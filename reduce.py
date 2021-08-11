@@ -55,7 +55,7 @@ def reduce(scilist,masterFlatname='masterFlat.fits',masterBiasname='masterBias.f
 			continue
 		'''
 		procData = (data - masterBias)/masterFlatFixed
-		print(procData)
+		#print(procData)
 		procHDU = fits.PrimaryHDU(procData)  # Create a new HDU with the processed image data
 		procHDU.header = primaryHeader       # Copy over the header from the raw file
 		procHDU.header.add_history('Bias corrected and flat-fielded') # Add a note to the header

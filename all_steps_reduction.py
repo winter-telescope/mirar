@@ -91,7 +91,7 @@ def prepare(basedir,redo=False,caldir='cals',procdir='proc',otherdir='other',mas
 			header = img[0].header
 			img.close()
 
-			print(flatlist[header['FILTER']])
+			#print(flatlist[header['FILTER']])
 			if header['OBSTYPE'] == 'flat':
 				flatlist[header['FILTER']].append(imgname)
 

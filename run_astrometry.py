@@ -23,8 +23,10 @@ astrom_nnw = 'config/default.nnw'
 
 def secondPass_astrometry(imgname,ra=None,dec=None,catalog_min_mag=10,catalog_max_mag=18,catalog_box_size_arcmin=30,writefiles=True,weightimg='weight.fits'):
 	#Run scamp to generate a refined solution
-	run_sextractor(imgname,weightimg=weightimg)
-
+	res = run_sextractor(imgname,weightimg=weightimg)
+	if res<0:
+		return -1
+			
 	if ra is None and dec is None:
 		img = fits.open(imgname)
 		header = img[0].header
@@ -35,13 +37,22 @@ def secondPass_astrometry(imgname,ra=None,dec=None,catalog_min_mag=10,catalog_ma
 		[ra, dec] = w.all_pix2world(data.shape[0]/2, data.shape[1]/2,1)
 
 	print(ra,dec)
-	make_gaia_catalog(ra,dec,imgname.replace('.fits','.gaia'),catalog_box_size_arcmin,catalog_min_mag,catalog_max_mag,writeldac=True)
+	res = make_gaia_catalog(ra,dec,imgname.replace('.fits','.gaia'),catalog_box_size_arcmin,catalog_min_mag,catalog_max_mag,writeldac=True)
+	if res<0:
+		return -1
+
 	print('Downloaded gaia sources')
-	run_scamp(imgname)
+	
+	res = run_scamp(imgname)
+	if res<0:
+		return -1
+
 	#print('Scamp run successfully')
 	if writefiles:
 		headername = imgname + '.head'
 		write_scamped_file(imgname,headername)
+
+	return 0
 
 
 def write_scamped_file(imgname,headername):
@@ -72,9 +83,10 @@ def make_gaia_catalog(ra, dec, tmcatname, catalog_box_size_arcmin, catalog_min_m
         job = Gaia.launch_job_async("SELECT * FROM gaiadr2.gaia_source AS g, gaiadr2.tmass_best_neighbour AS tbest, gaiadr1.tmass_original_valid AS tmass WHERE g.source_id = tbest.source_id AND tbest.tmass_oid = tmass.tmass_oid AND CONTAINS(POINT('ICRS', g.ra, g.dec), CIRCLE('ICRS', %.4f, %.4f, %.4f))=1 AND tmass.j_m > %.2f AND tmass.j_m < %.2f AND tbest.number_of_mates=0 AND tbest.number_of_neighbours=1;"%(ra, dec, catalog_box_size_arcmin/60, catalog_min_mag, catalog_max_mag), dump_to_file = False)
         print('Yay')
         t = job.get_results()
+        
     except:
         print('Could not query Gaia .. ')
-        return 0
+        return -1
    
     print(t.colnames)
     #t.remove_columns(['designation', 'phot_variable_flag', 'datalink_url', 'epoch_photometry_url', 'original_ext_source_id', 'designation_2'])
@@ -89,6 +101,7 @@ def make_gaia_catalog(ra, dec, tmcatname, catalog_box_size_arcmin, catalog_min_m
             os.remove(tmcatname + '.ldac')
         aw.save_table_as_ldac(t, tmcatname + '.ldac')
 
+    return 0
 
 def run_sextractor(imgname,weightimg='weight.fits'):
 	#Run sextractor on the proc image file
@@ -98,9 +111,11 @@ def run_sextractor(imgname,weightimg='weight.fits'):
 		rval = subprocess.run(command.split(),check=True,capture_output=True)
 		print('Process completed')
 		print(rval.stdout.decode())
+		return 0
 
 	except subprocess.CalledProcessError as err:
 		print('Could not run sextractor with error %s.'%(err))
+		return -1
 
 
 def run_scamp(imgname):
@@ -111,9 +126,11 @@ def run_scamp(imgname):
 		rval = subprocess.run(command.split(),check=True,capture_output=True)
 		print('Process completed')
 		print(rval.stdout.decode())
+		return 0
 
 	except subprocess.CalledProcessError as err:
 		print('Could not run scamp with error %s.'%(err))
+		return -1
 
 
 def gen_weight_img(imgname):
@@ -136,9 +153,11 @@ def run_swarp(imgname,weightimgname,pixscale,imgpisxize,ra,dec):
 		rval = subprocess.run(command.split(),check=True,capture_output=True)
 		print('Process completed')
 		print(rval.stdout.decode())
+		return 0
 
 	except subprocess.CalledProcessError as err:
 		print('Could not run swarp with error %s.'%(err))
+		return -1
 
 def firstPass_astrometry(procimgname,pixscale=0.466):
 	#Run autoastrometry.py
@@ -148,15 +167,25 @@ def firstPass_astrometry(procimgname,pixscale=0.466):
 		rval = subprocess.run(command.split(),check=True,capture_output=True)
 		print('Process completed')
 		print(rval.stdout.decode())
+		return 0
 
 	except subprocess.CalledProcessError as err:
 		print('Could not run astrometry with error %s.'%(err))
+		return -1
 
 
 def run_astrometry(proclist,pixscale=0.466,weightimg='weight.fits'):
 	for procimgname in proclist:
-		firstPass_astrometry(procimgname,pixscale)
-		secondPass_astrometry(procimgname.replace('.fits','') + '.autoastrom.fits',writefiles=True,weightimg=weightimg)
+		res = firstPass_astrometry(procimgname,pixscale)
+		if res<0:
+			print('Failed at first pass (autoastrometry) stage for ',procimgname)
+			continue
+		
+		res = secondPass_astrometry(procimgname.replace('.fits','') + '.autoastrom.fits',writefiles=True,weightimg=weightimg)
+		if res<0:
+			print('Failed at second pass stage for ',procimgname)
+			continue
+		
 		gen_weight_img(procimgname.replace('.fits','')+'.autoastrom.scampastrom.fits')
 		img = fits.open(procimgname.replace('.fits','')+'.autoastrom.fits')
 		header = img[0].header
