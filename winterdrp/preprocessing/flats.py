@@ -51,7 +51,7 @@ def make_master_flats(flatlist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500
             
         for f in list(set(filterlist)):
             
-            mask = flatlist == f
+            mask = np.array([x == f for x in flatfields])
             
             cutflatlist = flatlist[mask]
             
@@ -93,3 +93,6 @@ def make_master_flats(flatlist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500
       
     else:
         logger.warning("No flat images provided. Proceeding without flat-fielding correction.")
+        
+def select_sky_flats():
+    raise NotImplementedError
