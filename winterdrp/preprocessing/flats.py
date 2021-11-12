@@ -77,7 +77,7 @@ def make_master_flats(flatlist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500
             img = fits.open(flatlist[0])
             primaryHeader = img[0].header
             img.close()
-            procHDU = fits.PrimaryHDU(masterFlat)  # Create a new HDU with the processed image data
+            procHDU = fits.PrimaryHDU(master_flat)  # Create a new HDU with the processed image data
             procHDU.header = primaryHeader       # Copy over the header from the raw file
             procHDU.header.add_history('Stacked flat-fielded')
 

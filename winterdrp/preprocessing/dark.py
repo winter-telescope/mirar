@@ -25,8 +25,6 @@ def make_master_dark(darklist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500,
         img.close()
         nx = header['NAXIS1']
         ny = header['NAXIS2']
-
-        darks = np.zeros((ny,nx,len(darklist)))
         
         # Try to load bias image
         
@@ -80,8 +78,10 @@ def make_master_dark(darklist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500,
         # Loop over each set of darks and create a master_dark
                 
         for (cutdarklist, exptime, history) in dark_loop:
-        
+                    
             nframes = len(cutdarklist)
+            
+            darks = np.zeros((ny,nx,len(cutdarklist)))
 
             for i, dark in enumerate(cutdarklist):
 
@@ -89,17 +89,20 @@ def make_master_dark(darklist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500,
                 dark_exptime = img[0].header['EXPTIME']
 
                 logger.debug(f'Reading dark {i+1}/{nframes} with exposure time {dark_exptime}')
-
+                
                 darks[:,:,i] = (img[0].data - master_bias) * exptime/dark_exptime
 
                 img.close()
+                
+            print(darks)
+            print(darks.shape)
 
             master_dark = np.nanmedian(darks,axis=2)
 
             img = fits.open(darklist[0])
             primaryHeader = img[0].header
             img.close()
-            procHDU = fits.PrimaryHDU(master_bias)  # Create a new HDU with the processed image data
+            procHDU = fits.PrimaryHDU(master_dark)  # Create a new HDU with the processed image data
             procHDU.header = primaryHeader       # Copy over the header from the raw file
 
             procHDU.header.add_history(history)
