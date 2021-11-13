@@ -1,7 +1,7 @@
 import os
 import logging
 import numpy as np
-from astropy.io import fits
+from winterdrp.io import read_fits
 from winterdrp.paths import raw_img_dir, reduced_img_dir, reduced_img_path, cal_output_dir
 from winterdrp.preprocessing.bias import load_master_bias
 from winterdrp.preprocessing.dark import load_master_darks, select_master_dark
@@ -13,8 +13,9 @@ def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, m
     
     cal_dir = cal_output_dir(subdir)
     
-    with fits.open(raw_images[0]) as img:
-        header = img[0].header 
+    img = read_fits(raw_images[0])
+    header = img[0].header 
+    img.close()
     
     # Try making output directory, unless it exists
     
@@ -57,7 +58,7 @@ def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, m
             logger.debug(f"Skipping image {img_name}, because it has already been processed and 'reprocess' is False.")
             continue
         
-        img = fits.open(raw_img_path)
+        img = read_fits(raw_img_path)
         data = img[0].data
         header = img[0].header
         
