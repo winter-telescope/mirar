@@ -2,7 +2,8 @@ import numpy as np
 import os
 from astropy.io import fits
 import logging
-from winterdrp.preprocessing.bias import base_mbias_name
+from glob import glob
+from winterdrp.preprocessing.bias import load_master_bias
 
 logger = logging.getLogger(__name__)
 
@@ -17,26 +18,13 @@ def make_master_flats(flatlist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500
 
         logger.info(f'Found {len(flatlist)} flat frames')
 
-        img = fits.open(flatlist[0])
-        header = img[0].header
-        img.close()
+        with fits.open(flatlist[0]) as img:
+            header = img[0].header
+            
         nx = header['NAXIS1']
         ny = header['NAXIS2']
         
-        # Try to load bias image
-        
-        try:
-
-            img = fits.open(os.path.join(cal_dir, base_mbias_name))
-            master_bias = img[0].data
-            header = img[0].header
-            img.close() 
-            
-        except FileNotFoundError:
-            
-            logger.warning("No master bias found. No bias correction will be applied.")
-        
-            master_bias = np.zeros((ny,nx))
+        master_bias = load_master_bias(cal_dir, header)
         
         filterlist = []
         
@@ -96,3 +84,60 @@ def make_master_flats(flatlist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500
         
 def select_sky_flats():
     raise NotImplementedError
+    
+def load_master_flats(cal_dir, header=None):
+    
+    master_flat_paths = glob(f'{cal_dir}/{base_mflat_name}*.fits')
+            
+    if len(master_flat_paths) == 0:
+        
+        try:
+            nx = header['NAXIS1']
+            ny = header['NAXIS2']
+
+            master_flats = np.zeros((ny,nx))
+            
+            logger.warning("No master flat found. No flat-fielding correction will be applied.")
+        
+        except (TypeError, KeyError) as e:
+            err = "No master flat files found, and no header info provided to create a dummy image."
+            logger.error(err)
+            raise FileNotFoundError(err)
+            
+    else:
+        
+        master_flats = dict()
+        
+        for mfpath in master_flat_paths:
+                
+            f = os.path.basename(mfpath).split("_")[-1][:-5]
+
+            master_flats[f] = mfpath
+                
+    return master_flats
+
+def select_master_flat(all_master_flats, header=None, flat_nan_threshold=0.0):
+    
+    if isinstance(all_master_flats, np.ndarray):
+        master_flat = all_master_flats
+    
+    elif isinstance(all_master_flats, dict):
+        f = header['FILTER']
+        try:
+            master_flat = all_master_flats[f]
+        except KeyError:
+            err = f"Unrecognised key {f}. Available filters are {all_master_flats.keys()}"
+            logger.error(err)
+            raise KeyError(err)
+    else:
+        err = f"Unrecognised Type for all_master_flats ({type(all_master_flats)}). Was expecting 'numpy.ndarray' or 'dict'."
+        logger.error(err)
+        raise TypeError(err)
+        
+     # Mask pixels below a threshold
+    
+    masked_mflat = np.copy(master_flat)
+    if np.any(master_flat< flat_nan_threshold):
+        masked_mflat[master_flat < flat_nan_threshold] = np.nan
+    
+    return masked_mlat

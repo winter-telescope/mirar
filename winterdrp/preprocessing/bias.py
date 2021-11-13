@@ -13,15 +13,16 @@ def make_master_bias(biaslist, xlolim=200, xuplim=1300, ylolim=200, yuplim=1300,
         
         logger.info(f'Found {len(biaslist)} bias frames')
     
-        img = fits.open(biaslist[0])
-        header = img[0].header
-        img.close()
+        with fits.open(biaslist[0]) as img:
+            header = img[0].header
+        
         nx = header['NAXIS1']
         ny = header['NAXIS2']
 
         nframes = len(biaslist)
 
         biases = np.zeros((ny,nx,nframes))
+        
         for i, biasfile in enumerate(biaslist):
             logger.debug(f'Reading bias {i+1}/{nframes}')
             img = fits.open(biasfile)
@@ -46,4 +47,35 @@ def make_master_bias(biaslist, xlolim=200, xuplim=1300, ylolim=200, yuplim=1300,
         procHDU.writeto(mbias_path,overwrite=True)
         
     else:
-        logger.warning("No bias images provided. Proceeding without bias correction.")
+        logger.warning("No bias images provided. No master bias created.")
+        
+def load_master_bias(cal_dir, header=None):
+    
+    # Try to load bias image
+        
+    try:
+
+        img = fits.open(os.path.join(cal_dir, base_mbias_name))
+        master_bias = img[0].data
+        header = img[0].header
+        img.close() 
+
+    except FileNotFoundError:
+        
+        try:
+            
+            nx = header['NAXIS1']
+            ny = header['NAXIS2']
+
+            master_bias = np.zeros((ny,nx))
+            
+            logger.warning("No master bias found. No bias correction will be applied.")
+            
+        except KeyError:
+            
+            err = "No master bias files found, and no header info provided to create a dummy image."
+            logger.error(err)
+            raise FileNotFoundError(err)
+
+
+    return master_bias
