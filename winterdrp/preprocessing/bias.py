@@ -1,4 +1,4 @@
-from astropy.io import fits
+from winterdrp.io import open_fits, create_fits
 import os
 import numpy as np
 import logging
@@ -7,13 +7,14 @@ logger = logging.getLogger(__name__)
 
 base_mbias_name = 'master_bias.fits'
 
-def make_master_bias(biaslist, xlolim=200, xuplim=1300, ylolim=200, yuplim=1300, cal_dir='cals'):
+
+def make_master_bias(biaslist, cal_dir='cals'):
 
     if len(biaslist) > 0:
         
         logger.info(f'Found {len(biaslist)} bias frames')
     
-        with fits.open(biaslist[0]) as img:
+        with open_fits(biaslist[0]) as img:
             header = img[0].header
         
         nx = header['NAXIS1']
@@ -21,44 +22,42 @@ def make_master_bias(biaslist, xlolim=200, xuplim=1300, ylolim=200, yuplim=1300,
 
         nframes = len(biaslist)
 
-        biases = np.zeros((ny,nx,nframes))
+        biases = np.zeros((ny, nx, nframes))
         
-        for i, biasfile in enumerate(biaslist):
+        for i, bias in enumerate(biaslist):
             logger.debug(f'Reading bias {i+1}/{nframes}')
-            img = fits.open(biasfile)
-            biases[:,:,i] = img[0].data
-            img.close()
+            with open_fits(bias) as img:
+                biases[:, :, i] = img[0].data
 
         logger.info(f'Median combining {nframes} biases')
 
-        master_bias = np.nanmedian(biases,axis=2)
+        master_bias = np.nanmedian(biases, axis=2)
 
-        img = fits.open(biaslist[0])
-        primaryHeader = img[0].header
-        img.close()
-        procHDU = fits.PrimaryHDU(master_bias)  # Create a new HDU with the processed image data
-        procHDU.header = primaryHeader       # Copy over the header from the raw file
-        procHDU.header.add_history('median stacked bias')
+        with open_fits(biaslist[0]) as img:
+            primary_header = img[0].header
+
+        proc_hdu = create_fits(master_bias)  # Create a new HDU with the processed image data
+        proc_hdu.header = primary_header      # Copy over the header from the raw file
+        proc_hdu.header.add_history('median stacked bias')
 
         mbias_path = os.path.join(cal_dir, base_mbias_name)
 
         logger.info(f"Saving stacked 'master bias' to {mbias_path}")
 
-        procHDU.writeto(mbias_path,overwrite=True)
+        proc_hdu.writeto(mbias_path, overwrite=True)
         
     else:
         logger.warning("No bias images provided. No master bias created.")
-        
+
+
 def load_master_bias(cal_dir, header=None):
     
     # Try to load bias image
         
     try:
-
-        img = fits.open(os.path.join(cal_dir, base_mbias_name))
-        master_bias = img[0].data
-        header = img[0].header
-        img.close() 
+        with open_fits(os.path.join(cal_dir, base_mbias_name)):
+            master_bias = img[0].data
+            header = img[0].header
 
     except FileNotFoundError:
         
@@ -67,7 +66,7 @@ def load_master_bias(cal_dir, header=None):
             nx = header['NAXIS1']
             ny = header['NAXIS2']
 
-            master_bias = np.zeros((ny,nx))
+            master_bias = np.zeros((ny, nx))
             
             logger.warning("No master bias found. No bias correction will be applied.")
             
@@ -76,6 +75,5 @@ def load_master_bias(cal_dir, header=None):
             err = "No master bias files found, and no header info provided to create a dummy image."
             logger.error(err)
             raise FileNotFoundError(err)
-
 
     return master_bias

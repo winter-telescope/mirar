@@ -1,7 +1,7 @@
 import os
 import logging
 import numpy as np
-from winterdrp.io import read_fits
+from winterdrp.io import open_fits
 from winterdrp.paths import raw_img_dir, reduced_img_dir, reduced_img_path, cal_output_dir
 from winterdrp.preprocessing.bias import load_master_bias
 from winterdrp.preprocessing.dark import load_master_darks, select_master_dark
@@ -9,14 +9,14 @@ from winterdrp.preprocessing.flats import load_master_flats, select_master_flat
 
 logger = logging.getLogger(__name__)
 
+
 def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, master_flat=None, use_norm_dark=False, flat_nan_threshold=0.1, reprocess=True):
     
     cal_dir = cal_output_dir(subdir)
-    
-    img = read_fits(raw_images[0])
-    header = img[0].header 
-    img.close()
-    
+
+    with open_fits(raw_images[0]) as img:
+        header = img[0].header
+
     # Try making output directory, unless it exists
     
     output_dir = reduced_img_dir(subdir)
@@ -58,7 +58,7 @@ def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, m
             logger.debug(f"Skipping image {img_name}, because it has already been processed and 'reprocess' is False.")
             continue
         
-        img = read_fits(raw_img_path)
+        img = open_fits(raw_img_path)
         data = img[0].data
         header = img[0].header
         

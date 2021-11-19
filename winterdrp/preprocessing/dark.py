@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from glob import glob
-from astropy.io import fits
+from winterdrp.io import open_fits, create_fits
 import logging
 from winterdrp.preprocessing.bias import load_master_bias
 
@@ -9,19 +9,21 @@ logger = logging.getLogger(__name__)
 
 base_mdark_name = "master_dark"
 
+
 def mdark_name(exptime, norm=False):
     if norm:
         return f"{base_mdark_name}_normed.fits"
     else:
         return f"{base_mdark_name}_{exptime:.0f}s.fits"
 
-def make_master_dark(darklist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500, cal_dir='cals', make_norm=True):
+
+def make_master_dark(darklist, cal_dir='cals', make_norm=True):
     
     if len(darklist) > 0:
 
         logger.info(f'Found {len(darklist)} dark frames')
         
-        with fits.open(darklist[0]) as img:
+        with open_fits(darklist[0]) as img:
             header = img[0].header
             
         nx = header['NAXIS1']
@@ -34,10 +36,8 @@ def make_master_dark(darklist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500,
         explist = []
 
         for dark in darklist:
-            img = fits.open(dark)
-            data = img[0].data
-            header = img[0].header
-
+            with open_fits(dark) as img:
+                header = img[0].header
             explist.append(header['EXPTIME'])
 
         exps = sorted(list(set(explist)))
@@ -79,35 +79,32 @@ def make_master_dark(darklist, xlolim=500, xuplim=3500, ylolim=500, yuplim=3500,
             darks = np.zeros((ny,nx,len(cutdarklist)))
 
             for i, dark in enumerate(cutdarklist):
+                logger.debug(f'Reading dark {i + 1}/{nframes} with exposure time {dark_exptime}')
 
-                img = fits.open(dark)
-                dark_exptime = img[0].header['EXPTIME']
-
-                logger.debug(f'Reading dark {i+1}/{nframes} with exposure time {dark_exptime}')
-                
-                darks[:,:,i] = (img[0].data - master_bias) * exptime/dark_exptime
-
-                img.close()
+                with open_fits(dark) as img:
+                    dark_exptime = img[0].header['EXPTIME']
+                    darks[:, :, i] = (img[0].data - master_bias) * exptime/dark_exptime
 
             master_dark = np.nanmedian(darks,axis=2)
 
-            img = fits.open(darklist[0])
-            primaryHeader = img[0].header
-            img.close()
-            procHDU = fits.PrimaryHDU(master_dark)  # Create a new HDU with the processed image data
-            procHDU.header = primaryHeader       # Copy over the header from the raw file
+            with open_fits(darklist[0]) as img:
+                primary_header = img[0].header
+                
+            proc_hdu = create_fits(master_dark)  # Create a new HDU with the processed image data
+            proc_hdu.header = primary_header       # Copy over the header from the raw file
 
-            procHDU.header.add_history(history)
-            procHDU.header['EXPTIME'] = exptime
+            proc_hdu.header.add_history(history)
+            proc_hdu.header['EXPTIME'] = exptime
 
             logger.info(f"Saving stacked 'master dark' combining {nframes} exposures to {mdark_path}")
 
-            procHDU.writeto(mdark_path, overwrite=True)
+            proc_hdu.writeto(mdark_path, overwrite=True)
         return 0
       
     else:
         logger.warning("No dark images provided. No master dark created.")
-        
+
+
 def load_master_darks(cal_dir, header=None, use_norm=False):
     
     master_dark_paths = glob(f'{cal_dir}/{base_mdark_name}*.fits')
@@ -131,7 +128,7 @@ def load_master_darks(cal_dir, header=None, use_norm=False):
      
     elif use_norm:
         
-        with fits.open(mdark_norm_path) as img:
+        with open_fits(mdark_norm_path) as img:
             master_darks = img[0].data
             
     else:
@@ -142,10 +139,11 @@ def load_master_darks(cal_dir, header=None, use_norm=False):
             if mdark_norm_path not in mdpath:
                 
                 exp = os.path.basename(mdpath).split("_")[-1][:-6]
-                
-                master_darks[float(exp)] = mdpath
+                with open_fits(mdpath) as img:
+                    master_darks[float(exp)] = img[0].data
                 
     return master_darks
+
 
 def select_master_dark(all_master_darks, header):
     
