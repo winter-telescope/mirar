@@ -1,5 +1,4 @@
 import os
-import logging
 from astropy.io import fits
 from glob import glob
 import logging
@@ -18,18 +17,25 @@ if base_output_dir is None:
     logger.error("No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data'")
     raise ValueError("No output data directory specified.")
 
+sextractor_path = os.getenv("SEXTRACTOR_PATH", "")
+
+
 def raw_img_dir(subdir=""):
     return os.path.join(base_raw_dir, f"{subdir}/raw")
+
 
 def cal_output_dir(subdir=""):
     return os.path.join(base_output_dir, f"{subdir}/cals")
 
+
 def reduced_img_dir(subdir=""):
     return os.path.join(base_output_dir, f"{subdir}/redux")
 
+
 def reduced_img_path(img_name, subdir=""):
     return os.path.join(reduced_img_dir(subdir), img_name)
-    
+
+
 def parse_image_list(subdir=""):
     
     object_dict = dict()
