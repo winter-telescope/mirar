@@ -134,7 +134,8 @@ def select_master_flat(all_master_flats, header=None, flat_nan_threshold=0.0):
             logger.error(err)
             raise KeyError(err)
     else:
-        err = f"Unrecognised Type for all_master_flats ({type(all_master_flats)}). Was expecting 'numpy.ndarray' or 'dict'."
+        err = f"Unrecognised Type for all_master_flats ({type(all_master_flats)}). " \
+              f"Was expecting 'numpy.ndarray' or 'dict'."
         logger.error(err)
         raise TypeError(err)
         
@@ -144,4 +145,4 @@ def select_master_flat(all_master_flats, header=None, flat_nan_threshold=0.0):
     if np.any(master_flat < flat_nan_threshold):
         masked_mflat[master_flat < flat_nan_threshold] = np.nan
     
-    return masked_mlat
+    return masked_mflat

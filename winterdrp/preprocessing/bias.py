@@ -55,9 +55,8 @@ def load_master_bias(cal_dir, header=None):
     # Try to load bias image
         
     try:
-        with open_fits(os.path.join(cal_dir, base_mbias_name)):
+        with open_fits(os.path.join(cal_dir, base_mbias_name)) as img:
             master_bias = img[0].data
-            header = img[0].header
 
     except FileNotFoundError:
         

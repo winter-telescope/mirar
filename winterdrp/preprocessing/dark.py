@@ -79,17 +79,16 @@ def make_master_dark(darklist, cal_dir='cals', make_norm=True):
             darks = np.zeros((ny,nx,len(cutdarklist)))
 
             for i, dark in enumerate(cutdarklist):
-                logger.debug(f'Reading dark {i + 1}/{nframes} with exposure time {dark_exptime}')
-
                 with open_fits(dark) as img:
                     dark_exptime = img[0].header['EXPTIME']
+                    logger.debug(f'Read dark {i + 1}/{nframes} with exposure time {dark_exptime}')
                     darks[:, :, i] = (img[0].data - master_bias) * exptime/dark_exptime
 
-            master_dark = np.nanmedian(darks,axis=2)
+            master_dark = np.nanmedian(darks, axis=2)
 
             with open_fits(darklist[0]) as img:
                 primary_header = img[0].header
-                
+
             proc_hdu = create_fits(master_dark)  # Create a new HDU with the processed image data
             proc_hdu.header = primary_header       # Copy over the header from the raw file
 
@@ -159,7 +158,8 @@ def select_master_dark(all_master_darks, header):
             logger.error(err)
             raise KeyError(err)
     else:
-        err = f"Unrecognised Type for all_master_darks ({type(all_master_darks)}). Was expecting 'numpy.ndarray' or 'dict'."
+        err = f"Unrecognised Type for all_master_darks ({type(all_master_darks)}). " \
+              f"Was expecting 'numpy.ndarray' or 'dict'."
         logger.error(err)
         raise TypeError(err)
     

@@ -1,7 +1,7 @@
 import os
 import logging
 import numpy as np
-from winterdrp.io import open_fits
+from winterdrp.io import open_fits, create_fits
 from winterdrp.paths import raw_img_dir, reduced_img_dir, reduced_img_path, cal_output_dir
 from winterdrp.preprocessing.bias import load_master_bias
 from winterdrp.preprocessing.dark import load_master_darks, select_master_dark
@@ -10,7 +10,8 @@ from winterdrp.preprocessing.flats import load_master_flats, select_master_flat
 logger = logging.getLogger(__name__)
 
 
-def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, master_flat=None, use_norm_dark=False, flat_nan_threshold=0.1, reprocess=True):
+def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, master_flat=None,
+                    use_norm_dark=False, flat_nan_threshold=0.1, reprocess=True):
     
     cal_dir = cal_output_dir(subdir)
 
@@ -34,11 +35,11 @@ def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, m
         
     if master_dark is None:
         
-        all_master_darks = load_master_darks(cal_dir, header, use_norm=use_norm_dark)
+        master_dark = load_master_darks(cal_dir, header, use_norm=use_norm_dark)
     
     if master_flat is None:
         
-        all_master_flats = load_master_flats(cal_dir, header)
+        master_flat = load_master_flats(cal_dir, header)
         
     nframes = len(raw_images)
     
@@ -49,38 +50,38 @@ def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, m
     for i, raw_img_path in enumerate(raw_images):
         
         img_name = os.path.basename(raw_img_path)
-                
+
         logger.debug(f"Processing image {i+1}/{nframes} ({img_name})")
         
-        output_path = reduced_img_path(subdir, img_name)
+        output_path = reduced_img_path(img_name, subdir=subdir)
         
         if np.logical_and(os.path.exists(output_path), reprocess is False):
-            logger.debug(f"Skipping image {img_name}, because it has already been processed and 'reprocess' is False.")
+            logger.debug(f"Skipping image {img_name}, because it has already "
+                         f"been processed and 'reprocess' is False.")
             continue
         
-        img = open_fits(raw_img_path)
-        data = img[0].data
-        header = img[0].header
+        with open_fits(raw_img_path) as img:
+            data = img[0].data
+            header = img[0].header
         
         if header['OBSTYPE'] not in ['science', "object"]:
             logger.debug(f'Obstype is not science, skipping {raw_img_path}')
             continue
         
-        master_dark = select_master_dark(all_master_darks, header)
-        master_flat = select_master_flat(all_master_flats, header, flat_nan_threshold=flat_nan_threshold)
+        mdark = select_master_dark(master_dark, header)
+        mflat = select_master_flat(master_flat, header, flat_nan_threshold=flat_nan_threshold)
 
         # Master dark????
         
-        data_redux = (data - master_bias)/master_flat
-        #print(procData)
-        procHDU = fits.PrimaryHDU(data_redux)  # Create a new HDU with the processed image data
-        procHDU.header = header      # Copy over the header from the raw file
-        procHDU.header.add_history('Bias corrected and flat-fielded') # Add a note to the header
-        primaryHeader['BZERO'] = 0
+        data_redux = (data - master_bias)/mflat
+        proc_hdu = create_fits(data_redux)  # Create a new HDU with the processed image data
+        proc_hdu.header = header      # Copy over the header from the raw file
+        proc_hdu.header.add_history('Bias corrected and flat-fielded') # Add a note to the header
+        proc_hdu.header['BZERO'] = 0
         # Write the reduced frame to disk
 
-        logging.info(f"Saving processed image to {output_path}")
-        proclist.append(output_path)
-        procHDU.writeto(output_path, overwrite=True)
+        logger.info(f"Saving processed image to {output_path}")
+        proccessed_list.append(output_path)
+        proc_hdu.writeto(output_path, overwrite=True)
         
         
