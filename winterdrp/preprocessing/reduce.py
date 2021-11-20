@@ -83,5 +83,6 @@ def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, m
         logger.info(f"Saving processed image to {output_path}")
         proccessed_list.append(output_path)
         proc_hdu.writeto(output_path, overwrite=True)
-        
+
+    return proccessed_list
         
