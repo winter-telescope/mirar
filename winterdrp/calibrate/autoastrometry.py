@@ -450,7 +450,7 @@ def sextract(sexfilename, nxpix, nypix, border=3, corner=12, minfwhm=1.5, maxfwh
                 del flaglist[k]
                 ctbadcol += 1
     if ctbadcol > 0:
-        print(' Removed ', ctbadcol, ' detections along bad columns.')
+        logger.debug(' Removed ', ctbadcol, ' detections along bad columns.')
 
 
     # Remove galaxies and cosmic rays
@@ -601,12 +601,12 @@ def getcatalog(catalog, ra, dec, boxsize, minmag=8.0, maxmag=-1, maxpm=60.):
 def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch=3, patolerance=1.2,uncpa=-1):
 
     if tolerance <= 0:
-        print('Tolerance cannot be negative!!!')
+        logger.debug('Tolerance cannot be negative!!!')
         tolerance = abs(tolerance)
     if reqmatch < 2:
-        print('Warning: reqmatch >=3 suggested')
+        logger.debug('Warning: reqmatch >=3 suggested')
     if patolerance <= 0:
-        print('PA tolerance cannot be negative!!!')
+        logger.debug('PA tolerance cannot be negative!!!')
         patolerance = abs(patolerance)
     if uncpa < 0:
         uncpa = 720
@@ -770,8 +770,8 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
 
     nmatches = len(smatch)
     if (nmatches == 0):
-        print('Found no potential matches of any sort (including pairs).')
-        print('The algorithm is probably not finding enough real stars to solve the field.  Check seeing.')
+        logger.debug('Found no potential matches of any sort (including pairs).')
+        logger.debug('The algorithm is probably not finding enough real stars to solve the field.  Check seeing.')
         #print 'This is an unusual error.  Check that a parameter is not set to a highly nonstandard value?'
         return [], [], []
 
@@ -791,7 +791,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
             #rejects += 1  no longer a "reject"
 
     if len(smatch) < 1:
-        print('Found no matching clusters of reqmatch =', reqmatch)
+        logger.debug('Found no matching clusters of reqmatch =', reqmatch)
         return [], [], []
 
     #If we still have lots of matches, get rid of those with the minimum number of submatches
@@ -802,7 +802,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
         if n > minmatch:
             countnotmin += 1
     if len(nmatch) > 16 and countnotmin > 3:
-        print('Too many matches: increasing reqmatch to', reqmatch+1)
+        logger.debug('Too many matches: increasing reqmatch to', reqmatch+1)
         for i in range(len(primarymatchs)-1,-1,-1):
             if nmatch[i] == minmatch:
                 del mpa[i]
@@ -814,7 +814,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                 #rejects += 1   no longer a "reject"
 
     nmatches = len(smatch) # recalculate with the new reqmatch and with prunes supposedly removed
-    print('Found', nmatches, 'candidate matches.')
+    logger.debug('Found', nmatches, 'candidate matches.')
 
     #for i in range(len(primarymatchs)):
     #    si = primarymatchs[i]
@@ -893,9 +893,9 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                 del nmatch[i]
                 rejects += 1
 
-    print('Rejected', rejects, 'bad matches.')
+    logger.debug('Rejected', rejects, 'bad matches.')
     nmatches = len(primarymatchs)
-    print('Found', nmatches, 'good matches.')
+    logger.debug('Found', nmatches, 'good matches.')
 
     if nmatches == 0:
         return [], [], []
@@ -918,29 +918,29 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
         pixelscalestd = stdev(pixscalelist)
 
         if len(primarymatchs) >= 3:
-            print('Refined pixel scale measurement: %.4f"/pix (+/- %.4f)' % (pixelscale, pixelscalestd))
+            logger.debug('Refined pixel scale measurement: %.4f"/pix (+/- %.4f)' % (pixelscale, pixelscalestd))
         else:
-            print('Refined pixel scale measurement: %.4f"/pix' % pixelscale)
+            logger.debug('Refined pixel scale measurement: %.4f"/pix' % pixelscale)
 
 
     for i in range(len(primarymatchs)):
         si = primarymatchs[i]
         ci = primarymatchc[i]
-        print('%3i' % si, 'matches', '%3i' % ci, ' (dPA =%7.3f)' % mpa[i], end=' ')
+        logger.debug('%3i' % si, 'matches', '%3i' % ci, ' (dPA =%7.3f)' % mpa[i], end=' ')
         if showmatches:
-            print()
+            logger.debug()
             if len(smatch[i]) < 16:
-                print('  ', si, '-->', smatch[i], end=' ')
-                if len(smatch[i]) >= 7: print()
-                print('  ', ci, '-->', cmatch[i])
+                logger.debug('  ', si, '-->', smatch[i], end=' ')
+                if len(smatch[i]) >= 7: logger.debug()
+                logger.debug('  ', ci, '-->', cmatch[i])
             else:
-                print('  ', si, '-->', smatch[i][0:10], '+', len(smatch[i])-10, 'more')
-                print('  ', ci, '-->', cmatch[i][0:10], '+')#, len(cmatch[i])-10, ' more'
+                logger.debug('  ', si, '-->', smatch[i][0:10], '+', len(smatch[i])-10, 'more')
+                logger.debug('  ', ci, '-->', cmatch[i][0:10], '+')#, len(cmatch[i])-10, ' more'
             if i+1 >= 10 and len(primarymatchs)-10 > 0:
-                print((len(primarymatchs)-10), 'additional matches not shown.')
+                logger.debug((len(primarymatchs)-10), 'additional matches not shown.')
                 break
         else:
-            print(':', str(len(smatch[i])).strip(), 'rays')
+            logger.debug(':', str(len(smatch[i])).strip(), 'rays')
 
     with open('matchlines.im.reg','w') as out:
 
@@ -1006,9 +1006,9 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
         fits = af.open(filename)
         fits.verify('silentfix')
     except:
-        print('Error opening', filename)
+        logger.debug('Error opening', filename)
         if os.path.isfile(filename)==False:
-            print('File does not exist.')
+            logger.debug('File does not exist.')
         return -1
 
     sciext = 0
@@ -1090,12 +1090,12 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
             equinox = 2000. # could be 'J2000'; try to strip off first character?
 
         if abs(equinox-2000) > 0.5:
-            print('Converting equinox from', equinox, 'to J2000')
+            logger.debug('Converting equinox from', equinox, 'to J2000')
             try:
                 j2000 = ephem.Equatorial(ephem.Equatorial(str(ra/15), str(dec), epoch=str(equinox)),epoch=ephem.J2000)
                 [ra, dec] = [rasex2deg(j2000.ra), decsex2deg(j2000.dec)]
             except:
-                print('PyEphem is not installed but is required to precess this image.')
+                logger.debug('PyEphem is not installed but is required to precess this image.')
                 return -1
         h["CD1_1"] = pxscaledeg * cos(parad)*parity
         h["CD1_2"] = pxscaledeg * sin(parad)
@@ -1129,7 +1129,7 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
         key = 'NAXIS2'
         nypix = h[key]
     except:
-        print('Cannot find necessary WCS header keyword', key)
+        logger.debug('Cannot find necessary WCS header keyword', key)
         sys.exit(1)
     try:
         key = 'CRVAL1'
@@ -1152,11 +1152,11 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
         cd21 = float(h[key])
 
         equinox = float(h.get('EQUINOX', 2000.))
-        if abs(equinox-2000.) > 0.2: print('Warning: EQUINOX is not 2000.0')
+        if abs(equinox-2000.) > 0.2: logger.debug('Warning: EQUINOX is not 2000.0')
     except:
         if pixelscale == -1:
-            print('Cannot find necessary WCS header keyword', key)
-            print('Must specify pixel scale (-px VAL) or provide provisional basic WCS info via CD matrix.')
+            logger.debug('Cannot find necessary WCS header keyword', key)
+            logger.debug('Must specify pixel scale (-px VAL) or provide provisional basic WCS info via CD matrix.')
             #Some images might use CROT parameters, could try to be compatible with this too...?
             sys.exit(1)
 
@@ -1183,11 +1183,11 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
 
     if h['CTYPE1'] != 'RA---TAN':
         if quiet==False:
-            print('Changing CTYPE1 from', h['CTYPE1'], 'to', "RA---TAN")
+            logger.debug('Changing CTYPE1 from', h['CTYPE1'], 'to', "RA---TAN")
         h["CTYPE1"] = "RA---TAN"
         ctypechange = 1
     if h['CTYPE2'] != 'DEC--TAN':
-        if ctypechange: print('Changing CTYPE2 from', h['CTYPE2'], 'to', "DEC--TAN")
+        if ctypechange: logger.debug('Changing CTYPE2 from', h['CTYPE2'], 'to', "DEC--TAN")
         h["CTYPE2"] = "DEC--TAN"
         ctypechange = 1
     wcskeycheck = ['CRVAL1','CRVAL2','CRPIX1','CRPIX2','CD1_1','CD1_2','CD2_2','CD2_1','EQUINOX','EPOCH']
@@ -1201,25 +1201,25 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
                 pass
     if quiet == False:
         if len(irafkeys) > 0:
-            print('Removed nonstandard WCS keywords: ', end=' ')
+            logger.debug('Removed nonstandard WCS keywords: ', end=' ')
             for key in irafkeys:
-                print(key, end=' ')
-            print()
+                logger.debug(key, end=' ')
+            logger.debug()
         if len(highkeys) > 0:
-            print('Removed higher-order WCS keywords: ', end=' ')
+            logger.debug('Removed higher-order WCS keywords: ', end=' ')
             for key in highkeys:
-                print(key, end=' ')
-            print()
+                logger.debug(key, end=' ')
+            logger.debug()
         if len(oldkeys) > 0:
-            print('Removed old-style WCS keywords: ', end=' ')
+            logger.debug('Removed old-style WCS keywords: ', end=' ')
             for key in oldkeys:
-                print(key, end=' ')
-            print()
+                logger.debug(key, end=' ')
+            logger.debug()
         if len(distortionkeys) > 0:
-            print('Removed distortion WCS keywords: ', end=' ')
+            logger.debug('Removed distortion WCS keywords: ', end=' ')
             for key in distortionkeys:
-                print(key, end=' ')
-            print()
+                logger.debug(key, end=' ')
+            logger.debug()
     if len(highkeys)+len(distortionkeys)+ctypechange+headerformatchange > 0:
         #Rewrite and reload the image if the header was modified in a significant way so sextractor sees the same thing that we do.
         if os.path.isfile('temp.fits'): os.remove('temp.fits')
@@ -1252,12 +1252,12 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
     # this has only been checked for a PA of zero.
 
     if quiet == False:
-        print('Initial WCS info:')
-        print('   pixel scale:     x=%.4f"/pix,   y=%.4f"/pix' % (xscale*3600, yscale*3600))
-        print('   position angle: PA=%.2f' % initpa)
-        if parity == 1: print('   normal parity')
-        if parity ==-1: print('   inverse parity')
-        print('   center:        RA=%10.6f, dec=%9.6f' % (centerra, centerdec))
+        logger.debug('Initial WCS info:')
+        logger.debug('   pixel scale:     x=%.4f"/pix,   y=%.4f"/pix' % (xscale*3600, yscale*3600))
+        logger.debug('   position angle: PA=%.2f' % initpa)
+        if parity == 1: logger.debug('   normal parity')
+        if parity ==-1: logger.debug('   inverse parity')
+        logger.debug('   center:        RA=%10.6f, dec=%9.6f' % (centerra, centerdec))
 
     # Sextract stars to produce image star catalog
 
@@ -1265,8 +1265,8 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
 
     ngood = len(goodsexlist)
     if ngood < 4:
-        print('Only', ngood, 'good stars were found in the image.  The image is too small or shallow, the detection')
-        print('threshold is set too high, or stars and cosmic rays are being confused.')
+        logger.debug('Only', ngood, 'good stars were found in the image.  The image is too small or shallow, the detection')
+        logger.debug('threshold is set too high, or stars and cosmic rays are being confused.')
         #print '  If that does not work, the image may be too shallow for this method (or may be a flatfield, etc.).'
         writetextfile('det.init.txt', goodsexlist)
         writeregionfile('det.im.reg', goodsexlist, 'red', 'img')
@@ -1274,7 +1274,7 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
         #sys.exit(1)
 
     density = len(goodsexlist) / area_sqmin
-    print('Source density of %f4 /arcmin^2' % density)
+    logger.debug('Source density of %f4 /arcmin^2' % density)
 
     if nosolve == 1:
         if catalog == '': catalog = 'det.ref.txt'
@@ -1292,10 +1292,10 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
             check.close()
             if len(checklines) > 15:
                 catalog = trycat
-                print('Using catalog', catalog)
+                logger.debug('Using catalog', catalog)
                 break
         if catalog == '':
-            print('No catalog is available.  Check your internet connection.')
+            logger.debug('No catalog is available.  Check your internet connection.')
             return -1
 
     # Load in reference star catalog
@@ -1305,23 +1305,23 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
 
     ncat = len(catlist)
     catdensity = ncat / (2*boxsize/60.)**2
-    print(ncat, 'good catalog objects.')
-    print('Source density of %f4 /arcmin^2' % catdensity)
+    logger.debug(ncat, 'good catalog objects.')
+    logger.debug('Source density of %f4 /arcmin^2' % catdensity)
 
     if ncat < 5 and ncat > 0:
-        print('Only ', ncat, ' catalog objects in the search zone.  Increase the magnitude threshold or box size.')
+        logger.debug('Only ', ncat, ' catalog objects in the search zone.  Increase the magnitude threshold or box size.')
 
     if ncat == 0:
-        print()
-        print('No objects found in catalog.')
-        print('The web query failed, all stars were excluded by the FHWM clip, or the image')
-        print('is too small.  Check input parameters or your internet connection.')
+        logger.debug()
+        logger.debug('No objects found in catalog.')
+        logger.debug('The web query failed, all stars were excluded by the FHWM clip, or the image')
+        logger.debug('is too small.  Check input parameters or your internet connection.')
         return -1
 
 
     # If this image is actually shallower than reference catalog, trim the reference catalog down
     if ncat > 16 and catdensity > 3 * density:
-        print('Image is shallow.  Trimming reference catalog...')
+        logger.debug('Image is shallow.  Trimming reference catalog...')
         while catdensity > 3 * density:
             catlist = catlist[0:int(len(catlist)*4/5)]
             ncat = len(catlist)
@@ -1329,7 +1329,7 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
 
     # If the image is way deeper than USNO, trim the image catalog down
     if ngood > 16 and density > 4 * catdensity and ngood > 8:
-        print('Image is deep.  Trimming image catalog...')
+        logger.debug('Image is deep.  Trimming image catalog...')
         while density > 4 * catdensity and ngood > 8:
             goodsexlist = goodsexlist[0:int(len(goodsexlist)*4/5)]
             ngood = len(goodsexlist)
@@ -1337,7 +1337,7 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
 
     # If too many objects, do some more trimming
     if ngood*ncat > 120*120*4:
-        print('Image and/or catalog still too deep.  Trimming...')
+        logger.debug('Image and/or catalog still too deep.  Trimming...')
         while ngood*ncat > 120*120*4:
             if density > catdensity:
                 goodsexlist = goodsexlist[0:int(len(goodsexlist)*4/5)]
@@ -1404,9 +1404,9 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
     circcatdensity = catdensity *                  (math.pi*(maxrad/60.)**2 - math.pi*(minrad/60)**2)
     catperimage    = catdensity * area_sqmin
 
-    print('After trimming: ')
-    print('   ', len(goodsexlist), 'detected objects (%.2f/arcmin^2, %.1f/searchzone)' % (density, circdensity))
-    print('   ', len(catlist),     'catalog objects (%.2f/arcmin^2, %.1f/searchzone)' % (catdensity, circcatdensity))
+    logger.debug('After trimming: ')
+    logger.debug('   ', len(goodsexlist), 'detected objects (%.2f/arcmin^2, %.1f/searchzone)' % (density, circdensity))
+    logger.debug('   ', len(catlist),     'catalog objects (%.2f/arcmin^2, %.1f/searchzone)' % (catdensity, circcatdensity))
 
 
     patolerance = defaultpatolerance
@@ -1425,25 +1425,25 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
         reqmatch = 1
     #for an extremely small or shallow image
 
-    print('Pair comparison search radius: %.2f"'%maxrad)
-    print('Using reqmatch =', reqmatch)
+    logger.debug('Pair comparison search radius: %.2f"'%maxrad)
+    logger.debug('Using reqmatch =', reqmatch)
     (primarymatchs, primarymatchc, mpa) = distmatch(goodsexlist, catlist, maxrad, minrad, tolerance, reqmatch, patolerance, uncpa)
 
     nmatch = len(primarymatchs)
     if nmatch == 0:
-        print(' No valid matches found!')
+        logger.debug(' No valid matches found!')
         if quiet == False:
-            print(' Possible issues:')
-            print('  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value.')
-            print('  - The field is outside the catalog search region.  Check header RA/DEC or increase search radius.')
-            print('  - The routine is flooded by bad sources.  Specify or check the input seeing.')
-            print('  - The routine is flagging many real stars.  Check the input seeing.')
-            print(' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg.')
+            logger.debug(' Possible issues:')
+            logger.debug('  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value.')
+            logger.debug('  - The field is outside the catalog search region.  Check header RA/DEC or increase search radius.')
+            logger.debug('  - The routine is flooded by bad sources.  Specify or check the input seeing.')
+            logger.debug('  - The routine is flagging many real stars.  Check the input seeing.')
+            logger.debug(' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg.')
         return -1
     if nmatch <= 2:
-        print('Warning: only', nmatch, 'match(es).  Astrometry may be unreliable.')
+        logger.debug('Warning: only', nmatch, 'match(es).  Astrometry may be unreliable.')
         if quiet == False:
-            print('   Check the pixel scale and parity and consider re-running.')
+            logger.debug('   Check the pixel scale and parity and consider re-running.')
         warning = 1
 
     #We now have the PA and a list of stars that are almost certain matches.
@@ -1453,8 +1453,8 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
     skyoffpa = -parity*offpa # This appears to be necessary for the printed value to agree with our normal definition.
 
     #if abs(offpa) < 0.2: offpa = 0.0
-    print('PA offset:')
-    print('  dPA = %.3f  (unc. %.3f)' % (skyoffpa, stdevpa))
+    logger.debug('PA offset:')
+    logger.debug('  dPA = %.3f  (unc. %.3f)' % (skyoffpa, stdevpa))
 
     if norot <= 0:
         # Rotate the image to the new, correct PA
@@ -1483,7 +1483,7 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
     else:
         rotwarn = ''
         if abs(skyoffpa) > 1.0: rotwarn = ' (WARNING: image appears rotated, may produce bad shift)'
-        print('  Skipping rotation correction ')
+        logger.debug('  Skipping rotation correction ')
 
 
     writetextfile('det.wcs.txt',goodsexlist)
@@ -1524,13 +1524,13 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
     totoffsetarcsec = (raoffsetarcsec**2 + decoffset**2)**0.5
     stdoffsetarcsec = stdoffset*3600
 
-    print('Spatial offset:')
+    logger.debug('Spatial offset:')
     #print '  %.2f" (PA = %.2f deg)' % (finaloffset, finalpa)
-    print('  dra = %.2f",  ddec = %.2f"  (unc. %.3f")' % (raoffsetarcsec, decoffsetarcsec, stdoffsetarcsec))
+    logger.debug('  dra = %.2f",  ddec = %.2f"  (unc. %.3f")' % (raoffsetarcsec, decoffsetarcsec, stdoffsetarcsec))
 
     warning = 0
     if (stdoffset*3600 > 1.0):
-        print('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
+        logger.debug('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
         warning = 1
 
     h["CRVAL1"] = cra + raoffset
@@ -1576,7 +1576,7 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
         pass
     fits[sciext].header = h
     fits.writeto(outfile,output_verify='silentfix') #,clobber=True
-    print('Written to '+outfile)
+    logger.debug('Written to '+outfile)
 
     if (warning == 0):
         try:
@@ -1600,129 +1600,129 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
 #####################################################
 def help():
     #          12345678901234567890123456789012345678901234567890123456789012345678901234567890
-    print("autoastrometry.py - A fast astrometric solver")
-    print("Command-line options:")
-    print("   Automatic WCS information:")
-    print("      -px pixelscale:  The pixel scale in arcsec/pix.  Must be within ~1%.")
-    print("      -pa PA:          The position angle in degrees.  Not usually needed.")
-    print("      -inv:            Reverse(=positive) parity.")
-    print("   If your image has provisional WCS already, you do not need this information.")
+    logger.debug("autoastrometry.py - A fast astrometric solver")
+    logger.debug("Command-line options:")
+    logger.debug("   Automatic WCS information:")
+    logger.debug("      -px pixelscale:  The pixel scale in arcsec/pix.  Must be within ~1%.")
+    logger.debug("      -pa PA:          The position angle in degrees.  Not usually needed.")
+    logger.debug("      -inv:            Reverse(=positive) parity.")
+    logger.debug("   If your image has provisional WCS already, you do not need this information.")
     #print "   If your image has detailed WCS, you need to flush it for this code to work."
-    print("   Options:")
-    print("      -b  boxsize:     Half-width of box for reference catalog query (arcsec)")
-    print("      -s  seeing:      Approximate seeing in pixels for CR/star/galaxy ID'ing.")
-    print("      -x  saturation:  Saturation level; do not use stars exceeding.")
-    print("      -upa PAdiff:     Uncertainty of the position angle (degrees)")
-    print("   Additional options:")
-    print("      -c  catalog:     Catalog to use (ub2, tmc, sdss, or file: see --catalog)")
-    print("      -d  searchdist:  Maximum distance to look for star pairs.")
-    print("      -t  tolerance:   Amount of slack allowed in match determination")
-    print("      -o  output:      Specify output file (no argument overwrites input file)")
-    print("      -n:              Do not attempt to solve astrometry; just write catalog.")
-    print("   More help:")
-    print("      --examples:      Some examples for running at the command line.")
-    print("      --trouble:       Troubleshooting info if you can't get a field to solve.")
-    print("      --catalog:       More information on catalogs.")
-    print("      --algorithm:     Description of the program runtime steps.")
-    print("      --output:        Information on the output files.")
-    print("      --input:         Information on the input files.")
+    logger.debug("   Options:")
+    logger.debug("      -b  boxsize:     Half-width of box for reference catalog query (arcsec)")
+    logger.debug("      -s  seeing:      Approximate seeing in pixels for CR/star/galaxy ID'ing.")
+    logger.debug("      -x  saturation:  Saturation level; do not use stars exceeding.")
+    logger.debug("      -upa PAdiff:     Uncertainty of the position angle (degrees)")
+    logger.debug("   Additional options:")
+    logger.debug("      -c  catalog:     Catalog to use (ub2, tmc, sdss, or file: see --catalog)")
+    logger.debug("      -d  searchdist:  Maximum distance to look for star pairs.")
+    logger.debug("      -t  tolerance:   Amount of slack allowed in match determination")
+    logger.debug("      -o  output:      Specify output file (no argument overwrites input file)")
+    logger.debug("      -n:              Do not attempt to solve astrometry; just write catalog.")
+    logger.debug("   More help:")
+    logger.debug("      --examples:      Some examples for running at the command line.")
+    logger.debug("      --trouble:       Troubleshooting info if you can't get a field to solve.")
+    logger.debug("      --catalog:       More information on catalogs.")
+    logger.debug("      --algorithm:     Description of the program runtime steps.")
+    logger.debug("      --output:        Information on the output files.")
+    logger.debug("      --input:         Information on the input files.")
 
 def algorithmhelp():
-    print("Algorithm info:")
-    print("  The code uses a combination of pair-distance matching and asterism matching to")
-    print("  solve a field without knowing the position angle.  The full list of steps is:")
-    print(" 1 - Extract all stars from the image.  Attempts to filter out cosmic rays,")
-    print("     galaxies, bad columns, and so on.")
-    print(" 2 - Query a catalog to get a list of known star positions.")
-    print(" 3 - Trim the catalogs if necessary and try to optimize the search strategy")
-    print("     based on the relative catalog densities and areas.")
-    print(" 4 - Calculate the distance from every star to its neighbors, both in the")
-    print("     image and the catalog.  Stars too far apart are ignored.")
-    print("     If the distance between a star and a neighbor matches the distance between")
-    print("     some catalog star and one of its neighbors, calculate that PA too and store")
-    print("     as a potential match.")
-    print(" 5 - Look for stars that seem to have a lot of distance matches with catalog")
-    print("     stars.  If the PA's also match, store the list as an asterism match.")
-    print(" 6 - Prune out asterisms whose matches seem least useful.")
-    print(" 7 - Calculate analytically the PA shift and offset by averaging asterism")
-    print("     centers.")
-    print(" 8 - Update the header and write to disk.")
+    logger.debug("Algorithm info:")
+    logger.debug("  The code uses a combination of pair-distance matching and asterism matching to")
+    logger.debug("  solve a field without knowing the position angle.  The full list of steps is:")
+    logger.debug(" 1 - Extract all stars from the image.  Attempts to filter out cosmic rays,")
+    logger.debug("     galaxies, bad columns, and so on.")
+    logger.debug(" 2 - Query a catalog to get a list of known star positions.")
+    logger.debug(" 3 - Trim the catalogs if necessary and try to optimize the search strategy")
+    logger.debug("     based on the relative catalog densities and areas.")
+    logger.debug(" 4 - Calculate the distance from every star to its neighbors, both in the")
+    logger.debug("     image and the catalog.  Stars too far apart are ignored.")
+    logger.debug("     If the distance between a star and a neighbor matches the distance between")
+    logger.debug("     some catalog star and one of its neighbors, calculate that PA too and store")
+    logger.debug("     as a potential match.")
+    logger.debug(" 5 - Look for stars that seem to have a lot of distance matches with catalog")
+    logger.debug("     stars.  If the PA's also match, store the list as an asterism match.")
+    logger.debug(" 6 - Prune out asterisms whose matches seem least useful.")
+    logger.debug(" 7 - Calculate analytically the PA shift and offset by averaging asterism")
+    logger.debug("     centers.")
+    logger.debug(" 8 - Update the header and write to disk.")
 
 
 def troublehelp():
     #          12345678901234567890123456789012345678901234567890123456789012345678901234567890
-    print("Troubleshooting info:")
-    print("   Supplying the correct pixel scale (within 1%) and correct parity is critical")
-    print("   if the image does not already contain this information in the FITS header.")
-    print("   If you have difficulty solving a field correctly, double-check these values.")
-    print("   If still having trouble, try opening temp.fits and an archival image of the")
-    print("   field (from DSS, etc.) and loading the .reg files in DS9.  The problem might")
-    print("   be in the telescope pointing/header info (in this case, increase the boxsize)")
-    print("   or good matching stars may be thrown away or confused by artifacts (in this")
-    print("   case, specify a seeing value).  If the PA is known, restricting it can also")
-    print("   help (try -upa 0.5); by default all orientations are searched.")
-    print("   If still having issues, e-mail dperley@astro.berkeley.edu for help.")
+    logger.debug("Troubleshooting info:")
+    logger.debug("   Supplying the correct pixel scale (within 1%) and correct parity is critical")
+    logger.debug("   if the image does not already contain this information in the FITS header.")
+    logger.debug("   If you have difficulty solving a field correctly, double-check these values.")
+    logger.debug("   If still having trouble, try opening temp.fits and an archival image of the")
+    logger.debug("   field (from DSS, etc.) and loading the .reg files in DS9.  The problem might")
+    logger.debug("   be in the telescope pointing/header info (in this case, increase the boxsize)")
+    logger.debug("   or good matching stars may be thrown away or confused by artifacts (in this")
+    logger.debug("   case, specify a seeing value).  If the PA is known, restricting it can also")
+    logger.debug("   help (try -upa 0.5); by default all orientations are searched.")
+    logger.debug("   If still having issues, e-mail dperley@astro.berkeley.edu for help.")
 
 def cataloghelp():
-    print("Catalog info:")
-    print("   Leave the catalog field blank will use SDSS if available and USNO otherwise.")
-    print("   The catalog query uses wcstools (tdc-www.harvard.edu/wcstools).  However, you")
-    print("   can also use your own catalog file on disk if you prefer using -c [filename]")
-    print("   The default format is a text file with the first three columns indicating")
-    print("   ra, dec, magnitude.  However, you can change the order of the columns by")
-    print("   adding, e.g.")
-    print("              #:1,2,6")
-    print("   to the first line.  In this case, thisw ould indicate that the RA is in the")
-    print("   1st column, dec in the 2nd, and magnitude in the 6th.   The mag column can be")
-    print("   omitted completely, although if the catalog is not the same depth as the")
-    print("   image this may compromise the search results.")
+    logger.debug("Catalog info:")
+    logger.debug("   Leave the catalog field blank will use SDSS if available and USNO otherwise.")
+    logger.debug("   The catalog query uses wcstools (tdc-www.harvard.edu/wcstools).  However, you")
+    logger.debug("   can also use your own catalog file on disk if you prefer using -c [filename]")
+    logger.debug("   The default format is a text file with the first three columns indicating")
+    logger.debug("   ra, dec, magnitude.  However, you can change the order of the columns by")
+    logger.debug("   adding, e.g.")
+    logger.debug("              #:1,2,6")
+    logger.debug("   to the first line.  In this case, thisw ould indicate that the RA is in the")
+    logger.debug("   1st column, dec in the 2nd, and magnitude in the 6th.   The mag column can be")
+    logger.debug("   omitted completely, although if the catalog is not the same depth as the")
+    logger.debug("   image this may compromise the search results.")
 
 def examplehelp():
     #         12345678901234567890123456789012345678901234567890123456789012345678901234567890
-    print("Examples:")
-    print(" For an image with provisional WCS header but possibly incorrect PA:")
-    print("    autoastrometry image.fits   ")
-    print(" For an image with provisional WCS, definitely correct PA:")
-    print("    autoastrometry image.fits -upa 0.5")
-    print(' For an image with no WCS (or bad WCS) and a pixel scale of 0.35"/pixel:')
-    print("    autoastrometry image.fits -px 0.35")
-    print(' For an image with no WCS, pixel scale of 0.35", and PA of 121 degrees:')
-    print("    autoastrometry image.fits -px 0.35 -pa 121 -upa 0.5")
-    print(" For an image with no WCS, pixel scale of 0.35, and positive parity:")
-    print("    autoastrometry image.fits -px 0.35 -inv")
-    print(" Use a catalog on disk instead of wcstools query:")
-    print("    autoastrometry image.fits -c catalog.txt")
-    print(" Widen the catalog search to 12x12 arcminutes if the pointing is bad:")
-    print("    autoastrometry image.fits -b 720")
-    print(" Specify seeing (7 pixels) to better exclude cosmic rays and galaxies:")
-    print("    autoastrometry image.fits -s 7")
-    print(" Combine lots of options for a maximally directed solution:")
-    print("    autoastrometry image.fits -px 0.35 -pa 121 -upa 0.5 -inv -b 600 -s 7")
-    print(" (Substitute 'autoastrometry' with 'python autoastrometry.py' if not aliased.)")
+    logger.debug("Examples:")
+    logger.debug(" For an image with provisional WCS header but possibly incorrect PA:")
+    logger.debug("    autoastrometry image.fits   ")
+    logger.debug(" For an image with provisional WCS, definitely correct PA:")
+    logger.debug("    autoastrometry image.fits -upa 0.5")
+    logger.debug(' For an image with no WCS (or bad WCS) and a pixel scale of 0.35"/pixel:')
+    logger.debug("    autoastrometry image.fits -px 0.35")
+    logger.debug(' For an image with no WCS, pixel scale of 0.35", and PA of 121 degrees:')
+    logger.debug("    autoastrometry image.fits -px 0.35 -pa 121 -upa 0.5")
+    logger.debug(" For an image with no WCS, pixel scale of 0.35, and positive parity:")
+    logger.debug("    autoastrometry image.fits -px 0.35 -inv")
+    logger.debug(" Use a catalog on disk instead of wcstools query:")
+    logger.debug("    autoastrometry image.fits -c catalog.txt")
+    logger.debug(" Widen the catalog search to 12x12 arcminutes if the pointing is bad:")
+    logger.debug("    autoastrometry image.fits -b 720")
+    logger.debug(" Specify seeing (7 pixels) to better exclude cosmic rays and galaxies:")
+    logger.debug("    autoastrometry image.fits -s 7")
+    logger.debug(" Combine lots of options for a maximally directed solution:")
+    logger.debug("    autoastrometry image.fits -px 0.35 -pa 121 -upa 0.5 -inv -b 600 -s 7")
+    logger.debug(" (Substitute 'autoastrometry' with 'python autoastrometry.py' if not aliased.)")
 
 def outputhelp():
-    print("Explanation of output files:")
-    print(" DS9 region files -")
-    print("   cat.wcs.reg        - WCS positions of all objects in the catalog.")
-    print("   det.im.reg         - XY positions of all non-flagged detected objects.")
-    print("   matchlines.im.reg  - spoke lines for matched asterisms from XY positions.")
-    print("   matchlines.wcs.reg - spoke lines for matched asterisms from WCS positions.")
-    print(" Text output -")
-    print("   cat.txt            - objects in the catalog as a text file (RA, dec, mag)")
-    print("   det.init.txt       - objects in the image as a text file ('RA', 'dec', mag)")
-    print("   det.final.txt      - objects in the image as a text file (RA, dec, mag)")
-    print("   match.list         - list of matched stars: (X Y RA dec)")
-    print(" Image output -")
-    print("   a[image.fits]      - output image with astrometry (if not specified with -o)")
-    print("   temp.fits          - image with provisional WCS from your -px and -pa inputs")
+    logger.debug("Explanation of output files:")
+    logger.debug(" DS9 region files -")
+    logger.debug("   cat.wcs.reg        - WCS positions of all objects in the catalog.")
+    logger.debug("   det.im.reg         - XY positions of all non-flagged detected objects.")
+    logger.debug("   matchlines.im.reg  - spoke lines for matched asterisms from XY positions.")
+    logger.debug("   matchlines.wcs.reg - spoke lines for matched asterisms from WCS positions.")
+    logger.debug(" Text output -")
+    logger.debug("   cat.txt            - objects in the catalog as a text file (RA, dec, mag)")
+    logger.debug("   det.init.txt       - objects in the image as a text file ('RA', 'dec', mag)")
+    logger.debug("   det.final.txt      - objects in the image as a text file (RA, dec, mag)")
+    logger.debug("   match.list         - list of matched stars: (X Y RA dec)")
+    logger.debug(" Image output -")
+    logger.debug("   a[image.fits]      - output image with astrometry (if not specified with -o)")
+    logger.debug("   temp.fits          - image with provisional WCS from your -px and -pa inputs")
 
 def inputhelp():
-    print("Sextractor input files:")
-    print("  You can modify the following sextractor inputs if you choose.  This should")
-    print("  rarely be necessary, if ever.")
-    print("     sex.config - Overall input file")
-    print("     sex.conv   - Convolution matrix for detection")
-    print("  These files are written to disk using internal defaults if not present.")
+    logger.debug("Sextractor input files:")
+    logger.debug("  You can modify the following sextractor inputs if you choose.  This should")
+    logger.debug("  rarely be necessary, if ever.")
+    logger.debug("     sex.config - Overall input file")
+    logger.debug("     sex.conv   - Convolution matrix for detection")
+    logger.debug("  These files are written to disk using internal defaults if not present.")
 
 
 #Some other conceivable options for the future:
@@ -1732,8 +1732,8 @@ def inputhelp():
 ######################################################################
 def usage():
     (xdir,xname) = os.path.split(sys.argv[0])
-    print("Usage:  %s filename(s) [-px pixelscale -pa PA -inv -b boxsize -s seeing -upa PAunc]" % xname)
-    print("     or %s -help for instructions and more options." % xname)
+    logger.debug("Usage:  %s filename(s) [-px pixelscale -pa PA -inv -b boxsize -s seeing -upa PAunc]" % xname)
+    logger.debug("     or %s -help for instructions and more options." % xname)
 
 ######################################################################
 def main():
@@ -1874,7 +1874,7 @@ def main():
         i+=1
 
     if len(files) == 0:
-        print('No files selected!')
+        logger.debug('No files selected!')
         return
 
     filenames=files.split(",")
@@ -1895,7 +1895,8 @@ def main():
     multiinfo = []
 
     for filename in filenames:
-        if len(filenames) > 1: print('Processing', filename)
+        if len(filenames) > 1:
+            logger.debug('Processing', filename)
         if nosolve and catalog=='': catalog = filename+'.cat'
         fitinfo = autoastrometry(filename,pixelscale=pixelscale,pa=pa,inv=inv,uncpa=uncpa,minfwhm=minfwhm,maxfwhm=maxfwhm,maxellip=maxellip,boxsize=boxsize, maxrad=maxrad, userra=userra, userdec=userdec, tolerance=tolerance, catalog=catalog, nosolve=nosolve, overwrite=overwrite, outfile=outfile, saturation=saturation, quiet=quiet, norot=norot)
         if nosolve: continue
@@ -1908,40 +1909,39 @@ def main():
             failures.append(filename)
         if (fitinfo[5] > 2):    #stdev of offset
             questionable.append(filename)
-        if nimage > 1: print()
 
     if nimage > 1 and nosolve==0:
 
         if len(failures) == 0 and len(questionable) == 0:
-            print('Successfully processed all images!')
+            logger.debug('Successfully processed all images!')
         else:
-            print('Finished processing all images.')
+            logger.debug('Finished processing all images.')
 
         if len(questionable) > 0:
-            print('The following images solved but have questionable astrometry: ')
-            print('    ', end=' ')
-            for f in questionable: print(f, end=' ')
-            print()
+            logger.debug('The following images solved but have questionable astrometry: ')
+            logger.debug('    ', end=' ')
+            for f in questionable:
+                logger.debug(f, end=' ')
         if len(failures) > 0:
-            print('The following images failed to solve: ')
-            print('    ', end=' ')
-            for f in failures: print(f, end=' ')
-            print()
+            logger.debug('The following images failed to solve: ')
+            logger.debug('    ', end=' ')
+            for f in failures:
+                logger.debug(f, end=' ')
 
-        print("%25s " %'Filename', end=' ')
-        print("%6s %8s (%6s)  %7s %7s (%6s)" % ('#match', 'dPA ', 'stdev', 'dRA', 'dDec', 'stdev'))
+        logger.debug("%25s " %'Filename', end=' ')
+        logger.debug("%6s %8s (%6s)  %7s %7s (%6s)" % ('#match', 'dPA ', 'stdev', 'dRA', 'dDec', 'stdev'))
         for i in range(len(filenames)):
             info = multiinfo[i]
-            print("%25s " % filenames[i], end=' ')
+            logger.debug("%25s " % filenames[i], end=' ')
             if info[0] > 0:
-                print("%6d %8.3f (%6.3f)  %7.3f %7.3f (%6.3f)" % info)
+                logger.debug("%6d %8.3f (%6.3f)  %7.3f %7.3f (%6.3f)" % info)
             else:
-                print("failed to solve")
+                logger.debug("failed to solve")
 
     try:
         os.remove('temp.param')
     except:
-        print('Could not remove temp.param for some reason')
+        logger.debug('Could not remove temp.param for some reason')
 
 ######################################################################
 # Running as executable

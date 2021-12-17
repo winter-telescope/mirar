@@ -1,166 +1,274 @@
 import numpy as np
 import os
-from glob import glob
-from winterdrp.io import open_fits, create_fits
+from winterdrp.io import create_fits
 import logging
-from winterdrp.preprocessing.bias import load_master_bias
+from winterdrp.preprocessing.base_calibrator import BaseCalibrator
+from winterdrp.paths import cal_output_dir
 
 logger = logging.getLogger(__name__)
 
-base_mdark_name = "master_dark"
 
+class DarkCalibrator(BaseCalibrator):
+    base_name = "master_dark"
 
-def mdark_name(exptime, norm=False):
-    if norm:
-        return f"{base_mdark_name}_normed.fits"
-    else:
-        return f"{base_mdark_name}_{exptime:.0f}s.fits"
+    def __init__(self, open_fits, use_normed_dark=False):
+        BaseCalibrator.__init__(self, open_fits=open_fits)
+        self.use_normed_dark = use_normed_dark
 
+    def get_file_path(self, header, sub_dir=""):
 
-def make_master_dark(darklist, cal_dir='cals', make_norm=True):
-    
-    if len(darklist) > 0:
+        cal_dir = cal_output_dir(sub_dir=sub_dir)
 
-        logger.info(f'Found {len(darklist)} dark frames')
-        
-        with open_fits(darklist[0]) as img:
+        exptime = header['EXPTIME']
+
+        if self.use_normed_dark:
+            name = f"{self.base_name}_normed.fits"
+        else:
+            name = f"{self.base_name}_{exptime:.0f}s.fits"
+
+        return os.path.join(cal_dir, name)
+
+    def apply_calibration(self, img, sub_dir=""):
+        data = img[0].data
+        header = img[0].header
+        master_dark = self.load_calibrator_file(self.get_file_path(header, sub_dir=sub_dir))
+        img[0].data = data - (master_dark * header["EXPTIME"])
+        return img
+
+    def make_calibration_files(self, image_list, sub_dir="", subtract_bias=None, *args, **kwargs):
+
+        if subtract_bias is None:
+            raise Exception("No bias subtraction function provided.")
+
+        logger.info(f'Found {len(image_list)} dark frames')
+
+        with self.open_fits(image_list[0]) as img:
             header = img[0].header
-            
+
         nx = header['NAXIS1']
         ny = header['NAXIS2']
-        
-        master_bias = load_master_bias(cal_dir, header)
-            
+
         logger.info("Making one 'master_dark' for each exposure time.")
 
-        explist = []
+        exp_list = []
 
-        for dark in darklist:
-            with open_fits(dark) as img:
+        for dark in image_list:
+            with self.open_fits(dark) as img:
                 header = img[0].header
-            explist.append(header['EXPTIME'])
+            exp_list.append(header['EXPTIME'])
 
-        exps = sorted(list(set(explist)))
+        exp_times = sorted(list(set(exp_list)))
 
-        logger.info(f'Found {len(exps)} different exposure times: {exps}')
+        logger.info(f'Found {len(exp_times)} different exposure times: {exp_times}')
 
-        darklist = np.array(darklist)
+        image_list = np.array(image_list)
 
         dark_loop = []
 
-        for exp in exps:
+        # Either create one normalised master dark, or loop over each exposure time
 
-            mask = np.array([x == exp for x in explist])
+        if not self.use_normed_dark:
+            for exp in exp_times:
+                mask = np.array([x == exp for x in exp_list])
 
-            dark_loop.append((
-                darklist[mask],
-                exp,
-                "Median stacked dark",
-                os.path.join(cal_dir, mdark_name(exp, norm=False))
-            ))
-            
-        # Optionally loop over all darks
-
-        if make_norm:
+                dark_loop.append((
+                    image_list[mask],
+                    exp,
+                    "Median stacked dark",
+                    )
+                )
+        else:
             logger.info("Making one additional 'master_dark' combining all exposure times.")
             dark_loop.append((
-                darklist,
+                image_list,
                 1.0,
                 "Median stacked normalised dark",
-                os.path.join(cal_dir, mdark_name(None, norm=True))
             ))
-                
-        # Loop over each set of darks and create a master_dark
-                
-        for (cutdarklist, exptime, history, mdark_path) in dark_loop:
-                    
-            nframes = len(cutdarklist)
-            
-            darks = np.zeros((ny,nx,len(cutdarklist)))
 
-            for i, dark in enumerate(cutdarklist):
-                with open_fits(dark) as img:
+        # Loop over each set of darks and create a master_dark
+
+        for (cut_image_list, exp_time, history) in dark_loop:
+
+            n_frames = len(cut_image_list)
+
+            darks = np.zeros((ny, nx, len(cut_image_list)))
+
+            for i, dark in enumerate(cut_image_list):
+                with self.open_fits(dark) as img:
                     dark_exptime = img[0].header['EXPTIME']
-                    logger.debug(f'Read dark {i + 1}/{nframes} with exposure time {dark_exptime}')
-                    darks[:, :, i] = (img[0].data - master_bias) * exptime/dark_exptime
+                    logger.debug(f'Read dark {i + 1}/{n_frames} with exposure time {dark_exptime}')
+                    darks[:, :, i] = subtract_bias(img)[0].data / dark_exptime
 
             master_dark = np.nanmedian(darks, axis=2)
 
-            with open_fits(darklist[0]) as img:
+            with self.open_fits(image_list[0]) as img:
                 primary_header = img[0].header
 
-            proc_hdu = create_fits(master_dark)  # Create a new HDU with the processed image data
-            proc_hdu.header = primary_header       # Copy over the header from the raw file
+            proc_hdu = create_fits(master_dark, header=primary_header, history=history)  # Create a new HDU with the processed image data
 
-            proc_hdu.header.add_history(history)
-            proc_hdu.header['EXPTIME'] = exptime
+            proc_hdu.header['EXPTIME'] = exp_time
 
-            logger.info(f"Saving stacked 'master dark' combining {nframes} exposures to {mdark_path}")
+            master_dark_path = self.get_file_path(header=proc_hdu.header, sub_dir=sub_dir)
 
-            proc_hdu.writeto(mdark_path, overwrite=True)
-        return 0
-      
-    else:
-        logger.warning("No dark images provided. No master dark created.")
+            logger.info(f"Saving stacked 'master dark' "
+                        f"combining {n_frames} exposures to {master_dark_path}")
 
+            self.save_fits(proc_hdu, master_dark_path)
 
-def load_master_darks(cal_dir, header=None, use_norm=False):
-    
-    master_dark_paths = glob(f'{cal_dir}/{base_mdark_name}*.fits')
-    
-    mdark_norm_path = mdark_name(None, norm=True)
-        
-    if len(master_dark_paths) == 0:
-        
-        try:
-            nx = header['NAXIS1']
-            ny = header['NAXIS2']
-
-            master_darks = np.zeros((ny,nx))
-            
-            logger.warning("No master dark found. No dark correction will be applied.")
-        
-        except (TypeError, KeyError) as e:
-            err = "No master dark files found, and no header info provided to create a dummy image."
-            logger.error(err)
-            raise FileNotFoundError(err)
-     
-    elif use_norm:
-        
-        with open_fits(mdark_norm_path) as img:
-            master_darks = img[0].data
-            
-    else:
-        
-        master_darks = dict()
-        
-        for mdpath in master_dark_paths:
-            if mdark_norm_path not in mdpath:
-                
-                exp = os.path.basename(mdpath).split("_")[-1][:-6]
-                with open_fits(mdpath) as img:
-                    master_darks[float(exp)] = img[0].data
-                
-    return master_darks
-
-
-def select_master_dark(all_master_darks, header):
-    
-    if isinstance(all_master_darks, np.ndarray):
-        master_dark = all_master_darks
-    
-    elif isinstance(all_master_darks, dict):
-        exp = header['EXPTIME']
-        try:
-            master_dark = all_master_darks[float(exp)]
-        except KeyError:
-            err = f'Unrecognised key {exp}. Available dark exposure times are {all_master_darks.keys()}'
-            logger.error(err)
-            raise KeyError(err)
-    else:
-        err = f"Unrecognised Type for all_master_darks ({type(all_master_darks)}). " \
-              f"Was expecting 'numpy.ndarray' or 'dict'."
-        logger.error(err)
-        raise TypeError(err)
-    
-    return master_dark
+# base_mdark_name = "master_dark"
+#
+# def mdark_name(exptime, norm=False):
+#     if norm:
+#         return f"{base_mdark_name}_normed.fits"
+#     else:
+#         return f"{base_mdark_name}_{exptime:.0f}s.fits"
+#
+#
+# def make_master_dark(dark_list, cal_dir, open_fits, subtract_bias, make_norm=True):
+#
+#     if len(dark_list) > 0:
+#
+#         logger.info(f'Found {len(dark_list)} dark frames')
+#
+#         with open_fits(dark_list[0]) as img:
+#             header = img[0].header
+#
+#         nx = header['NAXIS1']
+#         ny = header['NAXIS2']
+#
+#         master_bias = load_master_bias(cal_dir, open_fits, header)
+#
+#         logger.info("Making one 'master_dark' for each exposure time.")
+#
+#         explist = []
+#
+#         for dark in dark_list:
+#             with open_fits(dark) as img:
+#                 header = img[0].header
+#             explist.append(header['EXPTIME'])
+#
+#         exps = sorted(list(set(explist)))
+#
+#         logger.info(f'Found {len(exps)} different exposure times: {exps}')
+#
+#         dark_list = np.array(dark_list)
+#
+#         dark_loop = []
+#
+#         for exp in exps:
+#
+#             mask = np.array([x == exp for x in explist])
+#
+#             dark_loop.append((
+#                 dark_list[mask],
+#                 exp,
+#                 "Median stacked dark",
+#                 os.path.join(cal_dir, mdark_name(exp, norm=False))
+#             ))
+#
+#         # Optionally loop over all darks
+#
+#         if make_norm:
+#             logger.info("Making one additional 'master_dark' combining all exposure times.")
+#             dark_loop.append((
+#                 dark_list,
+#                 1.0,
+#                 "Median stacked normalised dark",
+#                 os.path.join(cal_dir, mdark_name(None, norm=True))
+#             ))
+#
+#         # Loop over each set of darks and create a master_dark
+#
+#         for (cutdarklist, exptime, history, mdark_path) in dark_loop:
+#
+#             nframes = len(cutdarklist)
+#
+#             darks = np.zeros((ny, nx, len(cutdarklist)))
+#
+#             for i, dark in enumerate(cutdarklist):
+#                 with open_fits(dark) as img:
+#                     dark_exptime = img[0].header['EXPTIME']
+#                     logger.debug(f'Read dark {i + 1}/{nframes} with exposure time {dark_exptime}')
+#                     darks[:, :, i] = subtract_bias(img)[0].data * exptime/dark_exptime
+#
+#             master_dark = np.nanmedian(darks, axis=2)
+#
+#             with open_fits(dark_list[0]) as img:
+#                 primary_header = img[0].header
+#
+#             proc_hdu = create_fits(master_dark)  # Create a new HDU with the processed image data
+#             proc_hdu.header = primary_header       # Copy over the header from the raw file
+#
+#             proc_hdu.header.add_history(history)
+#             proc_hdu.header['EXPTIME'] = exptime
+#
+#             logger.info(f"Saving stacked 'master dark' combining {nframes} exposures to {mdark_path}")
+#
+#             proc_hdu.writeto(mdark_path, overwrite=True)
+#         return 0
+#
+#     else:
+#         logger.warning("No dark images provided. No master dark created.")
+#
+#
+# def load_master_darks(cal_dir, open_fits, header=None, use_norm=False):
+#
+#     master_dark_paths = glob(f'{cal_dir}/{base_mdark_name}*.fits')
+#
+#     mdark_norm_path = mdark_name(None, norm=True)
+#
+#     if len(master_dark_paths) == 0:
+#
+#         try:
+#             nx = header['NAXIS1']
+#             ny = header['NAXIS2']
+#
+#             master_darks = np.zeros((ny,nx))
+#
+#             logger.warning("No master dark found. No dark correction will be applied.")
+#
+#         except (TypeError, KeyError) as e:
+#             err = "No master dark files found, and no header info provided to create a dummy image."
+#             logger.error(err)
+#             raise FileNotFoundError(err)
+#
+#     elif use_norm:
+#
+#         with open_fits(mdark_norm_path) as img:
+#             master_darks = img[0].data
+#
+#     else:
+#
+#         master_darks = dict()
+#
+#         for mdpath in master_dark_paths:
+#             if mdark_norm_path not in mdpath:
+#
+#                 exp = os.path.basename(mdpath).split("_")[-1][:-6]
+#                 with open_fits(mdpath) as img:
+#                     master_darks[float(exp)] = img[0].data
+#
+#     return master_darks
+#
+#
+# def select_master_dark(all_master_darks, header):
+#
+#     if isinstance(all_master_darks, np.ndarray):
+#         master_dark = all_master_darks
+#
+#     elif isinstance(all_master_darks, dict):
+#         exp = header['EXPTIME']
+#         try:
+#             master_dark = all_master_darks[float(exp)]
+#         except KeyError:
+#             err = f'Unrecognised key {exp}. Available dark exposure times are {all_master_darks.keys()}'
+#             logger.error(err)
+#             raise KeyError(err)
+#     else:
+#         err = f"Unrecognised Type for all_master_darks ({type(all_master_darks)}). " \
+#               f"Was expecting 'numpy.ndarray' or 'dict'."
+#         logger.error(err)
+#         raise TypeError(err)
+#
+#     return master_dark
+#

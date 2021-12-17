@@ -1,26 +1,26 @@
 import os
 import logging
 import numpy as np
-from winterdrp.io import open_fits, create_fits
-from winterdrp.paths import raw_img_dir, reduced_img_dir, reduced_img_path, cal_output_dir
+from winterdrp.io import create_fits
+from winterdrp.paths import reduced_img_dir, reduced_img_path, cal_output_dir
 from winterdrp.preprocessing.bias import load_master_bias
 from winterdrp.preprocessing.dark import load_master_darks, select_master_dark
-from winterdrp.preprocessing.flats import load_master_flats, select_master_flat
+from winterdrp.preprocessing.flat import load_master_flats, select_master_flat
 
 logger = logging.getLogger(__name__)
 
 
-def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, master_flat=None,
+def apply_reduction(raw_images, open_fits, sub_dir="", master_bias=None, master_dark=None, master_flat=None,
                     use_norm_dark=False, flat_nan_threshold=0.1, reprocess=True):
     
-    cal_dir = cal_output_dir(subdir)
+    cal_dir = cal_output_dir(sub_dir)
 
     with open_fits(raw_images[0]) as img:
         header = img[0].header
 
     # Try making output directory, unless it exists
     
-    output_dir = reduced_img_dir(subdir)
+    output_dir = reduced_img_dir(sub_dir)
     
     try:
         os.makedirs(output_dir)
@@ -53,7 +53,7 @@ def apply_reduction(raw_images, subdir="", master_bias=None, master_dark=None, m
 
         logger.debug(f"Processing image {i+1}/{nframes} ({img_name})")
         
-        output_path = reduced_img_path(img_name, subdir=subdir)
+        output_path = reduced_img_path(img_name, sub_dir=sub_dir)
         
         if np.logical_and(os.path.exists(output_path), reprocess is False):
             logger.debug(f"Skipping image {img_name}, because it has already "
