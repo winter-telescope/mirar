@@ -1887,7 +1887,8 @@ def main():
         maxfwhm = 2 * seeing
 
     writeparfile()
-    if not os.path.exists('sex.config'): writeconfigfile(saturation)
+    if not os.path.exists('sex.config'):
+        writeconfigfile(saturation)
 
     nimage = len(filenames)
     failures = []

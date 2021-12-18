@@ -29,6 +29,7 @@ setuptools.setup(
         "astroquery",
         "jupyter",
         "matplotlib",
-        "numpy"
+        "numpy",
+        "docker"
     ]
 )

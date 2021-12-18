@@ -12,12 +12,13 @@ class FlatCalibrator(BaseCalibrator):
 
     base_name = "master_flat"
 
-    def __init__(self, open_fits, x_min=0., x_max=np.inf, y_min=0., y_max=np.inf):
+    def __init__(self, open_fits, x_min=0., x_max=np.inf, y_min=0., y_max=np.inf, flat_nan_threshold=np.nan, *args, **kwargs):
         BaseCalibrator.__init__(self, open_fits=open_fits)
         self.x_min = x_min
         self.x_max = x_max
         self.y_min = y_min
         self.y_max = y_max
+        self.flat_nan_threshold = flat_nan_threshold
 
     def get_file_path(self, header, sub_dir=""):
         cal_dir = cal_output_dir(sub_dir=sub_dir)
@@ -29,6 +30,8 @@ class FlatCalibrator(BaseCalibrator):
         data = img[0].data
         header = img[0].header
         master_flat = self.load_calibrator_file(self.get_file_path(header, sub_dir=sub_dir))
+        if np.any(master_flat < self.flat_nan_threshold):
+            master_flat[master_flat < self.flat_nan_threshold] = np.nan
         img[0].data = data/master_flat
         return img
 

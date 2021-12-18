@@ -23,10 +23,23 @@ class Pipeline:
     astrometry = ("GAIA", 9., 13.)
     photometry_cal = dict()
 
+    # Pixel range for flat-fielding
+    x_min = 0.
+    x_max = np.inf
+    y_min = 0.
+    y_max = np.inf
+
     def __init__(self, *args, **kwargs):
         self.bias_calibrator = [None, BiasCalibrator(self.open_fits, *args, **kwargs)][self.bias]
         self.dark_calibrator = [None, DarkCalibrator(self.open_fits, *args, **kwargs)][self.dark]
-        self.flats_calibrator = [None, FlatCalibrator(self.open_fits, *args, **kwargs)][self.flat]
+        self.flats_calibrator = [None, FlatCalibrator(
+            self.open_fits,
+            x_min=self.x_min,
+            x_max=self.x_max,
+            y_min=self.y_min,
+            y_max=self.y_max,
+            *args, **kwargs
+        )][self.flat]
 
     def open_fits(self, path):
         img = fits.open(path)
