@@ -7,7 +7,7 @@
 CATALOG_NAME     test.cat       # name of the output catalog
 CATALOG_TYPE     FITS_LDAC     # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
                                 # ASCII_VOTABLE, FITS_1.0 or FITS_LDAC
-PARAMETERS_NAME  /home/viraj/rts2/python/img_subtraction/astrom.param  # name of the file containing catalog contents
+PARAMETERS_NAME  astrom.param  # name of the file containing catalog contents
  
 #------------------------------- Extraction ----------------------------------
  
@@ -19,8 +19,8 @@ DETECT_THRESH    5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 ANALYSIS_THRESH  5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
  
 FILTER           Y              # apply filter for detection (Y or N)?
-FILTER_NAME      /home/viraj/rts2/python/img_subtraction/default.conv   # name of the file containing the filter
- 
+FILTER_NAME      default.conv   # name of the file containing the filter
+
 DEBLEND_NTHRESH  16             # Number of deblending sub-thresholds
 DEBLEND_MINCONT  1e-4          # Minimum contrast parameter for deblending
  
@@ -69,7 +69,7 @@ PIXEL_SCALE      0 .466           # size of pixel in arcsec (0=use FITS WCS info
 #------------------------- Star/Galaxy Separation ----------------------------
  
 SEEING_FWHM      2            # stellar FWHM in arcsec
-STARNNW_NAME     /home/viraj/rts2/python/img_subtraction/default.nnw    # Neural-Network_Weight table filename
+STARNNW_NAME     default.nnw    # Neural-Network_Weight table filename
  
 #------------------------------ Background -----------------------------------
  
@@ -96,7 +96,7 @@ CHECKIMAGE_TYPE  BACKGROUND, BACKGROUND_RMS           # can be NONE, BACKGROUND,
                                 # MINIBACKGROUND, MINIBACK_RMS, -BACKGROUND,
                                 # FILTERED, OBJECTS, -OBJECTS, SEGMENTATION,
                                 # or APERTURES
-CHECKIMAGE_NAME  check.fits     # Filename for the check-image
+CHECKIMAGE_NAME  check_bkg.fits,  check_bkg_rms.fits   # Filename for the check-image
  
 #--------------------- Memory (change with caution!) -------------------------
  

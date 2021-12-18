@@ -2,6 +2,7 @@ import os
 from astropy.io import fits
 from glob import glob
 import logging
+from winterdrp.calibrate.config import calibration_config_dir
 
 logger = logging.getLogger(__name__)
 
