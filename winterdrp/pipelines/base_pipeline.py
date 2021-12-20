@@ -2,10 +2,16 @@ import logging
 import os
 import numpy as np
 from astropy.io import fits
-from winterdrp.paths import cal_output_dir, parse_image_list, reduced_img_dir, reduced_img_path, raw_img_dir
 from winterdrp.preprocessing import BiasCalibrator, DarkCalibrator, FlatCalibrator
+from winterdrp.calibrate.sourceextractor import run_sextractor
 from winterdrp.io import create_fits
-
+from winterdrp.paths import \
+    cal_output_dir,\
+    parse_image_list, \
+    reduced_img_dir, \
+    reduced_img_path, \
+    raw_img_dir, \
+    astrometry_output_dir
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +72,7 @@ class Pipeline:
         logger.info(f"Making calibration files for directory {raw_img_dir(sub_dir)}")
 
         if self.bias:
-            make_master_bias(
+            self.bias_calibrator.make_calibration_files(
                 cal_dict["bias"],
                 cal_dir=cal_dir,
                 open_fits=self.open_fits
@@ -80,7 +86,7 @@ class Pipeline:
             )
 
         if self.flat:
-            make_master_flats(
+            self.flats_calibrator.make_calibration_files(
                 cal_dict["flats"],
                 cal_dir=cal_dir,
                 open_fits=self.open_fits,
@@ -170,4 +176,27 @@ class Pipeline:
             img = self.flats_calibrator.apply_calibration(img, sub_dir=sub_dir)
 
         return img
+
+    @staticmethod
+    def apply_astrometry(sub_dir="", redux_image_list=None, reprocess=True):
+
+        if redux_image_list is None:
+            redux_image_list = parse_image_list(sub_dir, group_by_object=False, base_dir_f=reduced_img_dir)
+
+        # Try making output directory, unless it exists
+
+        output_dir = astrometry_output_dir(sub_dir)
+
+        try:
+            os.makedirs(output_dir)
+        except OSError:
+            pass
+
+        # First run Sextractor
+
+        run_sextractor(
+            redux_image_list,
+            output_dir=output_dir,
+            reprocess=reprocess
+        )
 

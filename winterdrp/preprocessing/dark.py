@@ -32,7 +32,7 @@ class DarkCalibrator(BaseCalibrator):
         data = img[0].data
         header = img[0].header
         master_dark = self.load_calibrator_file(self.get_file_path(header, sub_dir=sub_dir))
-        img[0].data = data - (master_dark * header["EXPTIME"])
+        img[0].data = data - (master_dark[0].data * header["EXPTIME"])
         return img
 
     def make_calibration_files(self, image_list, sub_dir="", subtract_bias=None, *args, **kwargs):

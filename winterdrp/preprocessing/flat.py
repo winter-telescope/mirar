@@ -32,7 +32,7 @@ class FlatCalibrator(BaseCalibrator):
         master_flat = self.load_calibrator_file(self.get_file_path(header, sub_dir=sub_dir))
         if np.any(master_flat < self.flat_nan_threshold):
             master_flat[master_flat < self.flat_nan_threshold] = np.nan
-        img[0].data = data/master_flat
+        img[0].data = data/master_flat[0].data
         return img
 
     def make_calibration_files(self, image_list, sub_dir="", subtract_bias=None, subtract_dark=None, **kwargs):

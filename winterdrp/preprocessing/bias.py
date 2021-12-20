@@ -23,7 +23,7 @@ class BiasCalibrator(BaseCalibrator):
         data = img[0].data
         header = img[0].header
         master_bias = self.load_calibrator_file(self.get_file_path(header, sub_dir=sub_dir))
-        img[0].data = data - master_bias
+        img[0].data = data - master_bias[0].data
         return img
 
     def make_calibration_files(self, image_list, sub_dir="", *args, **kwargs):
