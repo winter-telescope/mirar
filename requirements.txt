@@ -3,3 +3,4 @@ astroquery
 jupyter
 matplotlib
 numpy
+docker
