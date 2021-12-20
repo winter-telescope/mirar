@@ -18,8 +18,6 @@ if base_output_dir is None:
     logger.error("No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data'")
     raise ValueError("No output data directory specified.")
 
-sextractor_path = os.getenv("SEXTRACTOR_PATH")
-
 
 def raw_img_dir(sub_dir=""):
     return os.path.join(base_raw_dir, os.path.join(sub_dir, "raw"))
@@ -37,11 +35,18 @@ def reduced_img_path(img_name, sub_dir=""):
     return os.path.join(reduced_img_dir(sub_dir), img_name)
 
 
-def parse_image_list(sub_dir="", group_by_object=True):
+def astrometry_output_dir(
+        sub_dir: str = "",
+        astro_pass: int = 1
+):
+    return os.path.join(base_output_dir, os.path.join(sub_dir, f"astrometry_{astro_pass}"))
+
+
+def parse_image_list(sub_dir="", group_by_object=True, base_dir_f=raw_img_dir):
     
     object_dict = dict()
         
-    img_list = glob(f'{raw_img_dir(sub_dir)}/*.fits')
+    img_list = glob(f'{base_dir_f(sub_dir)}/*.fits')
 
     if not group_by_object:
         return sorted(img_list)
