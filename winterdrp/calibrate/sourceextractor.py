@@ -3,8 +3,10 @@ import logging
 import subprocess
 import numpy as np
 from pathlib import Path
+import docker
 from winterdrp.paths import calibration_config_dir
-from winterdrp.utils.dockerutil import new_container, docker_path, docker_put, docker_get_new_files
+from docker.errors import DockerException
+from winterdrp.utils.dockerutil import new_container, docker_path, docker_batch_put, docker_get_new_files
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ def docker_sextractor(
     or on the command line with `docker start'.
 
     After sextractor has been run using the specified 'cmd' command,
-     all newly-generated files will be copied out of the container to 'output_dir'
+     all newly-generated files will be copy_list out of the container to 'output_dir'
 
     Parameters
     ----------
@@ -72,51 +74,74 @@ def docker_sextractor(
     """
 
     container = new_container()
-    container.attach()
 
-    container.start()
+    try:
 
-    split = cmd.split(" -")
+        container.attach()
 
-    new_split = []
+        container.start()
 
-    # Loop over sextractor command, and
-    # copy everything that looks like a file into container
+        split = cmd.split(" -")
 
-    copied = []
+        new_split = []
 
-    for i, arg in enumerate(split):
-        sep = arg.split(" ")
-        if os.path.exists(sep[1]):
-            new = list(sep)
-            new[1] = docker_path(sep[1])
-            new_split.append(" ".join(new))
-            docker_put(container, sep[1])
-            copied.append(sep[1])
-        else:
-            new_split.append(arg)
+        # Loop over sextractor command, and
+        # copy everything that looks like a file into container
 
-    cmd = " -".join(new_split)
+        copy_list = []
 
-    # See what files are already there
+        for i, arg in enumerate(split):
+            sep = arg.split(" ")
+            if os.path.exists(sep[1]):
+                new = list(sep)
+                new[1] = docker_path(sep[1])
+                new_split.append(" ".join(new))
+                copy_list.append(sep[1])
+            else:
+                new_split.append(arg)
 
-    ignore_files = container.exec_run("ls", stderr=True, stdout=True).output.decode().split("\n")
+        cmd = " -".join(new_split)
 
-    # Run sextractor
+        # Copy in files, and see what files are already there
 
-    log = container.exec_run(cmd, stderr=True, stdout=True)
+        ignore_files = docker_batch_put(
+            container=container,
+            local_paths=copy_list
+        )
 
-    if not log.output == b"":
-        logger.warning(f"Sextractor warning: {log.output.decode()}")
+        # Run sextractor
 
-    docker_get_new_files(
-        container=container,
-        output_dir=output_dir,
-        ignore_files=ignore_files
-    )
+        log = container.exec_run(cmd, stderr=True, stdout=True)
 
-    container.kill()
-    container.remove()
+        if not log.output == b"":
+            logger.warning(f"Sextractor warning: {log.output.decode()}")
+
+        if not log.exit_code == 0:
+            err = f"Error running command: \n '{cmd}'\n which resulted in returncode '{log.exit_code}' and" \
+                  f"the following error message: \n '{log.output.decode()}'"
+            logger.error(err)
+            raise subprocess.CalledProcessError(
+                returncode=log.exit_code,
+                cmd=cmd,
+                stderr=log.output.decode()
+            )
+
+        # Copy out any files which did not exist before running sextractor
+
+        docker_get_new_files(
+            container=container,
+            output_dir=output_dir,
+            ignore_files=ignore_files
+        )
+    except (docker.errors.APIError) as err:
+        logger.error(err)
+        raise err
+    finally:
+
+        # Clean up by killing the container and removing files
+
+        container.kill()
+        container.remove()
 
 
 # Either run sextractor locally or on docker

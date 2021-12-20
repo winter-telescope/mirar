@@ -13,6 +13,16 @@ docker_dir = "/usr/src/astrodocker"
 
 
 def new_container():
+    f"""Generate a new docker.models.containers.Container object, using the default 
+    docker daemon and the "{docker_image_name}" image. If the image is not found locally, 
+    the image will first be pulled from DockerHub.
+    
+    This function requires a Docker daemon to first be running.
+    
+    Returns
+    -------
+    A docker container built with the {docker_image_name} image
+    """
     try:
         client = docker.from_env()
     except DockerException:
@@ -32,7 +42,21 @@ def docker_path(file):
     return os.path.join(docker_dir, os.path.basename(file))
 
 
-def docker_get(container, local_path):
+def docker_get(
+        container: Container,
+        local_path: str
+):
+    """Function to cope one file from the Docker container 'container' to 'local_path'.
+    The file in the container should have the same name as the base file in 'local_path'.
+
+    Parameters
+    ----------
+    container: A docker.models.container.Container object
+    local_path: Local path of file to copy to
+
+    Returns
+    -------
+    """
 
     container_path = docker_path(local_path)
 
@@ -43,6 +67,16 @@ def docker_get(container, local_path):
 
 
 def docker_put(container, local_path):
+    """Function to one file, at 'local_path' into the Docker container 'container'
+
+    Parameters
+    ----------
+    container: A docker.models.container.Container object
+    local_path: Local path of file to copy
+
+    Returns
+    -------
+    """
     stream = io.BytesIO()
     with tarfile.open(fileobj=stream, mode='w|') as tar, open(local_path, 'rb') as f:
         info = tar.gettarinfo(fileobj=f)
@@ -83,16 +117,33 @@ def docker_get_new_files(
         ignore_files: list
 ):
     """
+    Function to copy new files out of a container. All files in the work directory of 'container'
+    will be copied out to 'output_dir', unless they appear in the 'ignore_files' list.
+
+    The normal procedure is to run this in tandem with docker_batch_put(), so that only new files
+    are copied out of the container. For example:
+
+        ignore_files = docker_batch_put(
+            container=container,
+            local_paths=list_of_files_to_copy_into_container
+        )
+
+        container.exec_run(some_docker_command)
+
+        docker_get_new_files(
+            container=container,
+            output_dir=output_dir,
+            ignore_files=ignore_files
+        )
 
     Parameters
     ----------
-    container
+    container: A docker.models.container.Container object
     output_dir: A local directory to save the output files to.
     ignore_files: List of files to ignore (i.e to not copy)
 
     Returns
     -------
-
     """
 
     new_files = [
@@ -100,7 +151,7 @@ def docker_get_new_files(
         if x not in ignore_files
     ]
 
-    # Make output directory
+    # Make output directory if it doesn't exist
 
     try:
         os.makedirs(output_dir)
