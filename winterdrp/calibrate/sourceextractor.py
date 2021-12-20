@@ -4,6 +4,7 @@ import subprocess
 import numpy as np
 from pathlib import Path
 import docker
+import shutil
 from winterdrp.paths import calibration_config_dir
 from docker.errors import DockerException
 from winterdrp.utils.dockerutil import new_container, docker_path, docker_batch_put, docker_get_new_files
@@ -23,7 +24,7 @@ def local_sextractor(
         export SEXTRACTOR_CMD = '/path/to/sextractor/executable/file
 
     After sextractor has been run using the specified 'cmd' command,
-     all newly-generated files will be copied out of the container to 'output_dir'
+     all newly-generated files will be copied out of the current directory to 'output_dir'
 
     Parameters
     ----------
@@ -37,18 +38,39 @@ def local_sextractor(
     """
 
     try:
-        rval = subprocess.run(cmd.split(" "), check=True, capture_output=True)
+
+        # See what files are in the directory beforehand
+
+        ignore_files = subprocess.run("ls", check=True, capture_output=True).stdout.decode().split("\n")
+
+        # Run sextractor
+
         rval = subprocess.run(cmd.split(), check=True, capture_output=True)
-        logger.info('Process completed')
+
+        logger.debug(f'Sextractor ran successfully on image {cmd.split(" ")[1]}')
         logger.debug(rval.stdout.decode())
 
-        raise NotImplementedError
+        # Move new files to output dir
+
+        new_files = [
+            x for x in subprocess.run("ls", check=True, capture_output=True).stdout.decode().split("\n")
+            if x not in ignore_files
+        ]
+
+        current_dir = subprocess.run("pwd", check=True, capture_output=True).stdout.decode().strip()
+
+        for file in new_files:
+
+            current_path = os.path.join(current_dir, file)
+            output_path = os.path.join(output_dir, file)
+
+            shutil.move(current_path, output_path)
 
         return 0
 
-    except subprocess.CalledProcessError as err:
+    except (subprocess.CalledProcessError, FileNotFoundError) as err:
         logger.error(f'Could not run sextractor with error {err}')
-        return -1
+        raise err
 
 
 def docker_sextractor(
@@ -90,8 +112,14 @@ def docker_sextractor(
 
         copy_list = []
 
+        config_file = None
+
         for i, arg in enumerate(split):
             sep = arg.split(" ")
+
+            if sep[0] == "c":
+                config_file = sep[1]
+
             if os.path.exists(sep[1]):
                 new = list(sep)
                 new[1] = docker_path(sep[1])
@@ -102,7 +130,19 @@ def docker_sextractor(
 
         cmd = " -".join(new_split)
 
+        # Be extra clever: go through config file and check there too!
+
+        if config_file is not None:
+            with open(config_file, "rb") as f:
+                for line in f.readlines():
+                    args = [x for x in line.decode().split(" ") if x not in [""]]
+                    for arg in args:
+                        if os.path.exists(arg):
+                            copy_list.append(arg)
+
         # Copy in files, and see what files are already there
+
+        copy_list = list(set(copy_list))
 
         ignore_files = docker_batch_put(
             container=container,
@@ -133,12 +173,12 @@ def docker_sextractor(
             output_dir=output_dir,
             ignore_files=ignore_files
         )
-    except (docker.errors.APIError) as err:
+
+    except docker.errors.APIError as err:
         logger.error(err)
         raise err
     finally:
-
-        # Clean up by killing the container and removing files
+        # In any case, clean up by killing the container and removing files
 
         container.kill()
         container.remove()
