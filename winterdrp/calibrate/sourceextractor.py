@@ -1,7 +1,6 @@
 import os
 import logging
 import subprocess
-import numpy as np
 from pathlib import Path
 import docker
 import shutil
