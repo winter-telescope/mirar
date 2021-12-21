@@ -1,6 +1,7 @@
 astropy
 astroquery
+docker
 jupyter
 matplotlib
 numpy
-docker
+pandas

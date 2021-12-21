@@ -27,9 +27,10 @@ setuptools.setup(
     install_requires=[
         "astropy",
         "astroquery",
+        "docker",
         "jupyter",
         "matplotlib",
         "numpy",
-        "docker"
+        "pandas"
     ]
 )

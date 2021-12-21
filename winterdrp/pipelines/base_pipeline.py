@@ -5,13 +5,16 @@ from astropy.io import fits
 from winterdrp.preprocessing import BiasCalibrator, DarkCalibrator, FlatCalibrator
 from winterdrp.calibrate.sourceextractor import run_sextractor
 from winterdrp.io import create_fits
+from glob import glob
+import pandas as pd
 from winterdrp.paths import \
     cal_output_dir,\
     parse_image_list, \
     reduced_img_dir, \
     reduced_img_path, \
     raw_img_dir, \
-    astrometry_output_dir
+    astrometry_output_dir, \
+    observing_log_dir
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +31,11 @@ class Pipeline:
     dither = True
     astrometry = ("GAIA", 9., 13.)
     photometry_cal = dict()
+
+    # Fix keys from header to save in log
+    # The first key should sort images in order
+
+    header_keys = list()
 
     # Pixel range for flat-fielding
     x_min = 0.
@@ -46,6 +54,7 @@ class Pipeline:
             y_max=self.y_max,
             *args, **kwargs
         )][self.flat]
+        self.observing_logs_cache = dict()
 
     def open_fits(self, path):
         img = fits.open(path)
@@ -199,4 +208,57 @@ class Pipeline:
             output_dir=output_dir,
             reprocess=reprocess
         )
+
+    def export_observing_log(self, sub_dir=""):
+
+        log = self.load_observing_log(sub_dir=sub_dir)
+
+        path = self.get_observing_log_path(sub_dir=sub_dir)
+
+        logger.debug(f"Saving to {path}")
+
+        log.to_csv(path)
+
+    @staticmethod
+    def get_observing_log_path(sub_dir=""):
+        base_dir = observing_log_dir(sub_dir=sub_dir)
+        return os.path.join(base_dir, "observing_log.csv")
+
+    def load_observing_log(self, sub_dir=""):
+
+        path = self.get_observing_log_path(sub_dir=sub_dir)
+
+        if path in self.observing_logs_cache:
+            log = self.observing_logs_cache[path]
+        else:
+            log = self.parse_observing_log(sub_dir=sub_dir)
+            self.observing_logs_cache[path] = log
+            self.export_observing_log(sub_dir=sub_dir)
+
+        return log
+
+    def parse_observing_log(self, sub_dir=""):
+
+        img_list = glob(f'{raw_img_dir(sub_dir)}/*.fits')
+
+        log_data = []
+
+        for img_file in img_list:
+            header = self.open_fits(img_file)[0].header
+
+            row = []
+
+            for key in self.header_keys:
+                row.append(header[key])
+
+            row.append(img_file)
+
+            log_data.append(row)
+
+        log = pd.DataFrame(log_data, columns=self.header_keys + ["RAWIMAGEPATH"])
+        log = log.sort_values(by=self.header_keys[0]).reset_index(drop=True)
+
+        return log
+
+
 
