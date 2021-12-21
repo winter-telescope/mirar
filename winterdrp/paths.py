@@ -35,6 +35,10 @@ def reduced_img_path(img_name, sub_dir=""):
     return os.path.join(reduced_img_dir(sub_dir), img_name)
 
 
+def observing_log_dir(sub_dir=""):
+    return os.path.join(base_raw_dir, sub_dir)
+
+
 def astrometry_output_dir(
         sub_dir: str = "",
         astro_pass: int = 1

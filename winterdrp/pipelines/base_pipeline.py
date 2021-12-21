@@ -65,9 +65,9 @@ class Pipeline:
     def reformat_raw_data(img):
         return img
 
-    def make_calibration_files(self, sub_dir):
+    def make_calibration_files(self, sub_dir=""):
 
-        cal_dict = parse_image_list(sub_dir)
+        log = self.load_observing_log(sub_dir)
 
         cal_dir = cal_output_dir(sub_dir)
 
@@ -81,22 +81,31 @@ class Pipeline:
         logger.info(f"Making calibration files for directory {raw_img_dir(sub_dir)}")
 
         if self.bias:
+
+            bias_files = log[log["OBJECT"] == "bias"]["RAWIMAGEPATH"]
+
             self.bias_calibrator.make_calibration_files(
-                cal_dict["bias"],
+                image_list=bias_files,
                 cal_dir=cal_dir,
                 open_fits=self.open_fits
             )
 
         if self.dark:
+
+            dark_files = log[log["OBJECT"] == "dark"]["RAWIMAGEPATH"]
+
             self.dark_calibrator.make_calibration_files(
-                image_list=cal_dict["dark"],
+                image_list=dark_files,
                 sub_dir=sub_dir,
                 subtract_bias=self.subtract_bias
             )
 
         if self.flat:
+
+            flat_files = log[log["OBJECT"] == "flat"]["RAWIMAGEPATH"]
+
             self.flats_calibrator.make_calibration_files(
-                cal_dict["flats"],
+                image_list=flat_files,
                 cal_dir=cal_dir,
                 open_fits=self.open_fits,
                 subtract_bias=self.subtract_bias,
@@ -209,18 +218,38 @@ class Pipeline:
             reprocess=reprocess
         )
 
-    def export_observing_log(self, sub_dir=""):
+    def export_observing_log(
+            self,
+            sub_dir: str = ""
+    ):
+        """Function to export observing log to file
 
+        Parameters
+        ----------
+        sub_dir: subdirectory associated with data, e.g date
+
+        Returns
+        -------
+        """
         log = self.load_observing_log(sub_dir=sub_dir)
-
         path = self.get_observing_log_path(sub_dir=sub_dir)
-
         logger.debug(f"Saving to {path}")
-
         log.to_csv(path)
 
     @staticmethod
-    def get_observing_log_path(sub_dir=""):
+    def get_observing_log_path(
+            sub_dir: str = ""
+    ):
+        """Function to find path for observing log file
+
+        Parameters
+        ----------
+        sub_dir: subdirectory associated with data, e.g date
+
+        Returns
+        -------
+        path to the observing log
+        """
         base_dir = observing_log_dir(sub_dir=sub_dir)
         return os.path.join(base_dir, "observing_log.csv")
 
