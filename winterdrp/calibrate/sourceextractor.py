@@ -249,6 +249,13 @@ def run_sextractor(
     if not isinstance(images, list):
         images = [images]
 
+    # Make output directory if it doesn't exist
+
+    try:
+        os.makedirs(output_dir)
+    except OSError:
+        pass
+
     for img in images:
         image_name = Path(img).stem
         output_catalog = f'{image_name}.cat'
