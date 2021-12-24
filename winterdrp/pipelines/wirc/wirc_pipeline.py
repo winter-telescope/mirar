@@ -19,15 +19,6 @@ class WircPipeline(Pipeline):
 
     # Set up elements to use
 
-    image_steps = [
-        "dark",
-        # "flat",
-        "save",
-        # "sextractor",
-        # "stack",
-        # "dither"
-    ]
-
     header_keys = [
         "UTSHUT",
         'OBJECT',
@@ -37,6 +28,17 @@ class WircPipeline(Pipeline):
     ]
 
     batch_split_keys = ["OBJECT", "FILTER"]
+
+    pipeline_configurations = {
+        None: [
+            ("dark",),
+            # "flat",
+            ("save", "preprocess"),
+            # "sextractor",
+            # "stack",
+            # "dither"
+        ]
+    }
 
     @staticmethod
     def reformat_raw_data(

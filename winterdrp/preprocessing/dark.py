@@ -1,3 +1,5 @@
+import copy
+
 import astropy.io.fits
 import numpy as np
 import os
@@ -131,18 +133,16 @@ class DarkCalibrator(BaseProcessor):
 
             master_dark = np.nanmedian(darks, axis=2)
 
-            primary_header = header
+            primary_header = copy.deepcopy(header)
+            primary_header["HISTORY"] = history
+            primary_header['EXPTIME'] = exp_time
 
-            proc_hdu = create_fits(master_dark, header=primary_header, history=history)  # Create a new HDU with the processed image data
-
-            proc_hdu.header['EXPTIME'] = exp_time
-
-            master_dark_path = self.get_file_path(header=proc_hdu.header, sub_dir=sub_dir)
+            master_dark_path = self.get_file_path(header=primary_header, sub_dir=sub_dir)
 
             logger.info(f"Saving stacked 'master dark' "
                         f"combining {n_frames} exposures to {master_dark_path}")
 
-            self.save_fits(proc_hdu, master_dark_path)
+            self.save_fits(master_dark, primary_header, master_dark_path)
 
 # base_mdark_name = "master_dark"
 #

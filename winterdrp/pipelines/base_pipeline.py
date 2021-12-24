@@ -9,6 +9,7 @@ from winterdrp.calibrate.sourceextractor import run_sextractor
 from winterdrp.io import create_fits
 from glob import glob
 import pandas as pd
+import copy
 from winterdrp.paths import \
     cal_output_dir,\
     parse_image_list, \
@@ -33,7 +34,9 @@ class Pipeline:
     astrometry = ("GAIA", 9., 13.)
     photometry_cal = dict()
 
-    image_steps = list()
+    pipeline_configurations = {
+        None: []
+    }
 
     # Fix keys from header to save in log
     # The first key should sort images in order
@@ -53,7 +56,13 @@ class Pipeline:
     flat_nan_threshold = np.nan
     standard_flats_dir = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, pipeline_configuration=None, *args, **kwargs):
+
+        self.image_steps = list()
+
+        self.set_pipeline_configuration(pipeline_configuration)
+
+        print(self.image_steps)
 
         instrument_vars = dict([(x, getattr(self, x)) for x in dir(self)])
 
@@ -62,15 +71,24 @@ class Pipeline:
 
         for step in self.image_steps:
 
-            if isinstance(step, str):
-                name = step
-            else:
-                name = step[0]
+            if not isinstance(step, tuple):
+                err = f"Image steps should be tuples. However, step '{step}' is {isinstance(step)}."
+                logger.error(err)
+                raise ValueError(err)
 
-                if len(step) > 1:
-                    print(step[1:])
+            name = step[0]
 
-            print(step)
+            if len(step) > 1:
+                print(step[1:])
+                args = step[1:] + args
+            #     name = step
+            # else:
+            #     name = step[0]
+            #
+            #     if len(step) > 1:
+            #         print(step[1:])
+            #
+            # print(step)
             #
             # if isinstance(processor_args, tuple):
             #     name = processor_args[0]
@@ -117,6 +135,15 @@ class Pipeline:
     ) -> (np.ndarray, astropy.io.fits.Header):
         raise NotImplementedError
 
+    def set_pipeline_configuration(
+            self,
+            configuration: str | list = None,
+    ):
+        if isinstance(configuration, str | None):
+            self.image_steps = self.pipeline_configurations[configuration]
+        else:
+            self.image_steps = configuration
+
     def make_calibration_files(self, sub_dir=""):
 
         observing_log = self.load_observing_log(sub_dir=sub_dir)
@@ -134,8 +161,8 @@ class Pipeline:
 
         preceding_steps = []
 
-        for processor_name in self.image_steps:
-            processor = self.processors[processor_name]
+        for step in self.image_steps:
+            processor = self.processors[step[0]]
             image_list = processor.select_cache_images(observing_log)
             if len(image_list) > 0:
                 processor.make_cache_files(
@@ -143,7 +170,7 @@ class Pipeline:
                     sub_dir=sub_dir,
                     preceding_steps=preceding_steps,
                 )
-            preceding_steps.append(self.processors[processor_name].apply)
+            preceding_steps.append(self.processors[step[0]].apply)
 
     def split_raw_images_into_batches(
             self,
@@ -185,8 +212,8 @@ class Pipeline:
     ) -> list:
 
         for processor in self.image_steps:
-            logger.debug(f"Applying '{processor}' processor to {len(images)} images")
-            images, headers = self.processors[processor].apply(
+            logger.debug(f"Applying '{processor[0]}' processor to {len(images)} images")
+            images, headers = self.processors[processor[0]].apply(
                 images,
                 headers,
                 sub_dir=sub_dir

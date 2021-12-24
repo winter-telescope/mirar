@@ -2,6 +2,7 @@ import logging
 import astropy.io.fits
 import numpy as np
 import pandas as pd
+from winterdrp.io import create_fits
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,9 @@ class BaseProcessor:
 
         # Check processor prerequisites are satisfied
 
-        preceding_steps = instrument_vars["image_steps"][:instrument_vars["image_steps"].index(self.base_key)]
+        steps = [x[0] for x in instrument_vars["image_steps"]]
+
+        preceding_steps = steps[:steps.index(self.base_key)]
 
         for x in self.requires:
             if x not in preceding_steps:
@@ -106,7 +109,8 @@ class BaseProcessor:
     ):
         pass
 
-    def save_fits(self, img, path):
-        self.cache[path] = (img.data, img.header)
+    def save_fits(self, data, header, path):
+        self.cache[path] = (data, header)
         logger.info(f"Saving to {path}")
+        img = create_fits(data, header=header)
         img.writeto(path, overwrite=True)

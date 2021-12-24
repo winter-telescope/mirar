@@ -8,8 +8,7 @@ from astropy.io import fits
 #     return img
 
 
-def create_fits(data, header, history):
+def create_fits(data, header):
     proc_hdu = fits.PrimaryHDU(data)
     proc_hdu.header = header  # Copy over the header from the raw file
-    proc_hdu.header.add_history(history)  # Add a note to the header
     return proc_hdu

@@ -23,12 +23,20 @@ def raw_img_dir(sub_dir=""):
     return os.path.join(base_raw_dir, os.path.join(sub_dir, "raw"))
 
 
+def output_dir(dir_root, sub_dir=""):
+    return os.path.join(base_output_dir, os.path.join(sub_dir, dir_root))
+
+
+def output_path(base_name, dir_root, sub_dir=""):
+    return os.path.join(output_dir(dir_root, sub_dir=sub_dir), base_name)
+
+
 def cal_output_dir(sub_dir=""):
-    return os.path.join(base_output_dir, os.path.join(sub_dir, "cals"))
+    return output_dir("cals", sub_dir=sub_dir)
 
 
 def reduced_img_dir(sub_dir=""):
-    return os.path.join(base_output_dir, os.path.join(sub_dir, "redux"))
+    return output_dir("redux", sub_dir=sub_dir)
 
 
 def reduced_img_path(img_name, sub_dir=""):
@@ -43,7 +51,7 @@ def astrometry_output_dir(
         sub_dir: str = "",
         astro_pass: int = 1
 ):
-    return os.path.join(base_output_dir, os.path.join(sub_dir, f"astrometry_{astro_pass}"))
+    return output_dir(f"astrometry_{astro_pass}", sub_dir=sub_dir)
 
 
 def parse_image_list(sub_dir="", group_by_object=True, base_dir_f=raw_img_dir):
