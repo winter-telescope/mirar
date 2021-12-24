@@ -1,23 +1,27 @@
 import logging
-from winterdrp.pipelines.wirc import WircPipeline
+from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 
 logger = logging.getLogger(__name__)
 
+# Convention: lowercase names
+
 pipelines = {
-    "WIRC": WircPipeline
+    "wirc": WircPipeline,
 }
 
 
 def get_pipeline(instrument):
 
     try:
-        pipeline = pipelines[instrument]()
+        pipeline = pipelines[instrument.lower()]
         logger.info(f"Found {instrument} pipeline")
-        return pipeline
     except KeyError:
         err = f"Unrecognised pipeline {instrument}. Available pipelines are: {pipelines.keys()}"
         logger.error(err)
         raise KeyError(err)
+
+    return pipeline()
+
 # def parse_telescope(header):
 #
 #     telname = None

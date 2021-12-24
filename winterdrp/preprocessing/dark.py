@@ -1,21 +1,34 @@
+import astropy.io.fits
 import numpy as np
 import os
 from winterdrp.io import create_fits
 import logging
-from winterdrp.preprocessing.base_calibrator import BaseCalibrator
+import pandas as pd
+from winterdrp.preprocessing.base_processor import BaseProcessor
 from winterdrp.paths import cal_output_dir
 
 logger = logging.getLogger(__name__)
 
 
-class DarkCalibrator(BaseCalibrator):
+class DarkCalibrator(BaseProcessor):
     base_name = "master_dark"
+    base_key = "dark"
 
-    def __init__(self, open_fits, use_normed_dark=False):
-        BaseCalibrator.__init__(self, open_fits=open_fits)
+    def __init__(
+            self,
+            instrument_vars,
+            use_normed_dark: bool = False,
+            *args,
+            **kwargs
+    ):
+        super().__init__(instrument_vars, *args, **kwargs)
         self.use_normed_dark = use_normed_dark
 
-    def get_file_path(self, header, sub_dir=""):
+    def get_file_path(
+            self,
+            header: astropy.io.fits.Header,
+            sub_dir: str = ""
+    ) -> str:
 
         cal_dir = cal_output_dir(sub_dir=sub_dir)
 
@@ -28,22 +41,34 @@ class DarkCalibrator(BaseCalibrator):
 
         return os.path.join(cal_dir, name)
 
-    def apply_calibration(self, img, sub_dir=""):
-        data = img[0].data
-        header = img[0].header
-        master_dark = self.load_calibrator_file(self.get_file_path(header, sub_dir=sub_dir))
-        img[0].data = data - (master_dark[0].data * header["EXPTIME"])
-        return img
+    def apply_to_images(
+            self,
+            images: list,
+            headers: list,
+            sub_dir: str = ""
+    ) -> list:
+        for i, data in enumerate(images):
+            header = headers[i]
+            master_dark = self.load_cache_file(self.get_file_path(header, sub_dir=sub_dir))
+            data = data - (master_dark[0].data * header["EXPTIME"])
+            header["CALSTEPS"] += "dark,"
+            images[i] = data
+            headers[i] = header
 
-    def make_calibration_files(self, image_list, sub_dir="", subtract_bias=None, *args, **kwargs):
+        return images
 
-        if subtract_bias is None:
-            raise Exception("No bias subtraction function provided.")
+    def make_cache_files(
+            self,
+            image_list: list,
+            preceding_steps: list,
+            sub_dir: str = "",
+            *args,
+            **kwargs
+    ):
 
         logger.info(f'Found {len(image_list)} dark frames')
 
-        with self.open_fits(image_list[0]) as img:
-            header = img[0].header
+        img, header = self.open_fits(image_list[0])
 
         nx = header['NAXIS1']
         ny = header['NAXIS2']
@@ -53,8 +78,7 @@ class DarkCalibrator(BaseCalibrator):
         exp_list = []
 
         for dark in image_list:
-            with self.open_fits(dark) as img:
-                header = img[0].header
+            img, header = self.open_fits(dark)
             exp_list.append(header['EXPTIME'])
 
         exp_times = sorted(list(set(exp_list)))
@@ -94,15 +118,19 @@ class DarkCalibrator(BaseCalibrator):
             darks = np.zeros((ny, nx, len(cut_image_list)))
 
             for i, dark in enumerate(cut_image_list):
-                with self.open_fits(dark) as img:
-                    dark_exptime = img[0].header['EXPTIME']
-                    logger.debug(f'Read dark {i + 1}/{n_frames} with exposure time {dark_exptime}')
-                    darks[:, :, i] = subtract_bias(img)[0].data / dark_exptime
+                img, header = self.open_fits(dark)
+                dark_exptime = header['EXPTIME']
+                logger.debug(f'Read dark {i + 1}/{n_frames} with exposure time {dark_exptime}')
+
+                # Iteratively apply corrections
+                for f in preceding_steps:
+                    img, header = f(list(img), list(header))
+
+                darks[:, :, i] = np.array(img) / dark_exptime
 
             master_dark = np.nanmedian(darks, axis=2)
 
-            with self.open_fits(image_list[0]) as img:
-                primary_header = img[0].header
+            primary_header = header
 
             proc_hdu = create_fits(master_dark, header=primary_header, history=history)  # Create a new HDU with the processed image data
 
