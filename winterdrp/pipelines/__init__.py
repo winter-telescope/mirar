@@ -1,22 +1,19 @@
 import logging
+from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 
 logger = logging.getLogger(__name__)
 
 # Convention: lowercase names
 
-pipelines = {
-    "wirc": WircPipeline,
-}
-
 
 def get_pipeline(instrument):
 
     try:
-        pipeline = pipelines[instrument.lower()]
+        pipeline = Pipeline.pipelines[instrument.lower()]
         logger.info(f"Found {instrument} pipeline")
     except KeyError:
-        err = f"Unrecognised pipeline {instrument}. Available pipelines are: {pipelines.keys()}"
+        err = f"Unrecognised pipeline {instrument}. Available pipelines are: {Pipeline.pipelines.keys()}"
         logger.error(err)
         raise KeyError(err)
 

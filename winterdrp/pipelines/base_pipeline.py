@@ -23,7 +23,11 @@ logger = logging.getLogger(__name__)
 
 raw_img_key = "RAWIMAGEPATH"
 
+
 class Pipeline:
+
+    pipelines = {}
+    name = None
 
     # Set up elements to use
     astrometry = ("GAIA", 9., 13.)
@@ -50,23 +54,24 @@ class Pipeline:
     standard_flats_dir = None
 
     def __init__(self, *args, **kwargs):
-        # self.bias_calibrator = [None, BiasCalibrator(self.open_fits, *args, **kwargs)][self.bias]
-        # self.dark_calibrator = [None, DarkCalibrator(self.open_fits, *args, **kwargs)][self.dark]
-        # self.flats_calibrator = [None, FlatCalibrator(
-        #     self.open_fits,
-        #     x_min=self.x_min,
-        #     x_max=self.x_max,
-        #     y_min=self.y_min,
-        #     y_max=self.y_max,
-        #     *args, **kwargs
-        # )][self.flat]
 
         instrument_vars = dict([(x, getattr(self, x)) for x in dir(self)])
 
         self.observing_logs_cache = dict()
         self.processors = dict()
 
-        for name in self.image_steps:
+        for step in self.image_steps:
+
+            if isinstance(step, str):
+                name = step
+            else:
+                name = step[0]
+
+                if len(step) > 1:
+                    print(step[1:])
+
+            print(step)
+            #
             # if isinstance(processor_args, tuple):
             #     name = processor_args[0]
             #     args += processor_args[1:]
@@ -74,19 +79,43 @@ class Pipeline:
             #     name = processor_args
             self.processors[name] = get_processor(name, instrument_vars, *args, **kwargs)
 
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if cls.name in cls.pipelines.keys():
+            err = f"Pipeline name '{cls.name}' is already found in the pipeline registered keys. " \
+                  f"The Pipeline class variable 'name' must be unique!"
+            logger.error(err)
+            raise ValueError(err)
+        cls.pipelines[cls.name] = cls
+
     def open_fits(
             self,
             path: str
-    ) -> [np.array, astropy.io.fits.Header]:
+    ) -> (np.array, astropy.io.fits.Header):
         with fits.open(path) as raw:
-            img = self.reformat_raw_data(raw)
-            data = img[0].data
-            header = img[0].header
+            data, header = self.reformat_raw_data(raw)
         return data, header
 
+    def open_image_batch(
+            self,
+            paths: list
+    ) -> (list, list):
+
+        images = []
+        headers = []
+        for path in paths:
+            data, header = self.open_fits(path)
+            images.append(data)
+            headers.append(header)
+
+        return images, headers
+
     @staticmethod
-    def reformat_raw_data(img):
-        return img
+    def reformat_raw_data(
+            img: astropy.io.fits.HDUList
+    ) -> (np.ndarray, astropy.io.fits.Header):
+        raise NotImplementedError
 
     def make_calibration_files(self, sub_dir=""):
 
@@ -114,39 +143,7 @@ class Pipeline:
                     sub_dir=sub_dir,
                     preceding_steps=preceding_steps,
                 )
-            preceding_steps.append(self.processors[processor_name].apply_to_images)
-
-        # if self.bias:
-        #
-        #     bias_files = log[log["OBJECT"] == "bias"]["RAWIMAGEPATH"]
-        #
-        #     self.bias_calibrator.make_cache_files(
-        #         image_list=bias_files,
-        #         cal_dir=cal_dir,
-        #         open_fits=self.open_fits
-        #     )
-        #
-        # if self.dark:
-        #
-        #     dark_files = log[log["OBJECT"] == "dark"]["RAWIMAGEPATH"]
-        #
-        #     self.dark_calibrator.make_cache_files(
-        #         image_list=dark_files,
-        #         sub_dir=sub_dir,
-        #         subtract_bias=self.subtract_bias
-        #     )
-        #
-        # if self.flat:
-        #
-        #     flat_files = log[log["OBJECT"] == "flat"]["RAWIMAGEPATH"]
-        #
-        #     self.flats_calibrator.make_cache_files(
-        #         image_list=flat_files,
-        #         cal_dir=cal_dir,
-        #         open_fits=self.open_fits,
-        #         subtract_bias=self.subtract_bias,
-        #         subtract_dark=self.subtract_dark
-        #     )
+            preceding_steps.append(self.processors[processor_name].apply)
 
     def split_raw_images_into_batches(
             self,
@@ -160,32 +157,40 @@ class Pipeline:
         split_vals = []
 
         for row in obs.itertuples():
-            sv = ""
+            sv = []
             for key in self.batch_split_keys:
-                sv += str(getattr(row, key))
+                sv.append(str(getattr(row, key)))
 
-            split_vals.append(sv)
+            split_vals.append("_".join(sv))
 
         split_vals = np.array(split_vals)
 
+        batches = sorted(list(set(split_vals)))
+
+        logger.debug(f"Selecting unique combinations of {self.batch_split_keys}, "
+                     f"found the following batches: {batches}")
+
         raw_image_path_batches = [
             list(obs[split_vals == x][raw_img_key])
-            for x in list(set(split_vals))
+            for x in batches
         ]
 
         return sorted(raw_image_path_batches)
 
     def reduce_images(
             self,
-            images: list = None,
+            images: list,
+            headers: list,
             sub_dir: str = ""
     ) -> list:
 
-        if images is None:
-            images = parse_image_list(sub_dir, group_by_object=False)
-
         for processor in self.image_steps:
-            images = self.processors[processor].apply(images, sub_dir=sub_dir)
+            logger.debug(f"Applying '{processor}' processor to {len(images)} images")
+            images, headers = self.processors[processor].apply(
+                images,
+                headers,
+                sub_dir=sub_dir
+            )
 
         return images
 
@@ -297,28 +302,28 @@ class Pipeline:
     #
     #     return proccessed_list
 
-    @staticmethod
-    def apply_astrometry(sub_dir="", redux_image_list=None, reprocess=True):
-
-        if redux_image_list is None:
-            redux_image_list = parse_image_list(sub_dir, group_by_object=False, base_dir_f=reduced_img_dir)
-
-        # Try making output directory, unless it exists
-
-        output_dir = astrometry_output_dir(sub_dir)
-
-        try:
-            os.makedirs(output_dir)
-        except OSError:
-            pass
-
-        # First run Sextractor
-
-        run_sextractor(
-            redux_image_list,
-            output_dir=output_dir,
-            reprocess=reprocess
-        )
+    # @staticmethod
+    # def apply_astrometry(sub_dir="", redux_image_list=None, reprocess=True):
+    #
+    #     if redux_image_list is None:
+    #         redux_image_list = parse_image_list(sub_dir, group_by_object=False, base_dir_f=reduced_img_dir)
+    #
+    #     # Try making output directory, unless it exists
+    #
+    #     output_dir = astrometry_output_dir(sub_dir)
+    #
+    #     try:
+    #         os.makedirs(output_dir)
+    #     except OSError:
+    #         pass
+    #
+    #     # First run Sextractor
+    #
+    #     run_sextractor(
+    #         redux_image_list,
+    #         output_dir=output_dir,
+    #         reprocess=reprocess
+    #     )
 
     def export_observing_log(
             self,

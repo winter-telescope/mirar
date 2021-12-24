@@ -1,24 +1,21 @@
 import logging
+from winterdrp.preprocessing.base_processor import BaseProcessor
 from winterdrp.preprocessing.bias import BiasCalibrator
 from winterdrp.preprocessing.dark import DarkCalibrator
 from winterdrp.preprocessing.flat import FlatCalibrator
+from winterdrp.preprocessing.image_saver import ImageSaver
+from winterdrp.calibrate.sextractor import SextractorRunner
 
 logger = logging.getLogger(__name__)
-
-processor_map = {
-    "bias": BiasCalibrator,
-    "dark": DarkCalibrator,
-    "flat": FlatCalibrator
-}
 
 
 def get_processor(processor_name, open_fits, *args, **kwargs):
 
     try:
-        processor = processor_map[processor_name]
+        processor = BaseProcessor.subclasses[processor_name]
     except KeyError:
         err = f"Processor type '{processor_name}' not recognised. " \
-              f"The following processors are available: {processor_map.keys()}"
+              f"The following processors are available: {BaseProcessor.subclasses.keys()}"
         logger.error(err)
         raise KeyError(err)
 

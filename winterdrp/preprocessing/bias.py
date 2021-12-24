@@ -18,7 +18,7 @@ class BiasCalibrator(BaseProcessor):
         cal_dir = cal_output_dir(sub_dir=sub_dir)
         return os.path.join(cal_dir, self.base_name)
 
-    def apply_to_images(self, images, sub_dir=""):
+    def _apply_to_images(self, images, sub_dir=""):
         data = images[0].data
         header = images[0].header
         master_bias = self.load_cache_file(self.get_file_path(header, sub_dir=sub_dir))

@@ -1,11 +1,16 @@
+import os
+
+import astropy.io.fits
+import numpy as np
 from astropy.io.fits import HDUList
 from winterdrp.pipelines.base_pipeline import Pipeline
-import os
 
 wirc_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
 
 class WircPipeline(Pipeline):
+
+    name = "wirc"
 
     astrometry_cal = ("GAIA", 9., 13.)
     photometry_cal = {
@@ -16,7 +21,9 @@ class WircPipeline(Pipeline):
 
     image_steps = [
         "dark",
-        "flat",
+        # "flat",
+        "save",
+        # "sextractor",
         # "stack",
         # "dither"
     ]
@@ -34,12 +41,13 @@ class WircPipeline(Pipeline):
     @staticmethod
     def reformat_raw_data(
             img: HDUList
-    ) -> HDUList:
+    ) -> [np.array, astropy.io.fits.Header]:
         header = img[0].header
         header["FILTER"] = header["AFT"].split("__")[0]
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
+        header["CALSTEPS"] = ""
         img[0].header = header
-        return img
+        return img[0].data, img[0].header
 
     # def apply_reduction(self, raw_image_list):
     #     return

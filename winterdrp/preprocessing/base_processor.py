@@ -1,5 +1,4 @@
 import logging
-
 import astropy.io.fits
 import numpy as np
 import pandas as pd
@@ -11,6 +10,9 @@ class BaseProcessor:
 
     base_name = None
     base_key = None
+    requires = []
+
+    subclasses = {}
 
     def __init__(
             self,
@@ -21,12 +23,55 @@ class BaseProcessor:
         self.cache = dict()
         self.open_fits = instrument_vars["open_fits"]
 
-    def apply_to_images(
+        # Check Processor has a key
+
+        if self.base_key is None:
+            err = f"No Base key has been defined for {self.__module__}"
+            logger.error(err)
+            raise AttributeError(err)
+
+        # Check processor prerequisites are satisfied
+
+        preceding_steps = instrument_vars["image_steps"][:instrument_vars["image_steps"].index(self.base_key)]
+
+        for x in self.requires:
+            if x not in preceding_steps:
+                err = f"Processor {self.base_key} requires '{x}' as a prerequisite." \
+                      f"However, the pipeline includes {instrument_vars['image_steps']} with " \
+                      f"{preceding_steps} occuring before {self.base_key}."
+                logger.error(err)
+                raise ValueError(err)
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.subclasses[cls.base_key] = cls
+
+    def _apply_to_images(
             self,
             images: list,
             headers: list,
-    ) -> list:
+            sub_dir: str = ""
+    ) -> (list, list):
         raise NotImplementedError
+
+    def _update_headers(
+            self,
+            headers: list,
+    ) -> list:
+        for header in headers:
+            header["CALSTEPS"] += self.base_key
+        return headers
+
+    def apply(
+            self,
+            images: list,
+            headers: list,
+            sub_dir: str = ""
+    ) -> (list, list):
+        images, headers = self._apply_to_images(images, headers, sub_dir=sub_dir)
+        headers = self._update_headers(headers)
+        return images, headers
 
     @staticmethod
     def get_file_path(header, sub_dir=""):
@@ -35,14 +80,14 @@ class BaseProcessor:
     def load_cache_file(
             self,
             path: str
-    ) -> astropy.io.fits.HDUList:
+    ) -> (np.ndarray, astropy.io.fits.Header):
 
         if path in self.cache:
-            img = self.cache[path]
+            img, header = self.cache[path]
         else:
-            img = self.open_fits(path)
-            self.cache[path] = img
-        return img
+            img, header = self.open_fits(path)
+            self.cache[path] = (img, header)
+        return img, header
 
     def select_cache_images(
             self,
@@ -62,6 +107,6 @@ class BaseProcessor:
         pass
 
     def save_fits(self, img, path):
-        self.cache[path] = img.data
+        self.cache[path] = (img.data, img.header)
         logger.info(f"Saving to {path}")
         img.writeto(path, overwrite=True)

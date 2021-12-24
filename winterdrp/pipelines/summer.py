@@ -34,6 +34,8 @@ class SummerPipeline(Pipeline):
         "UT_SHUT",
     ]
 
+    batch_split_keys = ["FIELD", "FILTER"]
+
     @staticmethod
     def reformat_raw_data(img):
         header = img[0].header

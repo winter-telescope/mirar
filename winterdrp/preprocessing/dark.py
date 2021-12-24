@@ -41,21 +41,22 @@ class DarkCalibrator(BaseProcessor):
 
         return os.path.join(cal_dir, name)
 
-    def apply_to_images(
+    def _apply_to_images(
             self,
             images: list,
             headers: list,
             sub_dir: str = ""
-    ) -> list:
+    ) -> (list, list):
+
         for i, data in enumerate(images):
             header = headers[i]
-            master_dark = self.load_cache_file(self.get_file_path(header, sub_dir=sub_dir))
-            data = data - (master_dark[0].data * header["EXPTIME"])
+            master_dark, _ = self.load_cache_file(self.get_file_path(header, sub_dir=sub_dir))
+            data = data - (master_dark * header["EXPTIME"])
             header["CALSTEPS"] += "dark,"
             images[i] = data
             headers[i] = header
 
-        return images
+        return images, headers
 
     def make_cache_files(
             self,
@@ -126,7 +127,7 @@ class DarkCalibrator(BaseProcessor):
                 for f in preceding_steps:
                     img, header = f(list(img), list(header))
 
-                darks[:, :, i] = np.array(img) / dark_exptime
+                darks[:, :, i] = img / dark_exptime
 
             master_dark = np.nanmedian(darks, axis=2)
 

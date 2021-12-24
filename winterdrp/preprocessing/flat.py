@@ -40,7 +40,7 @@ class FlatCalibrator(BaseProcessor):
         name = f"{self.base_name}_{filtername}.fits"
         return os.path.join(cal_dir, name)
 
-    def apply_to_images(
+    def _apply_to_images(
             self,
             images: list,
             sub_dir: str = ""

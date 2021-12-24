@@ -28,12 +28,9 @@ import urllib.request
 from math import sin, cos, tan, asin, sqrt
 import numpy as np
 from astropy.io import fits as af
-from winterdrp.paths import sextractor_path
+from winterdrp.calibrate.sourceextractor import sextractor_cmd
 import logging
-try:
-    import ephem
-except:
-    pass
+import ephem
 
 logger = logging.getLogger(__name__)
 
@@ -338,10 +335,10 @@ def sextract(sexfilename, nxpix, nypix, border=3, corner=12, minfwhm=1.5, maxfwh
 
     try:
         # Sextract the image !
-        os.system(sextractor_path + "sex " + sexfilename + " -c sex.config -SATUR_LEVEL " + str(sexsaturation))
+        os.system(sextractor_cmd + "sex " + sexfilename + " -c sex.config -SATUR_LEVEL " + str(sexsaturation))
     except:
         logger.error(f'Problem running sextractor. Check that program is installed and runs '
-                     f'at command line using {sextractor_path}sex')
+                     f'at command line using {sextractor_cmd}sex')
         sys.exit(1)
 
     # Read in the sextractor catalog
