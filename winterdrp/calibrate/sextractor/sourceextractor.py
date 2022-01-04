@@ -232,10 +232,13 @@ def parse_checkimage(
     return cmd
 
 
+default_config = os.path.join(calibration_config_dir, 'astrom.sex')
+
+
 def run_sextractor(
         images: str | list,
         output_dir: str,
-        config: str = os.path.join(calibration_config_dir, 'astrom.sex'),
+        config: str = default_config,
         param: str = os.path.join(calibration_config_dir, 'astrom.param'),
         filter_name: str = os.path.join(calibration_config_dir, 'default.conv'),
         star_nnw: str = os.path.join(calibration_config_dir, 'default.nnw'),

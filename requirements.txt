@@ -1,6 +1,7 @@
 astropy
 astroquery
 docker
+ephem
 jupyter
 matplotlib
 numpy
