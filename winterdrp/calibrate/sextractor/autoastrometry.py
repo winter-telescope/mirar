@@ -28,9 +28,10 @@ import urllib.request
 from math import sin, cos, tan, asin, sqrt
 import numpy as np
 from astropy.io import fits as af
-from winterdrp.calibrate.sourceextractor import sextractor_cmd
+from winterdrp.calibrate.sextractor.sourceextractor import execute_sextractor
 import logging
 import ephem
+from winterdrp.calibrate.sextractor.settings import write_param_file, write_config_file
 
 logger = logging.getLogger(__name__)
 
@@ -41,109 +42,6 @@ defaultmaxfwhm = 40
 
 fastmatch = 1
 showmatches = 0
-
-
-def writeparfile():
-    params = '''X_IMAGE
-Y_IMAGE
-ALPHA_J2000
-DELTA_J2000
-MAG_AUTO
-MAGERR_AUTO
-ELLIPTICITY
-FWHM_IMAGE
-FLAGS'''
-    with open('temp.param', 'w') as pf:
-        pf.write(params)
-
-
-def writeconfigfile(satlevel=55000.):
-    configs='''
-#-------------------------------- Catalog ------------------------------------
- 
-CATALOG_NAME     temp.cat       # name of the output catalog
-CATALOG_TYPE     ASCII_HEAD     # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
-                                # ASCII_VOTABLE, FITS_1.0 or FITS_LDAC
-PARAMETERS_NAME  temp.param     # name of the file containing catalog contents
- 
-#------------------------------- Extraction ----------------------------------
- 
-DETECT_TYPE      CCD            # CCD (linear) or PHOTO (with gamma correction)
-DETECT_MINAREA   5              # minimum number of pixels above threshold
-DETECT_THRESH    3              # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
-ANALYSIS_THRESH  3              # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
- 
-FILTER           Y              # apply filter for detection (Y or N)?
-FILTER_NAME      sex.conv       # name of the file containing the filter
- 
-DEBLEND_NTHRESH  16             # Number of deblending sub-thresholds
-DEBLEND_MINCONT  0.02           # Minimum contrast parameter for deblending
- 
-CLEAN            Y              # Clean spurious detections? (Y or N)?
-CLEAN_PARAM      1.0            # Cleaning efficiency
- 
-MASK_TYPE        CORRECT        # type of detection MASKing: can be one of
-                                # NONE, BLANK or CORRECT
- 
-#------------------------------ Photometry -----------------------------------
- 
-PHOT_APERTURES   5              # MAG_APER aperture diameter(s) in pixels
-PHOT_AUTOPARAMS  2.5, 3.5       # MAG_AUTO parameters: <Kron_fact>,<min_radius>
-PHOT_PETROPARAMS 2.0, 3.5       # MAG_PETRO parameters: <Petrosian_fact>,
-                                # <min_radius>
- 
- 
- 
-MAG_ZEROPOINT    0.0            # magnitude zero-point
-MAG_GAMMA        4.0            # gamma of emulsion (for photographic scans)
-GAIN             0.0            # detector gain in e-/ADU
-PIXEL_SCALE      1.0            # size of pixel in arcsec (0=use FITS WCS info)
- 
-#------------------------- Star/Galaxy Separation ----------------------------
- 
-SEEING_FWHM      1.2            # stellar FWHM in arcsec
-STARNNW_NAME     default.nnw    # Neural-Network_Weight table filename
- 
-#------------------------------ Background -----------------------------------
- 
-BACK_SIZE        64             # Background mesh: <size> or <width>,<height>
-BACK_FILTERSIZE  3              # Background filter: <size> or <width>,<height>
- 
-BACKPHOTO_TYPE   GLOBAL         # can be GLOBAL or LOCAL
- 
-#------------------------------ Check Image ----------------------------------
- 
-CHECKIMAGE_TYPE  NONE           # can be NONE, BACKGROUND, BACKGROUND_RMS,
-                                # MINIBACKGROUND, MINIBACK_RMS, -BACKGROUND,
-                                # FILTERED, OBJECTS, -OBJECTS, SEGMENTATION,
-                                # or APERTURES
-CHECKIMAGE_NAME  check.fits     # Filename for the check-image
- 
-#--------------------- Memory (change with caution!) -------------------------
- 
-MEMORY_OBJSTACK  3000           # number of objects in stack
-MEMORY_PIXSTACK  300000         # number of pixels in stack
-MEMORY_BUFSIZE   1024           # number of lines in buffer
- 
-#----------------------------- Miscellaneous ---------------------------------
- 
-VERBOSE_TYPE     QUIET          # can be QUIET, NORMAL or FULL
-WRITE_XML        N              # Write XML file (Y/N)?
-XML_NAME         sex.xml        # Filename for XML output
-'''
-    #SATUR_LEVEL      '''+str(satlevel)+'''        # level (in ADUs) at which arises saturation
-    with open('sex.config','w') as pf:
-        pf.write(configs)
-
-    convol='''CONV NORM
-# 3x3 ``all-ground'' convolution mask with FWHM = 2 pixels.
-1 2 1
-2 4 2
-1 2 1
-'''
-    if not os.path.exists('sex.conv'):
-        with open('sex.conv','w') as cf:
-            cf.write(convol)
 
 
 class Obj:
@@ -324,7 +222,18 @@ def unique(inlist):
     return lis
 
 
-def sextract(sexfilename, nxpix, nypix, border=3, corner=12, minfwhm=1.5, maxfwhm=25, maxellip=0.5, saturation=-1):
+def sextract(
+        sexfilename,
+        nxpix,
+        nypix,
+        border=3,
+        corner=12,
+        minfwhm=1.5,
+        maxfwhm=25,
+        maxellip=0.5,
+        saturation=-1,
+        output_dir="~/"
+):
 
     if maxellip == -1:
         maxellip = 0.5
@@ -333,19 +242,22 @@ def sextract(sexfilename, nxpix, nypix, border=3, corner=12, minfwhm=1.5, maxfwh
     else:
         sexsaturation = 1e10
 
-    try:
-        # Sextract the image !
-        os.system(sextractor_cmd + "sex " + sexfilename + " -c sex.config -SATUR_LEVEL " + str(sexsaturation))
-    except:
-        logger.error(f'Problem running sextractor. Check that program is installed and runs '
-                     f'at command line using {sextractor_cmd}sex')
-        sys.exit(1)
+    cmd = "sex " + sexfilename + " -c sex.config -SATUR_LEVEL " + str(sexsaturation)
+
+    execute_sextractor(cmd, output_dir=output_dir)
+
+    # try:
+    #     # Sextract the image !
+    #     os.system(sextractor_cmd + )
+    # except:
+    #     logger.error(f'Problem running sextractor. Check that program is installed and runs '
+    #                  f'at command line using {sextractor_cmd}sex')
+    #     sys.exit(1)
 
     # Read in the sextractor catalog
     try:
-        cat = open("temp.cat", 'r')
-        catlines = cat.readlines()
-        cat.close()
+        with open(os.path.join(output_dir, "temp.cat"), 'r') as cat:
+            catlines = cat.readlines()
     except:
         logger.error('Cannot load sextractor output file!')
         sys.exit(1)
@@ -1183,12 +1095,15 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
             logger.debug('Changing CTYPE1 from', h['CTYPE1'], 'to', "RA---TAN")
         h["CTYPE1"] = "RA---TAN"
         ctypechange = 1
+
     if h['CTYPE2'] != 'DEC--TAN':
         if ctypechange: logger.debug('Changing CTYPE2 from', h['CTYPE2'], 'to', "DEC--TAN")
         h["CTYPE2"] = "DEC--TAN"
         ctypechange = 1
+
     wcskeycheck = ['CRVAL1','CRVAL2','CRPIX1','CRPIX2','CD1_1','CD1_2','CD2_2','CD2_1','EQUINOX','EPOCH']
     headerformatchange = 0
+
     for w in wcskeycheck:
         if type(w) == type('0'):
             try:
@@ -1196,27 +1111,24 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
                 headerformatchange = 1
             except:
                 pass
+
     if quiet == False:
         if len(irafkeys) > 0:
             logger.debug('Removed nonstandard WCS keywords: ', end=' ')
             for key in irafkeys:
                 logger.debug(key, end=' ')
-            logger.debug()
         if len(highkeys) > 0:
             logger.debug('Removed higher-order WCS keywords: ', end=' ')
             for key in highkeys:
                 logger.debug(key, end=' ')
-            logger.debug()
         if len(oldkeys) > 0:
             logger.debug('Removed old-style WCS keywords: ', end=' ')
             for key in oldkeys:
                 logger.debug(key, end=' ')
-            logger.debug()
         if len(distortionkeys) > 0:
             logger.debug('Removed distortion WCS keywords: ', end=' ')
             for key in distortionkeys:
                 logger.debug(key, end=' ')
-            logger.debug()
     if len(highkeys)+len(distortionkeys)+ctypechange+headerformatchange > 0:
         #Rewrite and reload the image if the header was modified in a significant way so sextractor sees the same thing that we do.
         if os.path.isfile('temp.fits'): os.remove('temp.fits')
@@ -1575,6 +1487,8 @@ def autoastrometry(filename, pixelscale=-1, pa=-999, inv=0, uncpa=-1, userra=-99
     fits.writeto(outfile,output_verify='silentfix') #,clobber=True
     logger.debug('Written to '+outfile)
 
+    # Delete!
+
     if (warning == 0):
         try:
             #os.remove("temp.fits")
@@ -1624,6 +1538,7 @@ def help():
     logger.debug("      --output:        Information on the output files.")
     logger.debug("      --input:         Information on the input files.")
 
+
 def algorithmhelp():
     logger.debug("Algorithm info:")
     logger.debug("  The code uses a combination of pair-distance matching and asterism matching to")
@@ -1660,6 +1575,7 @@ def troublehelp():
     logger.debug("   help (try -upa 0.5); by default all orientations are searched.")
     logger.debug("   If still having issues, e-mail dperley@astro.berkeley.edu for help.")
 
+
 def cataloghelp():
     logger.debug("Catalog info:")
     logger.debug("   Leave the catalog field blank will use SDSS if available and USNO otherwise.")
@@ -1673,6 +1589,7 @@ def cataloghelp():
     logger.debug("   1st column, dec in the 2nd, and magnitude in the 6th.   The mag column can be")
     logger.debug("   omitted completely, although if the catalog is not the same depth as the")
     logger.debug("   image this may compromise the search results.")
+
 
 def examplehelp():
     #         12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -1696,6 +1613,7 @@ def examplehelp():
     logger.debug(" Combine lots of options for a maximally directed solution:")
     logger.debug("    autoastrometry image.fits -px 0.35 -pa 121 -upa 0.5 -inv -b 600 -s 7")
     logger.debug(" (Substitute 'autoastrometry' with 'python autoastrometry.py' if not aliased.)")
+
 
 def outputhelp():
     logger.debug("Explanation of output files:")
@@ -1727,22 +1645,27 @@ def inputhelp():
 #instrument defaults
 
 ######################################################################
-def usage():
-    (xdir,xname) = os.path.split(sys.argv[0])
-    logger.debug("Usage:  %s filename(s) [-px pixelscale -pa PA -inv -b boxsize -s seeing -upa PAunc]" % xname)
-    logger.debug("     or %s -help for instructions and more options." % xname)
+def usage(args):
+    (xdir,xname) = os.path.split(args[0])
+    logger.error("Usage:  %s filename(s) [-px pixelscale -pa PA -inv -b boxsize -s seeing -upa PAunc]" % xname)
+    logger.error("     or %s -help for instructions and more options." % xname)
 
 ######################################################################
-def main():
 
-    files=[]
 
-    if (len(sys.argv)==1):
-        usage()
+def main(args=None):
+
+    if args is None:
+        args = sys.argv
+
+    files = []
+
+    if len(args) == 1:
+        usage(args)
         sys.exit(1)
 
-    i=1
-    #defaults
+    i = 1
+    # defaults
     pixelscale = -1
     pa = -999
     uncpa = -1
@@ -1767,82 +1690,82 @@ def main():
     # Nov observations are all offset by a large amount in dec even after equinox
     # Keck: 0.135"/pix, chipPA=90+instPA
 
-    while (i<len(sys.argv)):
-        arg=sys.argv[i]
-        isarg=0
-        if (arg.find("-h") == 0):
+    while i < len(args):
+        arg = args[i]
+        isarg = 0
+        if arg.find("-h") == 0:
             help()
             sys.exit(1)
-        if (arg.find("-examp") == 0):
+        if arg.find("-examp") == 0:
             examplehelp()
             sys.exit(1)
-        if (arg.find("-troub") == 0):
+        if arg.find("-troub") == 0:
             troublehelp()
             sys.exit(1)
-        if (arg.find("-catal") == 0):
+        if arg.find("-catal") == 0:
             cataloghelp()
             sys.exit(1)
-        if (arg.find("-output") == 0):
+        if arg.find("-output") == 0:
             outputhelp()
             sys.exit(1)
-        if (arg.find("-input") == 0):
+        if arg.find("-input") == 0:
             inputhelp()
             sys.exit(1)
-        if (arg.find("-algor") == 0):
+        if arg.find("-algor") == 0:
             inputhelp()
             sys.exit(1)
-        if (arg.find("-pi")  == 0 or arg.find("-px") == 0):
-            pixelscale=float(sys.argv[i+1])
+        if np.logical_or(arg.find("-pi") == 0, arg.find("-px") == 0):
+            pixelscale = float(args[i+1])
+            i += 1
+            isarg = 1
+        if arg.find("-ra") == 0:
+            userra = rasex2deg(args[i+1])
             i+=1
             isarg=1
-        if (arg.find("-ra") == 0):
-            userra = rasex2deg(sys.argv[i+1])
+        if arg.find("-dec") == 0:
+            userdec = decsex2deg(args[i+1])
             i+=1
             isarg=1
-        if (arg.find("-dec") == 0):
-            userdec = decsex2deg(sys.argv[i+1])
+        if arg.find("-pa") == 0:
+            pa=float(args[i+1])
             i+=1
             isarg=1
-        if (arg.find("-pa") == 0):
-            pa=float(sys.argv[i+1])
+        if arg.find("-upa") == 0:
+            uncpa=float(args[i+1])
             i+=1
             isarg=1
-        if (arg.find("-upa") == 0):
-            uncpa=float(sys.argv[i+1])
-            i+=1
-            isarg=1
-        if (arg.find("-inv") == 0):
+        if arg.find("-inv") == 0:
             inv = 1
             isarg = 1
         if (arg.find("-norot") == 0): # some ambiguity with -n (nosolve)
             norot = 1
             isarg = 1
         if (arg.find("-b") == 0):
-            boxsize = float(sys.argv[i+1])
+            boxsize = float(args[i+1])
             i+=1
             isarg = 1
         if (arg.find("-d") == 0) and (arg.find("-dec") != 0):
-            maxrad = float(sys.argv[i+1])
+            maxrad = float(args[i+1])
             i+=1
             isarg = 1
         if (arg.find("-s") == 0):
-            seeing = float(sys.argv[i+1])
+            seeing = float(args[i+1])
             i+=1
             isarg = 1
         if (arg.find("-x") == 0):
-            saturation = float(sys.argv[i+1])
+            saturation = float(args[i+1])
             i+=1
             isarg = 1
         if (arg.find("-t") == 0):
-            tolerance = float(sys.argv[i+1])
+            tolerance = float(args[i+1])
             i+=1
             isarg = 1
         if (arg.find("-e") == 0):
-            maxellip = float(sys.argv[i+1])
+            maxellip = float(args[i+1])
             i+=1
             isarg = 1
         if (arg.find("-c") == 0):
-            catalog = sys.argv[i+1]
+            catalog = args[i+1]
             i+=1
             isarg = 1
         if (arg.find("-q") == 0):
@@ -1850,17 +1773,17 @@ def main():
             isarg = 1
         if (arg.find("-o") == 0):
             outfile = ''
-            if len(sys.argv) > i+1:
-                if (sys.argv[i+1]).find('-') != 0:
-                    outfile = sys.argv[i+1] #output
+            if len(args) > i+1:
+                if (args[i+1]).find('-') != 0:
+                    outfile = args[i+1] #output
                     i+=1
             if outfile == '': overwrite = 1
             isarg = 1
         if (arg.find("-n") == 0 and arg.find("-norot") == -1):
             nosolve = 1
-            if len(sys.argv) > i+1:
-                if (sys.argv[i+1]).find('-') != 0:
-                    catalog = sys.argv[i+1] #output
+            if len(args) > i+1:
+                if (args[i+1]).find('-') != 0:
+                    catalog = args[i+1] #output
                     i+=1
             isarg = 1
         if (not isarg):
@@ -1874,63 +1797,91 @@ def main():
         logger.debug('No files selected!')
         return
 
-    filenames=files.split(",")
+    filenames = files.split(",")
 
-    if (seeing == -1):
+    if seeing == -1:
         minfwhm = defaultminfwhm #1.5
         maxfwhm = defaultmaxfwhm #40
     else:
         minfwhm = 0.7 * seeing
         maxfwhm = 2 * seeing
 
-    writeparfile()
+    write_param_file()
     if not os.path.exists('sex.config'):
-        writeconfigfile(saturation)
+        write_config_file(saturation=saturation)
 
-    nimage = len(filenames)
+    n_image = len(filenames)
     failures = []
     questionable = []
     multiinfo = []
 
     for filename in filenames:
+
         if len(filenames) > 1:
             logger.debug('Processing', filename)
-        if nosolve and catalog=='': catalog = filename+'.cat'
-        fitinfo = autoastrometry(filename,pixelscale=pixelscale,pa=pa,inv=inv,uncpa=uncpa,minfwhm=minfwhm,maxfwhm=maxfwhm,maxellip=maxellip,boxsize=boxsize, maxrad=maxrad, userra=userra, userdec=userdec, tolerance=tolerance, catalog=catalog, nosolve=nosolve, overwrite=overwrite, outfile=outfile, saturation=saturation, quiet=quiet, norot=norot)
-        if nosolve: continue
-        if type(fitinfo)==int:
+
+        if nosolve and catalog == '':
+            catalog = filename+'.cat'
+
+        fitinfo = autoastrometry(
+            filename,
+            pixelscale=pixelscale,
+            pa=pa,
+            inv=inv,
+            uncpa=uncpa,
+            minfwhm=minfwhm,
+            maxfwhm=maxfwhm,
+            maxellip=maxellip,
+            boxsize=boxsize,
+            maxrad=maxrad,
+            userra=userra,
+            userdec=userdec,
+            tolerance=tolerance,
+            catalog=catalog,
+            nosolve=nosolve,
+            overwrite=overwrite,
+            outfile=outfile,
+            saturation=saturation,
+            quiet=quiet,
+            norot=norot
+        )
+
+        if nosolve:
+            continue
+
+        # WTF?
+
+        if isinstance(fitinfo, int):
             fitinfo = (0,0,0,0,0,0)
 
         multiinfo.append(fitinfo)
 
-        if (fitinfo[0] == 0):   #number of matches
+        if fitinfo[0] == 0:   #number of matches
             failures.append(filename)
-        if (fitinfo[5] > 2):    #stdev of offset
+        if fitinfo[5] > 2:    #stdev of offset
             questionable.append(filename)
 
-    if nimage > 1 and nosolve==0:
+    if np.logical_and(n_image > 1, nosolve == 0):
 
         if len(failures) == 0 and len(questionable) == 0:
-            logger.debug('Successfully processed all images!')
+            logger.info('Successfully processed all images!')
         else:
-            logger.debug('Finished processing all images.')
+            logger.warning(f'Finished processing all images, not all were successful.')
 
         if len(questionable) > 0:
-            logger.debug('The following images solved but have questionable astrometry: ')
-            logger.debug('    ', end=' ')
+            logger.warning('The following images solved but have questionable astrometry: \n')
             for f in questionable:
-                logger.debug(f, end=' ')
+                logger.warning(f)
         if len(failures) > 0:
-            logger.debug('The following images failed to solve: ')
-            logger.debug('    ', end=' ')
+            logger.error('The following images failed to solve: \n')
             for f in failures:
-                logger.debug(f, end=' ')
+                logger.error(f)
 
-        logger.debug("%25s " %'Filename', end=' ')
+        logger.debug("%25s " %'Filename')
         logger.debug("%6s %8s (%6s)  %7s %7s (%6s)" % ('#match', 'dPA ', 'stdev', 'dRA', 'dDec', 'stdev'))
         for i in range(len(filenames)):
             info = multiinfo[i]
-            logger.debug("%25s " % filenames[i], end=' ')
+            logger.debug("%25s " % filenames[i])
             if info[0] > 0:
                 logger.debug("%6d %8.3f (%6.3f)  %7.3f %7.3f (%6.3f)" % info)
             else:

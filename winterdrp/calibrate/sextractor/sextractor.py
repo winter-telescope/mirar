@@ -1,7 +1,7 @@
 import os
 import logging
 from winterdrp.paths import astrometry_output_dir
-from winterdrp.calibrate.sourceextractor import run_sextractor, default_config
+from winterdrp.calibrate.sextractor.sourceextractor import run_sextractor, default_config
 from winterdrp.preprocessing.base_processor import BaseProcessor
 from winterdrp.preprocessing.image_saver import ImageSaver, latest_save_key
 
@@ -11,8 +11,6 @@ logger = logging.getLogger(__name__)
 class SextractorRunner(BaseProcessor):
 
     base_key = "sextractor"
-
-    requires = ["save"]
 
     def __init__(
             self,
