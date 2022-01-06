@@ -28,6 +28,7 @@ import urllib.request
 from math import sin, cos, tan, asin, sqrt
 import numpy as np
 from astropy.io import fits as af
+from winterdrp.paths import base_output_dir
 from winterdrp.calibrate.sextractor.sourceextractor import execute_sextractor, sextractor_cmd
 import logging
 import ephem
@@ -112,8 +113,11 @@ class SexObj(Obj):
         self.magerr = float(inlinearg[5])
         self.ellip = float(inlinearg[6])
         self.fwhm = float(inlinearg[7])
+
         if len(inlinearg) >= 9:
             self.flag = int(inlinearg[8])
+        else:
+            self.flag = None
 
 
 #Pixel distance
@@ -243,11 +247,10 @@ def sextract(
         maxfwhm: float = defaultmaxfwhm,
         maxellip: float = 0.5,
         saturation: float = 1.e10,
-        output_dir: str = "~/"
+        output_dir: str = base_output_dir
 ):
-    # cmd = f"{sextractor_cmd} {sexfilename} -c sex.config -SATUR_LEVEL {saturation}"
-    # execute_sextractor(cmd, output_dir=output_dir)
-    minfwhm = 0.
+    cmd = f"{sextractor_cmd} {sexfilename} -c sex.config -SATUR_LEVEL {saturation}"
+    execute_sextractor(cmd, output_dir=output_dir)
 
     # Read in the sextractor catalog
     with open(os.path.join(output_dir, "temp.cat"), 'rb') as cat:
@@ -408,7 +411,7 @@ def sextract(
     # Sort by magnitude
     goodsexlist.sort(key=magcomp)
 
-    logger.info(f'{len(sexlist)} objects detected in image ({len(sexlist) - len(goodsexlist)} discarded)')
+    logger.info(f'{ngood} objects detected in image {sexfilename} (a further {nsexinit - ngood} discarded)')
 
     reject_stats = [(x, rejects.count(x)) for x in list(set(rejects))]
     logger.info(f"Reject reasons: {reject_stats}")
@@ -540,7 +543,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
     if patolerance <= 0:
         logger.debug('PA tolerance cannot be negative!!!')
         patolerance = abs(patolerance)
-    if uncpa < 0:
+    if uncpa is None:
         uncpa = 720
 
     declist = []
@@ -723,7 +726,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
             #rejects += 1  no longer a "reject"
 
     if len(smatch) < 1:
-        logger.debug('Found no matching clusters of reqmatch =', reqmatch)
+        logger.debug(f'Found no matching clusters of reqmatch = {reqmatch}')
         return [], [], []
 
     #If we still have lots of matches, get rid of those with the minimum number of submatches
@@ -734,7 +737,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
         if n > minmatch:
             countnotmin += 1
     if len(nmatch) > 16 and countnotmin > 3:
-        logger.debug('Too many matches: increasing reqmatch to', reqmatch+1)
+        logger.debug(f'Too many matches: increasing reqmatch to {reqmatch+1}')
         for i in range(len(primarymatchs)-1,-1,-1):
             if nmatch[i] == minmatch:
                 del mpa[i]
@@ -746,7 +749,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                 #rejects += 1   no longer a "reject"
 
     nmatches = len(smatch) # recalculate with the new reqmatch and with prunes supposedly removed
-    logger.debug('Found', nmatches, 'candidate matches.')
+    logger.debug(f'Found {nmatches} candidate matches.')
 
     #for i in range(len(primarymatchs)):
     #    si = primarymatchs[i]
@@ -825,9 +828,9 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                 del nmatch[i]
                 rejects += 1
 
-    logger.debug('Rejected', rejects, 'bad matches.')
+    logger.debug(f'Rejected {rejects} bad matches.')
     nmatches = len(primarymatchs)
-    logger.debug('Found', nmatches, 'good matches.')
+    logger.debug(f'Found {nmatches} good matches.')
 
     if nmatches == 0:
         return [], [], []
@@ -854,27 +857,26 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
         else:
             logger.debug('Refined pixel scale measurement: %.4f"/pix' % pixelscale)
 
-
     for i in range(len(primarymatchs)):
         si = primarymatchs[i]
         ci = primarymatchc[i]
-        logger.debug('%3i' % si, 'matches', '%3i' % ci, ' (dPA =%7.3f)' % mpa[i])
+        # logger.debug('%3i' % si, 'matches', '%3i' % ci, ' (dPA =%7.3f)' % mpa[i])
+        logger.debug(f'{si} matches {ci} (dPA =%7.3f)' % mpa[i])
         if showmatches:
-            logger.debug()
             if len(smatch[i]) < 16:
-                logger.debug('  ', si, '-->', smatch[i])
-                if len(smatch[i]) >= 7: logger.debug()
-                logger.debug('  ', ci, '-->', cmatch[i])
+                logger.debug(f'  {si} --> {smatch[i]}')
+                logger.debug(f'  {ci} --> {cmatch[i]}')
             else:
-                logger.debug('  ', si, '-->', smatch[i][0:10], '+', len(smatch[i])-10, 'more')
-                logger.debug('  ', ci, '-->', cmatch[i][0:10], '+')#, len(cmatch[i])-10, ' more'
+                logger.debug(f'  {si} --> {smatch[i][0:10]} {len(smatch[i])-10} more')
+                logger.debug(f'  {ci} --> {cmatch[i][0:10]} {len(cmatch[i])-10} more')
             if i+1 >= 10 and len(primarymatchs)-10 > 0:
-                logger.debug((len(primarymatchs)-10), 'additional matches not shown.')
+                logger.debug(f''
+                             f'{(len(primarymatchs)-10)} additional matches not shown.')
                 break
         else:
-            logger.debug(':', str(len(smatch[i])).strip(), 'rays')
+            logger.debug(f': {str(len(smatch[i])).strip()} rays')
 
-    with open('matchlines.im.reg','w') as out:
+    with open('matchlines.im.reg', 'w') as out:
 
         color = 'red'
         out.write('# Region file format: DS9 version 4.0\nglobal color='+color+' font="helvetica 10 normal" select=1 highlite=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n')
@@ -945,6 +947,7 @@ def autoastrometry(
         no_solve: bool = False,
         overwrite: bool = True,
         outfile: str = "",
+        output_dir: str = base_output_dir,
         saturation: float = None,
         no_rot: bool = False,
         min_fwhm: float = defaultminfwhm,
@@ -969,6 +972,7 @@ def autoastrometry(
     no_solve: Do not attempt to solve astrometry; just write catalog.
     overwrite: Overwrite output files
     outfile: Output file
+    output_dir: Directory for output file
     saturation: Saturation level; do not use stars exceeding.
     no_rot: Some kind of bool
     min_fwhm: Minimum fwhm
@@ -1028,7 +1032,7 @@ def autoastrometry(
                 crot = h[key]
                 key = 'CROTA2'
                 crot = h[key]
-            except:
+            except KeyError:
                 pass
 
             if sqrt(cdelt1**2 + cdelt2**2) < 0.1:  # some images use CDELT to indicate nonstandard things
@@ -1059,11 +1063,13 @@ def autoastrometry(
         try:
             epoch = float(h.get('EPOCH', 2000))
         except:
+            #warn?
             epoch = 2000.
 
         try:
             equinox = float(h.get('EQUINOX', epoch)) #If RA and DEC are not J2000 then convert
         except:
+            # warn??
             equinox = 2000. # could be 'J2000'; try to strip off first character?
 
         if abs(equinox-2000) > 0.5:
@@ -1248,7 +1254,8 @@ def autoastrometry(
         minfwhm=min_fwhm,
         maxfwhm=max_fwhm,
         maxellip=max_ellip,
-        saturation=saturation
+        saturation=saturation,
+        output_dir=output_dir
     )
 
     ngood = len(goodsexlist)
@@ -1297,8 +1304,8 @@ def autoastrometry(
 
     ncat = len(catlist)
     catdensity = ncat / (2 * box_size / 60.) ** 2
-    logger.debug(ncat, 'good catalog objects.')
-    logger.debug('Source density of %f4 /arcmin^2' % catdensity)
+    logger.debug(f'{ncat} good catalog objects.')
+    logger.debug(f'Source density of {catdensity} /arcmin^2')
 
     if ncat > 0 | ncat < 5:
         logger.warning(f'Only {ncat} catalog objects in the search zone.'
@@ -1380,18 +1387,19 @@ def autoastrometry(
 
     # Now start getting into the actual astrometry.
 
-    minrad = 5.0
+    min_rad = 5.0
     #if (maxrad == -1): maxrad = 180
-    if (max_rad == -1):
+    if max_rad is None:
         max_rad = 60 * (15 / (math.pi * min(density, catdensity))) ** 0.5 # numcomp ~ 15 [look at 15 closest objects
         max_rad = max(max_rad, 60.0)                                 #               in sparse dataset]
         if max_rad == 60.0:
-            minrad = 10.0   # in theory could scale this up further to reduce #comparisons
+            min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
         max_rad = min(max_rad, fieldwidth * 3. / 4)
 
         # note that density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
-    circdensity = density * min([area_sqmin, (math.pi * (max_rad / 60.) ** 2 - math.pi * (minrad / 60) ** 2)])
-    circcatdensity = catdensity * (math.pi * (max_rad / 60.) ** 2 - math.pi * (minrad / 60) ** 2)
+
+    circdensity = density * min([area_sqmin, (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)])
+    circcatdensity = catdensity * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
     catperimage = catdensity * area_sqmin
 
     logger.debug('After trimming: ')
@@ -1416,21 +1424,24 @@ def autoastrometry(
     #for an extremely small or shallow image
 
     logger.debug('Pair comparison search radius: %.2f"' % max_rad)
-    logger.debug('Using reqmatch =', reqmatch)
-    (primarymatchs, primarymatchc, mpa) = distmatch(goodsexlist, catlist, max_rad, minrad, tolerance, reqmatch, patolerance, uncpa)
+    logger.debug(f'Using reqmatch = {reqmatch}')
+    (primarymatchs, primarymatchc, mpa) = distmatch(goodsexlist, catlist, max_rad, min_rad, tolerance, reqmatch, patolerance, uncpa)
 
     nmatch = len(primarymatchs)
     if nmatch == 0:
-        logger.error(' No valid matches found!')
-        logger.error(' Possible issues:')
-        logger.error('  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value.')
-        logger.error('  - The field is outside the catalog search region.  Check header RA/DEC or increase search radius.')
-        logger.error('  - The routine is flooded by bad sources.  Specify or check the input seeing.')
-        logger.error('  - The routine is flagging many real stars.  Check the input seeing.')
-        logger.error(' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg.')
-        raise AstrometryException
+        err = (' No valid matches found!\n '
+               'Possible issues: \n'
+               '  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value. \n'
+               '  - The field is outside the catalog search region.  Check header RA/DEC or increase search radius. \n'
+               ' - The routine is flooded by bad sources.  Specify or check the input seeing. \n'
+               '  - The routine is flagging many real stars.  Check the input seeing. \n'
+               ' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg. \n'
+               )
+        logger.error(err)
+        raise AstrometryException(err)
+
     if nmatch <= 2:
-        logger.warning('Warning: only', nmatch, 'match(es).  Astrometry may be unreliable.')
+        logger.warning(f'Warning: only {nmatch} match(es).  Astrometry may be unreliable.')
         logger.warning('   Check the pixel scale and parity and consider re-running.')
         warning = 1
 
@@ -1563,9 +1574,10 @@ def autoastrometry(
         os.remove(outfile)
     except:
         pass
+
     fits[sciext].header = h
     fits.writeto(outfile,output_verify='silentfix') #,clobber=True
-    logger.debug('Written to '+outfile)
+    logger.info('Written to '+outfile)
 
     # Delete!
 
@@ -1720,23 +1732,6 @@ def usage(args):
 
 def main(
         files: str | list,
-        # catalog: str = "",
-        # max_rad: float = None,
-        # pixel_scale: float = None,
-        # tolerance: float = default_tolerance,
-        # saturation: float = None,
-        # inv: bool = False,
-        # box_size: float = None,
-        # userra: float = None,
-        # userdec: float = None,
-        # max_ellip: float = None,
-        # seeing: float = None,
-        # pa: float = None,
-        # uncpa: float = None,
-        # nosolve: bool = False,
-        # overwrite: bool = True,
-        # outfile: str = "",
-        # norot: bool = False
         seeing: float = None,
         pixel_scale: float = None,
         pa: float = None,
@@ -1750,8 +1745,9 @@ def main(
         tolerance: float = default_tolerance,
         catalog: str = "",
         no_solve: bool = False,
-        overwrite: bool = True,
-        outfile: str = "",
+        overwrite: bool = False,
+        outfile: str = None,
+        output_dir: str = base_output_dir,
         saturation: float = None,
         no_rot: bool = False,
 ):
@@ -1798,6 +1794,7 @@ def main(
     no_solve: Do not attempt to solve astrometry; just write catalog.
     overwrite: Overwrite output files
     outfile: Output file
+    output_dir: Output directory
     saturation: Saturation level; do not use stars exceeding.
     no_rot: Some kind of bool
 
@@ -1811,6 +1808,11 @@ def main(
 
     if len(files) == 0:
         err = 'No files selected!'
+        logger.error(err)
+        raise ValueError(err)
+
+    if np.logical_and(overwrite, outfile is not None):
+        err = f"An output file was specified ({outfile}), but the script was configured to overwrite the original file."
         logger.error(err)
         raise ValueError(err)
 
@@ -1900,6 +1902,7 @@ def main(
             no_solve=no_solve,
             overwrite=overwrite,
             outfile=outfile,
+            output_dir=output_dir,
             saturation=saturation,
             no_rot=no_rot
         )
