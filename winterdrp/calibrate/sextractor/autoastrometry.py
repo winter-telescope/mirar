@@ -32,7 +32,7 @@ from winterdrp.paths import base_output_dir
 from winterdrp.calibrate.sextractor.sourceextractor import execute_sextractor, sextractor_cmd
 import logging
 import ephem
-from winterdrp.calibrate.sextractor.settings import write_param_file, write_config_file
+from winterdrp.calibrate.sextractor.settings import write_param_file, write_config_file, default_config_path
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ default_tolerance = 0.01  # these defaults should generally not be altered.
 defaultpatolerance = 1.4
 defaultminfwhm = 1.5
 defaultmaxfwhm = 40
+default_saturation = 1.e10
 
 fastmatch = 1
 showmatches = 0
@@ -246,10 +247,11 @@ def sextract(
         minfwhm: float = defaultminfwhm,
         maxfwhm: float = defaultmaxfwhm,
         maxellip: float = 0.5,
-        saturation: float = 1.e10,
-        output_dir: str = base_output_dir
+        saturation: float = default_saturation,
+        output_dir: str = base_output_dir,
+        config_path: str = default_config_path
 ):
-    cmd = f"{sextractor_cmd} {sexfilename} -c sex.config -SATUR_LEVEL {saturation}"
+    cmd = f"{sextractor_cmd} {sexfilename} -c {config_path} -SATUR_LEVEL {saturation}"
     execute_sextractor(cmd, output_dir=output_dir)
 
     # Read in the sextractor catalog
@@ -948,7 +950,7 @@ def autoastrometry(
         overwrite: bool = True,
         outfile: str = "",
         output_dir: str = base_output_dir,
-        saturation: float = None,
+        saturation: float = default_saturation,
         no_rot: bool = False,
         min_fwhm: float = defaultminfwhm,
         max_fwhm: float = defaultmaxfwhm,
@@ -1748,7 +1750,7 @@ def main(
         overwrite: bool = False,
         outfile: str = None,
         output_dir: str = base_output_dir,
-        saturation: float = None,
+        saturation: float = default_saturation,
         no_rot: bool = False,
 ):
     """Function based on 'autoastrometry.py' by Daniel Perley and Kishalay De.
@@ -1868,8 +1870,7 @@ def main(
         max_fwhm = 2. * seeing
 
     write_param_file()
-    if not os.path.exists('sex.config'):
-        write_config_file(saturation=saturation)
+    write_config_file(saturation=saturation)
 
     n_image = len(files)
     failures = []

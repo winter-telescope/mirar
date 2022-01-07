@@ -1,6 +1,7 @@
 import os
 import logging
 import subprocess
+import sys
 from pathlib import Path
 import docker
 import shutil
@@ -72,6 +73,14 @@ def local_sextractor(
         raise err
 
 
+def temp_config(
+        config_path: str,
+        output_dir: str
+) -> str:
+    basename = f"temp_{os.path.basename(config_path)}"
+    return os.path.join(output_dir, basename)
+
+
 def docker_sextractor(
         cmd: str,
         output_dir: str,
@@ -104,6 +113,17 @@ def docker_sextractor(
 
         split = cmd.split(" -")
 
+        # Reorganise the commands so that each '-x' argument is grouped together
+        # Basically still work even if someone puts the filename in a weird place
+
+        sorted_split = []
+
+        for i, arg in enumerate(split):
+            sep = arg.split(" ")
+            sorted_split.append(" ".join(sep[:2]))
+            if len(sep) > 2:
+                sorted_split[0] += " " + " ".join(sep[2:])
+
         new_split = []
 
         # Loop over sextractor command, and
@@ -113,40 +133,60 @@ def docker_sextractor(
 
         config_file = None
 
-        for i, arg in enumerate(split):
+        for i, arg in enumerate(sorted_split):
             sep = arg.split(" ")
 
             if sep[0] == "c":
                 config_file = sep[1]
 
-            if os.path.exists(sep[1]):
-                new = list(sep)
-                new[1] = docker_path(sep[1])
-                new_split.append(" ".join(new))
-                copy_list.append(sep[1])
-            else:
-                new_split.append(arg)
+            new = list(sep)
+
+            for j, x in enumerate(sep):
+                if os.path.isfile(x):
+                    new[j] = docker_path(sep[j])
+                    copy_list.append(sep[j])
+
+            new_split.append(" ".join(new))
 
         cmd = " -".join(new_split)
 
         # Be extra clever: go through config file and check there too!
 
+        new_config_file = []
+
         if config_file is not None:
             with open(config_file, "rb") as f:
                 for line in f.readlines():
                     args = [x for x in line.decode().split(" ") if x not in [""]]
-                    for arg in args:
-                        if os.path.exists(arg):
+                    new_args = list(args)
+                    for i, arg in enumerate(args):
+                        if os.path.isfile(arg):
                             copy_list.append(arg)
+                            new_args[i] = docker_path(arg)
+                        print(arg, new_args[i], os.path.isfile(arg))
+                    new_config_file.append(" ".join(new_args))
+
+            temp_config_path = temp_config(config_file, output_dir)
+
+            with open(temp_config_path, "w") as g:
+                g.writelines(new_config_file)
+
+            copy_list.append(temp_config_path)
+
+            cmd = cmd.replace(docker_path(config_file), docker_path(temp_config_path))
 
         # Copy in files, and see what files are already there
 
         copy_list = list(set(copy_list))
 
+        logger.debug(f"Copying {copy_list} into container")
+
         ignore_files = docker_batch_put(
             container=container,
             local_paths=copy_list
         )
+
+        logger.debug(f"Ignoring files {ignore_files}")
 
         # Run sextractor
 
