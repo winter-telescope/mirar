@@ -50,6 +50,11 @@ def local_sextractor(
         logger.debug(f'Sextractor ran successfully on image {cmd.split(" ")[1]}')
         logger.debug(rval.stdout.decode())
 
+        try:
+            os.makedirs(output_dir)
+        except OSError:
+            pass
+
         # Move new files to output dir
 
         new_files = [
@@ -163,7 +168,6 @@ def docker_sextractor(
                         if os.path.isfile(arg):
                             copy_list.append(arg)
                             new_args[i] = docker_path(arg)
-                        print(arg, new_args[i], os.path.isfile(arg))
                     new_config_file.append(" ".join(new_args))
 
             temp_config_path = temp_config(config_file, output_dir)
