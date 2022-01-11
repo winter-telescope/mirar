@@ -1093,15 +1093,17 @@ def autoastrometry(
         h["EQUINOX"] = 2000.0
         #print ra, dec
 
-        if os.path.isfile('temp.fits'):
+        try:
             os.remove('temp.fits')
+        except FileNotFoundError:
+            pass
 
         fits[sciext].header = h
-        fits.writeto('temp.fits', output_verify='silentfix') #,clobber=True
+        fits.writeto(os.path.join(output_dir, 'temp.fits'), output_verify='silentfix') #,clobber=True
         fits.close()
-        fits = af.open('temp.fits')
+        fits = af.open(os.path.join(output_dir, 'temp.fits'))
         h = fits[sciext].header
-        sfilename = 'temp.fits'
+        sfilename = os.path.join(output_dir, 'temp.fits')
 
     #Read the header info from the file.
     try:
@@ -1204,14 +1206,16 @@ def autoastrometry(
 
     if len(highkeys)+len(distortionkeys)+ctypechange+headerformatchange > 0:
         #Rewrite and reload the image if the header was modified in a significant way so sextractor sees the same thing that we do.
-        if os.path.isfile('temp.fits'):
-            os.remove('temp.fits')
+        try:
+            os.remove(os.path.join(output_dir, 'temp.fits'))
+        except FileNotFoundError:
+            pass
         fits[sciext].header = h
-        fits.writeto('temp.fits', output_verify='silentfix') #,clobber=True
+        fits.writeto(os.path.join(output_dir, 'temp.fits'), output_verify='silentfix') #,clobber=True
         fits.close()
-        fits = af.open('temp.fits')
+        fits = af.open(os.path.join(output_dir, 'temp.fits'))
         h = fits[sciext].header
-        sfilename = 'temp.fits'
+        sfilename = os.path.join(output_dir, 'temp.fits')
 
     # Get image info from header (even if we put it there in the first place)
     if cd11 * cd22 < 0 or cd12 * cd21 > 0:
