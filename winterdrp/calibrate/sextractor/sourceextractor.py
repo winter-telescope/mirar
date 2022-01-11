@@ -47,7 +47,7 @@ def local_sextractor(
 
         # Run sextractor
 
-        rval = subprocess.run(cmd.split(), check=True, capture_output=True)
+        rval = subprocess.run(cmd, check=True, capture_output=True)
 
         logger.debug(f'Sextractor ran successfully on image {cmd.split(" ")[1]}')
         logger.debug(rval.stdout.decode())
