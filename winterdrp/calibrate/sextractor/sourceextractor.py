@@ -43,6 +43,8 @@ def local_sextractor(
 
         ignore_files = subprocess.run("ls", check=True, capture_output=True).stdout.decode().split("\n")
 
+        logger.debug(f"Ignoring files {ignore_files}")
+
         # Run sextractor
 
         rval = subprocess.run(cmd.split(), check=True, capture_output=True)
@@ -63,6 +65,8 @@ def local_sextractor(
         ]
 
         current_dir = subprocess.run("pwd", check=True, capture_output=True).stdout.decode().strip()
+
+        logger.info(f"The following new files were created: {new_files}")
 
         for file in new_files:
 
