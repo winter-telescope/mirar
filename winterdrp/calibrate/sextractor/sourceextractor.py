@@ -79,8 +79,8 @@ def local_sextractor(
 
         return 0
 
-    except (subprocess.CalledProcessError, FileNotFoundError) as err:
-        logger.error(f'Could not run sextractor with error {err}')
+    except subprocess.CalledProcessError as err:
+        logger.error(f'Could not run sextractor with error {err}: {err.output}')
         raise err
 
 
