@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
+default_saturation = 1.e10
+
 
 def local_sextractor(
         cmd: str,
@@ -47,7 +49,7 @@ def local_sextractor(
 
         # Run sextractor
 
-        rval = subprocess.run(cmd, check=True, capture_output=True)
+        rval = subprocess.run(cmd, check=True, capture_output=True, shell=True)
 
         logger.debug(f'Sextractor ran successfully on image {cmd.split(" ")[1]}')
         logger.debug(rval.stdout.decode())
@@ -288,14 +290,8 @@ default_config = os.path.join(calibration_config_dir, 'astrom.sex')
 def run_sextractor(
         images: str | list,
         output_dir: str,
-        config: str = default_config,
-        param: str = os.path.join(calibration_config_dir, 'astrom.param'),
-        filter_name: str = os.path.join(calibration_config_dir, 'default.conv'),
-        star_nnw: str = os.path.join(calibration_config_dir, 'default.nnw'),
-        weight_image: str = None,
-        verbose_type: str = "QUIET",
-        checkimage_type: str | list = None,
-        reprocess: bool = True
+        *args,
+        **kwargs
 ):
 
     if not isinstance(images, list):
@@ -309,40 +305,51 @@ def run_sextractor(
         pass
 
     for img in images:
+
+        run_sextractor_single(img, *args, **kwargs)
+
+
+def run_sextractor_single(
+        img: str,
+        output_dir: str,
+        output_catalog: str = None,
+        config: str = default_config,
+        param: str = os.path.join(calibration_config_dir, 'astrom.param'),
+        filter_name: str = os.path.join(calibration_config_dir, 'default.conv'),
+        star_nnw: str = os.path.join(calibration_config_dir, 'default.nnw'),
+        saturation: float = default_saturation,
+        weight_image: str = None,
+        verbose_type: str = "QUIET",
+        checkimage_type: str | list = None,
+):
+
+    if output_catalog is None:
         image_name = Path(img).stem
         output_catalog = f'{image_name}.cat'
 
-        cmd = f"{sextractor_cmd} {img} " \
-              f"-c {config} " \
-              f"-CATALOG_NAME {output_catalog} " \
-              f"-PARAMETERS_NAME {param} " \
-              f"-FILTER_NAME {filter_name} " \
-              f"-STARNNW_NAME {star_nnw} " \
-              f"-VERBOSE_TYPE {verbose_type} "
+    cmd = f"{sextractor_cmd} {img} " \
+          f"-c {config} " \
+          f"-CATALOG_NAME {output_catalog} " \
+          f"-PARAMETERS_NAME {param} " \
+          f"-FILTER_NAME {filter_name} " \
+          f"-STARNNW_NAME {star_nnw} " \
+          f"-VERBOSE_TYPE {verbose_type} " \
+          f"-SATURATION {saturation} "
 
-        cmd += parse_checkimage(
-            checkimage_type=checkimage_type,
-            image=img
-        )
+    cmd += parse_checkimage(
+        checkimage_type=checkimage_type,
+        image=img
+    )
 
-        if weight_image is None:
-            cmd += "-WEIGHT_TYPE None"
-        else:
-            cmd += f"-WEIGHT_IMAGE {weight_image}"
+    if weight_image is None:
+        cmd += "-WEIGHT_TYPE None"
+    else:
+        cmd += f"-WEIGHT_IMAGE {weight_image}"
 
-        if not reprocess:
+    logger.debug(f"Using '{['local', 'docker'][sextractor_cmd == local_sextractor]}' "
+                 f"sextractor installation to run `{cmd}`")
 
-            output_cat_path = os.path.join(output_dir, output_catalog)
-
-            if os.path.exists(output_cat_path):
-                logger.debug(f"Skipping because {output_cat_path} already exist.")
-                continue
-
-        logger.debug(f"Using '{['local', 'docker'][sextractor_cmd == local_sextractor]}' "
-                     f"sextractor installation to run `{cmd}`")
-
-        execute_sextractor(cmd, output_dir)
-
+    execute_sextractor(cmd, output_dir)
 
 if __name__ == "__main__":
     run_sextractor(

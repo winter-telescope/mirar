@@ -29,10 +29,12 @@ from math import sin, cos, tan, asin, sqrt
 import numpy as np
 from astropy.io import fits as af
 from winterdrp.paths import base_output_dir
-from winterdrp.calibrate.sextractor.sourceextractor import execute_sextractor, sextractor_cmd
+from winterdrp.calibrate.sextractor.sourceextractor import execute_sextractor, sextractor_cmd, \
+    run_sextractor_single, default_saturation
 import logging
 import ephem
-from winterdrp.calibrate.sextractor.settings import write_param_file, write_config_file, default_config_path
+from winterdrp.calibrate.sextractor.settings import write_param_file, write_config_file, default_config_path,\
+    default_conv_path, default_param_path
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,6 @@ default_tolerance = 0.01  # these defaults should generally not be altered.
 defaultpatolerance = 1.4
 defaultminfwhm = 1.5
 defaultmaxfwhm = 40
-default_saturation = 1.e10
 
 fastmatch = 1
 showmatches = 0
@@ -249,13 +250,30 @@ def sextract(
         maxellip: float = 0.5,
         saturation: float = default_saturation,
         output_dir: str = base_output_dir,
-        config_path: str = default_config_path
+        config_path: str = default_config_path,
+        output_catalog: str = "temp.cat"
 ):
-    cmd = f"{sextractor_cmd} {sexfilename} -c {config_path} -SATUR_LEVEL {saturation}"
-    execute_sextractor(cmd, output_dir=output_dir)
+
+    try:
+        os.remove(os.path.join(output_dir, output_catalog))
+    except FileNotFoundError:
+        pass
+
+    # cmd = f"{sextractor_cmd} {sexfilename} -c {config_path} -SATUR_LEVEL {saturation} -CATALOG_NAME {output_catalog}"
+    # execute_sextractor(cmd, output_dir=output_dir)
+
+    run_sextractor_single(
+        img=sexfilename,
+        output_dir=output_dir,
+        config=config_path,
+        saturation=saturation,
+        output_catalog=output_catalog,
+        param=default_param_path,
+        filter_name=default_conv_path
+    )
 
     # Read in the sextractor catalog
-    with open(os.path.join(output_dir, "temp.cat"), 'rb') as cat:
+    with open(os.path.join(output_dir, output_catalog), 'rb') as cat:
         catlines = [x.replace(b"\x00", b"").decode() for x in cat.readlines()][1:]
 
     if len(catlines) == 0:
@@ -1755,7 +1773,7 @@ def main(
         outfile: str = None,
         output_dir: str = base_output_dir,
         saturation: float = default_saturation,
-        no_rot: bool = False,
+        no_rot: bool = False
 ):
     """Function based on 'autoastrometry.py' by Daniel Perley and Kishalay De.
 
