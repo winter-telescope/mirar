@@ -968,6 +968,7 @@ def autoastrometry(
         overwrite: bool = True,
         outfile: str = "",
         output_dir: str = base_output_dir,
+        temp_file: str = None,
         saturation: float = default_saturation,
         no_rot: bool = False,
         min_fwhm: float = defaultminfwhm,
@@ -993,6 +994,7 @@ def autoastrometry(
     overwrite: Overwrite output files
     outfile: Output file
     output_dir: Directory for output file
+    temp_file: Temporary file
     saturation: Saturation level; do not use stars exceeding.
     no_rot: Some kind of bool
     min_fwhm: Minimum fwhm
@@ -1002,6 +1004,11 @@ def autoastrometry(
     -------
 
     """
+
+    if temp_file is None:
+        temp_file = f"temp_{os.path.basename(filename)}"
+
+    temp_path = os.path.join(output_dir, temp_file)
 
     # Get some basic info from the header  
     try:
@@ -1112,16 +1119,16 @@ def autoastrometry(
         #print ra, dec
 
         try:
-            os.remove('temp.fits')
+            os.remove(temp_path)
         except FileNotFoundError:
             pass
 
         fits[sciext].header = h
-        fits.writeto(os.path.join(output_dir, 'temp.fits'), output_verify='silentfix') #,clobber=True
+        fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
         fits.close()
-        fits = af.open(os.path.join(output_dir, 'temp.fits'))
+        fits = af.open(temp_path)
         h = fits[sciext].header
-        sfilename = os.path.join(output_dir, 'temp.fits')
+        sfilename = temp_path
 
     #Read the header info from the file.
     try:
@@ -1225,15 +1232,15 @@ def autoastrometry(
     if len(highkeys)+len(distortionkeys)+ctypechange+headerformatchange > 0:
         #Rewrite and reload the image if the header was modified in a significant way so sextractor sees the same thing that we do.
         try:
-            os.remove(os.path.join(output_dir, 'temp.fits'))
+            os.remove(temp_path)
         except FileNotFoundError:
             pass
         fits[sciext].header = h
-        fits.writeto(os.path.join(output_dir, 'temp.fits'), output_verify='silentfix') #,clobber=True
+        fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
         fits.close()
-        fits = af.open(os.path.join(output_dir, 'temp.fits'))
+        fits = af.open(temp_path)
         h = fits[sciext].header
-        sfilename = os.path.join(output_dir, 'temp.fits')
+        sfilename = temp_path
 
     # Get image info from header (even if we put it there in the first place)
     if cd11 * cd22 < 0 or cd12 * cd21 > 0:
