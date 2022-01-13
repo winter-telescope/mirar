@@ -82,8 +82,8 @@ def local_sextractor(
         return 0
 
     except subprocess.CalledProcessError as err:
-        msg = f"Running sextractor with command: \n '{err.cmd}' \n" \
-              f"yielded error code {err.returncode}. \n The following traceback was found: \n {err.stderr.decode()}"
+        msg = f"Error found when running sextractor with command: \n \n '{err.cmd}' \n \n" \
+              f"This yielded a return code of {err.returncode}. The following traceback was found: \n {err.stderr.decode()}"
         logger.error(msg)
         raise Exception(msg)
 
