@@ -4,6 +4,7 @@ from winterdrp.calibrate.config import calibration_config_dir
 default_param_path = os.path.join(calibration_config_dir, 'temp.param')
 default_conv_path = os.path.join(calibration_config_dir, 'sex.conv')
 default_config_path = os.path.join(calibration_config_dir, 'sex.config')
+default_starnnw_path = os.path.join(calibration_config_dir, 'default.nnw')
 
 
 def write_param_file(

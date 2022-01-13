@@ -34,7 +34,7 @@ from winterdrp.calibrate.sextractor.sourceextractor import execute_sextractor, s
 import logging
 import ephem
 from winterdrp.calibrate.sextractor.settings import write_param_file, write_config_file, default_config_path,\
-    default_conv_path, default_param_path
+    default_conv_path, default_param_path, default_starnnw_path
 
 logger = logging.getLogger(__name__)
 
@@ -267,9 +267,10 @@ def sextract(
         output_dir=output_dir,
         config=config_path,
         saturation=saturation,
-        output_catalog=output_catalog,
-        param=default_param_path,
-        filter_name=default_conv_path
+        catalog_name=output_catalog,
+        parameters_name=default_param_path,
+        filter_name=default_conv_path,
+        starnnw_name=default_starnnw_path
     )
 
     # Read in the sextractor catalog
