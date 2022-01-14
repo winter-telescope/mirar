@@ -136,16 +136,17 @@ def run_docker(
 
         # Loop over sextractor command, and
         # copy everything that looks like a file into container
+        # Go through everything that looks like a file with paths in it after
 
         copy_list = []
 
-        config_file = None
+        files_of_files = []
 
         for i, arg in enumerate(sorted_split):
             sep = arg.split(" ")
 
             if sep[0] == "c":
-                config_file = sep[1]
+                files_of_files.append(sep[1])
 
             new = list(sep)
 
@@ -153,17 +154,22 @@ def run_docker(
                 if os.path.isfile(x):
                     new[j] = docker_path(sep[j])
                     copy_list.append(sep[j])
+                elif x[0] == "@":
+                    files_of_files.append(x[1:])
 
             new_split.append(" ".join(new))
 
         cmd = " -".join(new_split)
 
-        # Be extra clever: go through config file and check there too!
+        # Be extra clever: go through files and check there too!
 
-        new_config_file = []
+        logger.debug(f"Found the following files which should contain paths: {files_of_files}")
 
-        if config_file is not None:
-            with open(config_file, "rb") as f:
+        for path in files_of_files:
+
+            new_file = []
+
+            with open(path, "rb") as f:
                 for line in f.readlines():
                     args = [x for x in line.decode().split(" ") if x not in [""]]
                     new_args = list(args)
@@ -171,16 +177,16 @@ def run_docker(
                         if os.path.isfile(arg):
                             copy_list.append(arg)
                             new_args[i] = docker_path(arg)
-                    new_config_file.append(" ".join(new_args))
+                    new_file.append(" ".join(new_args))
 
-            temp_config_path = temp_config(config_file, output_dir)
+            temp_file = temp_config(path, output_dir)
 
-            with open(temp_config_path, "w") as g:
-                g.writelines(new_config_file)
+            with open(temp_file, "w") as g:
+                g.writelines(new_file)
 
-            copy_list.append(temp_config_path)
+            copy_list.append(temp_file)
 
-            cmd = cmd.replace(docker_path(config_file), docker_path(temp_config_path))
+            cmd = cmd.replace(path, docker_path(temp_file))
 
         # Copy in files, and see what files are already there
 
@@ -193,7 +199,7 @@ def run_docker(
             local_paths=copy_list
         )
 
-        # Run sextractor
+        # Run commamd
 
         log = container.exec_run(cmd, stderr=True, stdout=True)
 
