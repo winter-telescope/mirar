@@ -79,8 +79,6 @@ def docker_put(container, local_path):
     """
     stream = io.BytesIO()
 
-    print(os.path.dirname(local_path), local_path, os.path.isdir(local_path))
-
     with tarfile.open(fileobj=stream, mode='w|') as tar, open(local_path, 'rb') as f:
         info = tar.gettarinfo(fileobj=f)
         info.name = os.path.basename(local_path)
@@ -107,9 +105,6 @@ def docker_batch_put(
 
     if isinstance(local_paths, str):
         local_paths = [local_paths]
-
-    print(local_paths)
-    logger.debug(f"Copying {local_paths}")
 
     for local_path in local_paths:
         docker_put(container, local_path)
