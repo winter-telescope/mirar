@@ -15,6 +15,9 @@ sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
 default_saturation = 1.e10
 
+class SextractorError(Exception):
+    pass
+
 
 def local_sextractor(
         cmd: str,
@@ -85,7 +88,7 @@ def local_sextractor(
         msg = f"Error found when running sextractor with command: \n \n '{err.cmd}' \n \n" \
               f"This yielded a return code of {err.returncode}. The following traceback was found: \n {err.stderr.decode()}"
         logger.error(msg)
-        raise Exception(msg)
+        raise SextractorError(msg)
 
 
 def temp_config(
@@ -278,7 +281,7 @@ def parse_checkimage(
 
     if checkimage_type is not None:
 
-        cmd = f"-CHECKIMAGE_TYPE {','.join(checkimage_type)}"
+        cmd = f"-CHECKIMAGE_TYPE {','.join(checkimage_type)} "
 
         if checkimage_name is not None:
             if not len(checkimage_type) == len(checkimage_name):
@@ -289,7 +292,7 @@ def parse_checkimage(
                 logger.error(err)
                 raise ValueError(err)
             else:
-                cmd += f"-CHECKIMAGE_NAME {','.join(checkimage_type)}"
+                cmd += f"-CHECKIMAGE_NAME {','.join(checkimage_name)}"
 
         else:
             if image is not None:
@@ -375,7 +378,7 @@ def run_sextractor_single(
           f"-FILTER_NAME {filter_name} " \
           f"-STARNNW_NAME {starnnw_name} " \
           f"-VERBOSE_TYPE {verbose_type} " \
-          f"-SATURATION {saturation} " \
+          f"-SATUR_LEVEL {saturation} " \
           f"-GAIN {gain:.3f} "
 
     cmd += parse_checkimage(
