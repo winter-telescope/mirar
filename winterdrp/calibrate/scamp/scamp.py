@@ -1,9 +1,19 @@
 import logging
 import os
 from winterdrp.calibrate.scamp.configs import scamp_config_dir
-from winterdrp.calibrate.sextractor.sourceextractor import execute_sextractor
+from winterdrp.utils import execute, ExecutionError
 
 logger = logging.getLogger(__name__)
+
+local_scamp = True
+
+
+def execute_scamp(cmd, output_dir="."):
+    execute(cmd, output_dir=output_dir, local=local_scamp)
+
+
+class ScampExecutionError(ExecutionError):
+    pass
 
 
 def run_scamp(
@@ -34,8 +44,9 @@ def run_scamp(
 
     cmd += f" -c {config_file} -ASTREFCAT_NAME {astrefcat_name}"
 
-    # logger.debug(f"Using '{['local', 'docker'][sextractor_cmd == local_sextractor]}' "
-    #              f"sextractor installation to run `{cmd}`")
-
     logger.debug(f"Executing '{cmd}'")
-    execute_sextractor(cmd, output_dir)
+
+    try:
+        execute_scamp(cmd, output_dir)
+    except ExecutionError as err:
+        raise ScampExecutionError(err)
