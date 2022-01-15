@@ -40,14 +40,15 @@ def run_local(
 
         ignore_files = subprocess.run("ls", check=True, capture_output=True).stdout.decode().split("\n")
 
-        logger.debug(f"Ignoring files {ignore_files}")
-
         # Run sextractor
 
         rval = subprocess.run(cmd, check=True, capture_output=True, shell=True)
 
-        logger.debug(f'Sextractor ran successfully on image {cmd.split(" ")[1]}')
-        logger.debug(rval.stdout.decode())
+        msg = f'Successfully executed command. '
+
+        if rval.stdout.decode() != "":
+            msg += f"Found the following output: {rval.stdout.decode()}"
+        logger.debug(msg)
 
         try:
             os.makedirs(output_dir)
@@ -63,7 +64,9 @@ def run_local(
 
         current_dir = subprocess.run("pwd", check=True, capture_output=True).stdout.decode().strip()
 
-        logger.info(f"The following new files were created: {new_files}")
+        if len(new_files) > 0:
+
+            logger.debug(f"The following new files were created in the current directory: {new_files}")
 
         for file in new_files:
 
@@ -139,6 +142,7 @@ def run_docker(
         # Go through everything that looks like a file with paths in it after
 
         copy_list = []
+        temp_files = []
 
         files_of_files = []
 
@@ -151,11 +155,14 @@ def run_docker(
             new = list(sep)
 
             for j, x in enumerate(sep):
-                if os.path.isfile(x):
-                    new[j] = docker_path(sep[j])
-                    copy_list.append(sep[j])
-                elif x[0] == "@":
-                    files_of_files.append(x[1:])
+                if len(x) > 0:
+                    if os.path.isfile(x):
+                        new[j] = docker_path(sep[j])
+                        copy_list.append(sep[j])
+                    elif x[0] == "@":
+                        files_of_files.append(x[1:])
+                    elif os.path.isdir(os.path.dirname(x)):
+                        new[j] = docker_path(sep[j])
 
             new_split.append(" ".join(new))
 
@@ -177,6 +184,9 @@ def run_docker(
                         if os.path.isfile(arg):
                             copy_list.append(arg)
                             new_args[i] = docker_path(arg)
+                        elif os.path.isfile(arg.strip("\n")):
+                            copy_list.append(arg.strip("\n"))
+                            new_args[i] = docker_path(arg.strip("\n")) + "\n"
                     new_file.append(" ".join(new_args))
 
             temp_file = temp_config(path, output_dir)
@@ -199,9 +209,15 @@ def run_docker(
             local_paths=copy_list
         )
 
-        # Run commamd
+        # Run command
+
+        full_cmd = f"/bin/bash -c 'alias sex=/usr/bin/source-extractor; alias swarp=/usr/bin/SWarp; {cmd}'"
 
         log = container.exec_run(cmd, stderr=True, stdout=True)
+
+        for temp_file in temp_files:
+            logger.debug(f"Deleting temporary file {temp_file}")
+            os.remove(temp_file)
 
         if not log.output == b"":
             logger.info(f"Output: {log.output.decode()}")
@@ -238,7 +254,7 @@ def execute(
         output_dir=".",
         local=True
 ):
-    logger.debug(f"Using '{['local', 'docker'][local]}' "
+    logger.debug(f"Using '{['docker', 'local'][local]}' "
                  f" installation to run `{cmd}`")
     if local:
         run_local(cmd, output_dir=output_dir)
