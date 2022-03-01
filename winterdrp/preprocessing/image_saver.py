@@ -1,5 +1,8 @@
-from winterdrp.paths import output_dir
+import os
+from winterdrp.paths import output_path, output_dir
 from winterdrp.preprocessing.base_processor import BaseProcessor
+
+latest_save_key = "SAVEPATH"
 
 
 class ImageSaver(BaseProcessor):
@@ -23,10 +26,18 @@ class ImageSaver(BaseProcessor):
             sub_dir: str = ""
     ) -> (list, list):
 
+        try:
+            os.makedirs(output_dir(dir_root=self.save_dir, sub_dir=sub_dir))
+        except OSError:
+            pass
+
         for i, img in enumerate(images):
 
-            paths = output_dir(self.save_dir, sub_dir=sub_dir)
+            header = headers[i]
 
-            self.save_fits(img, headers[i], path)
+            path = output_path(header["BASENAME"], dir_root=self.save_dir, sub_dir=sub_dir)
+
+            self.save_fits(img, header, path)
+            header[latest_save_key] = path
 
         return images, headers

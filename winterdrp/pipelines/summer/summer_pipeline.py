@@ -7,9 +7,9 @@ from winterdrp.pipelines.base_pipeline import Pipeline
 wirc_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
 
-class WircPipeline(Pipeline):
+class SummerPipeline(Pipeline):
 
-    name = "wirc"
+    name = "summer"
 
     astrometry_cal = ("GAIA", 9., 13.)
     photometry_cal = {

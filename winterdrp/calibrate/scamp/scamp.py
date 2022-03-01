@@ -5,7 +5,7 @@ from winterdrp.utils import execute, ExecutionError
 
 logger = logging.getLogger(__name__)
 
-local_scamp = False
+local_scamp = True
 
 
 class ScampExecutionError(ExecutionError):

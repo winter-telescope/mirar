@@ -2,34 +2,24 @@ import os
 import logging
 from pathlib import Path
 from winterdrp.paths import calibration_config_dir
-from winterdrp.utils import execute
+from winterdrp.utils import execute, ExecutionError
 
 
 logger = logging.getLogger(__name__)
 
-sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
+# sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
 default_saturation = 1.e10
 default_config = os.path.join(calibration_config_dir, 'astrom.sex')
 
 
-class SextractorError(Exception):
+class SextractorError(ExecutionError):
     pass
 
 
 # Either run sextractor locally or on docker
 
-if sextractor_cmd is None:
-    sextractor_cmd = "/usr/bin/source-extractor"
-    local_sextractor = False
-else:
-    sextractor_cmd = "sex"
-    local_sextractor = True
-
-
-def execute_sextractor(cmd, output_dir="."):
-    execute(cmd, output_dir=output_dir, local=local_sextractor)
-
+local_sextractor = True
 
 # Functions to parse commands and generate appropriate sextractor files
 
@@ -109,7 +99,6 @@ def run_sextractor(
         pass
 
     for img in images:
-
         run_sextractor_single(img, *args, **kwargs)
 
 
@@ -126,7 +115,8 @@ def run_sextractor_single(
         verbose_type: str = "QUIET",
         checkimage_name: str | list = None,
         checkimage_type: str | list = None,
-        gain: float = 0.0
+        gain: float = 0.0,
+        run_local: bool = local_sextractor
 ):
     if parameters_name is None:
         parameters_name = os.path.join(calibration_config_dir, 'astrom.param')
@@ -150,7 +140,7 @@ def run_sextractor_single(
         image_name = Path(img).stem
         catalog_name = f'{image_name}.cat'
 
-    cmd = f"{sextractor_cmd} {img} " \
+    cmd = f"sex {img} " \
           f"-c {config} " \
           f"-CATALOG_NAME {catalog_name} " \
           f"-PARAMETERS_NAME {parameters_name} " \
@@ -171,7 +161,10 @@ def run_sextractor_single(
     else:
         cmd += f"-WEIGHT_IMAGE {weight_image}"
 
-    execute_sextractor(cmd, output_dir)
+    try:
+        execute(cmd, output_dir, local=run_local)
+    except ExecutionError as e:
+        raise SextractorError(e)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ class BaseProcessor:
 
     base_name = None
     base_key = None
+
     requires = []
 
     subclasses = {}
@@ -24,26 +25,12 @@ class BaseProcessor:
         self.cache = dict()
         self.open_fits = instrument_vars["open_fits"]
 
-        # Check Processor has a key
-
-        if self.base_key is None:
-            err = f"No Base key has been defined for {self.__module__}"
-            logger.error(err)
-            raise AttributeError(err)
-
         # Check processor prerequisites are satisfied
 
         steps = [x[0] for x in instrument_vars["image_steps"]]
 
-        preceding_steps = steps[:steps.index(self.base_key)]
-
-        for x in self.requires:
-            if x not in preceding_steps:
-                err = f"Processor {self.base_key} requires '{x}' as a prerequisite." \
-                      f"However, the pipeline includes {instrument_vars['image_steps']} with " \
-                      f"{preceding_steps} occuring before {self.base_key}."
-                logger.error(err)
-                raise ValueError(err)
+        preceding_steps = steps[:steps.index(self)]
+        self.check_prerequisites(preceding_steps)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -58,7 +45,7 @@ class BaseProcessor:
     ) -> (list, list):
         raise NotImplementedError
 
-    def _update_headers(
+    def _update_processing_history(
             self,
             headers: list,
     ) -> list:
@@ -73,8 +60,14 @@ class BaseProcessor:
             sub_dir: str = ""
     ) -> (list, list):
         images, headers = self._apply_to_images(images, headers, sub_dir=sub_dir)
-        headers = self._update_headers(headers)
+        headers = self._update_processing_history(headers)
         return images, headers
+
+    def check_prerequisites(
+            self,
+            preceding_steps: list,
+    ):
+        pass
 
     @staticmethod
     def get_file_path(header, sub_dir=""):

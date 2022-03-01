@@ -5,18 +5,15 @@ import astropy.io.fits
 import numpy as np
 from astropy.io import fits
 from winterdrp.preprocessing import get_processor
-from winterdrp.calibrate.sourceextractor import run_sextractor
 from winterdrp.io import create_fits
 from glob import glob
 import pandas as pd
-import copy
 from winterdrp.paths import \
     cal_output_dir,\
     parse_image_list, \
     reduced_img_dir, \
     reduced_img_path, \
     raw_img_dir, \
-    astrometry_output_dir, \
     observing_log_dir
 
 logger = logging.getLogger(__name__)
@@ -44,7 +41,7 @@ class Pipeline:
     header_keys = list()
 
     # Key from log which defines batch grouping
-    # By default this is the raw image path, i.e each each is processed separately
+    # By default this is the raw image path, i.e each image is processed separately
 
     batch_split_keys = ["RAWIMAGEPATH"]
 
@@ -62,8 +59,6 @@ class Pipeline:
 
         self.set_pipeline_configuration(pipeline_configuration)
 
-        print(self.image_steps)
-
         instrument_vars = dict([(x, getattr(self, x)) for x in dir(self)])
 
         self.observing_logs_cache = dict()
@@ -72,30 +67,18 @@ class Pipeline:
         for step in self.image_steps:
 
             if not isinstance(step, tuple):
-                err = f"Image steps should be tuples. However, step '{step}' is {isinstance(step)}."
+                err = f"Image steps should be tuples. However, step '{step}' is {type(step)}."
                 logger.error(err)
                 raise ValueError(err)
 
             name = step[0]
 
             if len(step) > 1:
-                print(step[1:])
-                args = step[1:] + args
-            #     name = step
-            # else:
-            #     name = step[0]
-            #
-            #     if len(step) > 1:
-            #         print(step[1:])
-            #
-            # print(step)
-            #
-            # if isinstance(processor_args, tuple):
-            #     name = processor_args[0]
-            #     args += processor_args[1:]
-            # else:
-            #     name = processor_args
-            self.processors[name] = get_processor(name, instrument_vars, *args, **kwargs)
+                pargs = step[1:] + args
+            else:
+                pargs = args
+
+            self.processors[name] = get_processor(name, instrument_vars, *pargs, **kwargs)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -112,7 +95,7 @@ class Pipeline:
             path: str
     ) -> (np.array, astropy.io.fits.Header):
         with fits.open(path) as raw:
-            data, header = self.reformat_raw_data(raw)
+            data, header = self.reformat_raw_data(raw, path)
         return data, header
 
     def open_image_batch(
@@ -131,7 +114,8 @@ class Pipeline:
 
     @staticmethod
     def reformat_raw_data(
-            img: astropy.io.fits.HDUList
+            img: astropy.io.fits.HDUList,
+            path: str
     ) -> (np.ndarray, astropy.io.fits.Header):
         raise NotImplementedError
 
@@ -275,83 +259,6 @@ class Pipeline:
 
         return proccessed_list
 
-    # def preprocess_images(self, sub_dir="", raw_image_list=None, reprocess=True):
-    #
-    #     if raw_image_list is None:
-    #         raw_image_list = parse_image_list(sub_dir, group_by_object=False)
-    #
-    #     # Try making output directory, unless it exists
-    #
-    #     output_dir = reduced_img_dir(sub_dir)
-    #
-    #     try:
-    #         os.makedirs(output_dir)
-    #     except OSError:
-    #         pass
-    #
-    #     nframes = len(raw_image_list)
-    #
-    #     proccessed_list = []
-    #
-    #     # Loop over science images
-    #
-    #     for i, raw_img_path in enumerate(raw_image_list):
-    #
-    #         img_name = os.path.basename(raw_img_path)
-    #
-    #         logger.debug(f"Processing image {i + 1}/{nframes} ({img_name})")
-    #
-    #         output_path = reduced_img_path(img_name, sub_dir=sub_dir)
-    #
-    #         if np.logical_and(os.path.exists(output_path), reprocess is False):
-    #             logger.debug(f"Skipping image {img_name}, because it has already "
-    #                          f"been processed and 'reprocess' is False.")
-    #             continue
-    #
-    #         with self.open_fits(raw_img_path) as img:
-    #             header = img.header
-    #
-    #             if header['OBSTYPE'] not in ['science', "object"]:
-    #                 logger.debug(f'Obstype is not science, skipping {raw_img_path}')
-    #                 continue
-    #
-    #             data_redux = np.array(self.reduce_single_image(img, sub_dir=sub_dir))
-    #
-    #             proc_hdu = create_fits(data_redux, header=header, history=None)
-    #
-    #             proc_hdu.header['BZERO'] = 0
-    #
-    #             # Write the reduced frame to disk
-    #
-    #             logger.debug(f"Saving processed image to {output_path}")
-    #             proccessed_list.append(output_path)
-    #             proc_hdu.writeto(output_path, overwrite=True)
-    #
-    #     return proccessed_list
-
-    # @staticmethod
-    # def apply_astrometry(sub_dir="", redux_image_list=None, reprocess=True):
-    #
-    #     if redux_image_list is None:
-    #         redux_image_list = parse_image_list(sub_dir, group_by_object=False, base_dir_f=reduced_img_dir)
-    #
-    #     # Try making output directory, unless it exists
-    #
-    #     output_dir = astrometry_output_dir(sub_dir)
-    #
-    #     try:
-    #         os.makedirs(output_dir)
-    #     except OSError:
-    #         pass
-    #
-    #     # First run Sextractor
-    #
-    #     run_sextractor(
-    #         redux_image_list,
-    #         output_dir=output_dir,
-    #         reprocess=reprocess
-    #     )
-
     def export_observing_log(
             self,
             sub_dir: str = ""
@@ -426,6 +333,3 @@ class Pipeline:
         log = log.sort_values(by=self.header_keys[0]).reset_index(drop=True)
 
         return log
-
-
-

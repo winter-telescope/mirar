@@ -196,7 +196,7 @@ def run_docker(
 
             copy_list.append(temp_file)
 
-            cmd = cmd.replace(path, docker_path(temp_file))
+            cmd = cmd.replace(path + " ", docker_path(temp_file) + " ")
 
         # Copy in files, and see what files are already there
 
@@ -210,8 +210,6 @@ def run_docker(
         )
 
         # Run command
-
-        full_cmd = f"/bin/bash -c 'alias sex=/usr/bin/source-extractor; alias swarp=/usr/bin/SWarp; {cmd}'"
 
         log = container.exec_run(cmd, stderr=True, stdout=True)
 

@@ -4,7 +4,6 @@ from winterdrp.preprocessing.bias import BiasCalibrator
 from winterdrp.preprocessing.dark import DarkCalibrator
 from winterdrp.preprocessing.flat import FlatCalibrator
 from winterdrp.preprocessing.image_saver import ImageSaver
-from winterdrp.calibrate.sextractor import SextractorRunner
 
 logger = logging.getLogger(__name__)
 

@@ -29,8 +29,7 @@ from math import sin, cos, tan, asin, sqrt
 import numpy as np
 from astropy.io import fits as af
 from winterdrp.paths import base_output_dir
-from winterdrp.calibrate.sextractor.sourceextractor import execute_sextractor, sextractor_cmd, \
-    run_sextractor_single, default_saturation
+from winterdrp.calibrate.sextractor.sourceextractor import run_sextractor_single, default_saturation
 import logging
 import ephem
 from winterdrp.calibrate.sextractor.settings import write_param_file, write_config_file, default_config_path,\
@@ -432,10 +431,10 @@ def sextract(
     # Sort by magnitude
     goodsexlist.sort(key=magcomp)
 
-    logger.info(f'{ngood} objects detected in image {sexfilename} (a further {nsexinit - ngood} discarded)')
+    logger.debug(f'{ngood} objects detected in image {sexfilename} (a further {nsexinit - ngood} discarded)')
 
     reject_stats = [(x, rejects.count(x)) for x in list(set(rejects))]
-    logger.info(f"Reject reasons: {reject_stats}")
+    logger.debug(f"Reject reasons: {reject_stats}")
 
     return goodsexlist
 
@@ -474,7 +473,7 @@ def getcatalog(catalog, ra, dec, boxsize, minmag=8.0, maxmag=-1, maxpm=60.):
     else:
         usercat = 1
         try:
-            logger.info(f'Reading user catalog {catalog}')
+            logger.debug(f'Reading user catalog {catalog}')
 
             with open(catalog, 'r') as cat:
                 racolumn = 0
@@ -1321,7 +1320,7 @@ def autoastrometry(
             check.close()
             if len(checklines) > 15:
                 catalog = trycat
-                logger.debug('Using catalog', catalog)
+                logger.debug(f'Using catalog {catalog}')
                 break
         if catalog == '':
             err = 'No catalog is available.  Check your internet connection.'

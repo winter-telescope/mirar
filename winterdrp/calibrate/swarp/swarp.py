@@ -3,7 +3,7 @@ from winterdrp.utils import execute, ExecutionError
 
 logger = logging.getLogger(__name__)
 
-local_swarp = False
+local_swarp = True
 
 
 class SwarpExecutionError(ExecutionError):

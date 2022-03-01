@@ -18,7 +18,7 @@ WEIGHT_IMAGE                           # Weightmap filename if suffix not used
                                        # (all or for each weight-map)
  
 #------------------------------- Co-addition ----------------------------------
- 
+
 COMBINE                N               # Combine resampled images (Y/N)?
 COMBINE_TYPE           AVERAGE          # MEDIAN,AVERAGE,MIN,MAX,WEIGHTED,CHI2
                                        # or SUM
@@ -86,7 +86,7 @@ MEM_MAX                256             # Maximum amount of usable RAM (MB)
 COMBINE_BUFSIZE        256             # RAM dedicated to co-addition(MB)
  
 #------------------------------ Miscellaneous ---------------------------------
- 
+
 DELETE_TMPFILES        Y               # Delete temporary resampled FITS files
                                        # (Y/N)?
 COPY_KEYWORDS          OBJECT          # List of FITS keywords to propagate
@@ -96,7 +96,7 @@ WRITE_FILEINFO         N               # Write information about each input
 WRITE_XML              N               # Write XML file (Y/N)?
 XML_NAME               swarp.xml       # Filename for XML output
 VERBOSE_TYPE           NORMAL          # QUIET,NORMAL or FULL
- 
+
 NTHREADS               0               # Number of simultaneous threads for
                                        # the SMP version of SWarp
                                        # 0 = automatic
