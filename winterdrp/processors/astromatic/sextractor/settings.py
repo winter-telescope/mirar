@@ -1,5 +1,5 @@
 import os
-from winterdrp.calibrate.config import calibration_config_dir
+from winterdrp.processors.astromatic.config import calibration_config_dir
 
 default_param_path = os.path.join(calibration_config_dir, 'temp.param')
 default_conv_path = os.path.join(calibration_config_dir, 'sex.conv')

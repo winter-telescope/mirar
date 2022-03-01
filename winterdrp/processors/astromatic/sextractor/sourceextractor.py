@@ -1,7 +1,7 @@
 import os
 import logging
 from pathlib import Path
-from winterdrp.paths import calibration_config_dir
+from winterdrp.processors.astromatic.config import calibration_config_dir
 from winterdrp.utils import execute, ExecutionError
 
 

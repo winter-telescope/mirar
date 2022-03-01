@@ -1,6 +1,6 @@
 import os
 from winterdrp.paths import output_path, output_dir
-from winterdrp.preprocessing.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseProcessor
 
 latest_save_key = "SAVEPATH"
 

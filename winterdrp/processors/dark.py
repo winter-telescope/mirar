@@ -1,12 +1,9 @@
 import copy
-
 import astropy.io.fits
 import numpy as np
 import os
-from winterdrp.io import create_fits
 import logging
-import pandas as pd
-from winterdrp.preprocessing.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.paths import cal_output_dir
 
 logger = logging.getLogger(__name__)

@@ -4,6 +4,10 @@ import numpy as np
 from astropy.io.fits import HDUList
 from winterdrp.pipelines.base_pipeline import Pipeline
 
+from winterdrp.processors.dark import DarkCalibrator
+from winterdrp.processors.utils import ImageSaver
+from winterdrp.processors.astromatic import SextractorRunner
+
 wirc_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -26,14 +30,14 @@ class SummerPipeline(Pipeline):
         "COADDS",
     ]
 
-    batch_split_keys = ["OBJECT", "FILTER"]
+    batch_split_keys = ["RAWIMAGEPATH"]
 
     pipeline_configurations = {
         None: [
-            ("dark",),
+            (DarkCalibrator,),
             # "flat",
-            ("save", "preprocess"),
-            ("sextractor", ),
+            (ImageSaver, "preprocess"),
+            (SextractorRunner, ),
             # "stack",
             # "dither"
         ]

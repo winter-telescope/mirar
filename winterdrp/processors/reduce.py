@@ -3,9 +3,9 @@ import logging
 import numpy as np
 from winterdrp.io import create_fits
 from winterdrp.paths import reduced_img_dir, reduced_img_path, cal_output_dir
-from winterdrp.preprocessing.bias import load_master_bias
-from winterdrp.preprocessing.dark import load_master_darks, select_master_dark
-from winterdrp.preprocessing.flat import load_master_flats, select_master_flat
+from winterdrp.processors.bias import load_master_bias
+from winterdrp.processors.dark import load_master_darks, select_master_dark
+from winterdrp.processors.flat import load_master_flats, select_master_flat
 
 logger = logging.getLogger(__name__)
 

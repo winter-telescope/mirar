@@ -29,10 +29,10 @@ from math import sin, cos, tan, asin, sqrt
 import numpy as np
 from astropy.io import fits as af
 from winterdrp.paths import base_output_dir
-from winterdrp.calibrate.sextractor.sourceextractor import run_sextractor_single, default_saturation
+from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation
 import logging
 import ephem
-from winterdrp.calibrate.sextractor.settings import write_param_file, write_config_file, default_config_path,\
+from winterdrp.processors.astromatic.sextractor.settings import write_param_file, write_config_file, default_config_path,\
     default_conv_path, default_param_path, default_starnnw_path
 
 logger = logging.getLogger(__name__)

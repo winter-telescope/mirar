@@ -2,7 +2,7 @@ from winterdrp.io import create_fits
 import os
 import numpy as np
 import logging
-from winterdrp.preprocessing.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.paths import cal_output_dir
 
 

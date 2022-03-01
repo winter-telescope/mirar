@@ -1,6 +1,4 @@
 import logging
-import os
-from winterdrp.calibrate.scamp.configs import scamp_config_dir
 from winterdrp.utils import execute, ExecutionError
 
 logger = logging.getLogger(__name__)

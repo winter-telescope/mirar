@@ -1,9 +1,9 @@
 import os
 import logging
 from winterdrp.paths import astrometry_output_dir
-from winterdrp.calibrate.sextractor.sourceextractor import run_sextractor, default_config
-from winterdrp.preprocessing.base_processor import BaseProcessor
-from winterdrp.preprocessing.image_saver import ImageSaver, latest_save_key
+from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor, default_config
+from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.utils.image_saver import ImageSaver, latest_save_key
 
 logger = logging.getLogger(__name__)
 

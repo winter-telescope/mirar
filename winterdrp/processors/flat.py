@@ -5,7 +5,7 @@ from winterdrp.io import create_fits
 import logging
 import pandas as pd
 from collections.abc import Callable
-from winterdrp.preprocessing.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.paths import cal_output_dir
 # from winterdrp.pipelines.base_pipeline import Pipeline
 

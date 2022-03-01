@@ -1,9 +1,9 @@
 import logging
-from winterdrp.preprocessing.base_processor import BaseProcessor
-from winterdrp.preprocessing.bias import BiasCalibrator
-from winterdrp.preprocessing.dark import DarkCalibrator
-from winterdrp.preprocessing.flat import FlatCalibrator
-from winterdrp.preprocessing.image_saver import ImageSaver
+from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.bias import BiasCalibrator
+from winterdrp.processors.dark import DarkCalibrator
+from winterdrp.processors.flat import FlatCalibrator
+from winterdrp.processors.utils.image_saver import ImageSaver
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import os
 import astropy.io.fits
 import numpy as np
 from astropy.io import fits
-from winterdrp.preprocessing import get_processor
+from winterdrp.processors import get_processor
 from winterdrp.io import create_fits
 from glob import glob
 import pandas as pd
@@ -62,23 +62,25 @@ class Pipeline:
         instrument_vars = dict([(x, getattr(self, x)) for x in dir(self)])
 
         self.observing_logs_cache = dict()
-        self.processors = dict()
+        self.processors = list()
 
-        for step in self.image_steps:
+        for (processor, *args) in self.image_steps:
 
-            if not isinstance(step, tuple):
-                err = f"Image steps should be tuples. However, step '{step}' is {type(step)}."
-                logger.error(err)
-                raise ValueError(err)
+            # if not isinstance(step, tuple):
+            #     err = f"Image steps should be tuples. However, step '{step}' is {type(step)}."
+            #     logger.error(err)
+            #     raise ValueError(err)
+            #
+            # name = step[0]
+            #
+            # if len(step) > 1:
+            #     pargs = step[1:] + args
+            # else:
+            #     pargs = args
 
-            name = step[0]
+            self.processors.append(processor(instrument_vars, *args))
 
-            if len(step) > 1:
-                pargs = step[1:] + args
-            else:
-                pargs = args
-
-            self.processors[name] = get_processor(name, instrument_vars, *pargs, **kwargs)
+            # self.processors.append() = get_processor(name, instrument_vars, *pargs, **kwargs)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
