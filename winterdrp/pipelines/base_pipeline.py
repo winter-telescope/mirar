@@ -8,6 +8,7 @@ from winterdrp.processors import get_processor
 from winterdrp.io import create_fits
 from glob import glob
 import pandas as pd
+import sys
 from winterdrp.paths import \
     cal_output_dir,\
     parse_image_list, \
@@ -46,10 +47,10 @@ class Pipeline:
     batch_split_keys = ["RAWIMAGEPATH"]
 
     # Pixel range for flat-fielding
-    x_min = 0.
-    x_max = np.inf
-    y_min = 0.
-    y_max = np.inf
+    x_min = 0
+    x_max = sys.maxsize
+    y_min = 0
+    y_max = sys.maxsize
     flat_nan_threshold = np.nan
     standard_flats_dir = None
 
@@ -64,7 +65,7 @@ class Pipeline:
         self.observing_logs_cache = dict()
         self.processors = list()
 
-        for (processor, *args) in self.image_steps:
+        for i, (processor, *args) in enumerate(self.image_steps):
 
             # if not isinstance(step, tuple):
             #     err = f"Image steps should be tuples. However, step '{step}' is {type(step)}."
@@ -77,6 +78,8 @@ class Pipeline:
             #     pargs = step[1:] + args
             # else:
             #     pargs = args
+
+            instrument_vars["preceding_steps"] = [x[0] for x in self.image_steps[:i]]
 
             self.processors.append(processor(instrument_vars, *args))
 
@@ -147,16 +150,20 @@ class Pipeline:
 
         preceding_steps = []
 
-        for step in self.image_steps:
-            processor = self.processors[step[0]]
-            image_list = processor.select_cache_images(observing_log)
-            if len(image_list) > 0:
-                processor.make_cache_files(
-                    image_list=image_list,
-                    sub_dir=sub_dir,
-                    preceding_steps=preceding_steps,
-                )
-            preceding_steps.append(self.processors[step[0]].apply)
+        for processor in self.processors:
+            processor.make_cache(
+                observing_log,
+                sub_dir=sub_dir,
+                preceding_steps=preceding_steps,
+            )
+            # image_list = processor.select_cache_images(observing_log)
+            # if len(image_list) > 0:
+            #     processor.make_cache_files(
+            #         image_list=image_list,
+            #         sub_dir=sub_dir,
+            #         preceding_steps=preceding_steps,
+            #     )
+            preceding_steps.append(processor.apply)
 
     def split_raw_images_into_batches(
             self,
@@ -197,9 +204,9 @@ class Pipeline:
             sub_dir: str = ""
     ) -> list:
 
-        for processor in self.image_steps:
-            logger.debug(f"Applying '{processor[0]}' processor to {len(images)} images")
-            images, headers = self.processors[processor[0]].apply(
+        for processor in self.processors:
+            logger.debug(f"Applying '{processor}' processor to {len(images)} images")
+            images, headers = processor.apply(
                 images,
                 headers,
                 sub_dir=sub_dir
@@ -311,7 +318,21 @@ class Pipeline:
 
     def parse_observing_log(self, sub_dir=""):
 
-        img_list = glob(f'{raw_img_dir(sub_dir)}/*.fits')
+        raw_dir = raw_img_dir(sub_dir)
+
+        if not os.path.isdir(raw_dir):
+            error = f"Raw image directory '{raw_dir}' does not exit"
+            logger.error(error)
+            raise NotADirectoryError(error)
+
+        img_list = glob(f'{raw_dir}/*.fits')
+
+        if len(img_list) == 0:
+            err = f"No images found in directory {raw_dir}"
+            logger.error(err)
+            raise FileNotFoundError(err)
+        else:
+            logger.debug(f"Found {len(img_list)} raw images in {raw_dir}")
 
         log_data = []
 

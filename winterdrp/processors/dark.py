@@ -3,13 +3,13 @@ import astropy.io.fits
 import numpy as np
 import os
 import logging
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import ProcessorWithCache
 from winterdrp.paths import cal_output_dir
 
 logger = logging.getLogger(__name__)
 
 
-class DarkCalibrator(BaseProcessor):
+class DarkCalibrator(ProcessorWithCache):
     base_name = "master_dark"
     base_key = "dark"
 

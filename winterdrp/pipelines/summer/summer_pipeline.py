@@ -4,11 +4,14 @@ import numpy as np
 from astropy.io.fits import HDUList
 from winterdrp.pipelines.base_pipeline import Pipeline
 
-from winterdrp.processors.dark import DarkCalibrator
+from winterdrp.processors.bias import BiasCalibrator
+from winterdrp.processors.flat import FlatCalibrator
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.astromatic import SextractorRunner
 
-wirc_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+from winterdrp.pipelines.summer.calibration import select_bias, select_flats_archival
+
+summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
 
 class SummerPipeline(Pipeline):
@@ -23,21 +26,21 @@ class SummerPipeline(Pipeline):
     # Set up elements to use
 
     header_keys = [
-        "UTSHUT",
-        'OBJECT',
-        "FILTER",
+        "UTC",
+        'FIELDID',
+        "FILTERID",
         "EXPTIME",
-        "COADDS",
+        "OBSTYPE"
     ]
 
     batch_split_keys = ["RAWIMAGEPATH"]
 
     pipeline_configurations = {
         None: [
-            (DarkCalibrator,),
-            # "flat",
+            (BiasCalibrator, select_bias),
+            (FlatCalibrator, select_flats_archival),
             (ImageSaver, "preprocess"),
-            (SextractorRunner, ),
+            (SextractorRunner, "pass1"),
             # "stack",
             # "dither"
         ]
@@ -49,10 +52,9 @@ class SummerPipeline(Pipeline):
             path: str
     ) -> [np.array, astropy.io.fits.Header]:
         header = img[0].header
-        header["FILTER"] = header["AFT"].split("__")[0]
-        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
-        header["CALSTEPS"] = ""
+        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
         header["BASENAME"] = os.path.basename(path)
+        header["CALSTEPS"] = ""
         img[0].header = header
         return img[0].data, img[0].header
 

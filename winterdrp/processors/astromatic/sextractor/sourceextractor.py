@@ -99,7 +99,7 @@ def run_sextractor(
         pass
 
     for img in images:
-        run_sextractor_single(img, *args, **kwargs)
+        run_sextractor_single(img, output_dir, *args, **kwargs)
 
 
 def run_sextractor_single(

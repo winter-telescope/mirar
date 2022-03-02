@@ -1,4 +1,6 @@
 import logging
+from abc import ABC
+
 import astropy.io.fits
 import numpy as np
 import pandas as pd
@@ -27,10 +29,7 @@ class BaseProcessor:
 
         # Check processor prerequisites are satisfied
 
-        steps = [x[0] for x in instrument_vars["image_steps"]]
-
-        preceding_steps = steps[:steps.index(self)]
-        self.check_prerequisites(preceding_steps)
+        self.check_prerequisites(instrument_vars["preceding_steps"])
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -69,9 +68,32 @@ class BaseProcessor:
     ):
         pass
 
+    # @staticmethod
+    # def get_file_path(header, sub_dir=""):
+    #     raise NotImplementedError
+
+    def make_cache(
+            self,
+            observing_log: pd.DataFrame,
+            preceding_steps: list,
+            sub_dir: str = "",
+    ):
+        pass
+
+    def save_fits(self, data, header, path):
+        self.cache[path] = (data, header)
+        logger.info(f"Saving to {path}")
+        img = create_fits(data, header=header)
+        img.writeto(path, overwrite=True)
+
+
+class ProcessorWithCache(BaseProcessor, ABC):
+
     @staticmethod
-    def get_file_path(header, sub_dir=""):
-        raise NotImplementedError
+    def select_cache_images(
+            observing_log: pd.DataFrame
+    ) -> list:
+        return []
 
     def load_cache_file(
             self,
@@ -85,25 +107,25 @@ class BaseProcessor:
             self.cache[path] = (img, header)
         return img, header
 
-    def select_cache_images(
+    def make_cache(
             self,
-            observing_log: pd.DataFrame
-    ) -> list:
-        mask = observing_log["OBJECT"] == self.base_key
-        return observing_log[mask]["RAWIMAGEPATH"]
+            observing_log: pd.DataFrame,
+            preceding_steps: list,
+            sub_dir: str = "",
+    ):
+        image_list = self.select_cache_images(observing_log)
+
+        if len(image_list) > 0:
+            self.make_cache_files(
+                image_list,
+                preceding_steps=preceding_steps,
+                sub_dir=sub_dir
+            )
 
     def make_cache_files(
             self,
             image_list: list,
             preceding_steps: list,
-            sub_dir: str = "",
-            *args,
-            **kwargs
+            sub_dir: str = ""
     ):
-        pass
-
-    def save_fits(self, data, header, path):
-        self.cache[path] = (data, header)
-        logger.info(f"Saving to {path}")
-        img = create_fits(data, header=header)
-        img.writeto(path, overwrite=True)
+        raise NotImplementedError

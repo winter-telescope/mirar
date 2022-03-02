@@ -56,8 +56,8 @@ class SextractorRunner(BaseProcessor):
             self,
             preceding_steps: list,
     ):
-        if preceding_steps[-1] != ImageSaver.base_key:
-            err = f"Processor '{self.base_key}' must be preceded by {ImageSaver.base_key}. " \
+        if preceding_steps[-1] != ImageSaver:
+            err = f"Processor '{self}' must be preceded by {ImageSaver}. " \
                   f"However, the following preceding steps are found: {preceding_steps}."
             logger.error(err)
             raise ValueError(err)
