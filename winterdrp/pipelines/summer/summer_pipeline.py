@@ -55,6 +55,7 @@ class SummerPipeline(Pipeline):
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
         header["BASENAME"] = os.path.basename(path)
         header["CALSTEPS"] = ""
+        header["UTCTIME"] = header["UTCISO"].replace(" ", "T")
         img[0].header = header
         return img[0].data, img[0].header
 
