@@ -68,10 +68,6 @@ class BaseProcessor:
     ):
         pass
 
-    # @staticmethod
-    # def get_file_path(header, sub_dir=""):
-    #     raise NotImplementedError
-
     def make_cache(
             self,
             observing_log: pd.DataFrame,
@@ -93,7 +89,7 @@ class ProcessorWithCache(BaseProcessor, ABC):
     def select_cache_images(
             observing_log: pd.DataFrame
     ) -> list:
-        return []
+        raise NotImplementedError
 
     def load_cache_file(
             self,
@@ -129,3 +125,11 @@ class ProcessorWithCache(BaseProcessor, ABC):
             sub_dir: str = ""
     ):
         raise NotImplementedError
+
+    @staticmethod
+    def select_from_log(
+            observing_log: pd.DataFrame,
+            key: str
+    ) -> [str]:
+        mask = observing_log["TARGET"] == key
+        return list(observing_log[mask]["RAWIMAGEPATH"])
