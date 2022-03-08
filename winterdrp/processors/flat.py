@@ -1,25 +1,17 @@
 import astropy.io.fits
 import numpy as np
 import os
-from winterdrp.io import create_fits
 import logging
 import pandas as pd
 from collections.abc import Callable
-from winterdrp.processors.base_processor import ProcessorWithCache
+from astropy.time import Time
+from winterdrp.processors.base_processor import BaseProcessor, ProcessorWithCache
 from winterdrp.paths import cal_output_dir
-# from winterdrp.pipelines.base_pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
 
-def default_select_bias(
-       observing_log: pd.DataFrame
-) -> [str]:
-    mask = observing_log["OBJECT"].lower() == "flat"
-    return list(observing_log[mask]["RAWIMAGEPATH"])
-
-
-class FlatCalibrator(ProcessorWithCache):
+class BaseFlatCalibrator(BaseProcessor):
 
     base_name = "master_flat"
     base_key = "flat"
@@ -27,7 +19,6 @@ class FlatCalibrator(ProcessorWithCache):
     def __init__(
             self,
             instrument_vars: dict,
-            select_cache_images: Callable[[pd.DataFrame], list] = default_select_bias,
             *args,
             **kwargs
     ):
@@ -37,6 +28,75 @@ class FlatCalibrator(ProcessorWithCache):
         self.y_min = int(instrument_vars["y_min"])
         self.y_max = int(instrument_vars["y_max"])
         self.flat_nan_threshold = instrument_vars["flat_nan_threshold"]
+
+    def _apply_to_images(
+            self,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.header],
+            sub_dir: str = ""
+    ) -> (list, list):
+
+        for i, data in enumerate(images):
+            header = headers[i]
+            flat, _ = self.select_flat(data, header, images, headers)
+            if np.any(~(flat > self.flat_nan_threshold)):
+                flat[~(flat > self.flat_nan_threshold)] = np.nan
+
+            data = data / flat
+            header["CALSTEPS"] += "flat,"
+            images[i] = data
+            headers[i] = header
+        return images, headers
+
+    def select_flat(
+            self,
+            data: np.ndarray,
+            header: astropy.io.fits.header,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.header]
+    ) -> tuple[np.ndarray, astropy.io.fits.header]:
+        raise NotImplementedError
+
+
+class SkyFlatCalibrator(BaseFlatCalibrator):
+
+    def select_flat(
+            self,
+            data: np.ndarray,
+            header: astropy.io.fits.header,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.header]
+    ) -> tuple[np.ndarray, astropy.io.fits.header]:
+
+        ref = Time(header["UTCTIME"], format='isot', scale='utc').jd
+
+        deltas = np.array([
+            abs(Time(x["UTCTIME"], format='isot', scale='utc').jd - ref)
+            for x in headers
+        ])
+
+        closest_delta_t = min(deltas[deltas > 0.])
+
+        match_index = list(deltas).index(closest_delta_t)
+
+        return images[match_index], headers[match_index]
+
+
+class FlatCalibrator(ProcessorWithCache, BaseFlatCalibrator):
+
+    def __init__(
+            self,
+            instrument_vars: dict,
+            select_cache_images: Callable[[pd.DataFrame], list] = None,
+            *args,
+            **kwargs
+    ):
+        super().__init__(instrument_vars, *args, **kwargs)
+
+        if select_cache_images is None:
+            def select_cache_images(x):
+                return self.select_from_log(x, "flat")
+
         self.select_cache_images = select_cache_images
 
     def get_file_path(
@@ -48,24 +108,6 @@ class FlatCalibrator(ProcessorWithCache):
         filtername = header['FILTER'].replace(" ", "_")
         name = f"{self.base_name}_{filtername}.fits"
         return os.path.join(cal_dir, name)
-
-    def _apply_to_images(
-            self,
-            images: list,
-            headers: list,
-            sub_dir: str = ""
-    ) -> (list, list):
-
-        for i, data in enumerate(images):
-            header = headers[i]
-            master_flat, _ = self.load_cache_file(self.get_file_path(header, sub_dir=sub_dir))
-            if np.any(master_flat < self.flat_nan_threshold):
-                master_flat[master_flat < self.flat_nan_threshold] = np.nan
-            data = data / master_flat
-            header["CALSTEPS"] += "flat,"
-            images[i] = data
-            headers[i] = header
-        return images, headers
 
     def make_cache_files(
             self,
@@ -131,48 +173,38 @@ class FlatCalibrator(ProcessorWithCache):
             self.save_fits(master_flat, primary_header, master_flat_path)
 
 
-class StandardFlatCalibrator(FlatCalibrator):
-
-    def __init__(
-            self,
-            open_fits: Callable[[str], astropy.io.fits.HDUList],
-            x_min: float = 0.,
-            x_max: float = np.inf,
-            y_min: float = 0.,
-            y_max: float = np.inf,
-            flat_nan_threshold: float = np.nan,
-            standard_flat_dir: str = None
-    ):
-        FlatCalibrator.__init__(
-            self,
-            open_fits=open_fits,
-            x_min=x_min,
-            x_max=x_max,
-            y_min=y_min,
-            y_max=y_max,
-            flat_nan_threshold=flat_nan_threshold
-        )
-        if standard_flat_dir is None:
-            err = "For StandardFlatCalibrator, you must specify "
-            logger.error(err)
-            raise ValueError(err)
-
-    def make_cache_files(
-            self,
-            image_list: list,
-            sub_dir: str = "",
-            subtract_bias: Callable[[astropy.io.fits.HDUList], astropy.io.fits.HDUList] = None,
-            subtract_dark: Callable[[astropy.io.fits.HDUList], astropy.io.fits.HDUList] = None,
-            **kwargs
-    ):
-        pass
-
-    def get_file_path(
-            self,
-            header: astropy.io.fits.Header,
-            sub_dir: str = ""
-    ):
-        cal_dir = cal_output_dir(sub_dir=sub_dir)
-        filtername = header['FILTER']
-        name = f"{self.base_name}_{filtername}.fits"
-        return os.path.join(cal_dir, name)
+# class StandardFlatCalibrator(FlatCalibrator):
+#
+#     def __init__(
+#             self,
+#             open_fits: Callable[[str], astropy.io.fits.HDUList],
+#             x_min: float = 0.,
+#             x_max: float = np.inf,
+#             y_min: float = 0.,
+#             y_max: float = np.inf,
+#             flat_nan_threshold: float = np.nan,
+#             standard_flat_dir: str = None
+#     ):
+#         FlatCalibrator.__init__(
+#             self,
+#             open_fits=open_fits,
+#             x_min=x_min,
+#             x_max=x_max,
+#             y_min=y_min,
+#             y_max=y_max,
+#             flat_nan_threshold=flat_nan_threshold
+#         )
+#         if standard_flat_dir is None:
+#             err = "For StandardFlatCalibrator, you must specify "
+#             logger.error(err)
+#             raise ValueError(err)
+#
+#     def get_file_path(
+#             self,
+#             header: astropy.io.fits.Header,
+#             sub_dir: str = ""
+#     ):
+#         cal_dir = cal_output_dir(sub_dir=sub_dir)
+#         filtername = header['FILTER']
+#         name = f"{self.base_name}_{filtername}.fits"
+#         return os.path.join(cal_dir, name)

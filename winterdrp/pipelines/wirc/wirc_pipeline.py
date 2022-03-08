@@ -4,6 +4,11 @@ import numpy as np
 from astropy.io.fits import HDUList
 from winterdrp.pipelines.base_pipeline import Pipeline
 
+from winterdrp.processors.dark import DarkCalibrator
+from winterdrp.processors.flat import FlatCalibrator, SkyFlatCalibrator
+from winterdrp.processors.utils import ImageSaver
+from winterdrp.processors.astromatic import SextractorRunner
+
 wirc_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -30,12 +35,10 @@ class WircPipeline(Pipeline):
 
     pipeline_configurations = {
         None: [
-            ("dark",),
-            # "flat",
-            ("save", "preprocess"),
-            ("sextractor", ),
-            # "stack",
-            # "dither"
+            (DarkCalibrator, ),
+            (SkyFlatCalibrator, ),
+            (ImageSaver, "preprocess"),
+            # (SextractorRunner, "pass1"),
         ]
     }
 
@@ -49,6 +52,8 @@ class WircPipeline(Pipeline):
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
         header["CALSTEPS"] = ""
         header["BASENAME"] = os.path.basename(path)
+        header["TARGET"] = header["OBJECT"].lower()
+        header["UTCTIME"] = header["UTSHUT"]
         img[0].header = header
         return img[0].data, img[0].header
 

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 raw_img_key = "RAWIMAGEPATH"
+core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
 
 
 class Pipeline:
@@ -51,7 +52,7 @@ class Pipeline:
     x_max = sys.maxsize
     y_min = 0
     y_max = sys.maxsize
-    flat_nan_threshold = np.nan
+    flat_nan_threshold = 0.0
     standard_flats_dir = None
 
     def __init__(self, pipeline_configuration=None, *args, **kwargs):
@@ -101,6 +102,14 @@ class Pipeline:
     ) -> (np.array, astropy.io.fits.Header):
         with fits.open(path) as raw:
             data, header = self.reformat_raw_data(raw, path)
+
+        for key in core_fields:
+            if key not in header.keys():
+                err = f"Essential key {key} not found in header. " \
+                      f"Please add this field first. Available fields are: {header.keys()}"
+                logger.error(err)
+                raise KeyError(err)
+
         return data, header
 
     def open_image_batch(
@@ -156,18 +165,12 @@ class Pipeline:
                 sub_dir=sub_dir,
                 preceding_steps=preceding_steps,
             )
-            # image_list = processor.select_cache_images(observing_log)
-            # if len(image_list) > 0:
-            #     processor.make_cache_files(
-            #         image_list=image_list,
-            #         sub_dir=sub_dir,
-            #         preceding_steps=preceding_steps,
-            #     )
             preceding_steps.append(processor.apply)
 
     def split_raw_images_into_batches(
             self,
-            sub_dir: str = ""
+            sub_dir: str = "",
+            select_batch: str = None
     ) -> list:
         observing_log = self.load_observing_log(sub_dir=sub_dir)
 
@@ -189,6 +192,16 @@ class Pipeline:
 
         logger.debug(f"Selecting unique combinations of {self.batch_split_keys}, "
                      f"found the following batches: {batches}")
+
+        if select_batch is not None:
+            if select_batch in batches:
+                logger.debug(f"Only selecting '{select_batch}'")
+                batches = [select_batch]
+            else:
+                err = f"The batch '{select_batch}' was selected, " \
+                      f"but was not found in the batch list."
+                logger.error(err)
+                raise KeyError(err)
 
         raw_image_path_batches = [
             list(obs[split_vals == x][raw_img_key])
@@ -214,59 +227,59 @@ class Pipeline:
 
         return images
 
-    def process_images(self, sub_dir="", raw_image_list=None, reprocess=True):
-
-        if raw_image_list is None:
-            raw_image_list = parse_image_list(sub_dir, group_by_object=False)
-
-        # Try making output directory, unless it exists
-
-        output_dir = reduced_img_dir(sub_dir)
-
-        try:
-            os.makedirs(output_dir)
-        except OSError:
-            pass
-
-        nframes = len(raw_image_list)
-
-        proccessed_list = []
-
-        # Loop over science images
-
-        for i, raw_img_path in enumerate(raw_image_list):
-
-            img_name = os.path.basename(raw_img_path)
-
-            logger.debug(f"Processing image {i + 1}/{nframes} ({img_name})")
-
-            output_path = reduced_img_path(img_name, sub_dir=sub_dir)
-
-            if np.logical_and(os.path.exists(output_path), reprocess is False):
-                logger.debug(f"Skipping image {img_name}, because it has already "
-                             f"been processed and 'reprocess' is False.")
-                continue
-
-            with self.open_fits(raw_img_path) as img:
-                header = img.header
-
-                if header['OBSTYPE'] not in ['science', "object"]:
-                    logger.debug(f'Obstype is not science, skipping {raw_img_path}')
-                    continue
-
-                data_redux = np.array(self.reduce_single_image(img, sub_dir=sub_dir))
-
-                proc_hdu = create_fits(data_redux, header=header, history=None)
-
-                proc_hdu.header['BZERO'] = 0
-
-                # Write the reduced frame to disk
-
-                logger.debug(f"Saving processed image to {output_path}")
-                proccessed_list.append(output_path)
-                proc_hdu.writeto(output_path, overwrite=True)
-
-        return proccessed_list
+    # def process_images(self, sub_dir="", raw_image_list=None, reprocess=True):
+    #
+    #     if raw_image_list is None:
+    #         raw_image_list = parse_image_list(sub_dir, group_by_object=False)
+    #
+    #     # Try making output directory, unless it exists
+    #
+    #     output_dir = reduced_img_dir(sub_dir)
+    #
+    #     try:
+    #         os.makedirs(output_dir)
+    #     except OSError:
+    #         pass
+    #
+    #     nframes = len(raw_image_list)
+    #
+    #     proccessed_list = []
+    #
+    #     # Loop over science images
+    #
+    #     for i, raw_img_path in enumerate(raw_image_list):
+    #
+    #         img_name = os.path.basename(raw_img_path)
+    #
+    #         logger.debug(f"Processing image {i + 1}/{nframes} ({img_name})")
+    #
+    #         output_path = reduced_img_path(img_name, sub_dir=sub_dir)
+    #
+    #         if np.logical_and(os.path.exists(output_path), reprocess is False):
+    #             logger.debug(f"Skipping image {img_name}, because it has already "
+    #                          f"been processed and 'reprocess' is False.")
+    #             continue
+    #
+    #         with self.open_fits(raw_img_path) as img:
+    #             header = img.header
+    #
+    #             if header['OBSTYPE'] not in ['science', "object"]:
+    #                 logger.debug(f'Obstype is not science, skipping {raw_img_path}')
+    #                 continue
+    #
+    #             data_redux = np.array(self.reduce_single_image(img, sub_dir=sub_dir))
+    #
+    #             proc_hdu = create_fits(data_redux, header=header, history=None)
+    #
+    #             proc_hdu.header['BZERO'] = 0
+    #
+    #             # Write the reduced frame to disk
+    #
+    #             logger.debug(f"Saving processed image to {output_path}")
+    #             proccessed_list.append(output_path)
+    #             proc_hdu.writeto(output_path, overwrite=True)
+    #
+    #     return proccessed_list
 
     def export_observing_log(
             self,
@@ -338,7 +351,7 @@ class Pipeline:
 
         # Some fields should always go to the log
 
-        key_list = self.header_keys + ["OBSCLASS"]
+        key_list = self.header_keys + core_fields
 
         for img_file in img_list:
             _, header = self.open_fits(img_file)
