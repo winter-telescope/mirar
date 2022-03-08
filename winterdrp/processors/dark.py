@@ -3,6 +3,8 @@ import astropy.io.fits
 import numpy as np
 import os
 import logging
+import pandas as pd
+from collections.abc import Callable
 from winterdrp.processors.base_processor import ProcessorWithCache
 from winterdrp.paths import cal_output_dir
 
@@ -17,11 +19,19 @@ class DarkCalibrator(ProcessorWithCache):
             self,
             instrument_vars,
             use_normed_dark: bool = False,
+            select_cache_images: Callable[[pd.DataFrame], list] = None,
             *args,
             **kwargs
     ):
         super().__init__(instrument_vars, *args, **kwargs)
         self.use_normed_dark = use_normed_dark
+
+        if select_cache_images is None:
+
+            def select_cache_images(x):
+                return self.select_from_log(x, "dark")
+
+        self.select_cache_images = select_cache_images
 
     def get_file_path(
             self,
@@ -65,7 +75,6 @@ class DarkCalibrator(ProcessorWithCache):
             *args,
             **kwargs
     ):
-
         logger.info(f'Found {len(image_list)} dark frames')
 
         img, header = self.open_fits(image_list[0])
