@@ -6,6 +6,7 @@ from winterdrp.pipelines.base_pipeline import Pipeline
 
 from winterdrp.processors.dark import DarkCalibrator
 from winterdrp.processors.flat import FlatCalibrator, SkyFlatCalibrator
+from winterdrp.processors.sky import SkyMedianCalibrator
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.astromatic import SextractorRunner
 
@@ -35,9 +36,10 @@ class WircPipeline(Pipeline):
 
     pipeline_configurations = {
         None: [
-            (DarkCalibrator, ),
-            (SkyFlatCalibrator, ),
-            (ImageSaver, "preprocess"),
+            DarkCalibrator(),
+            SkyFlatCalibrator(),
+            SkyMedianCalibrator(),
+            ImageSaver(output_dir_name="preprocess"),
             # (SextractorRunner, "pass1"),
         ]
     }

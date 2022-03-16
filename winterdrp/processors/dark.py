@@ -17,13 +17,12 @@ class DarkCalibrator(ProcessorWithCache):
 
     def __init__(
             self,
-            instrument_vars,
             use_normed_dark: bool = False,
             select_cache_images: Callable[[pd.DataFrame], list] = None,
             *args,
             **kwargs
     ):
-        super().__init__(instrument_vars, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.use_normed_dark = use_normed_dark
 
         if select_cache_images is None:
@@ -52,10 +51,9 @@ class DarkCalibrator(ProcessorWithCache):
 
     def _apply_to_images(
             self,
-            images: list,
-            headers: list,
-            sub_dir: str = ""
-    ) -> (list, list):
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.Header],
+    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
         for i, data in enumerate(images):
             header = headers[i]
@@ -69,15 +67,11 @@ class DarkCalibrator(ProcessorWithCache):
 
     def make_cache_files(
             self,
-            image_list: list,
-            preceding_steps: list,
-            sub_dir: str = "",
-            *args,
-            **kwargs
+            image_paths: list[str],
     ):
-        logger.info(f'Found {len(image_list)} dark frames')
+        logger.info(f'Found {len(image_paths)} dark frames')
 
-        img, header = self.open_fits(image_list[0])
+        img, header = self.open_fits(image_paths[0])
 
         nx = header['NAXIS1']
         ny = header['NAXIS2']
@@ -86,7 +80,7 @@ class DarkCalibrator(ProcessorWithCache):
 
         exp_list = []
 
-        for dark in image_list:
+        for dark in image_paths:
             img, header = self.open_fits(dark)
             exp_list.append(header['EXPTIME'])
 
@@ -94,7 +88,7 @@ class DarkCalibrator(ProcessorWithCache):
 
         logger.info(f'Found {len(exp_times)} different exposure times: {exp_times}')
 
-        image_list = np.array(image_list)
+        image_paths = np.array(image_paths)
 
         dark_loop = []
 
@@ -105,7 +99,7 @@ class DarkCalibrator(ProcessorWithCache):
                 mask = np.array([x == exp for x in exp_list])
 
                 dark_loop.append((
-                    image_list[mask],
+                    image_paths[mask],
                     exp,
                     "Median stacked dark",
                     )
@@ -113,7 +107,7 @@ class DarkCalibrator(ProcessorWithCache):
         else:
             logger.info("Making one additional 'master_dark' combining all exposure times.")
             dark_loop.append((
-                image_list,
+                image_paths,
                 1.0,
                 "Median stacked normalised dark",
             ))
@@ -132,8 +126,8 @@ class DarkCalibrator(ProcessorWithCache):
                 logger.debug(f'Read dark {i + 1}/{n_frames} with exposure time {dark_exptime}')
 
                 # Iteratively apply corrections
-                for f in preceding_steps:
-                    img, header = f(list(img), list(header))
+                for p in self.preceding_steps:
+                    img, header = p.apply(list(img), list(header))
 
                 darks[:, :, i] = img / dark_exptime
 
@@ -143,7 +137,10 @@ class DarkCalibrator(ProcessorWithCache):
             primary_header["HISTORY"] = history
             primary_header['EXPTIME'] = exp_time
 
-            master_dark_path = self.get_file_path(header=primary_header, sub_dir=sub_dir)
+            master_dark_path = self.get_file_path(
+                header=primary_header,
+                sub_dir=self.night
+            )
 
             logger.info(f"Saving stacked 'master dark' "
                         f"combining {n_frames} exposures to {master_dark_path}")

@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 
 class BaseProcessor:
 
-    base_name = None
+    @property
+    def base_name(self):
+        raise NotImplementedError()
+
     base_key = None
 
     requires = []
@@ -20,16 +23,18 @@ class BaseProcessor:
 
     def __init__(
             self,
-            instrument_vars: dict,
             *args,
             **kwargs
     ):
         self.cache = dict()
-        self.open_fits = instrument_vars["open_fits"]
+
+        self.night = None
+        self.open_fits = None
+        self.preceding_steps = None
 
         # Check processor prerequisites are satisfied
 
-        self.check_prerequisites(instrument_vars["preceding_steps"])
+        self.check_prerequisites()
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -38,11 +43,35 @@ class BaseProcessor:
 
     def _apply_to_images(
             self,
-            images: list,
-            headers: list,
-            sub_dir: str = ""
-    ) -> (list, list):
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.Header],
+    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
         raise NotImplementedError
+
+    # def apply_previous(
+    #         self,
+    #         images: list[np.ndarray],
+    #         headers: list[astropy.io.fits.header],
+    # ) -> (list[np.ndarray], list[astropy.io.fits.header]):
+    #     raise NotImplementedError
+
+    def set_preceding_steps(
+            self,
+            previous_steps: list
+    ):
+        self.preceding_steps = previous_steps
+
+    def set_open_fits(
+            self,
+            open_fits
+    ):
+        self.open_fits = open_fits
+
+    def set_sub_dir(
+            self,
+            sub_dir: str = ""
+    ):
+        self.night = sub_dir
 
     def _update_processing_history(
             self,
@@ -54,25 +83,21 @@ class BaseProcessor:
 
     def apply(
             self,
-            images: list,
-            headers: list,
-            sub_dir: str = ""
-    ) -> (list, list):
-        images, headers = self._apply_to_images(images, headers, sub_dir=sub_dir)
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.header],
+    ) -> (list[np.ndarray], list[astropy.io.fits.header]):
+        images, headers = self._apply_to_images(images, headers)
         headers = self._update_processing_history(headers)
         return images, headers
 
     def check_prerequisites(
             self,
-            preceding_steps: list,
     ):
         pass
 
     def make_cache(
             self,
             observing_log: pd.DataFrame,
-            preceding_steps: list,
-            sub_dir: str = "",
     ):
         pass
 
@@ -106,30 +131,27 @@ class ProcessorWithCache(BaseProcessor, ABC):
     def make_cache(
             self,
             observing_log: pd.DataFrame,
-            preceding_steps: list,
-            sub_dir: str = "",
     ):
-        image_list = self.select_cache_images(observing_log)
+        img_path_list = self.select_cache_images(observing_log)
 
-        if len(image_list) > 0:
+        if len(img_path_list) > 0:
             self.make_cache_files(
-                image_list,
-                preceding_steps=preceding_steps,
-                sub_dir=sub_dir
+                img_path_list,
             )
 
     def make_cache_files(
             self,
-            image_list: list,
-            preceding_steps: list,
-            sub_dir: str = ""
+            image_paths: list[str],
     ):
         raise NotImplementedError
 
-    @staticmethod
     def select_from_log(
+            self,
             observing_log: pd.DataFrame,
             key: str
     ) -> [str]:
-        mask = observing_log["TARGET"] == key
+        mask = np.logical_and(
+            observing_log["TARGET"] == key,
+            observing_log["NIGHT"] == self.night
+        )
         return list(observing_log[mask]["RAWIMAGEPATH"])

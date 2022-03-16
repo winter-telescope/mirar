@@ -880,9 +880,9 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
     for i in range(len(primarymatchs)):
         si = primarymatchs[i]
         ci = primarymatchc[i]
-        # logger.debug('%3i' % si, 'matches', '%3i' % ci, ' (dPA =%7.3f)' % mpa[i])
-        logger.debug(f'{si} matches {ci} (dPA =%7.3f)' % mpa[i])
+
         if showmatches:
+            logger.debug(f'{si} matches {ci} (dPA ={mpa[i]:.3f})')
             if len(smatch[i]) < 16:
                 logger.debug(f'  {si} --> {smatch[i]}')
                 logger.debug(f'  {ci} --> {cmatch[i]}')
@@ -894,7 +894,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                              f'{(len(primarymatchs)-10)} additional matches not shown.')
                 break
         else:
-            logger.debug(f': {str(len(smatch[i])).strip()} rays')
+            logger.debug(f'{si} matches {ci} (dPA ={mpa[i]:.3f}): {str(len(smatch[i])).strip()} rays')
 
     with open('matchlines.im.reg', 'w') as out:
 

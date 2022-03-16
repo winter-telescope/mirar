@@ -4,16 +4,13 @@ import os
 import astropy.io.fits
 import numpy as np
 from astropy.io import fits
-from winterdrp.processors import get_processor
-from winterdrp.io import create_fits
 from glob import glob
 import pandas as pd
-import sys
+import copy
+from astropy.time import Time
+from astropy import units as u
 from winterdrp.paths import \
     cal_output_dir,\
-    parse_image_list, \
-    reduced_img_dir, \
-    reduced_img_path, \
     raw_img_dir, \
     observing_log_dir
 
@@ -33,9 +30,9 @@ class Pipeline:
     astrometry = ("GAIA", 9., 13.)
     photometry_cal = dict()
 
-    pipeline_configurations = {
-        None: []
-    }
+    @property
+    def pipeline_configurations(self):
+        raise NotImplementedError()
 
     # Fix keys from header to save in log
     # The first key should sort images in order
@@ -47,44 +44,37 @@ class Pipeline:
 
     batch_split_keys = ["RAWIMAGEPATH"]
 
-    # Pixel range for flat-fielding
-    x_min = 0
-    x_max = sys.maxsize
-    y_min = 0
-    y_max = sys.maxsize
-    flat_nan_threshold = 0.0
     standard_flats_dir = None
 
-    def __init__(self, pipeline_configuration=None, *args, **kwargs):
+    default_log_history_nights = 0
 
-        self.image_steps = list()
+    def __init__(
+            self,
+            pipeline_configuration: str = None,
+            night: int | str = "",
+            log_history_nights: int = None
+    ):
 
-        self.set_pipeline_configuration(pipeline_configuration)
+        if log_history_nights is None:
+            log_history_nights = self.default_log_history_nights
 
-        instrument_vars = dict([(x, getattr(self, x)) for x in dir(self)])
+        self.night_sub_dir = os.path.join(self.name, night)
+
+        self.processors = self.load_pipeline_configuration(pipeline_configuration)
 
         self.observing_logs_cache = dict()
-        self.processors = list()
 
-        for i, (processor, *args) in enumerate(self.image_steps):
+        observing_logs = self.load_observing_log_block(
+            night_sub_dir=self.night_sub_dir,
+            log_history_nights=log_history_nights
+        )
 
-            # if not isinstance(step, tuple):
-            #     err = f"Image steps should be tuples. However, step '{step}' is {type(step)}."
-            #     logger.error(err)
-            #     raise ValueError(err)
-            #
-            # name = step[0]
-            #
-            # if len(step) > 1:
-            #     pargs = step[1:] + args
-            # else:
-            #     pargs = args
+        self.configure_processors(sub_dir=self.night_sub_dir)
 
-            instrument_vars["preceding_steps"] = [x[0] for x in self.image_steps[:i]]
-
-            self.processors.append(processor(instrument_vars, *args))
-
-            # self.processors.append() = get_processor(name, instrument_vars, *pargs, **kwargs)
+        for i, (processor) in enumerate(self.processors):
+            # preceding_steps = [x[0] for x in self.processors[:i]]
+            processor.set_preceding_steps(previous_steps=self.processors[:i])
+            processor.make_cache(observing_log=observing_logs)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -95,6 +85,14 @@ class Pipeline:
             logger.error(err)
             raise ValueError(err)
         cls.pipelines[cls.name] = cls
+
+    def configure_processors(
+            self,
+            sub_dir: str = ""
+    ):
+        for processor in self.processors:
+            processor.set_sub_dir(sub_dir=sub_dir)
+            processor.set_open_fits(self.open_fits)
 
     def open_fits(
             self,
@@ -133,14 +131,14 @@ class Pipeline:
     ) -> (np.ndarray, astropy.io.fits.Header):
         raise NotImplementedError
 
-    def set_pipeline_configuration(
+    def load_pipeline_configuration(
             self,
             configuration: str | list = None,
     ):
         if isinstance(configuration, str | None):
-            self.image_steps = self.pipeline_configurations[configuration]
+            return copy.copy(self.pipeline_configurations[configuration])
         else:
-            self.image_steps = configuration
+            return copy.copy(configuration)
 
     def make_calibration_files(self, sub_dir=""):
 
@@ -169,10 +167,10 @@ class Pipeline:
 
     def split_raw_images_into_batches(
             self,
-            sub_dir: str = "",
             select_batch: str = None
     ) -> list:
-        observing_log = self.load_observing_log(sub_dir=sub_dir)
+
+        observing_log = self.load_observing_log(sub_dir=self.sub_dir)
 
         mask = observing_log["OBSCLASS"] == "science"
         obs = observing_log[mask]
@@ -316,22 +314,63 @@ class Pipeline:
         base_dir = observing_log_dir(sub_dir=sub_dir)
         return os.path.join(base_dir, "observing_log.csv")
 
-    def load_observing_log(self, sub_dir=""):
+    def load_observing_log(
+            self,
+            sub_dir: str | int
+    ):
 
         path = self.get_observing_log_path(sub_dir=sub_dir)
 
         if path in self.observing_logs_cache:
             log = self.observing_logs_cache[path]
         else:
-            log = self.parse_observing_log(sub_dir=sub_dir)
+            log = self.parse_observing_log(night_sub_dir=sub_dir)
             self.observing_logs_cache[path] = log
             self.export_observing_log(sub_dir=sub_dir)
 
         return log
 
-    def parse_observing_log(self, sub_dir=""):
+    def load_observing_log_block(
+            self,
+            night_sub_dir: str | int,
+            log_history_nights: int
+    ) -> pd.DataFrame:
 
-        raw_dir = raw_img_dir(sub_dir)
+        log = self.load_observing_log(sub_dir=night_sub_dir)
+
+        pipeline, night = night_sub_dir.split("/")
+
+        if len(str(night)) != 8:
+            err = f"Night format not recignised. Folders should be organised as YYYYMMDD. " \
+                  f"Instead found {night}."
+            logger.error(err)
+            raise ValueError(err)
+
+        date = Time(f"{night[:4]}-{night[4:6]}-{night[6:]}")
+
+        other_dates = [
+            (date - ((x+1) * u.day)).isot.split("T")[0].replace("-", "")
+            for x in range(log_history_nights)[::-1]
+        ]
+
+        for other_date in other_dates:
+
+            other_sub_dir = os.path.join(pipeline, other_date)
+
+            try:
+                log = pd.concat(
+                    log,
+                    self.load_observing_log(sub_dir=other_sub_dir)
+                )
+            except NotADirectoryError:
+                msg = f"Did not find sub diretory {other_sub_dir}, skipping instead."
+                logger.warning(msg)
+
+        return log
+
+    def parse_observing_log(self, night_sub_dir):
+
+        raw_dir = raw_img_dir(night_sub_dir)
 
         if not os.path.isdir(raw_dir):
             error = f"Raw image directory '{raw_dir}' does not exit"
@@ -351,10 +390,12 @@ class Pipeline:
 
         # Some fields should always go to the log
 
-        key_list = self.header_keys + core_fields
+        key_list = self.header_keys + core_fields + ["NIGHT"]
 
         for img_file in img_list:
             _, header = self.open_fits(img_file)
+
+            header["NIGHT"] = night_sub_dir.split("/")[1]
 
             row = []
 

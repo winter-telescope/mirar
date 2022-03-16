@@ -6,6 +6,7 @@ from winterdrp.processors.base_processor import ProcessorWithCache
 from winterdrp.paths import cal_output_dir
 from collections.abc import Callable
 import pandas as pd
+import astropy.io
 
 
 logger = logging.getLogger(__name__)
@@ -25,12 +26,11 @@ class BiasCalibrator(ProcessorWithCache):
 
     def __init__(
             self,
-            instrument_vars: dict,
             select_cache_images: Callable[[pd.DataFrame], list] = default_select_bias,
             *args,
             **kwargs
     ):
-        super(BiasCalibrator, self).__init__(instrument_vars, *args, **kwargs)
+        super(BiasCalibrator, self).__init__(*args, **kwargs)
         self.select_cache_images = select_cache_images
 
     def get_file_path(self, header, sub_dir=""):
@@ -39,10 +39,9 @@ class BiasCalibrator(ProcessorWithCache):
 
     def _apply_to_images(
             self,
-            images: list,
-            headers: list,
-            sub_dir: str = ""
-    ) -> (list, list):
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.Header],
+    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
         for i, data in enumerate(images):
             header = headers[i]

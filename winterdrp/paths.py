@@ -2,6 +2,7 @@ import os
 from astropy.io import fits
 from glob import glob
 import logging
+from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -20,31 +21,49 @@ if base_output_dir is None:
     raise ValueError(err)
 
 
-def raw_img_dir(sub_dir=""):
+def raw_img_dir(
+        sub_dir=""
+):
     return os.path.join(base_raw_dir, os.path.join(sub_dir, "raw"))
 
 
-def output_dir(dir_root, sub_dir=""):
+def output_dir(
+        dir_root: str,
+        sub_dir: str | int = ""
+):
     return os.path.join(base_output_dir, os.path.join(sub_dir, dir_root))
 
 
-def output_path(base_name, dir_root, sub_dir=""):
+def output_path(
+        base_name: str,
+        dir_root: str,
+        sub_dir: str | int = ""
+):
     return os.path.join(output_dir(dir_root, sub_dir=sub_dir), base_name)
 
 
-def cal_output_dir(sub_dir=""):
+def cal_output_dir(
+        sub_dir: str | int = ""
+):
     return output_dir("cals", sub_dir=sub_dir)
 
 
-def reduced_img_dir(sub_dir=""):
+def reduced_img_dir(
+        sub_dir: str | int = ""
+):
     return output_dir("redux", sub_dir=sub_dir)
 
 
-def reduced_img_path(img_name, sub_dir=""):
+def reduced_img_path(
+        img_name: str,
+        sub_dir: str | int = ""
+):
     return os.path.join(reduced_img_dir(sub_dir), img_name)
 
 
-def observing_log_dir(sub_dir=""):
+def observing_log_dir(
+        sub_dir: str | int = ""
+):
     return os.path.join(base_raw_dir, sub_dir)
 
 
@@ -55,7 +74,11 @@ def astrometry_output_dir(
     return output_dir(f"astrometry_{astro_pass}", sub_dir=sub_dir)
 
 
-def parse_image_list(sub_dir="", group_by_object=True, base_dir_f=raw_img_dir):
+def parse_image_list(
+        sub_dir: str | int = "",
+        group_by_object: bool = True,
+        base_dir_f: Callable[[str], str] = raw_img_dir
+):
     
     object_dict = dict()
         

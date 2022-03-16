@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 # Convention: lowercase names
 
 
-def get_pipeline(instrument):
+def get_pipeline(instrument, configuration, *args, **kwargs):
 
     try:
         pipeline = Pipeline.pipelines[instrument.lower()]
@@ -18,7 +18,7 @@ def get_pipeline(instrument):
         logger.error(err)
         raise KeyError(err)
 
-    return pipeline()
+    return pipeline(pipeline_configuration=configuration, *args, **kwargs)
 
 # def parse_telescope(header):
 #

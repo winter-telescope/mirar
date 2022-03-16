@@ -3,6 +3,7 @@ import numpy as np
 import os
 import logging
 import pandas as pd
+import sys
 from collections.abc import Callable
 from astropy.time import Time
 from winterdrp.processors.base_processor import BaseProcessor, ProcessorWithCache
@@ -18,23 +19,26 @@ class BaseFlatCalibrator(BaseProcessor):
 
     def __init__(
             self,
-            instrument_vars: dict,
+            x_min: int = 0,
+            x_max: int = sys.maxsize,
+            y_min: int = 0,
+            y_max: int = sys.maxsize,
+            flat_nan_threshold: float = np.nan,
             *args,
             **kwargs
     ):
-        super().__init__(instrument_vars, *args, **kwargs)
-        self.x_min = int(instrument_vars["x_min"])
-        self.x_max = int(instrument_vars["x_max"])
-        self.y_min = int(instrument_vars["y_min"])
-        self.y_max = int(instrument_vars["y_max"])
-        self.flat_nan_threshold = instrument_vars["flat_nan_threshold"]
+        super().__init__(*args, **kwargs)
+        self.x_min = x_min
+        self.x_max = x_max
+        self.y_min = y_min
+        self.y_max = y_max
+        self.flat_nan_threshold = flat_nan_threshold
 
     def _apply_to_images(
             self,
             images: list[np.ndarray],
-            headers: list[astropy.io.fits.header],
-            sub_dir: str = ""
-    ) -> (list, list):
+            headers: list[astropy.io.fits.Header],
+    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
         for i, data in enumerate(images):
             header = headers[i]
@@ -86,12 +90,11 @@ class FlatCalibrator(ProcessorWithCache, BaseFlatCalibrator):
 
     def __init__(
             self,
-            instrument_vars: dict,
             select_cache_images: Callable[[pd.DataFrame], list] = None,
             *args,
             **kwargs
     ):
-        super().__init__(instrument_vars, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if select_cache_images is None:
             def select_cache_images(x):
