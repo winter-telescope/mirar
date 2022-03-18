@@ -28,7 +28,7 @@ class ImageSaver(BaseProcessor):
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
         try:
-            os.makedirs(output_dir(dir_root=self.output_dir_name, sub_dir=self.night))
+            os.makedirs(output_dir(dir_root=self.output_dir_name, sub_dir=self.night_sub_dir))
         except OSError:
             pass
 
@@ -36,7 +36,11 @@ class ImageSaver(BaseProcessor):
 
             header = headers[i]
 
-            path = output_path(header["BASENAME"], dir_root=self.output_dir_name, sub_dir=self.night)
+            path = output_path(
+                header["BASENAME"],
+                dir_root=self.output_dir_name,
+                sub_dir=self.night_sub_dir
+            )
 
             self.save_fits(img, header, path)
             header[latest_save_key] = path

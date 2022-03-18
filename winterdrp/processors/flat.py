@@ -23,7 +23,7 @@ class FlatCalibrator(ProcessorWithCache):
             x_max: int = sys.maxsize,
             y_min: int = 0,
             y_max: int = sys.maxsize,
-            flat_nan_threshold: float = np.nan,
+            flat_nan_threshold: float = 0.,
             *args,
             **kwargs
     ):
@@ -35,7 +35,7 @@ class FlatCalibrator(ProcessorWithCache):
         self.flat_nan_threshold = flat_nan_threshold
 
     def select_cache_images(self, x):
-        return self.select_from_log(x, "flat")
+        return self.select_from_log(x, self.base_key)
 
     def _apply_to_images(
             self,
@@ -46,11 +46,15 @@ class FlatCalibrator(ProcessorWithCache):
         for i, data in enumerate(images):
             header = headers[i]
             flat, _ = self.load_cache_file(self.get_file_path(header))
-            if np.any(~(flat > self.flat_nan_threshold)):
-                flat[~(flat > self.flat_nan_threshold)] = np.nan
+
+            mask = flat > self.flat_nan_threshold
+
+            if np.sum(~mask) > 0:
+                flat[~mask] = np.nan
 
             data = data / flat
-            header["CALSTEPS"] += "flat,"
+
+            header["CALSTEPS"] += f"{self.base_key},"
             images[i] = data
             headers[i] = header
         return images, headers
@@ -70,7 +74,7 @@ class FlatCalibrator(ProcessorWithCache):
             image_paths: list[str],
     ):
 
-        logger.info(f'Found {len(image_paths)} flat frames')
+        logger.info(f'Found {len(image_paths)} {self.base_key} frames')
 
         _, primary_header = self.open_fits(image_paths[0])
 
@@ -98,18 +102,18 @@ class FlatCalibrator(ProcessorWithCache):
             flats = np.zeros((ny, nx, n_frames))
 
             for i, flat in enumerate(cut_flat_list):
-                logger.debug(f'Reading flat {i + 1}/{n_frames}')
+                logger.debug(f'Reading image {i + 1}/{n_frames}')
 
                 img, header = self.open_fits(flat)
 
                 # Iteratively apply corrections
                 for p in self.preceding_steps:
-                    img, header = p.apply([img], [header])
+                    [img], [header] = p.apply([img], [header])
 
-                median = np.nanmedian(img[0][self.x_min:self.x_max, self.y_min:self.y_max])
+                median = np.nanmedian(img[self.x_min:self.x_max, self.y_min:self.y_max])
                 flats[:, :, i] = img / median
 
-            logger.info(f'Median combining {n_frames} flats')
+            logger.info(f'Median combining {n_frames} {self.base_key} images')
 
             master_flat = np.nanmedian(flats, axis=2)
 
@@ -117,11 +121,11 @@ class FlatCalibrator(ProcessorWithCache):
 
             primary_header['BZERO'] = 0
             primary_header["FILTER"] = filt
-            primary_header['OBJECT'] = "flat"
+            primary_header['OBJECT'] = self.base_key
 
             master_flat_path = self.get_file_path(primary_header)
 
-            logger.info(f"Saving stacked 'master flat' for f {filt} to {master_flat_path}")
+            logger.info(f"Saving stacked '{self.base_name}' for filter {filt} to {master_flat_path}")
 
             self.save_fits(master_flat, primary_header, master_flat_path)
 
@@ -154,6 +158,48 @@ class SkyFlatCalibrator(FlatCalibrator):
 
         else:
             raise NotImplementedError
+
+
+class OldSkyFlatCalibrator(SkyFlatCalibrator):
+
+    def __init__(
+            self,
+            *args,
+            **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+
+        if not self.use_full_night:
+
+            err = f"Calibrator has been configured to not use a full night for sky flats. " \
+                  f"However, {self.__class__} needs to use all data fromb the previous night for flats. "
+
+            logger.error(err)
+            raise ValueError(err)
+
+    def select_cache_images(
+            self,
+            observing_log: pd.DataFrame
+    ) -> list[str]:
+
+        mask = observing_log["OBSCLASS"] == "science"
+        obs = observing_log[mask]
+        nights = list(sorted(set(obs["NIGHT"])))
+
+        if len(nights) == 1:
+            err = "Only found one night in observing log. " \
+                  "Cannot use a previous night for creating flats. " \
+                  "Try adjusting the 'log_history_nights' parameter of the pipeline, " \
+                  "to read in more history."
+
+            logger.error(err)
+            raise Exception(err)
+
+        previous_night = nights[nights.index(self.night) - 1]
+
+        previous = obs[obs["NIGHT"] == previous_night]
+
+        return list(previous["RAWIMAGEPATH"])
 
 
 

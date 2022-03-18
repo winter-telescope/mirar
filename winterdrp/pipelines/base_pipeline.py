@@ -52,7 +52,8 @@ class Pipeline:
             self,
             pipeline_configuration: str = None,
             night: int | str = "",
-            log_history_nights: int = None
+            log_history_nights: int = None,
+            skip_build_cache: bool = False
     ):
 
         if log_history_nights is None:
@@ -71,12 +72,16 @@ class Pipeline:
 
         self.configure_processors(sub_dir=self.night_sub_dir)
 
+        if skip_build_cache:
+            logger.warning("Skipping cache building for all processors.")
+
         for i, (processor) in enumerate(self.processors):
-            # preceding_steps = [x[0] for x in self.processors[:i]]
 
             logger.debug(f"Initialising processor {processor.__class__}")
             processor.set_preceding_steps(previous_steps=self.processors[:i])
-            processor.make_cache(observing_log=observing_logs)
+
+            if not skip_build_cache:
+                processor.make_cache(observing_log=observing_logs)
 
         logger.debug("Pipeline initialisation complete.")
 
