@@ -4,6 +4,9 @@ from abc import ABC
 import astropy.io.fits
 import numpy as np
 import pandas as pd
+import socket
+import getpass
+import datetime
 from winterdrp.io import create_fits
 
 logger = logging.getLogger(__name__)
@@ -12,10 +15,8 @@ logger = logging.getLogger(__name__)
 class BaseProcessor:
 
     @property
-    def base_name(self):
+    def base_key(self):
         raise NotImplementedError()
-
-    base_key = None
 
     requires = []
 
@@ -80,14 +81,18 @@ class BaseProcessor:
             headers: list,
     ) -> list:
         for header in headers:
-            header["CALSTEPS"] += self.base_key
+            header["CALSTEPS"] += self.base_key + ","
+            header['REDUCER'] = getpass.getuser()
+            header['REDMACH'] = socket.gethostname()
+            header['REDTIME'] = str(datetime.datetime.now())
+            header["REDSOFT"] = "winterdrp"
         return headers
 
     def apply(
             self,
             images: list[np.ndarray],
             headers: list[astropy.io.fits.header],
-    ) -> (list[np.ndarray], list[astropy.io.fits.header]):
+    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
         images, headers = self._apply_to_images(images, headers)
         headers = self._update_processing_history(headers)
         return images, headers
@@ -108,6 +113,19 @@ class BaseProcessor:
         logger.info(f"Saving to {path}")
         img = create_fits(data, header=header)
         img.writeto(path, overwrite=True)
+
+    def load_and_apply_previous(
+            self,
+            img_path: str
+    ) -> tuple[np.ndarray, astropy.io.fits.Header]:
+
+        img, header = self.open_fits(img_path)
+
+        # Iteratively apply corrections
+        for p in self.preceding_steps:
+            [img], [header] = p.apply([img], [header])
+
+        return img, header
 
 
 class ProcessorWithCache(BaseProcessor, ABC):

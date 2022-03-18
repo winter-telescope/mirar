@@ -27,7 +27,6 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
             header = headers[i]
             sky, _ = self.load_cache_file(self.get_file_path(header))
             data = data - np.nanmedian(data) * sky
-            header["CALSTEPS"] += "sky,"
             images[i] = data
             headers[i] = header
         return images, headers

@@ -7,7 +7,9 @@ from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.processors.dark import DarkCalibrator
 from winterdrp.processors.flat import SkyFlatCalibrator, OldSkyFlatCalibrator
 from winterdrp.processors.sky import NightSkyMedianCalibrator
+from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.utils import ImageSaver
+from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path
 from winterdrp.processors.astromatic import SextractorRunner
 
 wirc_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -36,6 +38,7 @@ class WircPipeline(Pipeline):
 
     pipeline_configurations = {
         None: [
+            MaskPixels(mask_path=wirc_mask_path),
             DarkCalibrator(),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),

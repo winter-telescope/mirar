@@ -117,7 +117,7 @@ class Pipeline:
                 logger.error(err)
                 raise KeyError(err)
 
-        return data, header
+        return data.astype(np.float64), header
 
     def open_image_batch(
             self,
@@ -151,7 +151,7 @@ class Pipeline:
 
     def make_calibration_files(self, sub_dir=""):
 
-        observing_log = self.load_observing_log(sub_dir=sub_dir)
+        observing_log = self.load_observing_log(night_sub_dir=sub_dir)
 
         cal_dir = cal_output_dir(sub_dir)
 
@@ -179,7 +179,7 @@ class Pipeline:
             select_batch: str = None
     ) -> list:
 
-        observing_log = self.load_observing_log(sub_dir=self.night_sub_dir)
+        observing_log = self.load_observing_log(night_sub_dir=self.night_sub_dir)
 
         mask = observing_log["OBSCLASS"] == "science"
         obs = observing_log[mask]
@@ -232,108 +232,54 @@ class Pipeline:
 
         return images
 
-    # def process_images(self, sub_dir="", raw_image_list=None, reprocess=True):
-    #
-    #     if raw_image_list is None:
-    #         raw_image_list = parse_image_list(sub_dir, group_by_object=False)
-    #
-    #     # Try making output directory, unless it exists
-    #
-    #     output_dir = reduced_img_dir(sub_dir)
-    #
-    #     try:
-    #         os.makedirs(output_dir)
-    #     except OSError:
-    #         pass
-    #
-    #     nframes = len(raw_image_list)
-    #
-    #     proccessed_list = []
-    #
-    #     # Loop over science images
-    #
-    #     for i, raw_img_path in enumerate(raw_image_list):
-    #
-    #         img_name = os.path.basename(raw_img_path)
-    #
-    #         logger.debug(f"Processing image {i + 1}/{nframes} ({img_name})")
-    #
-    #         output_path = reduced_img_path(img_name, sub_dir=sub_dir)
-    #
-    #         if np.logical_and(os.path.exists(output_path), reprocess is False):
-    #             logger.debug(f"Skipping image {img_name}, because it has already "
-    #                          f"been processed and 'reprocess' is False.")
-    #             continue
-    #
-    #         with self.open_fits(raw_img_path) as img:
-    #             header = img.header
-    #
-    #             if header['OBSTYPE'] not in ['science', "object"]:
-    #                 logger.debug(f'Obstype is not science, skipping {raw_img_path}')
-    #                 continue
-    #
-    #             data_redux = np.array(self.reduce_single_image(img, sub_dir=sub_dir))
-    #
-    #             proc_hdu = create_fits(data_redux, header=header, history=None)
-    #
-    #             proc_hdu.header['BZERO'] = 0
-    #
-    #             # Write the reduced frame to disk
-    #
-    #             logger.debug(f"Saving processed image to {output_path}")
-    #             proccessed_list.append(output_path)
-    #             proc_hdu.writeto(output_path, overwrite=True)
-    #
-    #     return proccessed_list
-
     def export_observing_log(
             self,
-            sub_dir: str = ""
+            night_sub_dir: str = ""
     ):
         """Function to export observing log to file
 
         Parameters
         ----------
-        sub_dir: subdirectory associated with data, e.g date
+        night_sub_dir: subdirectory associated with data, e.g date
 
         Returns
         -------
         """
-        log = self.load_observing_log(sub_dir=sub_dir)
-        path = self.get_observing_log_path(sub_dir=sub_dir)
+        log = self.load_observing_log(night_sub_dir=night_sub_dir)
+        path = self.get_observing_log_path(night_sub_dir=night_sub_dir)
         logger.debug(f"Saving to {path}")
         log.to_csv(path)
 
     @staticmethod
     def get_observing_log_path(
-            sub_dir: str = ""
+            night_sub_dir: str | int = ""
     ):
         """Function to find path for observing log file
 
         Parameters
         ----------
-        sub_dir: subdirectory associated with data, e.g date
+        night_sub_dir: subdirectory associated with data, e.g date
 
         Returns
         -------
         path to the observing log
         """
-        base_dir = observing_log_dir(sub_dir=sub_dir)
+        base_dir = observing_log_dir(sub_dir=night_sub_dir)
         return os.path.join(base_dir, "observing_log.csv")
 
     def load_observing_log(
             self,
-            sub_dir: str | int
+            night_sub_dir: str | int
     ):
 
-        path = self.get_observing_log_path(sub_dir=sub_dir)
+        path = self.get_observing_log_path(night_sub_dir=night_sub_dir)
 
         if path in self.observing_logs_cache:
             log = self.observing_logs_cache[path]
         else:
-            log = self.parse_observing_log(night_sub_dir=sub_dir)
+            log = self.parse_observing_log(night_sub_dir=night_sub_dir)
             self.observing_logs_cache[path] = log
-            self.export_observing_log(sub_dir=sub_dir)
+            self.export_observing_log(night_sub_dir=night_sub_dir)
 
         return log
 
@@ -343,7 +289,7 @@ class Pipeline:
             log_history_nights: int
     ) -> pd.DataFrame:
 
-        log = self.load_observing_log(sub_dir=night_sub_dir)
+        log = self.load_observing_log(night_sub_dir=night_sub_dir)
 
         pipeline, night = night_sub_dir.split("/")
 
@@ -367,7 +313,7 @@ class Pipeline:
             try:
                 log = pd.concat(
                     log,
-                    self.load_observing_log(sub_dir=other_sub_dir)
+                    self.load_observing_log(night_sub_dir=other_sub_dir)
                 )
             except NotADirectoryError:
                 msg = f"Did not find sub diretory {other_sub_dir}, skipping instead."

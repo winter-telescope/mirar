@@ -58,7 +58,6 @@ class DarkCalibrator(ProcessorWithCache):
             header = headers[i]
             master_dark, _ = self.load_cache_file(self.get_file_path(header))
             data = data - (master_dark * header["EXPTIME"])
-            header["CALSTEPS"] += "dark,"
             images[i] = data
             headers[i] = header
 
@@ -120,13 +119,9 @@ class DarkCalibrator(ProcessorWithCache):
             darks = np.zeros((ny, nx, len(cut_image_list)))
 
             for i, dark in enumerate(cut_image_list):
-                img, header = self.open_fits(dark)
+                img, header = self.load_and_apply_previous(dark)
                 dark_exptime = header['EXPTIME']
                 logger.debug(f'Read dark {i + 1}/{n_frames} with exposure time {dark_exptime}')
-
-                # Iteratively apply corrections
-                for p in self.preceding_steps:
-                    img, header = p.apply(list(img), list(header))
 
                 darks[:, :, i] = img / dark_exptime
 
@@ -145,7 +140,7 @@ class DarkCalibrator(ProcessorWithCache):
             except OSError:
                 pass
 
-            logger.info(f"Saving stacked 'master dark' "
+            logger.info(f"Saving stacked '{self.base_key}' "
                         f"combining {n_frames} exposures to {master_dark_path}")
 
             self.save_fits(master_dark, primary_header, master_dark_path)

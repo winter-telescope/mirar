@@ -4,8 +4,6 @@ import os
 import logging
 import pandas as pd
 import sys
-from collections.abc import Callable
-import copy
 from winterdrp.processors.base_processor import BaseProcessor, ProcessorWithCache
 from winterdrp.paths import cal_output_dir
 
@@ -47,14 +45,13 @@ class FlatCalibrator(ProcessorWithCache):
             header = headers[i]
             flat, _ = self.load_cache_file(self.get_file_path(header))
 
-            mask = flat > self.flat_nan_threshold
+            mask = flat <= self.flat_nan_threshold
 
-            if np.sum(~mask) > 0:
-                flat[~mask] = np.nan
+            if np.sum(mask) > 0:
+                flat[mask] = np.nan
 
             data = data / flat
 
-            header["CALSTEPS"] += f"{self.base_key},"
             images[i] = data
             headers[i] = header
         return images, headers
@@ -104,11 +101,7 @@ class FlatCalibrator(ProcessorWithCache):
             for i, flat in enumerate(cut_flat_list):
                 logger.debug(f'Reading image {i + 1}/{n_frames}')
 
-                img, header = self.open_fits(flat)
-
-                # Iteratively apply corrections
-                for p in self.preceding_steps:
-                    [img], [header] = p.apply([img], [header])
+                img, header = self.load_and_apply_previous(flat)
 
                 median = np.nanmedian(img[self.x_min:self.x_max, self.y_min:self.y_max])
                 flats[:, :, i] = img / median
