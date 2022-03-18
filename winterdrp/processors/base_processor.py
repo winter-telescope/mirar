@@ -34,10 +34,6 @@ class BaseProcessor:
         self.open_fits = None
         self.preceding_steps = None
 
-        # Check processor prerequisites are satisfied
-
-        self.check_prerequisites()
-
     @classmethod
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

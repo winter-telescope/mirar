@@ -79,6 +79,7 @@ class Pipeline:
 
             logger.debug(f"Initialising processor {processor.__class__}")
             processor.set_preceding_steps(previous_steps=self.processors[:i])
+            processor.check_prerequisites()
 
             if not skip_build_cache:
                 processor.make_cache(observing_log=observing_logs)
@@ -224,7 +225,7 @@ class Pipeline:
     ) -> list:
 
         for processor in self.processors:
-            logger.debug(f"Applying '{processor}' processor to {len(images)} images")
+            logger.debug(f"Applying '{processor.__class__}' processor to {len(images)} images")
             images, headers = processor.apply(
                 images,
                 headers,

@@ -250,8 +250,11 @@ def sextract(
         saturation: float = default_saturation,
         output_dir: str = base_output_dir,
         config_path: str = default_config_path,
-        output_catalog: str = "temp.cat"
+        output_catalog: str = None
 ):
+
+    if output_catalog is None:
+        output_catalog = sexfilename.replace(".fits", ".cat")
 
     try:
         os.remove(os.path.join(output_dir, output_catalog))
@@ -1596,35 +1599,21 @@ def autoastrometry(
 
     if overwrite:
         outfile = filename
-    if outfile == '':
+    elif outfile == '':
         slashpos = filename.rfind('/')
         dir = filename[0:slashpos+1]
         fil = filename[slashpos+1:]
-        outfile = dir+'a'+fil # alternate behavior would always output to current directory
-    try:
-        os.remove(outfile)
-    except:
-        pass
+        outfile = f"{dir}a{fil}" # alternate behavior would always output to current directory
 
-    fits[sciext].header = h
-    fits.writeto(outfile,output_verify='silentfix') #,clobber=True
-    logger.info('Written to '+outfile)
-
-    # Delete!
-
-    if (warning == 0):
+    if outfile is not None:
         try:
-            #os.remove("temp.fits")
+            os.remove(outfile)
+        except FileNotFoundError:
             pass
-        except:
-            pass
 
-    #print scatpath+'imwcs '+outfile+' -u match.list -w'
-
-    #imwcscommand = scatpath+'imwcs -h 500 -w -v -t 15 -u match.list -o '+'a'+outfile + ' ' + outfile
-    #print imwcscommand
-    #os.system(imwcscommand)   For some reason this is giving ridiculous results
-
+        fits[sciext].header = h
+        fits.writeto(outfile, output_verify='silentfix') #,clobber=True
+        logger.info(f'Written to {outfile}')
 
     fits.close()
 
@@ -1761,7 +1750,7 @@ def usage(args):
 ######################################################################
 
 
-def main(
+def run_autoastrometry(
         files: str | list,
         seeing: float = None,
         pixel_scale: float = None,
@@ -1846,50 +1835,6 @@ def main(
         err = f"An output file was specified ({outfile}), but the script was configured to overwrite the original file."
         logger.error(err)
         raise ValueError(err)
-
-    # nickel : 0.371"/pix, PA=177.7
-    # lick Geminicam:  A=0.697"/pix  B=0.672"/pix
-    # Nov observations are all offset by a large amount in dec even after equinox
-    # Keck: 0.135"/pix, chipPA=90+instPA
-
-    # args = []
-
-    # while i < len(args):
-    #     arg = args[i]
-    #     isarg = 0
-    #
-    #     if (arg.find("-norot") == 0): # some ambiguity with -n (nosolve)
-    #         norot = 1
-    #         isarg = 1
-    #
-    #     if (arg.find("-d") == 0) and (arg.find("-dec") != 0):
-    #         max_rad = float(args[i + 1])
-    #         i+=1
-    #         isarg = 1
-    #
-    #     if (arg.find("-o") == 0):
-    #         outfile = ''
-    #         if len(args) > i+1:
-    #             if (args[i+1]).find('-') != 0:
-    #                 outfile = args[i+1] #output
-    #                 i+=1
-    #         if outfile == '':
-    #             overwrite = 1
-    #         isarg = 1
-    #
-    #     if (arg.find("-n") == 0 and arg.find("-norot") == -1):
-    #         nosolve = 1
-    #         if len(args) > i+1:
-    #             if (args[i+1]).find('-') != 0:
-    #                 catalog = args[i+1] #output
-    #                 i+=1
-    #         isarg = 1
-    #     if not isarg:
-    #         if len(files) > 0:
-    #             files += ",%s" % arg
-    #         else:
-    #             files = arg
-    #     i+=1
 
     if seeing is None:
         min_fwhm = defaultminfwhm #1.5
@@ -1981,13 +1926,13 @@ def main(
     try:
         os.remove('temp.param')
     except:
-        logger.debug('Could not remove temp.param for some reason')
+        pass
 
 
 ######################################################################
 # Running as executable
 if __name__ == '__main__':
-    main(*sys.argv)
+    run_autoastrometry(*sys.argv)
 
 ######################################################################
 

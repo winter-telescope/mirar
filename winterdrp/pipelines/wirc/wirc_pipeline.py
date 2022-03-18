@@ -10,6 +10,7 @@ from winterdrp.processors.sky import NightSkyMedianCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path
+from winterdrp.processors.astromatic.sextractor import AutoAstrometry
 from winterdrp.processors.astromatic import SextractorRunner
 
 wirc_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -43,6 +44,7 @@ class WircPipeline(Pipeline):
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
             ImageSaver(output_dir_name="preprocess"),
+            AutoAstrometry(output_sub_dir="autoastrometry"),
             # (SextractorRunner, "pass1"),
         ]
     }
