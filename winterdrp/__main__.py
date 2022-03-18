@@ -98,6 +98,12 @@ parser.add_argument(
     default=None,
     help="Only process a specific image batch"
 )
+parser.add_argument(
+    '--skipcache',
+    help='Skip building cache',
+    action='store_true',
+    default=False
+)
 # parser.add_argument(
 #     '-skipfail',
 #     help='If processing of one image set fails, proceed with other objects/filters',
@@ -144,7 +150,12 @@ log.setLevel(args.level)
 
 # logger.info(f"Running modes selected: {modes}")
 
-pipe = get_pipeline(args.pipeline, args.config, night=args.night)
+pipe = get_pipeline(
+    args.pipeline,
+    configuration=args.config,
+    night=args.night,
+    skip_build_cache=args.skipcache
+)
 # pipe.make_calibration_files(sub_dir=args.subdir)
 image_batches = pipe.split_raw_images_into_batches(
     select_batch=args.batch
