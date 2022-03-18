@@ -73,8 +73,12 @@ class Pipeline:
 
         for i, (processor) in enumerate(self.processors):
             # preceding_steps = [x[0] for x in self.processors[:i]]
+
+            logger.debug(f"Initialising processor {processor.__class__}")
             processor.set_preceding_steps(previous_steps=self.processors[:i])
             processor.make_cache(observing_log=observing_logs)
+
+        logger.debug("Pipeline initialisation complete.")
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -91,7 +95,7 @@ class Pipeline:
             sub_dir: str = ""
     ):
         for processor in self.processors:
-            processor.set_sub_dir(sub_dir=sub_dir)
+            processor.set_night(night_sub_dir=sub_dir)
             processor.set_open_fits(self.open_fits)
 
     def open_fits(
@@ -170,7 +174,7 @@ class Pipeline:
             select_batch: str = None
     ) -> list:
 
-        observing_log = self.load_observing_log(sub_dir=self.sub_dir)
+        observing_log = self.load_observing_log(sub_dir=self.night_sub_dir)
 
         mask = observing_log["OBSCLASS"] == "science"
         obs = observing_log[mask]
@@ -212,7 +216,6 @@ class Pipeline:
             self,
             images: list,
             headers: list,
-            sub_dir: str = ""
     ) -> list:
 
         for processor in self.processors:
@@ -220,7 +223,6 @@ class Pipeline:
             images, headers = processor.apply(
                 images,
                 headers,
-                sub_dir=sub_dir
             )
 
         return images

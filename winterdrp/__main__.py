@@ -145,14 +145,13 @@ log.setLevel(args.level)
 # logger.info(f"Running modes selected: {modes}")
 
 pipe = get_pipeline(args.pipeline, args.config, night=args.night)
-pipe.make_calibration_files(sub_dir=args.subdir)
+# pipe.make_calibration_files(sub_dir=args.subdir)
 image_batches = pipe.split_raw_images_into_batches(
-    sub_dir=args.subdir,
     select_batch=args.batch
 )
 
 for image_batch in image_batches:
     images, headers = pipe.open_image_batch(image_batch)
-    pipe.reduce_images(images, headers, sub_dir=args.subdir)
+    pipe.reduce_images(images, headers)
 
 logger.info('END OF WIRC-PIPE EXECUTION')

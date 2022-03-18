@@ -45,7 +45,7 @@ def output_path(
 def cal_output_dir(
         sub_dir: str | int = ""
 ):
-    return output_dir("cals", sub_dir=sub_dir)
+    return output_dir("calibration", sub_dir=sub_dir)
 
 
 def reduced_img_dir(

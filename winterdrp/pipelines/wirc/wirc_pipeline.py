@@ -5,7 +5,7 @@ from astropy.io.fits import HDUList
 from winterdrp.pipelines.base_pipeline import Pipeline
 
 from winterdrp.processors.dark import DarkCalibrator
-from winterdrp.processors.flat import FlatCalibrator, SkyFlatCalibrator
+from winterdrp.processors.flat import SkyFlatCalibrator
 from winterdrp.processors.sky import SkyMedianCalibrator
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.astromatic import SextractorRunner
@@ -38,7 +38,7 @@ class WircPipeline(Pipeline):
         None: [
             DarkCalibrator(),
             SkyFlatCalibrator(),
-            SkyMedianCalibrator(),
+            # SkyMedianCalibrator(),
             ImageSaver(output_dir_name="preprocess"),
             # (SextractorRunner, "pass1"),
         ]

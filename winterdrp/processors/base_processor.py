@@ -29,6 +29,7 @@ class BaseProcessor:
         self.cache = dict()
 
         self.night = None
+        self.night_sub_dir = None
         self.open_fits = None
         self.preceding_steps = None
 
@@ -67,11 +68,12 @@ class BaseProcessor:
     ):
         self.open_fits = open_fits
 
-    def set_sub_dir(
+    def set_night(
             self,
-            sub_dir: str = ""
+            night_sub_dir: str | int = ""
     ):
-        self.night = sub_dir
+        self.night_sub_dir = night_sub_dir
+        self.night = night_sub_dir.split("/")[-1]
 
     def _update_processing_history(
             self,
@@ -132,6 +134,7 @@ class ProcessorWithCache(BaseProcessor, ABC):
             self,
             observing_log: pd.DataFrame,
     ):
+
         img_path_list = self.select_cache_images(observing_log)
 
         if len(img_path_list) > 0:
@@ -145,13 +148,29 @@ class ProcessorWithCache(BaseProcessor, ABC):
     ):
         raise NotImplementedError
 
+    def subselect_log(
+            self,
+            observing_log: pd.DataFrame,
+            key: str
+    ) -> pd.DataFrame:
+        mask = np.logical_and(
+            observing_log["TARGET"] == key,
+            observing_log["NIGHT"] == self.night
+        )
+
+        return observing_log[mask]
+
     def select_from_log(
             self,
             observing_log: pd.DataFrame,
             key: str
     ) -> [str]:
-        mask = np.logical_and(
-            observing_log["TARGET"] == key,
-            observing_log["NIGHT"] == self.night
+
+        obs = self.subselect_log(
+            observing_log=observing_log,
+            key=key
         )
-        return list(observing_log[mask]["RAWIMAGEPATH"])
+
+        logger.debug(f"Found {len(obs)} entries with key '{key}' for night '{self.night}'")
+
+        return list(obs["RAWIMAGEPATH"])
