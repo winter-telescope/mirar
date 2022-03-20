@@ -51,78 +51,73 @@ class AstrometryException(Exception):
     pass
 
 
-class Obj:
-    ra = 0.0
-    dec = 0.0
-    mag = 0.0
-
-    ra_rad = 0.0
-    dec_rad = 0.0
+class BaseSource:
 
     def __init__(
             self,
-            inra: float,
-            indec: float,
-            inmag: float
+            ra_deg: float,
+            dec_deg: float,
+            in_mag: float
     ):
-        self.ra = float(inra)
-        self.dec = indec
-        self.ra_rad = inra * math.pi/180
-        self.dec_rad = indec * math.pi/180
-        self.mag = inmag
+        self.ra_deg = float(ra_deg)
+        self.dec_deg = dec_deg
+        self.ra_rad = ra_deg * math.pi / 180
+        self.dec_rad = dec_deg * math.pi / 180
+        self.mag = in_mag
 
-    def rotate(self, dpa_deg, ra0, dec0):
+    def rotate(
+            self,
+            dpa_deg: float,
+            ra0: float,
+            dec0: float
+    ):
         dpa_rad = dpa_deg * math.pi/180
-        sindpa = math.sin(dpa_rad)
-        cosdpa = math.cos(dpa_rad)
-        rascale = math.cos(dec0*math.pi/180)
+        sin_dpa = math.sin(dpa_rad)
+        cos_dpa = math.cos(dpa_rad)
+        ra_scale = math.cos(dec0*math.pi/180)
 
-        #this is only valid for small fields away from the pole.
-        x = (self.ra - ra0) * rascale
-        y = (self.dec - dec0)
+        # this is only valid for small fields away from the pole.
+        x = (self.ra_deg - ra0) * ra_scale
+        y = (self.dec_deg - dec0)
 
-        xrot = cosdpa * x - sindpa * y
-        yrot = sindpa * x + cosdpa * y
+        x_rot = cos_dpa * x - sin_dpa * y
+        y_rot = sin_dpa * x + cos_dpa * y
 
-        self.ra = (xrot / rascale) + ra0
-        self.dec = yrot + dec0
-        self.ra_rad = self.ra * math.pi/180
-        self.dec_rad = self.dec * math.pi/180
+        self.ra_deg = (x_rot / ra_scale) + ra0
+        self.dec_deg = y_rot + dec0
+        self.ra_rad = self.ra_deg * math.pi / 180
+        self.dec_rad = self.dec_deg * math.pi / 180
 
 
-class SexObj(Obj):
-    x = 0.
-    y = 0.
-    mag = 0.0
-    magerr = 0.0
-    ellip = 0.0
-    fwhm = 0.0
-    flag = 0
+class SextractorSource(BaseSource):
 
-    def __init__(self, inline):
-        inlinearg = [x.strip() for x in inline.split(" ") if x not in [""]]
+    def __init__(
+            self,
+            line: str
+    ):
+        inline_arg = [x.strip() for x in line.split(" ") if x not in [""]]
 
-        if len(inlinearg) < 8:
-            err = f"Expected 8 values in table, found {len(inlinearg)} ({inlinearg})"
+        if len(inline_arg) < 8:
+            err = f"Expected 8 values in table, found {len(inline_arg)} ({inline_arg})"
             logger.error(err)
             raise ValueError(err)
 
-        self.x = float(inlinearg[0])
-        self.y = float(inlinearg[1])
+        self.x = float(inline_arg[0])
+        self.y = float(inline_arg[1])
 
-        super().__init__(*[float(x) for x in inlinearg[2:5]])
+        super().__init__(*[float(x) for x in inline_arg[2:5]])
 
-        self.magerr = float(inlinearg[5])
-        self.ellip = float(inlinearg[6])
-        self.fwhm = float(inlinearg[7])
+        self.mag_err = float(inline_arg[5])
+        self.ellip = float(inline_arg[6])
+        self.fwhm = float(inline_arg[7])
 
-        if len(inlinearg) >= 9:
-            self.flag = int(inlinearg[8])
+        if len(inline_arg) >= 9:
+            self.flag = int(inline_arg[8])
         else:
             self.flag = None
 
 
-#Pixel distance
+# Pixel distance
 def imdistance(obj1, obj2):
     return ((obj1.x - obj2.x)**2 + (obj1.y - obj2.y)**2)**0.5
 
@@ -142,8 +137,8 @@ def distance(obj1, obj2):
 
 #Non-great-circle distance is much faster
 def quickdistance(obj1, obj2, cosdec):
-    ddec = obj2.dec - obj1.dec
-    dra = obj2.ra - obj1.ra
+    ddec = obj2.dec_deg - obj1.dec_deg
+    dra = obj2.ra_deg - obj1.ra_deg
     if dra > 180:
         dra = 360 - dra
     return 3600 * math.sqrt(ddec**2 + (cosdec*dra)**2)
@@ -240,14 +235,14 @@ def unique(inlist):
 
 
 def sextract(
-        sexfilename,
-        nxpix,
-        nypix,
+        img_path: str,
+        nx_pix: int,
+        ny_pix: int,
         border: float = 3.,
         corner: float = 12.,
-        minfwhm: float = default_min_fwhm,
-        maxfwhm: float = default_max_fwhm,
-        maxellip: float = 0.5,
+        min_fwhm: float = default_min_fwhm,
+        max_fwhm: float = default_max_fwhm,
+        max_ellip: float = 0.5,
         saturation: float = default_saturation,
         output_dir: str = base_output_dir,
         config_path: str = default_config_path,
@@ -255,7 +250,7 @@ def sextract(
 ):
 
     if output_catalog is None:
-        output_catalog = sexfilename.replace(".fits", ".cat")
+        output_catalog = img_path.replace(".fits", ".cat")
 
     try:
         os.remove(os.path.join(output_dir, output_catalog))
@@ -266,7 +261,7 @@ def sextract(
     # execute_sextractor(cmd, output_dir=output_dir)
 
     run_sextractor_single(
-        img=sexfilename,
+        img=img_path,
         output_dir=output_dir,
         config=config_path,
         saturation=saturation,
@@ -282,66 +277,64 @@ def sextract(
 
     if len(catlines) == 0:
         logger.error('Sextractor catalog is empty: try a different catalog?')
-        sys.exit(1)
+        raise ValueError
 
-    minx = border
-    miny = border
-    maxx = nxpix - border    # This should be generalized
-    maxy = nypix - border
+    min_x = border
+    min_y = border
+    max_x = nx_pix - border    # This should be generalized
+    max_y = ny_pix - border
 
-    l = -1
-    nsexinit = 0
-    nsexpass = 0
+    n_sex_init = 0
+    n_sex_pass = 0
     xlist = []
     ylist = []
-    sexlist = []
-    fwhmlist = []
-    elliplist = []
-    flaglist = []
+    sex_list = []
+    fwhm_list = []
+    ellip_list = []
+    flag_list = []
 
     rejects = []
 
-    while l < len(catlines)-1:
+    for line in catlines:
 
-        l += 1
-        if len(catlines[l]) <= 1 or catlines[l][0] == '#':
+        if line[0] == "#":
             continue
 
-        iobj = SexObj(catlines[l]) #process the line into an object
-        nsexinit += 1
+        iobj = SextractorSource(line) #process the line into an object
+        n_sex_init += 1
 
         # Initial filtering
-        if iobj.ellip > maxellip:
+        if iobj.ellip > max_ellip:
             rejects.append("ellip")
             continue
-        if iobj.fwhm < minfwhm:
+        if iobj.fwhm < min_fwhm:
             rejects.append("min fwhm")
             continue
-        if iobj.fwhm > maxfwhm:
+        if iobj.fwhm > max_fwhm:
             rejects.append("max fwhm")
             continue
-        if iobj.x < minx:
+        if iobj.x < min_x:
             rejects.append("min x")
             continue
-        if iobj.y < miny:
+        if iobj.y < min_y:
             rejects.append("min y")
             continue
-        if iobj.x > maxx:
+        if iobj.x > max_x:
             rejects.append("max x")
             continue
-        if iobj.y > maxy:
+        if iobj.y > max_y:
             rejects.append("max y")
             continue
         if iobj.x + iobj.y < corner:
             rejects.append("corner")
             continue
-        if iobj.x + (nypix-iobj.y) < corner:
+        if iobj.x + (ny_pix - iobj.y) < corner:
             rejects.append("corner")
             continue
-        if (nxpix-iobj.x) < corner:
+        if (nx_pix - iobj.x) < corner:
             rejects.append("corner")
             continue
-        if (nxpix-iobj.x) + (nypix-iobj.y) < corner:
+        if (nx_pix - iobj.x) + (ny_pix - iobj.y) < corner:
             rejects.append("corner")
             continue
         if saturation is not None:
@@ -349,13 +342,13 @@ def sextract(
                 rejects.append("saturation")
                 continue  # this will likely overdo it for very deep fields.
 
-        sexlist.append(iobj)
+        sex_list.append(iobj)
         xlist.append(iobj.x)
         ylist.append(iobj.y)
-        fwhmlist.append(iobj.fwhm)
-        elliplist.append(iobj.ellip)
-        flaglist.append(iobj.flag)
-        nsexpass += 1
+        fwhm_list.append(iobj.fwhm)
+        ellip_list.append(iobj.ellip)
+        flag_list.append(iobj.flag)
+        n_sex_pass += 1
 
     # Remove detections along bad columns
 
@@ -365,43 +358,43 @@ def sextract(
         txp = 1.0
         xthresh = 1
         while txp > threshprob:
-            txp *= min((len(sexlist)*1.0/nxpix), 0.8) # some strange way of estimating the threshold.
+            txp *= min((len(sex_list) * 1.0 / nx_pix), 0.8) # some strange way of estimating the threshold.
             xthresh += 1                          #what I really want is a general analytic expression for
         removelist = []                           #the 99.99% prob. threshold for value of n for >=n out
         modex = mode(xlist)                       #of N total sources to land in the same bin (of NX total bins)
-        for j in range(len(sexlist)):
-            if (sexlist[j].x > modex-1) and (sexlist[j].x < modex+1):
+        for j in range(len(sex_list)):
+            if (sex_list[j].x > modex-1) and (sex_list[j].x < modex+1):
                 removelist.append(j)
         removelist.reverse()
         if len(removelist) > xthresh:
             for k in removelist:
                 del xlist[k]
                 del ylist[k]
-                del sexlist[k]
-                del fwhmlist[k]
-                del elliplist[k]
-                del flaglist[k]
+                del sex_list[k]
+                del fwhm_list[k]
+                del ellip_list[k]
+                del flag_list[k]
                 ctbadcol += 1
 
         typ = 1.0
         ythresh = 1
         while typ > threshprob:
-            typ *= min((len(sexlist)*1.0/nypix),0.8)
+            typ *= min((len(sex_list) * 1.0 / ny_pix), 0.8)
             ythresh += 1
         removelist = []
         modey = mode(ylist)
-        for j in range(len(sexlist)):
-            if (sexlist[j].y > modey-1) and (sexlist[j].y < modey+1):
+        for j in range(len(sex_list)):
+            if (sex_list[j].y > modey-1) and (sex_list[j].y < modey+1):
                 removelist.append(j)
         removelist.reverse()
         if len(removelist) > ythresh:
             for k in removelist:
                 del xlist[k]
                 del ylist[k]
-                del sexlist[k]
-                del fwhmlist[k]
-                del elliplist[k]
-                del flaglist[k]
+                del sex_list[k]
+                del fwhm_list[k]
+                del ellip_list[k]
+                del flag_list[k]
                 ctbadcol += 1
     if ctbadcol > 0:
         rejects += ["bad columns" for _ in range(ctbadcol)]
@@ -409,23 +402,23 @@ def sextract(
 
     # Remove galaxies and cosmic rays
 
-    if len(fwhmlist) > 5:
-        fwhmlist.sort()
-        fwhm20 = fwhmlist[int(len(fwhmlist)/5)]
-        fwhmmode = mode(fwhmlist)
+    if len(fwhm_list) > 5:
+        fwhm_list.sort()
+        fwhm20 = fwhm_list[int(len(fwhm_list)/5)]
+        fwhmmode = mode(fwhm_list)
     else:
-        fwhmmode = minfwhm
-        fwhm20 = minfwhm
+        fwhmmode = min_fwhm
+        fwhm20 = min_fwhm
 
     # formerly a max, but occasionally a preponderance of long CR's could cause fwhmmode to be bigger than the stars
-    refinedminfwhm = median([0.75*fwhmmode, 0.9*fwhm20, minfwhm]) # if CR's are bigger and more common than stars, this is dangerous...
+    refinedminfwhm = median([0.75 * fwhmmode, 0.9 * fwhm20, min_fwhm]) # if CR's are bigger and more common than stars, this is dangerous...
     logger.debug(f'Refined min FWHM: {refinedminfwhm} pix')
 
     #Might also be good to screen for false detections created by bad columns/rows
 
     ngood = 0
     goodsexlist = []
-    for sex in sexlist:
+    for sex in sex_list:
         if sex.fwhm > refinedminfwhm:
             goodsexlist.append(sex)
             ngood += 1
@@ -435,7 +428,7 @@ def sextract(
     # Sort by magnitude
     goodsexlist.sort(key=magcomp)
 
-    logger.debug(f'{ngood} objects detected in image {sexfilename} (a further {nsexinit - ngood} discarded)')
+    logger.debug(f'{ngood} objects detected in image {img_path} (a further {n_sex_init - ngood} discarded)')
 
     reject_stats = [(x, rejects.count(x)) for x in list(set(rejects))]
     logger.debug(f"Reject reasons: {reject_stats}")
@@ -550,7 +543,7 @@ def getcatalog(catalog, ra, dec, boxsize, minmag=8.0, maxmag=-1, maxpm=60.):
         if abs(pmra) > maxpm or abs(pmdec) > maxpm:
             continue
 
-        iobj = Obj(ra, dec, mag) #process the line into an object
+        iobj = BaseSource(ra, dec, mag) #process the line into an object
         catlist.append(iobj)
 
     catlist.sort(key=magcomp)
@@ -590,9 +583,9 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
         for j in range(len(sexlist)):
             if i == j:
                 continue
-            if abs(sexlist[i].dec - sexlist[j].dec) > maxrad:
+            if abs(sexlist[i].dec_deg - sexlist[j].dec_deg) > maxrad:
                 continue
-            if rascale*abs(sexlist[i].ra - sexlist[j].ra) > maxrad:
+            if rascale*abs(sexlist[i].ra_deg - sexlist[j].ra_deg) > maxrad:
                 continue
             dist = quickdistance(sexlist[i], sexlist[j], rascale)
             if dist > minrad and dist < maxrad :
@@ -612,9 +605,9 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
         for j in range(len(catlist)):
             if i == j:
                 continue
-            if abs(catlist[i].dec - catlist[j].dec) > maxrad:
+            if abs(catlist[i].dec_deg - catlist[j].dec_deg) > maxrad:
                 continue
-            if rascale*abs(catlist[i].ra - catlist[j].ra) > maxrad:
+            if rascale*abs(catlist[i].ra_deg - catlist[j].ra_deg) > maxrad:
                 continue
             dist = quickdistance(catlist[i], catlist[j], rascale)
             if dist > minrad and dist < maxrad :
@@ -919,7 +912,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
             ci = primarymatchc[i]
             for j in range(len(smatch[i])):
                 cj = cmatch[i][j]
-                out.write("line(%.5f,%.5f,%.5f,%.5f) # line=0 0\n" % (catlist[ci].ra, catlist[ci].dec, catlist[cj].ra, catlist[cj].dec))
+                out.write("line(%.5f,%.5f,%.5f,%.5f) # line=0 0\n" % (catlist[ci].ra_deg, catlist[ci].dec_deg, catlist[cj].ra_deg, catlist[cj].dec_deg))
 
     #future project: if not enough, go to the secondary offsets
 
@@ -931,7 +924,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
 def writetextfile(filename, objlist):
     out = open(filename,'w')
     for ob in objlist:
-        out.write("%11.7f %11.7f %5.2f\n" % (ob.ra, ob.dec, ob.mag))
+        out.write("%11.7f %11.7f %5.2f\n" % (ob.ra_deg, ob.dec_deg, ob.mag))
     out.close()
 
 
@@ -944,7 +937,7 @@ def writeregionfile(filename, objlist, color="green",sys=''):
         out.write('fk5\n')
         for ob in objlist:
             i += 1
-            out.write("point(%.7f,%.7f) # point=boxcircle text={%i}\n" % (ob.ra, ob.dec, i))
+            out.write("point(%.7f,%.7f) # point=boxcircle text={%i}\n" % (ob.ra_deg, ob.dec_deg, i))
     if sys == 'img':
         out.write('image\n')
         for ob in objlist:
@@ -1309,9 +1302,9 @@ def autoastrometry(
             nypix,
             3,
             12,
-            minfwhm=min_fwhm,
-            maxfwhm=max_fwhm,
-            maxellip=max_ellip,
+            min_fwhm=min_fwhm,
+            max_fwhm=max_fwhm,
+            max_ellip=max_ellip,
             saturation=saturation,
             output_dir=output_dir
         )
@@ -1541,8 +1534,8 @@ def autoastrometry(
         imraoffset = []
         imdecoffset = []
         for i in range(len(primarymatchs)):
-            imraoffset.append(goodsexlist[primarymatchs[i]].ra - catlist[primarymatchc[i]].ra)
-            imdecoffset.append(goodsexlist[primarymatchs[i]].dec - catlist[primarymatchc[i]].dec)
+            imraoffset.append(goodsexlist[primarymatchs[i]].ra_deg - catlist[primarymatchc[i]].ra_deg)
+            imdecoffset.append(goodsexlist[primarymatchs[i]].dec_deg - catlist[primarymatchc[i]].dec_deg)
 
         raoffset = -median(imraoffset)
         decoffset = -median(imdecoffset)
@@ -1592,7 +1585,7 @@ def autoastrometry(
         for i in range(len(primarymatchs)):
             si = primarymatchs[i]
             ci = primarymatchc[i]
-            outmatch.write("%s %s  %s %s\n" % (goodsexlist[si].x, goodsexlist[si].y, catlist[ci].ra, catlist[ci].dec))
+            outmatch.write("%s %s  %s %s\n" % (goodsexlist[si].x, goodsexlist[si].y, catlist[ci].ra_deg, catlist[ci].dec_deg))
             #goodsexlist[si].ra, goodsexlist[si].dec))
         outmatch.close()
 
