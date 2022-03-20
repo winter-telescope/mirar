@@ -118,24 +118,32 @@ class SextractorSource(BaseSource):
 
 
 # Pixel distance
-def imdistance(obj1, obj2):
+def im_distance(
+        obj1: SextractorSource,
+        obj2: SextractorSource
+) -> float:
     return ((obj1.x - obj2.x)**2 + (obj1.y - obj2.y)**2)**0.5
 
 
-#Great circle distance between two points.
-def distance(obj1, obj2):
-    # both must be Obj's.
+# Great circle distance between two points.
+def distance(
+        obj1: BaseSource,
+        obj2: BaseSource
+) -> float:
 
     ddec = obj2.dec_rad - obj1.dec_rad
-    dra  = obj2.ra_rad - obj1.ra_rad
-    dist_rad = 2 * math.asin(math.sqrt( (math.sin(ddec/2.))**2 + math.cos(obj1.dec_rad) * math.cos(obj2.dec_rad) * (math.sin(dra/2.))**2))
+    dra = obj2.ra_rad - obj1.ra_rad
+    dist_rad = 2 * math.asin(math.sqrt(
+        (math.sin(ddec/2.))**2 +
+        math.cos(obj1.dec_rad) * math.cos(obj2.dec_rad) * (math.sin(dra/2.))**2
+    ))
 
     dist_deg = dist_rad * 180. / math.pi
-    dist_sec = dist_deg * 3600.
-    return dist_sec
+    dist_arc_sec = dist_deg * 3600.
+    return dist_arc_sec
 
 
-#Non-great-circle distance is much faster
+# Non-great-circle distance is much faster
 def quickdistance(obj1, obj2, cosdec):
     ddec = obj2.dec_deg - obj1.dec_deg
     dra = obj2.ra_deg - obj1.ra_deg
@@ -863,7 +871,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                 sj = primarymatchs[j]
                 cj = primarymatchc[j]
                 try:
-                    pixscalelist.append(distance(catlist[ci],catlist[cj])/imdistance(sexlist[si],sexlist[sj]))
+                    pixscalelist.append(distance(catlist[ci],catlist[cj]) / im_distance(sexlist[si], sexlist[sj]))
                 except:
                     pass
         pixelscale = median(pixscalelist)
