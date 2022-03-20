@@ -26,7 +26,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import math
-# from math import sin, cos, tan, asin, sqrt
 import numpy as np
 from astropy.io import fits as af
 from winterdrp.paths import base_output_dir
@@ -182,10 +181,17 @@ def stdev(l):
     a = np.array(l)
     return np.std(a)
 
-def mode(l):
-    if len(l) == 0:
-        return
-    s = np.array(sorted(l))
+
+def mode(
+        float_list: list[float]
+) -> float:
+
+    if len(float_list) == 0:
+        err = "Float list is empty, cannot calculate mode."
+        logger.error(err)
+        raise ValueError(err)
+
+    s = np.array(sorted(float_list))
     d = s[1:] - s[:-1]
     nd = len(d)
     if nd >= 32:
@@ -195,19 +201,19 @@ def mode(l):
     else:
         g = 1
 
-    #g = max(nd / 16,1)  #sensitive to clusters up to a little less than 1/16 of the data set
-    minmean = d.sum()
-    imean = nd / 2
+    min_mean = d.sum()
+    i_mean = nd / 2
 
     for i in range(nd):
         r = [int(max(i-g, 0)), int(min(i+g, nd))]
         m = d[r[0]:r[1]].mean()
-        if m < minmean:
-            minmean = m
-            imean = i
+        if m < min_mean:
+            min_mean = m
+            i_mean = i
 
-    mode = s[int(imean)] #+ s[imean+1])/2
-    return mode
+    list_mode = s[int(i_mean)] #+ s[i_mean+1])/2
+
+    return list_mode
 
 
 def rasex2deg(rastr):
@@ -292,11 +298,11 @@ def sextract(
     max_x = nx_pix - border    # This should be generalized
     max_y = ny_pix - border
 
-    n_sex_init = 0
-    n_sex_pass = 0
+    n_src_init = 0
+    n_src_pass = 0
     xlist = []
     ylist = []
-    sex_list = []
+    src_list = []
     fwhm_list = []
     ellip_list = []
     flag_list = []
@@ -309,7 +315,7 @@ def sextract(
             continue
 
         iobj = SextractorSource(line) #process the line into an object
-        n_sex_init += 1
+        n_src_init += 1
 
         # Initial filtering
         if iobj.ellip > max_ellip:
@@ -350,62 +356,63 @@ def sextract(
                 rejects.append("saturation")
                 continue  # this will likely overdo it for very deep fields.
 
-        sex_list.append(iobj)
+        src_list.append(iobj)
         xlist.append(iobj.x)
         ylist.append(iobj.y)
         fwhm_list.append(iobj.fwhm)
         ellip_list.append(iobj.ellip)
         flag_list.append(iobj.flag)
-        n_sex_pass += 1
+        n_src_pass += 1
 
     # Remove detections along bad columns
 
-    threshprob = 0.0001
-    ctbadcol = 0
+    thresh_prob = 0.0001
+    ct_bad_col = 0
     for i in range(5):
         txp = 1.0
         xthresh = 1
-        while txp > threshprob:
-            txp *= min((len(sex_list) * 1.0 / nx_pix), 0.8) # some strange way of estimating the threshold.
-            xthresh += 1                          #what I really want is a general analytic expression for
-        removelist = []                           #the 99.99% prob. threshold for value of n for >=n out
-        modex = mode(xlist)                       #of N total sources to land in the same bin (of NX total bins)
-        for j in range(len(sex_list)):
-            if (sex_list[j].x > modex-1) and (sex_list[j].x < modex+1):
+        while txp > thresh_prob:
+            txp *= min((len(src_list) * 1.0 / nx_pix), 0.8)  # some strange way of estimating the threshold.
+            xthresh += 1                          # what I really want is a general analytic expression for
+
+        removelist = []                           # the 99.99% prob. threshold for value of n for >=n out
+        modex = mode(xlist)                       # of N total sources to land in the same bin (of NX total bins)
+        for j in range(len(src_list)):
+            if (src_list[j].x > modex-1) and (src_list[j].x < modex+1):
                 removelist.append(j)
         removelist.reverse()
         if len(removelist) > xthresh:
             for k in removelist:
                 del xlist[k]
                 del ylist[k]
-                del sex_list[k]
+                del src_list[k]
                 del fwhm_list[k]
                 del ellip_list[k]
                 del flag_list[k]
-                ctbadcol += 1
+                ct_bad_col += 1
 
         typ = 1.0
         ythresh = 1
-        while typ > threshprob:
-            typ *= min((len(sex_list) * 1.0 / ny_pix), 0.8)
+        while typ > thresh_prob:
+            typ *= min((len(src_list) * 1.0 / ny_pix), 0.8)
             ythresh += 1
         removelist = []
         modey = mode(ylist)
-        for j in range(len(sex_list)):
-            if (sex_list[j].y > modey-1) and (sex_list[j].y < modey+1):
+        for j in range(len(src_list)):
+            if (src_list[j].y > modey-1) and (src_list[j].y < modey+1):
                 removelist.append(j)
         removelist.reverse()
         if len(removelist) > ythresh:
             for k in removelist:
                 del xlist[k]
                 del ylist[k]
-                del sex_list[k]
+                del src_list[k]
                 del fwhm_list[k]
                 del ellip_list[k]
                 del flag_list[k]
-                ctbadcol += 1
-    if ctbadcol > 0:
-        rejects += ["bad columns" for _ in range(ctbadcol)]
+                ct_bad_col += 1
+    if ct_bad_col > 0:
+        rejects += ["bad columns" for _ in range(ct_bad_col)]
 
 
     # Remove galaxies and cosmic rays
@@ -426,7 +433,7 @@ def sextract(
 
     ngood = 0
     goodsexlist = []
-    for sex in sex_list:
+    for sex in src_list:
         if sex.fwhm > refinedminfwhm:
             goodsexlist.append(sex)
             ngood += 1
@@ -436,7 +443,7 @@ def sextract(
     # Sort by magnitude
     goodsexlist.sort(key=magcomp)
 
-    logger.debug(f'{ngood} objects detected in image {img_path} (a further {n_sex_init - ngood} discarded)')
+    logger.debug(f'{ngood} objects detected in image {img_path} (a further {n_src_init - ngood} discarded)')
 
     reject_stats = [(x, rejects.count(x)) for x in list(set(rejects))]
     logger.debug(f"Reject reasons: {reject_stats}")
