@@ -1015,22 +1015,13 @@ def autoastrometry(
     # temp_path = os.path.join(os.path.dirname(filename), temp_file)
     temp_path = os.path.join(output_dir, temp_file)
 
-
     # Get some basic info from the header  
     with af.open(filename) as fits:
         fits.verify('silentfix')
     
-        sciext = 0
-    
-        for nh in range(len(fits)): # iterate through extensions to find the data
-            try:
-                if len(fits[nh].data) > 1:
-                    sciext = nh
-                    break
-            except:
-                pass
-    
-        header = fits[sciext].header
+        sci_ext = 0
+
+        header = fits[sci_ext].header
         
         if np.logical_and(pixel_scale is not None, pa is None):
             pa = 0
@@ -1051,24 +1042,25 @@ def autoastrometry(
                 cdelt2 = header[key]
     
                 try:
-                    crot = 0
+                    c_rot = 0
                     key = 'CROTA1'
-                    crot = header[key]
+                    c_rot = header[key]
                     key = 'CROTA2'
-                    crot = header[key]
+                    c_rot = header[key]
                 except KeyError:
                     pass
     
                 if math.sqrt(cdelt1**2 + cdelt2**2) < 0.1:  # some images use CDELT to indicate nonstandard things
-                    header['CD1_1'] = cdelt1 * math.cos(crot*math.pi/180.)
-                    header['CD1_2'] = -cdelt2 * math.sin(crot*math.pi/180.)
-                    header['CD2_1'] = cdelt1 * math.sin(crot*math.pi/180.)
-                    header['CD2_2'] = cdelt2 * math.cos(crot*math.pi/180.)
+                    header['CD1_1'] = cdelt1 * math.cos(c_rot*math.pi/180.)
+                    header['CD1_2'] = -cdelt2 * math.sin(c_rot*math.pi/180.)
+                    header['CD2_1'] = cdelt1 * math.sin(c_rot*math.pi/180.)
+                    header['CD2_2'] = cdelt2 * math.cos(c_rot*math.pi/180.)
     
         if np.logical_and(pixel_scale is not None, pa is not None):
             # Create WCS header information if pixel scale is specified
-            parad = pa * math.pi / 180.
-            pxscaledeg = pixel_scale / 3600.
+            pa_rad = pa * math.pi / 180.
+            px_scale_deg = pixel_scale / 3600.
+
             if inv > 0:
                 parity = -1
             else:
@@ -1086,510 +1078,546 @@ def autoastrometry(
     
             try:
                 epoch = float(header.get('EPOCH', 2000))
-            except:
-                #warn?
+            except KeyError:
+                logger.warning("No EPOCH found in header. Assuming 2000")
                 epoch = 2000.
     
             try:
-                equinox = float(header.get('EQUINOX', epoch)) #If RA and DEC are not J2000 then convert
-            except:
-                # warn??
-                equinox = 2000. # could be 'J2000'; try to strip off first character?
+                equinox = float(header.get('EQUINOX', epoch))  # If RA and DEC are not J2000 then convert
+            except KeyError:
+                logger.warning("No EQUINOX found in header. Assuming 2000")
+                equinox = 2000.  # could be 'J2000'; try to strip off first character?
     
             if abs(equinox-2000) > 0.5:
-                logger.debug('Converting equinox from', equinox, 'to J2000')
-                j2000 = ephem.Equatorial(ephem.Equatorial(str(ra/15), str(dec), epoch=str(equinox)),epoch=ephem.J2000)
+                logger.debug(f'Converting equinox from {equinox} to J2000')
+                j2000 = ephem.Equatorial(ephem.Equatorial(
+                    str(ra/15), str(dec), epoch=str(equinox)), epoch=ephem.J2000
+                )
                 [ra, dec] = [rasex2deg(j2000.ra), decsex2deg(j2000.dec)]
     
-            header["CD1_1"] = pxscaledeg * math.cos(parad)*parity
-            header["CD1_2"] = pxscaledeg * math.sin(parad)
-            header["CD2_1"] = -pxscaledeg * math.sin(parad)*parity
-            header["CD2_2"] = pxscaledeg * math.cos(parad)
+            header["CD1_1"] = px_scale_deg * math.cos(pa_rad) * parity
+            header["CD1_2"] = px_scale_deg * math.sin(pa_rad)
+            header["CD2_1"] = -px_scale_deg * math.sin(pa_rad) * parity
+            header["CD2_2"] = px_scale_deg * math.cos(pa_rad)
             header["CRPIX1"] = header['NAXIS1']/2
             header["CRPIX2"] = header['NAXIS2']/2
             header["CRVAL1"] = ra
             header["CRVAL2"] = dec
             header["CTYPE1"] = "RA---TAN"
             header["CTYPE2"] = "DEC--TAN"
-            #header.update("EPOCH",2000.0)  does it matter?
             header["EQUINOX"] = 2000.0
-            #print ra, dec
-    
+
             try:
                 os.remove(temp_path)
             except FileNotFoundError:
                 pass
-    
-            fits[sciext].header = header
+
+            fits[sci_ext].header = header
             fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
 
-        fits = af.open(temp_path)
-        header = fits[sciext].header
-        sfilename = temp_path
+    with af.open(temp_path) as fits:
+        header = fits[sci_ext].header
 
-    #Read the header info from the file.
-    try:
-        # no longer drawing RA and DEC from here.
-        key = 'NAXIS1'
-        nxpix = header[key]
-        key = 'NAXIS2'
-        nypix = header[key]
-    except:
-        logger.debug('Cannot find necessary WCS header keyword', key)
-        sys.exit(1)
-    try:
-        key = 'CRVAL1'
-        cra = float(header[key])
-        key = 'CRVAL2'
-        cdec = float(header[key])
+        # Read the header info from the file.
+        try:
+            # no longer drawing RA and DEC from here.
+            key = 'NAXIS1'
+            nxpix = header[key]
+            key = 'NAXIS2'
+            nypix = header[key]
+        except KeyError:
+            err = f'Cannot find necessary WCS header keyword {key}'
+            logger.debug(err)
+            raise
 
-        key = 'CRPIX1'
-        crpix1 = float(header[key])
-        key = 'CRPIX2'
-        crpix2 = float(header[key])
+        try:
+            key = 'CRVAL1'
+            cra = float(header[key])
+            key = 'CRVAL2'
+            cdec = float(header[key])
 
-        key = 'CD1_1'
-        cd11 = float(header[key])
-        key = 'CD2_2'
-        cd22 = float(header[key])
-        key = 'CD1_2'
-        cd12 = float(header[key]) # deg / pix
-        key = 'CD2_1'
-        cd21 = float(header[key])
+            key = 'CRPIX1'
+            crpix1 = float(header[key])
+            key = 'CRPIX2'
+            crpix2 = float(header[key])
 
-        equinox = float(header.get('EQUINOX', 2000.))
-        if abs(equinox-2000.) > 0.2: logger.debug('Warning: EQUINOX is not 2000.0')
-    except:
-        if pixel_scale == -1:
-            logger.debug('Cannot find necessary WCS header keyword', key)
-            logger.debug('Must specify pixel scale (-px VAL) or provide provisional basic WCS info via CD matrix.')
-            #Some images might use CROT parameters, could try to be compatible with this too...?
-            sys.exit(1)
+            key = 'CD1_1'
+            cd11 = float(header[key])
+            key = 'CD2_2'
+            cd22 = float(header[key])
+            key = 'CD1_2'
+            cd12 = float(header[key]) # deg / pix
+            key = 'CD2_1'
+            cd21 = float(header[key])
 
-    # Wipe nonstandard fits info from the header (otherwise this will confuse verification)
-    header_keys = list(header.keys())
-    ctypechange = 0
-    irafkeys = []
-    highkeys = []
-    oldkeys = []
-    distortionkeys = []
-    for hkey in header_keys:
-        if hkey=='RADECSYS' or hkey == 'WCSDIM' or hkey.find('WAT')==0 or hkey.find('LTV')>=0 or hkey.find('LTM')==0:
-            del header[hkey]
-            irafkeys.append(hkey)
-        if hkey.find('CO1_') == 0 or hkey.find('CO2_') == 0 or hkey.find('PV1_') == 0 or hkey.find('PV2_') == 0 or hkey.find('PC00') == 0:
-            del header[hkey]
-            highkeys.append(hkey)
-        if hkey.find('CDELT1') == 0 or hkey.find('CDELT2') == 0 or hkey.find('CROTA1') == 0 or hkey.find('CROTA2') == 0:
-            del header[hkey]
-            oldkeys.append(hkey)
-        if hkey.find('A_') == 0 or hkey.find('B_') == 0 or hkey.find('AP_') == 0 or hkey.find('BP_') == 0:
-            del header[hkey]
-            distortionkeys.append(hkey)
+            equinox = float(header.get('EQUINOX', 2000.))
+            if abs(equinox-2000.) > 0.2:
+                logger.debug('Warning: EQUINOX is not 2000.0')
 
-    if header['CTYPE1'] != 'RA---TAN':
-        logger.debug('Changing CTYPE1 from', header['CTYPE1'], 'to', "RA---TAN")
-        header["CTYPE1"] = "RA---TAN"
-        ctypechange = 1
+        except KeyError:
+            if pixel_scale == -1:
+                err = f"Cannot find necessary WCS header keyword '{key}' \n " \
+                      f"Must specify pixel scale (-px VAL) or provide provisional basic WCS info via CD matrix."
+                logger.error(err)
+                raise
+                # Some images might use CROT parameters, could try to be compatible with this too...?
 
-    if header['CTYPE2'] != 'DEC--TAN':
-        if ctypechange:
-            logger.debug('Changing CTYPE2 from', header['CTYPE2'], 'to', "DEC--TAN")
-        header["CTYPE2"] = "DEC--TAN"
-        ctypechange = 1
+        # Wipe nonstandard fits info from the header (otherwise this will confuse verification)
+        header_keys = list(header.keys())
+        ctype_change = 0
+        iraf_keys = []
+        high_keys = []
+        old_keys = []
+        distortion_keys = []
+        for hkey in header_keys:
+            if hkey == 'RADECSYS' or \
+                    hkey == 'WCSDIM' or \
+                    hkey.find('WAT') == 0 or \
+                    hkey.find('LTV') >= 0 or \
+                    hkey.find('LTM') == 0:
+                del header[hkey]
+                iraf_keys.append(hkey)
 
-    wcskeycheck = ['CRVAL1', 'CRVAL2', 'CRPIX1', 'CRPIX2', 'CD1_1', 'CD1_2', 'CD2_2', 'CD2_1', 'EQUINOX', 'EPOCH']
-    headerformatchange = 0
+            if hkey.find('CO1_') == 0 or\
+                    hkey.find('CO2_') == 0 or \
+                    hkey.find('PV1_') == 0 or \
+                    hkey.find('PV2_') == 0 or \
+                    hkey.find('PC00') == 0:
+                del header[hkey]
+                high_keys.append(hkey)
 
-    for w in wcskeycheck:
-        if type(w) == type('0'):
+            if hkey.find('CDELT1') == 0 or \
+                    hkey.find('CDELT2') == 0 or \
+                    hkey.find('CROTA1') == 0 or \
+                    hkey.find('CROTA2') == 0:
+                del header[hkey]
+                old_keys.append(hkey)
+
+            if hkey.find('A_') == 0 or \
+                    hkey.find('B_') == 0 or \
+                    hkey.find('AP_') == 0 or \
+                    hkey.find('BP_') == 0:
+                del header[hkey]
+                distortion_keys.append(hkey)
+
+        if header['CTYPE1'] != 'RA---TAN':
+            logger.info(f"Changing CTYPE1 from '{header['CTYPE1']}' to 'RA---TAN'")
+            header["CTYPE1"] = "RA---TAN"
+            ctype_change = 1
+
+        if header['CTYPE2'] != 'DEC--TAN':
+            if ctype_change:
+                logger.debug(f"Changing CTYPE2 from '{header['CTYPE2']}' to 'DEC--TAN'")
+            header["CTYPE2"] = "DEC--TAN"
+            ctype_change = 1
+
+        wcs_key_check = [
+            'CRVAL1',
+            'CRVAL2',
+            'CRPIX1',
+            'CRPIX2',
+            'CD1_1',
+            'CD1_2',
+            'CD2_2',
+            'CD2_1',
+            'EQUINOX',
+            'EPOCH'
+        ]
+
+        header_format_change = False
+
+        for w in wcs_key_check:
+            if isinstance(w, str):
+                try:
+                    header[w] = float(header[w])
+                    header_format_change = True
+                except KeyError:
+                    pass
+
+        if len(iraf_keys) > 0:
+            logger.warning('Removed nonstandard WCS keywords: ')
+            for key in iraf_keys:
+                logger.debug(key)
+        if len(high_keys) > 0:
+            logger.warning('Removed higher-order WCS keywords: ')
+            for key in high_keys:
+                logger.debug(key)
+        if len(old_keys) > 0:
+            logger.warning('Removed old-style WCS keywords: ')
+            for key in old_keys:
+                logger.debug(key)
+        if len(distortion_keys) > 0:
+            logger.warning('Removed distortion WCS keywords: ')
+            for key in distortion_keys:
+                logger.debug(key)
+
+        if len(high_keys)+len(distortion_keys)+ctype_change+header_format_change > 0:
+            # Rewrite and reload the image if the header was modified in a significant way so
+            # sextractor sees the same thing that we do.
             try:
-                header[w] = float(header[w])
-                headerformatchange = 1
-            except:
+                os.remove(temp_path)
+            except FileNotFoundError:
                 pass
+            fits[sci_ext].header = header
+            fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
 
-    if len(irafkeys) > 0:
-        logger.debug('Removed nonstandard WCS keywords: ')
-        for key in irafkeys:
-            logger.debug(key)
-    if len(highkeys) > 0:
-        logger.debug('Removed higher-order WCS keywords: ')
-        for key in highkeys:
-            logger.debug(key)
-    if len(oldkeys) > 0:
-        logger.debug('Removed old-style WCS keywords: ')
-        for key in oldkeys:
-            logger.debug(key)
-    if len(distortionkeys) > 0:
-        logger.debug('Removed distortion WCS keywords: ')
-        for key in distortionkeys:
-            logger.debug(key)
-
-    if len(highkeys)+len(distortionkeys)+ctypechange+headerformatchange > 0:
-        #Rewrite and reload the image if the header was modified in a significant way so sextractor sees the same thing that we do.
-        try:
-            os.remove(temp_path)
-        except FileNotFoundError:
-            pass
-        fits[sciext].header = header
-        fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
-        fits.close()
-        fits = af.open(temp_path)
-        header = fits[sciext].header
+    with af.open(temp_path) as fits:
+        header = fits[sci_ext].header
         sfilename = temp_path
 
-    # Get image info from header (even if we put it there in the first place)
-    if cd11 * cd22 < 0 or cd12 * cd21 > 0:
-        parity = -1
-    else:
-        parity = 1
+        # Get image info from header (even if we put it there in the first place)
+        if cd11 * cd22 < 0 or cd12 * cd21 > 0:
+            parity = -1
+        else:
+            parity = 1
 
-    xscale = math.sqrt(cd11**2 + cd21**2)
-    yscale = math.sqrt(cd12**2 + cd22**2)
-    initpa = -parity * np.arctan2(cd21 * yscale, cd22 * xscale) * 180 / math.pi
-    xscale = abs(xscale)
-    yscale = abs(yscale)
-    fieldwidth = max(xscale * nxpix, yscale * nypix) * 3600.
-    area_sqdeg = xscale * nxpix * yscale * nypix
-    area_sqmin = area_sqdeg * 3600.
-    centerx = nxpix/2
-    centery = nypix/2
-    centerdx = centerx - crpix1
-    centerdy = centery - crpix2
-    centerra  = cra - centerdx*xscale*math.cos(initpa*math.pi/180.) + centerdy*yscale*math.sin(initpa*math.pi/180.)
-    centerdec = cdec + parity*centerdx*xscale*math.sin(-initpa*math.pi/180.) + centerdy*yscale*math.cos(initpa*math.pi/180.)
+        x_scale = math.sqrt(cd11**2 + cd21**2)
+        y_scale = math.sqrt(cd12**2 + cd22**2)
+        init_pa = -parity * np.arctan2(cd21 * y_scale, cd22 * x_scale) * 180 / math.pi
+        x_scale = abs(x_scale)
+        y_scale = abs(y_scale)
+        field_width = max(x_scale * nxpix, y_scale * nypix) * 3600.
+        area_sq_deg = x_scale * nxpix * y_scale * nypix
+        area_sq_min = area_sq_deg * 3600.
+        center_x = nxpix/2
+        center_y = nypix/2
+        center_dx = center_x - crpix1
+        center_dy = center_y - crpix2
+        center_ra = cra - center_dx*x_scale*math.cos(init_pa*math.pi/180.) + center_dy*y_scale*math.sin(init_pa*math.pi/180.)
+        center_dec = cdec + parity*center_dx*x_scale*math.sin(-init_pa*math.pi/180.) + center_dy*y_scale*math.cos(init_pa*math.pi/180.)
 
-    # this has only been checked for a PA of zero.
+        # this has only been checked for a PA of zero.
 
-    logger.debug('Initial WCS info:')
-    logger.debug('   pixel scale:     x=%.4f"/pix,   y=%.4f"/pix' % (xscale*3600, yscale*3600))
-    logger.debug('   position angle: PA=%.2f' % initpa)
-    if parity == 1:
-        logger.debug('   normal parity')
-    if parity == -1:
-        logger.debug('   inverse parity')
-    logger.debug('   center:        RA=%10.6f, dec=%9.6f' % (centerra, centerdec))
+        logger.debug(
+            f'Initial WCS info: \n'
+            f'   pixel scale:     x={x_scale*3600:.4f}"/pix,   y={y_scale*3600:.4f}"/pix \n'
+            f'   position angle: PA={init_pa:.2f}'
+        )
 
-    # Sextract stars to produce image star catalog
+        if parity == 1:
+            logger.debug('   normal parity')
+        if parity == -1:
+            logger.debug('   inverse parity')
 
-    goodsexlist = sextract(
-        sfilename,
-        nxpix,
-        nypix,
-        3,
-        12,
-        minfwhm=min_fwhm,
-        maxfwhm=max_fwhm,
-        maxellip=max_ellip,
-        saturation=saturation,
-        output_dir=output_dir
-    )
+        logger.debug(f'   center:        RA={center_ra:.6f}, dec={center_dec:.6f}')
 
-    ngood = len(goodsexlist)
+        # Sextract stars to produce image star catalog
 
-    if ngood < 4:
+        goodsexlist = sextract(
+            sfilename,
+            nxpix,
+            nypix,
+            3,
+            12,
+            minfwhm=min_fwhm,
+            maxfwhm=max_fwhm,
+            maxellip=max_ellip,
+            saturation=saturation,
+            output_dir=output_dir
+        )
 
-        err = f'Only {ngood} good stars were found in the image.  The image is too small or shallow, the ' \
-              f'detection threshold is set too high, or stars and cosmic rays are being confused.'
-        logger.error(err)
-        writetextfile('det.init.txt', goodsexlist)
-        writeregionfile('det.im.reg', goodsexlist, 'red', 'img')
-        raise AstrometryException(err)
+        ngood = len(goodsexlist)
 
-    density = len(goodsexlist) / area_sqmin
-    logger.debug('Source density of %f4 /arcmin^2' % density)
+        if ngood < 4:
 
-    if no_solve is True:
-        if catalog == '':
-            catalog = 'det.ref.txt'
-        writetextfile(catalog, goodsexlist)
-        return
-
-    # If no catalog specified, check availability of SDSS
-    if catalog == '':
-        try:
-            trycats = ['sdss', 'ub2', 'tmc']
-            for trycat in trycats:
-                testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={centerra}" \
-                               f"&dec={centerdec}&system=J2000&rad=-90"
-                check = urllib.request.urlopen(testqueryurl)
-                checklines = check.readlines()
-                check.close()
-                if len(checklines) > 15:
-                    catalog = trycat
-                    logger.debug(f'Using catalog {catalog}')
-                    break
-        except urllib.error.URLError:
-            err = 'No catalog is available.  Check your internet connection.'
+            err = f'Only {ngood} good stars were found in the image.  The image is too small or shallow, the ' \
+                  f'detection threshold is set too high, or stars and cosmic rays are being confused.'
             logger.error(err)
+            writetextfile('det.init.txt', goodsexlist)
+            writeregionfile('det.im.reg', goodsexlist, 'red', 'img')
             raise AstrometryException(err)
 
-    # Load in reference star catalog
-    if box_size_arcsec is None:
-        box_size_arcsec = fieldwidth
+        density = len(goodsexlist) / area_sq_min
+        logger.debug('Source density of %f4 /arcmin^2' % density)
 
-    catlist = getcatalog(catalog, centerra, centerdec, box_size_arcsec)
+        if no_solve is True:
+            if catalog == '':
+                catalog = 'det.ref.txt'
+            writetextfile(catalog, goodsexlist)
+            return
 
-    ncat = len(catlist)
-    catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
-    logger.debug(f'{ncat} good catalog objects.')
-    logger.debug(f'Source density of {catdensity} /arcmin^2')
+        # If no catalog specified, check availability of SDSS
+        if catalog == '':
+            try:
+                trycats = ['sdss', 'ub2', 'tmc']
+                for trycat in trycats:
+                    testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={center_ra}" \
+                                   f"&dec={center_dec}&system=J2000&rad=-90"
+                    check = urllib.request.urlopen(testqueryurl)
+                    checklines = check.readlines()
+                    check.close()
+                    if len(checklines) > 15:
+                        catalog = trycat
+                        logger.debug(f'Using catalog {catalog}')
+                        break
+            except urllib.error.URLError:
+                err = 'No catalog is available.  Check your internet connection.'
+                logger.error(err)
+                raise AstrometryException(err)
 
-    if ncat > 0 | ncat < 5:
-        logger.warning(f'Only {ncat} catalog objects in the search zone.'
-                       f'Increase the magnitude threshold or box size.')
+        # Load in reference star catalog
+        if box_size_arcsec is None:
+            box_size_arcsec = field_width
 
-    if ncat == 0:
-        logger.error('No objects found in catalog.')
-        logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
-        logger.error('is too small.  Check input parameters or your internet connection.')
-        raise AstrometryException
+        catlist = getcatalog(catalog, center_ra, center_dec, box_size_arcsec)
 
-    # If this image is actually shallower than reference catalog, trim the reference catalog down
-    if ncat > 16 and catdensity > 3 * density:
-        logger.debug('Image is shallow.  Trimming reference catalog...')
-        while catdensity > 3 * density:
-            catlist = catlist[0:int(len(catlist)*4/5)]
-            ncat = len(catlist)
-            catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
+        ncat = len(catlist)
+        catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
+        logger.debug(f'{ncat} good catalog objects.')
+        logger.debug(f'Source density of {catdensity} /arcmin^2')
 
-    # If the image is way deeper than USNO, trim the image catalog down
-    if ngood > 16 and density > 4 * catdensity and ngood > 8:
-        logger.debug('Image is deep.  Trimming image catalog...')
-        while density > 4 * catdensity and ngood > 8:
-            goodsexlist = goodsexlist[0:int(len(goodsexlist)*4/5)]
-            ngood = len(goodsexlist)
-            density = ngood / area_sqmin
+        if ncat > 0 | ncat < 5:
+            logger.warning(f'Only {ncat} catalog objects in the search zone.'
+                           f'Increase the magnitude threshold or box size.')
 
-    # If too many objects, do some more trimming
-    if ngood*ncat > 120*120*4:
-        logger.debug('Image and/or catalog still too deep.  Trimming...')
-        while ngood*ncat > 120*120*4:
-            if density > catdensity:
-                goodsexlist = goodsexlist[0:int(len(goodsexlist)*4/5)]
-                ngood = len(goodsexlist)
-                density = ngood / area_sqmin
-            else:
+        if ncat == 0:
+            logger.error('No objects found in catalog.')
+            logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
+            logger.error('is too small.  Check input parameters or your internet connection.')
+            raise AstrometryException
+
+        # If this image is actually shallower than reference catalog, trim the reference catalog down
+        if ncat > 16 and catdensity > 3 * density:
+            logger.debug('Image is shallow.  Trimming reference catalog...')
+            while catdensity > 3 * density:
                 catlist = catlist[0:int(len(catlist)*4/5)]
                 ncat = len(catlist)
                 catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
 
-    # Remove fainter object in close pairs for both lists
-    minsep = 3
-    deletelist = []
-    for i in range(len(goodsexlist)):
-        for j in range(i+1, len(goodsexlist)):
-            if i == j: continue
-            dist = distance(goodsexlist[i], goodsexlist[j])
-            if dist < minsep:
-                if goodsexlist[i].mag > goodsexlist[j].mag:
-                    deletelist.append(i)
+        # If the image is way deeper than USNO, trim the image catalog down
+        if ngood > 16 and density > 4 * catdensity and ngood > 8:
+            logger.debug('Image is deep.  Trimming image catalog...')
+            while density > 4 * catdensity and ngood > 8:
+                goodsexlist = goodsexlist[0:int(len(goodsexlist)*4/5)]
+                ngood = len(goodsexlist)
+                density = ngood / area_sq_min
+
+        # If too many objects, do some more trimming
+        if ngood*ncat > 120*120*4:
+            logger.debug('Image and/or catalog still too deep.  Trimming...')
+            while ngood*ncat > 120*120*4:
+                if density > catdensity:
+                    goodsexlist = goodsexlist[0:int(len(goodsexlist)*4/5)]
+                    ngood = len(goodsexlist)
+                    density = ngood / area_sq_min
                 else:
-                    deletelist.append(j)
-    deletelist = unique(deletelist)
-    deletelist.reverse()
-    for d in deletelist:
-        del goodsexlist[d]
-    deletelist = []
-    for i in range(len(catlist)):
-        for j in range(i+1, len(catlist)):
-            if i == j: continue
-            dist = distance(catlist[i], catlist[j])
-            if dist < minsep:
-                if catlist[i].mag > catlist[j].mag:
-                    deletelist.append(i)
-                else:
-                    deletelist.append(j)
-    deletelist = unique(deletelist)
-    deletelist.reverse()
-    for d in deletelist:
-        del catlist[d]
+                    catlist = catlist[0:int(len(catlist)*4/5)]
+                    ncat = len(catlist)
+                    catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
 
-    writetextfile('det.init.txt', goodsexlist)
-    writeregionfile('det.im.reg', goodsexlist, 'red', 'img')
-    writetextfile('cat.txt', catlist)
-    writeregionfile('cat.wcs.reg', catlist, 'green', 'wcs')
+        # Remove fainter object in close pairs for both lists
+        minsep = 3
+        deletelist = []
+        for i in range(len(goodsexlist)):
+            for j in range(i+1, len(goodsexlist)):
+                if i == j: continue
+                dist = distance(goodsexlist[i], goodsexlist[j])
+                if dist < minsep:
+                    if goodsexlist[i].mag > goodsexlist[j].mag:
+                        deletelist.append(i)
+                    else:
+                        deletelist.append(j)
+        deletelist = unique(deletelist)
+        deletelist.reverse()
+        for d in deletelist:
+            del goodsexlist[d]
+        deletelist = []
+        for i in range(len(catlist)):
+            for j in range(i+1, len(catlist)):
+                if i == j: continue
+                dist = distance(catlist[i], catlist[j])
+                if dist < minsep:
+                    if catlist[i].mag > catlist[j].mag:
+                        deletelist.append(i)
+                    else:
+                        deletelist.append(j)
+        deletelist = unique(deletelist)
+        deletelist.reverse()
+        for d in deletelist:
+            del catlist[d]
 
-    # The catalogs have now been completed.
+        writetextfile('det.init.txt', goodsexlist)
+        writeregionfile('det.im.reg', goodsexlist, 'red', 'img')
+        writetextfile('cat.txt', catlist)
+        writeregionfile('cat.wcs.reg', catlist, 'green', 'wcs')
 
-
-    # Now start getting into the actual astrometry.
-
-    min_rad = 5.0
-    #if (maxrad == -1): maxrad = 180
-    if max_rad is None:
-        max_rad = 60 * (15 / (math.pi * min(density, catdensity))) ** 0.5 # numcomp ~ 15 [look at 15 closest objects
-        max_rad = max(max_rad, 60.0)                                 #               in sparse dataset]
-        if max_rad == 60.0:
-            min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
-        max_rad = min(max_rad, fieldwidth * 3. / 4)
-
-        # note that density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
-
-    circdensity = density * min([area_sqmin, (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)])
-    circcatdensity = catdensity * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
-    catperimage = catdensity * area_sqmin
-
-    logger.debug('After trimming: ')
-    logger.debug(f'{len(goodsexlist)} detected objects ({density:.2f}/arcmin^2, {circdensity:.1f}/searchzone)')
-    logger.debug(f'{len(catlist)} catalog objects ({catdensity:.2f}/arcmin^2, {circcatdensity:.1f}/searchzone)')
+        # The catalogs have now been completed.
 
 
-    patolerance = defaultpatolerance
-    expectfalsetrios = ngood * ncat * circdensity**2 * circcatdensity**2 * tolerance**2 * (patolerance/360.)**1
+        # Now start getting into the actual astrometry.
 
-    overlap1 = 0.3 * min(1,catdensity/density) # fraction of stars in image that are also in catalog - a guess
-    truematchesperstar = (circdensity * overlap1) # but how many matches >3 and >4?  some annoying binomial thing
+        min_rad = 5.0
+        #if (maxrad == -1): maxrad = 180
+        if max_rad is None:
+            max_rad = 60 * (15 / (math.pi * min(density, catdensity))) ** 0.5 # numcomp ~ 15 [look at 15 closest objects
+            max_rad = max(max_rad, 60.0)                                 #               in sparse dataset]
+            if max_rad == 60.0:
+                min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
+            max_rad = min(max_rad, field_width * 3. / 4)
 
-    reqmatch = 3
-    if expectfalsetrios > 30 and truematchesperstar >= 4:
-        reqmatch = 4
-    # should check that this will actually work for the catalog, too.
-    if catperimage <= 6 or ngood <= 6:
-        reqmatch = 2
-    if catperimage <= 3 or ngood <= 3:
-        reqmatch = 1
-    # for an extremely small or shallow image
+            # note that density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
 
-    logger.debug('Pair comparison search radius: %.2f"' % max_rad)
-    logger.debug(f'Using reqmatch = {reqmatch}')
-    (primarymatchs, primarymatchc, mpa) = distmatch(goodsexlist, catlist, max_rad, min_rad, tolerance, reqmatch, patolerance, unc_pa)
+        circdensity = density * min([area_sq_min, (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)])
+        circcatdensity = catdensity * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
+        catperimage = catdensity * area_sq_min
 
-    nmatch = len(primarymatchs)
-    if nmatch == 0:
-        err = (' No valid matches found!\n '
-               'Possible issues: \n'
-               '  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value. \n'
-               '  - The field is outside the catalog search region.  Check header RA/DEC or increase search radius. \n'
-               ' - The routine is flooded by bad sources.  Specify or check the input seeing. \n'
-               '  - The routine is flagging many real stars.  Check the input seeing. \n'
-               ' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg. \n'
-               )
-        logger.error(err)
-        raise AstrometryException(err)
-
-    if nmatch <= 2:
-        logger.warning(f'Warning: only {nmatch} match(es).  Astrometry may be unreliable.')
-        logger.warning('   Check the pixel scale and parity and consider re-running.')
-
-    #We now have the PA and a list of stars that are almost certain matches.
-    offpa = median(mpa)  #get average PA from the excellent values
-    stdevpa = stdev(mpa)
-
-    skyoffpa = -parity*offpa # This appears to be necessary for the printed value to agree with our normal definition.
-
-    logger.debug('PA offset:')
-    logger.debug('  dPA = %.3f  (unc. %.3f)' % (skyoffpa, stdevpa))
-
-    if no_rot <= 0:
-        # Rotate the image to the new, correct PA
-        #  NOTE: when CRPIX don't match CRVAL this shifts the center and screws things up.
-        #  I don't understand why they don't always match.  [[I think this was an equinox issue.
-        #  should be solved now, but be alert for further problems.]]
-        
-        #Rotate....
-        rot = offpa * math.pi/180
-        #...the image itself
-        header["CD1_1"] = math.cos(rot)*cd11 - math.sin(rot)*cd21
-        header["CD1_2"] = math.cos(rot)*cd12 - math.sin(rot)*cd22   # a parity issue may be involved here?
-        header["CD2_1"] = math.sin(rot)*cd11 + math.cos(rot)*cd21
-        header["CD2_2"] = math.sin(rot)*cd12 + math.cos(rot)*cd22
-        #...the coordinates (so we don't have to resex)
-        for i in range(len(goodsexlist)):  #do all of them, though this is not necessary
-            goodsexlist[i].rotate(offpa,cra,cdec)
-
-    else:
-        rotwarn = ''
-        if abs(skyoffpa) > 1.0:
-            rotwarn = ' (WARNING: image appears rotated, may produce bad shift)'
-        logger.debug('  Skipping rotation correction ')
+        logger.debug('After trimming: ')
+        logger.debug(f'{len(goodsexlist)} detected objects ({density:.2f}/arcmin^2, {circdensity:.1f}/searchzone)')
+        logger.debug(f'{len(catlist)} catalog objects ({catdensity:.2f}/arcmin^2, {circcatdensity:.1f}/searchzone)')
 
 
-    writetextfile('det.wcs.txt',goodsexlist)
+        patolerance = defaultpatolerance
+        expectfalsetrios = ngood * ncat * circdensity**2 * circcatdensity**2 * tolerance**2 * (patolerance/360.)**1
 
-    imraoffset = []
-    imdecoffset = []
-    for i in range(len(primarymatchs)):
-        imraoffset.append(goodsexlist[primarymatchs[i]].ra - catlist[primarymatchc[i]].ra)
-        imdecoffset.append(goodsexlist[primarymatchs[i]].dec - catlist[primarymatchc[i]].dec)
+        overlap1 = 0.3 * min(1,catdensity/density) # fraction of stars in image that are also in catalog - a guess
+        truematchesperstar = (circdensity * overlap1) # but how many matches >3 and >4?  some annoying binomial thing
 
-    raoffset = -median(imraoffset)
-    decoffset = -median(imdecoffset)
-    rastd = stdev(imraoffset)*math.cos(cdec*math.pi/180)  # all of these are in degrees
-    decstd = stdev(imdecoffset)
-    stdoffset = math.sqrt(rastd**2 + decstd**2)
+        reqmatch = 3
+        if expectfalsetrios > 30 and truematchesperstar >= 4:
+            reqmatch = 4
+        # should check that this will actually work for the catalog, too.
+        if catperimage <= 6 or ngood <= 6:
+            reqmatch = 2
+        if catperimage <= 3 or ngood <= 3:
+            reqmatch = 1
+        # for an extremely small or shallow image
 
-    raoffsetarcsec = raoffset*3600*math.cos(cdec*math.pi/180)
-    decoffsetarcsec = decoffset*3600
-    totoffsetarcsec = (raoffsetarcsec**2 + decoffset**2)**0.5
-    stdoffsetarcsec = stdoffset*3600
+        logger.debug('Pair comparison search radius: %.2f"' % max_rad)
+        logger.debug(f'Using reqmatch = {reqmatch}')
+        (primarymatchs, primarymatchc, mpa) = distmatch(goodsexlist, catlist, max_rad, min_rad, tolerance, reqmatch, patolerance, unc_pa)
 
-    logger.debug('Spatial offset:')
+        nmatch = len(primarymatchs)
+        if nmatch == 0:
+            err = (' No valid matches found!\n '
+                   'Possible issues: \n'
+                   '  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value. \n'
+                   '  - The field is outside the catalog search region.  Check header RA/DEC or increase search radius. \n'
+                   ' - The routine is flooded by bad sources.  Specify or check the input seeing. \n'
+                   '  - The routine is flagging many real stars.  Check the input seeing. \n'
+                   ' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg. \n'
+                   )
+            logger.error(err)
+            raise AstrometryException(err)
 
-    msg = f'  dra = {raoffsetarcsec:.2f}",' \
-          f'  ddec = {decoffsetarcsec:.2f}"' \
-          f'  (unc. {stdoffsetarcsec:.3f}")'
-    logger.error(msg)
-    #
-    if msg != '  dra = 87.39",  ddec = 47.42"  (unc. 0.176")':
-        raise ValueError("MISMATCH")
+        if nmatch <= 2:
+            logger.warning(f'Warning: only {nmatch} match(es).  Astrometry may be unreliable.')
+            logger.warning('   Check the pixel scale and parity and consider re-running.')
 
-    warning = 0
-    if (stdoffset*3600 > 1.0):
-        logger.debug('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
-        warning = 1
+        #We now have the PA and a list of stars that are almost certain matches.
+        offpa = median(mpa)  #get average PA from the excellent values
+        stdevpa = stdev(mpa)
 
-    header["CRVAL1"] = cra + raoffset
-    header["CRVAL2"] = cdec + decoffset
+        skyoffpa = -parity*offpa # This appears to be necessary for the printed value to agree with our normal definition.
 
-    #header.update("ASTRMTCH", catalog)
-    try:
-        oldcat = header['ASTR_CAT']
-        header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
-    except:
-        pass
-    header["ASTR_CAT"] = (catalog, "Reference catalog for autoastrometry")
-    header["ASTR_UNC"] = (stdoffsetarcsec, "Astrometric scatter vs. catalog (arcsec)")
-    header["ASTR_SPA"] = (stdevpa, "Measured uncertainty in PA (degrees)")
-    header["ASTR_DPA"] = (skyoffpa, "Change in PA (degrees)")
-    header["ASTR_OFF"] = (totoffsetarcsec, "Change in center position (arcsec)")
-    header["ASTR_NUM"] = (len(primarymatchs), "Number of matches")
+        logger.debug('PA offset:')
+        logger.debug('  dPA = %.3f  (unc. %.3f)' % (skyoffpa, stdevpa))
 
-    #Write out a match list to allow doing a formal fit with WCStools.
+        if no_rot <= 0:
+            # Rotate the image to the new, correct PA
+            #  NOTE: when CRPIX don't match CRVAL this shifts the center and screws things up.
+            #  I don't understand why they don't always match.  [[I think this was an equinox issue.
+            #  should be solved now, but be alert for further problems.]]
 
-    outmatch = open('match.list','w')
-    for i in range(len(primarymatchs)):
-        si = primarymatchs[i]
-        ci = primarymatchc[i]
-        outmatch.write("%s %s  %s %s\n" % (goodsexlist[si].x, goodsexlist[si].y, catlist[ci].ra, catlist[ci].dec))
-        #goodsexlist[si].ra, goodsexlist[si].dec))
-    outmatch.close()
+            #Rotate....
+            rot = offpa * math.pi/180
+            #...the image itself
+            header["CD1_1"] = math.cos(rot)*cd11 - math.sin(rot)*cd21
+            header["CD1_2"] = math.cos(rot)*cd12 - math.sin(rot)*cd22   # a parity issue may be involved here?
+            header["CD2_1"] = math.sin(rot)*cd11 + math.cos(rot)*cd21
+            header["CD2_2"] = math.sin(rot)*cd12 + math.cos(rot)*cd22
+            #...the coordinates (so we don't have to resex)
+            for i in range(len(goodsexlist)):  #do all of them, though this is not necessary
+                goodsexlist[i].rotate(offpa,cra,cdec)
 
-    # Could repeat with scale adjustment
+        else:
+            rotwarn = ''
+            if abs(skyoffpa) > 1.0:
+                rotwarn = ' (WARNING: image appears rotated, may produce bad shift)'
+            logger.debug('  Skipping rotation correction ')
 
 
-    # Could then go back to full good catalog and match all sources
+        writetextfile('det.wcs.txt',goodsexlist)
 
-    if overwrite:
-        outfile = filename
-    elif outfile == '':
-        slashpos = filename.rfind('/')
-        dir = filename[0:slashpos+1]
-        fil = filename[slashpos+1:]
-        outfile = f"{dir}a{fil}" # alternate behavior would always output to current directory
+        imraoffset = []
+        imdecoffset = []
+        for i in range(len(primarymatchs)):
+            imraoffset.append(goodsexlist[primarymatchs[i]].ra - catlist[primarymatchc[i]].ra)
+            imdecoffset.append(goodsexlist[primarymatchs[i]].dec - catlist[primarymatchc[i]].dec)
 
-    if outfile is not None:
+        raoffset = -median(imraoffset)
+        decoffset = -median(imdecoffset)
+        rastd = stdev(imraoffset)*math.cos(cdec*math.pi/180)  # all of these are in degrees
+        decstd = stdev(imdecoffset)
+        stdoffset = math.sqrt(rastd**2 + decstd**2)
+
+        raoffsetarcsec = raoffset*3600*math.cos(cdec*math.pi/180)
+        decoffsetarcsec = decoffset*3600
+        totoffsetarcsec = (raoffsetarcsec**2 + decoffset**2)**0.5
+        stdoffsetarcsec = stdoffset*3600
+
+        logger.debug('Spatial offset:')
+
+        msg = f'  dra = {raoffsetarcsec:.2f}",' \
+              f'  ddec = {decoffsetarcsec:.2f}"' \
+              f'  (unc. {stdoffsetarcsec:.3f}")'
+        logger.error(msg)
+        #
+        if msg != '  dra = 87.39",  ddec = 47.42"  (unc. 0.176")':
+            raise ValueError("MISMATCH")
+
+        warning = 0
+        if (stdoffset*3600 > 1.0):
+            logger.debug('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
+            warning = 1
+
+        header["CRVAL1"] = cra + raoffset
+        header["CRVAL2"] = cdec + decoffset
+
+        #header.update("ASTRMTCH", catalog)
         try:
-            os.remove(outfile)
-        except FileNotFoundError:
+            oldcat = header['ASTR_CAT']
+            header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
+        except:
             pass
+        header["ASTR_CAT"] = (catalog, "Reference catalog for autoastrometry")
+        header["ASTR_UNC"] = (stdoffsetarcsec, "Astrometric scatter vs. catalog (arcsec)")
+        header["ASTR_SPA"] = (stdevpa, "Measured uncertainty in PA (degrees)")
+        header["ASTR_DPA"] = (skyoffpa, "Change in PA (degrees)")
+        header["ASTR_OFF"] = (totoffsetarcsec, "Change in center position (arcsec)")
+        header["ASTR_NUM"] = (len(primarymatchs), "Number of matches")
 
-        fits[sciext].header = header
-        fits.writeto(outfile, output_verify='silentfix') #,clobber=True
-        logger.info(f'Written to {outfile}')
+        #Write out a match list to allow doing a formal fit with WCStools.
 
-    fits.close()
+        outmatch = open('match.list','w')
+        for i in range(len(primarymatchs)):
+            si = primarymatchs[i]
+            ci = primarymatchc[i]
+            outmatch.write("%s %s  %s %s\n" % (goodsexlist[si].x, goodsexlist[si].y, catlist[ci].ra, catlist[ci].dec))
+            #goodsexlist[si].ra, goodsexlist[si].dec))
+        outmatch.close()
+
+        # Could repeat with scale adjustment
+
+
+        # Could then go back to full good catalog and match all sources
+
+        if overwrite:
+            outfile = filename
+        elif outfile == '':
+            slashpos = filename.rfind('/')
+            dir = filename[0:slashpos+1]
+            fil = filename[slashpos+1:]
+            outfile = f"{dir}a{fil}" # alternate behavior would always output to current directory
+
+        if outfile is not None:
+            try:
+                os.remove(outfile)
+            except FileNotFoundError:
+                pass
+
+            fits[sci_ext].header = header
+            fits.writeto(outfile, output_verify='silentfix') #,clobber=True
+            logger.info(f'Written to {outfile}')
 
     return nmatch, skyoffpa, stdevpa, raoffsetarcsec, decoffsetarcsec, stdoffsetarcsec      #stdoffset*3600
 
