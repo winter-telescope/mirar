@@ -1314,18 +1314,19 @@ def autoastrometry(
 
     # If no catalog specified, check availability of SDSS
     if catalog == '':
-        trycats = ['sdss', 'ub2', 'tmc']
-        for trycat in trycats:
-            testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={centerra}" \
-                           f"&dec={centerdec}&system=J2000&rad=-90"
-            check = urllib.request.urlopen(testqueryurl)
-            checklines = check.readlines()
-            check.close()
-            if len(checklines) > 15:
-                catalog = trycat
-                logger.debug(f'Using catalog {catalog}')
-                break
-        if catalog == '':
+        try:
+            trycats = ['sdss', 'ub2', 'tmc']
+            for trycat in trycats:
+                testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={centerra}" \
+                               f"&dec={centerdec}&system=J2000&rad=-90"
+                check = urllib.request.urlopen(testqueryurl)
+                checklines = check.readlines()
+                check.close()
+                if len(checklines) > 15:
+                    catalog = trycat
+                    logger.debug(f'Using catalog {catalog}')
+                    break
+        except urllib.error.URLError:
             err = 'No catalog is available.  Check your internet connection.'
             logger.error(err)
             raise AstrometryException(err)
@@ -1620,135 +1621,7 @@ def autoastrometry(
     return nmatch, skyoffpa, stdevpa, raoffsetarcsec, decoffsetarcsec, stdoffsetarcsec      #stdoffset*3600
 
 
-# #####################################################
-# def argument_help():
-#     #          12345678901234567890123456789012345678901234567890123456789012345678901234567890
-#     logger.debug("autoastrometry.py - A fast astrometric solver")
-#     logger.debug("Command-line options:")
-#     logger.debug("   Automatic WCS information:")
-#     logger.debug("      -px pixelscale:  The pixel scale in arcsec/pix.  Must be within ~1%.")
-#     logger.debug("      -pa PA:          The position angle in degrees.  Not usually needed.")
-#     logger.debug("      -inv:            Reverse(=positive) parity.")
-#     logger.debug("   If your image has provisional WCS already, you do not need this information.")
-#     #print "   If your image has detailed WCS, you need to flush it for this code to work."
-#     logger.debug("   Options:")
-#     logger.debug("      -b  boxsize:     Half-width of box for reference catalog query (arcsec)")
-#     logger.debug("      -s  seeing:      Approximate seeing in pixels for CR/star/galaxy ID'ing.")
-#     logger.debug("      -x  saturation:  Saturation level; do not use stars exceeding.")
-#     logger.debug("      -upa PAdiff:     Uncertainty of the position angle (degrees)")
-#     logger.debug("   Additional options:")
-#     logger.debug("      -c  catalog:     Catalog to use (ub2, tmc, sdss, or file: see --catalog)")
-#     logger.debug("      -d  searchdist:  Maximum distance to look for star pairs.")
-#     logger.debug("      -t  tolerance:   Amount of slack allowed in match determination")
-#     logger.debug("      -o  output:      Specify output file (no argument overwrites input file)")
-#     logger.debug("      -n:              Do not attempt to solve astrometry; just write catalog.")
-#     logger.debug("   More help:")
-#     logger.debug("      --examples:      Some examples for running at the command line.")
-#     logger.debug("      --trouble:       Troubleshooting info if you can't get a field to solve.")
-#     logger.debug("      --catalog:       More information on catalogs.")
-#     logger.debug("      --algorithm:     Description of the program runtime steps.")
-#     logger.debug("      --output:        Information on the output files.")
-#     logger.debug("      --input:         Information on the input files.")
-
-
-def algorithmhelp():
-    logger.debug("Algorithm info:")
-    logger.debug("  The code uses a combination of pair-distance matching and asterism matching to")
-    logger.debug("  solve a field without knowing the position angle.  The full list of steps is:")
-    logger.debug(" 1 - Extract all stars from the image.  Attempts to filter out cosmic rays,")
-    logger.debug("     galaxies, bad columns, and so on.")
-    logger.debug(" 2 - Query a catalog to get a list of known star positions.")
-    logger.debug(" 3 - Trim the catalogs if necessary and try to optimize the search strategy")
-    logger.debug("     based on the relative catalog densities and areas.")
-    logger.debug(" 4 - Calculate the distance from every star to its neighbors, both in the")
-    logger.debug("     image and the catalog.  Stars too far apart are ignored.")
-    logger.debug("     If the distance between a star and a neighbor matches the distance between")
-    logger.debug("     some catalog star and one of its neighbors, calculate that PA too and store")
-    logger.debug("     as a potential match.")
-    logger.debug(" 5 - Look for stars that seem to have a lot of distance matches with catalog")
-    logger.debug("     stars.  If the PA's also match, store the list as an asterism match.")
-    logger.debug(" 6 - Prune out asterisms whose matches seem least useful.")
-    logger.debug(" 7 - Calculate analytically the PA shift and offset by averaging asterism")
-    logger.debug("     centers.")
-    logger.debug(" 8 - Update the header and write to disk.")
-
-
-# def troublehelp():
-#     #          12345678901234567890123456789012345678901234567890123456789012345678901234567890
-#     logger.debug("Troubleshooting info:")
-#     logger.debug("   Supplying the correct pixel scale (within 1%) and correct parity is critical")
-#     logger.debug("   if the image does not already contain this information in the FITS header.")
-#     logger.debug("   If you have difficulty solving a field correctly, double-check these values.")
-#     logger.debug("   If still having trouble, try opening temp.fits and an archival image of the")
-#     logger.debug("   field (from DSS, etc.) and loading the .reg files in DS9.  The problem might")
-#     logger.debug("   be in the telescope pointing/header info (in this case, increase the boxsize)")
-#     logger.debug("   or good matching stars may be thrown away or confused by artifacts (in this")
-#     logger.debug("   case, specify a seeing value).  If the PA is known, restricting it can also")
-#     logger.debug("   help (try -upa 0.5); by default all orientations are searched.")
-#     logger.debug("   If still having issues, e-mail dperley@astro.berkeley.edu for help.")
-
-
-def examplehelp():
-    #         12345678901234567890123456789012345678901234567890123456789012345678901234567890
-    logger.debug("Examples:")
-    logger.debug(" For an image with provisional WCS header but possibly incorrect PA:")
-    logger.debug("    autoastrometry image.fits   ")
-    logger.debug(" For an image with provisional WCS, definitely correct PA:")
-    logger.debug("    autoastrometry image.fits -upa 0.5")
-    logger.debug(' For an image with no WCS (or bad WCS) and a pixel scale of 0.35"/pixel:')
-    logger.debug("    autoastrometry image.fits -px 0.35")
-    logger.debug(' For an image with no WCS, pixel scale of 0.35", and PA of 121 degrees:')
-    logger.debug("    autoastrometry image.fits -px 0.35 -pa 121 -upa 0.5")
-    logger.debug(" For an image with no WCS, pixel scale of 0.35, and positive parity:")
-    logger.debug("    autoastrometry image.fits -px 0.35 -inv")
-    logger.debug(" Use a catalog on disk instead of wcstools query:")
-    logger.debug("    autoastrometry image.fits -c catalog.txt")
-    logger.debug(" Widen the catalog search to 12x12 arcminutes if the pointing is bad:")
-    logger.debug("    autoastrometry image.fits -b 720")
-    logger.debug(" Specify seeing (7 pixels) to better exclude cosmic rays and galaxies:")
-    logger.debug("    autoastrometry image.fits -s 7")
-    logger.debug(" Combine lots of options for a maximally directed solution:")
-    logger.debug("    autoastrometry image.fits -px 0.35 -pa 121 -upa 0.5 -inv -b 600 -s 7")
-    logger.debug(" (Substitute 'autoastrometry' with 'python autoastrometry.py' if not aliased.)")
-
-
-def outputhelp():
-    logger.debug("Explanation of output files:")
-    logger.debug(" DS9 region files -")
-    logger.debug("   cat.wcs.reg        - WCS positions of all objects in the catalog.")
-    logger.debug("   det.im.reg         - XY positions of all non-flagged detected objects.")
-    logger.debug("   matchlines.im.reg  - spoke lines for matched asterisms from XY positions.")
-    logger.debug("   matchlines.wcs.reg - spoke lines for matched asterisms from WCS positions.")
-    logger.debug(" Text output -")
-    logger.debug("   cat.txt            - objects in the catalog as a text file (RA, dec, mag)")
-    logger.debug("   det.init.txt       - objects in the image as a text file ('RA', 'dec', mag)")
-    logger.debug("   det.final.txt      - objects in the image as a text file (RA, dec, mag)")
-    logger.debug("   match.list         - list of matched stars: (X Y RA dec)")
-    logger.debug(" Image output -")
-    logger.debug("   a[image.fits]      - output image with astrometry (if not specified with -o)")
-    logger.debug("   temp.fits          - image with provisional WCS from your -px and -pa inputs")
-
-# def inputhelp():
-#     logger.debug("Sextractor input files:")
-#     logger.debug("  You can modify the following sextractor inputs if you choose.  This should")
-#     logger.debug("  rarely be necessary, if ever.")
-#     logger.debug("     sex.config - Overall input file")
-#     logger.debug("     sex.conv   - Convolution matrix for detection")
-#     logger.debug("  These files are written to disk using internal defaults if not present.")
-
-
-#Some other conceivable options for the future:
-#noncircular PSF
-#instrument defaults
-
 ######################################################################
-def usage(args):
-    (xdir,xname) = os.path.split(args[0])
-    logger.error("Usage:  %s filename(s) [-px pixelscale -pa PA -inv -b boxsize -s seeing -upa PAunc]" % xname)
-    logger.error("     or %s -help for instructions and more options." % xname)
-
-######################################################################
-
 
 def run_autoastrometry(
         files: str | list,
@@ -1925,7 +1798,7 @@ def run_autoastrometry(
 
     try:
         os.remove('temp.param')
-    except:
+    except FileNotFoundError:
         pass
 
 
