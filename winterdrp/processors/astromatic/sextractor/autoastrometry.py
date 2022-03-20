@@ -19,7 +19,6 @@
 # Modified by Kishalay De (kde@astro.caltech.edu) for removing dependency on deprecated pyfits
 # and making it compatible with astropy headers and python 3.6 (June 11, 2018)
 
-import math
 import os
 import sys
 import urllib.error
@@ -38,12 +37,12 @@ from winterdrp.processors.astromatic.sextractor.settings import write_param_file
 logger = logging.getLogger(__name__)
 
 default_tolerance = 0.01  # these defaults should generally not be altered.
-defaultpatolerance = 1.4
+default_pa_tolerance = 1.4
 default_min_fwhm = 1.5
 default_max_fwhm = 40
 
-fastmatch = 1
-showmatches = 0
+fast_match = True
+show_matches = False
 
 
 class AstrometryException(Exception):
@@ -151,34 +150,49 @@ def quickdistance(obj1, obj2, cosdec):
     return 3600 * math.sqrt(ddec**2 + (cosdec*dra)**2)
 
 
-#Calculate the (spherical) position angle between two objects.
-def posangle(obj1, obj2):
+# Calculate the (spherical) position angle between two objects.
+def position_angle(
+        obj1: BaseSource,
+        obj2: BaseSource
+):
     dra = obj2.ra_rad - obj1.ra_rad
-    pa_rad = np.arctan2(math.cos(obj1.dec_rad) * math.tan(obj2.dec_rad) - math.sin(obj1.dec_rad) * math.cos(dra), math.sin(dra));
-    pa_deg = pa_rad * 180./math.pi;
-    pa_deg = 90. - pa_deg  #defined as degrees east of north
-    while pa_deg > 200: pa_deg -= 360.   # make single-valued
-    while pa_deg < -160: pa_deg += 360.  # note there is a crossing point at PA=200, images at this exact PA
+    pa_rad = np.arctan2(
+        math.cos(obj1.dec_rad) * math.tan(obj2.dec_rad) - math.sin(obj1.dec_rad) * math.cos(dra),
+        math.sin(dra)
+    )
+    pa_deg = pa_rad * 180./math.pi
+    pa_deg = 90. - pa_deg  # defined as degrees east of north
+    while pa_deg > 200:
+        pa_deg -= 360.   # make single-valued
+    while pa_deg < -160:
+        pa_deg += 360.  # note there is a crossing point at PA=200, images at this exact PA
     return pa_deg                        # will have the number of matches cut by half at each comparison level
 
-#Compare objects using magnitude.
-def magcomp(obj): #useful for sorting; Altered by KD for compatibility with python 3
-    return obj.mag
-    #return (obj1.mag > obj2.mag) - (obj1.mag < obj2.mag)
+
+# Compare objects using magnitude.
+def compare_mag(
+        source: SextractorSource
+) -> float:
+    """"useful for sorting; Altered by KD for compatibility with python 3"""
+    return source.mag
 
 
-#Check if two values are the same to within a fraction specified.
+# Check if two values are the same to within a fraction specified.
 def fuzzyequal(v1, v2, tolerance):
     return abs(v1/v2 - 1) < tolerance
 
 
-def median(l):
-    a = np.array(l)
+def median(
+        float_list: list[float]
+) -> np.ndarray:
+    a = np.array(float_list)
     return np.median(a)
 
 
-def stdev(l):
-    a = np.array(l)
+def stdev(
+        float_list: list[float]
+) -> np.ndarray:
+    a = np.array(float_list)
     return np.std(a)
 
 
@@ -216,22 +230,27 @@ def mode(
     return list_mode
 
 
-def rasex2deg(rastr):
-    rastr = str(rastr).strip()
-    ra=rastr.split(':')
-    if len(ra) == 1: return float(rastr)
-    return 15*(float(ra[0])+float(ra[1])/60.0+float(ra[2])/3600.0)
+def ra_str_2_deg(
+        ra_str: str
+) -> float:
+    ra_str = str(ra_str).strip()
+    ra = ra_str.split(':')
+    if len(ra) == 1:
+        return float(ra_str)
+    return 15*(float(ra[0])+float(ra[1])/60.0 + float(ra[2])/3600.0)
 
 
-def decsex2deg(decstr):
-    decstr = str(decstr).strip()
-    dec=decstr.split(':')
+def dec_str_2_deg(
+        dec_str: str
+) -> float:
+    dec_str = str(dec_str).strip()
+    dec = dec_str.split(':')
     if len(dec) == 1:
-        return float(decstr)
+        return float(dec_str)
     sign = 1
-    if (decstr[0] == '-'):
-        sign=-1
-    return sign*(abs(float(dec[0]))+float(dec[1])/60.0+float(dec[2])/3600.0)
+    if dec_str[0] == '-':
+        sign = -1
+    return sign*(abs(float(dec[0])) + float(dec[1])/60.0 + float(dec[2])/3600.0)
 
 
 def unique(inlist):
@@ -261,7 +280,7 @@ def sextract(
         output_dir: str = base_output_dir,
         config_path: str = default_config_path,
         output_catalog: str = None
-):
+) -> list[SextractorSource]:
 
     if output_catalog is None:
         output_catalog = img_path.replace(".fits", ".cat")
@@ -300,12 +319,7 @@ def sextract(
 
     n_src_init = 0
     n_src_pass = 0
-    xlist = []
-    ylist = []
     src_list = []
-    fwhm_list = []
-    ellip_list = []
-    flag_list = []
 
     rejects = []
 
@@ -314,54 +328,49 @@ def sextract(
         if line[0] == "#":
             continue
 
-        iobj = SextractorSource(line) #process the line into an object
+        src = SextractorSource(line) #process the line into an object
         n_src_init += 1
 
         # Initial filtering
-        if iobj.ellip > max_ellip:
+        if src.ellip > max_ellip:
             rejects.append("ellip")
             continue
-        if iobj.fwhm < min_fwhm:
+        if src.fwhm < min_fwhm:
             rejects.append("min fwhm")
             continue
-        if iobj.fwhm > max_fwhm:
+        if src.fwhm > max_fwhm:
             rejects.append("max fwhm")
             continue
-        if iobj.x < min_x:
-            rejects.append("min x")
+        if src.x < min_x:
+            rejects.append("min val")
             continue
-        if iobj.y < min_y:
+        if src.y < min_y:
             rejects.append("min y")
             continue
-        if iobj.x > max_x:
-            rejects.append("max x")
+        if src.x > max_x:
+            rejects.append("max val")
             continue
-        if iobj.y > max_y:
+        if src.y > max_y:
             rejects.append("max y")
             continue
-        if iobj.x + iobj.y < corner:
+        if src.x + src.y < corner:
             rejects.append("corner")
             continue
-        if iobj.x + (ny_pix - iobj.y) < corner:
+        if src.x + (ny_pix - src.y) < corner:
             rejects.append("corner")
             continue
-        if (nx_pix - iobj.x) < corner:
+        if (nx_pix - src.x) < corner:
             rejects.append("corner")
             continue
-        if (nx_pix - iobj.x) + (ny_pix - iobj.y) < corner:
+        if (nx_pix - src.x) + (ny_pix - src.y) < corner:
             rejects.append("corner")
             continue
         if saturation is not None:
-            if iobj.flag > 0:
+            if src.flag > 0:
                 rejects.append("saturation")
                 continue  # this will likely overdo it for very deep fields.
 
-        src_list.append(iobj)
-        xlist.append(iobj.x)
-        ylist.append(iobj.y)
-        fwhm_list.append(iobj.fwhm)
-        ellip_list.append(iobj.ellip)
-        flag_list.append(iobj.flag)
+        src_list.append(src)
         n_src_pass += 1
 
     # Remove detections along bad columns
@@ -369,86 +378,67 @@ def sextract(
     thresh_prob = 0.0001
     ct_bad_col = 0
     for i in range(5):
-        txp = 1.0
-        xthresh = 1
-        while txp > thresh_prob:
-            txp *= min((len(src_list) * 1.0 / nx_pix), 0.8)  # some strange way of estimating the threshold.
-            xthresh += 1                          # what I really want is a general analytic expression for
 
-        removelist = []                           # the 99.99% prob. threshold for value of n for >=n out
-        modex = mode(xlist)                       # of N total sources to land in the same bin (of NX total bins)
-        for j in range(len(src_list)):
-            if (src_list[j].x > modex-1) and (src_list[j].x < modex+1):
-                removelist.append(j)
-        removelist.reverse()
-        if len(removelist) > xthresh:
-            for k in removelist:
-                del xlist[k]
-                del ylist[k]
-                del src_list[k]
-                del fwhm_list[k]
-                del ellip_list[k]
-                del flag_list[k]
-                ct_bad_col += 1
+        for variable in ["x", "y"]:
 
-        typ = 1.0
-        ythresh = 1
-        while typ > thresh_prob:
-            typ *= min((len(src_list) * 1.0 / ny_pix), 0.8)
-            ythresh += 1
-        removelist = []
-        modey = mode(ylist)
-        for j in range(len(src_list)):
-            if (src_list[j].y > modey-1) and (src_list[j].y < modey+1):
-                removelist.append(j)
-        removelist.reverse()
-        if len(removelist) > ythresh:
-            for k in removelist:
-                del xlist[k]
-                del ylist[k]
-                del src_list[k]
-                del fwhm_list[k]
-                del ellip_list[k]
-                del flag_list[k]
-                ct_bad_col += 1
+            txp = 1.0
+            val_thresh = 1
+            while txp > thresh_prob:
+                txp *= min((len(src_list) * 1.0 / nx_pix), 0.8)  # some strange way of estimating the threshold.
+                val_thresh += 1                          # what I really want is a general analytic expression for
+
+            remove_list = []                           # the 99.99% prob. threshold for value of n for >=n out
+            val_list = [getattr(src, variable) for src in src_list]
+            mode_val = mode(val_list)                       # of N total sources to land in the same bin (of NX total bins)
+            for j, val in enumerate(val_list):
+                if (val > mode_val-1) and (val < mode_val+1):
+                    remove_list.append(j)
+
+            remove_list.reverse()
+            if len(remove_list) > val_thresh:
+                for k in remove_list:
+                    del src_list[k]
+                    ct_bad_col += 1
+
     if ct_bad_col > 0:
         rejects += ["bad columns" for _ in range(ct_bad_col)]
 
-
     # Remove galaxies and cosmic rays
+
+    fwhm_list = [src.fwhm for src in src_list]
 
     if len(fwhm_list) > 5:
         fwhm_list.sort()
-        fwhm20 = fwhm_list[int(len(fwhm_list)/5)]
-        fwhmmode = mode(fwhm_list)
+        fwhm_20 = fwhm_list[int(len(fwhm_list)/5)]
+        fwhm_mode = mode(fwhm_list)
     else:
-        fwhmmode = min_fwhm
-        fwhm20 = min_fwhm
+        fwhm_mode = min_fwhm
+        fwhm_20 = min_fwhm
 
-    # formerly a max, but occasionally a preponderance of long CR's could cause fwhmmode to be bigger than the stars
-    refinedminfwhm = median([0.75 * fwhmmode, 0.9 * fwhm20, min_fwhm]) # if CR's are bigger and more common than stars, this is dangerous...
-    logger.debug(f'Refined min FWHM: {refinedminfwhm} pix')
+    # formerly a max, but occasionally a preponderance of long CR's could cause fwhm_mode to be bigger than the stars
+    refined_min_fwhm = median([0.75 * fwhm_mode, 0.9 * fwhm_20, min_fwhm]) # if CR's are bigger and more common than stars, this is dangerous...
+    logger.debug(f'Refined min FWHM: {refined_min_fwhm} pix')
 
-    #Might also be good to screen for false detections created by bad columns/rows
+    # Might also be good to screen for false detections created by bad columns/rows
 
-    ngood = 0
-    goodsexlist = []
-    for sex in src_list:
-        if sex.fwhm > refinedminfwhm:
-            goodsexlist.append(sex)
-            ngood += 1
+    n_good = 0
+    good_src_list = []
+    for src in src_list:
+        if src.fwhm > refined_min_fwhm:
+            good_src_list.append(src)
+            n_good += 1
         else:
             rejects.append("refined min fwhm")
 
     # Sort by magnitude
-    goodsexlist.sort(key=magcomp)
+    good_src_list.sort(key=compare_mag)
 
-    logger.debug(f'{ngood} objects detected in image {img_path} (a further {n_src_init - ngood} discarded)')
+    logger.debug(f'{n_good} objects detected in image {img_path} (a further {n_src_init - n_good} discarded)')
 
     reject_stats = [(x, rejects.count(x)) for x in list(set(rejects))]
     logger.debug(f"Reject reasons: {reject_stats}")
 
-    return goodsexlist
+    return good_src_list
 
 
 def getcatalog(catalog, ra, dec, boxsize, minmag=8.0, maxmag=-1, maxpm=60.):
@@ -528,11 +518,11 @@ def getcatalog(catalog, ra, dec, boxsize, minmag=8.0, maxmag=-1, maxpm=60.):
         if inlinearg[racolumn].find(':') == -1:
             ra = float(inlinearg[racolumn])
         else:
-            ra = rasex2deg(inlinearg[racolumn])
+            ra = ra_str_2_deg(inlinearg[racolumn])
         if inlinearg[deccolumn].find(':') == -1:
             dec = float(inlinearg[deccolumn])
         else:
-            dec = decsex2deg(inlinearg[deccolumn])
+            dec = dec_str_2_deg(inlinearg[deccolumn])
 
         if magcolumn >= 0 and narg > magcolumn:
             try:
@@ -561,7 +551,7 @@ def getcatalog(catalog, ra, dec, boxsize, minmag=8.0, maxmag=-1, maxpm=60.):
         iobj = BaseSource(ra, dec, mag) #process the line into an object
         catlist.append(iobj)
 
-    catlist.sort(key=magcomp)
+    catlist.sort(key=compare_mag)
 
     return catlist
 
@@ -681,7 +671,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                 #  in the catalog.  Therefore it is a robust measurement of the rotation.
 
                 for i in range(len(smatchin)):
-                    ddpa = posangle(sexlist[si],sexlist[smatchin[i]]) - posangle(catlist[ci],catlist[cmatchin[i]])
+                    ddpa = position_angle(sexlist[si], sexlist[smatchin[i]]) - position_angle(catlist[ci], catlist[cmatchin[i]])
                     while ddpa > 200: ddpa  -= 360.
                     while ddpa < -160: ddpa += 360.
                     #print smatchin[i], '-', cmatchin[i], ': ', posangle(sexlist[si],sexlist[smatchin[i]]), '-', posangle(catlist[ci],catlist[cmatchin[i]]), '=', ddpa
@@ -725,7 +715,8 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                 nmatch.append(len(smatchin)-ndegeneracies)
 
                 if (len(smatchin)-ndegeneracies > 6): countgreatmatches += 1
-        if countgreatmatches > 16 and fastmatch == 1: break #save processing time
+        if countgreatmatches > 16 and fast_match is True:
+            break #save processing time
 
         #print '   ', sexdistarr
         #print '   ', catdistarr
@@ -893,7 +884,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
         si = primarymatchs[i]
         ci = primarymatchc[i]
 
-        if showmatches:
+        if show_matches:
             logger.debug(f'{si} matches {ci} (dPA ={mpa[i]:.3f})')
             if len(smatch[i]) < 16:
                 logger.debug(f'  {si} --> {smatch[i]}')
@@ -1077,12 +1068,12 @@ def autoastrometry(
             if user_ra_deg is not None:
                 ra = user_ra_deg
             else:
-                ra = rasex2deg(header['CRVAL1'])
+                ra = ra_str_2_deg(header['CRVAL1'])
     
             if user_dec_deg is not None:
                 dec = user_dec_deg
             else:
-                dec = decsex2deg(header['CRVAL2'])
+                dec = dec_str_2_deg(header['CRVAL2'])
     
             try:
                 epoch = float(header.get('EPOCH', 2000))
@@ -1101,7 +1092,7 @@ def autoastrometry(
                 j2000 = ephem.Equatorial(ephem.Equatorial(
                     str(ra/15), str(dec), epoch=str(equinox)), epoch=ephem.J2000
                 )
-                [ra, dec] = [rasex2deg(j2000.ra), decsex2deg(j2000.dec)]
+                [ra, dec] = [ra_str_2_deg(j2000.ra), dec_str_2_deg(j2000.dec)]
     
             header["CD1_1"] = px_scale_deg * math.cos(pa_rad) * parity
             header["CD1_2"] = px_scale_deg * math.sin(pa_rad)
@@ -1474,7 +1465,7 @@ def autoastrometry(
         logger.debug(f'{len(catlist)} catalog objects ({catdensity:.2f}/arcmin^2, {circcatdensity:.1f}/searchzone)')
 
 
-        patolerance = defaultpatolerance
+        patolerance = default_pa_tolerance
         expectfalsetrios = ngood * ncat * circdensity**2 * circcatdensity**2 * tolerance**2 * (patolerance/360.)**1
 
         overlap1 = 0.3 * min(1,catdensity/density) # fraction of stars in image that are also in catalog - a guess
