@@ -44,6 +44,8 @@ class AutoAstrometry(BaseProcessor):
                 output_dir=sextractor_out_dir
             )
 
+            raise
+
         return images, headers
 
     def check_prerequisites(

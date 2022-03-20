@@ -25,7 +25,8 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from math import sin, cos, tan, asin, sqrt
+import math
+# from math import sin, cos, tan, asin, sqrt
 import numpy as np
 from astropy.io import fits as af
 from winterdrp.paths import base_output_dir
@@ -39,8 +40,8 @@ logger = logging.getLogger(__name__)
 
 default_tolerance = 0.01  # these defaults should generally not be altered.
 defaultpatolerance = 1.4
-defaultminfwhm = 1.5
-defaultmaxfwhm = 40
+default_min_fwhm = 1.5
+default_max_fwhm = 40
 
 fastmatch = 1
 showmatches = 0
@@ -72,9 +73,9 @@ class Obj:
 
     def rotate(self, dpa_deg, ra0, dec0):
         dpa_rad = dpa_deg * math.pi/180
-        sindpa = sin(dpa_rad)
-        cosdpa = cos(dpa_rad)
-        rascale = cos(dec0*math.pi/180)
+        sindpa = math.sin(dpa_rad)
+        cosdpa = math.cos(dpa_rad)
+        rascale = math.cos(dec0*math.pi/180)
 
         #this is only valid for small fields away from the pole.
         x = (self.ra - ra0) * rascale
@@ -132,7 +133,7 @@ def distance(obj1, obj2):
 
     ddec = obj2.dec_rad - obj1.dec_rad
     dra  = obj2.ra_rad - obj1.ra_rad
-    dist_rad = 2 * asin(sqrt( (sin(ddec/2.))**2 + cos(obj1.dec_rad) * cos(obj2.dec_rad) * (sin(dra/2.))**2))
+    dist_rad = 2 * math.asin(math.sqrt( (math.sin(ddec/2.))**2 + math.cos(obj1.dec_rad) * math.cos(obj2.dec_rad) * (math.sin(dra/2.))**2))
 
     dist_deg = dist_rad * 180. / math.pi
     dist_sec = dist_deg * 3600.
@@ -145,13 +146,13 @@ def quickdistance(obj1, obj2, cosdec):
     dra = obj2.ra - obj1.ra
     if dra > 180:
         dra = 360 - dra
-    return 3600 * sqrt(ddec**2 + (cosdec*dra)**2)
+    return 3600 * math.sqrt(ddec**2 + (cosdec*dra)**2)
 
 
 #Calculate the (spherical) position angle between two objects.
 def posangle(obj1, obj2):
     dra = obj2.ra_rad - obj1.ra_rad
-    pa_rad = np.arctan2(cos(obj1.dec_rad) * tan(obj2.dec_rad) - sin(obj1.dec_rad) * cos(dra), sin(dra));
+    pa_rad = np.arctan2(math.cos(obj1.dec_rad) * math.tan(obj2.dec_rad) - math.sin(obj1.dec_rad) * math.cos(dra), math.sin(dra));
     pa_deg = pa_rad * 180./math.pi;
     pa_deg = 90. - pa_deg  #defined as degrees east of north
     while pa_deg > 200: pa_deg -= 360.   # make single-valued
@@ -244,8 +245,8 @@ def sextract(
         nypix,
         border: float = 3.,
         corner: float = 12.,
-        minfwhm: float = defaultminfwhm,
-        maxfwhm: float = defaultmaxfwhm,
+        minfwhm: float = default_min_fwhm,
+        maxfwhm: float = default_max_fwhm,
         maxellip: float = 0.5,
         saturation: float = default_saturation,
         output_dir: str = base_output_dir,
@@ -573,7 +574,7 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
     for s in sexlist:
         declist.append(s.dec_rad)
     avdec_rad = median(declist)       # faster distance computation
-    rascale = cos(avdec_rad)          # will mess up meridian crossings, however
+    rascale = math.cos(avdec_rad)          # will mess up meridian crossings, however
 
     #Calculate all the distances
 
@@ -959,11 +960,11 @@ def autoastrometry(
         pixel_scale: float = None,
         pa: float = None,
         inv: bool = False,
-        uncpa: float = None,
-        userra: float = None,
-        userdec: float = None,
+        unc_pa: float = None,
+        user_ra_deg: float = None,
+        user_dec_deg: float = None,
         max_ellip: float = 0.5,
-        box_size: float = None,
+        box_size_arcsec: float = None,
         max_rad: float = None,
         tolerance: float = default_tolerance,
         catalog: str = "",
@@ -974,8 +975,8 @@ def autoastrometry(
         temp_file: str = None,
         saturation: float = default_saturation,
         no_rot: bool = False,
-        min_fwhm: float = defaultminfwhm,
-        max_fwhm: float = defaultmaxfwhm,
+        min_fwhm: float = default_min_fwhm,
+        max_fwhm: float = default_max_fwhm,
 ) -> (int, ):
     """
 
@@ -984,12 +985,12 @@ def autoastrometry(
     filename: Path of file
     pixel_scale: The pixel scale in arcsec/pix.  Must be within ~1%. By default: ???
     pa: The position angle in degrees.  Not usually needed.
-    uncpa: Uncertainty of the position angle (degrees)
+    unc_pa: Uncertainty of the position angle (degrees)
     inv: Reverse(=positive) parity.
-    userra: RA in deg
-    userdec: Dec in deg
+    user_ra_deg: RA in deg
+    user_dec_deg: Dec in deg
     max_ellip: Maximum elliptical something?
-    box_size: Half-width of box for reference catalog query (arcsec)
+    box_size_arcsec: Half-width of box for reference catalog query (arcsec)
     max_rad: Maximum distance to look for star pairs.
     tolerance: Amount of slack allowed in match determination
     catalog: Catalog to use (ub2, tmc, sdss, or file)
@@ -1011,159 +1012,152 @@ def autoastrometry(
     if temp_file is None:
         temp_file = f"temp_{os.path.basename(filename)}"
 
+    # temp_path = os.path.join(os.path.dirname(filename), temp_file)
     temp_path = os.path.join(output_dir, temp_file)
 
+
     # Get some basic info from the header  
-    try:
-        fits = af.open(filename)
+    with af.open(filename) as fits:
         fits.verify('silentfix')
-    except KeyboardInterrupt:
-        logger.debug('Error opening', filename)
-        if os.path.isfile(filename)==False:
-            logger.debug('File does not exist.')
-        raise AstrometryException
-
-    sciext = 0
-
-    for nh in range(len(fits)): # iterate through extensions to find the data
-        try:
-            if len(fits[nh].data) > 1:
-                sciext = nh
-                break
-        except:
-            pass
-
-    h = fits[sciext].header
-
-    #h = fits[0].header  #ideally check for primary extension, or even iterate
-    #fits.close()
-    sfilename = filename
-
-    if np.logical_and(pixel_scale is not None, pa is None):
-        pa = 0
-
-    # Check for old-style WCS header
-    if pixel_scale is None:
-        #   hkeys = h.ascardlist().keys()
-        hkeys = list(h.keys())
-        oldwcstype = False
-        for hkey in hkeys:
-            if hkey == 'CDELT1' or hkey == 'CDELT2':
-                oldwcstype = True
-        if oldwcstype:
-            key = 'CDELT1'
-            cdelt1 = h[key]
-            key = 'CDELT2'
-            cdelt2 = h[key]
-
+    
+        sciext = 0
+    
+        for nh in range(len(fits)): # iterate through extensions to find the data
             try:
-                crot = 0
-                key = 'CROTA1'
-                crot = h[key]
-                key = 'CROTA2'
-                crot = h[key]
-            except KeyError:
+                if len(fits[nh].data) > 1:
+                    sciext = nh
+                    break
+            except:
                 pass
+    
+        header = fits[sciext].header
+        
+        if np.logical_and(pixel_scale is not None, pa is None):
+            pa = 0
+    
+        # Check for old-style WCS header
+        if pixel_scale is None:
+            
+            old_wcs_type = False
+            
+            for hkey in header.keys():
+                if hkey in ['CDELT1', 'CDELT2']:
+                    old_wcs_type = True
+            
+            if old_wcs_type:
+                key = 'CDELT1'
+                cdelt1 = header[key]
+                key = 'CDELT2'
+                cdelt2 = header[key]
+    
+                try:
+                    crot = 0
+                    key = 'CROTA1'
+                    crot = header[key]
+                    key = 'CROTA2'
+                    crot = header[key]
+                except KeyError:
+                    pass
+    
+                if math.sqrt(cdelt1**2 + cdelt2**2) < 0.1:  # some images use CDELT to indicate nonstandard things
+                    header['CD1_1'] = cdelt1 * math.cos(crot*math.pi/180.)
+                    header['CD1_2'] = -cdelt2 * math.sin(crot*math.pi/180.)
+                    header['CD2_1'] = cdelt1 * math.sin(crot*math.pi/180.)
+                    header['CD2_2'] = cdelt2 * math.cos(crot*math.pi/180.)
+    
+        if np.logical_and(pixel_scale is not None, pa is not None):
+            # Create WCS header information if pixel scale is specified
+            parad = pa * math.pi / 180.
+            pxscaledeg = pixel_scale / 3600.
+            if inv > 0:
+                parity = -1
+            else:
+                parity = 1
+    
+            if user_ra_deg is not None:
+                ra = user_ra_deg
+            else:
+                ra = rasex2deg(header['CRVAL1'])
+    
+            if user_dec_deg is not None:
+                dec = user_dec_deg
+            else:
+                dec = decsex2deg(header['CRVAL2'])
+    
+            try:
+                epoch = float(header.get('EPOCH', 2000))
+            except:
+                #warn?
+                epoch = 2000.
+    
+            try:
+                equinox = float(header.get('EQUINOX', epoch)) #If RA and DEC are not J2000 then convert
+            except:
+                # warn??
+                equinox = 2000. # could be 'J2000'; try to strip off first character?
+    
+            if abs(equinox-2000) > 0.5:
+                logger.debug('Converting equinox from', equinox, 'to J2000')
+                j2000 = ephem.Equatorial(ephem.Equatorial(str(ra/15), str(dec), epoch=str(equinox)),epoch=ephem.J2000)
+                [ra, dec] = [rasex2deg(j2000.ra), decsex2deg(j2000.dec)]
+    
+            header["CD1_1"] = pxscaledeg * math.cos(parad)*parity
+            header["CD1_2"] = pxscaledeg * math.sin(parad)
+            header["CD2_1"] = -pxscaledeg * math.sin(parad)*parity
+            header["CD2_2"] = pxscaledeg * math.cos(parad)
+            header["CRPIX1"] = header['NAXIS1']/2
+            header["CRPIX2"] = header['NAXIS2']/2
+            header["CRVAL1"] = ra
+            header["CRVAL2"] = dec
+            header["CTYPE1"] = "RA---TAN"
+            header["CTYPE2"] = "DEC--TAN"
+            #header.update("EPOCH",2000.0)  does it matter?
+            header["EQUINOX"] = 2000.0
+            #print ra, dec
+    
+            try:
+                os.remove(temp_path)
+            except FileNotFoundError:
+                pass
+    
+            fits[sciext].header = header
+            fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
 
-            if sqrt(cdelt1**2 + cdelt2**2) < 0.1:  # some images use CDELT to indicate nonstandard things
-                h['CD1_1'] = cdelt1 * cos(crot*math.pi/180.)
-                h['CD1_2'] = -cdelt2 * sin(crot*math.pi/180.)
-                h['CD2_1'] = cdelt1 * sin(crot*math.pi/180.)
-                h['CD2_2'] = cdelt2 * cos(crot*math.pi/180.)
-
-    if np.logical_and(pixel_scale is not None, pa is not None):
-        # Create WCS header information if pixel scale is specified
-        parad = pa * math.pi / 180.
-        pxscaledeg = pixel_scale / 3600.
-        if inv > 0:
-            parity = -1
-        else:
-            parity = 1
-
-        if userra is not None:
-            ra = userra
-        else:
-            ra = rasex2deg(h['CRVAL1'])
-
-        if userdec is not None:
-            dec = userdec
-        else:
-            dec = decsex2deg(h['CRVAL2'])
-
-        try:
-            epoch = float(h.get('EPOCH', 2000))
-        except:
-            #warn?
-            epoch = 2000.
-
-        try:
-            equinox = float(h.get('EQUINOX', epoch)) #If RA and DEC are not J2000 then convert
-        except:
-            # warn??
-            equinox = 2000. # could be 'J2000'; try to strip off first character?
-
-        if abs(equinox-2000) > 0.5:
-            logger.debug('Converting equinox from', equinox, 'to J2000')
-            j2000 = ephem.Equatorial(ephem.Equatorial(str(ra/15), str(dec), epoch=str(equinox)),epoch=ephem.J2000)
-            [ra, dec] = [rasex2deg(j2000.ra), decsex2deg(j2000.dec)]
-
-        h["CD1_1"] = pxscaledeg * cos(parad)*parity
-        h["CD1_2"] = pxscaledeg * sin(parad)
-        h["CD2_1"] = -pxscaledeg * sin(parad)*parity
-        h["CD2_2"] = pxscaledeg * cos(parad)
-        h["CRPIX1"] = h['NAXIS1']/2
-        h["CRPIX2"] = h['NAXIS2']/2
-        h["CRVAL1"] = ra
-        h["CRVAL2"] = dec
-        h["CTYPE1"] = "RA---TAN"
-        h["CTYPE2"] = "DEC--TAN"
-        #h.update("EPOCH",2000.0)  does it matter?
-        h["EQUINOX"] = 2000.0
-        #print ra, dec
-
-        try:
-            os.remove(temp_path)
-        except FileNotFoundError:
-            pass
-
-        fits[sciext].header = h
-        fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
-        fits.close()
         fits = af.open(temp_path)
-        h = fits[sciext].header
+        header = fits[sciext].header
         sfilename = temp_path
 
     #Read the header info from the file.
     try:
         # no longer drawing RA and DEC from here.
         key = 'NAXIS1'
-        nxpix = h[key]
+        nxpix = header[key]
         key = 'NAXIS2'
-        nypix = h[key]
+        nypix = header[key]
     except:
         logger.debug('Cannot find necessary WCS header keyword', key)
         sys.exit(1)
     try:
         key = 'CRVAL1'
-        cra = float(h[key])
+        cra = float(header[key])
         key = 'CRVAL2'
-        cdec = float(h[key])
+        cdec = float(header[key])
 
         key = 'CRPIX1'
-        crpix1 = float(h[key])
+        crpix1 = float(header[key])
         key = 'CRPIX2'
-        crpix2 = float(h[key])
+        crpix2 = float(header[key])
 
         key = 'CD1_1'
-        cd11 = float(h[key])
+        cd11 = float(header[key])
         key = 'CD2_2'
-        cd22 = float(h[key])
+        cd22 = float(header[key])
         key = 'CD1_2'
-        cd12 = float(h[key]) # deg / pix
+        cd12 = float(header[key]) # deg / pix
         key = 'CD2_1'
-        cd21 = float(h[key])
+        cd21 = float(header[key])
 
-        equinox = float(h.get('EQUINOX', 2000.))
+        equinox = float(header.get('EQUINOX', 2000.))
         if abs(equinox-2000.) > 0.2: logger.debug('Warning: EQUINOX is not 2000.0')
     except:
         if pixel_scale == -1:
@@ -1173,35 +1167,35 @@ def autoastrometry(
             sys.exit(1)
 
     # Wipe nonstandard fits info from the header (otherwise this will confuse verification)
-    hkeys = list(h.keys())
+    header_keys = list(header.keys())
     ctypechange = 0
     irafkeys = []
     highkeys = []
     oldkeys = []
     distortionkeys = []
-    for hkey in hkeys:
+    for hkey in header_keys:
         if hkey=='RADECSYS' or hkey == 'WCSDIM' or hkey.find('WAT')==0 or hkey.find('LTV')>=0 or hkey.find('LTM')==0:
-            del h[hkey]
+            del header[hkey]
             irafkeys.append(hkey)
         if hkey.find('CO1_') == 0 or hkey.find('CO2_') == 0 or hkey.find('PV1_') == 0 or hkey.find('PV2_') == 0 or hkey.find('PC00') == 0:
-            del h[hkey]
+            del header[hkey]
             highkeys.append(hkey)
         if hkey.find('CDELT1') == 0 or hkey.find('CDELT2') == 0 or hkey.find('CROTA1') == 0 or hkey.find('CROTA2') == 0:
-            del h[hkey]
+            del header[hkey]
             oldkeys.append(hkey)
         if hkey.find('A_') == 0 or hkey.find('B_') == 0 or hkey.find('AP_') == 0 or hkey.find('BP_') == 0:
-            del h[hkey]
+            del header[hkey]
             distortionkeys.append(hkey)
 
-    if h['CTYPE1'] != 'RA---TAN':
-        logger.debug('Changing CTYPE1 from', h['CTYPE1'], 'to', "RA---TAN")
-        h["CTYPE1"] = "RA---TAN"
+    if header['CTYPE1'] != 'RA---TAN':
+        logger.debug('Changing CTYPE1 from', header['CTYPE1'], 'to', "RA---TAN")
+        header["CTYPE1"] = "RA---TAN"
         ctypechange = 1
 
-    if h['CTYPE2'] != 'DEC--TAN':
+    if header['CTYPE2'] != 'DEC--TAN':
         if ctypechange:
-            logger.debug('Changing CTYPE2 from', h['CTYPE2'], 'to', "DEC--TAN")
-        h["CTYPE2"] = "DEC--TAN"
+            logger.debug('Changing CTYPE2 from', header['CTYPE2'], 'to', "DEC--TAN")
+        header["CTYPE2"] = "DEC--TAN"
         ctypechange = 1
 
     wcskeycheck = ['CRVAL1', 'CRVAL2', 'CRPIX1', 'CRPIX2', 'CD1_1', 'CD1_2', 'CD2_2', 'CD2_1', 'EQUINOX', 'EPOCH']
@@ -1210,7 +1204,7 @@ def autoastrometry(
     for w in wcskeycheck:
         if type(w) == type('0'):
             try:
-                h[w] = float(h[w])
+                header[w] = float(header[w])
                 headerformatchange = 1
             except:
                 pass
@@ -1238,11 +1232,11 @@ def autoastrometry(
             os.remove(temp_path)
         except FileNotFoundError:
             pass
-        fits[sciext].header = h
+        fits[sciext].header = header
         fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
         fits.close()
         fits = af.open(temp_path)
-        h = fits[sciext].header
+        header = fits[sciext].header
         sfilename = temp_path
 
     # Get image info from header (even if we put it there in the first place)
@@ -1251,8 +1245,8 @@ def autoastrometry(
     else:
         parity = 1
 
-    xscale = sqrt(cd11**2 + cd21**2)
-    yscale = sqrt(cd12**2 + cd22**2)
+    xscale = math.sqrt(cd11**2 + cd21**2)
+    yscale = math.sqrt(cd12**2 + cd22**2)
     initpa = -parity * np.arctan2(cd21 * yscale, cd22 * xscale) * 180 / math.pi
     xscale = abs(xscale)
     yscale = abs(yscale)
@@ -1263,8 +1257,8 @@ def autoastrometry(
     centery = nypix/2
     centerdx = centerx - crpix1
     centerdy = centery - crpix2
-    centerra  = cra - centerdx*xscale*cos(initpa*math.pi/180.) + centerdy*yscale*sin(initpa*math.pi/180.)
-    centerdec = cdec + parity*centerdx*xscale*sin(-initpa*math.pi/180.) + centerdy*yscale*cos(initpa*math.pi/180.)
+    centerra  = cra - centerdx*xscale*math.cos(initpa*math.pi/180.) + centerdy*yscale*math.sin(initpa*math.pi/180.)
+    centerdec = cdec + parity*centerdx*xscale*math.sin(-initpa*math.pi/180.) + centerdy*yscale*math.cos(initpa*math.pi/180.)
 
     # this has only been checked for a PA of zero.
 
@@ -1332,13 +1326,13 @@ def autoastrometry(
             raise AstrometryException(err)
 
     # Load in reference star catalog
-    if box_size is None:
-        box_size = fieldwidth
+    if box_size_arcsec is None:
+        box_size_arcsec = fieldwidth
 
-    catlist = getcatalog(catalog, centerra, centerdec, box_size)
+    catlist = getcatalog(catalog, centerra, centerdec, box_size_arcsec)
 
     ncat = len(catlist)
-    catdensity = ncat / (2 * box_size / 60.) ** 2
+    catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
     logger.debug(f'{ncat} good catalog objects.')
     logger.debug(f'Source density of {catdensity} /arcmin^2')
 
@@ -1358,7 +1352,7 @@ def autoastrometry(
         while catdensity > 3 * density:
             catlist = catlist[0:int(len(catlist)*4/5)]
             ncat = len(catlist)
-            catdensity = ncat / (2 * box_size / 60.) ** 2
+            catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
 
     # If the image is way deeper than USNO, trim the image catalog down
     if ngood > 16 and density > 4 * catdensity and ngood > 8:
@@ -1379,7 +1373,7 @@ def autoastrometry(
             else:
                 catlist = catlist[0:int(len(catlist)*4/5)]
                 ncat = len(catlist)
-                catdensity = ncat / (2 * box_size / 60.) ** 2
+                catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
 
     # Remove fainter object in close pairs for both lists
     minsep = 3
@@ -1451,16 +1445,16 @@ def autoastrometry(
     reqmatch = 3
     if expectfalsetrios > 30 and truematchesperstar >= 4:
         reqmatch = 4
-    #should check that this will actually work for the catalog, too.
+    # should check that this will actually work for the catalog, too.
     if catperimage <= 6 or ngood <= 6:
         reqmatch = 2
     if catperimage <= 3 or ngood <= 3:
         reqmatch = 1
-    #for an extremely small or shallow image
+    # for an extremely small or shallow image
 
     logger.debug('Pair comparison search radius: %.2f"' % max_rad)
     logger.debug(f'Using reqmatch = {reqmatch}')
-    (primarymatchs, primarymatchc, mpa) = distmatch(goodsexlist, catlist, max_rad, min_rad, tolerance, reqmatch, patolerance, uncpa)
+    (primarymatchs, primarymatchc, mpa) = distmatch(goodsexlist, catlist, max_rad, min_rad, tolerance, reqmatch, patolerance, unc_pa)
 
     nmatch = len(primarymatchs)
     if nmatch == 0:
@@ -1478,7 +1472,6 @@ def autoastrometry(
     if nmatch <= 2:
         logger.warning(f'Warning: only {nmatch} match(es).  Astrometry may be unreliable.')
         logger.warning('   Check the pixel scale and parity and consider re-running.')
-        warning = 1
 
     #We now have the PA and a list of stars that are almost certain matches.
     offpa = median(mpa)  #get average PA from the excellent values
@@ -1486,7 +1479,6 @@ def autoastrometry(
 
     skyoffpa = -parity*offpa # This appears to be necessary for the printed value to agree with our normal definition.
 
-    #if abs(offpa) < 0.2: offpa = 0.0
     logger.debug('PA offset:')
     logger.debug('  dPA = %.3f  (unc. %.3f)' % (skyoffpa, stdevpa))
 
@@ -1495,93 +1487,74 @@ def autoastrometry(
         #  NOTE: when CRPIX don't match CRVAL this shifts the center and screws things up.
         #  I don't understand why they don't always match.  [[I think this was an equinox issue.
         #  should be solved now, but be alert for further problems.]]
-
-        #Greisen et al.:
-        #WCS_i = SUM[j] (CD_ij)(p_j - CRPIX_j)      i.e.
-        # RA - CRVAL1 = CD1_1 (x - CRPIX1) + CD1_2 (y - CRPIX2)
-        #dec - CRVAL2 = CD2_1 (x - CRPIX1) + CD2_2 (y - CRPIX2)   [times a projection scale...]
-
+        
         #Rotate....
         rot = offpa * math.pi/180
         #...the image itself
-        h["CD1_1"] = cos(rot)*cd11 - sin(rot)*cd21
-        h["CD1_2"] = cos(rot)*cd12 - sin(rot)*cd22   # a parity issue may be involved here?
-        h["CD2_1"] = sin(rot)*cd11 + cos(rot)*cd21
-        h["CD2_2"] = sin(rot)*cd12 + cos(rot)*cd22
+        header["CD1_1"] = math.cos(rot)*cd11 - math.sin(rot)*cd21
+        header["CD1_2"] = math.cos(rot)*cd12 - math.sin(rot)*cd22   # a parity issue may be involved here?
+        header["CD2_1"] = math.sin(rot)*cd11 + math.cos(rot)*cd21
+        header["CD2_2"] = math.sin(rot)*cd12 + math.cos(rot)*cd22
         #...the coordinates (so we don't have to resex)
         for i in range(len(goodsexlist)):  #do all of them, though this is not necessary
-            #print "%11.7f %11.7f %5.2f " % (goodsexlist[i].ra, goodsexlist[i].dec, goodsexlist[i].mag),
             goodsexlist[i].rotate(offpa,cra,cdec)
-            #print "%11.7f %11.7f %5.2f" % (goodsexlist[i].ra, goodsexlist[i].dec, goodsexlist[i].mag)
-        #print
+
     else:
         rotwarn = ''
-        if abs(skyoffpa) > 1.0: rotwarn = ' (WARNING: image appears rotated, may produce bad shift)'
+        if abs(skyoffpa) > 1.0:
+            rotwarn = ' (WARNING: image appears rotated, may produce bad shift)'
         logger.debug('  Skipping rotation correction ')
 
 
     writetextfile('det.wcs.txt',goodsexlist)
 
-
-    #print
-    #imoffsets = []
-    #imoffpas = []
     imraoffset = []
     imdecoffset = []
     for i in range(len(primarymatchs)):
-        #print goodsexlist[primarymatchs[i]].ra, goodsexlist[primarymatchs[i]].dec, ' to ', catlist[primarymatchc[i]].ra, catlist[primarymatchc[i]].dec
         imraoffset.append(goodsexlist[primarymatchs[i]].ra - catlist[primarymatchc[i]].ra)
         imdecoffset.append(goodsexlist[primarymatchs[i]].dec - catlist[primarymatchc[i]].dec)
-        #imoffsets.append(distance(goodsexlist[primarymatchs[i]], catlist[primarymatchc[i]]))
-        #imoffpas.append( posangle(goodsexlist[primarymatchs[i]], catlist[primarymatchc[i]]))
-
-    #for i in range(len(imraoffset)):
-    #    print primarymatchs[i], ':', (imraoffset[i]-median(imraoffset))*3600*cos(cdec*math.pi/180), (imdecoffset[i]-median(imdecoffset))*3600
-
 
     raoffset = -median(imraoffset)
     decoffset = -median(imdecoffset)
-    rastd = stdev(imraoffset)*cos(cdec*math.pi/180)  # all of these are in degrees
+    rastd = stdev(imraoffset)*math.cos(cdec*math.pi/180)  # all of these are in degrees
     decstd = stdev(imdecoffset)
-    stdoffset = sqrt(rastd**2 + decstd**2)
+    stdoffset = math.sqrt(rastd**2 + decstd**2)
 
-    #finaloffset = median(imoffsets)
-    #finalpa =    median(imoffpas)
-
-
-    #PA is east of north.
-    #raoffset  =  (1./3600) * finaloffset * sin(finalpa*math.pi/180) / cos(cdec*math.pi/180)
-    #decoffset =  (1./3600) * finaloffset * cos(finalpa*math.pi/180)
-
-    raoffsetarcsec = raoffset*3600*cos(cdec*math.pi/180)
+    raoffsetarcsec = raoffset*3600*math.cos(cdec*math.pi/180)
     decoffsetarcsec = decoffset*3600
     totoffsetarcsec = (raoffsetarcsec**2 + decoffset**2)**0.5
     stdoffsetarcsec = stdoffset*3600
 
     logger.debug('Spatial offset:')
-    #print '  %.2f" (PA = %.2f deg)' % (finaloffset, finalpa)
-    logger.debug('  dra = %.2f",  ddec = %.2f"  (unc. %.3f")' % (raoffsetarcsec, decoffsetarcsec, stdoffsetarcsec))
+
+    msg = f'  dra = {raoffsetarcsec:.2f}",' \
+          f'  ddec = {decoffsetarcsec:.2f}"' \
+          f'  (unc. {stdoffsetarcsec:.3f}")'
+    logger.error(msg)
+    #
+    if msg != '  dra = 87.39",  ddec = 47.42"  (unc. 0.176")':
+        raise ValueError("MISMATCH")
 
     warning = 0
     if (stdoffset*3600 > 1.0):
         logger.debug('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
         warning = 1
 
-    h["CRVAL1"] = cra + raoffset
-    h["CRVAL2"] = cdec + decoffset
+    header["CRVAL1"] = cra + raoffset
+    header["CRVAL2"] = cdec + decoffset
 
-    #h.update("ASTRMTCH", catalog)
+    #header.update("ASTRMTCH", catalog)
     try:
-        oldcat = h['ASTR_CAT']
-        h["OLD_CAT"] = (oldcat, "Earlier reference catalog")
+        oldcat = header['ASTR_CAT']
+        header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
     except:
         pass
-    h["ASTR_CAT"] = (catalog, "Reference catalog for autoastrometry")
-    h["ASTR_UNC"] = (stdoffsetarcsec, "Astrometric scatter vs. catalog (arcsec)")
-    h["ASTR_SPA"] = (stdevpa, "Measured uncertainty in PA (degrees)")
-    h["ASTR_DPA"] = (skyoffpa, "Change in PA (degrees)")
-    h["ASTR_OFF"] = (totoffsetarcsec, "Change in center position (arcsec)")
-    h["ASTR_NUM"] = (len(primarymatchs), "Number of matches")
+    header["ASTR_CAT"] = (catalog, "Reference catalog for autoastrometry")
+    header["ASTR_UNC"] = (stdoffsetarcsec, "Astrometric scatter vs. catalog (arcsec)")
+    header["ASTR_SPA"] = (stdevpa, "Measured uncertainty in PA (degrees)")
+    header["ASTR_DPA"] = (skyoffpa, "Change in PA (degrees)")
+    header["ASTR_OFF"] = (totoffsetarcsec, "Change in center position (arcsec)")
+    header["ASTR_NUM"] = (len(primarymatchs), "Number of matches")
 
     #Write out a match list to allow doing a formal fit with WCStools.
 
@@ -1612,7 +1585,7 @@ def autoastrometry(
         except FileNotFoundError:
             pass
 
-        fits[sciext].header = h
+        fits[sciext].header = header
         fits.writeto(outfile, output_verify='silentfix') #,clobber=True
         logger.info(f'Written to {outfile}')
 
@@ -1710,8 +1683,8 @@ def run_autoastrometry(
         raise ValueError(err)
 
     if seeing is None:
-        min_fwhm = defaultminfwhm #1.5
-        max_fwhm = defaultmaxfwhm #40
+        min_fwhm = default_min_fwhm #1.5
+        max_fwhm = default_max_fwhm #40
     else:
         min_fwhm = 0.7 * seeing
         max_fwhm = 2. * seeing
@@ -1737,14 +1710,14 @@ def run_autoastrometry(
             pixel_scale=pixel_scale,
             pa=pa,
             inv=inv,
-            uncpa=uncpa,
+            unc_pa=uncpa,
             min_fwhm=min_fwhm,
             max_fwhm=max_fwhm,
             max_ellip=max_ellip,
-            box_size=box_size,
+            box_size_arcsec=box_size,
             max_rad=max_rad,
-            userra=userra,
-            userdec=userdec,
+            user_ra_deg=userra,
+            user_dec_deg=userdec,
             tolerance=tolerance,
             catalog=catalog,
             no_solve=no_solve,
