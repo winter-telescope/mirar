@@ -441,119 +441,128 @@ def sextract(
     return good_src_list
 
 
-def getcatalog(catalog, ra, dec, boxsize, minmag=8.0, maxmag=-1, maxpm=60.):
+def get_catalog(
+        catalog: str,
+        ra: float,
+        dec: float,
+        boxsize,
+        min_mag: float = 8.0,
+        max_mag: float = None,
+        max_pm: float = 60.
+) -> list[BaseSource]:
+
     # Get catalog from USNO
 
-    if maxmag == -1:
-        maxmag = 999 #default (custom catalog)
+    if max_mag is None:
+        max_mag = 999  # default (custom catalog)
         if catalog == 'ub2':
-            maxmag = 21.0#19.5
-        if catalog == 'sdss':
-            maxmag = 22.0
-        if catalog == 'tmc':
-            maxmag = 20.0
+            max_mag = 21.0  # 19.5
+        elif catalog == 'sdss':
+            max_mag = 22.0
+        elif catalog == 'tmc':
+            max_mag = 20.0
+        else:
+            err = "Catalog not recognised. Please select 'ub2', 'sdss' or tmc'."
+            logger.error(err)
+            raise ValueError(err)
 
+    # if catalog in ['ub2', 'sdss', 'tmc']:
+    #     user_cat = False
+    ra_col = 1
+    dec_col = 2
 
-    if (catalog =='ub2' or catalog=='sdss' or catalog=='tmc'):
-        usercat = 0
-        racolumn = 1
-        deccolumn = 2
-        magcolumn = 6
-        if catalog=='tmc':
-            magcolumn=3
-        pmracolumn = 10
-        pmdeccolumn = 11
-        queryurl = "http://tdc-www.harvard.edu/cgi-bin/scat?catalog=" + catalog +  "&ra=" + str(ra) + "&dec=" + str(dec) + "&system=J2000&rad=" + str(-boxsize) + "&sort=mag&epoch=2000.00000&nstar=6400"
-        #print queryurl
-        cat = urllib.request.urlopen(queryurl)
-        catlines = cat.readlines()
-        cat.close()
-        if len(catlines) > 6400-20:
-            logger.warning('Reached maximum catalog query size. Gaps may be '
-                           'present in the catalog, leading to a poor solution '
-                           'or no solution. Decrease the search radius.')
+    if catalog == 'tmc':
+        mag_col = 3
     else:
-        usercat = 1
-        try:
-            logger.debug(f'Reading user catalog {catalog}')
+        mag_col = 6
 
-            with open(catalog, 'r') as cat:
-                racolumn = 0
-                deccolumn = 1   # defaults
-                magcolumn = -1    #  (to override, specify in first line using format #:0,1,2)
-                catlines = cat.readlines()
+    pm_ra_col = 10
+    pm_dec_col = 11
+    query_url = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={catalog}" \
+                f"&ra={ra}&dec={dec}&system=J2000&rad={-boxsize}" \
+                f"&sort=mag&epoch=2000.00000&nstar=6400"
 
-        except:
-            logger.error(f'Failed to open user catalog {catalog}. File not '
-                         f'found or invalid online catalog.  Specify ub2, sdss, or tmc.')
-            return []
+    with urllib.request.urlopen(query_url) as cat:
+        cat_lines = cat.readlines()
 
-    l = -1
-    catlist = []
+    if len(cat_lines) > 6400-20:
+        logger.warning('Reached maximum catalog query size. Gaps may be '
+                       'present in the catalog, leading to a poor solution '
+                       'or no solution. Decrease the search radius.')
+    # else:
+    #     user_cat = True
+    #     logger.debug(f'Reading user catalog {catalog}')
+    #
+    #     with open(catalog, 'r') as cat:
+    #         ra_col = 0
+    #         dec_col = 1   # defaults
+    #         mag_col = -1    # (to override, specify in first line using format #:0,1,2)
+    #         cat_lines = cat.readlines()
 
-    while l < len(catlines)-1:
-        l += 1
-        inline = catlines[l].strip()
+    cat_list = list()
+
+    for line in cat_lines:
+        inline = line.strip()
 
         if len(inline) <= 2:
             continue
 
         if inline[0:2] == '#:':
-            inlinearg = inline[2:].split(',')
-            racolumn = int(inlinearg[0])-1
-            deccolumn = int(inlinearg[1])-1
-            if len(inlinearg) > 2:
-                magcolumn = int(inlinearg[2])-1
+            inline_arg = inline[2:].split(',')
+            ra_col = int(inline_arg[0])-1
+            dec_col = int(inline_arg[1])-1
+            if len(inline_arg) > 2:
+                mag_col = int(inline_arg[2])-1
             continue
 
-        if (inline[0] < ord('0') or inline[0] > ord('9')) and str(inline[0]) != '.':
-            continue #this may be too overzealous about
-        if (inline[1] < ord('0') or inline[1] > ord('9')) and str(inline[1]) != '.':
-            continue # removing comments...
+        if (int(inline[0]) < ord('0') or int(inline[0]) > ord('9')) and str(inline[0]) != '.':
+            continue  # this may be too overzealous about
+        if (int(inline[1]) < ord('0') or int(inline[1]) > ord('9')) and str(inline[1]) != '.':
+            continue  # removing comments...
 
-        inlineargByte = inline.split()
-        inlinearg = [str(a, 'utf-8') for a in inlineargByte]
-        narg = len(inlinearg)
+        inline_arg_byte = inline.split()
+        inline_arg = [str(bytes(a), 'utf-8') for a in inline_arg_byte]
+        n_arg = len(inline_arg)
 
-        if inlinearg[racolumn].find(':') == -1:
-            ra = float(inlinearg[racolumn])
+        if inline_arg[ra_col].find(':') == -1:
+            ra = float(inline_arg[ra_col])
         else:
-            ra = ra_str_2_deg(inlinearg[racolumn])
-        if inlinearg[deccolumn].find(':') == -1:
-            dec = float(inlinearg[deccolumn])
-        else:
-            dec = dec_str_2_deg(inlinearg[deccolumn])
+            ra = ra_str_2_deg(inline_arg[ra_col])
 
-        if magcolumn >= 0 and narg > magcolumn:
+        if inline_arg[dec_col].find(':') == -1:
+            dec = float(inline_arg[dec_col])
+        else:
+            dec = dec_str_2_deg(inline_arg[dec_col])
+
+        if n_arg > mag_col >= 0:
             try:
-                mag = float(inlinearg[magcolumn])
-            except:
-                mag = float(inlinearg[magcolumn][0:-2])
+                mag = float(inline_arg[mag_col])
+            except ValueError:
+                mag = float(inline_arg[mag_col][0:-2])
         else:
-            mag = maxmag
+            mag = max_mag
 
-        if usercat == 0 and narg > pmracolumn and narg > pmdeccolumn:
-            pmra = float(inlinearg[pmracolumn])
-            pmdec = float(inlinearg[pmdeccolumn])
+        # if user_cat is False and n_arg > pm_ra_col and n_arg > pm_dec_col:
+        if n_arg > pm_ra_col and n_arg > pm_dec_col:
+            pm_ra = float(inline_arg[pm_ra_col])
+            pm_dec = float(inline_arg[pm_dec_col])
         else:
-            pmra = pmdec = 0
-        #print
-        #print ra, dec, mag,
-        #print pmra, pmdec,
-        if mag > maxmag:
-            continue #don't believe anything this faint
-        if mag < minmag:
-            continue #ignore anything this bright
+            pm_ra = pm_dec = 0
 
-        if abs(pmra) > maxpm or abs(pmdec) > maxpm:
+        if mag > max_mag:
+            continue
+        if mag < min_mag:
             continue
 
-        iobj = BaseSource(ra, dec, mag) #process the line into an object
-        catlist.append(iobj)
+        if abs(pm_ra) > max_pm or abs(pm_dec) > max_pm:
+            continue
 
-    catlist.sort(key=compare_mag)
+        source = BaseSource(ra, dec, mag)  # process the line into an object
+        cat_list.append(source)
 
-    return catlist
+    cat_list.sort(key=compare_mag)
+
+    return cat_list
 
 def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch=3, patolerance=1.2,uncpa=-1):
 
@@ -1358,7 +1367,7 @@ def autoastrometry(
         if box_size_arcsec is None:
             box_size_arcsec = field_width
 
-        catlist = getcatalog(catalog, center_ra, center_dec, box_size_arcsec)
+        catlist = get_catalog(catalog, center_ra, center_dec, box_size_arcsec)
 
         ncat = len(catlist)
         catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
