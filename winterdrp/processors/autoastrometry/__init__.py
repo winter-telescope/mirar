@@ -1,0 +1,1 @@
+from winterdrp.processors.autoastrometry.autoastrometry_processor import AutoAstrometry
