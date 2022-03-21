@@ -22,56 +22,56 @@ if base_output_dir is None:
 
 
 def raw_img_dir(
-        sub_dir=""
-):
-    return os.path.join(base_raw_dir, os.path.join(sub_dir, "raw"))
+        sub_dir: str = ""
+) -> str:
+    return os.path.join(base_raw_dir, os.path.join(str(sub_dir), "raw"))
 
 
 def output_dir(
         dir_root: str,
         sub_dir: str | int = ""
-):
-    return os.path.join(base_output_dir, os.path.join(sub_dir, dir_root))
+) -> str:
+    return os.path.join(base_output_dir, os.path.join(str(sub_dir), dir_root))
 
 
 def output_path(
         base_name: str,
         dir_root: str,
         sub_dir: str | int = ""
-):
-    return os.path.join(output_dir(dir_root, sub_dir=sub_dir), base_name)
+) -> str:
+    return os.path.join(output_dir(dir_root, sub_dir=str(sub_dir)), base_name)
 
 
 def cal_output_dir(
         sub_dir: str | int = ""
-):
-    return output_dir("calibration", sub_dir=sub_dir)
+) -> str:
+    return output_dir("calibration", sub_dir=str(sub_dir))
 
 
 def reduced_img_dir(
         sub_dir: str | int = ""
-):
-    return output_dir("redux", sub_dir=sub_dir)
+) -> str:
+    return output_dir("redux", sub_dir=str(sub_dir))
 
 
 def reduced_img_path(
         img_name: str,
         sub_dir: str | int = ""
-):
-    return os.path.join(reduced_img_dir(sub_dir), img_name)
+) -> str:
+    return os.path.join(reduced_img_dir(str(sub_dir)), img_name)
 
 
 def observing_log_dir(
         sub_dir: str | int = ""
-):
-    return os.path.join(base_raw_dir, sub_dir)
+) -> str:
+    return os.path.join(base_raw_dir, str(sub_dir))
 
 
 def astrometry_output_dir(
         sub_dir: str = "",
         astro_pass: int = 1
-):
-    return output_dir(f"astrometry_{astro_pass}", sub_dir=sub_dir)
+) -> str:
+    return output_dir(f"astrometry_{astro_pass}", sub_dir=str(sub_dir))
 
 
 def parse_image_list(
