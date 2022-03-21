@@ -553,248 +553,253 @@ def get_catalog(
 
     return cat_list
 
-def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch=3, patolerance=1.2,uncpa=-1):
+
+def distance_match(
+        img_src_list: list[SextractorSource],
+        ref_src_list: list[BaseSource],
+        max_rad: float = 180.,
+        min_rad: float = 10.,
+        tolerance: float = 0.010,
+        req_match: int = 3,
+        pa_tolerance: float = 1.2,
+        unc_pa: float = None
+):
 
     if tolerance <= 0:
-        logger.debug('Tolerance cannot be negative!!!')
-        tolerance = abs(tolerance)
-    if reqmatch < 2:
-        logger.debug('Warning: reqmatch >=3 suggested')
-    if patolerance <= 0:
-        logger.debug('PA tolerance cannot be negative!!!')
-        patolerance = abs(patolerance)
-    if uncpa is None:
-        uncpa = 720
+        err = f'Tolerance cannot be negative! Using {abs(tolerance)} not {tolerance}.'
+        logger.error(err)
+        raise ValueError(err)
+    elif pa_tolerance <= 0:
+        err = f'PA tolerance cannot be negative! Using {abs(pa_tolerance)} not {pa_tolerance}.'
+        logger.error(err)
+        raise ValueError(err)
 
-    declist = []
-    for s in sexlist:
-        declist.append(s.dec_rad)
-    avdec_rad = median(declist)       # faster distance computation
-    rascale = math.cos(avdec_rad)          # will mess up meridian crossings, however
+    if req_match < 2:
+        logger.warning('Warning: reqmatch >=3 suggested')
 
-    #Calculate all the distances
+    if unc_pa is None:
+        unc_pa = 720
 
-    #print 'Calculating distances...'
-    #dtime0 = time.clock()
+    dec_list = list()
+    for src in img_src_list:
+        dec_list.append(src.dec_rad)
+    median_dec_rad = median(dec_list)       # faster distance computation
+    ra_scale = math.cos(median_dec_rad)          # will mess up meridian crossings, however
+
+    # Calculate all the distances
 
     # In image catalog:
-    sexdists = []
-    sexmatchids = []
-    for i in range(len(sexlist)):
+    img_src_dists = list()
+    img_src_match_ids = list()
+    for i, src in enumerate(img_src_list):
         d = []
         dj = []
-        for j in range(len(sexlist)):
+        for j, src2 in enumerate(img_src_list):
             if i == j:
                 continue
-            if abs(sexlist[i].dec_deg - sexlist[j].dec_deg) > maxrad:
+
+            if abs(src.dec_deg - src2.dec_deg) > max_rad:
                 continue
-            if rascale*abs(sexlist[i].ra_deg - sexlist[j].ra_deg) > maxrad:
+            if ra_scale*abs(src.ra_deg - src2.ra_deg) > max_rad:
                 continue
-            dist = quickdistance(sexlist[i], sexlist[j], rascale)
-            if dist > minrad and dist < maxrad :
-                #print "%.2f" % dist, '['+str(j).strip()+']  ',
+
+            dist = quickdistance(src, src2, ra_scale)
+
+            if min_rad < dist < max_rad:
                 d.append(dist)
                 dj.append(j)
-        sexdists.append(d)
-        sexmatchids.append(dj)
-        #print
+
+        img_src_dists.append(d)
+        img_src_match_ids.append(dj)
 
     # In reference catalog:
-    catdists = []
-    catmatchids = []
-    for i in range(len(catlist)):
+    ref_src_dists = []
+    ref_src_match_ids = []
+    for i, src in enumerate(ref_src_list):
         d = []
         dj = []
-        for j in range(len(catlist)):
+        for j, src2 in enumerate(ref_src_list):
+
             if i == j:
                 continue
-            if abs(catlist[i].dec_deg - catlist[j].dec_deg) > maxrad:
+
+            if abs(src.dec_deg - src2.dec_deg) > max_rad:
                 continue
-            if rascale*abs(catlist[i].ra_deg - catlist[j].ra_deg) > maxrad:
+            if ra_scale*abs(src.ra_deg - src2.ra_deg) > max_rad:
                 continue
-            dist = quickdistance(catlist[i], catlist[j], rascale)
-            if dist > minrad and dist < maxrad :
+
+            dist = quickdistance(src, src2, ra_scale)
+
+            if min_rad < dist < max_rad:
                 d.append(dist)
                 dj.append(j)
-        catdists.append(d)
-        catmatchids.append(dj)
+
+        ref_src_dists.append(d)
+        ref_src_match_ids.append(dj)
 
     # Now look for matches in the reference catalog to distances in the image catalog.
 
-    #print 'All done (in', time.clock()-dtime0, 's)'
-    #print 'Finding matches...'
-    #mtime0 = time.clock()
+    n_great_matches = 0
 
-    countgreatmatches = 0
+    s_match = list()
+    c_match = list()
+    mpa = list()
+    n_match = list()
 
-    smatch = []
-    cmatch = []
-    mpa = []
-    nmatch = []
+    primary_matchs = []
+    primary_matchc = []
 
-    primarymatchs = []
-    primarymatchc = []
+    for si, img_dist_array in enumerate(img_src_dists):
 
-    for si in range(len(sexdists)):
-        sexdistarr = sexdists[si]
-        if len(sexdistarr) < 2:
+        if len(img_dist_array) < 2:
             continue
 
-        for ci in range(len(catdists)):
-            catdistarr = catdists[ci]
+        for ci, ref_dist_array in enumerate(ref_src_dists):
 
-            if len(catdistarr) < 2:
+            if len(ref_dist_array) < 2:
                 continue
 
             match = 0
-            smatchin = []
+            s_match_in = []
             cmatchin = []
 
-            for sj in range(len(sexdistarr)):
-                sexdist = sexdistarr[sj]
-                newmatch = 1
-                for cj in range(len(catdistarr)):
-                    catdist = catdistarr[cj]
-                    if abs((sexdist/catdist)-1.0) < tolerance:
-                        match += newmatch
-                        newmatch = 0 #further matches before the next sj loop indicate degeneracies
-                        smatchin.append(sexmatchids[si][sj])
-                        cmatchin.append(catmatchids[ci][cj])
+            for sj, img_src_dist in enumerate(img_dist_array):
 
-            if match >= reqmatch:
+                new_match = 1
+
+                for cj, ref_src_dist in enumerate(ref_dist_array):
+
+                    if abs((img_src_dist/ref_src_dist)-1.0) < tolerance:
+                        match += new_match
+                        new_match = 0 #further matches before the next sj loop indicate degeneracies
+                        s_match_in.append(img_src_match_ids[si][sj])
+                        cmatchin.append(ref_src_match_ids[ci][cj])
+
+            if match >= req_match:
 
                 dpa = []
                 # Here, dpa[n] is the mean rotation of the PA from the primary star of this match
                 #  to the stars in its match RELATIVE TO those same angles for those same stars
                 #  in the catalog.  Therefore it is a robust measurement of the rotation.
 
-                for i in range(len(smatchin)):
-                    ddpa = position_angle(sexlist[si], sexlist[smatchin[i]]) - position_angle(catlist[ci], catlist[cmatchin[i]])
-                    while ddpa > 200: ddpa  -= 360.
-                    while ddpa < -160: ddpa += 360.
-                    #print smatchin[i], '-', cmatchin[i], ': ', posangle(sexlist[si],sexlist[smatchin[i]]), '-', posangle(catlist[ci],catlist[cmatchin[i]]), '=', ddpa
+                for i in range(len(s_match_in)):
+                    ddpa = position_angle(img_src_list[si], img_src_list[s_match_in[i]]) - \
+                           position_angle(ref_src_list[ci], ref_src_list[cmatchin[i]])
+                    while ddpa > 200:
+                        ddpa -= 360.
+                    while ddpa < -160:
+                        ddpa += 360.
                     dpa.append(ddpa)
 
-                #If user was confident the initial PA was right, remove bad PA's right away
-                for i in range(len(smatchin)-1,-1,-1):
-                    if abs(dpa[i]) > uncpa:
-                        del smatchin[i]
+                # If user was confident the initial PA was right, remove bad PA'src right away
+                for i in range(len(s_match_in)-1,-1,-1):
+                    if abs(dpa[i]) > unc_pa:
+                        del s_match_in[i]
                         del cmatchin[i]
                         del dpa[i]
 
-                if len(smatchin) < 2:
+                if len(s_match_in) < 2:
                     continue
 
                 dpamode = mode(dpa)
 
-                #Remove deviant matches by PA
-                for i in range(len(smatchin)-1, -1, -1):
-                    if abs(dpa[i] - dpamode) > patolerance:
-                        del smatchin[i]
+                # Remove deviant matches by PA
+                for i in range(len(s_match_in)-1, -1, -1):
+                    if abs(dpa[i] - dpamode) > pa_tolerance:
+                        del s_match_in[i]
                         del cmatchin[i]
                         del dpa[i]
 
-                if len(smatchin) < 2:
+                if len(s_match_in) < 2:
                     continue
 
-                #print si, 'matches', ci, ' ('+ str(len(smatchin))+ ' matches)'
-                #print '  ',si,'-->', smatchin, '   ',ci,'-->', cmatchin
-                #print '  PA change', dpamode
-                #print '       PAs:', dpa
-
-                ndegeneracies = len(smatchin)-len(unique(smatchin)) + len(cmatchin)-len(unique(cmatchin))
+                ndegeneracies = len(s_match_in)-len(unique(s_match_in)) + len(cmatchin)-len(unique(cmatchin))
                 # this isn't quite accurate (overestimates if degeneracies are mixed up)
 
                 mpa.append(dpamode)
-                primarymatchs.append(si)
-                primarymatchc.append(ci)
-                smatch.append(smatchin)
-                cmatch.append(cmatchin)
-                nmatch.append(len(smatchin)-ndegeneracies)
+                primary_matchs.append(si)
+                primary_matchc.append(ci)
+                s_match.append(s_match_in)
+                c_match.append(cmatchin)
+                n_match.append(len(s_match_in)-ndegeneracies)
 
-                if (len(smatchin)-ndegeneracies > 6): countgreatmatches += 1
-        if countgreatmatches > 16 and fast_match is True:
+                if len(s_match_in)-ndegeneracies > 6:
+                    n_great_matches += 1
+
+        if n_great_matches > 16 and fast_match is True:
             break #save processing time
 
-        #print '   ', sexdistarr
-        #print '   ', catdistarr
-        #print '   ', sexlist[si].ra, sexlist[si].dec, sexlist[si].mag
-        #print '   ', catlist[ci].ra, catlist[ci].dec, catlist[ci].mag
-        #print '   ', distance(sexlist[si], catlist[ci])
-
-    #print 'All done (in', time.clock()-mtime0, 's)'
-
-    nmatches = len(smatch)
-    if (nmatches == 0):
-        logger.debug('Found no potential matches of any sort (including pairs).')
-        logger.debug('The algorithm is probably not finding enough real stars to solve the field.  Check seeing.')
+    n_matches = len(s_match)
+    if n_matches == 0:
+        logger.warning('Found no potential matches of any sort (including pairs).')
+        logger.warning('The algorithm is probably not finding enough real stars to solve the field.  Check seeing.')
         #print 'This is an unusual error.  Check that a parameter is not set to a highly nonstandard value?'
         return [], [], []
 
     # Kill the bad matches
     rejects = 0
 
-    #Get rid of matches that don't pass the reqmatch cut
-    #if nmatches > 10 and max(nmatch) >= reqmatch:
-    for i in range(len(primarymatchs)-1,-1,-1):
-        if nmatch[i] < reqmatch:
+    # Get rid of matches that don't pass the reqmatch cut
+    # if n_matches > 10 and max(n_match) >= reqmatch:
+    for i in range(len(primary_matchs)-1,-1,-1):
+        if n_match[i] < req_match:
             del mpa[i]
-            del primarymatchs[i]
-            del primarymatchc[i]
-            del smatch[i]
-            del cmatch[i]
-            del nmatch[i]
+            del primary_matchs[i]
+            del primary_matchc[i]
+            del s_match[i]
+            del c_match[i]
+            del n_match[i]
             #rejects += 1  no longer a "reject"
 
-    if len(smatch) < 1:
-        logger.debug(f'Found no matching clusters of reqmatch = {reqmatch}')
+    if len(s_match) < 1:
+        logger.debug(f'Found no matching clusters of reqmatch = {req_match}')
         return [], [], []
 
     #If we still have lots of matches, get rid of those with the minimum number of submatches
     #(that is, increase reqmatch by 1)
-    minmatch = min(nmatch)
+    minmatch = min(n_match)
     countnotmin = 0
-    for n in nmatch:
+    for n in n_match:
         if n > minmatch:
             countnotmin += 1
-    if len(nmatch) > 16 and countnotmin > 3:
-        logger.debug(f'Too many matches: increasing reqmatch to {reqmatch+1}')
-        for i in range(len(primarymatchs)-1,-1,-1):
-            if nmatch[i] == minmatch:
+    if len(n_match) > 16 and countnotmin > 3:
+        logger.debug(f'Too many matches: increasing reqmatch to {req_match + 1}')
+        for i in range(len(primary_matchs)-1,-1,-1):
+            if n_match[i] == minmatch:
                 del mpa[i]
-                del primarymatchs[i]
-                del primarymatchc[i]
-                del smatch[i]
-                del cmatch[i]
-                del nmatch[i]
+                del primary_matchs[i]
+                del primary_matchc[i]
+                del s_match[i]
+                del c_match[i]
+                del n_match[i]
                 #rejects += 1   no longer a "reject"
 
-    nmatches = len(smatch) # recalculate with the new reqmatch and with prunes supposedly removed
-    logger.debug(f'Found {nmatches} candidate matches.')
+    n_matches = len(s_match) # recalculate with the new reqmatch and with prunes supposedly removed
+    logger.debug(f'Found {n_matches} candidate matches.')
 
-    #for i in range(len(primarymatchs)):
-    #    si = primarymatchs[i]
-    #    ci = primarymatchc[i]
+    #for i in range(len(primary_matchs)):
+    #    si = primary_matchs[i]
+    #    ci = primary_matchc[i]
     #    print si, 'matches', ci, ' (dPA = %.3f)' % mpa[i]
-    #    if len(smatch[i]) < 16:
-    #       print '  ', si, '-->', smatch[i]
-    #       print '  ', ci, '-->', cmatch[i]
+    #    if len(s_match[i]) < 16:
+    #       print '  ', si, '-->', s_match[i]
+    #       print '  ', ci, '-->', c_match[i]
 
     # Use only matches with a consistent PA
 
     offpa = mode(mpa)
 
-    if len(smatch) > 2:
+    if len(s_match) > 2:
 
         #Coarse iteration for anything away from the mode
-        for i in range(len(primarymatchs)-1,-1,-1):
-            if abs(mpa[i] - offpa) > patolerance:
+        for i in range(len(primary_matchs)-1,-1,-1):
+            if abs(mpa[i] - offpa) > pa_tolerance:
                 del mpa[i]
-                del primarymatchs[i]
-                del primarymatchc[i]
-                del smatch[i]
-                del cmatch[i]
-                del nmatch[i]
+                del primary_matchs[i]
+                del primary_matchc[i]
+                del s_match[i]
+                del c_match[i]
+                del n_match[i]
                 rejects += 1
 
         medpa = median(mpa)
@@ -802,34 +807,34 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
         refinedtolerance = (2.2 * stdevpa)
 
         #Fine iteration to flag outliers now that we know most are reliable
-        for i in range(len(primarymatchs)-1,-1,-1):
+        for i in range(len(primary_matchs)-1,-1,-1):
             if abs(mpa[i] - offpa) > refinedtolerance:
                 del mpa[i]
-                del primarymatchs[i]
-                del primarymatchc[i]
-                del smatch[i]
-                del cmatch[i]
-                del nmatch[i]
+                del primary_matchs[i]
+                del primary_matchc[i]
+                del s_match[i]
+                del c_match[i]
+                del n_match[i]
                 rejects += 1  #these aren't necessarily bad, just making more manageable.
 
     # New verification step: calculate distances and PAs between central stars of matches
-    ndistflags = [0]*len(primarymatchs)
-    #npaflats = [0]*len(primarymatchs)
+    ndistflags = [0]*len(primary_matchs)
+    #npaflats = [0]*len(primary_matchs)
     for v in range(2):  #two iterations
         # find bad pairs
-        if len(primarymatchs) == 0:
+        if len(primary_matchs) == 0:
             break
 
-        for i in range(len(primarymatchs)):
-            for j in range(len(primarymatchs)):
+        for i in range(len(primary_matchs)):
+            for j in range(len(primary_matchs)):
                 if i == j: continue
-                si = primarymatchs[i]
-                ci = primarymatchc[i]
-                sj = primarymatchs[j]
-                cj = primarymatchc[j]
+                si = primary_matchs[i]
+                ci = primary_matchc[i]
+                sj = primary_matchs[j]
+                cj = primary_matchc[j]
 
-                sexdistij = distance(sexlist[si], sexlist[sj])
-                catdistij = distance(catlist[ci], catlist[cj])
+                sexdistij = distance(img_src_list[si], img_src_list[sj])
+                catdistij = distance(ref_src_list[ci], ref_src_list[cj])
 
                 try:
                     if abs((sexdistij/catdistij)-1.0) > tolerance:
@@ -838,89 +843,89 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
                     pass
 
         # delete bad clusters
-        ntestmatches = len(primarymatchs)
+        ntestmatches = len(primary_matchs)
         for i in range(ntestmatches-1,-1,-1):
             if ndistflags[i] == ntestmatches-1:   #if every comparison is bad, this is a bad match
                 del mpa[i]
-                del primarymatchs[i]
-                del primarymatchc[i]
-                del smatch[i]
-                del cmatch[i]
-                del nmatch[i]
+                del primary_matchs[i]
+                del primary_matchc[i]
+                del s_match[i]
+                del c_match[i]
+                del n_match[i]
                 rejects += 1
 
     logger.debug(f'Rejected {rejects} bad matches.')
-    nmatches = len(primarymatchs)
-    logger.debug(f'Found {nmatches} good matches.')
+    n_matches = len(primary_matchs)
+    logger.debug(f'Found {n_matches} good matches.')
 
-    if nmatches == 0:
+    if n_matches == 0:
         return [], [], []
 
 
     # check the pixel scale while we're at it
     pixscalelist = []
-    if len(primarymatchs) >= 2:
-        for i in range(len(primarymatchs)-1):
-            for j in range(i+1,len(primarymatchs)):
-                si = primarymatchs[i]
-                ci = primarymatchc[i]
-                sj = primarymatchs[j]
-                cj = primarymatchc[j]
+    if len(primary_matchs) >= 2:
+        for i in range(len(primary_matchs)-1):
+            for j in range(i+1,len(primary_matchs)):
+                si = primary_matchs[i]
+                ci = primary_matchc[i]
+                sj = primary_matchs[j]
+                cj = primary_matchc[j]
                 try:
-                    pixscalelist.append(distance(catlist[ci],catlist[cj]) / im_distance(sexlist[si], sexlist[sj]))
+                    pixscalelist.append(distance(ref_src_list[ci], ref_src_list[cj]) / im_distance(img_src_list[si], img_src_list[sj]))
                 except:
                     pass
         pixelscale = median(pixscalelist)
         pixelscalestd = stdev(pixscalelist)
 
-        if len(primarymatchs) >= 3:
+        if len(primary_matchs) >= 3:
             logger.debug('Refined pixel scale measurement: %.4f"/pix (+/- %.4f)' % (pixelscale, pixelscalestd))
         else:
             logger.debug('Refined pixel scale measurement: %.4f"/pix' % pixelscale)
 
-    for i in range(len(primarymatchs)):
-        si = primarymatchs[i]
-        ci = primarymatchc[i]
+    for i in range(len(primary_matchs)):
+        si = primary_matchs[i]
+        ci = primary_matchc[i]
 
         if show_matches:
             logger.debug(f'{si} matches {ci} (dPA ={mpa[i]:.3f})')
-            if len(smatch[i]) < 16:
-                logger.debug(f'  {si} --> {smatch[i]}')
-                logger.debug(f'  {ci} --> {cmatch[i]}')
+            if len(s_match[i]) < 16:
+                logger.debug(f'  {si} --> {s_match[i]}')
+                logger.debug(f'  {ci} --> {c_match[i]}')
             else:
-                logger.debug(f'  {si} --> {smatch[i][0:10]} {len(smatch[i])-10} more')
-                logger.debug(f'  {ci} --> {cmatch[i][0:10]} {len(cmatch[i])-10} more')
-            if i+1 >= 10 and len(primarymatchs)-10 > 0:
+                logger.debug(f'  {si} --> {s_match[i][0:10]} {len(s_match[i])-10} more')
+                logger.debug(f'  {ci} --> {c_match[i][0:10]} {len(c_match[i])-10} more')
+            if i+1 >= 10 and len(primary_matchs)-10 > 0:
                 logger.debug(f''
-                             f'{(len(primarymatchs)-10)} additional matches not shown.')
+                             f'{(len(primary_matchs)-10)} additional matches not shown.')
                 break
         else:
-            logger.debug(f'{si} matches {ci} (dPA ={mpa[i]:.3f}): {str(len(smatch[i])).strip()} rays')
+            logger.debug(f'{si} matches {ci} (dPA ={mpa[i]:.3f}): {str(len(s_match[i])).strip()} rays')
 
     with open('matchlines.im.reg', 'w') as out:
 
         color = 'red'
         out.write('# Region file format: DS9 version 4.0\nglobal color='+color+' font="helvetica 10 normal" select=1 highlite=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n')
         out.write('image\n')
-        for i in range(len(primarymatchs)):
-            si = primarymatchs[i]
-            for j in range(len(smatch[i])):
-                sj = smatch[i][j]
-                out.write("line(%.3f,%.3f,%.3f,%.3f) # line=0 0\n" % (sexlist[si].x, sexlist[si].y, sexlist[sj].x, sexlist[sj].y))
+        for i in range(len(primary_matchs)):
+            si = primary_matchs[i]
+            for j in range(len(s_match[i])):
+                sj = s_match[i][j]
+                out.write("line(%.3f,%.3f,%.3f,%.3f) # line=0 0\n" % (img_src_list[si].x, img_src_list[si].y, img_src_list[sj].x, img_src_list[sj].y))
 
     with open('matchlines.wcs.reg', 'w') as out:
         color='green'
         out.write('# Region file format: DS9 version 4.0\nglobal color='+color+' font="helvetica 10 normal" select=1 highlite=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n')
         out.write('fk5\n')
-        for i in range(len(primarymatchs)):
-            ci = primarymatchc[i]
-            for j in range(len(smatch[i])):
-                cj = cmatch[i][j]
-                out.write("line(%.5f,%.5f,%.5f,%.5f) # line=0 0\n" % (catlist[ci].ra_deg, catlist[ci].dec_deg, catlist[cj].ra_deg, catlist[cj].dec_deg))
+        for i in range(len(primary_matchs)):
+            ci = primary_matchc[i]
+            for j in range(len(s_match[i])):
+                cj = c_match[i][j]
+                out.write("line(%.5f,%.5f,%.5f,%.5f) # line=0 0\n" % (ref_src_list[ci].ra_deg, ref_src_list[ci].dec_deg, ref_src_list[cj].ra_deg, ref_src_list[cj].dec_deg))
 
     #future project: if not enough, go to the secondary offsets
 
-    return (primarymatchs, primarymatchc, mpa)
+    return (primary_matchs, primary_matchc, mpa)
 
 ############################################
 
@@ -959,12 +964,10 @@ def write_region_file(
             out.write('fk5\n')
             for i, src in enumerate(src_list):
                 out.write(f"point({src.ra_deg:.7f},{src.dec_deg:.7f}) # point=boxcircle text={{{i+1}}}\n")
-                print(f"point({src.ra_deg:.7f},{src.dec_deg:.7f}) # point=boxcircle text={{{i+1}}}\n")
-                raise
         elif system == 'img':
             out.write('image\n')
             for i, src in enumerate(src_list):
-                out.write(f"point({src:.3f},{src.dec_deg:.3f}) # point=boxcircle text={i+1}\n")
+                out.write(f"point({src.ra_deg:.3f},{src.dec_deg:.3f}) # point=boxcircle text={{{i+1}}}\n")
 
 ############################################
 
@@ -1346,8 +1349,8 @@ def autoastrometry(
         if no_solve is True:
             # RS: Not sure what's happening here...
             if catalog is None:
-                catalog = 'det.ref.txt'
-            write_text_file(catalog, good_src_list)
+                output_path = os.path.join(output_dir, 'det.ref.txt')
+            write_text_file(file_path=output_path, src_list=good_src_list)
             return
 
         # If no catalog specified, check availability of SDSS
@@ -1373,14 +1376,14 @@ def autoastrometry(
         if box_size_arcsec is None:
             box_size_arcsec = field_width
 
-        ref_cat_list = get_catalog(
+        ref_src_list = get_catalog(
             catalog=catalog,
             ra=center_ra,
             dec=center_dec,
             box_size_arcsec=box_size_arcsec
         )
 
-        n_cat = len(ref_cat_list)
+        n_cat = len(ref_src_list)
         cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
         logger.debug(f'{n_cat} good catalog objects.')
         logger.debug(f'Source density of {cat_density} /arcmin^2')
@@ -1399,8 +1402,8 @@ def autoastrometry(
         if n_cat > 16 and cat_density > 3 * density:
             logger.debug('Image is shallow.  Trimming reference catalog...')
             while cat_density > 3 * density:
-                ref_cat_list = ref_cat_list[0:int(len(ref_cat_list)*4/5)]
-                n_cat = len(ref_cat_list)
+                ref_src_list = ref_src_list[0:int(len(ref_src_list)*4/5)]
+                n_cat = len(ref_src_list)
                 cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
 
         # If the image is way deeper than USNO, trim the image catalog down
@@ -1420,12 +1423,13 @@ def autoastrometry(
                     n_good = len(good_src_list)
                     density = n_good / area_sq_min
                 else:
-                    ref_cat_list = ref_cat_list[0:int(len(ref_cat_list)*4/5)]
-                    n_cat = len(ref_cat_list)
+                    ref_src_list = ref_src_list[0:int(len(ref_src_list)*4/5)]
+                    n_cat = len(ref_src_list)
                     cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
 
         # Remove fainter object in close pairs for both lists
         min_sep = 3
+
         delete_list = []
         for i, src in enumerate(good_src_list):
             for j, src2 in enumerate(good_src_list[i+1:]):
@@ -1434,79 +1438,107 @@ def autoastrometry(
                     if src.mag > src2.mag:
                         delete_list.append(i)
                     else:
-                        delete_list.append(j)
+                        delete_list.append(i + j + 1)
 
         delete_list = unique(delete_list)
         delete_list.reverse()
         for d in delete_list:
             del good_src_list[d]
-        delete_list = []
-        for i in range(len(ref_cat_list)):
-            for j in range(i+1, len(ref_cat_list)):
-                if i == j: continue
-                dist = distance(ref_cat_list[i], ref_cat_list[j])
+
+        for i, src in enumerate(ref_src_list):
+            for j, src2 in enumerate(ref_src_list[i+1:]):
+
+                dist = distance(src, src2)
                 if dist < min_sep:
-                    if ref_cat_list[i].mag > ref_cat_list[j].mag:
+                    if src.mag > src2.mag:
                         delete_list.append(i)
                     else:
-                        delete_list.append(j)
+                        delete_list.append(i + j + 1)
+
         delete_list = unique(delete_list)
         delete_list.reverse()
         for d in delete_list:
-            del ref_cat_list[d]
+            del ref_src_list[d]
 
-        write_text_file('det.init.txt', good_src_list)
-        write_region_file('det.im.reg', good_src_list, 'red', 'img')
-        write_text_file('cat.txt', ref_cat_list)
-        write_region_file('cat.wcs.reg', ref_cat_list, 'green', 'wcs')
+        write_text_file(
+            file_path=os.path.join(output_dir, 'det.init.txt'),
+            src_list=good_src_list
+        )
+        write_region_file(
+            file_path=os.path.join(output_dir, 'det.im.reg'),
+            src_list=good_src_list,
+            color='red',
+            system='img'
+        )
+        write_text_file(
+            file_path=os.path.join(output_dir, 'cat.txt'),
+            src_list=ref_src_list
+        )
+        write_region_file(
+            file_path=os.path.join(output_dir, 'cat.wcs.reg'),
+            src_list=ref_src_list,
+            color='green',
+            system='wcs'
+        )
 
         # The catalogs have now been completed.
-
 
         # Now start getting into the actual astrometry.
 
         min_rad = 5.0
-        #if (maxrad == -1): maxrad = 180
         if max_rad is None:
-            max_rad = 60 * (15 / (math.pi * min(density, cat_density))) ** 0.5 # numcomp ~ 15 [look at 15 closest objects
-            max_rad = max(max_rad, 60.0)                                 #               in sparse dataset]
+            max_rad = 60 * (15 / (math.pi * min(density, cat_density))) ** 0.5  # numcomp ~ 15 [look at 15 closest objects
+            max_rad = max(max_rad, 60.0)                                  #               in sparse dataset]
             if max_rad == 60.0:
                 min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
             max_rad = min(max_rad, field_width * 3. / 4)
 
             # note that density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
 
-        circdensity = density * min([area_sq_min, (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)])
-        circcatdensity = cat_density * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
-        catperimage = cat_density * area_sq_min
+        circ_density = density * min([area_sq_min, (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)])
+        circ_ref_density = cat_density * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
+        n_ref_src_per_image = cat_density * area_sq_min
 
         logger.debug('After trimming: ')
-        logger.debug(f'{len(good_src_list)} detected objects ({density:.2f}/arcmin^2, {circdensity:.1f}/searchzone)')
-        logger.debug(f'{len(ref_cat_list)} catalog objects ({cat_density:.2f}/arcmin^2, {circcatdensity:.1f}/searchzone)')
+        logger.debug(f'{len(good_src_list)} detected objects ({density:.2f}/arcmin^2, {circ_density:.1f}/searchzone)')
+        logger.debug(
+            f'{len(ref_src_list)} catalog objects ({cat_density:.2f}/arcmin^2, {circ_ref_density:.1f}/searchzone)'
+        )
 
+        pa_tolerance = default_pa_tolerance
 
-        patolerance = default_pa_tolerance
-        expectfalsetrios = n_good * n_cat * circdensity**2 * circcatdensity**2 * tolerance**2 * (patolerance/360.)**1
+        # RS: WTF is x**1 for?
+        expect_false_trios = n_good * n_cat * circ_density**2 * circ_ref_density**2 * tolerance**2 * (pa_tolerance/360.)**1
 
-        overlap1 = 0.3 * min(1,cat_density/density) # fraction of stars in image that are also in catalog - a guess
-        truematchesperstar = (circdensity * overlap1) # but how many matches >3 and >4?  some annoying binomial thing
+        overlap_first_guess = 0.3 * min(1, cat_density/density)  # fraction of stars in image that are also in catalog - a guess
+        true_matches_per_star = (circ_density * overlap_first_guess)  # but how many matches >3 and >4?  some annoying binomial thing
 
-        reqmatch = 3
-        if expectfalsetrios > 30 and truematchesperstar >= 4:
-            reqmatch = 4
+        req_matches = 3
+        if expect_false_trios > 30 and true_matches_per_star >= 4:
+            req_matches = 4
         # should check that this will actually work for the catalog, too.
-        if catperimage <= 6 or n_good <= 6:
-            reqmatch = 2
-        if catperimage <= 3 or n_good <= 3:
-            reqmatch = 1
+        if n_ref_src_per_image <= 6 or n_good <= 6:
+            req_matches = 2
+        if n_ref_src_per_image <= 3 or n_good <= 3:
+            req_matches = 1
         # for an extremely small or shallow image
 
         logger.debug('Pair comparison search radius: %.2f"' % max_rad)
-        logger.debug(f'Using reqmatch = {reqmatch}')
-        (primarymatchs, primarymatchc, mpa) = distmatch(good_src_list, ref_cat_list, max_rad, min_rad, tolerance, reqmatch, patolerance, unc_pa)
+        logger.debug(f'Using req_matches = {req_matches}')
 
-        nmatch = len(primarymatchs)
-        if nmatch == 0:
+        (primarymatchs, primarymatchc, mpa) = distance_match(
+            img_src_list=good_src_list,
+            ref_src_list=ref_src_list,
+            max_rad=max_rad,
+            min_rad=min_rad,
+            tolerance=tolerance,
+            req_match=req_matches,
+            pa_tolerance=pa_tolerance,
+            unc_pa=unc_pa
+        )
+
+        n_match = len(primarymatchs)
+        if n_match == 0:
             err = (' No valid matches found!\n '
                    'Possible issues: \n'
                    '  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value. \n'
@@ -1518,8 +1550,8 @@ def autoastrometry(
             logger.error(err)
             raise AstrometryException(err)
 
-        if nmatch <= 2:
-            logger.warning(f'Warning: only {nmatch} match(es).  Astrometry may be unreliable.')
+        if n_match <= 2:
+            logger.warning(f'Warning: only {n_match} match(es).  Astrometry may be unreliable.')
             logger.warning('   Check the pixel scale and parity and consider re-running.')
 
         #We now have the PA and a list of stars that are almost certain matches.
@@ -1560,8 +1592,8 @@ def autoastrometry(
         imraoffset = []
         imdecoffset = []
         for i in range(len(primarymatchs)):
-            imraoffset.append(good_src_list[primarymatchs[i]].ra_deg - ref_cat_list[primarymatchc[i]].ra_deg)
-            imdecoffset.append(good_src_list[primarymatchs[i]].dec_deg - ref_cat_list[primarymatchc[i]].dec_deg)
+            imraoffset.append(good_src_list[primarymatchs[i]].ra_deg - ref_src_list[primarymatchc[i]].ra_deg)
+            imdecoffset.append(good_src_list[primarymatchs[i]].dec_deg - ref_src_list[primarymatchc[i]].dec_deg)
 
         raoffset = -median(imraoffset)
         decoffset = -median(imdecoffset)
@@ -1611,7 +1643,7 @@ def autoastrometry(
         for i in range(len(primarymatchs)):
             si = primarymatchs[i]
             ci = primarymatchc[i]
-            outmatch.write("%s %s  %s %s\n" % (good_src_list[si].x, good_src_list[si].y, ref_cat_list[ci].ra_deg, ref_cat_list[ci].dec_deg))
+            outmatch.write("%s %s  %s %s\n" % (good_src_list[si].x, good_src_list[si].y, ref_src_list[ci].ra_deg, ref_src_list[ci].dec_deg))
             #good_src_list[si].ra, good_src_list[si].dec))
         outmatch.close()
 
@@ -1638,7 +1670,7 @@ def autoastrometry(
             fits.writeto(outfile, output_verify='silentfix') #,clobber=True
             logger.info(f'Written to {outfile}')
 
-    return nmatch, skyoffpa, stdevpa, raoffsetarcsec, decoffsetarcsec, stdoffsetarcsec      #stdoffset*3600
+    return n_match, skyoffpa, stdevpa, raoffsetarcsec, decoffsetarcsec, stdoffsetarcsec      #stdoffset*3600
 
 
 ######################################################################
