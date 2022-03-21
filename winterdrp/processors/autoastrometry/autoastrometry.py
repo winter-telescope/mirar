@@ -1228,21 +1228,13 @@ def parse_header(
                     pass
 
         if len(iraf_keys) > 0:
-            logger.warning('Removed nonstandard WCS keywords: ')
-            for key in iraf_keys:
-                logger.debug(key)
+            logger.warning(f'Removed nonstandard WCS keywords: {iraf_keys}')
         if len(high_keys) > 0:
-            logger.warning('Removed higher-order WCS keywords: ')
-            for key in high_keys:
-                logger.debug(key)
+            logger.warning(f'Removed higher-order WCS keywords: {high_keys}')
         if len(old_keys) > 0:
-            logger.warning('Removed old-style WCS keywords: ')
-            for key in old_keys:
-                logger.debug(key)
+            logger.warning(f'Removed old-style WCS keywords: {old_keys}')
         if len(distortion_keys) > 0:
-            logger.warning('Removed distortion WCS keywords: ')
-            for key in distortion_keys:
-                logger.debug(key)
+            logger.warning(f'Removed distortion WCS keywords: {distortion_keys}')
 
         if len(high_keys) + len(distortion_keys) + ctype_change + header_format_change > 0:
             # Rewrite and reload the image if the header was modified in a significant way so
@@ -1796,6 +1788,8 @@ def autoastrometry(
                     f"{ref_src_list[ci].ra_deg} {ref_src_list[ci].dec_deg}\n"
                 )
 
+    logger.info(f"Finished deriving astrometry for {filename}")
+
     # Could repeat with scale adjustment
     # Could then go back to full good catalog and match all sources
 
@@ -1811,7 +1805,7 @@ def autoastrometry(
         with fits.open(outfile) as hdu:
             hdu[sci_ext].header = header
             hdu.writeto(outfile, output_verify='silentfix', overwrite=True)
-            logger.info(f'Written to {outfile}')
+            logger.info(f'Written updated file to {outfile}')
 
     return n_match, sky_offset_pa, stdev_pa, ra_offset_arcsec, dec_offset_arcsec, std_offset_arcsec
 
