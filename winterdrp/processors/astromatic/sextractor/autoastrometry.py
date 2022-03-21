@@ -26,7 +26,7 @@ import urllib.parse
 import urllib.request
 import math
 import numpy as np
-from astropy.io import fits as af
+from astropy.io import fits
 from winterdrp.paths import base_output_dir
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation
 import logging
@@ -969,94 +969,42 @@ def write_region_file(
             for i, src in enumerate(src_list):
                 out.write(f"point({src.ra_deg:.3f},{src.dec_deg:.3f}) # point=boxcircle text={{{i+1}}}\n")
 
-############################################
 
-def autoastrometry(
-        filename: str,
+def parse_header(
+        file_path: str,
+        temp_path: str,
         pixel_scale: float = None,
         pa: float = None,
         inv: bool = False,
-        unc_pa: float = None,
         user_ra_deg: float = None,
         user_dec_deg: float = None,
-        max_ellip: float = 0.5,
-        box_size_arcsec: float = None,
-        max_rad: float = None,
-        tolerance: float = default_tolerance,
-        catalog: str = None,
-        no_solve: bool = False,
-        overwrite: bool = True,
-        outfile: str = "",
-        output_dir: str = base_output_dir,
-        temp_file: str = None,
-        saturation: float = default_saturation,
-        no_rot: bool = False,
-        min_fwhm: float = default_min_fwhm,
-        max_fwhm: float = default_max_fwhm,
-) -> (int, ):
-    """
+):
+    sci_ext = 0
 
-    Parameters
-    ----------
-    filename: Path of file
-    pixel_scale: The pixel scale in arcsec/pix.  Must be within ~1%. By default: ???
-    pa: The position angle in degrees.  Not usually needed.
-    unc_pa: Uncertainty of the position angle (degrees)
-    inv: Reverse(=positive) parity.
-    user_ra_deg: RA in deg
-    user_dec_deg: Dec in deg
-    max_ellip: Maximum elliptical something?
-    box_size_arcsec: Half-width of box for reference catalog query (arcsec)
-    max_rad: Maximum distance to look for star pairs.
-    tolerance: Amount of slack allowed in match determination
-    catalog: Catalog to use (ub2, tmc, sdss, or file)
-    no_solve: Do not attempt to solve astrometry; just write catalog.
-    overwrite: Overwrite output files
-    outfile: Output file
-    output_dir: Directory for output file
-    temp_file: Temporary file
-    saturation: Saturation level; do not use stars exceeding.
-    no_rot: Some kind of bool
-    min_fwhm: Minimum fwhm
-    max_fwhm: Maximum fwhm
+    # Get some basic info from the header
+    with fits.open(file_path) as hdu:
+        hdu.verify('silentfix')
 
-    Returns
-    -------
+        header = hdu[sci_ext].header
 
-    """
-
-    if temp_file is None:
-        temp_file = f"temp_{os.path.basename(filename)}"
-
-    # temp_path = os.path.join(os.path.dirname(filename), temp_file)
-    temp_path = os.path.join(output_dir, temp_file)
-
-    # Get some basic info from the header  
-    with af.open(filename) as fits:
-        fits.verify('silentfix')
-    
-        sci_ext = 0
-
-        header = fits[sci_ext].header
-        
         if np.logical_and(pixel_scale is not None, pa is None):
             pa = 0
-    
+
         # Check for old-style WCS header
         if pixel_scale is None:
-            
+
             old_wcs_type = False
-            
+
             for hkey in header.keys():
                 if hkey in ['CDELT1', 'CDELT2']:
                     old_wcs_type = True
-            
+
             if old_wcs_type:
                 key = 'CDELT1'
                 cdelt1 = header[key]
                 key = 'CDELT2'
                 cdelt2 = header[key]
-    
+
                 try:
                     c_rot = 0
                     key = 'CROTA1'
@@ -1065,13 +1013,13 @@ def autoastrometry(
                     c_rot = header[key]
                 except KeyError:
                     pass
-    
-                if math.sqrt(cdelt1**2 + cdelt2**2) < 0.1:  # some images use CDELT to indicate nonstandard things
-                    header['CD1_1'] = cdelt1 * math.cos(c_rot*math.pi/180.)
-                    header['CD1_2'] = -cdelt2 * math.sin(c_rot*math.pi/180.)
-                    header['CD2_1'] = cdelt1 * math.sin(c_rot*math.pi/180.)
-                    header['CD2_2'] = cdelt2 * math.cos(c_rot*math.pi/180.)
-    
+
+                if math.sqrt(cdelt1 ** 2 + cdelt2 ** 2) < 0.1:  # some images use CDELT to indicate nonstandard things
+                    header['CD1_1'] = cdelt1 * math.cos(c_rot * math.pi / 180.)
+                    header['CD1_2'] = -cdelt2 * math.sin(c_rot * math.pi / 180.)
+                    header['CD2_1'] = cdelt1 * math.sin(c_rot * math.pi / 180.)
+                    header['CD2_2'] = cdelt2 * math.cos(c_rot * math.pi / 180.)
+
         if np.logical_and(pixel_scale is not None, pa is not None):
             # Create WCS header information if pixel scale is specified
             pa_rad = pa * math.pi / 180.
@@ -1081,58 +1029,50 @@ def autoastrometry(
                 parity = -1
             else:
                 parity = 1
-    
+
             if user_ra_deg is not None:
                 ra = user_ra_deg
             else:
                 ra = ra_str_2_deg(header['CRVAL1'])
-    
+
             if user_dec_deg is not None:
                 dec = user_dec_deg
             else:
                 dec = dec_str_2_deg(header['CRVAL2'])
-    
+
             try:
                 epoch = float(header.get('EPOCH', 2000))
             except KeyError:
                 logger.warning("No EPOCH found in header. Assuming 2000")
                 epoch = 2000.
-    
+
             try:
                 equinox = float(header.get('EQUINOX', epoch))  # If RA and DEC are not J2000 then convert
             except KeyError:
                 logger.warning("No EQUINOX found in header. Assuming 2000")
                 equinox = 2000.  # could be 'J2000'; try to strip off first character?
-    
-            if abs(equinox-2000) > 0.5:
+
+            if abs(equinox - 2000) > 0.5:
                 logger.debug(f'Converting equinox from {equinox} to J2000')
                 j2000 = ephem.Equatorial(ephem.Equatorial(
-                    str(ra/15), str(dec), epoch=str(equinox)), epoch=ephem.J2000
+                    str(ra / 15), str(dec), epoch=str(equinox)), epoch=ephem.J2000
                 )
                 [ra, dec] = [ra_str_2_deg(j2000.ra), dec_str_2_deg(j2000.dec)]
-    
+
             header["CD1_1"] = px_scale_deg * math.cos(pa_rad) * parity
             header["CD1_2"] = px_scale_deg * math.sin(pa_rad)
             header["CD2_1"] = -px_scale_deg * math.sin(pa_rad) * parity
             header["CD2_2"] = px_scale_deg * math.cos(pa_rad)
-            header["CRPIX1"] = header['NAXIS1']/2
-            header["CRPIX2"] = header['NAXIS2']/2
+            header["CRPIX1"] = header['NAXIS1'] / 2
+            header["CRPIX2"] = header['NAXIS2'] / 2
             header["CRVAL1"] = ra
             header["CRVAL2"] = dec
             header["CTYPE1"] = "RA---TAN"
             header["CTYPE2"] = "DEC--TAN"
             header["EQUINOX"] = 2000.0
 
-            try:
-                os.remove(temp_path)
-            except FileNotFoundError:
-                pass
-
-            fits[sci_ext].header = header
-            fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
-
-    with af.open(temp_path) as fits:
-        header = fits[sci_ext].header
+            hdu[sci_ext].header = header
+            hdu.writeto(temp_path, output_verify='silentfix', overwrite=True)  # ,clobber=True
 
         # Read the header info from the file.
         try:
@@ -1162,12 +1102,12 @@ def autoastrometry(
             key = 'CD2_2'
             cd22 = float(header[key])
             key = 'CD1_2'
-            cd12 = float(header[key]) # deg / pix
+            cd12 = float(header[key])  # deg / pix
             key = 'CD2_1'
             cd21 = float(header[key])
 
             equinox = float(header.get('EQUINOX', 2000.))
-            if abs(equinox-2000.) > 0.2:
+            if abs(equinox - 2000.) > 0.2:
                 logger.debug('Warning: EQUINOX is not 2000.0')
 
         except KeyError:
@@ -1178,7 +1118,7 @@ def autoastrometry(
                 raise
                 # Some images might use CROT parameters, could try to be compatible with this too...?
 
-        # Wipe nonstandard fits info from the header (otherwise this will confuse verification)
+        # Wipe nonstandard hdu info from the header (otherwise this will confuse verification)
         header_keys = list(header.keys())
         ctype_change = 0
         iraf_keys = []
@@ -1194,7 +1134,7 @@ def autoastrometry(
                 del header[hkey]
                 iraf_keys.append(hkey)
 
-            if hkey.find('CO1_') == 0 or\
+            if hkey.find('CO1_') == 0 or \
                     hkey.find('CO2_') == 0 or \
                     hkey.find('PV1_') == 0 or \
                     hkey.find('PV2_') == 0 or \
@@ -1267,408 +1207,596 @@ def autoastrometry(
             for key in distortion_keys:
                 logger.debug(key)
 
-        if len(high_keys)+len(distortion_keys)+ctype_change+header_format_change > 0:
+        if len(high_keys) + len(distortion_keys) + ctype_change + header_format_change > 0:
             # Rewrite and reload the image if the header was modified in a significant way so
             # sextractor sees the same thing that we do.
-            try:
-                os.remove(temp_path)
-            except FileNotFoundError:
-                pass
-            fits[sci_ext].header = header
-            fits.writeto(temp_path, output_verify='silentfix') #,clobber=True
+            hdu[sci_ext].header = header
+            hdu.writeto(temp_path, output_verify='silentfix', overwrite=True)  # ,clobber=True
 
-    with af.open(temp_path) as fits:
-        header = fits[sci_ext].header
-        img_path = temp_path
-
-        # Get image info from header (even if we put it there in the first place)
-        if cd11 * cd22 < 0 or cd12 * cd21 > 0:
-            parity = -1
-        else:
-            parity = 1
-
-        x_scale = math.sqrt(cd11**2 + cd21**2)
-        y_scale = math.sqrt(cd12**2 + cd22**2)
-        init_pa = -parity * np.arctan2(cd21 * y_scale, cd22 * x_scale) * 180 / math.pi
-        x_scale = abs(x_scale)
-        y_scale = abs(y_scale)
-        field_width = max(x_scale * nxpix, y_scale * nypix) * 3600.
-        area_sq_deg = x_scale * nxpix * y_scale * nypix
-        area_sq_min = area_sq_deg * 3600.
-        center_x = nxpix/2
-        center_y = nypix/2
-        center_dx = center_x - crpix1
-        center_dy = center_y - crpix2
-        center_ra = cra - center_dx*x_scale*math.cos(init_pa*math.pi/180.) + center_dy*y_scale*math.sin(init_pa*math.pi/180.)
-        center_dec = cdec + parity*center_dx*x_scale*math.sin(-init_pa*math.pi/180.) + center_dy*y_scale*math.cos(init_pa*math.pi/180.)
-
-        # this has only been checked for a PA of zero.
-
-        logger.debug(
-            f'Initial WCS info: \n'
-            f'   pixel scale:     x={x_scale*3600:.4f}"/pix,   y={y_scale*3600:.4f}"/pix \n'
-            f'   position angle: PA={init_pa:.2f}'
-        )
-
-        if parity == 1:
-            logger.debug('   normal parity')
-        if parity == -1:
-            logger.debug('   inverse parity')
-
-        logger.debug(f'   center:        RA={center_ra:.6f}, dec={center_dec:.6f}')
-
-        # Sextract stars to produce image star catalog
-
-        good_src_list = sextract(
-            img_path=img_path,
-            nx_pix=nxpix,
-            ny_pix=nypix,
-            border=3,
-            corner=12,
-            min_fwhm=min_fwhm,
-            max_fwhm=max_fwhm,
-            max_ellip=max_ellip,
-            saturation=saturation,
-            output_dir=output_dir
-        )
-
-        n_good = len(good_src_list)
-
-        if n_good < 4:
-
-            err = f'Only {n_good} good stars were found in the image.  The image is too small or shallow, the ' \
-                  f'detection threshold is set too high, or stars and cosmic rays are being confused.'
-            logger.error(err)
-            write_text_file('det.init.txt', good_src_list)
-            write_region_file('det.im.reg', good_src_list, 'red', 'img')
-            raise AstrometryException(err)
-
-        density = len(good_src_list) / area_sq_min
-        logger.debug('Source density of %f4 /arcmin^2' % density)
-
-        if no_solve is True:
-            # RS: Not sure what's happening here...
-            if catalog is None:
-                output_path = os.path.join(output_dir, 'det.ref.txt')
-            write_text_file(file_path=output_path, src_list=good_src_list)
-            return
-
-        # If no catalog specified, check availability of SDSS
-        if catalog is None:
-            try:
-                trycats = ['sdss', 'ub2', 'tmc']
-                for trycat in trycats:
-                    testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={center_ra}" \
-                                   f"&dec={center_dec}&system=J2000&rad=-90"
-                    check = urllib.request.urlopen(testqueryurl)
-                    checklines = check.readlines()
-                    check.close()
-                    if len(checklines) > 15:
-                        catalog = trycat
-                        logger.info(f'Using catalog {catalog}')
-                        break
-            except urllib.error.URLError:
-                err = 'No catalog is available.  Check your internet connection.'
-                logger.error(err)
-                raise AstrometryException(err)
-
-        # Load in reference star catalog
-        if box_size_arcsec is None:
-            box_size_arcsec = field_width
-
-        ref_src_list = get_catalog(
-            catalog=catalog,
-            ra=center_ra,
-            dec=center_dec,
-            box_size_arcsec=box_size_arcsec
-        )
-
-        n_cat = len(ref_src_list)
-        cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
-        logger.debug(f'{n_cat} good catalog objects.')
-        logger.debug(f'Source density of {cat_density} /arcmin^2')
-
-        if n_cat == 0:
-            logger.error('No objects found in catalog.')
-            logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
-            logger.error('is too small.  Check input parameters or your internet connection.')
-            raise AstrometryException
-
-        elif 0 < n_cat < 5:
-            logger.error(f'Only {n_cat} catalog objects in the search zone.'
-                         f'Increase the magnitude threshold or box size.')
-
-        # If this image is actually shallower than reference catalog, trim the reference catalog down
-        if n_cat > 16 and cat_density > 3 * density:
-            logger.debug('Image is shallow.  Trimming reference catalog...')
-            while cat_density > 3 * density:
-                ref_src_list = ref_src_list[0:int(len(ref_src_list)*4/5)]
-                n_cat = len(ref_src_list)
-                cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
-
-        # If the image is way deeper than USNO, trim the image catalog down
-        if n_good > 16 and density > 4 * cat_density:
-            logger.debug('Image is deep.  Trimming image catalog...')
-            while density > 4 * cat_density and n_good > 8:
-                good_src_list = good_src_list[0:int(len(good_src_list)*4/5)]
-                n_good = len(good_src_list)
-                density = n_good / area_sq_min
-
-        # If too many objects, do some more trimming
-        if n_good*n_cat > 120*120*4:
-            logger.debug('Image and/or catalog still too deep.  Trimming...')
-            while n_good*n_cat > 120*120*4:
-                if density > cat_density:
-                    good_src_list = good_src_list[0:int(len(good_src_list)*4/5)]
-                    n_good = len(good_src_list)
-                    density = n_good / area_sq_min
-                else:
-                    ref_src_list = ref_src_list[0:int(len(ref_src_list)*4/5)]
-                    n_cat = len(ref_src_list)
-                    cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
-
-        # Remove fainter object in close pairs for both lists
-        min_sep = 3
-
-        delete_list = []
-        for i, src in enumerate(good_src_list):
-            for j, src2 in enumerate(good_src_list[i+1:]):
-                dist = distance(src, src2)
-                if dist < min_sep:
-                    if src.mag > src2.mag:
-                        delete_list.append(i)
-                    else:
-                        delete_list.append(i + j + 1)
-
-        delete_list = unique(delete_list)
-        delete_list.reverse()
-        for d in delete_list:
-            del good_src_list[d]
-
-        for i, src in enumerate(ref_src_list):
-            for j, src2 in enumerate(ref_src_list[i+1:]):
-
-                dist = distance(src, src2)
-                if dist < min_sep:
-                    if src.mag > src2.mag:
-                        delete_list.append(i)
-                    else:
-                        delete_list.append(i + j + 1)
-
-        delete_list = unique(delete_list)
-        delete_list.reverse()
-        for d in delete_list:
-            del ref_src_list[d]
-
-        write_text_file(
-            file_path=os.path.join(output_dir, 'det.init.txt'),
-            src_list=good_src_list
-        )
-        write_region_file(
-            file_path=os.path.join(output_dir, 'det.im.reg'),
-            src_list=good_src_list,
-            color='red',
-            system='img'
-        )
-        write_text_file(
-            file_path=os.path.join(output_dir, 'cat.txt'),
-            src_list=ref_src_list
-        )
-        write_region_file(
-            file_path=os.path.join(output_dir, 'cat.wcs.reg'),
-            src_list=ref_src_list,
-            color='green',
-            system='wcs'
-        )
-
-        # The catalogs have now been completed.
-
-        # Now start getting into the actual astrometry.
-
-        min_rad = 5.0
-        if max_rad is None:
-            max_rad = 60 * (15 / (math.pi * min(density, cat_density))) ** 0.5  # numcomp ~ 15 [look at 15 closest objects
-            max_rad = max(max_rad, 60.0)                                  #               in sparse dataset]
-            if max_rad == 60.0:
-                min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
-            max_rad = min(max_rad, field_width * 3. / 4)
-
-            # note that density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
-
-        circ_density = density * min([area_sq_min, (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)])
-        circ_ref_density = cat_density * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
-        n_ref_src_per_image = cat_density * area_sq_min
-
-        logger.debug('After trimming: ')
-        logger.debug(f'{len(good_src_list)} detected objects ({density:.2f}/arcmin^2, {circ_density:.1f}/searchzone)')
-        logger.debug(
-            f'{len(ref_src_list)} catalog objects ({cat_density:.2f}/arcmin^2, {circ_ref_density:.1f}/searchzone)'
-        )
-
-        pa_tolerance = default_pa_tolerance
-
-        # RS: WTF is x**1 for?
-        expect_false_trios = n_good * n_cat * circ_density**2 * circ_ref_density**2 * tolerance**2 * (pa_tolerance/360.)**1
-
-        overlap_first_guess = 0.3 * min(1, cat_density/density)  # fraction of stars in image that are also in catalog - a guess
-        true_matches_per_star = (circ_density * overlap_first_guess)  # but how many matches >3 and >4?  some annoying binomial thing
-
-        req_matches = 3
-        if expect_false_trios > 30 and true_matches_per_star >= 4:
-            req_matches = 4
-        # should check that this will actually work for the catalog, too.
-        if n_ref_src_per_image <= 6 or n_good <= 6:
-            req_matches = 2
-        if n_ref_src_per_image <= 3 or n_good <= 3:
-            req_matches = 1
-        # for an extremely small or shallow image
-
-        logger.debug('Pair comparison search radius: %.2f"' % max_rad)
-        logger.debug(f'Using req_matches = {req_matches}')
-
-        (primarymatchs, primarymatchc, mpa) = distance_match(
-            img_src_list=good_src_list,
-            ref_src_list=ref_src_list,
-            max_rad=max_rad,
-            min_rad=min_rad,
-            tolerance=tolerance,
-            req_match=req_matches,
-            pa_tolerance=pa_tolerance,
-            unc_pa=unc_pa
-        )
-
-        n_match = len(primarymatchs)
-        if n_match == 0:
-            err = (' No valid matches found!\n '
-                   'Possible issues: \n'
-                   '  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value. \n'
-                   '  - The field is outside the catalog search region.  Check header RA/DEC or increase search radius. \n'
-                   ' - The routine is flooded by bad sources.  Specify or check the input seeing. \n'
-                   '  - The routine is flagging many real stars.  Check the input seeing. \n'
-                   ' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg. \n'
-                   )
-            logger.error(err)
-            raise AstrometryException(err)
-
-        if n_match <= 2:
-            logger.warning(f'Warning: only {n_match} match(es).  Astrometry may be unreliable.')
-            logger.warning('   Check the pixel scale and parity and consider re-running.')
-
-        #We now have the PA and a list of stars that are almost certain matches.
-        offpa = median(mpa)  #get average PA from the excellent values
-        stdevpa = stdev(mpa)
-
-        skyoffpa = -parity*offpa # This appears to be necessary for the printed value to agree with our normal definition.
-
-        logger.debug('PA offset:')
-        logger.debug('  dPA = %.3f  (unc. %.3f)' % (skyoffpa, stdevpa))
-
-        if no_rot <= 0:
-            # Rotate the image to the new, correct PA
-            #  NOTE: when CRPIX don't match CRVAL this shifts the center and screws things up.
-            #  I don't understand why they don't always match.  [[I think this was an equinox issue.
-            #  should be solved now, but be alert for further problems.]]
-
-            #Rotate....
-            rot = offpa * math.pi/180
-            #...the image itself
-            header["CD1_1"] = math.cos(rot)*cd11 - math.sin(rot)*cd21
-            header["CD1_2"] = math.cos(rot)*cd12 - math.sin(rot)*cd22   # a parity issue may be involved here?
-            header["CD2_1"] = math.sin(rot)*cd11 + math.cos(rot)*cd21
-            header["CD2_2"] = math.sin(rot)*cd12 + math.cos(rot)*cd22
-            #...the coordinates (so we don't have to resex)
-            for i in range(len(good_src_list)):  #do all of them, though this is not necessary
-                good_src_list[i].rotate(offpa,cra,cdec)
-
-        else:
-            rotwarn = ''
-            if abs(skyoffpa) > 1.0:
-                rotwarn = ' (WARNING: image appears rotated, may produce bad shift)'
-            logger.debug('  Skipping rotation correction ')
+    return nxpix, nypix, cd11, cd12, cd21, cd22, crpix1, crpix2, cra, cdec
 
 
-        write_text_file('det.wcs.txt', good_src_list)
-
-        imraoffset = []
-        imdecoffset = []
-        for i in range(len(primarymatchs)):
-            imraoffset.append(good_src_list[primarymatchs[i]].ra_deg - ref_src_list[primarymatchc[i]].ra_deg)
-            imdecoffset.append(good_src_list[primarymatchs[i]].dec_deg - ref_src_list[primarymatchc[i]].dec_deg)
-
-        raoffset = -median(imraoffset)
-        decoffset = -median(imdecoffset)
-        rastd = stdev(imraoffset)*math.cos(cdec*math.pi/180)  # all of these are in degrees
-        decstd = stdev(imdecoffset)
-        stdoffset = math.sqrt(rastd**2 + decstd**2)
-
-        raoffsetarcsec = raoffset*3600*math.cos(cdec*math.pi/180)
-        decoffsetarcsec = decoffset*3600
-        totoffsetarcsec = (raoffsetarcsec**2 + decoffset**2)**0.5
-        stdoffsetarcsec = stdoffset*3600
-
-        logger.debug('Spatial offset:')
-
-        msg = f'  dra = {raoffsetarcsec:.2f}",' \
-              f'  ddec = {decoffsetarcsec:.2f}"' \
-              f'  (unc. {stdoffsetarcsec:.3f}")'
-        logger.error(msg)
-        #
-        if msg != '  dra = 87.39",  ddec = 47.42"  (unc. 0.176")':
-            raise ValueError("MISMATCH")
-
-        warning = 0
-        if (stdoffset*3600 > 1.0):
-            logger.debug('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
-            warning = 1
-
-        header["CRVAL1"] = cra + raoffset
-        header["CRVAL2"] = cdec + decoffset
-
-        #header.update("ASTRMTCH", catalog)
+def get_ref_sources_from_catalog(
+        catalog: str,
+        center_ra: float,
+        center_dec: float,
+        box_size_arcsec: float,
+):
+    # If no catalog specified, check availability of SDSS
+    if catalog is None:
         try:
-            oldcat = header['ASTR_CAT']
-            header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
-        except:
+            trycats = ['sdss', 'ub2', 'tmc']
+            for trycat in trycats:
+                testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={center_ra}" \
+                               f"&dec={center_dec}&system=J2000&rad=-90"
+                check = urllib.request.urlopen(testqueryurl)
+                checklines = check.readlines()
+                check.close()
+                if len(checklines) > 15:
+                    catalog = trycat
+                    logger.info(f'Using catalog {catalog}')
+                    break
+        except urllib.error.URLError:
+            err = 'No catalog is available.  Check your internet connection.'
+            logger.error(err)
+            raise AstrometryException(err)
+
+    # Load in reference star catalog
+
+    ref_src_list = get_catalog(
+        catalog=catalog,
+        ra=center_ra,
+        dec=center_dec,
+        box_size_arcsec=box_size_arcsec
+    )
+
+    n_cat = len(ref_src_list)
+    cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
+    logger.debug(f'{n_cat} good catalog objects.')
+    logger.debug(f'Source density of {cat_density} /arcmin^2')
+
+    if n_cat == 0:
+        logger.error('No objects found in catalog.')
+        logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
+        logger.error('is too small.  Check input parameters or your internet connection.')
+        raise AstrometryException
+
+    elif 0 < n_cat < 5:
+        logger.error(f'Only {n_cat} catalog objects in the search zone.'
+                     f'Increase the magnitude threshold or box size.')
+        raise AstrometryException
+
+    return ref_src_list, n_cat, cat_density
+
+
+def crosscheck_source_lists(
+        img_src_list: list[SextractorSource],
+        n_img: int,
+        img_density: float,
+        ref_src_list: list[BaseSource],
+        n_ref: int,
+        ref_density: float,
+        box_size_arcsec: float,
+        area_sq_min: float
+) -> tuple[list[SextractorSource], int, float, list[BaseSource], int, float]:
+
+    # If this image is actually shallower than reference catalog, trim the reference catalog down
+    if n_ref > 16 and ref_density > 3 * img_density:
+        logger.debug('Image is shallow.  Trimming reference catalog...')
+        while ref_density > 3 * img_density:
+            ref_src_list = ref_src_list[0:int(len(ref_src_list)*4/5)]
+            n_ref = len(ref_src_list)
+            ref_density = n_ref / (2 * box_size_arcsec / 60.) ** 2
+
+    # If the image is way deeper than USNO, trim the image catalog down
+    if n_img > 16 and img_density > 4 * ref_density:
+        logger.debug('Image is deep.  Trimming image catalog...')
+        while img_density > 4 * ref_density and n_img > 8:
+            img_src_list = img_src_list[0:int(len(img_src_list) * 4 / 5)]
+            n_img = len(img_src_list)
+            img_density = n_img / area_sq_min
+
+    # If too many objects, do some more trimming
+    if n_img*n_ref > 120*120*4:
+        logger.debug('Image and/or catalog still too deep.  Trimming...')
+        while n_img*n_ref > 120*120*4:
+            if img_density > ref_density:
+                img_src_list = img_src_list[0:int(len(img_src_list) * 4 / 5)]
+                n_img = len(img_src_list)
+                img_density = n_img / area_sq_min
+            else:
+                ref_src_list = ref_src_list[0:int(len(ref_src_list)*4/5)]
+                n_ref = len(ref_src_list)
+                ref_density = n_ref / (2 * box_size_arcsec / 60.) ** 2
+
+    # Remove fainter object in close pairs for both lists
+    min_sep = 3
+
+    delete_list = []
+    for i, src in enumerate(img_src_list):
+        for j, src2 in enumerate(img_src_list[i + 1:]):
+            dist = distance(src, src2)
+            if dist < min_sep:
+                if src.mag > src2.mag:
+                    delete_list.append(i)
+                else:
+                    delete_list.append(i + j + 1)
+
+    delete_list = unique(delete_list)
+    delete_list.reverse()
+    for d in delete_list:
+        del img_src_list[d]
+
+    for i, src in enumerate(ref_src_list):
+        for j, src2 in enumerate(ref_src_list[i+1:]):
+
+            dist = distance(src, src2)
+            if dist < min_sep:
+                if src.mag > src2.mag:
+                    delete_list.append(i)
+                else:
+                    delete_list.append(i + j + 1)
+
+    delete_list = unique(delete_list)
+    delete_list.reverse()
+    for d in delete_list:
+        del ref_src_list[d]
+
+    return img_src_list, n_img, img_density, ref_src_list, n_ref, ref_density
+
+
+def export_src_lists(
+        img_src_list: list[SextractorSource],
+        ref_src_list: list[BaseSource],
+        output_dir: str
+):
+    write_text_file(
+        file_path=os.path.join(output_dir, 'det.init.txt'),
+        src_list=img_src_list
+    )
+    write_region_file(
+        file_path=os.path.join(output_dir, 'det.im.reg'),
+        src_list=img_src_list,
+        color='red',
+        system='img'
+    )
+    write_text_file(
+        file_path=os.path.join(output_dir, 'cat.txt'),
+        src_list=ref_src_list
+    )
+    write_region_file(
+        file_path=os.path.join(output_dir, 'cat.wcs.reg'),
+        src_list=ref_src_list,
+        color='green',
+        system='wcs'
+    )
+
+############################################
+
+def autoastrometry(
+        filename: str,
+        pixel_scale: float = None,
+        pa: float = None,
+        inv: bool = False,
+        unc_pa: float = None,
+        user_ra_deg: float = None,
+        user_dec_deg: float = None,
+        max_ellip: float = 0.5,
+        box_size_arcsec: float = None,
+        max_rad: float = None,
+        tolerance: float = default_tolerance,
+        catalog: str = None,
+        no_solve: bool = False,
+        overwrite: bool = True,
+        outfile: str = "",
+        output_dir: str = base_output_dir,
+        temp_file: str = None,
+        saturation: float = default_saturation,
+        no_rot: bool = False,
+        min_fwhm: float = default_min_fwhm,
+        max_fwhm: float = default_max_fwhm,
+):
+    """
+
+    Parameters
+    ----------
+    filename: Path of file
+    pixel_scale: The pixel scale in arcsec/pix.  Must be within ~1%. By default: ???
+    pa: The position angle in degrees.  Not usually needed.
+    unc_pa: Uncertainty of the position angle (degrees)
+    inv: Reverse(=positive) parity.
+    user_ra_deg: RA in deg
+    user_dec_deg: Dec in deg
+    max_ellip: Maximum elliptical something?
+    box_size_arcsec: Half-width of box for reference catalog query (arcsec)
+    max_rad: Maximum distance to look for star pairs.
+    tolerance: Amount of slack allowed in match determination
+    catalog: Catalog to use (ub2, tmc, sdss, or file)
+    no_solve: Do not attempt to solve astrometry; just write catalog.
+    overwrite: Overwrite output files
+    outfile: Output file
+    output_dir: Directory for output file
+    temp_file: Temporary file
+    saturation: Saturation level; do not use stars exceeding.
+    no_rot: Some kind of bool
+    min_fwhm: Minimum fwhm
+    max_fwhm: Maximum fwhm
+
+    Returns
+    -------
+
+    """
+
+    if temp_file is None:
+        temp_file = f"temp_{os.path.basename(filename)}"
+
+    # temp_path = os.path.join(os.path.dirname(filename), temp_file)
+    temp_path = os.path.join(output_dir, temp_file)
+
+    # Block A
+    # Parse header
+
+    nx_pix, ny_pix, cd11, cd12, cd21, cd22, crpix1, crpix2, cra, cdec = parse_header(
+        file_path=filename,
+        temp_path=temp_path,
+        pixel_scale=pixel_scale,
+        pa=pa,
+        inv=inv,
+        user_ra_deg=user_ra_deg,
+        user_dec_deg=user_dec_deg
+    )
+
+    # Block B
+    # Sextract stars to produce image star catalog
+
+    img_src_list = sextract(
+        img_path=temp_path,
+        nx_pix=nx_pix,
+        ny_pix=ny_pix,
+        border=3,
+        corner=12,
+        min_fwhm=min_fwhm,
+        max_fwhm=max_fwhm,
+        max_ellip=max_ellip,
+        saturation=saturation,
+        output_dir=output_dir
+    )
+
+    # Block C
+
+    sci_ext = 0
+
+    with fits.open(temp_path) as hdu:
+        header = hdu[sci_ext].header
+
+    # Get image info from header (even if we put it there in the first place)
+    if cd11 * cd22 < 0 or cd12 * cd21 > 0:
+        parity = -1
+    else:
+        parity = 1
+
+    x_scale = math.sqrt(cd11**2 + cd21**2)
+    y_scale = math.sqrt(cd12**2 + cd22**2)
+    init_pa = -parity * np.arctan2(cd21 * y_scale, cd22 * x_scale) * 180 / math.pi
+    x_scale = abs(x_scale)
+    y_scale = abs(y_scale)
+    field_width = max(x_scale * nx_pix, y_scale * ny_pix) * 3600.
+    area_sq_deg = x_scale * nx_pix * y_scale * ny_pix
+    area_sq_min = area_sq_deg * 3600.
+    center_x = nx_pix/2
+    center_y = ny_pix/2
+    center_dx = center_x - crpix1
+    center_dy = center_y - crpix2
+    center_ra = (
+            cra
+            - center_dx * x_scale * math.cos(init_pa*math.pi/180.)
+            + center_dy * y_scale * math.sin(init_pa*math.pi/180.)
+    )
+    center_dec = (
+            cdec
+            + parity * center_dx * x_scale * math.sin(-init_pa * math.pi/180.)
+            + center_dy * y_scale * math.cos(init_pa * math.pi/180.)
+    )
+
+    if box_size_arcsec is None:
+        box_size_arcsec = field_width
+
+    # this has only been checked for a PA of zero.
+
+    logger.debug(
+        f'Initial WCS info: \n'
+        f'   pixel scale:     x={x_scale*3600:.4f}"/pix,   y={y_scale*3600:.4f}"/pix \n'
+        f'   position angle: PA={init_pa:.2f}'
+    )
+
+    if parity == 1:
+        logger.debug('   normal parity')
+    if parity == -1:
+        logger.debug('   inverse parity')
+
+    logger.debug(f'   center:        RA={center_ra:.6f}, dec={center_dec:.6f}')
+
+    n_img = len(img_src_list)
+
+    if n_img < 4:
+
+        err = f'Only {n_img} good stars were found in the image.  The image is too small or shallow, the ' \
+              f'detection threshold is set too high, or stars and cosmic rays are being confused.'
+        logger.error(err)
+        write_text_file('det.init.txt', img_src_list)
+        write_region_file('det.im.reg', img_src_list, 'red', 'img')
+        raise AstrometryException(err)
+
+    img_density = len(img_src_list) / area_sq_min
+    logger.debug('Source img_density of %f4 /arcmin^2' % img_density)
+
+    if no_solve is True:
+        raise NotImplementedError()
+        # RS: Not sure what's happening here...
+        if catalog is None:
+            output_path = os.path.join(output_dir, 'det.ref.txt')
+        write_text_file(file_path=output_path, src_list=img_src_list)
+        return
+
+    # # If no catalog specified, check availability of SDSS
+    # if catalog is None:
+    #     try:
+    #         trycats = ['sdss', 'ub2', 'tmc']
+    #         for trycat in trycats:
+    #             testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={center_ra}" \
+    #                            f"&dec={center_dec}&system=J2000&rad=-90"
+    #             check = urllib.request.urlopen(testqueryurl)
+    #             checklines = check.readlines()
+    #             check.close()
+    #             if len(checklines) > 15:
+    #                 catalog = trycat
+    #                 logger.info(f'Using catalog {catalog}')
+    #                 break
+    #     except urllib.error.URLError:
+    #         err = 'No catalog is available.  Check your internet connection.'
+    #         logger.error(err)
+    #         raise AstrometryException(err)
+    #
+    # # Load in reference star catalog
+    # if box_size_arcsec is None:
+    #     box_size_arcsec = field_width
+    #
+    # ref_src_list = get_catalog(
+    #     catalog=catalog,
+    #     ra=center_ra,
+    #     dec=center_dec,
+    #     box_size_arcsec=box_size_arcsec
+    # )
+    #
+    # n_ref = len(ref_src_list)
+    # ref_density = n_ref / (2 * box_size_arcsec / 60.) ** 2
+    # logger.debug(f'{n_ref} good catalog objects.')
+    # logger.debug(f'Source img_density of {ref_density} /arcmin^2')
+    #
+    # if n_ref == 0:
+    #     logger.error('No objects found in catalog.')
+    #     logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
+    #     logger.error('is too small.  Check input parameters or your internet connection.')
+    #     raise AstrometryException
+    #
+    # elif 0 < n_ref < 5:
+    #     logger.error(f'Only {n_ref} catalog objects in the search zone.'
+    #                  f'Increase the magnitude threshold or box size.')
+
+    ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog(
+        catalog=catalog,
+        center_ra=center_ra,
+        center_dec=center_dec,
+        box_size_arcsec=box_size_arcsec,
+    )
+
+    # Block N
+
+    img_src_list, n_img, img_density, ref_src_list, n_ref, ref_density = crosscheck_source_lists(
+        img_src_list=img_src_list,
+        n_img=n_img,
+        img_density=img_density,
+        ref_src_list=ref_src_list,
+        n_ref=n_ref,
+        ref_density=ref_density,
+        box_size_arcsec=box_size_arcsec,
+        area_sq_min=area_sq_min
+    )
+
+    export_src_lists(
+        img_src_list=img_src_list,
+        ref_src_list=ref_src_list,
+        output_dir=output_dir
+    )
+
+    # The catalogs have now been completed.
+
+    # Now start getting into the actual astrometry.
+
+    min_rad = 5.0
+    if max_rad is None:
+        max_rad = 60 * (15 / (math.pi * min(img_density, ref_density))) ** 0.5  # numcomp ~ 15 [look at 15 closest objects
+        max_rad = max(max_rad, 60.0)                                  #               in sparse dataset]
+        if max_rad == 60.0:
+            min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
+        max_rad = min(max_rad, field_width * 3. / 4)
+
+        # note that img_density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
+
+    circ_density = img_density * min([area_sq_min, (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)])
+    circ_ref_density = ref_density * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
+    n_ref_src_per_image = ref_density * area_sq_min
+
+    logger.debug('After trimming: ')
+    logger.debug(f'{len(img_src_list)} detected objects ({img_density:.2f}/arcmin^2, {circ_density:.1f}/searchzone)')
+    logger.debug(
+        f'{len(ref_src_list)} catalog objects ({ref_density:.2f}/arcmin^2, {circ_ref_density:.1f}/searchzone)'
+    )
+
+    pa_tolerance = default_pa_tolerance
+
+    # RS: WTF is x**1 for?
+    expect_false_trios = n_img * n_ref * circ_density**2 * circ_ref_density**2 * tolerance**2 * (pa_tolerance/360.)**1
+
+    overlap_first_guess = 0.3 * min(1, ref_density/img_density)  # fraction of stars in image that are also in catalog - a guess
+    true_matches_per_star = (circ_density * overlap_first_guess)  # but how many matches >3 and >4?  some annoying binomial thing
+
+    req_matches = 3
+    if expect_false_trios > 30 and true_matches_per_star >= 4:
+        req_matches = 4
+    # should check that this will actually work for the catalog, too.
+    if n_ref_src_per_image <= 6 or n_img <= 6:
+        req_matches = 2
+    if n_ref_src_per_image <= 3 or n_img <= 3:
+        req_matches = 1
+    # for an extremely small or shallow image
+
+    logger.debug('Pair comparison search radius: %.2f"' % max_rad)
+    logger.debug(f'Using req_matches = {req_matches}')
+
+    (primarymatchs, primarymatchc, mpa) = distance_match(
+        img_src_list=img_src_list,
+        ref_src_list=ref_src_list,
+        max_rad=max_rad,
+        min_rad=min_rad,
+        tolerance=tolerance,
+        req_match=req_matches,
+        pa_tolerance=pa_tolerance,
+        unc_pa=unc_pa
+    )
+
+    n_match = len(primarymatchs)
+    if n_match == 0:
+        err = (' No valid matches found!\n '
+               'Possible issues: \n'
+               '  - The specified pixel scale (or PA or parity) is incorrect.  Double-check the input value. \n'
+               '  - The field is outside the catalog search region.  Check header RA/DEC or increase search radius. \n'
+               ' - The routine is flooded by bad sources.  Specify or check the input seeing. \n'
+               '  - The routine is flagging many real stars.  Check the input seeing. \n'
+               ' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg. \n'
+               )
+        logger.error(err)
+        raise AstrometryException(err)
+
+    if n_match <= 2:
+        logger.warning(f'Warning: only {n_match} match(es).  Astrometry may be unreliable.')
+        logger.warning('   Check the pixel scale and parity and consider re-running.')
+
+    #We now have the PA and a list of stars that are almost certain matches.
+    offpa = median(mpa)  #get average PA from the excellent values
+    stdevpa = stdev(mpa)
+
+    skyoffpa = -parity*offpa # This appears to be necessary for the printed value to agree with our normal definition.
+
+    logger.debug('PA offset:')
+    logger.debug('  dPA = %.3f  (unc. %.3f)' % (skyoffpa, stdevpa))
+
+    if no_rot <= 0:
+        # Rotate the image to the new, correct PA
+        #  NOTE: when CRPIX don't match CRVAL this shifts the center and screws things up.
+        #  I don't understand why they don't always match.  [[I think this was an equinox issue.
+        #  should be solved now, but be alert for further problems.]]
+
+        #Rotate....
+        rot = offpa * math.pi/180
+        #...the image itself
+        header["CD1_1"] = math.cos(rot)*cd11 - math.sin(rot)*cd21
+        header["CD1_2"] = math.cos(rot)*cd12 - math.sin(rot)*cd22   # a parity issue may be involved here?
+        header["CD2_1"] = math.sin(rot)*cd11 + math.cos(rot)*cd21
+        header["CD2_2"] = math.sin(rot)*cd12 + math.cos(rot)*cd22
+        #...the coordinates (so we don't have to resex)
+        for i in range(len(img_src_list)):  #do all of them, though this is not necessary
+            img_src_list[i].rotate(offpa,cra,cdec)
+
+    else:
+        rotwarn = ''
+        if abs(skyoffpa) > 1.0:
+            rotwarn = ' (WARNING: image appears rotated, may produce bad shift)'
+        logger.debug('  Skipping rotation correction ')
+
+
+    write_text_file('det.wcs.txt', img_src_list)
+
+    imraoffset = []
+    imdecoffset = []
+    for i in range(len(primarymatchs)):
+        imraoffset.append(img_src_list[primarymatchs[i]].ra_deg - ref_src_list[primarymatchc[i]].ra_deg)
+        imdecoffset.append(img_src_list[primarymatchs[i]].dec_deg - ref_src_list[primarymatchc[i]].dec_deg)
+
+    raoffset = -median(imraoffset)
+    decoffset = -median(imdecoffset)
+    rastd = stdev(imraoffset)*math.cos(cdec*math.pi/180)  # all of these are in degrees
+    decstd = stdev(imdecoffset)
+    stdoffset = math.sqrt(rastd**2 + decstd**2)
+
+    raoffsetarcsec = raoffset*3600*math.cos(cdec*math.pi/180)
+    decoffsetarcsec = decoffset*3600
+    totoffsetarcsec = (raoffsetarcsec**2 + decoffset**2)**0.5
+    stdoffsetarcsec = stdoffset*3600
+
+    logger.debug('Spatial offset:')
+
+    msg = f'  dra = {raoffsetarcsec:.2f}",' \
+          f'  ddec = {decoffsetarcsec:.2f}"' \
+          f'  (unc. {stdoffsetarcsec:.3f}")'
+    logger.error(msg)
+    #
+    if msg != '  dra = 87.39",  ddec = 47.42"  (unc. 0.176")':
+        raise ValueError("MISMATCH")
+
+    warning = 0
+    if (stdoffset*3600 > 1.0):
+        logger.debug('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
+        warning = 1
+
+    header["CRVAL1"] = cra + raoffset
+    header["CRVAL2"] = cdec + decoffset
+
+    #header.update("ASTRMTCH", catalog)
+    try:
+        oldcat = header['ASTR_CAT']
+        header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
+    except:
+        pass
+    header["ASTR_CAT"] = (catalog, "Reference catalog for autoastrometry")
+    header["ASTR_UNC"] = (stdoffsetarcsec, "Astrometric scatter vs. catalog (arcsec)")
+    header["ASTR_SPA"] = (stdevpa, "Measured uncertainty in PA (degrees)")
+    header["ASTR_DPA"] = (skyoffpa, "Change in PA (degrees)")
+    header["ASTR_OFF"] = (totoffsetarcsec, "Change in center position (arcsec)")
+    header["ASTR_NUM"] = (len(primarymatchs), "Number of matches")
+
+    #Write out a match list to allow doing a formal fit with WCStools.
+
+    outmatch = open('match.list','w')
+    for i in range(len(primarymatchs)):
+        si = primarymatchs[i]
+        ci = primarymatchc[i]
+        outmatch.write("%s %s  %s %s\n" % (img_src_list[si].x, img_src_list[si].y, ref_src_list[ci].ra_deg, ref_src_list[ci].dec_deg))
+        #img_src_list[si].ra, img_src_list[si].dec))
+    outmatch.close()
+
+    # Could repeat with scale adjustment
+
+
+    # Could then go back to full good catalog and match all sources
+
+    if overwrite:
+        outfile = filename
+    elif outfile == '':
+        slashpos = filename.rfind('/')
+        dir = filename[0:slashpos+1]
+        fil = filename[slashpos+1:]
+        outfile = f"{dir}a{fil}" # alternate behavior would always output to current directory
+
+    if outfile is not None:
+        try:
+            os.remove(outfile)
+        except FileNotFoundError:
             pass
-        header["ASTR_CAT"] = (catalog, "Reference catalog for autoastrometry")
-        header["ASTR_UNC"] = (stdoffsetarcsec, "Astrometric scatter vs. catalog (arcsec)")
-        header["ASTR_SPA"] = (stdevpa, "Measured uncertainty in PA (degrees)")
-        header["ASTR_DPA"] = (skyoffpa, "Change in PA (degrees)")
-        header["ASTR_OFF"] = (totoffsetarcsec, "Change in center position (arcsec)")
-        header["ASTR_NUM"] = (len(primarymatchs), "Number of matches")
 
-        #Write out a match list to allow doing a formal fit with WCStools.
-
-        outmatch = open('match.list','w')
-        for i in range(len(primarymatchs)):
-            si = primarymatchs[i]
-            ci = primarymatchc[i]
-            outmatch.write("%s %s  %s %s\n" % (good_src_list[si].x, good_src_list[si].y, ref_src_list[ci].ra_deg, ref_src_list[ci].dec_deg))
-            #good_src_list[si].ra, good_src_list[si].dec))
-        outmatch.close()
-
-        # Could repeat with scale adjustment
-
-
-        # Could then go back to full good catalog and match all sources
-
-        if overwrite:
-            outfile = filename
-        elif outfile == '':
-            slashpos = filename.rfind('/')
-            dir = filename[0:slashpos+1]
-            fil = filename[slashpos+1:]
-            outfile = f"{dir}a{fil}" # alternate behavior would always output to current directory
-
-        if outfile is not None:
-            try:
-                os.remove(outfile)
-            except FileNotFoundError:
-                pass
-
-            fits[sci_ext].header = header
-            fits.writeto(outfile, output_verify='silentfix') #,clobber=True
-            logger.info(f'Written to {outfile}')
+        hdu[sci_ext].header = header
+        hdu.writeto(outfile, output_verify='silentfix') #,clobber=True
+        logger.info(f'Written to {outfile}')
 
     return n_match, skyoffpa, stdevpa, raoffsetarcsec, decoffsetarcsec, stdoffsetarcsec      #stdoffset*3600
 
