@@ -7,7 +7,7 @@ from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.processors.bias import BiasCalibrator
 from winterdrp.processors.flat import FlatCalibrator
 from winterdrp.processors.utils import ImageSaver
-from winterdrp.processors.astromatic import SextractorRunner
+from winterdrp.processors.astromatic import Sextractor
 
 from winterdrp.pipelines.summer.calibration import select_bias, select_flats_archival
 
@@ -40,7 +40,7 @@ class SummerPipeline(Pipeline):
             (BiasCalibrator, select_bias),
             (FlatCalibrator, select_flats_archival),
             (ImageSaver, "preprocess"),
-            (SextractorRunner, "pass1"),
+            (Sextractor, "pass1"),
             # "stack",
             # "dither"
         ]

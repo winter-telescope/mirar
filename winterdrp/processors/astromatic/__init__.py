@@ -1,1 +1,1 @@
-from winterdrp.processors.astromatic.sextractor.sextractor import SextractorRunner
+from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
