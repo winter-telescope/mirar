@@ -4,11 +4,10 @@ import numpy as np
 import astropy.io.fits
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.utils.image_saver import latest_save_key, ImageSaver
-from winterdrp.processors.autoastrometry.autoastrometry import run_autoastrometry
+from winterdrp.processors.autoastrometry.autoastrometry import run_autoastrometry_single
 from winterdrp.paths import output_dir
 
 logger = logging.getLogger(__name__)
-
 
 class AutoAstrometry(BaseProcessor):
 
@@ -39,14 +38,25 @@ class AutoAstrometry(BaseProcessor):
         except OSError:
             pass
 
-        for header in headers:
-            run_autoastrometry(
-                files=header[latest_save_key],
+        for i, data in enumerate(images):
+            header = headers[i]
+
+            temp_path = os.path.join(sextractor_out_dir, header["BASENAME"])
+
+            self.save_fits(data, header, temp_path)
+
+            run_autoastrometry_single(
+                img_path=temp_path,
                 output_dir=sextractor_out_dir,
-                write_crosscheck_files=self.write_crosscheck_files
+                write_crosscheck_files=self.write_crosscheck_files,
+                overwrite=True
             )
 
-            raise
+            # Load up temp path image.header, then delete
+            img, header = self.open_fits(temp_path)
+            images[i] = img
+            headers[i] = header
+            os.remove(temp_path)
 
         return images, headers
 

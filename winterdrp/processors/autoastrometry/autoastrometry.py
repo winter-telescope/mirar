@@ -1470,6 +1470,9 @@ def autoastrometry(
     # temp_path = os.path.join(os.path.dirname(filename), temp_file)
     temp_path = os.path.join(output_dir, temp_file)
 
+    if overwrite:
+        temp_path = filename
+
     base_output_path = os.path.join(
         output_dir,
         ".".join(os.path.basename(filename).split(".")[:-1])
@@ -1753,9 +1756,6 @@ def autoastrometry(
           f'  (unc. {std_offset_arcsec:.3f}")'
     logger.debug(msg)
 
-    if msg != '  dra = 87.39",  ddec = 47.42"  (unc. 0.176")':
-        raise ValueError("MISMATCH")
-
     if std_offset*3600 > 1.0:
         logger.debug('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
 
@@ -1808,22 +1808,76 @@ def autoastrometry(
         outfile = f"{dir_name}a{fil}"  # alternate behavior would always output to current directory
 
     if outfile is not None:
-        try:
-            os.remove(outfile)
-        except FileNotFoundError:
-            pass
-
-        hdu[sci_ext].header = header
-        hdu.writeto(outfile, output_verify='silentfix')
-        logger.info(f'Written to {outfile}')
+        with fits.open(outfile) as hdu:
+            hdu[sci_ext].header = header
+            hdu.writeto(outfile, output_verify='silentfix', overwrite=True)
+            logger.info(f'Written to {outfile}')
 
     return n_match, sky_offset_pa, stdev_pa, ra_offset_arcsec, dec_offset_arcsec, std_offset_arcsec
 
 
+def run_autoastrometry_single(
+        img_path: str,
+        seeing: float = None,
+        pixel_scale: float = None,
+        pa: float = None,
+        uncpa: float = None,
+        inv: bool = False,
+        user_ra: float = None,
+        user_dec: float = None,
+        max_ellip: float = 0.5,
+        box_size: float = None,
+        max_rad: float = None,
+        tolerance: float = default_tolerance,
+        catalog: str = None,
+        overwrite: bool = False,
+        outfile: str = None,
+        output_dir: str = base_output_dir,
+        saturation: float = default_saturation,
+        no_rot: bool = False,
+        write_crosscheck_files: bool = False
+):
+
+    if seeing is None:
+        min_fwhm = default_min_fwhm  # 1.5
+        max_fwhm = default_max_fwhm  # 40
+    else:
+        min_fwhm = 0.7 * seeing
+        max_fwhm = 2. * seeing
+
+        write_param_file()
+    write_config_file(saturation=saturation)
+
+    fit_info = autoastrometry(
+        filename=img_path,
+        pixel_scale=pixel_scale,
+        pa=pa,
+        inv=inv,
+        unc_pa=uncpa,
+        min_fwhm=min_fwhm,
+        max_fwhm=max_fwhm,
+        max_ellip=max_ellip,
+        box_size_arcsec=box_size,
+        max_rad=max_rad,
+        user_ra_deg=user_ra,
+        user_dec_deg=user_dec,
+        tolerance=tolerance,
+        catalog=catalog,
+        overwrite=overwrite,
+        outfile=outfile,
+        output_dir=output_dir,
+        saturation=saturation,
+        no_rot=no_rot,
+        write_crosscheck_files=write_crosscheck_files
+    )
+
+    return fit_info
+
+
 ######################################################################
 
-def run_autoastrometry(
-        files: str | list,
+def run_autoastrometry_batch(
+        files: str | list[str],
         seeing: float = None,
         pixel_scale: float = None,
         pa: float = None,
@@ -1860,7 +1914,7 @@ def run_autoastrometry(
     Catalog info:
     Leave the catalog field blank will use SDSS if available and USNO otherwise.
     The catalog query uses wcstools (tdc-www.harvard.edu/wcstools).  However, you
-    can also use your own catalog file on disk if you prefer using -c [filename]
+    can also use your own catalog file on disk if you prefer using -c [img_path]
     The default format is a text file with the first three columns indicating
     ra, dec, magnitude.  However, you can change the order of the columns by
     adding, e.g.#:1,2,6 to the first line.  In this case, this would indicate that the RA is in the
@@ -1908,60 +1962,49 @@ def run_autoastrometry(
         logger.error(err)
         raise ValueError(err)
 
-    if seeing is None:
-        min_fwhm = default_min_fwhm  # 1.5
-        max_fwhm = default_max_fwhm  # 40
-    else:
-        min_fwhm = 0.7 * seeing
-        max_fwhm = 2. * seeing
-
-    write_param_file()
-    write_config_file(saturation=saturation)
-
     n_image = len(files)
     failures = []
     questionable = []
     multi_info = []
 
-    for filename in files:
+    for img_path in files:
 
         if len(files) > 1:
-            logger.debug(f'Processing {filename}')
+            logger.debug(f'Processing {img_path}')
 
-        fitinfo = autoastrometry(
-            filename=filename,
+        fit_info = run_autoastrometry_single(
+            img_path=img_path,
+            seeing=seeing,
             pixel_scale=pixel_scale,
             pa=pa,
+            uncpa=uncpa,
             inv=inv,
-            unc_pa=uncpa,
-            min_fwhm=min_fwhm,
-            max_fwhm=max_fwhm,
+            user_ra=user_ra,
+            user_dec=user_dec,
             max_ellip=max_ellip,
-            box_size_arcsec=box_size,
-            max_rad=max_rad,
-            user_ra_deg=user_ra,
-            user_dec_deg=user_dec,
+            box_size=box_size,
             tolerance=tolerance,
             catalog=catalog,
-            overwrite=overwrite,
             outfile=outfile,
+            overwrite=overwrite,
             output_dir=output_dir,
             saturation=saturation,
             no_rot=no_rot,
             write_crosscheck_files=write_crosscheck_files
         )
 
+
         # WTF?
 
-        if isinstance(fitinfo, int):
-            fitinfo = (0, 0, 0, 0, 0, 0)
+        if isinstance(fit_info, int):
+            fit_info = (0, 0, 0, 0, 0, 0)
 
-        multi_info.append(fitinfo)
+        multi_info.append(fit_info)
 
-        if fitinfo[0] == 0:   # number of matches
-            failures.append(filename)
-        if fitinfo[5] > 2:    # stdev of offset
-            questionable.append(filename)
+        if fit_info[0] == 0:   # number of matches
+            failures.append(img_path)
+        if fit_info[5] > 2:    # stdev of offset
+            questionable.append(img_path)
 
     if n_image > 1:
 
@@ -1998,7 +2041,7 @@ def run_autoastrometry(
 ######################################################################
 # Running as executable
 if __name__ == '__main__':
-    run_autoastrometry(*sys.argv)
+    run_autoastrometry_batch(*sys.argv)
 
 ######################################################################
 
