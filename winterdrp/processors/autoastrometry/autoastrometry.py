@@ -285,6 +285,7 @@ def get_img_src_list(
         saturation: float = default_saturation,
         config_path: str = default_config_path,
         output_catalog: str = None,
+        write_crosscheck_files: bool = False
 ) -> list[SextractorSource]:
 
     if output_catalog is None:
@@ -312,6 +313,10 @@ def get_img_src_list(
     # Read in the sextractor catalog
     with open(output_catalog, 'rb') as cat:
         catlines = [x.replace(b"\x00", b"").decode() for x in cat.readlines()][1:]
+
+    # Delete the sextractor catalog again, if not requested
+    if not write_crosscheck_files:
+        os.remove(output_catalog)
 
     if len(catlines) == 0:
         logger.error('Sextractor catalog is empty: try a different catalog?')
@@ -1496,7 +1501,8 @@ def autoastrometry(
         max_fwhm=max_fwhm,
         max_ellip=max_ellip,
         saturation=saturation,
-        base_output_path=base_output_path
+        base_output_path=base_output_path,
+        write_crosscheck_files=write_crosscheck_files
     )
 
     # Block C
