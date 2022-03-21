@@ -19,6 +19,9 @@
 # Modified by Kishalay De (kde@astro.caltech.edu) for removing dependency on deprecated pyfits
 # and making it compatible with astropy headers and python 3.6 (June 11, 2018)
 
+# Modified/dissected by Robert Stein (rdstein@caltech.edu) in 2021/2022 for incorporation into winterdrp
+# Also converted to python 3.10
+
 import os
 import sys
 import urllib.error
@@ -154,7 +157,7 @@ def quickdistance(obj1, obj2, cosdec):
 def position_angle(
         obj1: BaseSource,
         obj2: BaseSource
-):
+) -> float:
     dra = obj2.ra_rad - obj1.ra_rad
     pa_rad = np.arctan2(
         math.cos(obj1.dec_rad) * math.tan(obj2.dec_rad) - math.sin(obj1.dec_rad) * math.cos(dra),
@@ -184,16 +187,16 @@ def fuzzyequal(v1, v2, tolerance):
 
 def median(
         float_list: list[float]
-) -> np.ndarray:
+) -> float:
     a = np.array(float_list)
-    return np.median(a)
+    return float(np.median(a))
 
 
 def stdev(
         float_list: list[float]
-) -> np.ndarray:
+) -> float:
     a = np.array(float_list)
-    return np.std(a)
+    return float(np.std(a))
 
 
 def mode(
@@ -578,7 +581,7 @@ def distance_match(
         logger.warning('Warning: reqmatch >=3 suggested')
 
     if unc_pa is None:
-        unc_pa = 720
+        unc_pa = 720.
 
     dec_list = list()
     for src in img_src_list:
@@ -683,16 +686,16 @@ def distance_match(
                 #  in the catalog.  Therefore it is a robust measurement of the rotation.
 
                 for i in range(len(s_match_in)):
-                    ddpa = position_angle(img_src_list[si], img_src_list[s_match_in[i]]) - \
-                           position_angle(ref_src_list[ci], ref_src_list[cmatchin[i]])
-                    while ddpa > 200:
+                    ddpa = position_angle(img_src_list[si], img_src_list[s_match_in[i]]) \
+                           - position_angle(ref_src_list[ci], ref_src_list[cmatchin[i]])
+                    while ddpa > 200.:
                         ddpa -= 360.
-                    while ddpa < -160:
+                    while ddpa < -160.:
                         ddpa += 360.
                     dpa.append(ddpa)
 
                 # If user was confident the initial PA was right, remove bad PA'src right away
-                for i in range(len(s_match_in)-1,-1,-1):
+                for i in range(len(s_match_in)-1, -1, -1):
                     if abs(dpa[i]) > unc_pa:
                         del s_match_in[i]
                         del cmatchin[i]
@@ -713,7 +716,7 @@ def distance_match(
                 if len(s_match_in) < 2:
                     continue
 
-                ndegeneracies = len(s_match_in)-len(unique(s_match_in)) + len(cmatchin)-len(unique(cmatchin))
+                n_degeneracies = len(s_match_in) - len(unique(s_match_in)) + len(cmatchin) - len(unique(cmatchin))
                 # this isn't quite accurate (overestimates if degeneracies are mixed up)
 
                 mpa.append(dpamode)
@@ -721,9 +724,9 @@ def distance_match(
                 primary_matchc.append(ci)
                 s_match.append(s_match_in)
                 c_match.append(cmatchin)
-                n_match.append(len(s_match_in)-ndegeneracies)
+                n_match.append(len(s_match_in)-n_degeneracies)
 
-                if len(s_match_in)-ndegeneracies > 6:
+                if len(s_match_in)-n_degeneracies > 6:
                     n_great_matches += 1
 
         if n_great_matches > 16 and fast_match is True:
@@ -731,9 +734,8 @@ def distance_match(
 
     n_matches = len(s_match)
     if n_matches == 0:
-        logger.warning('Found no potential matches of any sort (including pairs).')
-        logger.warning('The algorithm is probably not finding enough real stars to solve the field.  Check seeing.')
-        #print 'This is an unusual error.  Check that a parameter is not set to a highly nonstandard value?'
+        logger.error('Found no potential matches of any sort (including pairs).')
+        logger.error('The algorithm is probably not finding enough real stars to solve the field.  Check seeing.')
         return [], [], []
 
     # Kill the bad matches
@@ -741,7 +743,7 @@ def distance_match(
 
     # Get rid of matches that don't pass the reqmatch cut
     # if n_matches > 10 and max(n_match) >= reqmatch:
-    for i in range(len(primary_matchs)-1,-1,-1):
+    for i in range(len(primary_matchs)-1, -1, -1):
         if n_match[i] < req_match:
             del mpa[i]
             del primary_matchs[i]
@@ -749,50 +751,39 @@ def distance_match(
             del s_match[i]
             del c_match[i]
             del n_match[i]
-            #rejects += 1  no longer a "reject"
 
     if len(s_match) < 1:
-        logger.debug(f'Found no matching clusters of reqmatch = {req_match}')
+        logger.error(f'Found no matching clusters of reqmatch = {req_match}')
         return [], [], []
 
-    #If we still have lots of matches, get rid of those with the minimum number of submatches
-    #(that is, increase reqmatch by 1)
-    minmatch = min(n_match)
-    countnotmin = 0
+    # If we still have lots of matches, get rid of those with the minimum number of submatches
+    # (that is, increase reqmatch by 1)
+    min_match = min(n_match)
+    count_not_min = 0
     for n in n_match:
-        if n > minmatch:
-            countnotmin += 1
-    if len(n_match) > 16 and countnotmin > 3:
+        if n > min_match:
+            count_not_min += 1
+    if len(n_match) > 16 and count_not_min > 3:
         logger.debug(f'Too many matches: increasing reqmatch to {req_match + 1}')
-        for i in range(len(primary_matchs)-1,-1,-1):
-            if n_match[i] == minmatch:
+        for i in range(len(primary_matchs)-1, -1, -1):
+            if n_match[i] == min_match:
                 del mpa[i]
                 del primary_matchs[i]
                 del primary_matchc[i]
                 del s_match[i]
                 del c_match[i]
                 del n_match[i]
-                #rejects += 1   no longer a "reject"
 
-    n_matches = len(s_match) # recalculate with the new reqmatch and with prunes supposedly removed
+    n_matches = len(s_match)  # recalculate with the new reqmatch and with prunes supposedly removed
     logger.debug(f'Found {n_matches} candidate matches.')
-
-    #for i in range(len(primary_matchs)):
-    #    si = primary_matchs[i]
-    #    ci = primary_matchc[i]
-    #    print si, 'matches', ci, ' (dPA = %.3f)' % mpa[i]
-    #    if len(s_match[i]) < 16:
-    #       print '  ', si, '-->', s_match[i]
-    #       print '  ', ci, '-->', c_match[i]
 
     # Use only matches with a consistent PA
 
     offpa = mode(mpa)
 
     if len(s_match) > 2:
-
-        #Coarse iteration for anything away from the mode
-        for i in range(len(primary_matchs)-1,-1,-1):
+        # Coarse iteration for anything away from the mode
+        for i in range(len(primary_matchs)-1, -1, -1):
             if abs(mpa[i] - offpa) > pa_tolerance:
                 del mpa[i]
                 del primary_matchs[i]
@@ -802,11 +793,10 @@ def distance_match(
                 del n_match[i]
                 rejects += 1
 
-        medpa = median(mpa)
         stdevpa = stdev(mpa)
         refinedtolerance = (2.2 * stdevpa)
 
-        #Fine iteration to flag outliers now that we know most are reliable
+        # Fine iteration to flag outliers now that we know most are reliable
         for i in range(len(primary_matchs)-1,-1,-1):
             if abs(mpa[i] - offpa) > refinedtolerance:
                 del mpa[i]
@@ -815,19 +805,21 @@ def distance_match(
                 del s_match[i]
                 del c_match[i]
                 del n_match[i]
-                rejects += 1  #these aren't necessarily bad, just making more manageable.
+                rejects += 1  # these aren't necessarily bad, just making more manageable.
 
     # New verification step: calculate distances and PAs between central stars of matches
     ndistflags = [0]*len(primary_matchs)
-    #npaflats = [0]*len(primary_matchs)
-    for v in range(2):  #two iterations
+    for v in range(2):  # two iterations
         # find bad pairs
         if len(primary_matchs) == 0:
             break
 
         for i in range(len(primary_matchs)):
             for j in range(len(primary_matchs)):
-                if i == j: continue
+
+                if i == j:
+                    continue
+
                 si = primary_matchs[i]
                 ci = primary_matchc[i]
                 sj = primary_matchs[j]
@@ -837,15 +829,15 @@ def distance_match(
                 catdistij = distance(ref_src_list[ci], ref_src_list[cj])
 
                 try:
-                    if abs((sexdistij/catdistij)-1.0) > tolerance:
+                    if abs((sexdistij / catdistij) - 1.0) > tolerance:
                         ndistflags[i] += 1
-                except:  # (occasionally will get divide by zero)
+                except ZeroDivisionError:  # (occasionally will get divide by zero)
                     pass
 
         # delete bad clusters
-        ntestmatches = len(primary_matchs)
-        for i in range(ntestmatches-1,-1,-1):
-            if ndistflags[i] == ntestmatches-1:   #if every comparison is bad, this is a bad match
+        n_test_matches = len(primary_matchs)
+        for i in range(n_test_matches-1, -1, -1):
+            if ndistflags[i] == n_test_matches-1:   #if every comparison is bad, this is a bad match
                 del mpa[i]
                 del primary_matchs[i]
                 del primary_matchc[i]
@@ -861,9 +853,8 @@ def distance_match(
     if n_matches == 0:
         return [], [], []
 
-
     # check the pixel scale while we're at it
-    pixscalelist = []
+    pix_scale_list = []
     if len(primary_matchs) >= 2:
         for i in range(len(primary_matchs)-1):
             for j in range(i+1,len(primary_matchs)):
@@ -871,17 +862,19 @@ def distance_match(
                 ci = primary_matchc[i]
                 sj = primary_matchs[j]
                 cj = primary_matchc[j]
-                try:
-                    pixscalelist.append(distance(ref_src_list[ci], ref_src_list[cj]) / im_distance(img_src_list[si], img_src_list[sj]))
-                except:
-                    pass
-        pixelscale = median(pixscalelist)
-        pixelscalestd = stdev(pixscalelist)
+
+                pix_scale_list.append(
+                        distance(ref_src_list[ci], ref_src_list[cj]) / im_distance(img_src_list[si], img_src_list[sj])
+                )
+
+        pix_scale = median(pix_scale_list)
+        pix_scale_std = stdev(pix_scale_list)
 
         if len(primary_matchs) >= 3:
-            logger.debug('Refined pixel scale measurement: %.4f"/pix (+/- %.4f)' % (pixelscale, pixelscalestd))
+            logger.debug(f'Refined pixel scale measurement: {pix_scale:.4f}"/pix '
+                         f'(+/- {pix_scale_std:.4f})')
         else:
-            logger.debug('Refined pixel scale measurement: %.4f"/pix' % pixelscale)
+            logger.debug(f'Refined pixel scale measurement: {pix_scale:.4f}"/pix')
 
     for i in range(len(primary_matchs)):
         si = primary_matchs[i]
@@ -1538,50 +1531,7 @@ def autoastrometry(
         write_text_file(file_path=output_path, src_list=img_src_list)
         return
 
-    # # If no catalog specified, check availability of SDSS
-    # if catalog is None:
-    #     try:
-    #         trycats = ['sdss', 'ub2', 'tmc']
-    #         for trycat in trycats:
-    #             testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={center_ra}" \
-    #                            f"&dec={center_dec}&system=J2000&rad=-90"
-    #             check = urllib.request.urlopen(testqueryurl)
-    #             checklines = check.readlines()
-    #             check.close()
-    #             if len(checklines) > 15:
-    #                 catalog = trycat
-    #                 logger.info(f'Using catalog {catalog}')
-    #                 break
-    #     except urllib.error.URLError:
-    #         err = 'No catalog is available.  Check your internet connection.'
-    #         logger.error(err)
-    #         raise AstrometryException(err)
-    #
-    # # Load in reference star catalog
-    # if box_size_arcsec is None:
-    #     box_size_arcsec = field_width
-    #
-    # ref_src_list = get_catalog(
-    #     catalog=catalog,
-    #     ra=center_ra,
-    #     dec=center_dec,
-    #     box_size_arcsec=box_size_arcsec
-    # )
-    #
-    # n_ref = len(ref_src_list)
-    # ref_density = n_ref / (2 * box_size_arcsec / 60.) ** 2
-    # logger.debug(f'{n_ref} good catalog objects.')
-    # logger.debug(f'Source img_density of {ref_density} /arcmin^2')
-    #
-    # if n_ref == 0:
-    #     logger.error('No objects found in catalog.')
-    #     logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
-    #     logger.error('is too small.  Check input parameters or your internet connection.')
-    #     raise AstrometryException
-    #
-    # elif 0 < n_ref < 5:
-    #     logger.error(f'Only {n_ref} catalog objects in the search zone.'
-    #                  f'Increase the magnitude threshold or box size.')
+    # Block D
 
     ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog(
         catalog=catalog,
@@ -1590,7 +1540,7 @@ def autoastrometry(
         box_size_arcsec=box_size_arcsec,
     )
 
-    # Block N
+    # Block E
 
     img_src_list, n_img, img_density, ref_src_list, n_ref, ref_density = crosscheck_source_lists(
         img_src_list=img_src_list,
@@ -1603,6 +1553,8 @@ def autoastrometry(
         area_sq_min=area_sq_min
     )
 
+    # Block F
+
     export_src_lists(
         img_src_list=img_src_list,
         ref_src_list=ref_src_list,
@@ -1610,6 +1562,8 @@ def autoastrometry(
     )
 
     # The catalogs have now been completed.
+
+    # Block G
 
     # Now start getting into the actual astrometry.
 
@@ -1638,8 +1592,10 @@ def autoastrometry(
     # RS: WTF is x**1 for?
     expect_false_trios = n_img * n_ref * circ_density**2 * circ_ref_density**2 * tolerance**2 * (pa_tolerance/360.)**1
 
-    overlap_first_guess = 0.3 * min(1, ref_density/img_density)  # fraction of stars in image that are also in catalog - a guess
-    true_matches_per_star = (circ_density * overlap_first_guess)  # but how many matches >3 and >4?  some annoying binomial thing
+    # fraction of stars in image that are also in catalog - a guess
+    overlap_first_guess = 0.3 * min(1., ref_density/img_density)
+    # but how many matches >3 and >4?  some annoying binomial thing
+    true_matches_per_star = (circ_density * overlap_first_guess)
 
     req_matches = 3
     if expect_false_trios > 30 and true_matches_per_star >= 4:
@@ -1654,7 +1610,7 @@ def autoastrometry(
     logger.debug('Pair comparison search radius: %.2f"' % max_rad)
     logger.debug(f'Using req_matches = {req_matches}')
 
-    (primarymatchs, primarymatchc, mpa) = distance_match(
+    primary_matchs, primarymatchc, mpa = distance_match(
         img_src_list=img_src_list,
         ref_src_list=ref_src_list,
         max_rad=max_rad,
@@ -1665,7 +1621,7 @@ def autoastrometry(
         unc_pa=unc_pa
     )
 
-    n_match = len(primarymatchs)
+    n_match = len(primary_matchs)
     if n_match == 0:
         err = (' No valid matches found!\n '
                'Possible issues: \n'
@@ -1682,7 +1638,7 @@ def autoastrometry(
         logger.warning(f'Warning: only {n_match} match(es).  Astrometry may be unreliable.')
         logger.warning('   Check the pixel scale and parity and consider re-running.')
 
-    #We now have the PA and a list of stars that are almost certain matches.
+    # We now have the PA and a list of stars that are almost certain matches.
     offpa = median(mpa)  #get average PA from the excellent values
     stdevpa = stdev(mpa)
 
@@ -1714,14 +1670,13 @@ def autoastrometry(
             rotwarn = ' (WARNING: image appears rotated, may produce bad shift)'
         logger.debug('  Skipping rotation correction ')
 
-
     write_text_file('det.wcs.txt', img_src_list)
 
     imraoffset = []
     imdecoffset = []
-    for i in range(len(primarymatchs)):
-        imraoffset.append(img_src_list[primarymatchs[i]].ra_deg - ref_src_list[primarymatchc[i]].ra_deg)
-        imdecoffset.append(img_src_list[primarymatchs[i]].dec_deg - ref_src_list[primarymatchc[i]].dec_deg)
+    for i in range(len(primary_matchs)):
+        imraoffset.append(img_src_list[primary_matchs[i]].ra_deg - ref_src_list[primarymatchc[i]].ra_deg)
+        imdecoffset.append(img_src_list[primary_matchs[i]].dec_deg - ref_src_list[primarymatchc[i]].dec_deg)
 
     raoffset = -median(imraoffset)
     decoffset = -median(imdecoffset)
@@ -1763,13 +1718,13 @@ def autoastrometry(
     header["ASTR_SPA"] = (stdevpa, "Measured uncertainty in PA (degrees)")
     header["ASTR_DPA"] = (skyoffpa, "Change in PA (degrees)")
     header["ASTR_OFF"] = (totoffsetarcsec, "Change in center position (arcsec)")
-    header["ASTR_NUM"] = (len(primarymatchs), "Number of matches")
+    header["ASTR_NUM"] = (len(primary_matchs), "Number of matches")
 
     #Write out a match list to allow doing a formal fit with WCStools.
 
     outmatch = open('match.list','w')
-    for i in range(len(primarymatchs)):
-        si = primarymatchs[i]
+    for i in range(len(primary_matchs)):
+        si = primary_matchs[i]
         ci = primarymatchc[i]
         outmatch.write("%s %s  %s %s\n" % (img_src_list[si].x, img_src_list[si].y, ref_src_list[ci].ra_deg, ref_src_list[ci].dec_deg))
         #img_src_list[si].ra, img_src_list[si].dec))
