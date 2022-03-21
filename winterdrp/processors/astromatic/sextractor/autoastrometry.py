@@ -34,8 +34,9 @@ from winterdrp.paths import base_output_dir
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation
 import logging
 import ephem
-from winterdrp.processors.astromatic.sextractor.settings import write_param_file, write_config_file, default_config_path,\
-    default_conv_path, default_param_path, default_starnnw_path
+from winterdrp.processors.astromatic.sextractor.settings import write_param_file, write_config_file, \
+    default_config_path, default_conv_path, default_param_path, default_starnnw_path
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +228,7 @@ def mode(
             min_mean = m
             i_mean = i
 
-    list_mode = s[int(i_mean)] #+ s[i_mean+1])/2
+    list_mode = s[int(i_mean)]  # + s[i_mean+1])/2
 
     return list_mode
 
@@ -258,7 +259,7 @@ def dec_str_2_deg(
 def unique(
         input_list: list
 ) -> list:
-    lis = input_list[:] #make a copy
+    lis = input_list[:]  # make a copy
     lis.sort()
     llen = len(lis)
     i = 0
@@ -273,6 +274,7 @@ def unique(
 
 def get_img_src_list(
         img_path: str,
+        base_output_path: str,
         nx_pix: int,
         ny_pix: int,
         border: int = 3,
@@ -281,16 +283,15 @@ def get_img_src_list(
         max_fwhm: float = default_max_fwhm,
         max_ellip: float = 0.5,
         saturation: float = default_saturation,
-        output_dir: str = base_output_dir,
         config_path: str = default_config_path,
-        output_catalog: str = None
+        output_catalog: str = None,
 ) -> list[SextractorSource]:
 
     if output_catalog is None:
-        output_catalog = img_path.replace(".fits", ".cat")
+        output_catalog = Path(base_output_path).with_suffix(".cat")
 
     try:
-        os.remove(os.path.join(output_dir, output_catalog))
+        os.remove(output_catalog)
     except FileNotFoundError:
         pass
 
@@ -299,7 +300,7 @@ def get_img_src_list(
 
     run_sextractor_single(
         img=img_path,
-        output_dir=output_dir,
+        output_dir=os.path.dirname(output_catalog),
         config=config_path,
         saturation=saturation,
         catalog_name=output_catalog,
@@ -309,7 +310,7 @@ def get_img_src_list(
     )
 
     # Read in the sextractor catalog
-    with open(os.path.join(output_dir, output_catalog), 'rb') as cat:
+    with open(output_catalog, 'rb') as cat:
         catlines = [x.replace(b"\x00", b"").decode() for x in cat.readlines()][1:]
 
     if len(catlines) == 0:
@@ -332,7 +333,7 @@ def get_img_src_list(
         if line[0] == "#":
             continue
 
-        src = SextractorSource(line) #process the line into an object
+        src = SextractorSource(line)  # process the line into an object
         n_src_init += 1
 
         # Initial filtering
@@ -420,7 +421,8 @@ def get_img_src_list(
         fwhm_20 = min_fwhm
 
     # formerly a max, but occasionally a preponderance of long CR's could cause fwhm_mode to be bigger than the stars
-    refined_min_fwhm = median([0.75 * fwhm_mode, 0.9 * fwhm_20, min_fwhm]) # if CR's are bigger and more common than stars, this is dangerous...
+    refined_min_fwhm = median([0.75 * fwhm_mode, 0.9 * fwhm_20, min_fwhm])
+    # if CR's are bigger and more common than stars, this is dangerous...
     logger.debug(f'Refined min FWHM: {refined_min_fwhm} pix')
 
     # Might also be good to screen for false detections created by bad columns/rows
@@ -561,13 +563,14 @@ def get_catalog(
 def distance_match(
         img_src_list: list[SextractorSource],
         ref_src_list: list[BaseSource],
-        output_dir: str,
+        base_output_path: str,
         max_rad: float = 180.,
         min_rad: float = 10.,
         tolerance: float = 0.010,
         req_match: int = 3,
         pa_tolerance: float = 1.2,
         unc_pa: float = None,
+        write_crosscheck_files: bool = False
 ) -> tuple[list[int], list[int], list[float]]:
 
     if tolerance <= 0:
@@ -677,7 +680,7 @@ def distance_match(
                     if abs((img_src_dist / ref_src_dist) - 1.0) < tolerance:
                         match += new_match
 
-                        new_match = 0 #further matches before the next img_j loop indicate degeneracies
+                        new_match = 0  # further matches before the next img_j loop indicate degeneracies
 
                         img_match_in.append(img_src_match_ids[img_i][img_j])
                         ref_match_in.append(ref_src_match_ids[ref_i][ref_j])
@@ -739,7 +742,7 @@ def distance_match(
                     n_great_matches += 1
 
         if n_great_matches > 16 and fast_match is True:
-            break #save processing time
+            break  # save processing time
 
     n_matches = len(img_match)
     if n_matches == 0:
@@ -908,39 +911,49 @@ def distance_match(
                 f' {str(len(img_match[i])).strip()} rays'
             )
 
-    with open(os.path.join(output_dir, 'matchlines.im.reg'), 'w') as out:
-        color = 'red'
-        out.write(
-            f'# Region file format: DS9 version 4.0\nglobal color={color} '
-            f'font="helvetica 10 normal" select=1 highlite=1 '
-            f'edit=1 move=1 delete=1 include=1 fixed=0 source\n'
-        )
-        out.write('image\n')
-        for i, img_i in enumerate(primary_match_img):
-            for j, img_j in enumerate(img_match[i]):
-                out.write(
-                    f"line({img_src_list[img_i].x:.3f},"
-                    f"{img_src_list[img_i].y:.3f},"
-                    f"{img_src_list[img_j].x:.3f},"
-                    f"{img_src_list[img_j].y:.3f}) # line=0 0\n"
-                )
+    if write_crosscheck_files:
 
-    with open('matchlines.wcs.reg', 'w') as out:
-        color = 'green'
-        out.write(
-            f'# Region file format: DS9 version 4.0\nglobal color={color} '
-            f'font="helvetica 10 normal" select=1 highlite=1 '
-            f'edit=1 move=1 delete=1 include=1 fixed=0 source\n'
-        )
-        out.write('fk5\n')
-        for i, ref_i in enumerate(primary_match_ref):
-            for j, ref_j in enumerate(ref_match[i]):
-                out.write(
-                    f"line({ref_src_list[ref_i].ra_deg:.5f},"
-                    f"{ref_src_list[ref_i].dec_deg:.5f},"
-                    f"{ref_src_list[ref_j].ra_deg:.5f},"
-                    f"{ref_src_list[ref_j].dec_deg:.5f}) # line=0 0\n"
-                )
+        match_lines_im = os.path.splitext(base_output_path)[0] + '.matchlines.im.reg'
+
+        logger.info(f"Writing match lines to {match_lines_im}")
+
+        with open(match_lines_im, 'w') as out:
+            color = 'red'
+            out.write(
+                f'# Region file format: DS9 version 4.0\nglobal color={color} '
+                f'font="helvetica 10 normal" select=1 highlite=1 '
+                f'edit=1 move=1 delete=1 include=1 fixed=0 source\n'
+            )
+            out.write('image\n')
+            for i, img_i in enumerate(primary_match_img):
+                for j, img_j in enumerate(img_match[i]):
+                    out.write(
+                        f"line({img_src_list[img_i].x:.3f},"
+                        f"{img_src_list[img_i].y:.3f},"
+                        f"{img_src_list[img_j].x:.3f},"
+                        f"{img_src_list[img_j].y:.3f}) # line=0 0\n"
+                    )
+
+        match_lines_wcs = os.path.splitext(base_output_path)[0]+'.matchlines.wcs.reg'
+
+        logger.info(f"Writing match lines to {match_lines_wcs}")
+
+        with open(match_lines_wcs, 'w') as out:
+            color = 'green'
+            out.write(
+                f'# Region file format: DS9 version 4.0\nglobal color={color} '
+                f'font="helvetica 10 normal" select=1 highlite=1 '
+                f'edit=1 move=1 delete=1 include=1 fixed=0 source\n'
+            )
+            out.write('fk5\n')
+            for i, ref_i in enumerate(primary_match_ref):
+                for j, ref_j in enumerate(ref_match[i]):
+                    out.write(
+                        f"line({ref_src_list[ref_i].ra_deg:.5f},"
+                        f"{ref_src_list[ref_i].dec_deg:.5f},"
+                        f"{ref_src_list[ref_j].ra_deg:.5f},"
+                        f"{ref_src_list[ref_j].dec_deg:.5f}) # line=0 0\n"
+                    )
 
     # future project: if not enough, go to the secondary offsets
 
@@ -953,9 +966,12 @@ def write_text_file(
         file_path: str,
         src_list: list[BaseSource]
 ):
+
+    logger.info(f"Saving text file to {file_path}")
+
     with open(file_path, 'w') as out:
         for ob in src_list:
-            out.write("%11.7f %11.7f %5.2f\n" % (ob.ra_deg, ob.dec_deg, ob.mag))
+            out.write(f"{ob.ra_deg:11.7f} {ob.dec_deg:11.7f} {ob.mag:5.2f}\n")
 
 
 def write_region_file(
@@ -971,6 +987,8 @@ def write_region_file(
         err = f"Did not recognise system '{system}'. Valid values are 'wcs' and 'img'."
         logger.error(err)
         raise ValueError(err)
+
+    logger.debug(f"Saving region file to {file_path}")
 
     with open(file_path, 'w') as out:
         out.write(
@@ -1367,24 +1385,24 @@ def crosscheck_source_lists(
 def export_src_lists(
         img_src_list: list[SextractorSource],
         ref_src_list: list[BaseSource],
-        output_dir: str
+        base_output_path: str
 ):
     write_text_file(
-        file_path=os.path.join(output_dir, 'det.init.txt'),
+        file_path=os.path.splitext(base_output_path)[0] + '.det.init.txt',
         src_list=img_src_list
     )
     write_region_file(
-        file_path=os.path.join(output_dir, 'det.im.reg'),
+        file_path=os.path.splitext(base_output_path)[0] + '.det.im.reg',
         src_list=img_src_list,
         color='red',
         system='img'
     )
     write_text_file(
-        file_path=os.path.join(output_dir, 'cat.txt'),
+        file_path=os.path.splitext(base_output_path)[0] + '.cat.txt',
         src_list=ref_src_list
     )
     write_region_file(
-        file_path=os.path.join(output_dir, 'cat.wcs.reg'),
+        file_path=os.path.splitext(base_output_path)[0] + '.cat.wcs.reg',
         src_list=ref_src_list,
         color='green',
         system='wcs'
@@ -1413,6 +1431,7 @@ def autoastrometry(
         no_rot: bool = False,
         min_fwhm: float = default_min_fwhm,
         max_fwhm: float = default_max_fwhm,
+        write_crosscheck_files: bool = False
 ):
     """
 
@@ -1438,6 +1457,7 @@ def autoastrometry(
     no_rot: Some kind of bool
     min_fwhm: Minimum fwhm
     max_fwhm: Maximum fwhm
+    write_crosscheck_files: Bool for whether to write region and other crosscheck files
 
     Returns
     -------
@@ -1449,6 +1469,11 @@ def autoastrometry(
 
     # temp_path = os.path.join(os.path.dirname(filename), temp_file)
     temp_path = os.path.join(output_dir, temp_file)
+
+    base_output_path = os.path.join(
+        output_dir,
+        ".".join(os.path.basename(filename).split(".")[:-1])
+    )
 
     # Block A
     # Parse header
@@ -1476,7 +1501,7 @@ def autoastrometry(
         max_fwhm=max_fwhm,
         max_ellip=max_ellip,
         saturation=saturation,
-        output_dir=output_dir
+        base_output_path=base_output_path
     )
 
     # Block C
@@ -1571,11 +1596,12 @@ def autoastrometry(
 
     # Block F
 
-    export_src_lists(
-        img_src_list=img_src_list,
-        ref_src_list=ref_src_list,
-        output_dir=output_dir
-    )
+    if write_crosscheck_files:
+        export_src_lists(
+            img_src_list=img_src_list,
+            ref_src_list=ref_src_list,
+            base_output_path=base_output_path
+        )
 
     # The catalogs have now been completed.
 
@@ -1585,8 +1611,9 @@ def autoastrometry(
 
     min_rad = 5.0
     if max_rad is None:
-        max_rad = 60 * (15 / (math.pi * min(img_density, ref_density))) ** 0.5  # numcomp ~ 15 [look at 15 closest objects
-        max_rad = max(max_rad, 60.0)                                  #               in sparse dataset]
+        # numcomp ~ 15 [look at 15 closest objects in sparse dataset]
+        max_rad = 60 * (15 / (math.pi * min(img_density, ref_density))) ** 0.5
+        max_rad = max(max_rad, 60.0)
         if max_rad == 60.0:
             min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
         max_rad = min(max_rad, field_width * 3. / 4)
@@ -1643,13 +1670,14 @@ def autoastrometry(
     primary_match_img, primary_match_ref, mpa = distance_match(
         img_src_list=img_src_list,
         ref_src_list=ref_src_list,
-        output_dir=output_dir,
+        base_output_path=base_output_path,
         max_rad=max_rad,
         min_rad=min_rad,
         tolerance=tolerance,
         req_match=req_matches,
         pa_tolerance=pa_tolerance,
-        unc_pa=unc_pa
+        unc_pa=unc_pa,
+        write_crosscheck_files=write_crosscheck_files
     )
 
     n_match = len(primary_match_img)
@@ -1673,7 +1701,8 @@ def autoastrometry(
     median_pa = median(mpa)  # get average PA from the excellent values
     stdev_pa = stdev(mpa)
 
-    sky_offset_pa = -parity * median_pa # This appears to be necessary for the printed value to agree with our normal definition.
+    sky_offset_pa = -parity * median_pa
+    # This appears to be necessary for the printed value to agree with our normal definition.
 
     logger.debug('PA offset:')
     logger.debug(f'  dPA = {sky_offset_pa:.3f}  (unc. {stdev_pa:.3f})')
@@ -1700,8 +1729,6 @@ def autoastrometry(
             logger.warning(' (WARNING: image appears rotated, may produce bad shift)')
         logger.debug('  Skipping rotation correction ')
 
-    write_text_file(os.path.join(output_dir, 'det.wcs.txt'), img_src_list)
-
     im_ra_offset = []
     im_dec_offset = []
     for i, x in enumerate(primary_match_img):
@@ -1710,7 +1737,7 @@ def autoastrometry(
 
     ra_offset = -median(im_ra_offset)
     dec_offset = -median(im_dec_offset)
-    ra_std = stdev(im_ra_offset)*math.cos(cdec*math.pi/180)  # all of these are in degrees
+    ra_std = stdev(im_ra_offset) * math.cos(cdec*math.pi/180)  # all of these are in degrees
     dec_std = stdev(im_dec_offset)
     std_offset = math.sqrt(ra_std**2 + dec_std**2)
 
@@ -1735,12 +1762,12 @@ def autoastrometry(
     header["CRVAL1"] = cra + ra_offset
     header["CRVAL2"] = cdec + dec_offset
 
-    # header.update("ASTRMTCH", catalog)
     try:
         oldcat = header['ASTR_CAT']
         header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
     except KeyError:
         pass
+
     header["ASTR_CAT"] = (catalog, "Reference catalog for autoastrometry")
     header["ASTR_UNC"] = (std_offset_arcsec, "Astrometric scatter vs. catalog (arcsec)")
     header["ASTR_SPA"] = (stdev_pa, "Measured uncertainty in PA (degrees)")
@@ -1748,15 +1775,26 @@ def autoastrometry(
     header["ASTR_OFF"] = (tot_offset_arcsec, "Change in center position (arcsec)")
     header["ASTR_NUM"] = (len(primary_match_img), "Number of matches")
 
-    # Write out a match list to allow doing a formal fit with WCStools.
+    if write_crosscheck_files:
 
-    with open(os.path.join(output_dir, 'match.list'), 'w') as outmatch:
-        for i, si in enumerate(primary_match_img):
-            ci = primary_match_ref[i]
-            outmatch.write(
-                f"{img_src_list[si].x} {img_src_list[si].y} "
-                f"{ref_src_list[ci].ra_deg} {ref_src_list[ci].dec_deg}\n"
-            )
+        write_text_file(
+            file_path=os.path.splitext(base_output_path)[0] + '.det.wcs.txt',
+            src_list=img_src_list
+        )
+
+        # Write out a match list to allow doing a formal fit with WCStools.
+
+        match_list_path = os.path.splitext(base_output_path)[0] + '.match.list'
+
+        logger.info(f"Writing match list to {match_list_path}")
+
+        with open(match_list_path, 'w') as outmatch:
+            for i, si in enumerate(primary_match_img):
+                ci = primary_match_ref[i]
+                outmatch.write(
+                    f"{img_src_list[si].x} {img_src_list[si].y} "
+                    f"{ref_src_list[ci].ra_deg} {ref_src_list[ci].dec_deg}\n"
+                )
 
     # Could repeat with scale adjustment
     # Could then go back to full good catalog and match all sources
@@ -1767,7 +1805,7 @@ def autoastrometry(
         slash_pos = filename.rfind('/')
         dir_name = filename[0:slash_pos+1]
         fil = filename[slash_pos+1:]
-        outfile = f"{dir_name}a{fil}" # alternate behavior would always output to current directory
+        outfile = f"{dir_name}a{fil}"  # alternate behavior would always output to current directory
 
     if outfile is not None:
         try:
@@ -1776,10 +1814,10 @@ def autoastrometry(
             pass
 
         hdu[sci_ext].header = header
-        hdu.writeto(outfile, output_verify='silentfix') #,clobber=True
+        hdu.writeto(outfile, output_verify='silentfix')
         logger.info(f'Written to {outfile}')
 
-    return n_match, sky_offset_pa, stdev_pa, ra_offset_arcsec, dec_offset_arcsec, std_offset_arcsec      #std_offset*3600
+    return n_match, sky_offset_pa, stdev_pa, ra_offset_arcsec, dec_offset_arcsec, std_offset_arcsec
 
 
 ######################################################################
@@ -1791,8 +1829,8 @@ def run_autoastrometry(
         pa: float = None,
         uncpa: float = None,
         inv: bool = False,
-        userra: float = None,
-        userdec: float = None,
+        user_ra: float = None,
+        user_dec: float = None,
         max_ellip: float = 0.5,
         box_size: float = None,
         max_rad: float = None,
@@ -1802,7 +1840,8 @@ def run_autoastrometry(
         outfile: str = None,
         output_dir: str = base_output_dir,
         saturation: float = default_saturation,
-        no_rot: bool = False
+        no_rot: bool = False,
+        write_crosscheck_files: bool = False
 ):
     """Function based on 'autoastrometry.py' by Daniel Perley and Kishalay De.
 
@@ -1837,8 +1876,8 @@ def run_autoastrometry(
     pa: The position angle in degrees.  Not usually needed.
     uncpa: Uncertainty of the position angle (degrees)
     inv: Reverse(=positive) parity.
-    userra: RA in deg
-    userdec: Dec in deg
+    user_ra: RA in deg
+    user_dec: Dec in deg
     max_ellip: Maximum elliptical something?
     box_size: Half-width of box for reference catalog query (arcsec)
     max_rad: Maximum distance to look for star pairs.
@@ -1849,6 +1888,7 @@ def run_autoastrometry(
     output_dir: Output directory
     saturation: Saturation level; do not use stars exceeding.
     no_rot: Some kind of bool
+    write_crosscheck_files: Bool for whether to write region and other crosscheck files
 
     Returns
     -------
@@ -1869,8 +1909,8 @@ def run_autoastrometry(
         raise ValueError(err)
 
     if seeing is None:
-        min_fwhm = default_min_fwhm #1.5
-        max_fwhm = default_max_fwhm #40
+        min_fwhm = default_min_fwhm  # 1.5
+        max_fwhm = default_max_fwhm  # 40
     else:
         min_fwhm = 0.7 * seeing
         max_fwhm = 2. * seeing
@@ -1881,7 +1921,7 @@ def run_autoastrometry(
     n_image = len(files)
     failures = []
     questionable = []
-    multiinfo = []
+    multi_info = []
 
     for filename in files:
 
@@ -1899,15 +1939,16 @@ def run_autoastrometry(
             max_ellip=max_ellip,
             box_size_arcsec=box_size,
             max_rad=max_rad,
-            user_ra_deg=userra,
-            user_dec_deg=userdec,
+            user_ra_deg=user_ra,
+            user_dec_deg=user_dec,
             tolerance=tolerance,
             catalog=catalog,
             overwrite=overwrite,
             outfile=outfile,
             output_dir=output_dir,
             saturation=saturation,
-            no_rot=no_rot
+            no_rot=no_rot,
+            write_crosscheck_files=write_crosscheck_files
         )
 
         # WTF?
@@ -1915,7 +1956,7 @@ def run_autoastrometry(
         if isinstance(fitinfo, int):
             fitinfo = (0, 0, 0, 0, 0, 0)
 
-        multiinfo.append(fitinfo)
+        multi_info.append(fitinfo)
 
         if fitinfo[0] == 0:   # number of matches
             failures.append(filename)
@@ -1938,10 +1979,10 @@ def run_autoastrometry(
             for f in failures:
                 logger.error(f)
 
-        logger.debug("%25s " %'Filename')
+        logger.debug("%25s " % 'Filename')
         logger.debug("%6s %8s (%6s)  %7s %7s (%6s)" % ('#match', 'dPA ', 'stdev', 'dRA', 'dDec', 'stdev'))
         for i in range(len(files)):
-            info = multiinfo[i]
+            info = multi_info[i]
             logger.debug(f"{files:25s} ")
             if info[0] > 0:
                 logger.debug(info)
@@ -1969,5 +2010,3 @@ if __name__ == '__main__':
 # run wcstools for distortion parameters
 # merge catalog check with catalog search to save a query
 # improve the CR rejection further... maybe think about recognizing elliptical "seeing"?
-
-
