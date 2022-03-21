@@ -5,7 +5,7 @@ import astropy.io.fits
 from winterdrp.paths import astrometry_output_dir
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_config
 from winterdrp.processors.base_processor import BaseProcessor
-from winterdrp.paths import output_dir
+from winterdrp.paths import get_output_dir
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class Sextractor(BaseProcessor):
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
-        sextractor_out_dir = output_dir(self.output_sub_dir, self.night_sub_dir)
+        sextractor_out_dir = get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
         try:
             os.makedirs(sextractor_out_dir)

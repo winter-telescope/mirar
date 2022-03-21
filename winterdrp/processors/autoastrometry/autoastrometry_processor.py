@@ -4,7 +4,7 @@ import numpy as np
 import astropy.io.fits
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.autoastrometry.autoastrometry import run_autoastrometry_single
-from winterdrp.paths import output_dir
+from winterdrp.paths import get_output_dir
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class AutoAstrometry(BaseProcessor):
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
-        sextractor_out_dir = output_dir(self.temp_output_sub_dir, self.night_sub_dir)
+        sextractor_out_dir = get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
         try:
             os.makedirs(sextractor_out_dir)
