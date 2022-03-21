@@ -271,8 +271,8 @@ def sextract(
         img_path: str,
         nx_pix: int,
         ny_pix: int,
-        border: float = 3.,
-        corner: float = 12.,
+        border: int = 3,
+        corner: int = 12,
         min_fwhm: float = default_min_fwhm,
         max_fwhm: float = default_max_fwhm,
         max_ellip: float = 0.5,
@@ -445,7 +445,7 @@ def get_catalog(
         catalog: str,
         ra: float,
         dec: float,
-        boxsize,
+        box_size_arcsec,
         min_mag: float = 8.0,
         max_mag: float = None,
         max_pm: float = 60.
@@ -454,7 +454,7 @@ def get_catalog(
     # Get catalog from USNO
 
     if max_mag is None:
-        max_mag = 999  # default (custom catalog)
+
         if catalog == 'ub2':
             max_mag = 21.0  # 19.5
         elif catalog == 'sdss':
@@ -466,8 +466,6 @@ def get_catalog(
             logger.error(err)
             raise ValueError(err)
 
-    # if catalog in ['ub2', 'sdss', 'tmc']:
-    #     user_cat = False
     ra_col = 1
     dec_col = 2
 
@@ -479,7 +477,7 @@ def get_catalog(
     pm_ra_col = 10
     pm_dec_col = 11
     query_url = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={catalog}" \
-                f"&ra={ra}&dec={dec}&system=J2000&rad={-boxsize}" \
+                f"&ra={ra}&dec={dec}&system=J2000&rad={-box_size_arcsec}" \
                 f"&sort=mag&epoch=2000.00000&nstar=6400"
 
     with urllib.request.urlopen(query_url) as cat:
@@ -489,15 +487,6 @@ def get_catalog(
         logger.warning('Reached maximum catalog query size. Gaps may be '
                        'present in the catalog, leading to a poor solution '
                        'or no solution. Decrease the search radius.')
-    # else:
-    #     user_cat = True
-    #     logger.debug(f'Reading user catalog {catalog}')
-    #
-    #     with open(catalog, 'r') as cat:
-    #         ra_col = 0
-    #         dec_col = 1   # defaults
-    #         mag_col = -1    # (to override, specify in first line using format #:0,1,2)
-    #         cat_lines = cat.readlines()
 
     cat_list = list()
 
@@ -936,30 +925,46 @@ def distmatch(sexlist, catlist, maxrad=180, minrad=10, tolerance=0.010, reqmatch
 ############################################
 
 
-def writetextfile(filename, objlist):
-    out = open(filename,'w')
-    for ob in objlist:
-        out.write("%11.7f %11.7f %5.2f\n" % (ob.ra_deg, ob.dec_deg, ob.mag))
-    out.close()
+def write_text_file(
+        file_path: str,
+        src_list: list[BaseSource]
+):
+    with open(file_path, 'w') as out:
+        for ob in src_list:
+            out.write("%11.7f %11.7f %5.2f\n" % (ob.ra_deg, ob.dec_deg, ob.mag))
 
 
-def writeregionfile(filename, objlist, color="green",sys=''):
-    if sys == '': sys = 'wcs'
-    out = open(filename,'w')
-    i = -1
-    out.write('# Region file format: DS9 version 4.0\nglobal color='+color+' font="helvetica 10 normal" select=1 highlite=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n')
-    if sys == 'wcs':
-        out.write('fk5\n')
-        for ob in objlist:
-            i += 1
-            out.write("point(%.7f,%.7f) # point=boxcircle text={%i}\n" % (ob.ra_deg, ob.dec_deg, i))
-    if sys == 'img':
-        out.write('image\n')
-        for ob in objlist:
-            i += 1
-            out.write("point(%.3f,%.3f) # point=boxcircle text={%i}\n" % (ob.x, ob.y, i))
-    out.close()
+def write_region_file(
+        file_path: str,
+        src_list: list[BaseSource],
+        color: str = "green",
+        system: str = None
+):
+    if system is None:
+        system = 'wcs'
 
+    if system not in ["wcs", "img"]:
+        err = f"Did not recognise system '{system}'. Valid values are 'wcs' and 'img'."
+        logger.error(err)
+        raise ValueError(err)
+
+    with open(file_path, 'w') as out:
+        out.write(
+            f'# Region file format: DS9 version 4.0\n'
+            f'global color={color} font="helvetica 10 normal" select=1 '
+            f'highlite=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n'
+        )
+
+        if system == 'wcs':
+            out.write('fk5\n')
+            for i, src in enumerate(src_list):
+                out.write(f"point({src.ra_deg:.7f},{src.dec_deg:.7f}) # point=boxcircle text={{{i+1}}}\n")
+                print(f"point({src.ra_deg:.7f},{src.dec_deg:.7f}) # point=boxcircle text={{{i+1}}}\n")
+                raise
+        elif system == 'img':
+            out.write('image\n')
+            for i, src in enumerate(src_list):
+                out.write(f"point({src:.3f},{src.dec_deg:.3f}) # point=boxcircle text={i+1}\n")
 
 ############################################
 
@@ -975,7 +980,7 @@ def autoastrometry(
         box_size_arcsec: float = None,
         max_rad: float = None,
         tolerance: float = default_tolerance,
-        catalog: str = "",
+        catalog: str = None,
         no_solve: bool = False,
         overwrite: bool = True,
         outfile: str = "",
@@ -1271,7 +1276,7 @@ def autoastrometry(
 
     with af.open(temp_path) as fits:
         header = fits[sci_ext].header
-        sfilename = temp_path
+        img_path = temp_path
 
         # Get image info from header (even if we put it there in the first place)
         if cd11 * cd22 < 0 or cd12 * cd21 > 0:
@@ -1311,12 +1316,12 @@ def autoastrometry(
 
         # Sextract stars to produce image star catalog
 
-        goodsexlist = sextract(
-            sfilename,
-            nxpix,
-            nypix,
-            3,
-            12,
+        good_src_list = sextract(
+            img_path=img_path,
+            nx_pix=nxpix,
+            ny_pix=nypix,
+            border=3,
+            corner=12,
             min_fwhm=min_fwhm,
             max_fwhm=max_fwhm,
             max_ellip=max_ellip,
@@ -1324,28 +1329,29 @@ def autoastrometry(
             output_dir=output_dir
         )
 
-        ngood = len(goodsexlist)
+        n_good = len(good_src_list)
 
-        if ngood < 4:
+        if n_good < 4:
 
-            err = f'Only {ngood} good stars were found in the image.  The image is too small or shallow, the ' \
+            err = f'Only {n_good} good stars were found in the image.  The image is too small or shallow, the ' \
                   f'detection threshold is set too high, or stars and cosmic rays are being confused.'
             logger.error(err)
-            writetextfile('det.init.txt', goodsexlist)
-            writeregionfile('det.im.reg', goodsexlist, 'red', 'img')
+            write_text_file('det.init.txt', good_src_list)
+            write_region_file('det.im.reg', good_src_list, 'red', 'img')
             raise AstrometryException(err)
 
-        density = len(goodsexlist) / area_sq_min
+        density = len(good_src_list) / area_sq_min
         logger.debug('Source density of %f4 /arcmin^2' % density)
 
         if no_solve is True:
-            if catalog == '':
+            # RS: Not sure what's happening here...
+            if catalog is None:
                 catalog = 'det.ref.txt'
-            writetextfile(catalog, goodsexlist)
+            write_text_file(catalog, good_src_list)
             return
 
         # If no catalog specified, check availability of SDSS
-        if catalog == '':
+        if catalog is None:
             try:
                 trycats = ['sdss', 'ub2', 'tmc']
                 for trycat in trycats:
@@ -1356,7 +1362,7 @@ def autoastrometry(
                     check.close()
                     if len(checklines) > 15:
                         catalog = trycat
-                        logger.debug(f'Using catalog {catalog}')
+                        logger.info(f'Using catalog {catalog}')
                         break
             except urllib.error.URLError:
                 err = 'No catalog is available.  Check your internet connection.'
@@ -1367,87 +1373,92 @@ def autoastrometry(
         if box_size_arcsec is None:
             box_size_arcsec = field_width
 
-        catlist = get_catalog(catalog, center_ra, center_dec, box_size_arcsec)
+        ref_cat_list = get_catalog(
+            catalog=catalog,
+            ra=center_ra,
+            dec=center_dec,
+            box_size_arcsec=box_size_arcsec
+        )
 
-        ncat = len(catlist)
-        catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
-        logger.debug(f'{ncat} good catalog objects.')
-        logger.debug(f'Source density of {catdensity} /arcmin^2')
+        n_cat = len(ref_cat_list)
+        cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
+        logger.debug(f'{n_cat} good catalog objects.')
+        logger.debug(f'Source density of {cat_density} /arcmin^2')
 
-        if ncat > 0 | ncat < 5:
-            logger.warning(f'Only {ncat} catalog objects in the search zone.'
-                           f'Increase the magnitude threshold or box size.')
-
-        if ncat == 0:
+        if n_cat == 0:
             logger.error('No objects found in catalog.')
             logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
             logger.error('is too small.  Check input parameters or your internet connection.')
             raise AstrometryException
 
+        elif 0 < n_cat < 5:
+            logger.error(f'Only {n_cat} catalog objects in the search zone.'
+                         f'Increase the magnitude threshold or box size.')
+
         # If this image is actually shallower than reference catalog, trim the reference catalog down
-        if ncat > 16 and catdensity > 3 * density:
+        if n_cat > 16 and cat_density > 3 * density:
             logger.debug('Image is shallow.  Trimming reference catalog...')
-            while catdensity > 3 * density:
-                catlist = catlist[0:int(len(catlist)*4/5)]
-                ncat = len(catlist)
-                catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
+            while cat_density > 3 * density:
+                ref_cat_list = ref_cat_list[0:int(len(ref_cat_list)*4/5)]
+                n_cat = len(ref_cat_list)
+                cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
 
         # If the image is way deeper than USNO, trim the image catalog down
-        if ngood > 16 and density > 4 * catdensity and ngood > 8:
+        if n_good > 16 and density > 4 * cat_density:
             logger.debug('Image is deep.  Trimming image catalog...')
-            while density > 4 * catdensity and ngood > 8:
-                goodsexlist = goodsexlist[0:int(len(goodsexlist)*4/5)]
-                ngood = len(goodsexlist)
-                density = ngood / area_sq_min
+            while density > 4 * cat_density and n_good > 8:
+                good_src_list = good_src_list[0:int(len(good_src_list)*4/5)]
+                n_good = len(good_src_list)
+                density = n_good / area_sq_min
 
         # If too many objects, do some more trimming
-        if ngood*ncat > 120*120*4:
+        if n_good*n_cat > 120*120*4:
             logger.debug('Image and/or catalog still too deep.  Trimming...')
-            while ngood*ncat > 120*120*4:
-                if density > catdensity:
-                    goodsexlist = goodsexlist[0:int(len(goodsexlist)*4/5)]
-                    ngood = len(goodsexlist)
-                    density = ngood / area_sq_min
+            while n_good*n_cat > 120*120*4:
+                if density > cat_density:
+                    good_src_list = good_src_list[0:int(len(good_src_list)*4/5)]
+                    n_good = len(good_src_list)
+                    density = n_good / area_sq_min
                 else:
-                    catlist = catlist[0:int(len(catlist)*4/5)]
-                    ncat = len(catlist)
-                    catdensity = ncat / (2 * box_size_arcsec / 60.) ** 2
+                    ref_cat_list = ref_cat_list[0:int(len(ref_cat_list)*4/5)]
+                    n_cat = len(ref_cat_list)
+                    cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
 
         # Remove fainter object in close pairs for both lists
-        minsep = 3
-        deletelist = []
-        for i in range(len(goodsexlist)):
-            for j in range(i+1, len(goodsexlist)):
-                if i == j: continue
-                dist = distance(goodsexlist[i], goodsexlist[j])
-                if dist < minsep:
-                    if goodsexlist[i].mag > goodsexlist[j].mag:
-                        deletelist.append(i)
+        min_sep = 3
+        delete_list = []
+        for i, src in enumerate(good_src_list):
+            for j, src2 in enumerate(good_src_list[i+1:]):
+                dist = distance(src, src2)
+                if dist < min_sep:
+                    if src.mag > src2.mag:
+                        delete_list.append(i)
                     else:
-                        deletelist.append(j)
-        deletelist = unique(deletelist)
-        deletelist.reverse()
-        for d in deletelist:
-            del goodsexlist[d]
-        deletelist = []
-        for i in range(len(catlist)):
-            for j in range(i+1, len(catlist)):
-                if i == j: continue
-                dist = distance(catlist[i], catlist[j])
-                if dist < minsep:
-                    if catlist[i].mag > catlist[j].mag:
-                        deletelist.append(i)
-                    else:
-                        deletelist.append(j)
-        deletelist = unique(deletelist)
-        deletelist.reverse()
-        for d in deletelist:
-            del catlist[d]
+                        delete_list.append(j)
 
-        writetextfile('det.init.txt', goodsexlist)
-        writeregionfile('det.im.reg', goodsexlist, 'red', 'img')
-        writetextfile('cat.txt', catlist)
-        writeregionfile('cat.wcs.reg', catlist, 'green', 'wcs')
+        delete_list = unique(delete_list)
+        delete_list.reverse()
+        for d in delete_list:
+            del good_src_list[d]
+        delete_list = []
+        for i in range(len(ref_cat_list)):
+            for j in range(i+1, len(ref_cat_list)):
+                if i == j: continue
+                dist = distance(ref_cat_list[i], ref_cat_list[j])
+                if dist < min_sep:
+                    if ref_cat_list[i].mag > ref_cat_list[j].mag:
+                        delete_list.append(i)
+                    else:
+                        delete_list.append(j)
+        delete_list = unique(delete_list)
+        delete_list.reverse()
+        for d in delete_list:
+            del ref_cat_list[d]
+
+        write_text_file('det.init.txt', good_src_list)
+        write_region_file('det.im.reg', good_src_list, 'red', 'img')
+        write_text_file('cat.txt', ref_cat_list)
+        write_region_file('cat.wcs.reg', ref_cat_list, 'green', 'wcs')
 
         # The catalogs have now been completed.
 
@@ -1457,7 +1468,7 @@ def autoastrometry(
         min_rad = 5.0
         #if (maxrad == -1): maxrad = 180
         if max_rad is None:
-            max_rad = 60 * (15 / (math.pi * min(density, catdensity))) ** 0.5 # numcomp ~ 15 [look at 15 closest objects
+            max_rad = 60 * (15 / (math.pi * min(density, cat_density))) ** 0.5 # numcomp ~ 15 [look at 15 closest objects
             max_rad = max(max_rad, 60.0)                                 #               in sparse dataset]
             if max_rad == 60.0:
                 min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
@@ -1466,33 +1477,33 @@ def autoastrometry(
             # note that density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
 
         circdensity = density * min([area_sq_min, (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)])
-        circcatdensity = catdensity * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
-        catperimage = catdensity * area_sq_min
+        circcatdensity = cat_density * (math.pi * (max_rad / 60.) ** 2 - math.pi * (min_rad / 60) ** 2)
+        catperimage = cat_density * area_sq_min
 
         logger.debug('After trimming: ')
-        logger.debug(f'{len(goodsexlist)} detected objects ({density:.2f}/arcmin^2, {circdensity:.1f}/searchzone)')
-        logger.debug(f'{len(catlist)} catalog objects ({catdensity:.2f}/arcmin^2, {circcatdensity:.1f}/searchzone)')
+        logger.debug(f'{len(good_src_list)} detected objects ({density:.2f}/arcmin^2, {circdensity:.1f}/searchzone)')
+        logger.debug(f'{len(ref_cat_list)} catalog objects ({cat_density:.2f}/arcmin^2, {circcatdensity:.1f}/searchzone)')
 
 
         patolerance = default_pa_tolerance
-        expectfalsetrios = ngood * ncat * circdensity**2 * circcatdensity**2 * tolerance**2 * (patolerance/360.)**1
+        expectfalsetrios = n_good * n_cat * circdensity**2 * circcatdensity**2 * tolerance**2 * (patolerance/360.)**1
 
-        overlap1 = 0.3 * min(1,catdensity/density) # fraction of stars in image that are also in catalog - a guess
+        overlap1 = 0.3 * min(1,cat_density/density) # fraction of stars in image that are also in catalog - a guess
         truematchesperstar = (circdensity * overlap1) # but how many matches >3 and >4?  some annoying binomial thing
 
         reqmatch = 3
         if expectfalsetrios > 30 and truematchesperstar >= 4:
             reqmatch = 4
         # should check that this will actually work for the catalog, too.
-        if catperimage <= 6 or ngood <= 6:
+        if catperimage <= 6 or n_good <= 6:
             reqmatch = 2
-        if catperimage <= 3 or ngood <= 3:
+        if catperimage <= 3 or n_good <= 3:
             reqmatch = 1
         # for an extremely small or shallow image
 
         logger.debug('Pair comparison search radius: %.2f"' % max_rad)
         logger.debug(f'Using reqmatch = {reqmatch}')
-        (primarymatchs, primarymatchc, mpa) = distmatch(goodsexlist, catlist, max_rad, min_rad, tolerance, reqmatch, patolerance, unc_pa)
+        (primarymatchs, primarymatchc, mpa) = distmatch(good_src_list, ref_cat_list, max_rad, min_rad, tolerance, reqmatch, patolerance, unc_pa)
 
         nmatch = len(primarymatchs)
         if nmatch == 0:
@@ -1534,8 +1545,8 @@ def autoastrometry(
             header["CD2_1"] = math.sin(rot)*cd11 + math.cos(rot)*cd21
             header["CD2_2"] = math.sin(rot)*cd12 + math.cos(rot)*cd22
             #...the coordinates (so we don't have to resex)
-            for i in range(len(goodsexlist)):  #do all of them, though this is not necessary
-                goodsexlist[i].rotate(offpa,cra,cdec)
+            for i in range(len(good_src_list)):  #do all of them, though this is not necessary
+                good_src_list[i].rotate(offpa,cra,cdec)
 
         else:
             rotwarn = ''
@@ -1544,13 +1555,13 @@ def autoastrometry(
             logger.debug('  Skipping rotation correction ')
 
 
-        writetextfile('det.wcs.txt',goodsexlist)
+        write_text_file('det.wcs.txt', good_src_list)
 
         imraoffset = []
         imdecoffset = []
         for i in range(len(primarymatchs)):
-            imraoffset.append(goodsexlist[primarymatchs[i]].ra_deg - catlist[primarymatchc[i]].ra_deg)
-            imdecoffset.append(goodsexlist[primarymatchs[i]].dec_deg - catlist[primarymatchc[i]].dec_deg)
+            imraoffset.append(good_src_list[primarymatchs[i]].ra_deg - ref_cat_list[primarymatchc[i]].ra_deg)
+            imdecoffset.append(good_src_list[primarymatchs[i]].dec_deg - ref_cat_list[primarymatchc[i]].dec_deg)
 
         raoffset = -median(imraoffset)
         decoffset = -median(imdecoffset)
@@ -1600,8 +1611,8 @@ def autoastrometry(
         for i in range(len(primarymatchs)):
             si = primarymatchs[i]
             ci = primarymatchc[i]
-            outmatch.write("%s %s  %s %s\n" % (goodsexlist[si].x, goodsexlist[si].y, catlist[ci].ra_deg, catlist[ci].dec_deg))
-            #goodsexlist[si].ra, goodsexlist[si].dec))
+            outmatch.write("%s %s  %s %s\n" % (good_src_list[si].x, good_src_list[si].y, ref_cat_list[ci].ra_deg, ref_cat_list[ci].dec_deg))
+            #good_src_list[si].ra, good_src_list[si].dec))
         outmatch.close()
 
         # Could repeat with scale adjustment
@@ -1645,7 +1656,7 @@ def run_autoastrometry(
         box_size: float = None,
         max_rad: float = None,
         tolerance: float = default_tolerance,
-        catalog: str = "",
+        catalog: str = None,
         no_solve: bool = False,
         overwrite: bool = False,
         outfile: str = None,
