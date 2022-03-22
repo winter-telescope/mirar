@@ -74,6 +74,12 @@ def astrometry_output_dir(
     return get_output_dir(f"astrometry_{astro_pass}", sub_dir=str(sub_dir))
 
 
+def get_mask_path(
+        img_path: str,
+) -> str:
+    return img_path + ".mask"
+
+
 def parse_image_list(
         sub_dir: str | int = "",
         group_by_object: bool = True,
