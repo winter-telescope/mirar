@@ -77,7 +77,7 @@ def astrometry_output_dir(
 def get_mask_path(
         img_path: str,
 ) -> str:
-    return img_path + ".mask"
+    return os.path.splitext(img_path)[0] + ".mask.fits"
 
 
 def parse_image_list(
