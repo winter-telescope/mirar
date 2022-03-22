@@ -9,7 +9,7 @@ from winterdrp.processors.flat import SkyFlatCalibrator, OldSkyFlatCalibrator
 from winterdrp.processors.sky import NightSkyMedianCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.utils import ImageSaver
-from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, astrometry_files
+from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, sextractor_astrometry_config
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic.scamp import Scamp
 from winterdrp.processors.astromatic import Sextractor
@@ -21,10 +21,10 @@ class WircPipeline(Pipeline):
 
     name = "wirc"
 
-    astrometry_cal = ("GAIA", 9., 13.)
-    photometry_cal = {
-        "J": ()
-    }
+    # astrometry_cal = ("GAIA", 9., 13.)
+    # photometry_cal = {
+    #     "J": ()
+    # }
 
     # Set up elements to use
 
@@ -44,10 +44,11 @@ class WircPipeline(Pipeline):
             DarkCalibrator(),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
+            ImageSaver(output_dir_name="preprocess"),
             # AutoAstrometry(),
             Sextractor(
-                output_sub_dir="sextractor_v1",
-                **astrometry_files
+                output_sub_dir="sextractor",
+                **sextractor_astrometry_config
             ),
             # Scamp(),
             ImageSaver(output_dir_name="preprocess"),
