@@ -2,8 +2,7 @@ import os
 import numpy as np
 import logging
 import astropy.io.fits
-from winterdrp.paths import astrometry_output_dir
-from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_config
+from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.paths import get_output_dir
 
@@ -17,13 +16,32 @@ class Sextractor(BaseProcessor):
     def __init__(
             self,
             output_sub_dir: str,
-            config: str = default_config,
+            config_path: str,
+            parameter_path: str,
+            filter_path: str,
+            starnnw_path: str,
+            saturation: float = None,
+            weight_image: str = None,
+            verbose_type: str = "QUIET",
+            checkimage_name: str | list = None,
+            checkimage_type: str | list = None,
+            gain: float = None,
             *args,
             **kwargs
     ):
         super(Sextractor, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
-        self.config = config
+        self.config = config_path
+
+        self.parameters_name = parameter_path
+        self.filter_name = filter_path
+        self.starnnw_name = starnnw_path
+        self.saturation = saturation
+        self.weight_image = weight_image
+        self.verbose_type = verbose_type
+        self.checkimage_name = checkimage_name
+        self.checkimage_type = checkimage_type
+        self.gain = gain
 
     def _apply_to_images(
             self,
@@ -45,18 +63,25 @@ class Sextractor(BaseProcessor):
 
             self.save_fits(data, header, temp_path)
 
-            run_sextractor_single(
+            output_cat = run_sextractor_single(
                 img=temp_path,
                 config=self.config,
                 output_dir=sextractor_out_dir,
+                parameters_name=self.parameters_name,
+                filter_name=self.filter_name,
+                starnnw_name=self.starnnw_name,
+                saturation=self.saturation,
+                weight_image=self.weight_image,
+                verbose_type=self.verbose_type,
+                checkimage_name=self.checkimage_name,
+                checkimage_type=self.checkimage_type,
+                gain=self.gain,
             )
 
-            # Load up temp path image.header, then delete
-            img, header = self.open_fits(temp_path)
-            images[i] = img
-            headers[i] = header
             os.remove(temp_path)
-            logger.info(f"Loaded updated header, and deleted temporary file {temp_path}")
+            logger.info(f"Deleted temporary image {temp_path}")
+
+            header["SRCCAT"] = output_cat
 
         return images, headers
 

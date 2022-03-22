@@ -9,7 +9,7 @@ from winterdrp.processors.flat import SkyFlatCalibrator, OldSkyFlatCalibrator
 from winterdrp.processors.sky import NightSkyMedianCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.utils import ImageSaver
-from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path
+from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, astrometry_files
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic.scamp import Scamp
 from winterdrp.processors.astromatic import Sextractor
@@ -45,7 +45,10 @@ class WircPipeline(Pipeline):
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
             # AutoAstrometry(),
-            Sextractor(output_sub_dir="first_pass"),
+            Sextractor(
+                output_sub_dir="sextractor_v1",
+                **astrometry_files
+            ),
             # Scamp(),
             ImageSaver(output_dir_name="preprocess"),
             # (SextractorRunner, "pass1"),

@@ -1,7 +1,7 @@
 import os
 import logging
 from pathlib import Path
-from winterdrp.processors.astromatic.config import calibration_config_dir
+from winterdrp.processors.astromatic.config import astromatic_config_dir
 from winterdrp.utils import execute, ExecutionError
 
 
@@ -10,7 +10,10 @@ logger = logging.getLogger(__name__)
 # sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
 default_saturation = 1.e10
-default_config = os.path.join(calibration_config_dir, 'astrom.sex')
+default_config_path = os.path.join(astromatic_config_dir, 'astrom.sex')
+default_param_path = os.path.join(astromatic_config_dir, 'astrom.param')
+default_filter_name = os.path.join(astromatic_config_dir, 'default.conv')
+default_starnnw_path = os.path.join(astromatic_config_dir, 'default.nnw')
 
 
 class SextractorError(ExecutionError):
@@ -20,6 +23,7 @@ class SextractorError(ExecutionError):
 # Either run sextractor locally or on docker
 
 local_sextractor = True
+
 
 # Functions to parse commands and generate appropriate sextractor files
 
@@ -44,10 +48,10 @@ def parse_checkimage(
     cmd: A string containing the partial sextractor command relating to checkimages. The default is an empty string.
     """
     if isinstance(checkimage_type, str):
-        checkimage_type = list(checkimage_type)
+        checkimage_type = [checkimage_type]
 
     if isinstance(checkimage_name, str):
-        checkimage_name = list(checkimage_name)
+        checkimage_name = [checkimage_name]
 
     cmd = ""
 
@@ -106,49 +110,41 @@ def run_sextractor_single(
         img: str,
         output_dir: str,
         catalog_name: str = None,
-        config: str = default_config,
-        parameters_name: str = None,
-        filter_name: str = None,
-        starnnw_name: str = None,
+        config: str = default_config_path,
+        parameters_name: str = default_param_path,
+        filter_name: str = default_filter_name,
+        starnnw_name: str = default_starnnw_path,
         saturation: float = default_saturation,
         weight_image: str = None,
         verbose_type: str = "QUIET",
         checkimage_name: str | list = None,
         checkimage_type: str | list = None,
-        gain: float = 0.0,
-        run_local: bool = local_sextractor
+        gain: float = None,
 ):
-    if parameters_name is None:
-        parameters_name = os.path.join(calibration_config_dir, 'astrom.param')
-        msg = "No parameters name was passed. Only paths explicitly passed as arguments are used. " \
-              f"Using a default parameter file of {filter_name}"
-        logger.warning(msg)
-
-    if filter_name is None:
-        filter_name = os.path.join(calibration_config_dir, 'default.conv')
-        msg = "No filter name was passed. Only paths explicitly passed as arguments are used. " \
-              f"Using a default filter file of {filter_name}"
-        logger.warning(msg)
-
-    if starnnw_name is None:
-        starnnw_name = os.path.join(calibration_config_dir, 'default.nnw')
-        msg = "No starnnw name was passed. Only paths explicitly passed as arguments are used. " \
-              f"Using a default starnnw file of {filter_name}"
-        logger.warning(msg)
 
     if catalog_name is None:
         image_name = Path(img).stem
-        catalog_name = f'{image_name}.cat'
+        catalog_name = os.path.join(os.path.dirname(img), f'{image_name}.cat')
 
     cmd = f"sex {img} " \
           f"-c {config} " \
           f"-CATALOG_NAME {catalog_name} " \
-          f"-PARAMETERS_NAME {parameters_name} " \
-          f"-FILTER_NAME {filter_name} " \
-          f"-STARNNW_NAME {starnnw_name} " \
-          f"-VERBOSE_TYPE {verbose_type} " \
-          f"-SATUR_LEVEL {saturation} " \
-          f"-GAIN {gain:.3f} "
+          f"-VERBOSE_TYPE {verbose_type} "
+
+    if saturation is not None:
+        cmd += f"-SATUR_LEVEL {saturation} "
+
+    if gain is not None:
+        cmd += f"-GAIN {gain:.3f} "
+
+    if parameters_name is not None:
+        cmd += f"-PARAMETERS_NAME {parameters_name} "
+
+    if filter_name is not None:
+        cmd += f"-FILTER_NAME {filter_name} "
+
+    if starnnw_name is not None:
+        cmd += f"-STARNNW_NAME {starnnw_name} "
 
     cmd += parse_checkimage(
         checkimage_type=checkimage_type,
@@ -162,14 +158,8 @@ def run_sextractor_single(
         cmd += f"-WEIGHT_IMAGE {weight_image}"
 
     try:
-        execute(cmd, output_dir, local=run_local)
+        execute(cmd, output_dir)
     except ExecutionError as e:
         raise SextractorError(e)
 
-
-if __name__ == "__main__":
-    run_sextractor(
-        "/Users/robertstein/Data/WIRC/20200929/redux/image0240.fits",
-        "/Users/robertstein/Data/testersextractor",
-        checkimage_type=["BACKGROUND", "BACKGROUND_RMS"]
-    )
+    return catalog_name

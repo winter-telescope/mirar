@@ -1,10 +1,10 @@
 import os
-from winterdrp.processors.astromatic.config import calibration_config_dir
+from winterdrp.processors.astromatic.config import astromatic_config_dir
 
-default_param_path = os.path.join(calibration_config_dir, 'temp.param')
-default_conv_path = os.path.join(calibration_config_dir, 'sex.conv')
-default_config_path = os.path.join(calibration_config_dir, 'sex.config')
-default_starnnw_path = os.path.join(calibration_config_dir, 'default.nnw')
+default_param_path = os.path.join(astromatic_config_dir, 'temp.param')
+default_conv_path = os.path.join(astromatic_config_dir, 'sex.conv')
+default_config_path = os.path.join(astromatic_config_dir, 'sex.config')
+default_starnnw_path = os.path.join(astromatic_config_dir, 'default.nnw')
 
 
 def write_param_file(
