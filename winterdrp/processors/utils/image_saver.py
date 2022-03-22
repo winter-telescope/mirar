@@ -2,7 +2,7 @@ import os
 
 import astropy.io.fits
 import numpy as np
-from winterdrp.paths import output_path, get_output_dir
+from winterdrp.paths import output_path, get_output_dir, get_mask_path
 from winterdrp.processors.base_processor import BaseProcessor
 
 latest_save_key = "SAVEPATH"
@@ -15,11 +15,13 @@ class ImageSaver(BaseProcessor):
     def __init__(
             self,
             output_dir_name: str,
+            write_mask: bool = True,
             *args,
             **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.output_dir_name = output_dir_name
+        self.write_mask = write_mask
 
     def _apply_to_images(
             self,
@@ -41,6 +43,12 @@ class ImageSaver(BaseProcessor):
                 dir_root=self.output_dir_name,
                 sub_dir=self.night_sub_dir
             )
+
+            if self.write_mask:
+                mask = np.isnan(img).astype(int)
+                mask_path = get_mask_path(path)
+                header["MASKPATH"] = mask_path
+                self.save_fits(mask, header, mask_path)
 
             self.save_fits(img, header, path)
             header[latest_save_key] = path
