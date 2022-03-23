@@ -73,7 +73,7 @@ def run_local(
             current_path = os.path.join(current_dir, file)
             output_path = os.path.join(output_dir, file)
 
-            logger.debug(f"Moving {current_path} to {output_path}")
+            logger.info(f"File saved to {output_path}")
 
             shutil.move(current_path, output_path)
 
