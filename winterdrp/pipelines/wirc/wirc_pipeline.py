@@ -9,12 +9,16 @@ from winterdrp.processors.flat import SkyFlatCalibrator, OldSkyFlatCalibrator
 from winterdrp.processors.sky import NightSkyMedianCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.utils import ImageSaver
-from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, sextractor_astrometry_config
+from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, sextractor_astrometry_config, scamp_fp_path
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic.scamp import Scamp
 from winterdrp.processors.astromatic import Sextractor
+from winterdrp.catalog import Gaia2Mass
 
-wirc_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+def wirc_catalog_generator(
+        header: astropy.io.fits.Header
+):
+    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30)
 
 
 class WircPipeline(Pipeline):
@@ -47,11 +51,16 @@ class WircPipeline(Pipeline):
             ImageSaver(output_dir_name="preprocess"),
             # AutoAstrometry(),
             Sextractor(
-                output_sub_dir="sextractor",
+                output_sub_dir="postprocess",
                 **sextractor_astrometry_config
             ),
-            # Scamp(),
-            ImageSaver(output_dir_name="preprocess"),
+            ImageSaver(output_dir_name="postprocess"),
+            Scamp(
+                ref_catalog_generator=wirc_catalog_generator,
+                scamp_config_path=scamp_fp_path,
+                # temp_output_sub_dir="postprocess",
+            ),
+            ImageSaver(output_dir_name="latest"),
             # (SextractorRunner, "pass1"),
         ]
     }
