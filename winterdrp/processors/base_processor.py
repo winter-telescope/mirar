@@ -8,7 +8,7 @@ import socket
 import getpass
 import datetime
 from winterdrp.io import create_fits
-from winterdrp.paths import raw_img_key
+from winterdrp.paths import raw_img_key, get_mask_path
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +110,17 @@ class BaseProcessor:
         logger.info(f"Saving to {path}")
         img = create_fits(data, header=header)
         img.writeto(path, overwrite=True)
+
+    def save_mask(
+            self,
+            data: np.ndarray,
+            header: astropy.io.fits.Header,
+            img_path: str
+    ) -> str:
+        mask = ~np.isnan(data).astype(int)
+        mask_path = get_mask_path(img_path)
+        self.save_fits(mask, header, mask_path)
+        return mask_path
 
     def load_and_apply_previous(
             self,

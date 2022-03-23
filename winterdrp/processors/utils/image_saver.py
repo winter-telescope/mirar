@@ -45,10 +45,8 @@ class ImageSaver(BaseProcessor):
             )
 
             if self.write_mask:
-                mask = np.isnan(img).astype(int)
-                mask_path = get_mask_path(path)
+                mask_path = self.save_mask(img, header, img_path=path)
                 header["MASKPATH"] = mask_path
-                self.save_fits(mask, header, mask_path)
 
             self.save_fits(img, header, path)
             header[latest_save_key] = path
