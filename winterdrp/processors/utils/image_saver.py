@@ -2,7 +2,7 @@ import os
 
 import astropy.io.fits
 import numpy as np
-from winterdrp.paths import output_path, get_output_dir, get_mask_path
+from winterdrp.paths import get_output_path, get_output_dir, get_mask_path
 from winterdrp.processors.base_processor import BaseProcessor
 
 latest_save_key = "SAVEPATH"
@@ -38,7 +38,7 @@ class ImageSaver(BaseProcessor):
 
             header = headers[i]
 
-            path = output_path(
+            path = get_output_path(
                 header["BASENAME"],
                 dir_root=self.output_dir_name,
                 sub_dir=self.night_sub_dir

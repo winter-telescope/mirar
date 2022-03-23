@@ -43,13 +43,16 @@ class Sextractor(BaseProcessor):
         self.checkimage_type = checkimage_type
         self.gain = gain
 
+    def get_sextractor_output_dir(self):
+        return get_output_dir(self.output_sub_dir, self.night_sub_dir)
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
-        sextractor_out_dir = get_output_dir(self.output_sub_dir, self.night_sub_dir)
+        sextractor_out_dir = self.get_sextractor_output_dir()
 
         try:
             os.makedirs(sextractor_out_dir)
@@ -81,7 +84,7 @@ class Sextractor(BaseProcessor):
             os.remove(temp_path)
             logger.info(f"Deleted temporary image {temp_path}")
 
-            header["SRCCAT"] = output_cat
+            header["SRCCAT"] = os.path.join(sextractor_out_dir, output_cat)
 
         return images, headers
 
