@@ -11,3 +11,5 @@ sextractor_astrometry_config = {
     "parameter_path": os.path.join(astromatic_config_dir, 'default.param'),
     "starnnw_path": os.path.join(astromatic_config_dir, 'default.nnw')
 }
+
+scamp_fp_path = os.path.join(wirc_dir, "scamp_fp.conf")
