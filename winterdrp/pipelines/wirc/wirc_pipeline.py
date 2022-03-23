@@ -16,6 +16,9 @@ from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
 from winterdrp.catalog import Gaia2Mass
 
 
+wirc_gain = 1.2
+
+
 def wirc_astrometric_catalog_generator(
         header: astropy.io.fits.Header
 ):
@@ -48,7 +51,7 @@ class WircPipeline(Pipeline):
             DarkCalibrator(),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
-            # AutoAstrometry(),
+            AutoAstrometry(),
             Sextractor(
                 output_sub_dir="postprocess",
                 **sextractor_astrometry_config
@@ -74,6 +77,7 @@ class WircPipeline(Pipeline):
         header["BASENAME"] = os.path.basename(path)
         header["TARGET"] = header["OBJECT"].lower()
         header["UTCTIME"] = header["UTSHUT"]
+        header.append(('GAIN', wirc_gain, 'Gain in electrons / ADU'), end=True)
         img[0].header = header
         return img[0].data, img[0].header
 
