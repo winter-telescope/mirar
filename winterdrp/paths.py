@@ -1,4 +1,6 @@
 import os
+import shutil
+
 from astropy.io import fits
 from glob import glob
 import logging
@@ -34,7 +36,7 @@ def get_output_dir(
     return os.path.join(base_output_dir, os.path.join(str(sub_dir), dir_root))
 
 
-def output_path(
+def get_output_path(
         base_name: str,
         dir_root: str,
         sub_dir: str | int = ""
@@ -80,6 +82,33 @@ def get_mask_path(
     return os.path.splitext(img_path)[0] + ".mask.fits"
 
 
+def get_temp_path(
+        output_dir: str,
+        file_path: str
+) -> str:
+    return os.path.join(output_dir, "temp_" + os.path.basename(file_path))
+
+
+def get_untemp_path(
+        temp_path: str
+) -> str:
+    path = os.path.join(
+        os.path.dirname(temp_path),
+        os.path.basename(temp_path).split("temp_")[1]
+    )
+    return path
+
+
+def copy_temp_file(
+        output_dir: str,
+        file_path: str
+) -> str:
+    output_path = get_temp_path(output_dir=output_dir, file_path=file_path)
+    logger.debug(f"Copying from {file_path} to {output_path}")
+    shutil.copyfile(file_path, output_path)
+    return output_path
+
+
 def parse_image_list(
         sub_dir: str | int = "",
         group_by_object: bool = True,
@@ -113,3 +142,4 @@ def parse_image_list(
 
 
 raw_img_key = "RAWIMAGEPATH"
+base_name_key = "BASENAME"
