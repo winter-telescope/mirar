@@ -9,7 +9,7 @@ import pandas as pd
 import copy
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.paths import cal_output_dir,raw_img_dir, observing_log_dir
+from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir
 
 logger = logging.getLogger(__name__)
 
