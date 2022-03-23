@@ -7,10 +7,12 @@ from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, get_u
 from winterdrp.utils import execute
 from winterdrp.catalog.base_catalog import BaseCatalog
 from collections.abc import Callable
-from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
+from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor, sextractor_header_key
 import shutil
 
 logger = logging.getLogger(__name__)
+
+scamp_header_key = ""
 
 
 def run_scamp(
@@ -90,7 +92,7 @@ class Scamp(BaseProcessor):
 
                 temp_cat_path = copy_temp_file(
                     output_dir=scamp_output_dir,
-                    file_path=header['SRCCAT']
+                    file_path=header[sextractor_header_key]
                 )
 
                 temp_img_path = get_temp_path(scamp_output_dir, header["BASENAME"])
@@ -119,7 +121,7 @@ class Scamp(BaseProcessor):
             header = headers[i]
             new_out_path = get_untemp_path(out_path)
             shutil.move(out_path, new_out_path)
-            header["HEADPATH"] = new_out_path
+            header[scamp_header_key] = new_out_path
             logger.info(f"Saved to {new_out_path}")
 
         return images, headers

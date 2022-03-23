@@ -8,6 +8,8 @@ from winterdrp.paths import get_output_dir
 
 logger = logging.getLogger(__name__)
 
+sextractor_header_key = 'SRCCAT'
+
 
 class Sextractor(BaseProcessor):
 
@@ -84,7 +86,7 @@ class Sextractor(BaseProcessor):
             os.remove(temp_path)
             logger.info(f"Deleted temporary image {temp_path}")
 
-            header["SRCCAT"] = os.path.join(sextractor_out_dir, output_cat)
+            header[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
 
         return images, headers
 
