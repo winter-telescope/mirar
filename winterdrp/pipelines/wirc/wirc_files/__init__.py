@@ -13,3 +13,5 @@ sextractor_astrometry_config = {
 }
 
 scamp_fp_path = os.path.join(wirc_dir, "scamp_fp.conf")
+
+swarp_sp_path = os.path.join(wirc_dir, "second_pass.swarp")
