@@ -124,7 +124,7 @@ def run_sextractor_single(
 
     if catalog_name is None:
         image_name = Path(img).stem
-        catalog_name = os.path.join(os.path.dirname(img), f'{image_name}.cat')
+        catalog_name = f'{image_name}.cat'
 
     cmd = f"sex {img} " \
           f"-c {config} " \
