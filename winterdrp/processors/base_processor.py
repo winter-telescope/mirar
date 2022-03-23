@@ -8,9 +8,10 @@ import socket
 import getpass
 import datetime
 from winterdrp.io import create_fits
-from winterdrp.pipelines.base_pipeline import raw_img_key
+from winterdrp.paths import raw_img_key
 
 logger = logging.getLogger(__name__)
+
 
 class BaseProcessor:
 

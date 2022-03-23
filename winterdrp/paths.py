@@ -110,3 +110,6 @@ def parse_image_list(
             object_dict[key] = []
 
     return object_dict
+
+
+raw_img_key = "RAWIMAGEPATH"

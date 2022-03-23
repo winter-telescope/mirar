@@ -9,12 +9,11 @@ import pandas as pd
 import copy
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir
+from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir, raw_img_key
 
 logger = logging.getLogger(__name__)
 
 
-raw_img_key = "RAWIMAGEPATH"
 core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
 
 
