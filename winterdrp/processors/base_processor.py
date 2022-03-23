@@ -8,9 +8,9 @@ import socket
 import getpass
 import datetime
 from winterdrp.io import create_fits
+from winterdrp.pipelines.base_pipeline import raw_img_key
 
 logger = logging.getLogger(__name__)
-
 
 class BaseProcessor:
 
@@ -187,4 +187,4 @@ class ProcessorWithCache(BaseProcessor, ABC):
 
         logger.debug(f"Found {len(obs)} entries with key '{key}' for night '{self.night}'")
 
-        return list(obs["RAWIMAGEPATH"])
+        return list(obs[raw_img_key])
