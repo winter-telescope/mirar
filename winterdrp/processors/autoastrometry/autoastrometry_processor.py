@@ -54,8 +54,10 @@ class AutoAstrometry(BaseProcessor):
 
             # Load up temp path image.header, then delete
             img, header = self.open_fits(temp_path)
+
             images[i] = img
             headers[i] = header
+
             os.remove(temp_path)
             logger.info(f"Loaded updated header, and deleted temporary file {temp_path}")
 

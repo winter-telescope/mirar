@@ -1810,6 +1810,7 @@ def autoastrometry(
     if outfile is not None:
         with fits.open(temp_path) as hdu:
             hdu[sci_ext].header = header
+
             hdu.writeto(outfile, output_verify='silentfix', overwrite=True)
             logger.info(f'Written updated file to {outfile}')
 

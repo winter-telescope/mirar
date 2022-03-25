@@ -51,17 +51,21 @@ class WircPipeline(Pipeline):
             DarkCalibrator(),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
+            ImageSaver(output_dir_name="testa"),
             AutoAstrometry(),
-            Sextractor(
-                output_sub_dir="postprocess",
-                **sextractor_astrometry_config
-            ),
-            Scamp(
-                ref_catalog_generator=wirc_astrometric_catalog_generator,
-                scamp_config_path=scamp_fp_path,
-            ),
-            Swarp(swarp_config_path=swarp_sp_path),
-            ImageSaver(output_dir_name="latest"),
+            ImageSaver(output_dir_name="testb"),
+            # Sextractor(
+            #     output_sub_dir="postprocess",
+            #     **sextractor_astrometry_config
+            # ),
+            # ImageSaver(output_dir_name="testc"),
+            # Scamp(
+            #     ref_catalog_generator=wirc_astrometric_catalog_generator,
+            #     scamp_config_path=scamp_fp_path,
+            # ),
+            # ImageSaver(output_dir_name="testd"),
+            # Swarp(swarp_config_path=swarp_sp_path),
+            # ImageSaver(output_dir_name="latest"),
         ]
     }
 
@@ -73,7 +77,8 @@ class WircPipeline(Pipeline):
         header = img[0].header
         header["FILTER"] = header["AFT"].split("__")[0]
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
-        header["CALSTEPS"] = ""
+        if "CALSTEPS" not in header.keys():
+            header["CALSTEPS"] = ""
         header["BASENAME"] = os.path.basename(path)
         header["TARGET"] = header["OBJECT"].lower()
         header["UTCTIME"] = header["UTSHUT"]

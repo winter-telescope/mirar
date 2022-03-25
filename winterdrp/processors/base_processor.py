@@ -8,7 +8,7 @@ import socket
 import getpass
 import datetime
 from winterdrp.io import create_fits
-from winterdrp.paths import raw_img_key, get_mask_path
+from winterdrp.paths import raw_img_key, get_mask_path, latest_save_key, latest_mask_save_key
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +105,16 @@ class BaseProcessor:
     ):
         pass
 
-    def save_fits(self, data, header, path):
-        self.cache[path] = (data, header)
+    def save_fits(
+            self,
+            data,
+            header,
+            path,
+            copy_to_cache: bool = False
+    ):
+        header[latest_save_key] = path
+        if copy_to_cache:
+            self.cache[path] = (data, header)
         logger.info(f"Saving to {path}")
         img = create_fits(data, header=header)
         img.writeto(path, overwrite=True)
@@ -117,8 +125,9 @@ class BaseProcessor:
             header: astropy.io.fits.Header,
             img_path: str
     ) -> str:
-        mask = ~np.isnan(data).astype(int)
+        mask = (~np.isnan(data)).astype(int)
         mask_path = get_mask_path(img_path)
+        header[latest_mask_save_key] = mask_path
         self.save_fits(mask, header, mask_path)
         return mask_path
 
