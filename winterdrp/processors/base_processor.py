@@ -8,7 +8,7 @@ import socket
 import getpass
 import datetime
 from winterdrp.io import create_fits
-from winterdrp.paths import raw_img_key, get_mask_path, latest_save_key, latest_mask_save_key
+from winterdrp.paths import raw_img_key, get_mask_path, latest_save_key, latest_mask_save_key, saturate_key
 
 logger = logging.getLogger(__name__)
 
@@ -99,12 +99,6 @@ class BaseProcessor:
     ):
         pass
 
-    def make_cache(
-            self,
-            observing_log: pd.DataFrame,
-    ):
-        pass
-
     def save_fits(
             self,
             data,
@@ -125,7 +119,7 @@ class BaseProcessor:
             header: astropy.io.fits.Header,
             img_path: str
     ) -> str:
-        mask = (~np.isnan(data)).astype(int)
+        mask = (~np.isnan(data)).astype(float)
         mask_path = get_mask_path(img_path)
         header[latest_mask_save_key] = mask_path
         self.save_fits(mask, header, mask_path)

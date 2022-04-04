@@ -9,7 +9,8 @@ import pandas as pd
 import copy
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir, raw_img_key
+from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir, raw_img_key, saturate_key
+from winterdrp.processors.base_processor import ProcessorWithCache
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,14 @@ class Pipeline:
 
     @property
     def pipeline_configurations(self):
+        raise NotImplementedError()
+
+    @property
+    def gain(self):
+        raise NotImplementedError()
+
+    @property
+    def non_linear_level(self):
         raise NotImplementedError()
 
     # Fix keys from header to save in log
@@ -78,7 +87,8 @@ class Pipeline:
             processor.check_prerequisites()
 
             if not skip_build_cache:
-                processor.make_cache(observing_log=observing_logs)
+                if isinstance(processor, ProcessorWithCache):
+                    processor.make_cache(observing_log=observing_logs)
 
         logger.debug("Pipeline initialisation complete.")
 
@@ -360,3 +370,16 @@ class Pipeline:
         log = log.sort_values(by=self.header_keys[0]).reset_index(drop=True)
 
         return log
+
+    def set_saturation(
+            self,
+            header: astropy.io.fits.Header
+    ) -> astropy.io.fits.Header:
+        # update the SATURATE keyword in the header for subsequent sextractor runs
+        co_add_head = header['COADDS']
+        num_co_adds = int(co_add_head)
+        saturation_level = self.non_linear_level * num_co_adds
+        if "SKMEDSUB" in header.keys():
+            saturation_level -= header['SKMEDSUB']
+        header.append((saturate_key, saturation_level, 'Saturation level'), end=True)
+        return header
