@@ -71,3 +71,19 @@ class BaseCatalog:
         cat_base_name = os.path.splitext(base_name)[0] + f".{self.abbreviation}.cat"
         return os.path.join(output_dir, cat_base_name)
 
+    def get_catalog_from_header(
+            self,
+            header: astropy.io.fits.header
+            ) -> astropy.table:
+        ra_deg = header['CRVAL1']
+        dec_deg = header['CRVAL2']
+
+        cat = self.get_catalog(
+            ra_deg=ra_deg,
+            dec_deg=dec_deg,
+            search_radius_arcmin=self.search_radius_arcmin,
+            min_mag=self.min_mag,
+            max_mag=self.max_mag
+        )
+
+        return cat
