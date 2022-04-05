@@ -1760,6 +1760,7 @@ def autoastrometry(
     header["CRVAL1"] = cra + ra_offset
     header["CRVAL2"] = cdec + dec_offset
 
+    logger.info(f'Updated header {header["CRVAL1"],header["CRVAL2"]}')
     try:
         oldcat = header['ASTR_CAT']
         header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
@@ -1814,6 +1815,8 @@ def autoastrometry(
             hdu.writeto(outfile, output_verify='silentfix', overwrite=True)
             logger.info(f'Written updated file to {outfile}')
 
+
+
     return n_match, sky_offset_pa, stdev_pa, ra_offset_arcsec, dec_offset_arcsec, std_offset_arcsec
 
 
@@ -1848,7 +1851,7 @@ def run_autoastrometry_single(
 
         write_param_file()
     write_config_file(saturation=saturation)
-
+    logger.info(f'Outfile is {outfile}')
     fit_info = autoastrometry(
         filename=img_path,
         pixel_scale=pixel_scale,

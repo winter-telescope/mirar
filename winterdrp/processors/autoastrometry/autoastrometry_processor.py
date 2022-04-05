@@ -17,6 +17,9 @@ class AutoAstrometry(BaseProcessor):
             self,
             temp_output_sub_dir: str = "autoastrometry",
             write_crosscheck_files: bool = False,
+            pixel_scale: float = None,
+            inv: bool = False,
+            pa: float = None,
             *args,
             **kwargs
     ):
@@ -24,6 +27,9 @@ class AutoAstrometry(BaseProcessor):
 
         self.temp_output_sub_dir = temp_output_sub_dir
         self.write_crosscheck_files = write_crosscheck_files
+        self.pixel_scale = pixel_scale
+        self.inv = inv
+        self.pa = pa
 
     def _apply_to_images(
             self,
@@ -42,14 +48,17 @@ class AutoAstrometry(BaseProcessor):
             header = headers[i]
 
             temp_path = os.path.join(sextractor_out_dir, header["BASENAME"])
-
+            logger.info(sextractor_out_dir)
             self.save_fits(data, header, temp_path)
 
             run_autoastrometry_single(
                 img_path=temp_path,
                 output_dir=sextractor_out_dir,
                 write_crosscheck_files=self.write_crosscheck_files,
-                overwrite=True
+                overwrite=True,
+                pixel_scale=self.pixel_scale,
+                inv=self.inv,
+                pa=self.pa
             )
 
             # Load up temp path image.header, then delete
