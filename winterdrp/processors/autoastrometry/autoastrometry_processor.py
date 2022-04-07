@@ -17,6 +17,7 @@ class AutoAstrometry(BaseProcessor):
             self,
             temp_output_sub_dir: str = "autoastrometry",
             write_crosscheck_files: bool = False,
+            catalog: str = None,
             *args,
             **kwargs
     ):
@@ -24,6 +25,7 @@ class AutoAstrometry(BaseProcessor):
 
         self.temp_output_sub_dir = temp_output_sub_dir
         self.write_crosscheck_files = write_crosscheck_files
+        self.catalog = catalog
 
     def _apply_to_images(
             self,
@@ -49,7 +51,8 @@ class AutoAstrometry(BaseProcessor):
                 img_path=temp_path,
                 output_dir=sextractor_out_dir,
                 write_crosscheck_files=self.write_crosscheck_files,
-                overwrite=True
+                overwrite=True,
+                catalog=self.catalog
             )
 
             # Load up temp path image.header, then delete
