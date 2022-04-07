@@ -44,8 +44,6 @@ class BaseCatalog:
 
         base_name = os.path.basename(header[base_name_key])
 
-        output_path = self.get_output_path(output_dir, base_name)
-
         cat = self.get_catalog(
             ra_deg=ra_deg,
             dec_deg=dec_deg,
@@ -53,6 +51,8 @@ class BaseCatalog:
             min_mag=self.min_mag,
             max_mag=self.max_mag
         )
+
+        output_path = self.get_output_path(output_dir, base_name) + ".ldac"
 
         if os.path.exists(output_path):
             os.remove(output_path)
