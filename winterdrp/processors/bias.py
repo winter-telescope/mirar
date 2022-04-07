@@ -6,7 +6,7 @@ from winterdrp.processors.base_processor import ProcessorWithCache
 from winterdrp.paths import cal_output_dir
 from collections.abc import Callable
 import pandas as pd
-import astropy.io
+import astropy.io.fits
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def default_select_bias(
        observing_log: pd.DataFrame
 ) -> [str]:
-    mask = observing_log["OBJECT"].lower() == "bias"
+    mask = observing_log["OBSTYPE"].lower() == "bias"
     return list(observing_log[mask]["RAWIMAGEPATH"])
 
 
@@ -26,14 +26,19 @@ class BiasCalibrator(ProcessorWithCache):
 
     def __init__(
             self,
-            select_cache_images: Callable[[pd.DataFrame], list] = default_select_bias,
+            select_cache_images: Callable[[pd.DataFrame], list] = None,
             *args,
             **kwargs
     ):
         super(BiasCalibrator, self).__init__(*args, **kwargs)
+        if select_cache_images is None:
+
+            def select_cache_images(x):
+                return self.select_from_log(x, "bias")
+
         self.select_cache_images = select_cache_images
 
-    def get_file_path(self, header, sub_dir=""):
+    def get_file_path(self, sub_dir=""):
         cal_dir = cal_output_dir(sub_dir=sub_dir)
         return os.path.join(cal_dir, self.base_name)
 
@@ -45,9 +50,9 @@ class BiasCalibrator(ProcessorWithCache):
 
         for i, data in enumerate(images):
             header = headers[i]
-            master_bias, _ = self.load_cache_file(self.get_file_path(header, sub_dir=sub_dir))
+            master_bias, _ = self.load_cache_file(self.get_file_path(sub_dir=self.night_sub_dir))
             data = data - master_bias
-            header["CALSTEPS"] += "bias,"
+            # header["CALSTEPS"] += "bias,"
             images[i] = data
             headers[i] = header
 
@@ -55,11 +60,7 @@ class BiasCalibrator(ProcessorWithCache):
 
     def make_cache_files(
             self,
-            image_list: list,
-            preceding_steps: list,
-            sub_dir: str = "",
-            *args,
-            **kwargs
+            image_list: list[str],
     ):
 
         image_list = image_list
@@ -80,8 +81,8 @@ class BiasCalibrator(ProcessorWithCache):
             img, header = self.open_fits(bias)
 
             # Iteratively apply corrections
-            for f in preceding_steps:
-                img, header = f(list(img), list(header), sub_dir=sub_dir)
+            # for f in preceding_steps:
+            #    img, header = f(list(img), list(header), sub_dir=sub_dir)
 
             biases[:, :, i] = img
 
@@ -93,6 +94,11 @@ class BiasCalibrator(ProcessorWithCache):
         # Create a new HDU with the processed image data
         proc_hdu.header = primary_header  # Copy over the header from the raw file
 
-        master_bias_path = self.get_file_path(primary_header, sub_dir=sub_dir)
+        master_bias_path = self.get_file_path(sub_dir=self.night_sub_dir)
+        try:
+            os.makedirs(os.path.dirname(master_bias_path))
+        except OSError:
+            pass
+
         logger.info(f"Saving stacked 'master bias' to {master_bias_path}")
         self.save_fits(master_bias, primary_header, master_bias_path)

@@ -120,7 +120,7 @@ class Pipeline:
         for key in core_fields:
             if key not in header.keys():
                 err = f"Essential key {key} not found in header. " \
-                      f"Please add this field first. Available fields are: {header.keys()}"
+                      f"Please add this field first. Available fields are: {list(header.keys())}"
                 logger.error(err)
                 raise KeyError(err)
 
