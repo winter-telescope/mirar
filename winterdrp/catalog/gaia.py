@@ -18,7 +18,7 @@ class Gaia2Mass(BaseCatalog):
             min_mag: float,
             max_mag: float,
             ph_qual_cut: bool = False,
-            trim: bool = True,
+            trim: bool = False,
             image_catalog_path: str = None
     ):
         super().__init__(search_radius_arcmin, min_mag, max_mag)
