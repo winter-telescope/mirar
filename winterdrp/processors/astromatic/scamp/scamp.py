@@ -24,7 +24,7 @@ def run_scamp(
     scamp_cmd = f"scamp @{scamp_list_path} " \
                 f"-c {scamp_config_path} " \
                 f"-ASTREFCAT_NAME {ast_ref_cat_path} " \
-                # f"-VERBOSE_TYPE QUIET "
+                f"-VERBOSE_TYPE QUIET "
 
     execute(scamp_cmd, output_dir=output_dir)
 
@@ -70,9 +70,12 @@ class Scamp(BaseProcessor):
 
         ref_catalog = self.ref_catalog_generator(headers[0])
 
-        cat_path = ref_catalog.write_catalog(
-            headers[0],
-            output_dir=scamp_output_dir
+        cat_path = copy_temp_file(
+            output_dir=scamp_output_dir,
+            file_path=ref_catalog.write_catalog(
+                headers[0],
+                output_dir=scamp_output_dir
+            )
         )
 
         scamp_image_list_path = os.path.join(
@@ -97,6 +100,7 @@ class Scamp(BaseProcessor):
 
                 temp_img_path = get_temp_path(scamp_output_dir, header["BASENAME"])
                 self.save_fits(data, header, temp_img_path)
+                temp_mask_path = self.save_mask(data, header, temp_img_path)
                 f.write(f"{temp_cat_path}\n")
                 temp_files += [temp_cat_path, temp_img_path]
 
@@ -123,6 +127,7 @@ class Scamp(BaseProcessor):
             shutil.move(out_path, new_out_path)
             header[scamp_header_key] = new_out_path
             logger.info(f"Saved to {new_out_path}")
+            headers[i] = header
 
         return images, headers
 
@@ -135,21 +140,5 @@ class Scamp(BaseProcessor):
                   f"However, the following steps were found: {self.preceding_steps}."
             logger.error(err)
             raise ValueError
-
-
-    # @classmethod
-    # def single_catalog(
-    #         cls,
-    #         catalog: BaseCatalog,
-    #         *args,
-    #         **kwargs
-    # ):
-    #
-    #     def get_catalog(
-    #             header: astropy.io.fits.Header
-    #     ) -> BaseCatalog:
-    #         return catalog
-    #
-    #     return cls(get_catalog=get_catalog, *args, **kwargs)
 
 
