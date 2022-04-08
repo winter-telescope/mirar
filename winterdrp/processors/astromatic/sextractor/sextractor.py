@@ -2,9 +2,9 @@ import os
 import numpy as np
 import logging
 import astropy.io.fits
-from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single
+from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation
 from winterdrp.processors.base_processor import BaseProcessor
-from winterdrp.paths import get_output_dir
+from winterdrp.paths import get_output_dir, get_temp_path
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,7 @@ class Sextractor(BaseProcessor):
             parameter_path: str,
             filter_path: str,
             starnnw_path: str,
-            saturation: float = None,
-            weight_image: str = None,
+            saturation: float = default_saturation,
             verbose_type: str = "QUIET",
             checkimage_name: str | list = None,
             checkimage_type: str | list = None,
@@ -39,7 +38,6 @@ class Sextractor(BaseProcessor):
         self.filter_name = filter_path
         self.starnnw_name = starnnw_path
         self.saturation = saturation
-        self.weight_image = weight_image
         self.verbose_type = verbose_type
         self.checkimage_name = checkimage_name
         self.checkimage_type = checkimage_type
@@ -64,9 +62,12 @@ class Sextractor(BaseProcessor):
         for i, data in enumerate(images):
             header = headers[i]
 
-            temp_path = os.path.join(sextractor_out_dir, header["BASENAME"])
+            temp_path = get_temp_path(sextractor_out_dir, header["BASENAME"])
 
             self.save_fits(data, header, temp_path)
+            mask_path = self.save_mask(data, header, temp_path)
+
+            output_cat = os.path.join(sextractor_out_dir, header["BASENAME"].replace(".fits", ".cat"))
 
             output_cat = run_sextractor_single(
                 img=temp_path,
@@ -76,11 +77,12 @@ class Sextractor(BaseProcessor):
                 filter_name=self.filter_name,
                 starnnw_name=self.starnnw_name,
                 saturation=self.saturation,
-                weight_image=self.weight_image,
+                weight_image=mask_path,
                 verbose_type=self.verbose_type,
                 checkimage_name=self.checkimage_name,
                 checkimage_type=self.checkimage_type,
                 gain=self.gain,
+                catalog_name=output_cat
             )
 
             os.remove(temp_path)
@@ -90,30 +92,3 @@ class Sextractor(BaseProcessor):
 
         return images, headers
 
-    # def _apply_to_images(
-    #         self,
-    #         images: list,
-    #         headers: list,
-    #         sub_dir: str = ""
-    # ) -> (list, list):
-    #
-    #     # Try making output directory, unless it exists
-    #
-    #     output_dir = astrometry_output_dir(sub_dir)
-    #
-    #     try:
-    #         os.makedirs(output_dir)
-    #     except OSError:
-    #         pass
-    #
-    #     for header in list(headers):
-    #
-    #         # First run Sextractor
-    #
-    #         run_sextractor(
-    #             header[latest_save_key],
-    #             config=self.config,
-    #             output_dir=output_dir,
-    #         )
-    #
-    #     return images, headers
