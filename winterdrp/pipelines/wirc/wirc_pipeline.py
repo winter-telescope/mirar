@@ -48,17 +48,14 @@ class WircPipeline(Pipeline):
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
             AutoAstrometry(catalog="tmc"),
-            # ImageSaver(output_dir_name="testb"),
             Sextractor(
                 output_sub_dir="postprocess",
                 **sextractor_astrometry_config
             ),
-            ImageSaver(output_dir_name="testc"),
             Scamp(
                 ref_catalog_generator=wirc_astrometric_catalog_generator,
                 scamp_config_path=scamp_fp_path,
             ),
-            ImageSaver(output_dir_name="testd"),
             Swarp(swarp_config_path=swarp_sp_path),
             ImageSaver(output_dir_name="latest"),
         ]
