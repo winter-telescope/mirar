@@ -162,7 +162,7 @@ image_batches = pipe.split_raw_images_into_batches(
 )
 
 for image_batch in image_batches:
-    images, headers = pipe.open_image_batch(image_batch)
+    images, headers = pipe.open_raw_image_batch(image_batch)
     pipe.reduce_images(images, headers)
 
 logger.info('END OF WIRC-PIPE EXECUTION')
