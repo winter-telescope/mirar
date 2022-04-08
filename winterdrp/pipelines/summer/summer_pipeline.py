@@ -28,7 +28,7 @@ def summer_astrometric_catalog_generator(
         header: astropy.io.fits.Header
 ):
     temp_cat_path = header[sextractor_header_key]
-    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30, trim = False, image_catalog_path=temp_cat_path)
+    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30, trim = True, image_catalog_path=temp_cat_path)
 
 
 class SummerPipeline(Pipeline):
@@ -78,7 +78,7 @@ class SummerPipeline(Pipeline):
                 checkimage_type=None,
                  **sextractor_astrometry_config
              ),
-            ImageSaver(output_dir_name="testb"),
+            ImageSaver(output_dir_name="testc"),
             Scamp(
                  ref_catalog_generator=summer_astrometric_catalog_generator,
                  scamp_config_path=scamp_path,
