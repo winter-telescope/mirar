@@ -3,14 +3,16 @@ import os
 
 import astropy.io.fits
 import numpy as np
-from astropy.io import fits
 from glob import glob
 import pandas as pd
 import copy
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir, raw_img_key, saturate_key
+from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir, raw_img_key, saturate_key, \
+    get_preprocess_path
 from winterdrp.processors.base_processor import ProcessorWithCache
+from winterdrp.io import save_to_path
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +24,6 @@ class Pipeline:
 
     pipelines = {}
     name = None
-
-    # Set up elements to use
-    astrometry = ("GAIA", 9., 13.)
-    photometry_cal = dict()
 
     @property
     def pipeline_configurations(self):
@@ -48,8 +46,6 @@ class Pipeline:
     # By default this is the raw image path, i.e each image is processed separately
 
     batch_split_keys = ["RAWIMAGEPATH"]
-
-    standard_flats_dir = None
 
     default_log_history_nights = 0
 
@@ -108,14 +104,13 @@ class Pipeline:
     ):
         for processor in self.processors:
             processor.set_night(night_sub_dir=sub_dir)
-            processor.set_open_fits(self.open_fits)
 
-    def open_fits(
+    def open_raw_image(
             self,
             path: str
-    ) -> (np.array, astropy.io.fits.Header):
-        with fits.open(path) as raw:
-            data, header = self.reformat_raw_data(raw, path)
+    ) -> tuple[np.array, astropy.io.fits.Header]:
+
+        data, header = self.load_raw_image(path)
 
         for key in core_fields:
             if key not in header.keys():
@@ -126,25 +121,24 @@ class Pipeline:
 
         return data.astype(np.float64), header
 
-    def open_image_batch(
+    def open_raw_image_batch(
             self,
             paths: list
-    ) -> (list, list):
+    ) -> tuple[list, list]:
 
         images = []
         headers = []
         for path in paths:
-            data, header = self.open_fits(path)
+            data, header = self.open_raw_image(path)
             images.append(data)
             headers.append(header)
 
         return images, headers
 
     @staticmethod
-    def reformat_raw_data(
-            img: astropy.io.fits.HDUList,
+    def load_raw_image(
             path: str
-    ) -> (np.ndarray, astropy.io.fits.Header):
+    ) -> tuple[np.array, astropy.io.fits.Header]:
         raise NotImplementedError
 
     def load_pipeline_configuration(
@@ -346,23 +340,34 @@ class Pipeline:
         else:
             logger.debug(f"Found {len(img_list)} raw images in {raw_dir}")
 
+        preprocess_dir = os.path.dirname(get_preprocess_path(img_list[0]))
+
+        try:
+            os.makedirs(preprocess_dir)
+        except OSError:
+            pass
+
         log_data = []
 
         # Some fields should always go to the log
 
         key_list = self.header_keys + core_fields + ["NIGHT"]
 
-        for img_file in img_list:
-            _, header = self.open_fits(img_file)
+        for raw_img_path in img_list:
+            data, header = self.open_raw_image(raw_img_path)
+
+            preprocess_img_path = get_preprocess_path(raw_img_path)
 
             header["NIGHT"] = night_sub_dir.split("/")[1]
+
+            save_to_path(data, header, preprocess_img_path)
 
             row = []
 
             for key in key_list:
                 row.append(header[key])
 
-            row.append(img_file)
+            row.append(preprocess_img_path)
 
             log_data.append(row)
 

@@ -29,6 +29,12 @@ def raw_img_dir(
     return os.path.join(base_raw_dir, os.path.join(str(sub_dir), "raw"))
 
 
+def get_preprocess_path(
+        raw_img_path: str
+) -> str:
+    return raw_img_path.replace("/raw/", "/preprocess/")
+
+
 def get_output_dir(
         dir_root: str,
         sub_dir: str | int = ""

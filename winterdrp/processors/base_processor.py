@@ -7,8 +7,8 @@ import pandas as pd
 import socket
 import getpass
 import datetime
-from winterdrp.io import create_fits
-from winterdrp.paths import raw_img_key, get_mask_path, latest_save_key, latest_mask_save_key, saturate_key
+from winterdrp.io import save_to_path, open_fits
+from winterdrp.paths import raw_img_key, get_mask_path, latest_save_key, latest_mask_save_key
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,6 @@ class BaseProcessor:
 
         self.night = None
         self.night_sub_dir = None
-        self.open_fits = None
         self.preceding_steps = None
 
     @classmethod
@@ -59,12 +58,6 @@ class BaseProcessor:
             previous_steps: list
     ):
         self.preceding_steps = previous_steps
-
-    def set_open_fits(
-            self,
-            open_fits
-    ):
-        self.open_fits = open_fits
 
     def set_night(
             self,
@@ -99,6 +92,12 @@ class BaseProcessor:
     ):
         pass
 
+    @staticmethod
+    def open_fits(
+            path: str
+    ) -> tuple[np.ndarray, astropy.io.fits]:
+        return open_fits(path)
+
     def save_fits(
             self,
             data,
@@ -110,8 +109,7 @@ class BaseProcessor:
         if copy_to_cache:
             self.cache[path] = (data, header)
         logger.info(f"Saving to {path}")
-        img = create_fits(data, header=header)
-        img.writeto(path, overwrite=True)
+        save_to_path(data, header, path)
 
     def save_mask(
             self,

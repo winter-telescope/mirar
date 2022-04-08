@@ -1,9 +1,9 @@
 import os
 import astropy.io.fits
 import numpy as np
-from astropy.io.fits import HDUList
+from astropy.io import fits
+from astropy.time import Time
 from winterdrp.pipelines.base_pipeline import Pipeline
-
 from winterdrp.processors.dark import DarkCalibrator
 from winterdrp.processors.flat import SkyFlatCalibrator, OldSkyFlatCalibrator
 from winterdrp.processors.sky import NightSkyMedianCalibrator
@@ -16,9 +16,6 @@ from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
 from winterdrp.catalog import Gaia2Mass
 
 
-wirc_gain = 1.2
-
-
 def wirc_astrometric_catalog_generator(
         header: astropy.io.fits.Header
 ):
@@ -29,9 +26,8 @@ class WircPipeline(Pipeline):
 
     name = "wirc"
 
-    # photometry_cal = {
-    #     "J": ()
-    # }
+    non_linear_level = 30000
+    gain = 1.2
 
     # Set up elements to use
 
@@ -51,40 +47,37 @@ class WircPipeline(Pipeline):
             DarkCalibrator(),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
-            ImageSaver(output_dir_name="testa"),
-            AutoAstrometry(),
-            ImageSaver(output_dir_name="testb"),
-            # Sextractor(
-            #     output_sub_dir="postprocess",
-            #     **sextractor_astrometry_config
-            # ),
-            # ImageSaver(output_dir_name="testc"),
-            # Scamp(
-            #     ref_catalog_generator=wirc_astrometric_catalog_generator,
-            #     scamp_config_path=scamp_fp_path,
-            # ),
-            # ImageSaver(output_dir_name="testd"),
-            # Swarp(swarp_config_path=swarp_sp_path),
-            # ImageSaver(output_dir_name="latest"),
+            AutoAstrometry(catalog="tmc"),
+            # ImageSaver(output_dir_name="testb"),
+            Sextractor(
+                output_sub_dir="postprocess",
+                **sextractor_astrometry_config
+            ),
+            ImageSaver(output_dir_name="testc"),
+            Scamp(
+                ref_catalog_generator=wirc_astrometric_catalog_generator,
+                scamp_config_path=scamp_fp_path,
+            ),
+            ImageSaver(output_dir_name="testd"),
+            Swarp(swarp_config_path=swarp_sp_path),
+            ImageSaver(output_dir_name="latest"),
         ]
     }
 
-    @staticmethod
-    def reformat_raw_data(
-            img: HDUList,
+    def load_raw_image(
+            self,
             path: str
-    ) -> [np.array, astropy.io.fits.Header]:
-        header = img[0].header
-        header["FILTER"] = header["AFT"].split("__")[0]
-        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
-        if "CALSTEPS" not in header.keys():
+    ) -> tuple[np.array, astropy.io.fits.Header]:
+        with fits.open(path) as img:
+            data = img[0].data
+            header = img[0].header
+            header["FILTER"] = header["AFT"].split("__")[0]
+            header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
             header["CALSTEPS"] = ""
-        header["BASENAME"] = os.path.basename(path)
-        header["TARGET"] = header["OBJECT"].lower()
-        header["UTCTIME"] = header["UTSHUT"]
-        header.append(('GAIN', wirc_gain, 'Gain in electrons / ADU'), end=True)
-        img[0].header = header
-        return img[0].data, img[0].header
-
-    # def apply_reduction(self, raw_image_list):
-    #     return
+            header["BASENAME"] = os.path.basename(path)
+            header["TARGET"] = header["OBJECT"].lower()
+            header["UTCTIME"] = header["UTSHUT"]
+            header["MJD-OBS"] = Time(header['UTSHUT']).mjd
+            header.append(('GAIN', self.gain, 'Gain in electrons / ADU'), end=True)
+            header = self.set_saturation(header)
+        return data, header
