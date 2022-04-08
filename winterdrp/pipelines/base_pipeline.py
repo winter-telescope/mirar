@@ -141,6 +141,12 @@ class Pipeline:
     ) -> tuple[np.array, astropy.io.fits.Header]:
         raise NotImplementedError
 
+    @staticmethod
+    def download_raw_images_for_night(
+            night: str | int
+    ):
+        raise NotImplemented
+
     def load_pipeline_configuration(
             self,
             configuration: str | list = None,

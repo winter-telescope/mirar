@@ -2,7 +2,7 @@
 import argparse
 import sys
 import logging
-from winterdrp.pipelines import get_pipeline
+from winterdrp.pipelines import get_pipeline, Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +104,13 @@ parser.add_argument(
     action='store_true',
     default=False
 )
+
+parser.add_argument(
+    '--download',
+    help='Download images from server',
+    action='store_true',
+    default=False
+)
 # parser.add_argument(
 #     '-skipfail',
 #     help='If processing of one image set fails, proceed with other objects/filters',
@@ -150,19 +157,30 @@ log.setLevel(args.level)
 
 # logger.info(f"Running modes selected: {modes}")
 
-pipe = get_pipeline(
-    args.pipeline,
-    configuration=args.config,
-    night=args.night,
-    skip_build_cache=args.skipcache
-)
-# pipe.make_calibration_files(sub_dir=args.subdir)
-image_batches = pipe.split_raw_images_into_batches(
-    select_batch=args.batch
-)
+if args.download:
 
-for image_batch in image_batches:
-    images, headers = pipe.open_raw_image_batch(image_batch)
-    pipe.reduce_images(images, headers)
+    Pipeline.pipelines[args.pipeline.lower()].download_raw_images_for_night(
+        night=args.night
+    )
 
-logger.info('END OF WIRC-PIPE EXECUTION')
+    logger.info("Download complete")
+
+else:
+
+    pipe = get_pipeline(
+        args.pipeline,
+        configuration=args.config,
+        night=args.night,
+        skip_build_cache=args.skipcache
+    )
+
+    # pipe.make_calibration_files(sub_dir=args.subdir)
+    image_batches = pipe.split_raw_images_into_batches(
+        select_batch=args.batch
+    )
+
+    for image_batch in image_batches:
+        images, headers = pipe.open_raw_image_batch(image_batch)
+        pipe.reduce_images(images, headers)
+
+    logger.info('END OF WIRC-PIPE EXECUTION')

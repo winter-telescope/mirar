@@ -3,8 +3,8 @@ import astropy.io.fits
 import numpy as np
 from astropy.coordinates import SkyCoord
 import astropy.units as u
-from astropy.io.fits import HDUList
 from winterdrp.pipelines.base_pipeline import Pipeline
+from winterdrp.downloader.caltech import download_via_ssh
 
 from winterdrp.processors.bias import BiasCalibrator
 from winterdrp.processors.flat import FlatCalibrator
@@ -31,9 +31,12 @@ def summer_astrometric_catalog_generator(
     return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30, trim = True, image_catalog_path=temp_cat_path)
 
 
+pipeline_name = "summer"
+
+
 class SummerPipeline(Pipeline):
 
-    name = "summer"
+    name = pipeline_name
 
     astrometry_cal = ("GAIA", 10., 20.)
     photometry_cal = {
@@ -126,5 +129,13 @@ class SummerPipeline(Pipeline):
             data[0].header = header
         return data[0].data, data[0].header
 
-    # def apply_reduction(self, raw_image_list):
-    #     return
+    @staticmethod
+    def download_raw_images_for_night(
+            night: str | int
+    ):
+        download_via_ssh(
+            server="jagati.caltech.edu",
+            base_dir="/data/viraj/winter_data/commissioning/raw/",
+            night=night,
+            pipeline=pipeline_name
+        )
