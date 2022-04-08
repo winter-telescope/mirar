@@ -2,12 +2,14 @@ import logging
 import astropy.table
 from astroquery.gaia import Gaia
 from winterdrp.catalog.base_catalog import BaseCatalog
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+from winterdrp.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
 
 class Gaia2Mass(BaseCatalog):
-
     abbreviation = "tmass"
 
     def __init__(
@@ -15,10 +17,16 @@ class Gaia2Mass(BaseCatalog):
             search_radius_arcmin: float,
             min_mag: float,
             max_mag: float,
-            ph_qual_cut: bool = False
+            ph_qual_cut: bool = False,
+            trim: bool = True,
+            image_catalog_path: str = None
     ):
         super().__init__(search_radius_arcmin, min_mag, max_mag)
         self.ph_qual_cut = ph_qual_cut
+        self.trim = trim
+        self.image_catalog_path = image_catalog_path
+
+        logger.info(f'Sextractor catalog path is {self.image_catalog_path}')
 
     def get_catalog(
             self,
@@ -60,8 +68,29 @@ class Gaia2Mass(BaseCatalog):
         t['ra_errdeg'] = t['ra_error'] / 3.6e6
         t['dec_errdeg'] = t['dec_error'] / 3.6e6
         t['FLAGS'] = 0
+
+        logger.info(f'Found {len(t)} sources in Gaia')
+        if self.trim:
+            if self.image_catalog_path is None:
+                logger.error('Gaia catalog trimming requested but no sextractor catalog path specified.')
+                raise ValueError
+            else:
+                image_catalog = get_table_from_ldac(self.image_catalog_path)
+                t = self.trim_catalog(t, image_catalog)
+                logger.info(f'Trimmed to {len(t)} sources in Gaia')
+
         return t
 
+    def trim_catalog(self, ref_catalog, image_catalog):
+        ref_coords = SkyCoord(ra=ref_catalog['ra'], dec=ref_catalog['dec'], unit=(u.deg, u.deg))
+        image_coords = SkyCoord(ra=image_catalog['ALPHAWIN_J2000'], dec=image_catalog['DELTAWIN_J2000'],
+                                unit=(u.deg, u.deg))
+        idx, d2d, d3d = image_coords.match_to_catalog_sky(ref_coords)
+        match_mask = (d2d < 2 * u.arcsec)
+        matched_catalog = ref_catalog[idx[match_mask]]
+        return matched_catalog
+#        if len(matched_catalog) == 0:
+#            return -1
 
 # def make_gaia_catalog(
 #         ra_deg: float,

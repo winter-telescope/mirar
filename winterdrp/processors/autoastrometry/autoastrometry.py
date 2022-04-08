@@ -1815,6 +1815,7 @@ def autoastrometry(
             hdu.writeto(outfile, output_verify='silentfix', overwrite=True)
             logger.info(f'Written updated file to {outfile}')
 
+        logger.info(f"Derived center coordinates of {header['CRVAL1']}, {header['CRVAL2']}.")
 
 
     return n_match, sky_offset_pa, stdev_pa, ra_offset_arcsec, dec_offset_arcsec, std_offset_arcsec
