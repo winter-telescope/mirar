@@ -17,6 +17,7 @@ from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_wei
     swarp_path
 from winterdrp.paths import  copy_temp_file
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
+from astropy.io import fits
 
 from winterdrp.pipelines.summer.calibration import select_bias, select_flats_archival
 
@@ -91,46 +92,39 @@ class SummerPipeline(Pipeline):
     }
 
     @staticmethod
-    def reformat_raw_data(
-            img: HDUList,
+    def load_raw_image(
             path: str
-    ) -> [np.array, astropy.io.fits.Header]:
-        header = img[0].header
-        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
-        #print(header['OBSCLASS'])
-        header['UTCTIME'] = header['UTCSHUT']
-        header['TARGET'] = header['OBSTYPE'].lower()
-        #header['TARGET'] = header['FIELDID']
-        crd = SkyCoord(ra=img[0].header['RA'], dec=img[0].header['DEC'], unit=(u.deg, u.deg))
-        header['RA'] = crd.ra.deg
-        header['DEC'] = crd.dec.deg
-
-        if 'CRVAL1' not in header:
+    ) -> tuple[np.array, astropy.io.fits.Header]:
+        with fits.open(path) as data:
+            header = data[0].header
+            header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
+            # print(header['OBSCLASS'])
+            header['UTCTIME'] = header['UTCSHUT']
+            header['TARGET'] = header['OBSTYPE'].lower()
+            # header['TARGET'] = header['FIELDID']
+            crd = SkyCoord(ra=data[0].header['RA'], dec=data[0].header['DEC'], unit=(u.deg, u.deg))
+            header['RA'] = crd.ra.deg
+            header['DEC'] = crd.dec.deg
             header['CRVAL1'] = header['RA']
-
-        if 'CRVAL2' not in header:
             header['CRVAL2'] = header['DEC']
+            tel_crd = SkyCoord(ra=data[0].header['TELRA'], dec=data[0].header['TELDEC'], unit=(u.deg, u.deg))
+            header['TELRA'] = tel_crd.ra.deg
+            header['TELDEC'] = tel_crd.dec.deg
+            # filters = {'4': 'OPEN', '3': 'r', '1': 'u'}
+            header['BZERO'] = 0
 
-        tel_crd = SkyCoord(ra=img[0].header['TELRA'], dec=img[0].header['TELDEC'], unit=(u.deg, u.deg))
-        header['TELRA'] = tel_crd.ra.deg
-        header['TELDEC'] = tel_crd.dec.deg
-        #filters = {'4': 'OPEN', '3': 'r', '1': 'u'}
-        header['BZERO'] = 0
+            # print(img[0].data.shape)
+            data[0].data = data[0].data * 1.0
+            # img[0].data[2048, :] = np.nan
 
-        #print(img[0].data.shape)
-        img[0].data = img[0].data * 1.0
-        #img[0].data[2048, :] = np.nan
+            if 'other' in header['FILTERID']:
+                header['FILTERID'] = 'r'
 
-        if 'other' in header['FILTERID']:
-            header['FILTERID'] = 'r'
-
-        if "CALSTEPS" not in header.keys():
             header["CALSTEPS"] = ""
-        header["BASENAME"] = os.path.basename(path)
-        header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
-
-        img[0].header = header
-        return img[0].data, img[0].header
+            header["BASENAME"] = os.path.basename(path)
+            header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
+            data[0].header = header
+        return data[0].data, data[0].header
 
     # def apply_reduction(self, raw_image_list):
     #     return
