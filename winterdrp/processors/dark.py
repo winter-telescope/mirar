@@ -121,7 +121,7 @@ class DarkCalibrator(ProcessorWithCache):
             for i, dark in enumerate(cut_image_list):
                 img, header = self.load_and_apply_previous(dark)
                 dark_exptime = header['EXPTIME']
-                logger.debug(f'Read dark {i + 1}/{n_frames} with exposure time {dark_exptime}')
+                logger.debug(f'Read dark {i + 1}/{n_frames} with exposure time {dark_exptime}: {dark}')
 
                 darks[:, :, i] = img / dark_exptime
 

@@ -99,7 +99,7 @@ class FlatCalibrator(ProcessorWithCache):
             flats = np.zeros((ny, nx, n_frames))
 
             for i, flat in enumerate(cut_flat_list):
-                logger.debug(f'Reading image {i + 1}/{n_frames}')
+                logger.debug(f'Reading image {i + 1}/{n_frames}: {flat}')
 
                 img, header = self.load_and_apply_previous(flat)
 

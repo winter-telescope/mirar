@@ -52,7 +52,6 @@ class BiasCalibrator(ProcessorWithCache):
             header = headers[i]
             master_bias, _ = self.load_cache_file(self.get_file_path(sub_dir=self.night_sub_dir))
             data = data - master_bias
-            # header["CALSTEPS"] += "bias,"
             images[i] = data
             headers[i] = header
 
@@ -77,7 +76,7 @@ class BiasCalibrator(ProcessorWithCache):
         biases = np.zeros((ny, nx, nframes))
 
         for i, bias in enumerate(image_list):
-            logger.debug(f'Reading bias {i + 1}/{nframes}')
+            logger.debug(f'Reading bias {i + 1}/{nframes}: {bias}')
             img, header = self.open_fits(bias)
 
             # Iteratively apply corrections
