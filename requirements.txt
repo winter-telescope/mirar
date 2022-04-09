@@ -6,4 +6,5 @@ jupyter
 matplotlib
 numpy
 pandas
+psycopg3
 wget

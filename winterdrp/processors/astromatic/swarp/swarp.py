@@ -3,10 +3,8 @@ import os
 import numpy as np
 import astropy.io.fits
 from winterdrp.processors.base_processor import BaseProcessor
-from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, get_untemp_path, get_mask_path
+from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_name_key
 from winterdrp.utils import execute
-from winterdrp.catalog.base_catalog import BaseCatalog
-from collections.abc import Callable
 from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
 import shutil
 from astropy.wcs import WCS
@@ -192,7 +190,6 @@ class Swarp(BaseProcessor):
 
                 temp_img_path = get_temp_path(swarp_output_dir, header["BASENAME"])
                 self.save_fits(data, header, temp_img_path)
-
                 temp_mask_path = self.save_mask(data, header, temp_img_path)
 
                 f.write(f"{temp_img_path}\n")
@@ -209,6 +206,7 @@ class Swarp(BaseProcessor):
             self.center_ra = np.median(all_ras)
         if self.center_dec is None:
             self.center_dec = np.median(all_decs)
+
         run_swarp(
             stack_list_path=swarp_image_list_path,
             swarp_config_path=self.swarp_config,
@@ -222,22 +220,29 @@ class Swarp(BaseProcessor):
             center_dec=self.center_dec
         )
 
-        #raise
+        image, new_header = self.open_fits(output_image_path)
 
-        # for path in temp_files:
-        #     logger.debug(f"Deleting temp file {path}")
-        #     os.remove(path)
-        #
-        # assert len(headers) == len(out_files)
-        #
-        # for i, out_path in enumerate(out_files):
-        #     header = headers[i]
-        #     new_out_path = get_untemp_path(out_path)
-        #     shutil.move(out_path, new_out_path)
-        #     header["HEADPATH"] = new_out_path
-        #     logger.info(f"Saved to {new_out_path}")
+        for key in headers[0]:
+            if np.sum([x[key] == headers[0][key] for x in headers]) == len(headers):
+                if key not in new_header:
+                    new_header[key] = headers[0][key]
 
-        return images, headers
+        new_header["COADDS"] = np.sum([x["COADDS"] for x in headers])
+        # print(new_header["COADDS"], len(headers))
+        # print(header["SATURATION"])
+        # # Saturation
+        #
+        # raise
+
+        # fix
+        # headers
+        # here.....load
+        # up
+        # comps
+
+        new_header[base_name_key] = os.path.basename(output_image_path)
+
+        return [image], [new_header]
 
     def check_prerequisites(
             self,
