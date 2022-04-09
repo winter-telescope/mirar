@@ -14,6 +14,7 @@ from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, sextractor_astro
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
 from winterdrp.catalog import Gaia2Mass
+from winterdrp.downloader.caltech import download_via_ssh
 
 
 def wirc_astrometric_catalog_generator(
@@ -22,9 +23,12 @@ def wirc_astrometric_catalog_generator(
     return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30)
 
 
+pipeline_name = "wirc"
+
+
 class WircPipeline(Pipeline):
 
-    name = "wirc"
+    name = pipeline_name
 
     non_linear_level = 30000
     gain = 1.2
@@ -78,3 +82,15 @@ class WircPipeline(Pipeline):
             header.append(('GAIN', self.gain, 'Gain in electrons / ADU'), end=True)
             header = self.set_saturation(header)
         return data, header
+
+    @staticmethod
+    def download_raw_images_for_night(
+            night: str | int
+    ):
+        download_via_ssh(
+            server="gayatri.caltech.edu",
+            base_dir="/data/sanand/WIRC/",
+            night=night,
+            pipeline=pipeline_name,
+            server_sub_dir="raw"
+        )
