@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class PhotCalibrator(BaseProcessor):
+    base_key = 'photcalibrator'
 
     def __init__(self,
                  ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],

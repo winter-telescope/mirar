@@ -9,9 +9,10 @@ from astropy.table import Table
 logger = logging.getLogger(__name__)
 
 
-class PS1(BaseCatalog):
+class SDSS(BaseCatalog):
 
-    catalog_vizier_code = "II/349"
+    catalog_vizier_code = "V/147"
+    abbreviation = "sdss"
 
     def __init__(
             self,
@@ -21,30 +22,26 @@ class PS1(BaseCatalog):
             filter_name: str,
             snr_threshold : float=3.0
     ):
-        super().__init__(search_radius_arcmin, min_mag, max_mag)
-        self.filter_name = filter_name
+        super().__init__(search_radius_arcmin, min_mag, max_mag, filter_name)
         self.snr_threshold = snr_threshold
 
     def get_catalog(
             self,
             ra_deg: float,
-            dec_deg: float,
-            search_radius_arcmin: float,
-            min_mag: float,
-            max_mag: float,
+            dec_deg: float
     ) -> astropy.table.Table:
 
         logger.info(
             f'Querying SDSS catalog around RA {ra_deg:.4f}, '
-            f'Dec {dec_deg:.4f} with a radius of {search_radius_arcmin:.4f} arcmin'
+            f'Dec {dec_deg:.4f} with a radius of {self.search_radius_arcmin:.4f} arcmin'
         )
 
         v = Vizier(columns=['*'],
-                   column_filters={f"{self.filter_name}mag" : f"< {max_mag}",
+                   column_filters={f"{self.filter_name}mag" : f"< {self.max_mag}",
                                    f"e_{self.filter_name}mag" : "<%.3f" % (1.086 / self.snr_threshold)},
                    row_limit=-1)
         Q = v.query_region(SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
-                           radius=str(search_radius_arcmin) + 'm',
+                           radius=str(self.search_radius_arcmin) + 'm',
                            catalog="V/147", cache=False)
 
         if len(Q) == 0:

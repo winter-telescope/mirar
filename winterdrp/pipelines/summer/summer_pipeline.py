@@ -11,8 +11,11 @@ from winterdrp.processors.flat import FlatCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.autoastrometry import AutoAstrometry
+from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
-from winterdrp.catalog import Gaia2Mass
+from winterdrp.catalog import Gaia2Mass, PS1, SDSS
+from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_weight_path, sextractor_astrometry_config, scamp_path, \
+    swarp_path, sextractor_photometry_config
 from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_weight_path, sextractor_astrometry_config, scamp_path, \
     swarp_path
 from winterdrp.paths import  copy_temp_file
@@ -28,7 +31,14 @@ def summer_astrometric_catalog_generator(
         header: astropy.io.fits.Header
 ):
     temp_cat_path = header[sextractor_header_key]
-    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30, trim = True, image_catalog_path=temp_cat_path)
+    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30, trim = True, image_catalog_path=temp_cat_path, filter_name='j')
+
+
+def summer_photometric_catalog_generator(
+        header: astropy.io.fits.Header
+):
+    filter_name = header['FILTERID']
+    return PS1(min_mag=10, max_mag=20, search_radius_arcmin=30, filter_name=filter_name)
 
 
 pipeline_name = "summer"
@@ -37,11 +47,6 @@ pipeline_name = "summer"
 class SummerPipeline(Pipeline):
 
     name = pipeline_name
-
-    astrometry_cal = ("GAIA", 10., 20.)
-    photometry_cal = {
-        "J": ()
-    }
 
     # Set up elements to use
 
@@ -54,12 +59,14 @@ class SummerPipeline(Pipeline):
     ]
 
     batch_split_keys = ["RAWIMAGEPATH"]
+    # batch_split_keys = ["FIELDID"]
 
     pipeline_configurations = {
         None: [
             MaskPixels(mask_path=summer_mask_path),
             BiasCalibrator(),
             FlatCalibrator(),
+            # ImageSaver(output_dir_name="testa"),
             AutoAstrometry(pa=0, inv=True, pixel_scale=0.466),
             ImageSaver(output_dir_name="testb"),
             Sextractor(
@@ -68,17 +75,22 @@ class SummerPipeline(Pipeline):
                 checkimage_name=None,
                 checkimage_type=None,
                 **sextractor_astrometry_config
-             ),
+            ),
             ImageSaver(output_dir_name="testc"),
             Scamp(
-                 ref_catalog_generator=summer_astrometric_catalog_generator,
-                 scamp_config_path=scamp_path,
-             ),
-            #ImageSaver(output_dir_name="testd"),
-            Swarp(swarp_config_path=swarp_path,imgpixsize=2400),
-            #ImageSaver(output_dir_name="latest"),
-            #PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
-            #PhotCalibrator(ref_catalog_generator=summer_backup_photometric_catalog_generator,redo=False),
+                ref_catalog_generator=summer_astrometric_catalog_generator,
+                scamp_config_path=scamp_path,
+            ),
+            # ImageSaver(output_dir_name="testd"),
+            Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
+            # ImageSaver(output_dir_name="latest"),
+            Sextractor(output_sub_dir="photprocess",
+                       checkimage_name='NONE',
+                       checkimage_type='NONE',
+                       **sextractor_photometry_config),
+            ImageSaver(output_dir_name="testd"),
+            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
+            # PhotCalibrator(ref_catalog_generator=summer_backup_photometric_catalog_generator,redo=False),
         ]
     }
 
