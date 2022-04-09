@@ -55,31 +55,19 @@ class SummerPipeline(Pipeline):
 
     batch_split_keys = ["RAWIMAGEPATH"]
 
-    #pipeline_configurations = {
-    #    None: [
-    #        (BiasCalibrator, select_bias),
-    #        (FlatCalibrator, select_flats_archival),
-    #        (ImageSaver, "preprocess"),
-    #        (Sextractor, "pass1"),
-    #        # "stack",
-    #        # "dither"
-    #    ]
-    #}
-
     pipeline_configurations = {
         None: [
             MaskPixels(mask_path=summer_mask_path),
             BiasCalibrator(),
             FlatCalibrator(),
-            #ImageSaver(output_dir_name="testa"),
             AutoAstrometry(pa=0, inv=True, pixel_scale=0.466),
             ImageSaver(output_dir_name="testb"),
             Sextractor(
-                 output_sub_dir="postprocess",
-                 weight_image=summer_weight_path,
+                output_sub_dir="postprocess",
+                weight_image=summer_weight_path,
                 checkimage_name=None,
                 checkimage_type=None,
-                 **sextractor_astrometry_config
+                **sextractor_astrometry_config
              ),
             ImageSaver(output_dir_name="testc"),
             Scamp(
