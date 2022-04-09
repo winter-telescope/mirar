@@ -1,4 +1,4 @@
-astropy
+astropy[recommended]
 astroquery
 docker
 ephem
@@ -6,3 +6,4 @@ jupyter
 matplotlib
 numpy
 pandas
+wget

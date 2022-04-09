@@ -23,13 +23,14 @@ setuptools.setup(
     ],
     python_requires='>=3.10',
     install_requires=[
-        "astropy",
+        "astropy[recommended]",
         "astroquery",
         "docker",
         "ephem",
         "jupyter",
         "matplotlib",
         "numpy",
-        "pandas"
+        "pandas",
+        "wget"
     ]
 )
