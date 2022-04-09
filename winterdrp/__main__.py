@@ -165,22 +165,21 @@ if args.download:
 
     logger.info("Download complete")
 
-else:
 
-    pipe = get_pipeline(
-        args.pipeline,
-        configuration=args.config,
-        night=args.night,
-        skip_build_cache=args.skipcache
-    )
+pipe = get_pipeline(
+    args.pipeline,
+    configuration=args.config,
+    night=args.night,
+    skip_build_cache=args.skipcache
+)
 
-    # pipe.make_calibration_files(sub_dir=args.subdir)
-    image_batches = pipe.split_raw_images_into_batches(
-        select_batch=args.batch
-    )
+# pipe.make_calibration_files(sub_dir=args.subdir)
+image_batches = pipe.split_raw_images_into_batches(
+    select_batch=args.batch
+)
 
-    for image_batch in image_batches:
-        images, headers = pipe.open_raw_image_batch(image_batch)
-        pipe.reduce_images(images, headers)
+for image_batch in image_batches:
+    images, headers = pipe.open_raw_image_batch(image_batch)
+    pipe.reduce_images(images, headers)
 
-    logger.info('END OF WIRC-PIPE EXECUTION')
+logger.info('End of winterdrp execution')
