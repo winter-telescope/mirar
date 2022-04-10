@@ -6,5 +6,6 @@ jupyter
 matplotlib
 numpy
 pandas
-psycopg3
+psycopg2
 wget
+astroplan
