@@ -5,6 +5,9 @@ import os
 from glob import glob
 from astropy.time import Time
 import numpy as np
+import argparse
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 
 
 def create_db(db_name, db_user, password):
@@ -91,6 +94,11 @@ def insert_exposures(header, db_user, password, db_name='commissioning', db_host
     if header['ITID'] != 1:
         header['FIELDID'] = -99
 
+
+    crds = SkyCoord(ra=header['RA'],dec=header['DEC'],unit=(u.deg,u.deg))
+    header['RA'] = crds.ra.deg
+    header['DEC'] = crds.dec.deg
+
     txt = f'INSERT INTO exposures ({colnames}) VALUES ('
     txt = txt.replace('[','').replace(']','').replace("'",'')
 
@@ -104,13 +112,23 @@ def insert_exposures(header, db_user, password, db_name='commissioning', db_host
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--db', type=str, default='commissioning_1', help='Database name')
+    parser.add_argument('--secrets', type=str, default='/Users/viraj/winter_drp/db_secrets.csv')
+    parser.add_argument('--h', type=str, default='localhost')
+    parser.add_argument('--d',type=str,default='/Users/viraj/winter_data/summer/20220402/raw/')
 
-    db_name = 'commissioning_1'
-    secrets_file = '/Users/viraj/winter_drp/db_secrets.csv'
+    args = parser.parse_args()
+
+    db_name = args.db
+    secrets_file = args.secrets
+    host = args.h
+    dirname = args.d
+
     secrets = ascii.read(secrets_file)
     user = secrets['user'][0]
     pwd = secrets['pwd'][0]
-    host = 'localhost'
+
     if not check_if_db_exists(db_name, user, pwd, host):
         create_db(db_name, user, pwd)
 
@@ -119,7 +137,7 @@ if __name__ == '__main__':
         create_table('schema/' + table+'.sql', db_name, user, pwd)
 
 
-    ls = glob('/Users/viraj/winter_data/summer/20220402/raw/SUMMER_*.fits')
+    ls = glob(os.path.join(dirname, 'SUMMER_*.fits'))
     print(len(ls))
     #header = fits.getheader('/Users/viraj/winter_data/summer/20220402/raw/SUMMER_20220402_203525_Camera0.fits')
     for l in ls:
