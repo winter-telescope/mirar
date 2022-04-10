@@ -20,7 +20,7 @@ def create_db(db_name, db_user, password):
 
 
 def create_table(schema_path, db_name, db_user, password, db_host='localhost'):
-    conn = psycopg2.connect(database=db_name, user=db_user, password=password)
+    conn = psycopg2.connect(database=db_name,  user=db_user, password=password)
     conn.autocommit = True
     cursor = conn.cursor()
 
@@ -28,7 +28,7 @@ def create_table(schema_path, db_name, db_user, password, db_host='localhost'):
 
 
 def check_if_db_exists(db_name, db_user, password, db_host='localhost'):
-    conn = psycopg2.connect(database='postgres', host=db_host, user=db_user, password=password)
+    conn = psycopg2.connect(database='postgres',  user=db_user, password=password)
     conn.autocommit = True
     cursor = conn.cursor()
 
@@ -43,7 +43,7 @@ def check_if_db_exists(db_name, db_user, password, db_host='localhost'):
 
 
 def insert_exposures(header, db_user, password, db_name='commissioning', db_host='localhost'):
-    conn = psycopg2.connect(database=db_name, host=db_host, user=db_user, password=password)
+    conn = psycopg2.connect(database=db_name, user=db_user, password=password)
     conn.autocommit = True
     cursor = conn.cursor()
 
