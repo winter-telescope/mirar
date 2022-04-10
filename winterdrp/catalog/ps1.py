@@ -5,7 +5,6 @@ from winterdrp.catalog.base_catalog import BaseCatalog
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy.table import Table
-from winterdrp.utils.ldac_tools import save_table_as_ldac
 
 logger = logging.getLogger(__name__)
 
@@ -56,5 +55,5 @@ class PS1(BaseCatalog):
             logger.info(f'{len(t)} matches found in the given radius in PS1')
             t.write('phot_table.csv',overwrite=True)
             t = Table.read('phot_table.csv')
-            #save_table_as_ldac(t,'phot_table.ldac')
+            # save_table_as_ldac(t,'phot_table.ldac')
         return t
