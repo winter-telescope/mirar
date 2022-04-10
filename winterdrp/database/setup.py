@@ -86,7 +86,10 @@ def insert_exposures(header, db_user, password, db_name='commissioning', db_host
                'BIAS':2, 'FLAT':2, 'DARK':2, 'FOCUS' :3
                ,'POINTING':4, 'OTHER':5}
 
-    header['ITID'] = itid_dict[header['OBSTYPE']]
+    if not header['OBSTYPE'] in itid_dict.keys():
+        header['ITID'] = 5
+    else:
+        header['ITID'] = itid_dict[header['OBSTYPE']]
 
     if header['FIELDID'] == 'radec':
         header['FIELDID'] = 0
