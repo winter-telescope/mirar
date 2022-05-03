@@ -5,6 +5,9 @@ from winterdrp.processors.base_processor import BaseProcessor
 
 logger = logging.getLogger(__name__)
 
+# mask_value = -99.
+mask_value = np.nan
+
 
 class MaskPixels(BaseProcessor):
 
@@ -37,7 +40,7 @@ class MaskPixels(BaseProcessor):
 
             mask = mask != 0
 
-            data[mask] = np.nan
+            data[mask] = mask_value
             images[i] = data
             headers[i] = header
 
