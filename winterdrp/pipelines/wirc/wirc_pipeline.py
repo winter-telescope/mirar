@@ -61,7 +61,12 @@ class WircPipeline(Pipeline):
                 scamp_config_path=scamp_fp_path,
             ),
             Swarp(swarp_config_path=swarp_sp_path),
-            ImageSaver(output_dir_name="latest"),
+            Sextractor(
+                output_sub_dir="final_sextractor",
+                **sextractor_astrometry_config
+            ),
+            ImageSaver(output_dir_name="final"),
+
         ]
     }
 
