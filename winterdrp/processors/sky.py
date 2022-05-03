@@ -7,7 +7,7 @@ from collections.abc import Callable
 from astropy.time import Time
 from winterdrp.processors.base_processor import ProcessorWithCache
 from winterdrp.processors.flat import SkyFlatCalibrator, OldSkyFlatCalibrator
-from winterdrp.paths import cal_output_dir
+from winterdrp.paths import cal_output_dir, saturate_key
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
             sky, _ = self.load_cache_file(self.get_file_path(header))
             subtract_median = np.nanmedian(data)
             data = data - subtract_median * sky
+            header[saturate_key] -= subtract_median
             header.append(('SKMEDSUB', subtract_median, 'Median sky level subtracted'), end=True)
             images[i] = data
             headers[i] = header
