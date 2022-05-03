@@ -102,7 +102,7 @@ class Scamp(BaseProcessor):
                 self.save_fits(data, header, temp_img_path)
                 temp_mask_path = self.save_mask(data, header, temp_img_path)
                 f.write(f"{temp_cat_path}\n")
-                temp_files += [temp_cat_path, temp_img_path]
+                temp_files += [temp_cat_path, temp_img_path, temp_mask_path]
 
                 out_path = get_scamp_output_head_path(temp_cat_path)
 
