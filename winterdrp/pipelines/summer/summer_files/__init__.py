@@ -14,6 +14,14 @@ sextractor_astrometry_config = {
     "starnnw_path": os.path.join(astromatic_config_dir, 'default.nnw')
 }
 
+
+sextractor_photometry_config = {
+    "config_path": os.path.join(astromatic_config_dir, 'photomCat.sex'),
+    "filter_path": os.path.join(astromatic_config_dir, 'default.conv'),
+    "parameter_path": os.path.join(astromatic_config_dir, 'photom.param'),
+    "starnnw_path": os.path.join(astromatic_config_dir, 'default.nnw')
+}
+
 astrom_scamp = 'config/scamp.conf'
 astrom_sex = 'config/astrom.sex'
 astrom_param = 'config/astrom.param'

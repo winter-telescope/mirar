@@ -17,11 +17,13 @@ class Gaia2Mass(BaseCatalog):
             search_radius_arcmin: float,
             min_mag: float,
             max_mag: float,
+            filter_name: str,
             ph_qual_cut: bool = False,
             trim: bool = False,
-            image_catalog_path: str = None
+            image_catalog_path: str = None,
+
     ):
-        super().__init__(search_radius_arcmin, min_mag, max_mag)
+        super().__init__(search_radius_arcmin, min_mag, max_mag, filter_name)
         self.ph_qual_cut = ph_qual_cut
         self.trim = trim
         self.image_catalog_path = image_catalog_path
@@ -32,14 +34,11 @@ class Gaia2Mass(BaseCatalog):
             self,
             ra_deg: float,
             dec_deg: float,
-            search_radius_arcmin: float,
-            min_mag: float,
-            max_mag: float,
     ) -> astropy.table.Table:
 
         logger.info(
             f'Querying 2MASS - Gaia cross-match around RA {ra_deg:.4f}, '
-            f'Dec {dec_deg:.4f} with a radius of {search_radius_arcmin:.4f} arcmin'
+            f'Dec {dec_deg:.4f} with a radius of {self.search_radius_arcmin:.4f} arcmin'
         )
 
         cmd = f"SELECT * FROM gaiadr2.gaia_source AS g, " \
@@ -48,9 +47,9 @@ class Gaia2Mass(BaseCatalog):
               f"WHERE g.source_id = tbest.source_id " \
               f"AND tbest.tmass_oid = tmass.tmass_oid " \
               f"AND CONTAINS(POINT('ICRS', g.ra, g.dec), " \
-              f"CIRCLE('ICRS', {ra_deg:.4f}, {dec_deg:.4f}, {search_radius_arcmin / 60:.4f}))=1 " \
-              f"AND tmass.j_m > {min_mag:.2f} " \
-              f"AND tmass.j_m < {max_mag:.2f} " \
+              f"CIRCLE('ICRS', {ra_deg:.4f}, {dec_deg:.4f}, {self.search_radius_arcmin / 60:.4f}))=1 " \
+              f"AND tmass.{self.filter_name}_m > {self.min_mag:.2f} " \
+              f"AND tmass.{self.filter_name}_m < {self.max_mag:.2f} " \
               f"AND tbest.number_of_mates=0 " \
               f"AND tbest.number_of_neighbours=1"
 

@@ -19,18 +19,17 @@ class BaseCatalog:
             search_radius_arcmin: float,
             min_mag: float,
             max_mag: float,
+            filter_name: str
     ):
         self.search_radius_arcmin = search_radius_arcmin
         self.min_mag = min_mag
         self.max_mag = max_mag
+        self.filter_name = filter_name
 
     @staticmethod
     def get_catalog(
             ra_deg: float,
-            dec_deg: float,
-            search_radius_arcmin: float,
-            min_mag: float,
-            max_mag: float
+            dec_deg: float
     ) -> astropy.table.Table:
         raise NotImplementedError()
 
@@ -46,10 +45,7 @@ class BaseCatalog:
 
         cat = self.get_catalog(
             ra_deg=ra_deg,
-            dec_deg=dec_deg,
-            search_radius_arcmin=self.search_radius_arcmin,
-            min_mag=self.min_mag,
-            max_mag=self.max_mag
+            dec_deg=dec_deg
         )
 
         output_path = self.get_output_path(output_dir, base_name) + ".ldac"
@@ -80,10 +76,7 @@ class BaseCatalog:
 
         cat = self.get_catalog(
             ra_deg=ra_deg,
-            dec_deg=dec_deg,
-            search_radius_arcmin=self.search_radius_arcmin,
-            min_mag=self.min_mag,
-            max_mag=self.max_mag
+            dec_deg=dec_deg
         )
 
         return cat
