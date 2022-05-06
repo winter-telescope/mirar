@@ -104,7 +104,6 @@ parser.add_argument(
     action='store_true',
     default=False
 )
-
 parser.add_argument(
     '--download',
     help='Download images from server',
