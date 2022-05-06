@@ -17,7 +17,7 @@ class Gaia2Mass(BaseCatalog):
             search_radius_arcmin: float,
             min_mag: float,
             max_mag: float,
-            filter_name: str,
+            filter_name: str = "j",
             ph_qual_cut: bool = False,
             trim: bool = False,
             image_catalog_path: str = None,
