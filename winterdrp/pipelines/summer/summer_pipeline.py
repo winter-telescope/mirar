@@ -27,11 +27,20 @@ from winterdrp.pipelines.summer.calibration import select_bias, select_flats_arc
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
 
+
 def summer_astrometric_catalog_generator(
         header: astropy.io.fits.Header
 ):
     temp_cat_path = header[sextractor_header_key]
-    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30, trim = True, image_catalog_path=temp_cat_path, filter_name='j')
+    cat = Gaia2Mass(
+        min_mag=10,
+        max_mag=20,
+        search_radius_arcmin=30,
+        trim=True,
+        image_catalog_path=temp_cat_path,
+        filter_name='j'
+    )
+    return cat
 
 
 def summer_photometric_catalog_generator(
