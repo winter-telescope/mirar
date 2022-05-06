@@ -18,7 +18,7 @@ from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_wei
     swarp_path, sextractor_photometry_config
 from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_weight_path, sextractor_astrometry_config, scamp_path, \
     swarp_path
-from winterdrp.paths import  copy_temp_file
+from winterdrp.paths import copy_temp_file
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from astropy.io import fits
 
@@ -26,6 +26,7 @@ from winterdrp.pipelines.summer.calibration import select_bias, select_flats_arc
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
+summer_pixel_scale = 0.466
 
 
 def summer_astrometric_catalog_generator(
@@ -76,7 +77,7 @@ class SummerPipeline(Pipeline):
             BiasCalibrator(),
             FlatCalibrator(),
             # ImageSaver(output_dir_name="testa"),
-            AutoAstrometry(pa=0, inv=True, pixel_scale=0.466),
+            AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
             ImageSaver(output_dir_name="testb"),
             Sextractor(
                 output_sub_dir="postprocess",
