@@ -45,12 +45,12 @@ class PS1(BaseCatalog):
                            catalog="II/349", cache=False)
 
         if len(Q) == 0:
-            logger.info('No matches found in the given radius in PS1')
+            logger.warning('No matches found in the given radius in PS1')
             t = Table()
         else:
             t = Table(Q[0])
-            t['RA'] = t['RAJ2000']
-            t['DEC'] = t['DEJ2000']
+            t['ra'] = t['RAJ2000']
+            t['dec'] = t['DEJ2000']
             t['magnitude'] = t[f'{self.filter_name}mag']
             logger.info(f'{len(t)} matches found in the given radius in PS1')
             t.write('phot_table.csv',overwrite=True)

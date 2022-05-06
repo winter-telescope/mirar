@@ -56,7 +56,7 @@ class PhotCalibrator(BaseProcessor):
             logger.info('No sources found in reference catalog')
             return [{'Error': -1}]
 
-        ref_coords = SkyCoord(ra=ref_cat['RA'],dec=ref_cat['DEC'],unit=(u.deg,u.deg))
+        ref_coords = SkyCoord(ra=ref_cat['ra'], dec=ref_cat['dec'], unit=(u.deg, u.deg))
 
         clean_mask = (img_cat['FLAGS'] == 0) & (img_cat['FWHM_WORLD'] < self.fwhm_threshold_arcsec / 3600) \
                      & (img_cat['X_IMAGE'] > self.x_lower_limit) & \
