@@ -1,15 +1,15 @@
-import psycopg2
+import psycopg
+import getpass
 from astropy.coordinates import SkyCoord
 import astropy.units as u
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from astropy.io import fits, ascii
 import os
 from glob import glob
 from astropy.time import Time
 
 
-def ingest_raw(user,password,rawimlist,reingest=False):
-	conn = psycopg2.connect(database='commissioning', user=user, password=password)#, host='127.0.0.1', port='5432')
+def ingest_raw(user, password, rawimlist, reingest=False):
+	conn = psycopg.connect(database='commissioning', user=user, password=password)#, host='127.0.0.1', port='5432')
 	conn.autocommit = True
 	cursor = conn.cursor()
 	for l in rawimlist:
@@ -36,7 +36,6 @@ def ingest_raw(user,password,rawimlist,reingest=False):
 		if 'UTCISO' in header.keys():
 			obs_utc = header['UTCISO']
 			obsdate = int(Time(obs_utc).isot.split('T')[0].replace('-',''))
-
 		
 		filesize = os.stat(filename).st_size
 		
@@ -53,10 +52,10 @@ def ingest_raw(user,password,rawimlist,reingest=False):
 		if 'RA' in header.keys():
 			obj_ra = header['RA']
 			obj_dec = header['DEC']
-			obj_crds = SkyCoord(ra=obj_ra,dec=obj_dec,unit=(u.deg,u.deg))
+			obj_crds = SkyCoord(ra=obj_ra, dec=obj_dec, unit=(u.deg,u.deg))
 			obj_ra, obj_dec = obj_crds.ra.deg, obj_crds.dec.deg
 		else:
-			obj_ra, obj_dec = -99,-99
+			obj_ra, obj_dec = -99, -99
 
 		if 'TELRA' in header.keys():
 			tel_ra = header['TELRA']
@@ -176,8 +175,8 @@ def ingest_raw(user,password,rawimlist,reingest=False):
 	return 0	
 
 
-def ingest_proc(user,password,procimlist,reingest=False):
-	conn = psycopg2.connect(database='commissioning', user=user, password=password)#, host='127.0.0.1', port='5432')
+def ingest_proc(user, password, procimlist, reingest=False):
+	conn = psycopg.connect(database='commissioning', user=user, password=password)#, host='127.0.0.1', port='5432')
 	conn.autocommit = True
 	cursor = conn.cursor()
 
@@ -330,7 +329,7 @@ def ingest_proc(user,password,procimlist,reingest=False):
 	return 0
 
 
-def create_db(user,password,dbname='commissioning'):
+def create_db(user, password, dbname='commissioning'):
 	conn = psycopg2.connect(database='postgres', user=user, password=password)#, host='127.0.0.1', port='5432')
 	cursor = conn.cursor()
 	conn.autocommit = True
@@ -339,7 +338,7 @@ def create_db(user,password,dbname='commissioning'):
 	print('Created db %s'%(dbname))
 	
 	
-def create_tables(user,password,dbname='commissioning'):
+def create_tables(user, password, dbname='commissioning'):
 	conn = psycopg2.connect(database=dbname, user=user, password=password)#, host='127.0.0.1', port='5432')
 	cursor = conn.cursor()
 	conn.autocommit = True
@@ -368,26 +367,26 @@ def create_tables(user,password,dbname='commissioning'):
 if __name__ == '__main__':
 	import argparse
 	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-	parser.add_argument("--d",type=str,default='data',help='Path to the directory where raw images are stored')
-	parser.add_argument("--procdir",type=str,default='proc',help='Name of output subdirectory for processed images')
-	parser.add_argument("--create_db",action="store_true")
-	parser.add_argument("--raw",action="store_true")
-	parser.add_argument("--proc",action="store_true")
-	parser.add_argument("--reingest",action="store_true")
-	parser.add_argument("--dbname",type=str,default='commissioning',help='Name of database')
-	parser.add_argument("--secrets",type=str,default='/home/viraj/db_secrets.csv',help='Username and password file')
+	parser.add_argument("--d", type=str, default='data',help='Path to the directory where raw images are stored')
+	parser.add_argument("--procdir", type=str, default='proc',help='Name of output subdirectory for processed images')
+	parser.add_argument("--create_db", action="store_true")
+	parser.add_argument("--raw", action="store_true")
+	parser.add_argument("--proc", action="store_true")
+	parser.add_argument("--reingest", action="store_true")
+	parser.add_argument("--dbname", type=str, default='commissioning',help='Name of database')
 
 
 	args = parser.parse_args()
-	
-	secrets = ascii.read(args.secrets)
-	user = secrets['user'][0]
-	password = secrets['pwd'][0]
+
+	user = "rd"
+
+	# password = getpass.getpass(f"Enter password for user {user}: ")
+	password = "nothingfornow"
 
 	if args.create_db:
-		create_db(user,password,args.dbname)
+		create_db(user, password, args.dbname)
 
-		create_tables(user,password,args.dbname)
+		create_tables(user, password, args.dbname)
 
 	if args.raw:
 		rawimlist = glob('%s/*.fits'%(args.d))
