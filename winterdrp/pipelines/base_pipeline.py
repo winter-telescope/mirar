@@ -54,8 +54,10 @@ class Pipeline:
             pipeline_configuration: str = None,
             night: int | str = "",
             log_history_nights: int = None,
-            skip_build_cache: bool = False
+            skip_build_cache: bool = False,
+            remake_logs: bool = False
     ):
+        self.remake_logs = remake_logs
 
         if log_history_nights is None:
             log_history_nights = self.default_log_history_nights
@@ -283,7 +285,12 @@ class Pipeline:
 
         if path in self.observing_logs_cache:
             log = self.observing_logs_cache[path]
+        elif np.logical_and(not self.remake_logs, os.path.isfile(path)):
+            logger.debug(f"Found log, loading {path}")
+            log = pd.read_csv(path)
+            self.observing_logs_cache[path] = log
         else:
+            logger.debug(f"Making log {path}")
             log = self.parse_observing_log(night_sub_dir=night_sub_dir)
             self.observing_logs_cache[path] = log
             self.export_observing_log(night_sub_dir=night_sub_dir)
