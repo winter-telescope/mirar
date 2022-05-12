@@ -12,9 +12,6 @@ from glob import glob
 
 logger = logging.getLogger(__name__)
 
-print(raw_img_key)
-
-
 
 class ImageLoader(BaseProcessor):
 
@@ -27,6 +24,7 @@ class ImageLoader(BaseProcessor):
             *args,
             **kwargs
     ):
+        super().__init__(*args, **kwargs)
         self.input_sub_dir = input_sub_dir
         self.load_image = load_image
 
@@ -72,6 +70,8 @@ class ImageLoader(BaseProcessor):
         )
 
         img_list = glob(f'{input_dir}/*.fits')
+
+        logger.info(f"Loading from {input_dir}, with {len(img_list)} images")
 
         new_images = []
         new_headers = []
