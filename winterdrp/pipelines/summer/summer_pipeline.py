@@ -5,24 +5,16 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.downloader.caltech import download_via_ssh
-
-from winterdrp.processors.bias import BiasCalibrator
-from winterdrp.processors.flat import FlatCalibrator
-from winterdrp.processors.mask import MaskPixels
-from winterdrp.processors.utils import ImageSaver
-from winterdrp.processors.autoastrometry import AutoAstrometry
-from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
-from winterdrp.catalog import Gaia2Mass, PS1, SDSS
-from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_weight_path, sextractor_astrometry_config, scamp_path, \
-    swarp_path, sextractor_photometry_config
-from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_weight_path, sextractor_astrometry_config, scamp_path, \
-    swarp_path
-from winterdrp.paths import copy_temp_file
+from astropy.time import Time
+from winterdrp.catalog import Gaia2Mass, PS1
+from winterdrp.processors.database.database_exporter import DatabaseExporter
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from astropy.io import fits
+from winterdrp.pipelines.summer.summer_files import get_summer_schema_path, summer_mask_path
+from winterdrp.processors.split import SplitImage
+from winterdrp.processors.utils import ImageSaver
+from winterdrp.processors.mask import MaskPixels
 
-from winterdrp.pipelines.summer.calibration import select_bias, select_flats_archival
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
@@ -68,41 +60,71 @@ class SummerPipeline(Pipeline):
         "OBSTYPE"
     ]
 
-    batch_split_keys = ["RAWIMAGEPATH"]
+    # batch_split_keys = ["RAWIMAGEPATH"]
     # batch_split_keys = ["FIELDID"]
+    # batch_split_keys = ["ORIGIN"]
 
     pipeline_configurations = {
-        None: [
-            MaskPixels(mask_path=summer_mask_path),
-            BiasCalibrator(),
-            FlatCalibrator(),
-            # ImageSaver(output_dir_name="testa"),
-            AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
-            ImageSaver(output_dir_name="testb"),
-            Sextractor(
-                output_sub_dir="postprocess",
-                weight_image=summer_weight_path,
-                checkimage_name=None,
-                checkimage_type=None,
-                **sextractor_astrometry_config
-            ),
-            ImageSaver(output_dir_name="testc"),
-            Scamp(
-                ref_catalog_generator=summer_astrometric_catalog_generator,
-                scamp_config_path=scamp_path,
-            ),
+        # None: [
+            # MaskPixels(mask_path=summer_mask_path),
+            # BiasCalibrator(),
+            # FlatCalibrator(),
+            # # ImageSaver(output_dir_name="testa"),
+            # AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
+            # ImageSaver(output_dir_name="testb"),
+            # Sextractor(
+            #     output_sub_dir="postprocess",
+            #     weight_image=summer_weight_path,
+            #     checkimage_name=None,
+            #     checkimage_type=None,
+            #     **sextractor_astrometry_config
+            # ),
+            # ImageSaver(output_dir_name="testc"),
+            # Scamp(
+            #     ref_catalog_generator=summer_astrometric_catalog_generator,
+            #     scamp_config_path=scamp_path,
+            # ),
+            # # ImageSaver(output_dir_name="testd"),
+            # Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
+            # # ImageSaver(output_dir_name="latest"),
+            # Sextractor(output_sub_dir="photprocess",
+            #            checkimage_name='NONE',
+            #            checkimage_type='NONE',
+            #            **sextractor_photometry_config),
             # ImageSaver(output_dir_name="testd"),
-            Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
-            # ImageSaver(output_dir_name="latest"),
-            Sextractor(output_sub_dir="photprocess",
-                       checkimage_name='NONE',
-                       checkimage_type='NONE',
-                       **sextractor_photometry_config),
-            ImageSaver(output_dir_name="testd"),
-            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
-            # PhotCalibrator(ref_catalog_generator=summer_backup_photometric_catalog_generator,redo=False),
+            # PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
+            # # PhotCalibrator(ref_catalog_generator=summer_backup_photometric_catalog_generator,redo=False),
+        # ]
+        None: [
+            DatabaseExporter(
+                db_name=pipeline_name,
+                db_table="exposures",
+                schema_path=get_summer_schema_path("exposures")
+            ),
+            SplitImage(
+                buffer_pixels=0,
+                n_x=1,
+                n_y=2
+            ),
+            ImageSaver(output_dir_name="rawimages"),
+            DatabaseExporter(
+                db_name=pipeline_name,
+                db_table="raw",
+                schema_path=get_summer_schema_path("raw")
+            ),
         ]
     }
+
+    @staticmethod
+    def download_raw_images_for_night(
+            night: str | int
+    ):
+        download_via_ssh(
+            server="jagati.caltech.edu",
+            base_dir="/data/viraj/winter_data/commissioning/raw/",
+            night=night,
+            pipeline=pipeline_name
+        )
 
     @staticmethod
     def load_raw_image(
@@ -136,16 +158,67 @@ class SummerPipeline(Pipeline):
             header["CALSTEPS"] = ""
             header["BASENAME"] = os.path.basename(path)
             header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
+
+            header['OBSDATE'] = int(header['UTC'].split('_')[0])
+
+            obstime = Time(header['UTCISO'], format='iso')
+            t0 = Time('2018-01-01', format='iso')
+            header['OBSID'] = 0
+            header['NIGHT'] = np.floor((obstime - t0).jd).astype(int)
+            header['PROGID'] = 0
+            header['EXPMJD'] = header['OBSMJD']
+
+            if "SUBPROG" not in header.keys():
+                header['SUBPROG'] = 'high_cadence'
+
+            header['FILTER'] = header['FILTERID']
+
+            # print('Time', header['shutopen'])
+            try:
+                header['SHUTOPEN'] = Time(header['SHUTOPEN'], format='iso').jd
+            except (KeyError, ValueError):
+                # header['SHUTOPEN'] = None
+                pass
+
+            try:
+                header['SHUTCLSD'] = Time(header['SHUTCLSD'], format='iso').jd
+            except ValueError:
+                pass
+                # header['SHUTCLSD'] = None
+
+            header['PROCFLAG'] = 0
+            sunmoon_keywords = ['MOONRA', 'MOONDEC', 'MOONILLF', 'MOONPHAS', 'MOONALT', 'SUNAZ', 'SUNALT']
+            for key in sunmoon_keywords:
+                val = 0
+                if key in header.keys():
+                    if header[key] not in ['']:
+                        val = header[key]
+                header[key] = val
+
+            itid_dict = {
+                'SCIENCE': 1,
+                'BIAS': 2,
+                'FLAT': 2,
+                'DARK': 2,
+                'FOCUS': 3,
+                'POINTING': 4,
+                'OTHER': 5
+            }
+
+            if not header['OBSTYPE'] in itid_dict.keys():
+                header['ITID'] = 5
+            else:
+                header['ITID'] = itid_dict[header['OBSTYPE']]
+
+            if header['FIELDID'] == 'radec':
+                header['FIELDID'] = 0
+
+            if header['ITID'] != 1:
+                header['FIELDID'] = -99
+
+            crds = SkyCoord(ra=header['RA'], dec=header['DEC'], unit=(u.deg, u.deg))
+            header['RA'] = crds.ra.deg
+            header['DEC'] = crds.dec.deg
+
             data[0].header = header
         return data[0].data, data[0].header
-
-    @staticmethod
-    def download_raw_images_for_night(
-            night: str | int
-    ):
-        download_via_ssh(
-            server="jagati.caltech.edu",
-            base_dir="/data/viraj/winter_data/commissioning/raw/",
-            night=night,
-            pipeline=pipeline_name
-        )

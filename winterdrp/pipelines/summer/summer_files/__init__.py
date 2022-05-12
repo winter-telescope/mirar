@@ -1,9 +1,8 @@
 import os
-#from winterdrp.processors.astromatic.config import astromatic_config_dir
-
+from winterdrp.pipelines.summer.summer_files.schema import get_summer_schema_path
 summer_dir = os.path.dirname(__file__)
 
-astromatic_config_dir = os.path.join(summer_dir,'config')
+astromatic_config_dir = os.path.join(summer_dir, 'config')
 summer_mask_path = os.path.join(summer_dir, "mask.fits")
 summer_weight_path = os.path.join(summer_dir, "weight.fits")
 
