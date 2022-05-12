@@ -8,6 +8,8 @@ from winterdrp.paths import base_name_key
 
 logger = logging.getLogger(__name__)
 
+sub_id_key = "SUBID"
+
 
 class SplitImage(BaseProcessor):
 
@@ -74,13 +76,16 @@ class SplitImage(BaseProcessor):
 
                     new_header["SUBCOORD"] = (sub_img_id, "Sub-image coordinate, in form x_y")
 
-                    new_header["SUBID"] = k
+                    new_header[sub_id_key] = k
                     k += 1
 
                     new_header["SRCIMAGE"] = (
                         base_header[base_name_key],
                         "Source image name, from which sub-image was made"
                     )
+
+                    new_header["NAXIS2"], new_header["NAXIS1"] = new_data.shape
+
 
                     new_header[base_name_key] = base_header[base_name_key].replace(
                         ".fits", f"_{sub_img_id}.fits"
@@ -89,3 +94,22 @@ class SplitImage(BaseProcessor):
                     new_headers.append(new_header)
 
         return new_images, new_headers
+
+    def update_batches(
+        self,
+        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
+    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
+
+        all_new_batches = []
+
+        for [images, headers] in batches:
+            new_batches = [[[], []] for _ in range(self.n_x * self.n_y)]
+
+            for i, header in enumerate(headers):
+                idx = header[sub_id_key]
+                new_batches[idx][0] += [images[i]]
+                new_batches[idx][1] += [header]
+
+            all_new_batches += new_batches
+
+        return all_new_batches
