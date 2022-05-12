@@ -45,6 +45,8 @@ class SplitImage(BaseProcessor):
         new_images = []
         new_headers = []
 
+        logger.info(f"Splitting each image into {self.n_x*self.n_y} sub-images")
+
         for i, data in enumerate(images):
 
             base_header = headers[i]
