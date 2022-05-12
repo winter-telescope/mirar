@@ -51,6 +51,8 @@ class SplitImage(BaseProcessor):
 
             pix_width_x, pix_width_y = data.shape
 
+            k = 0
+
             for ix in range(self.n_x):
 
                 x_0, x_1 = self.get_range(self.n_x, pix_width_x, ix)
@@ -68,7 +70,15 @@ class SplitImage(BaseProcessor):
 
                     sub_img_id = f"{ix}_{iy}"
 
-                    new_header["SUBIMAGE"] = (sub_img_id, "Sub-image coordinate, in form x_y")
+                    new_header["SUBCOORD"] = (sub_img_id, "Sub-image coordinate, in form x_y")
+
+                    new_header["SUBID"] = k
+                    k += 1
+
+                    new_header["SRCIMAGE"] = (
+                        base_header[base_name_key],
+                        "Source image name, from which sub-image was made"
+                    )
 
                     new_header[base_name_key] = base_header[base_name_key].replace(
                         ".fits", f"_{sub_img_id}.fits"
