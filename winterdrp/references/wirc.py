@@ -1,14 +1,14 @@
 import logging
 from glob import glob
 from astropy.io import fits
-from winterdrp.references.base_reference import BaseReference
+from winterdrp.references.base_reference_generator import BaseReferenceGenerator
 import numpy as np
 from astropy.time import Time
 
 logger = logging.getLogger(__name__)
 
 
-class WIRCRef(BaseReference):
+class WIRCRef(BaseReferenceGenerator):
     abbreviation = "wirc_file_lookup"
 
     def __init__(

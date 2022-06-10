@@ -3,10 +3,9 @@ import os
 import numpy as np
 import astropy.io.fits
 from winterdrp.processors.base_processor import BaseProcessor
-from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_name_key
+from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_name_key, latest_mask_save_key
 from winterdrp.utils import execute
 from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
-import shutil
 from astropy.wcs import WCS
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,8 @@ def run_swarp(
         weight_list_path: str = None,
         weight_out_path: str = None,
         pixscale: float=None,
-        imgpixsize: float=None,
+        x_imgpixsize: float=None,
+        y_imgpixsize: float=None,
         propogate_headerlist: list=None,
         center_ra: float=None,
         center_dec: float=None,
@@ -73,10 +73,21 @@ def run_swarp(
         swarp_command += f' -PIXEL_SCALE {pixscale}'
 
     if propogate_headerlist is not None:
-        swarp_command += f' -COPY_KEYWORDS ' + propogate_headerlist
+        swarp_command += f' -COPY_KEYWORDS '
+        for keyword in propogate_headerlist:
+            swarp_command += f'{keyword},'
+
+        #remove final comma
+        swarp_command = swarp_command[:-1]
 
     if np.logical_and(center_ra is not None, center_dec is not None):
         swarp_command += f' -CENTER {center_ra},{center_dec}'
+
+    if x_imgpixsize is not None:
+        swarp_command += f' -IMAGE_SIZE {x_imgpixsize}'
+        if y_imgpixsize is not None:
+            swarp_command += f',{y_imgpixsize}'
+
     print(swarp_command)
 
     execute(swarp_command)
@@ -97,7 +108,8 @@ class Swarp(BaseProcessor):
             swarp_config_path: str,
             temp_output_sub_dir: str = "swarp",
             pixscale: float = None,
-            imgpixsize: float=None,
+            x_imgpixsize: float=None,
+            y_imgpixsize: float=None,
             propogate_headerlist: list=None,
             center_ra: float = None,
             center_dec: float = None,
@@ -108,10 +120,11 @@ class Swarp(BaseProcessor):
         self.swarp_config = swarp_config_path
         self.temp_output_sub_dir = temp_output_sub_dir
         self.pixscale = pixscale
-        self.imgpixsize = imgpixsize
         self.propogate_headerlist = propogate_headerlist
         self.center_ra = center_ra
         self.center_dec = center_dec
+        self.x_imgpixsize = x_imgpixsize
+        self.y_imgpixsize = y_imgpixsize
 
     def get_swarp_output_dir(self):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
@@ -158,7 +171,7 @@ class Swarp(BaseProcessor):
             for i, data in enumerate(images):
                 header = headers[i]
 
-                if not np.logical_or(self.pixscale is None, self.imgpixsize is None):
+                if not np.logical_or(self.pixscale is None, self.x_imgpixsize is None, self.y_imgpixsize is None):
                     pass
                 else:
                     w = WCS(header)
@@ -199,22 +212,27 @@ class Swarp(BaseProcessor):
                 # out_files.append(out_path)
 
         if self.pixscale is None:
-            self.pixscale = np.max(pixscale)
-        if self.imgpixsize is None:
-            self.imgpixsize = np.max(imgpixsize)
+            self.pixscale = np.max(all_pixscales)
+        if self.x_imgpixsize is None:
+            self.x_imgpixsize = np.max(all_imgpixsizes)
+        if self.y_imgpixsize is None:
+            self.y_imgpixsize = np.max(all_imgpixsizes)
         if self.center_ra is None:
             self.center_ra = np.median(all_ras)
         if self.center_dec is None:
             self.center_dec = np.median(all_decs)
+
+        output_image_weight_path = output_image_path.replace(".fits", ".weight.fits")
 
         run_swarp(
             stack_list_path=swarp_image_list_path,
             swarp_config_path=self.swarp_config,
             out_path=output_image_path,
             weight_list_path=swarp_weight_list_path,
-            weight_out_path=output_image_path.replace(".fits", ".weight.fits"),
+            weight_out_path=output_image_weight_path,
             pixscale=self.pixscale,
-            imgpixsize=self.imgpixsize,
+            x_imgpixsize=self.x_imgpixsize,
+            y_imgpixsize=self.y_imgpixsize,
             propogate_headerlist=self.propogate_headerlist,
             center_ra=self.center_ra,
             center_dec=self.center_dec
@@ -241,7 +259,7 @@ class Swarp(BaseProcessor):
         # comps
 
         new_header[base_name_key] = os.path.basename(output_image_path)
-
+        new_header[latest_mask_save_key] = os.path.basename(output_image_weight_path)
         return [image], [new_header]
 
     def check_prerequisites(

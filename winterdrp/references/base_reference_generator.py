@@ -7,7 +7,7 @@ from winterdrp.paths import base_name_key
 logger = logging.getLogger(__name__)
 
 
-class BaseReference:
+class BaseReferenceGenerator:
 
     @property
     def abbreviation(self):

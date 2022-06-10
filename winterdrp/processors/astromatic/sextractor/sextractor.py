@@ -4,7 +4,7 @@ import logging
 import astropy.io.fits
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation
 from winterdrp.processors.base_processor import BaseProcessor
-from winterdrp.paths import get_output_dir, get_temp_path
+from winterdrp.paths import get_output_dir, get_temp_path, latest_mask_save_key
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,6 @@ sextractor_header_key = 'SRCCAT'
 
 
 class Sextractor(BaseProcessor):
-
     base_key = "sextractor"
 
     def __init__(
@@ -64,8 +63,15 @@ class Sextractor(BaseProcessor):
 
             temp_path = get_temp_path(sextractor_out_dir, header["BASENAME"])
 
-            self.save_fits(data, header, temp_path)
-            mask_path = self.save_mask(data, header, temp_path)
+            mask_path = None
+            if latest_mask_save_key in header.keys():
+                mask_path = get_temp_path(sextractor_out_dir, header[latest_mask_save_key])
+                if not os.path.exists(mask_path):
+                    mask_path = None
+
+            if mask_path is None:
+                self.save_fits(data, header, temp_path)
+                mask_path = self.save_mask(data, header, temp_path)
 
             output_cat = os.path.join(sextractor_out_dir, header["BASENAME"].replace(".fits", ".cat"))
 
@@ -91,4 +97,3 @@ class Sextractor(BaseProcessor):
             header[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
 
         return images, headers
-
