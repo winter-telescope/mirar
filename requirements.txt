@@ -9,3 +9,4 @@ pandas
 psycopg2
 wget
 astroplan
+pyfftw
