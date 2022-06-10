@@ -23,10 +23,11 @@ pyfftw.interfaces.cache.set_keepalive_time(1.)
 
 
 def py_zogy(Nf, Rf, P_Nf, P_Rf, S_Nf, S_Rf, SN, SR, dx=0.25, dy=0.25):
-    '''Python implementation of ZOGY image subtraction algorithm.
+    '''
+    Python implementation of ZOGY image subtraction algorithm.
 	As per Frank's instructions, will assume images have been aligned,
 	background subtracted, and gain-matched.
-	
+
 	Arguments:
 	N: New image (filename)
 	R: Reference image (filename)
@@ -38,7 +39,7 @@ def py_zogy(Nf, Rf, P_Nf, P_Rf, S_Nf, S_Rf, SN, SR, dx=0.25, dy=0.25):
 	SR: Average uncertainty (sigma) of Reference image
 	dx: Astrometric uncertainty (sigma) in x coordinate
 	dy: Astrometric uncertainty (sigma) in y coordinate
-	
+
 	Returns:
 	D: Subtracted image
 	P_D: PSF of subtracted image

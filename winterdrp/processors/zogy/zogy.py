@@ -1,3 +1,5 @@
+import logging
+
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.paths import get_output_dir, latest_mask_save_key
 from astropy.io import fits
@@ -9,6 +11,8 @@ import astropy.units as u
 from winterdrp.io import open_fits
 from winterdrp.processors.zogy.py_zogy import py_zogy
 import os
+
+logger = logging.getLogger(__name__)
 
 class ZOGY(BaseProcessor):
 
@@ -88,7 +92,7 @@ class ZOGYPrepare(BaseProcessor):
                 ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
                                    ref_catalog['SNR_WIN'] < 1000)
 
-        print('Number of good sources SCI: %d REF: %d' % (np.sum(good_sci_sources), np.sum(good_ref_sources)))
+        print(f'Number of good sources SCI: {np.sum(good_sci_sources)} REF: {np.sum(good_ref_sources)}')
         ref_catalog = ref_catalog[good_ref_sources]
         sci_catalog = sci_catalog[good_sci_sources]
 
@@ -105,7 +109,7 @@ class ZOGYPrepare(BaseProcessor):
         sci_flux_auto = sci_catalog['FLUX_AUTO']
         ref_flux_auto = ref_catalog['FLUX_AUTO']
 
-        print('Number of cross-matched sources is %d' % (len(d2d)))
+        logger.info('Number of cross-matched sources is %d' % (len(d2d)))
 
         ast_unc_x = np.std(xpos_sci[idx_sci] - xpos_ref[idx_ref])
         ast_unc_y = np.std(ypos_sci[idx_sci] - ypos_ref[idx_ref])
@@ -116,9 +120,9 @@ class ZOGYPrepare(BaseProcessor):
             for i in range(len(xpos_ref[idx_ref])):
                 f.write('point (%s,%s) #point=cross\n' % (xpos_sci[idx_sci][i], ypos_sci[idx_sci][i]))
 
-        print('Astrometric uncertainties are X: %.2f Y:%.2f' % (ast_unc_x, ast_unc_y))
-        print('Mean of astrometric uncertainties is X:%.2f Y:%.2f' % (
-            np.mean(xpos_sci[idx_sci] - xpos_ref[idx_ref]), np.mean(xpos_sci[idx_sci] - xpos_ref[idx_ref])))
+        logger.info(f'Astrometric uncertainties are X: {ast_unc_x} Y: {ast_unc_y}')
+        #print('Mean of astrometric uncertainties is X:%.2f Y:%.2f' % (
+        #    np.mean(xpos_sci[idx_sci] - xpos_ref[idx_ref]), np.mean(xpos_sci[idx_sci] - xpos_ref[idx_ref])))
         flux_scale_mean, flux_scale_median, flux_scale_std = sigma_clipped_stats(
             sci_flux_auto[idx_sci] / ref_flux_auto[idx_ref])
         flux_scale = flux_scale_median
