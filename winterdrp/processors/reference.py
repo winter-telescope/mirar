@@ -84,5 +84,6 @@ class Reference(BaseProcessor):
 
             resampled_ref_sex_image, resampled_ref_sex_psf_header = ref_psfex.apply(resampled_ref_sex_image,
                                                                                     resampled_ref_sex_header)
-
-            return resampled_ref_sex_image, resampled_ref_sex_psf_header
+            header["REFPSF"] = resampled_ref_sex_psf_header["PSF"]
+            header["REFIMG"] = resampled_ref_sex_psf_header["BASENAME"]
+        return images, headers

@@ -2,6 +2,8 @@ from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.references.wirc import WIRCRef
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
+from winterdrp.processors.astromatic.psfex import PSFex
+from winterdrp.processors.reference import Reference
 
 
 def wirc_reference_image_generator():
@@ -20,11 +22,29 @@ def wirc_reference_sextractor():
                       )
 
 
+def wirc_reference_psfex():
+    return Sextractor(config_path='xx',
+                      parameter_path='xx',
+                      filter_path='xx',
+                      starnnw_path='xx'
+                      )
+
+
 class WircImsubPipeline(Pipeline):
-    '''
+
     pipeline_configurations = {
         None: [
-            Reference()
+            Reference(),
+            Swarp(),
+            Sextractor(),
+            PSFex(),
+            ImPrepare(),
+            Zogy(),
+            CandidateDetect()
+
+            ]
+    }
+    '''
             MaskPixels(mask_path=wirc_mask_path),
             DarkCalibrator(),
             SkyFlatCalibrator(),

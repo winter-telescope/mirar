@@ -5,7 +5,8 @@ import astropy.io.fits
 
 def create_fits(data, header):
     proc_hdu = fits.PrimaryHDU(data)
-    proc_hdu.header = header  # Copy over the header from the raw file
+    if header is not None:
+        proc_hdu.header = header  # Copy over the header from the raw file
     return proc_hdu
 
 
