@@ -4,7 +4,6 @@ from pathlib import Path
 from winterdrp.processors.astromatic.config import astromatic_config_dir
 from winterdrp.utils import execute, ExecutionError
 
-
 logger = logging.getLogger(__name__)
 
 # sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
@@ -28,9 +27,9 @@ local_sextractor = True
 # Functions to parse commands and generate appropriate sextractor files
 
 def parse_checkimage(
-    checkimage_type: str | list = None,
-    checkimage_name: str | list = None,
-    image: str = None,
+        checkimage_type: str | list = None,
+        checkimage_name: str | list = None,
+        image: str = None,
 ):
     """Function to parse the "checkimage" component of Sextractor configuration.
 
@@ -91,7 +90,6 @@ def run_sextractor(
         *args,
         **kwargs
 ):
-
     if not isinstance(images, list):
         images = [images]
 
@@ -121,7 +119,6 @@ def run_sextractor_single(
         checkimage_type: str | list = None,
         gain: float = None,
 ):
-
     if catalog_name is None:
         image_name = Path(img).stem
         catalog_name = f'{image_name}.cat'
@@ -150,6 +147,66 @@ def run_sextractor_single(
         checkimage_type=checkimage_type,
         checkimage_name=checkimage_name,
         image=img
+    )
+
+    if weight_image is None:
+        cmd += "-WEIGHT_TYPE None"
+    else:
+        cmd += f"-WEIGHT_IMAGE {weight_image}"
+
+    try:
+        execute(cmd, output_dir)
+    except ExecutionError as e:
+        raise SextractorError(e)
+
+    return catalog_name
+
+
+def run_sextractor_dual(
+        det_image: str,
+        measure_image: str,
+        output_dir: str,
+        catalog_name: str = None,
+        config: str = default_config_path,
+        parameters_name: str = default_param_path,
+        filter_name: str = default_filter_name,
+        starnnw_name: str = default_starnnw_path,
+        saturation: float = default_saturation,
+        weight_image: str = None,
+        verbose_type: str = "QUIET",
+        checkimage_name: str | list = None,
+        checkimage_type: str | list = None,
+        gain: float = None,
+
+):
+    if catalog_name is None:
+        image_name = Path(measure_image).stem
+        catalog_name = f'{image_name}.cat'
+
+    cmd = f"sex {det_image},{measure_image} " \
+          f"-c {config} " \
+          f"-CATALOG_NAME {catalog_name} " \
+          f"-VERBOSE_TYPE {verbose_type} "
+
+    if saturation is not None:
+        cmd += f"-SATUR_LEVEL {saturation} "
+
+    if gain is not None:
+        cmd += f"-GAIN {gain:.3f} "
+
+    if parameters_name is not None:
+        cmd += f"-PARAMETERS_NAME {parameters_name} "
+
+    if filter_name is not None:
+        cmd += f"-FILTER_NAME {filter_name} "
+
+    if starnnw_name is not None:
+        cmd += f"-STARNNW_NAME {starnnw_name} "
+
+    cmd += parse_checkimage(
+        checkimage_type=checkimage_type,
+        checkimage_name=checkimage_name,
+        image=det_image
     )
 
     if weight_image is None:

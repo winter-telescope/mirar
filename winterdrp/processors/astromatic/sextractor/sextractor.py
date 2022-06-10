@@ -2,7 +2,8 @@ import os
 import numpy as np
 import logging
 import astropy.io.fits
-from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation
+from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation, \
+    run_sextractor_dual
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.paths import get_output_dir, get_temp_path, latest_mask_save_key
 
@@ -26,6 +27,7 @@ class Sextractor(BaseProcessor):
             checkimage_name: str | list = None,
             checkimage_type: str | list = None,
             gain: float = None,
+            dual: bool = False,
             *args,
             **kwargs
     ):
@@ -41,6 +43,7 @@ class Sextractor(BaseProcessor):
         self.checkimage_name = checkimage_name
         self.checkimage_type = checkimage_type
         self.gain = gain
+        self.dual = dual
 
     def get_sextractor_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
@@ -58,8 +61,23 @@ class Sextractor(BaseProcessor):
         except OSError:
             pass
 
-        for i, data in enumerate(images):
+        for i in range(len(images)):
+
             header = headers[i]
+            data = images[i]
+
+            det_image, measure_image, det_header, measure_header = None, None, None, None
+            if self.dual:
+                try:
+                    det_header = headers[i][0]
+                    measure_header = headers[i][1]
+                    det_image = images[i][0]
+                    measure_image = images[i][1]
+                    header = det_header
+                    data = det_image
+                    self.gain = measure_header["GAIN"]
+                except:
+                    ValueError()
 
             temp_path = get_temp_path(sextractor_out_dir, header["BASENAME"])
 
@@ -75,21 +93,40 @@ class Sextractor(BaseProcessor):
 
             output_cat = os.path.join(sextractor_out_dir, header["BASENAME"].replace(".fits", ".cat"))
 
-            output_cat = run_sextractor_single(
-                img=temp_path,
-                config=self.config,
-                output_dir=sextractor_out_dir,
-                parameters_name=self.parameters_name,
-                filter_name=self.filter_name,
-                starnnw_name=self.starnnw_name,
-                saturation=self.saturation,
-                weight_image=mask_path,
-                verbose_type=self.verbose_type,
-                checkimage_name=self.checkimage_name,
-                checkimage_type=self.checkimage_type,
-                gain=self.gain,
-                catalog_name=output_cat
-            )
+            if not self.dual:
+                output_cat = run_sextractor_single(
+                    img=temp_path,
+                    config=self.config,
+                    output_dir=sextractor_out_dir,
+                    parameters_name=self.parameters_name,
+                    filter_name=self.filter_name,
+                    starnnw_name=self.starnnw_name,
+                    saturation=self.saturation,
+                    weight_image=mask_path,
+                    verbose_type=self.verbose_type,
+                    checkimage_name=self.checkimage_name,
+                    checkimage_type=self.checkimage_type,
+                    gain=self.gain,
+                    catalog_name=output_cat
+                )
+
+            if self.dual:
+                output_cat = run_sextractor_dual(
+                    det_image=det_image,
+                    measure_image=measure_image,
+                    config=self.config,
+                    output_dir=sextractor_out_dir,
+                    parameters_name=self.parameters_name,
+                    filter_name=self.filter_name,
+                    starnnw_name=self.starnnw_name,
+                    saturation=self.saturation,
+                    weight_image=mask_path,
+                    verbose_type=self.verbose_type,
+                    checkimage_name=self.checkimage_name,
+                    checkimage_type=self.checkimage_type,
+                    gain=self.gain,
+                    catalog_name=output_cat
+                )
 
             os.remove(temp_path)
             logger.info(f"Deleted temporary image {temp_path}")
