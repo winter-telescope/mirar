@@ -14,6 +14,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
+
 class ZOGY(BaseProcessor):
 
     def __init__(self,
@@ -28,7 +29,6 @@ class ZOGY(BaseProcessor):
             images: list[np.ndarray],
             headers: list[fits.Header],
     ) -> tuple[list[np.ndarray], list[fits.Header]]:
-
         for ind, header in enumerate(headers):
             sci_image_path = header["SCISCL"]
             ref_image_path = header["REFSCL"]
@@ -42,7 +42,7 @@ class ZOGY(BaseProcessor):
             ast_unc_y = header["ASTUNCY"]
 
             D, P_D, S_corr = py_zogy(sci_image_path, ref_image_path, sci_psf, ref_psf, sci_rms_image,
-                                             ref_rms_image, sci_rms, ref_rms, dx=ast_unc_x, dy=ast_unc_y)
+                                     ref_rms_image, sci_rms, ref_rms, dx=ast_unc_x, dy=ast_unc_y)
 
             diff_image_path = sci_image_path + '.diff'
             self.save_fits(data=D,
@@ -59,9 +59,19 @@ class ZOGY(BaseProcessor):
                            header=header,
                            path=os.path.join(self.output_sub_dir, scorr_image_path))
 
+            sci_rms_data, _ = self.open_fits(os.path.join(self.output_sub_dir, sci_rms_image))
+            ref_rms_data, _ = self.open_fits(os.path.join(self.output_sub_dir, ref_rms_image))
+            diff_rms_image = np.sqrt(sci_rms_data ** 2 + ref_rms_data ** 2)
+
+            diff_rms_path = diff_image_path + '.unc'
+            self.save_fits(data=diff_rms_image,
+                           header=header,
+                           path=os.path.join(self.output_sub_dir, diff_rms_path))
+
             header["DIFFIMG"] = diff_image_path
             header["DIFFPSF"] = diff_psf_path
             header["DIFFSCR"] = scorr_image_path
+            header["DIFFUNC"] = diff_rms_path
 
         return images, headers
 
@@ -121,7 +131,7 @@ class ZOGYPrepare(BaseProcessor):
                 f.write('point (%s,%s) #point=cross\n' % (xpos_sci[idx_sci][i], ypos_sci[idx_sci][i]))
 
         logger.info(f'Astrometric uncertainties are X: {ast_unc_x} Y: {ast_unc_y}')
-        #print('Mean of astrometric uncertainties is X:%.2f Y:%.2f' % (
+        # print('Mean of astrometric uncertainties is X:%.2f Y:%.2f' % (
         #    np.mean(xpos_sci[idx_sci] - xpos_ref[idx_ref]), np.mean(xpos_sci[idx_sci] - xpos_ref[idx_ref])))
         flux_scale_mean, flux_scale_median, flux_scale_std = sigma_clipped_stats(
             sci_flux_auto[idx_sci] / ref_flux_auto[idx_ref])
@@ -158,13 +168,13 @@ class ZOGYPrepare(BaseProcessor):
             ref_scaled_path = ref_img_path + '.scaled'
             self.save_fits(data=ref_data,
                            header=ref_header,
-                           path=os.path.join(self.output_sub_dir,ref_scaled_path)
+                           path=os.path.join(self.output_sub_dir, ref_scaled_path)
                            )
 
             sci_scaled_path = sci_img_path + '.scaled'
             self.save_fits(data=sci_data,
                            header=header,
-                           path=os.path.join(self.output_sub_dir,sci_scaled_path)
+                           path=os.path.join(self.output_sub_dir, sci_scaled_path)
                            )
 
             sci_rms = 0.5 * (
@@ -191,12 +201,12 @@ class ZOGYPrepare(BaseProcessor):
 
             self.save_fits(data=sci_rms_image,
                            header=header,
-                           path=os.path.join(self.output_sub_dir,sci_rms_path)
+                           path=os.path.join(self.output_sub_dir, sci_rms_path)
                            )
 
             self.save_fits(data=ref_rms_image,
                            header=ref_header,
-                           path=os.path.join(self.output_sub_dir,ref_rms_path)
+                           path=os.path.join(self.output_sub_dir, ref_rms_path)
                            )
 
             header['SCIRMS'] = sci_rms
