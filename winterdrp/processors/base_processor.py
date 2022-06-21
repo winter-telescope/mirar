@@ -105,7 +105,8 @@ class BaseProcessor:
             path,
             copy_to_cache: bool = False
     ):
-        header[latest_save_key] = path
+        if header is not None:
+            header[latest_save_key] = path
         if copy_to_cache:
             self.cache[path] = (data, header)
         logger.info(f"Saving to {path}")
@@ -201,3 +202,10 @@ class ProcessorWithCache(BaseProcessor, ABC):
         logger.debug(f"Found {len(obs)} entries with key '{key}' for night '{self.night}'")
 
         return list(obs[raw_img_key])
+
+
+class TransitionProcessor:
+    pass
+
+class ProcessorwithDataframe:
+    pass
