@@ -32,12 +32,20 @@ class BaseReferenceGenerator:
     ) -> str:
 
         base_name = os.path.basename(header[base_name_key])
-
+        logger.debug(f'Base name is {base_name}')
         refHDU = self.get_reference(
             header
         )
 
-        output_path = self.get_output_path(output_dir, base_name) + "_ref.fits"
+        output_path = self.get_output_path(output_dir, base_name).replace('.fits','') + "_ref.fits"
+
+        # This is because Swarp requires the COADDS keyword. I am setting it to zero manually
+        if not 'COADDS' in refHDU.header.keys():
+            logger.debug('Setting COADDS to 0')
+            refHDU.header['COADDS'] = 0
+        if not 'CALSTEPS' in refHDU.header.keys():
+            logger.debug('Setting CALSTEPS to blank')
+            refHDU.header['CALSTEPS'] = ''
 
         if os.path.exists(output_path):
             os.remove(output_path)
@@ -53,5 +61,5 @@ class BaseReferenceGenerator:
             output_dir: str,
             base_name: str
     ) -> str:
-        cat_base_name = os.path.splitext(base_name)[0] + f".{self.abbreviation}.cat"
-        return os.path.join(output_dir, cat_base_name)
+        #cat_base_name = os.path.splitext(base_name)[0] + f".{self.abbreviation}.cat"
+        return os.path.join(output_dir, base_name)

@@ -26,8 +26,10 @@ class WIRCRef(BaseReferenceGenerator):
             self,
             header: fits.Header
     ) -> fits.PrimaryHDU:
-        full_imagelist = np.array(glob(f"{self.images_directory_path}/{self.object_name}/ \
-                                        {self.object_name}_{self.filter_name}_*.fits"))
+        full_imagelist = np.array(glob(f"{self.images_directory_path}/{self.object_name}/{self.object_name}_{self.filter_name}_*.fits"))
+        logger.debug(f"Searching for references in {self.images_directory_path}/{self.object_name}/ \
+                                        {self.object_name}_{self.filter_name}_*.fits")
+        logger.debug(full_imagelist)
         imagelist = np.array([x for x in full_imagelist if not 'resamp' in x])
         try:
             mjds = [fits.getval(x, 'MJD-OBS') for x in imagelist]
@@ -35,9 +37,9 @@ class WIRCRef(BaseReferenceGenerator):
             dates = Time([fits.getval(x, 'DATE') for x in imagelist])
             mjds = dates.mjd
 
-        sinds = np.argsort(mjds)
-        imagelist = imagelist[sinds]
-        ref_image = imagelist[-1]
+        maxind = np.argmax(mjds)
+        ref_image = imagelist[maxind]
 
+        logger.info(f'Found reference image {ref_image}')
         refHDU = fits.open(ref_image)[0]
         return refHDU
