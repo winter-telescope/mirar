@@ -17,6 +17,9 @@ import astropy.io.fits as fits
 # Could also use numpy.fft, but this is apparently faster
 import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
+import logging
+
+logger = logging.getLogger(__name__)
 
 pyfftw.interfaces.cache.enable()
 pyfftw.interfaces.cache.set_keepalive_time(1.)
@@ -54,7 +57,7 @@ def py_zogy(Nf, Rf, P_Nf, P_Rf, S_Nf, S_Rf, SN, SR, dx=0.25, dy=0.25):
     P_N_small = fits.open(P_Nf)[0].data
     P_R_small = fits.open(P_Rf)[0].data
 
-    print('Max of small PSF is %d %d' % np.unravel_index(np.argmax(P_N_small, axis=None), P_N_small.shape))
+    logger.info('Max of small PSF is %d %d' % np.unravel_index(np.argmax(P_N_small, axis=None), P_N_small.shape))
 
     # Place PSF at center of image with same size as new / reference
     P_N = np.zeros(N.shape)
@@ -66,13 +69,13 @@ def py_zogy(Nf, Rf, P_Nf, P_Rf, S_Nf, S_Rf, SN, SR, dx=0.25, dy=0.25):
     P_N[idx] = P_N_small
     P_R[idx] = P_R_small
 
-    print('Max of big PSF is %d %d' % np.unravel_index(np.argmax(P_N, axis=None), P_N.shape))
+    logger.info('Max of big PSF is %d %d' % np.unravel_index(np.argmax(P_N, axis=None), P_N.shape))
 
     # Shift the PSF to the origin so it will not introduce a shift
     P_N = fft.fftshift(P_N)
     P_R = fft.fftshift(P_R)
 
-    print('Max of big PSF shift is %d %d' % np.unravel_index(np.argmax(P_N, axis=None), P_N.shape))
+    logger.info('Max of big PSF shift is %d %d' % np.unravel_index(np.argmax(P_N, axis=None), P_N.shape))
 
     # PNhdu = fits.PrimaryHDU(P_N)
     # PNhdu.writeto('PSFshift.fits', overwrite = True)
@@ -112,7 +115,7 @@ def py_zogy(Nf, Rf, P_Nf, P_Rf, S_Nf, S_Rf, SN, SR, dx=0.25, dy=0.25):
     P_Dnocorr = fft.ifftshift(P_Dnocorr)
     P_Dnocorr = P_Dnocorr[idx]
 
-    print('Max of diff PSF is %d %d' % np.unravel_index(np.argmax(P_D, axis=None), P_D.shape))
+    logger.info('Max of diff PSF is %d %d' % np.unravel_index(np.argmax(P_D, axis=None), P_D.shape))
 
     # Fourier Transform of Score Image (Equation 17)
     S_hat = FD * D_hat * np.conj(P_D_hat)

@@ -6,7 +6,7 @@ from astropy.time import Time
 import numpy as np
 from astropy.coordinates import SkyCoord
 import astropy.units as u
-from winterdrp.processors.database.schema import schema_dir
+from winterdrp.processors.database.paths import schema_dir
 from psycopg.errors import Error
 import logging
 

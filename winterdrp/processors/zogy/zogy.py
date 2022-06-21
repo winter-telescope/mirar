@@ -10,13 +10,14 @@ from astropy.stats import sigma_clipped_stats
 import astropy.units as u
 from winterdrp.io import open_fits
 from winterdrp.processors.zogy.py_zogy import py_zogy
+from winterdrp.paths import norm_psfex_header_key
 import os
 
 logger = logging.getLogger(__name__)
 
 
 class ZOGY(BaseProcessor):
-
+    base_key = "ZOGY"
     def __init__(self,
                  output_sub_dir: str = "sub",
                  *args,
@@ -24,49 +25,53 @@ class ZOGY(BaseProcessor):
         super(ZOGY, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
 
+    def get_sub_output_dir(self):
+        return get_output_dir(self.output_sub_dir, self.night_sub_dir)
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],
             headers: list[fits.Header],
     ) -> tuple[list[np.ndarray], list[fits.Header]]:
         for ind, header in enumerate(headers):
-            sci_image_path = header["SCISCL"]
-            ref_image_path = header["REFSCL"]
+            sci_image_path = os.path.join(self.get_sub_output_dir(), header["SCISCL"])
+            ref_image_path = os.path.join(self.get_sub_output_dir(), header["REFSCL"])
             sci_rms = header["SCIRMS"]
             ref_rms = header["REFRMS"]
-            sci_psf = header["SCIPSF"]
-            ref_psf = header["REFPSF"]
-            sci_rms_image = header["SCUNCPTH"]
-            ref_rms_image = header["RFUNCPTH"]
+            sci_psf = os.path.join(self.get_sub_output_dir(),header[norm_psfex_header_key])
+            ref_psf = os.path.join(self.get_sub_output_dir(),header["REFPSF"])
+            sci_rms_image = os.path.join(self.get_sub_output_dir(),header["SCUNCPTH"])
+            ref_rms_image = os.path.join(self.get_sub_output_dir(), header["RFUNCPTH"])
             ast_unc_x = header["ASTUNCX"]
             ast_unc_y = header["ASTUNCY"]
 
             D, P_D, S_corr = py_zogy(sci_image_path, ref_image_path, sci_psf, ref_psf, sci_rms_image,
                                      ref_rms_image, sci_rms, ref_rms, dx=ast_unc_x, dy=ast_unc_y)
 
-            diff_image_path = sci_image_path + '.diff'
+            diff_image_path = sci_image_path.replace('.fits','')+ '.diff.fits'
             self.save_fits(data=D,
                            header=header,
-                           path=os.path.join(self.output_sub_dir, diff_image_path))
+                           path=os.path.join(self.get_sub_output_dir(), diff_image_path))
 
             diff_psf_path = sci_image_path + '.psf'
             self.save_fits(data=P_D,
                            header=None,
-                           path=os.path.join(self.output_sub_dir, diff_psf_path))
+                           path=os.path.join(self.get_sub_output_dir(), diff_psf_path))
 
-            scorr_image_path = sci_image_path + '.scorr'
+            scorr_image_path = sci_image_path.replace('.fits','') + '.scorr.fits'
             self.save_fits(data=S_corr,
                            header=header,
-                           path=os.path.join(self.output_sub_dir, scorr_image_path))
-
-            sci_rms_data, _ = self.open_fits(os.path.join(self.output_sub_dir, sci_rms_image))
-            ref_rms_data, _ = self.open_fits(os.path.join(self.output_sub_dir, ref_rms_image))
+                           path=os.path.join(self.get_sub_output_dir(), scorr_image_path))
+            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(S_corr)
+            logger.info(f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}")
+            sci_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), sci_rms_image))
+            ref_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_rms_image))
             diff_rms_image = np.sqrt(sci_rms_data ** 2 + ref_rms_data ** 2)
 
             diff_rms_path = diff_image_path + '.unc'
             self.save_fits(data=diff_rms_image,
                            header=header,
-                           path=os.path.join(self.output_sub_dir, diff_rms_path))
+                           path=os.path.join(self.get_sub_output_dir(), diff_rms_path))
 
             header["DIFFIMG"] = diff_image_path
             header["DIFFPSF"] = diff_psf_path
@@ -77,6 +82,7 @@ class ZOGY(BaseProcessor):
 
 
 class ZOGYPrepare(BaseProcessor):
+    base_key = "ZOGYPREP"
 
     def __init__(self,
                  output_sub_dir: str = "sub",
@@ -92,8 +98,9 @@ class ZOGYPrepare(BaseProcessor):
     def get_ast_fluxscale(ref_catalog_name: str,
                           sci_catalog_name: str) -> tuple[float, float, float]:
         # Cross match science and reference image catalogs to get flux scaling factor and astometric uncertainties
-        sci_catalog = get_table_from_ldac(ref_catalog_name)
-        ref_catalog = get_table_from_ldac(sci_catalog_name)
+        logger.info(f'Reference catalog is at {ref_catalog_name}')
+        ref_catalog = get_table_from_ldac(ref_catalog_name)
+        sci_catalog = get_table_from_ldac(sci_catalog_name)
 
         good_sci_sources = (sci_catalog['FLAGS'] == 0) & (sci_catalog['SNR_WIN'] > 5) & (
                 sci_catalog['FWHM_WORLD'] < 4. / 3600) & (sci_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
@@ -102,7 +109,7 @@ class ZOGYPrepare(BaseProcessor):
                 ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
                                    ref_catalog['SNR_WIN'] < 1000)
 
-        print(f'Number of good sources SCI: {np.sum(good_sci_sources)} REF: {np.sum(good_ref_sources)}')
+        logger.info(f'Number of good sources SCI: {np.sum(good_sci_sources)} REF: {np.sum(good_ref_sources)}')
         ref_catalog = ref_catalog[good_ref_sources]
         sci_catalog = sci_catalog[good_sci_sources]
 
@@ -136,7 +143,7 @@ class ZOGYPrepare(BaseProcessor):
         flux_scale_mean, flux_scale_median, flux_scale_std = sigma_clipped_stats(
             sci_flux_auto[idx_sci] / ref_flux_auto[idx_ref])
         flux_scale = flux_scale_median
-        print('Flux scaling for reference is %.5f +/- %.5f' % (flux_scale, flux_scale_std))
+        logger.info('Flux scaling for reference is %.5f +/- %.5f' % (flux_scale, flux_scale_std))
         return ast_unc_x, ast_unc_y, flux_scale
 
     @staticmethod
@@ -157,7 +164,7 @@ class ZOGYPrepare(BaseProcessor):
             sci_img_path = header["BASENAME"]
             sci_data = images[ind]
 
-            ref_data, ref_header = self.open_fits(os.path.join(self.output_sub_dir, ref_img_path))
+            ref_data, ref_header = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_img_path))
             ref_catalog_path = ref_header["SRCCAT"]
             sci_catalog_path = header["SRCCAT"]
 
@@ -168,20 +175,20 @@ class ZOGYPrepare(BaseProcessor):
             ref_scaled_path = ref_img_path + '.scaled'
             self.save_fits(data=ref_data,
                            header=ref_header,
-                           path=os.path.join(self.output_sub_dir, ref_scaled_path)
+                           path=os.path.join(os.path.join(self.get_sub_output_dir(), ref_scaled_path))
                            )
 
             sci_scaled_path = sci_img_path + '.scaled'
             self.save_fits(data=sci_data,
                            header=header,
-                           path=os.path.join(self.output_sub_dir, sci_scaled_path)
+                           path=os.path.join(os.path.join(self.get_sub_output_dir(), sci_scaled_path))
                            )
 
             sci_rms = 0.5 * (
                     np.percentile(sci_data[sci_data != 0], 84.13) - np.percentile(sci_data[sci_data != 0], 15.86))
             ref_rms = 0.5 * (
                     np.percentile(ref_data[ref_data != 0], 84.13) - np.percentile(ref_data[ref_data != 0], 15.86))
-            print('Science RMS is %.2f. Reference RMS is %.2f' % (sci_rms, ref_rms))
+            logger.info('Science RMS is %.2f. Reference RMS is %.2f' % (sci_rms, ref_rms))
 
             sci_weight_path = header[latest_mask_save_key]
             ref_weight_path = header[latest_mask_save_key]
@@ -201,12 +208,12 @@ class ZOGYPrepare(BaseProcessor):
 
             self.save_fits(data=sci_rms_image,
                            header=header,
-                           path=os.path.join(self.output_sub_dir, sci_rms_path)
+                           path=os.path.join(os.path.join(self.get_sub_output_dir(), sci_rms_path))
                            )
 
             self.save_fits(data=ref_rms_image,
                            header=ref_header,
-                           path=os.path.join(self.output_sub_dir, ref_rms_path)
+                           path=os.path.join(os.path.join(self.get_sub_output_dir(), ref_rms_path))
                            )
 
             header['SCIRMS'] = sci_rms
