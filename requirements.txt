@@ -6,7 +6,7 @@ jupyter
 matplotlib
 numpy
 pandas
-psycopg2
+psycopg
 wget
 astroplan
 pyfftw
