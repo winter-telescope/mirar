@@ -238,7 +238,7 @@ class Pipeline:
                 images,
                 headers,
             )
-
+        assert False
         return images
 
     def export_observing_log(
