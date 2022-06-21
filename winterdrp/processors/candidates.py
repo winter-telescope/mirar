@@ -1,14 +1,21 @@
 import logging
+
+import astropy.table
+import pandas as pd
+
 from winterdrp.processors.base_processor import BaseProcessor
 import numpy as np
 from astropy.io import fits
-from collections import Callable
+from collections.abc import Callable
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
+from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
 from winterdrp.utils.ldac_tools import get_table_from_ldac
+from winterdrp.paths import get_output_dir
 import io
 import gzip
+import os
 
-#TODO : Move photometry to its own thing like catalogs, user can choose whichever way they want to do photometry
+# TODO : Move photometry to its own thing like catalogs, user can choose whichever way they want to do photometry
 logger = logging.getLogger(__name__)
 
 
@@ -29,23 +36,51 @@ class FilterCandidates(BaseProcessor):
 
 
 class DetectCandidates(BaseProcessor):
-
+    base_key = "DETCANDS"
     def __init__(self,
-                 scorr_image_sextractor: Callable[Sextractor],
+                 cand_det_sextractor_config: str,
+                 cand_det_sextractor_filter: str,
+                 cand_det_sextractor_nnw: str,
+                 cand_det_sextractor_params: str,
+                 output_sub_dir: str = "candidates",
                  *args,
                  **kwargs):
         super(DetectCandidates, self).__init__(*args, **kwargs)
-        self.scorr_image_sextractor = scorr_image_sextractor
+        self.output_sub_dir = output_sub_dir
+        self.cand_det_sextractor_config = cand_det_sextractor_config
+        self.cand_det_sextractor_filter = cand_det_sextractor_filter
+        self.cand_det_sextractor_nnw = cand_det_sextractor_nnw
+        self.cand_det_sextractor_params = cand_det_sextractor_params
+
+    def get_sub_output_dir(self):
+        return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     @staticmethod
     def make_alert_cutouts(imagename, position, half_size):
         data = fits.getdata(imagename)
+        y_image_size, x_image_size = np.shape(data)
         x, y = position
+        logger.info(f'{x},{y},{np.shape(data)}')
+        if y<half_size:
+            cutout = data[0:y+half_size+1, x - half_size:x+half_size+1]
+            n_pix = half_size - y
+            cutout = np.pad(cutout, ((n_pix,0),(0,0)), 'constant')
 
-        # if y<half_size:
-        #    cutout = data[0:y+half_size+1,x-half_size:x+half_size+1]
-        # elif :
-        cutout = data[y - half_size:y + half_size + 1, x - half_size:x + half_size + 1]
+        elif y + half_size+1 > y_image_size:
+            cutout = data[y - half_size: y_image_size, x - half_size: x + half_size + 1]
+            n_pix = (half_size+y+1) - y_image_size
+            cutout = np.pad(cutout, ((0,n_pix),(0,0)), 'constant')
+
+        elif x < half_size:
+            cutout = data[y - half_size: y+half_size+1, 0:x+half_size+1]
+            n_pix = half_size - x
+            cutout = np.pad(cutout, ((0,0),(n_pix,0)),'constant')
+        elif x + half_size > x_image_size:
+            cutout = data[y-half_size:y+half_size+1, x-half_size:x_image_size]
+            n_pix = (half_size + x + 1) - x_image_size
+            cutout = np.pad(cutout, ((0, 0), (0, n_pix)), 'constant')
+        else:
+            cutout = data[y - half_size:y + half_size + 1, x - half_size:x + half_size + 1]
         return cutout
 
     @staticmethod
@@ -127,6 +162,7 @@ class DetectCandidates(BaseProcessor):
                                   diff_scorr_filename, diff_psf_filename, diff_unc_filename):
         det_srcs = get_table_from_ldac(scorr_catalog_name)
 
+        logger.info(f'Found {len(det_srcs)} candidates in image {diff_filename}.')
         det_srcs['X_IMAGE'] = det_srcs['X_IMAGE'] - 1
         det_srcs['Y_IMAGE'] = det_srcs['Y_IMAGE'] - 1
 
@@ -151,13 +187,15 @@ class DetectCandidates(BaseProcessor):
         display_diff_ims = []
 
         for ind, src in enumerate(det_srcs):
+            logger.info(f'Cand # {ind}')
             xpeak, ypeak = int(xpeaks[ind]), int(ypeaks[ind])
             scorr_peak = scorr_peaks[ind]
 
             diff_cutout = self.make_alert_cutouts(diff_filename, (xpeak, ypeak), cutout_size_psf_phot)
             diff_unc_cutout = self.make_alert_cutouts(diff_unc_filename, (xpeak, ypeak), cutout_size_psf_phot)
-
-            psf_flux, psf_fluxunc, minchi2, xshift, yshift = self.psf_photometry(diff_cutout, diff_unc_cutout, psfmodels)
+            logger.info(f'Cutout dimensions {diff_cutout.shape}')
+            psf_flux, psf_fluxunc, minchi2, xshift, yshift = self.psf_photometry(diff_cutout, diff_unc_cutout,
+                                                                                 psfmodels)
 
             src['psf_flux'] = psf_flux
             src['psf_fluxunc'] = psf_fluxunc
@@ -193,14 +231,42 @@ class DetectCandidates(BaseProcessor):
             self,
             images: list[np.ndarray],
             headers: list[fits.Header],
-    ) -> tuple[list[np.ndarray], list[fits.Header]]:
+    ) -> list[pd.DataFrame]:
 
+        all_cands_list = []
         for ind, header in enumerate(headers):
-            scorr_image_path = header["DIFFSCR"]
-            diff_image_path = header["DIFFIMG"]
-            diff_psf_path = header["DIFFPSF"]
-            diff_unc_path = header["DIFFUNC"]
+            scorr_image_path = os.path.join(self.get_sub_output_dir(), header["DIFFSCR"])
+            diff_image_path = os.path.join(self.get_sub_output_dir(), header["DIFFIMG"])
+            diff_psf_path = os.path.join(self.get_sub_output_dir(), header["DIFFPSF"])
+            diff_unc_path = os.path.join(self.get_sub_output_dir(), header["DIFFUNC"])
 
+            cands_catalog_name = diff_image_path.replace('.fits', '.dets')
+            cands_catalog_name = run_sextractor_dual(
+                det_image=scorr_image_path,
+                measure_image=diff_image_path,
+                output_dir=self.get_sub_output_dir(),
+                catalog_name=cands_catalog_name,
+                config=self.cand_det_sextractor_config,
+                parameters_name=self.cand_det_sextractor_params,
+                filter_name=self.cand_det_sextractor_filter,
+                starnnw_name=self.cand_det_sextractor_nnw,
+                gain=1.0
+            )
 
+            sci_image_path = os.path.join(self.get_sub_output_dir(), header['BASENAME'])
+            ref_image_path = os.path.join(self.get_sub_output_dir(), header['REFIMG'])
+            cands_table = self.generate_candidates_table(
+                                                         scorr_catalog_name=cands_catalog_name,
+                                                         sci_resamp_imagename=sci_image_path,
+                                                         ref_resamp_imagename=ref_image_path,
+                                                         diff_filename=diff_image_path,
+                                                         diff_scorr_filename=scorr_image_path,
+                                                         diff_psf_filename=diff_psf_path,
+                                                         diff_unc_filename=diff_unc_path
+                                                         )
 
-        pass
+            all_cands_list.append(cands_table)
+
+        return images, headers
+        # Need to get this to return a dataframe and not images+headers, but that will require some coding
+        #return all_cands_list
