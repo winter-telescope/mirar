@@ -81,6 +81,9 @@ def parse_checkimage(
 
         cmd += " "
 
+    else:
+
+        cmd = f" -CHECKIMAGE_TYPE NONE "
     return cmd
 
 

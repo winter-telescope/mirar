@@ -63,10 +63,10 @@ class PSFex(BaseProcessor):
             sextractor_cat_path = header[sextractor_header_key]
 
             psf_path = sextractor_cat_path.replace('.cat', '.psf')
-            norm_psf_path = header[base_name_key].replace('.fits', '.psfmodel')
+            norm_psf_path = sextractor_cat_path.replace('.cat', '.psfmodel')
             run_psfex(sextractor_cat_path=sextractor_cat_path,
                       config_path=self.config_path,
-                      psf_output_dir=self.output_sub_dir,
+                      psf_output_dir=os.path.dirname(sextractor_cat_path),
                       norm_psf_output_name=norm_psf_path
                       )
 
