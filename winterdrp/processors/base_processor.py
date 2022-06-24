@@ -219,10 +219,10 @@ class BaseImage_DataframeProcessor(BaseProcessor, ABC):
             self,
             images: list[np.ndarray],
             headers: list[astropy.io.fits.header],
-    ) -> tuple[list[DataFrame], list]:
-        tables, headers = self._apply_to_images(images, headers)
-        headers = self._update_processing_history(headers)
-        return tables, headers
+    ) -> list[DataFrame]:
+        tables = self._apply_to_images(images, headers)
+        # headers = self._update_processing_history(headers)
+        return tables
 
     def _apply_to_images(
             self,
@@ -241,16 +241,14 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
 
     def apply(
             self,
-            tables: list[DataFrame],
-            headers: list[astropy.io.fits.header],
+            tables: list[DataFrame]
     ) -> list[pd.DataFrame]:
-        tables = self._apply_to_images(tables, headers)
+        tables = self._apply_to_images(tables)
         return tables
 
     def _apply_to_images(
             self,
-            tables: list[DataFrame],
-            headers: list[astropy.io.fits.header],
-    ) -> tuple[list[DataFrame], list[astropy.io.fits.header]]:
+            tables: list[DataFrame]
+    ) -> list[DataFrame]:
         raise NotImplementedError
 

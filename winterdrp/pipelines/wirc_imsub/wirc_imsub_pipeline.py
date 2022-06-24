@@ -5,7 +5,7 @@ from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.psfex import PSFex
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare
-from winterdrp.processors.candidates import DetectCandidates
+from winterdrp.processors.candidates import DetectCandidates, FilterCandidates
 import numpy as np
 from astropy.io import fits
 import os
@@ -108,7 +108,8 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_config='winterdrp/pipelines/wirc_imsub/config/photomCat.sex',
                              cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                              cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
-                             cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param')
+                             cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
+            FilterCandidates()
         ]
     }
 

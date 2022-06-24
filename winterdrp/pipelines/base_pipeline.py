@@ -10,18 +10,16 @@ from astropy.time import Time
 from astropy import units as u
 from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir, raw_img_key, saturate_key, \
     get_preprocess_path
-from winterdrp.processors.base_processor import ProcessorWithCache
+from winterdrp.processors.base_processor import BaseProcessor, ProcessorWithCache, BaseImage_DataframeProcessor, \
+    BaseDataframeProcessor
 from winterdrp.io import save_to_path
 
-
 logger = logging.getLogger(__name__)
-
 
 core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
 
 
 class Pipeline:
-
     pipelines = {}
     name = None
 
@@ -231,13 +229,30 @@ class Pipeline:
             images: list,
             headers: list,
     ) -> list:
+        tables = []
 
         for processor in self.processors:
-            logger.debug(f"Applying '{processor.__class__}' processor to {len(images)} images")
-            images, headers = processor.apply(
-                images,
-                headers,
-            )
+            if isinstance(processor, BaseImage_DataframeProcessor):
+                logger.debug(
+                    f"Applying Image-Dataframe processor '{processor.__class__}' processor to {len(images)} images")
+                tables = processor.apply(
+                    images,
+                    headers
+                )
+
+            elif isinstance(processor, BaseDataframeProcessor):
+                logger.debug(f"Applying '{processor.__class__}' processor to {len(tables)} tables")
+                tables = processor.apply(
+                    tables
+                )
+
+            else:
+                logger.debug(f"Applying Dataframe-Dataframe '{processor.__class__}' processor to {len(images)} images")
+                images, headers = processor.apply(
+                    images,
+                    headers,
+                )
+
         # assert False
         return images
 
@@ -316,7 +331,7 @@ class Pipeline:
         date = Time(f"{night[:4]}-{night[4:6]}-{night[6:]}")
 
         other_dates = [
-            (date - ((x+1) * u.day)).isot.split("T")[0].replace("-", "")
+            (date - ((x + 1) * u.day)).isot.split("T")[0].replace("-", "")
             for x in range(log_history_nights)[::-1]
         ]
 
