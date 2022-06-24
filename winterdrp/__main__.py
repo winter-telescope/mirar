@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import argparse
+import os
 import sys
 import logging
 from winterdrp.pipelines import get_pipeline, Pipeline
+from winterdrp.paths import raw_img_dir
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +112,18 @@ parser.add_argument(
     action='store_true',
     default=False
 )
+parser.add_argument(
+    '--db',
+    help='Set up database',
+    action='store_true',
+    default=False
+)
+parser.add_argument(
+    '--remake_logs',
+    help='Rebuild log even if it exists',
+    action='store_true',
+    default=False
+)
 # parser.add_argument(
 #     '-skipfail',
 #     help='If processing of one image set fails, proceed with other objects/filters',
@@ -164,21 +178,26 @@ if args.download:
 
     logger.info("Download complete")
 
+# if args.db:
+#     set_up_db(data_dir=raw_img_dir(os.path.join(args.pipeline.lower(), args.night)))
 
 pipe = get_pipeline(
     args.pipeline,
     configuration=args.config,
     night=args.night,
-    skip_build_cache=args.skipcache
+    skip_build_cache=args.skipcache,
+    remake_logs=args.remake_logs
 )
 
 # pipe.make_calibration_files(sub_dir=args.subdir)
-image_batches = pipe.split_raw_images_into_batches(
-    select_batch=args.batch
-)
+# image_batches = pipe.split_raw_images_into_batches(
+#     select_batch=args.batch
+# )
 
-for image_batch in image_batches:
-    images, headers = pipe.open_raw_image_batch(image_batch)
-    pipe.reduce_images(images, headers)
+pipe.reduce_images([[[], []]])
+
+# for image_batch in image_batches:
+#     images, headers = pipe.open_raw_image_batch(image_batch)
+#     pipe.reduce_images(images, headers)
 
 logger.info('End of winterdrp execution')
