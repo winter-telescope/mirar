@@ -3,7 +3,7 @@ import logging
 import astropy.table
 import pandas as pd
 
-from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor
+from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor, BaseDataframeProcessor
 import numpy as np
 from astropy.io import fits
 from collections.abc import Callable
@@ -19,7 +19,7 @@ import os
 logger = logging.getLogger(__name__)
 
 
-class FilterCandidates(BaseProcessor):
+class FilterCandidates(BaseDataframeProcessor):
 
     def __init__(self,
                  *args,
@@ -29,10 +29,9 @@ class FilterCandidates(BaseProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[fits.Header],
-    ) -> tuple[list[np.ndarray], list[fits.Header]]:
-        pass
+            tables: list[pd.DataFrame]
+    ) -> list[pd.DataFrame]:
+        return tables
 
 
 class DetectCandidates(BaseImage_DataframeProcessor):
@@ -159,7 +158,7 @@ class DetectCandidates(BaseImage_DataframeProcessor):
         return psfmodels
 
     def generate_candidates_table(self, scorr_catalog_name, sci_resamp_imagename, ref_resamp_imagename, diff_filename,
-                                  diff_scorr_filename, diff_psf_filename, diff_unc_filename):
+                                  diff_scorr_filename, diff_psf_filename, diff_unc_filename) -> pd.DataFrame:
         det_srcs = get_table_from_ldac(scorr_catalog_name)
 
         logger.info(f'Found {len(det_srcs)} candidates in image {diff_filename}.')
@@ -269,6 +268,6 @@ class DetectCandidates(BaseImage_DataframeProcessor):
 
             all_cands_list.append(cands_table)
 
-        return all_cands_list, headers
+        return all_cands_list
         # Need to get this to return a dataframe and not images+headers, but that will require some coding
         #return all_cands_list

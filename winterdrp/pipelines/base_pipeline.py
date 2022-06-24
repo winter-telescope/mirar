@@ -6,15 +6,12 @@ import numpy as np
 import copy
 from winterdrp.paths import saturate_key
 
-
 logger = logging.getLogger(__name__)
-
 
 core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
 
 
 class Pipeline:
-
     pipelines = {}
     name = None
 
@@ -112,6 +109,7 @@ class Pipeline:
         for i, processor in enumerate(self.processors):
             logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
                          f"(Step {i+1}/{len(self.processors)})")
+
             batches, failures = processor.apply(
                 batches
             )
