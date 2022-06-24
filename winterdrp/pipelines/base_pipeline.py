@@ -302,7 +302,7 @@ class Pipeline:
         pipeline, night = night_sub_dir.split("/")
 
         if len(str(night)) != 8:
-            err = f"Night format not recignised. Folders should be organised as YYYYMMDD. " \
+            err = f"Night format not recognised. Folders should be organised as YYYYMMDD. " \
                   f"Instead found {night}."
             logger.error(err)
             raise ValueError(err)
