@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def wirc_reference_image_generator(
         header: fits.header,
-        images_directory: str = "/Users/viraj/wirc_imsub",
+        images_directory: str = os.environ['REF_IMG_DIR'],
 ):
     object_name = header['OBJECT']
     filter_name = header['FILTER']
@@ -54,17 +54,17 @@ def wirc_reference_image_resampler(pixsize,
 
 
 def wirc_reference_sextractor(output_sub_dir, gain):
-    return Sextractor(config_path='~/wirc_imsub/config/photomCat.sex',
-                      parameter_path='~/wirc_imsub/config/photom.param',
-                      filter_path='~/wirc_imsub/config/default.conv',
-                      starnnw_path='~/wirc_imsub/config/default.nnw',
+    return Sextractor(config_path='winterdrp/pipelines/wirc_imsub/config/photomCat.sex',
+                      parameter_path='winterdrp/pipelines/wirc_imsub/config/photom.param',
+                      filter_path='winterdrp/pipelines/wirc_imsub/config/default.conv',
+                      starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                       gain=gain,
                       output_sub_dir=output_sub_dir
                       )
 
 
 def wirc_reference_psfex(output_sub_dir, norm_fits):
-    return PSFex(config_path='~/wirc_imsub/config/photom.psfex',
+    return PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
                  output_sub_dir=output_sub_dir,
                  norm_fits=norm_fits
                  )
@@ -94,21 +94,21 @@ class WircImsubPipeline(Pipeline):
                 ref_psfex=wirc_reference_psfex
             ),
             # Swarp(),
-            Sextractor(config_path='~/wirc_imsub/config/photomCat.sex',
-                       parameter_path='~/wirc_imsub/config/photom.param',
-                       filter_path='~/wirc_imsub/config/default.conv',
-                       starnnw_path='~/wirc_imsub/config/default.nnw',
+            Sextractor(config_path='winterdrp/pipelines/wirc_imsub/config/photomCat.sex',
+                       parameter_path='winterdrp/pipelines/wirc_imsub/config/photom.param',
+                       filter_path='winterdrp/pipelines/wirc_imsub/config/default.conv',
+                       starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                        output_sub_dir='subtract'),
-            PSFex(config_path='~/wirc_imsub/config/photom.psfex',
+            PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
                   output_sub_dir="subtract",
                   norm_fits=True),
             ZOGYPrepare(output_sub_dir="subtract"),
             ZOGY(output_sub_dir="subtract"),
             DetectCandidates(output_sub_dir="subtract",
-                             cand_det_sextractor_config='~/wirc_imsub/config/photomCat.sex',
-                             cand_det_sextractor_nnw='~/wirc_imsub/config/default.nnw',
-                             cand_det_sextractor_filter='~/wirc_imsub/config/default.conv',
-                             cand_det_sextractor_params='~/wirc_imsub/config/Scorr.param')
+                             cand_det_sextractor_config='winterdrp/pipelines/wirc_imsub/config/photomCat.sex',
+                             cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/config/default.nnw',
+                             cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
+                             cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param')
         ]
     }
 
