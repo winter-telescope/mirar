@@ -24,7 +24,7 @@ class PhotCalibrator(BaseProcessor):
                  temp_output_sub_dir: str = "phot",
                  redo: bool = True,
                  x_lower_limit: float = 100,
-                 x_upper_limit: float = 2800,
+                 x_upper_limit: float = 2800,  # Are these floats or ints?
                  y_lower_limit: float = 100,
                  y_upper_limit: float = 2800,
                  fwhm_threshold_arcsec: float = 4.0,
@@ -32,14 +32,14 @@ class PhotCalibrator(BaseProcessor):
                  *args,
                  **kwargs):
         super(PhotCalibrator, self).__init__(*args, **kwargs)
-        self.redo = redo
+        self.redo = redo # What is this for?
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
         self.x_lower_limit = x_lower_limit
         self.x_upper_limit = x_upper_limit
         self.y_lower_limit = y_lower_limit
         self.y_upper_limit = y_upper_limit
-        self.fwhm_threshold_arcsec = fwhm_threshold_arcsec
+        self.fwhm_threshold_arcsec = fwhm_threshold_arcsec # Why is this here not in catalog?
         self.num_matches_threshold = num_matches_threshold
 
     def get_phot_output_dir(self):
@@ -53,13 +53,17 @@ class PhotCalibrator(BaseProcessor):
         img_cat = get_table_from_ldac(img_cat_path)
 
         if len(ref_cat) == 0:
-            logger.info('No sources found in reference catalog')
-            return [{'Error': -1}]
+            logger.error('No sources found in reference catalog') # Errors should be logging.error
+            return [{'Error': -1}] # Why not raise error?
+
+        print(ref_cat.dtype.names)
+        raise
 
         ref_coords = SkyCoord(ra=ref_cat['ra'], dec=ref_cat['dec'], unit=(u.deg, u.deg))
 
-        clean_mask = (img_cat['FLAGS'] == 0) & (img_cat['FWHM_WORLD'] < self.fwhm_threshold_arcsec / 3600) \
-                     & (img_cat['X_IMAGE'] > self.x_lower_limit) & \
+        clean_mask = (img_cat['FLAGS'] == 0) & \
+                     (img_cat['FWHM_WORLD'] < self.fwhm_threshold_arcsec / 3600) & \
+                     (img_cat['X_IMAGE'] > self.x_lower_limit) & \
                      (img_cat['X_IMAGE'] < self.x_upper_limit) & \
                      (img_cat['Y_IMAGE'] > self.y_lower_limit) & \
                      (img_cat['Y_IMAGE'] < self.y_upper_limit)
@@ -71,7 +75,7 @@ class PhotCalibrator(BaseProcessor):
                                     unit=(u.deg, u.deg))
 
         if 0 == len(clean_img_coords):
-            logger.info('No clean sources found in image')
+            logger.info('No clean sources found in image')  # Error
             return [{'Error': -2}]
 
         idx, d2d, d3d = ref_coords.match_to_catalog_sky(clean_img_coords)
@@ -81,7 +85,7 @@ class PhotCalibrator(BaseProcessor):
         logger.info(f'Cross-matched {len(matched_img_cat)} sources from catalog to the image.')
 
         if len(matched_img_cat)< self.num_matches_threshold:
-            logger.info(f'Not enough cross-matched sources found to calculate a reliable zeropoint.')
+            logger.info(f'Not enough cross-matched sources found to calculate a reliable zeropoint.')  # Error
             return [{'Error': -3}]
 
         apertures = np.array([2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])  # aperture diameters
@@ -116,7 +120,6 @@ class PhotCalibrator(BaseProcessor):
 
         return zeropoints
 
-
     def _apply_to_images(
             self,
             images: list[np.ndarray],
@@ -138,7 +141,9 @@ class PhotCalibrator(BaseProcessor):
                 file_path=header[sextractor_header_key]
             )
 
-            zp_dicts = self.calculate_zeropoint(ref_cat_path,temp_cat_path)
+            zp_dicts = self.calculate_zeropoint(ref_cat_path, temp_cat_path)
+
+            # Try: / Except PhotCalError:
 
             if 'Error' in zp_dicts[0].keys():
                 logger.info(f'Failed to run photometric calibration for ')
@@ -154,7 +159,6 @@ class PhotCalibrator(BaseProcessor):
             header['PHOTCAL'] = 'SUCCESS'
 
         return images, headers
-
 
     def check_prerequisites(
             self,

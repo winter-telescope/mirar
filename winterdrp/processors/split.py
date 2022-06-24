@@ -84,8 +84,7 @@ class SplitImage(BaseProcessor):
                         "Source image name, from which sub-image was made"
                     )
 
-                    new_header["NAXIS2"], new_header["NAXIS1"] = new_data.shape
-
+                    new_header["NAXIS1"], new_header["NAXIS2"] = new_data.shape
 
                     new_header[base_name_key] = base_header[base_name_key].replace(
                         ".fits", f"_{sub_img_id}.fits"
