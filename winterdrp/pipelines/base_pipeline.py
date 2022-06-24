@@ -9,7 +9,7 @@ import copy
 from astropy.time import Time
 from astropy import units as u
 from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir, raw_img_key, saturate_key, \
-    get_preprocess_path
+    get_preprocess_path, ProcessingError
 from winterdrp.processors.base_processor import ProcessorWithCache
 from winterdrp.io import save_to_path
 
@@ -84,10 +84,6 @@ class Pipeline:
             processor.set_preceding_steps(previous_steps=self.processors[:i])
             processor.check_prerequisites()
 
-            if not skip_build_cache:
-                if isinstance(processor, ProcessorWithCache):
-                    processor.make_cache(observing_log=observing_logs)
-
         logger.debug("Pipeline initialisation complete.")
 
     @classmethod
@@ -158,30 +154,30 @@ class Pipeline:
         else:
             return copy.copy(configuration)
 
-    def make_calibration_files(self, sub_dir=""):
-
-        observing_log = self.load_observing_log(night_sub_dir=sub_dir)
-
-        cal_dir = cal_output_dir(sub_dir)
-
-        # Make calibration directory, unless it already exists
-
-        try:
-            os.makedirs(cal_dir)
-        except OSError:
-            pass
-
-        logger.info(f"Making calibration files for directory {raw_img_dir(sub_dir)}")
-
-        preceding_steps = []
-
-        for processor in self.processors:
-            processor.make_cache(
-                observing_log,
-                sub_dir=sub_dir,
-                preceding_steps=preceding_steps,
-            )
-            preceding_steps.append(processor.apply)
+    # def make_calibration_files(self, sub_dir=""):
+    #
+    #     observing_log = self.load_observing_log(night_sub_dir=sub_dir)
+    #
+    #     cal_dir = cal_output_dir(sub_dir)
+    #
+    #     # Make calibration directory, unless it already exists
+    #
+    #     try:
+    #         os.makedirs(cal_dir)
+    #     except OSError:
+    #         pass
+    #
+    #     logger.info(f"Making calibration files for directory {raw_img_dir(sub_dir)}")
+    #
+    #     preceding_steps = []
+    #
+    #     for processor in self.processors:
+    #         processor.make_cache(
+    #             observing_log,
+    #             sub_dir=sub_dir,
+    #             preceding_steps=preceding_steps,
+    #         )
+    #         preceding_steps.append(processor.apply)
 
     def split_raw_images_into_batches(
             self,
@@ -228,18 +224,14 @@ class Pipeline:
 
     def reduce_images(
             self,
-            images: list,
-            headers: list,
-    ) -> list:
+            batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]],
+    ):
 
         for processor in self.processors:
-            logger.debug(f"Applying '{processor.__class__}' processor to {len(images)} images")
-            images, headers = processor.apply(
-                images,
-                headers,
+            logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches")
+            batches, failures = processor.apply(
+                batches
             )
-
-        return images
 
     def export_observing_log(
             self,
