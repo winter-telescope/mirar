@@ -17,7 +17,7 @@ def run_psfex(sextractor_cat_path: str,
               psf_output_dir: str,
               norm_psf_output_name: str = None
               ):
-    psfex_command = f"psfex -c {config_path} {sextractor_cat_path} -PSF_DIR {psf_output_dir} "
+    psfex_command = f"psfex -c {config_path} {sextractor_cat_path} -PSF_DIR {psf_output_dir} -CHECKIMAGE_TYPE NONE"
     print(psfex_command)
 
     execute(psfex_command)
@@ -72,7 +72,7 @@ class PSFex(BaseProcessor):
 
             header[psfex_header_key] = psf_path
             header[norm_psfex_header_key] = norm_psf_path
-            assert False
+            # assert False
         return images, headers
 
     def check_prerequisites(

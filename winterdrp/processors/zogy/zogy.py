@@ -182,7 +182,7 @@ class ZOGYPrepare(BaseProcessor):
 
             logger.info(f"Zeropoints are reference : {ref_unscaled_zp}, scaled reference : {ref_header['TMC_ZP']} and "
                         f"science : {header['TMC_ZP']}")
-            assert(False)
+            # assert(False)
             sci_scaled_path = sci_img_path + '.scaled'
             self.save_fits(data=sci_data,
                            header=header,
