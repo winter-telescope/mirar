@@ -1,5 +1,6 @@
 import logging
 from abc import ABC
+from typing import Tuple
 
 import astropy.io.fits
 import numpy as np
@@ -7,6 +8,9 @@ import pandas as pd
 import socket
 import getpass
 import datetime
+
+from pandas import DataFrame
+
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import raw_img_key, get_mask_path, latest_save_key, latest_mask_save_key
 
@@ -204,8 +208,49 @@ class ProcessorWithCache(BaseProcessor, ABC):
         return list(obs[raw_img_key])
 
 
-class TransitionProcessor:
-    pass
+class BaseImage_DataframeProcessor(BaseProcessor, ABC):
 
-class ProcessorwithDataframe:
-    pass
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.subclasses[cls.base_key] = cls
+
+    def apply(
+            self,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.header],
+    ) -> tuple[list[DataFrame], list]:
+        tables, headers = self._apply_to_images(images, headers)
+        headers = self._update_processing_history(headers)
+        return tables, headers
+
+    def _apply_to_images(
+            self,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.Header],
+    ) -> list[DataFrame]:
+        raise NotImplementedError
+
+
+class BaseDataframeProcessor(BaseProcessor, ABC):
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.subclasses[cls.base_key] = cls
+
+    def apply(
+            self,
+            tables: list[DataFrame],
+            headers: list[astropy.io.fits.header],
+    ) -> list[pd.DataFrame]:
+        tables = self._apply_to_images(tables, headers)
+        return tables
+
+    def _apply_to_images(
+            self,
+            tables: list[DataFrame],
+            headers: list[astropy.io.fits.header],
+    ) -> tuple[list[DataFrame], list[astropy.io.fits.header]]:
+        raise NotImplementedError
+
