@@ -233,6 +233,8 @@ class Pipeline:
                 batches
             )
 
+        return batches
+
     def export_observing_log(
             self,
             night_sub_dir: str = ""

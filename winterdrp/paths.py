@@ -155,6 +155,9 @@ base_name_key = "BASENAME"
 latest_save_key = "SAVEPATH"
 latest_mask_save_key = "MASKPATH"
 saturate_key = "SATURATE"
+sextractor_header_key = 'SRCCAT'
+psfex_header_key = 'PSFCAT'
+norm_psfex_header_key = 'NPSFCAT'
 
 core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
 

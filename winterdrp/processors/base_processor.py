@@ -9,7 +9,7 @@ import getpass
 import datetime
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
-    ProcessingError, base_name_key
+    ProcessingError
 from winterdrp.errors import ErrorReport
 
 logger = logging.getLogger(__name__)
@@ -205,67 +205,9 @@ class ProcessorWithCache(BaseProcessor, ABC):
     ) -> tuple[np.ndarray, astropy.io.fits.Header]:
         raise NotImplementedError
 
-# class ProcessorWithCache(BaseProcessor, ABC):
-#
-#     @staticmethod
-#     def select_cache_images(
-#             observing_log: pd.DataFrame
-#     ) -> list:
-#         raise NotImplementedError
-#
-#     def load_cache_file(
-#             self,
-#             path: str
-#     ) -> (np.ndarray, astropy.io.fits.Header):
-#
-#         if path in self.cache:
-#             img, header = self.cache[path]
-#         else:
-#             img, header = self.open_fits(path)
-#             self.cache[path] = (img, header)
-#         return img, header
-#
-#     def make_cache(
-#             self,
-#             observing_log: pd.DataFrame,
-#     ):
-#
-#         img_path_list = self.select_cache_images(observing_log)
-#
-#         if len(img_path_list) > 0:
-#             self.make_cache_files(
-#                 img_path_list,
-#             )
-#
-#     def make_cache_files(
-#             self,
-#             image_paths: list[str],
-#     ):
-#         raise NotImplementedError
-#
-#     def subselect_log(
-#             self,
-#             observing_log: pd.DataFrame,
-#             key: str
-#     ) -> pd.DataFrame:
-#         mask = np.logical_and(
-#             observing_log["TARGET"] == key,
-#             observing_log["NIGHT"] == self.night
-#         )
-#
-#         return observing_log[mask]
-#
-#     def select_from_log(
-#             self,
-#             observing_log: pd.DataFrame,
-#             key: str
-#     ) -> [str]:
-#
-#         obs = self.subselect_log(
-#             observing_log=observing_log,
-#             key=key
-#         )
-#
-#         logger.debug(f"Found {len(obs)} entries with key '{key}' for night '{self.night}'")
-#
-#         return list(obs[raw_img_key])
+
+class TransitionProcessor:
+    pass
+
+class ProcessorwithDataframe:
+    pass
