@@ -1,8 +1,10 @@
 # import logging
-# from winterdrp.processors.base_processor import BaseProcessor
-# from winterdrp.processors.bias import BiasCalibrator
-# from winterdrp.processors.dark import DarkCalibrator
-# from winterdrp.processors.utils.image_saver import ImageSaver
+from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.bias import BiasCalibrator
+from winterdrp.processors.dark import DarkCalibrator
+from winterdrp.processors.mask import MaskPixels
+from winterdrp.processors.flat import FlatCalibrator, SkyFlatCalibrator
+from winterdrp.processors.utils.image_saver import ImageSaver
 #
 # logger = logging.getLogger(__name__)
 #
