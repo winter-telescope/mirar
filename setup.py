@@ -31,6 +31,7 @@ setuptools.setup(
         "matplotlib",
         "numpy",
         "pandas",
+        "psycopg[binary]",
         "wget"
     ]
 )
