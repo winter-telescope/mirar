@@ -20,7 +20,7 @@ class PS1(BaseCatalog):
             min_mag: float,
             max_mag: float,
             filter_name: str,
-            snr_threshold : float=3.0
+            snr_threshold: float = 3.0
     ):
         super().__init__(search_radius_arcmin, min_mag, max_mag, filter_name)
         self.snr_threshold = snr_threshold
@@ -37,8 +37,8 @@ class PS1(BaseCatalog):
         )
 
         v = Vizier(columns=['*'],
-                   column_filters={f"{self.filter_name}mag" : f"< {self.max_mag}",
-                                   f"e_{self.filter_name}mag" : "<%.3f" % (1.086 / self.snr_threshold)},
+                   column_filters={f"{self.filter_name}mag": f"< {self.max_mag}",
+                                   f"e_{self.filter_name}mag": "<%.3f" % (1.086 / self.snr_threshold)},
                    row_limit=-1)
         Q = v.query_region(SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
                            radius=str(self.search_radius_arcmin) + 'm',
