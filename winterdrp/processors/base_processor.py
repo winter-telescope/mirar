@@ -1,5 +1,6 @@
 import logging
 from abc import ABC
+from typing import Tuple
 
 import astropy.io.fits
 import numpy as np
@@ -8,6 +9,8 @@ import socket
 import getpass
 import datetime
 import hashlib
+import pandas as pd
+
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
     ProcessingError, base_name_key, proc_history_key
@@ -222,8 +225,51 @@ class ProcessorWithCache(BaseProcessor, ABC):
         raise NotImplementedError
 
 
-class TransitionProcessor:
-    pass
+class BaseImage_DataframeProcessor(BaseProcessor, ABC):
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.subclasses[cls.base_key] = cls
+
+    def apply(
+            self,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.header],
+    ) -> tuple[list[pd.DataFrame], list]:
+        tables, headers = self._apply_to_images(images, headers)
+        headers = self._update_processing_history(headers)
+        return tables, headers
+
+    def _apply_to_images(
+            self,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.Header],
+    ) -> list[pd.DataFrame]:
+        raise NotImplementedError
+
+
+class BaseDataframeProcessor(BaseProcessor, ABC):
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.subclasses[cls.base_key] = cls
+
+    def apply(
+            self,
+            tables: list[pd.DataFrame],
+            headers: list[astropy.io.fits.header],
+    ) -> list[pd.DataFrame]:
+        tables = self._apply_to_images(tables, headers)
+        return tables
+
+    def _apply_to_images(
+            self,
+            tables: list[pd.DataFrame],
+            headers: list[astropy.io.fits.header],
+    ) -> tuple[list[pd.DataFrame], list[astropy.io.fits.header]]:
+        raise NotImplementedError
 
 
 class ProcessorwithDataframe:

@@ -3,7 +3,7 @@ import logging
 import astropy.table
 import pandas as pd
 
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor
 import numpy as np
 from astropy.io import fits
 from collections.abc import Callable
@@ -35,7 +35,7 @@ class FilterCandidates(BaseProcessor):
         pass
 
 
-class DetectCandidates(BaseProcessor):
+class DetectCandidates(BaseImage_DataframeProcessor):
     base_key = "DETCANDS"
     def __init__(self,
                  cand_det_sextractor_config: str,
@@ -269,6 +269,6 @@ class DetectCandidates(BaseProcessor):
 
             all_cands_list.append(cands_table)
 
-        return images, headers
+        return all_cands_list, headers
         # Need to get this to return a dataframe and not images+headers, but that will require some coding
         #return all_cands_list
