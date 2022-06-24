@@ -56,6 +56,9 @@ def cal_output_dir(
     return get_output_dir("calibration", sub_dir=str(sub_dir))
 
 
+cal_output_sub_dir = "calibration"
+
+
 def reduced_img_dir(
         sub_dir: str | int = ""
 ) -> str:
@@ -154,3 +157,8 @@ latest_mask_save_key = "MASKPATH"
 saturate_key = "SATURATE"
 
 core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
+
+
+class ProcessingError(Exception):
+    pass
+
