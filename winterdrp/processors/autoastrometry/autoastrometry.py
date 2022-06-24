@@ -30,7 +30,7 @@ import urllib.request
 import math
 import numpy as np
 from astropy.io import fits
-from winterdrp.paths import base_output_dir
+from winterdrp.paths import base_output_dir, ProcessingError
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation
 import logging
 import ephem
@@ -49,7 +49,7 @@ fast_match = True
 show_matches = False
 
 
-class AstrometryException(Exception):
+class AstrometryError(ProcessingError):
     pass
 
 
@@ -1263,9 +1263,10 @@ def get_ref_sources_from_catalog(
             for trycat in trycats:
                 testqueryurl = f"http://tdc-www.harvard.edu/cgi-bin/scat?catalog={trycat}&ra={center_ra}" \
                                f"&dec={center_dec}&system=J2000&rad=-90"
-                check = urllib.request.urlopen(testqueryurl)
-                checklines = check.readlines()
-                check.close()
+
+                with urllib.request.urlopen(testqueryurl, timeout=30) as check:
+                    checklines = check.readlines()
+
                 if len(checklines) > 15:
                     catalog = trycat
                     logger.info(f'Using catalog {catalog}')
@@ -1273,7 +1274,7 @@ def get_ref_sources_from_catalog(
         except urllib.error.URLError:
             err = 'No catalog is available.  Check your internet connection.'
             logger.error(err)
-            raise AstrometryException(err)
+            raise AstrometryError(err)
 
     # Load in reference star catalog
 
@@ -1293,12 +1294,12 @@ def get_ref_sources_from_catalog(
         logger.error('No objects found in catalog.')
         logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
         logger.error('is too small.  Check input parameters or your internet connection.')
-        raise AstrometryException
+        raise AstrometryError
 
     elif 0 < n_cat < 5:
         logger.error(f'Only {n_cat} catalog objects in the search zone.'
                      f'Increase the magnitude threshold or box size.')
-        raise AstrometryException
+        raise AstrometryError
 
     return ref_src_list, n_cat, cat_density
 
@@ -1568,7 +1569,7 @@ def autoastrometry(
         logger.error(err)
         write_text_file('det.init.txt', img_src_list)
         write_region_file('det.im.reg', img_src_list, 'red', 'img')
-        raise AstrometryException(err)
+        raise AstrometryError(err)
 
     img_density = len(img_src_list) / area_sq_min
     logger.debug('Source img_density of %f4 /arcmin^2' % img_density)
@@ -1692,7 +1693,7 @@ def autoastrometry(
                ' You can display a list of detected/catalog sources using det.im.reg and cat.wcs.reg. \n'
                )
         logger.error(err)
-        raise AstrometryException(err)
+        raise AstrometryError(err)
 
     if n_match <= 2:
         logger.warning(f'Warning: only {n_match} match(es).  Astrometry may be unreliable.')
