@@ -2,12 +2,7 @@ import logging
 
 import pandas as pd
 
-<<<<<<< HEAD:winterdrp/processors/candidates/candidate_detector.py
 from winterdrp.processors.base_processor import BaseCandidateGenerator
-=======
-from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor, BaseDataframeProcessor
-
->>>>>>> 82dca3e (Update detect candidates processor type):winterdrp/processors/candidates.py
 import numpy as np
 from astropy.io import fits
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
@@ -268,3 +263,4 @@ class DetectCandidates(BaseCandidateGenerator):
             all_cands_list.append(cands_table)
 
         return pd.concat(all_cands_list)
+

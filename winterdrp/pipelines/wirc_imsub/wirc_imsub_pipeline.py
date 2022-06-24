@@ -110,7 +110,8 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                              cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
                              cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
-            EdgeCandidatesMask(edge_boundary_size=100)
+            EdgeCandidatesMask(edge_boundary_size=100),
+            FilterCandidates()
         ]
     }
 
