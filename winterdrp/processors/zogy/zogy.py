@@ -171,6 +171,8 @@ class ZOGYPrepare(BaseProcessor):
             ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(ref_catalog_path, sci_catalog_path)
 
             ref_data = ref_data * flux_scale
+            ref_unscaled_zp = ref_header['TMC_ZP']
+            ref_header['TMC_ZP'] = float(ref_header['TMC_ZP']) + 2.5*np.log10(flux_scale)
 
             ref_scaled_path = ref_img_path + '.scaled'
             self.save_fits(data=ref_data,
@@ -178,6 +180,9 @@ class ZOGYPrepare(BaseProcessor):
                            path=os.path.join(os.path.join(self.get_sub_output_dir(), ref_scaled_path))
                            )
 
+            logger.info(f"Zeropoints are reference : {ref_unscaled_zp}, scaled reference : {ref_header['TMC_ZP']} and "
+                        f"science : {header['TMC_ZP']}")
+            assert(False)
             sci_scaled_path = sci_img_path + '.scaled'
             self.save_fits(data=sci_data,
                            header=header,

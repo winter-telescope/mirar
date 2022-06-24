@@ -72,7 +72,7 @@ class PSFex(BaseProcessor):
 
             header[psfex_header_key] = psf_path
             header[norm_psfex_header_key] = norm_psf_path
-
+            assert False
         return images, headers
 
     def check_prerequisites(

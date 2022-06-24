@@ -69,8 +69,10 @@ def wirc_reference_psfex(output_sub_dir, norm_fits):
                  norm_fits=norm_fits
                  )
 
+
 def detect_candidates_sextractor():
     pass
+
 
 class WircImsubPipeline(Pipeline):
     name = "wirc_imsub"

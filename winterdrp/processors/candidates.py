@@ -224,7 +224,9 @@ class DetectCandidates(BaseProcessor):
         det_srcs['psf_magerr'] = 1.086 * det_srcs['psf_fluxunc'] / det_srcs['psf_flux']
         det_srcs['ZP'] = diff_zp
 
-        det_srcs.write(sci_resamp_imagename + '.candidates.dat', format='ascii', overwrite=True)
+        # det_srcs.write(sci_resamp_imagename + '.candidates.dat', format='ascii', overwrite=True)
+        det_srcs = det_srcs.to_pandas()
+        det_srcs.to_pickle(sci_resamp_imagename + '.candidates.pkl')
         return det_srcs
 
     def _apply_to_images(
