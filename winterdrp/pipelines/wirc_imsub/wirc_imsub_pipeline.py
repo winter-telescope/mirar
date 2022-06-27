@@ -11,6 +11,7 @@ from astropy.io import fits
 import os
 from astropy.time import Time
 import logging
+from winterdrp.processors.candidate_filters import EdgeCandidatesMask
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,7 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                              cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
                              cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
-            FilterCandidates()
+            EdgeCandidatesMask(edge_boundary_size=100)
         ]
     }
 

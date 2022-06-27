@@ -36,6 +36,7 @@ class FilterCandidates(BaseDataframeProcessor):
 
 class DetectCandidates(BaseImage_DataframeProcessor):
     base_key = "DETCANDS"
+
     def __init__(self,
                  cand_det_sextractor_config: str,
                  cand_det_sextractor_filter: str,
@@ -59,23 +60,23 @@ class DetectCandidates(BaseImage_DataframeProcessor):
         data = fits.getdata(imagename)
         y_image_size, x_image_size = np.shape(data)
         x, y = position
-        logger.info(f'{x},{y},{np.shape(data)}')
-        if y<half_size:
-            cutout = data[0:y+half_size+1, x - half_size:x+half_size+1]
+        logger.debug(f'{x},{y},{np.shape(data)}')
+        if y < half_size:
+            cutout = data[0:y + half_size + 1, x - half_size:x + half_size + 1]
             n_pix = half_size - y
-            cutout = np.pad(cutout, ((n_pix,0),(0,0)), 'constant')
+            cutout = np.pad(cutout, ((n_pix, 0), (0, 0)), 'constant')
 
-        elif y + half_size+1 > y_image_size:
+        elif y + half_size + 1 > y_image_size:
             cutout = data[y - half_size: y_image_size, x - half_size: x + half_size + 1]
-            n_pix = (half_size+y+1) - y_image_size
-            cutout = np.pad(cutout, ((0,n_pix),(0,0)), 'constant')
+            n_pix = (half_size + y + 1) - y_image_size
+            cutout = np.pad(cutout, ((0, n_pix), (0, 0)), 'constant')
 
         elif x < half_size:
-            cutout = data[y - half_size: y+half_size+1, 0:x+half_size+1]
+            cutout = data[y - half_size: y + half_size + 1, 0:x + half_size + 1]
             n_pix = half_size - x
-            cutout = np.pad(cutout, ((0,0),(n_pix,0)),'constant')
+            cutout = np.pad(cutout, ((0, 0), (n_pix, 0)), 'constant')
         elif x + half_size > x_image_size:
-            cutout = data[y-half_size:y+half_size+1, x-half_size:x_image_size]
+            cutout = data[y - half_size:y + half_size + 1, x - half_size:x_image_size]
             n_pix = (half_size + x + 1) - x_image_size
             cutout = np.pad(cutout, ((0, 0), (0, n_pix)), 'constant')
         else:
@@ -91,7 +92,7 @@ class DetectCandidates(BaseImage_DataframeProcessor):
         # image: input image cutout
         #
         # Returns:
-        # buf2: a gizipped fits file of the cutout image as
+        # buf2: a gzipped fits file of the cutout image as
         #  a BytesIO object
         ######################################################
 
@@ -192,7 +193,7 @@ class DetectCandidates(BaseImage_DataframeProcessor):
 
             diff_cutout = self.make_alert_cutouts(diff_filename, (xpeak, ypeak), cutout_size_psf_phot)
             diff_unc_cutout = self.make_alert_cutouts(diff_unc_filename, (xpeak, ypeak), cutout_size_psf_phot)
-            logger.info(f'Cutout dimensions {diff_cutout.shape}')
+            logger.debug(f'Cutout dimensions {diff_cutout.shape}')
             psf_flux, psf_fluxunc, minchi2, xshift, yshift = self.psf_photometry(diff_cutout, diff_unc_cutout,
                                                                                  psfmodels)
 
@@ -236,6 +237,8 @@ class DetectCandidates(BaseImage_DataframeProcessor):
 
         all_cands_list = []
         for ind, header in enumerate(headers):
+            image = images[ind]
+
             scorr_image_path = os.path.join(self.get_sub_output_dir(), header["DIFFSCR"])
             diff_image_path = os.path.join(self.get_sub_output_dir(), header["DIFFIMG"])
             diff_psf_path = os.path.join(self.get_sub_output_dir(), header["DIFFPSF"])
@@ -257,17 +260,20 @@ class DetectCandidates(BaseImage_DataframeProcessor):
             sci_image_path = os.path.join(self.get_sub_output_dir(), header['BASENAME'])
             ref_image_path = os.path.join(self.get_sub_output_dir(), header['REFIMG'])
             cands_table = self.generate_candidates_table(
-                                                         scorr_catalog_name=cands_catalog_name,
-                                                         sci_resamp_imagename=sci_image_path,
-                                                         ref_resamp_imagename=ref_image_path,
-                                                         diff_filename=diff_image_path,
-                                                         diff_scorr_filename=scorr_image_path,
-                                                         diff_psf_filename=diff_psf_path,
-                                                         diff_unc_filename=diff_unc_path
-                                                         )
+                scorr_catalog_name=cands_catalog_name,
+                sci_resamp_imagename=sci_image_path,
+                ref_resamp_imagename=ref_image_path,
+                diff_filename=diff_image_path,
+                diff_scorr_filename=scorr_image_path,
+                diff_psf_filename=diff_psf_path,
+                diff_unc_filename=diff_unc_path
+            )
 
+            x_shape, y_shape = image.shape
+            cands_table['X_SHAPE'] = x_shape
+            cands_table['Y_SHAPE'] = y_shape
             all_cands_list.append(cands_table)
 
         return all_cands_list
         # Need to get this to return a dataframe and not images+headers, but that will require some coding
-        #return all_cands_list
+        # return all_cands_list
