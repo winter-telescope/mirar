@@ -17,7 +17,7 @@ from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.catalog import Gaia2Mass
 from winterdrp.downloader.caltech import download_via_ssh
 from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
+from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
 
 
 def wirc_astrometric_catalog_generator(
@@ -78,10 +78,16 @@ class WircPipeline(Pipeline):
                 load_image=load_raw_wirc_image
             ),
             MaskPixels(mask_path=wirc_mask_path),
-            ImageBatcher(split_key="EXPTIME"),
+            ImageBatcher(split_key="exptime"),
             DarkCalibrator(),
+            ImageDebatcher(),
+            ImageBatcher(split_key="filter"),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
+            ImageSelector(
+                ("object", "ZTF21acbnfos"),
+                ("filter", "J")
+            ),
             AutoAstrometry(catalog="tmc"),
             Sextractor(
                 output_sub_dir="postprocess",
