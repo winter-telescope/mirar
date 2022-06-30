@@ -32,6 +32,7 @@ setuptools.setup(
         "numpy",
         "pandas",
         "psycopg[binary]",
+        "pyfftw",
         "wget"
     ]
 )
