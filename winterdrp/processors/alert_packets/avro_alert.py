@@ -9,6 +9,7 @@ import json
 import time
 
 from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor, BaseDataframeProcessor
+from winterdrp.paths import get_output_dir
 import numpy as np
 from astropy.io import fits
 
@@ -22,10 +23,14 @@ class AvroPacketMaker(BaseDataframeProcessor):
         store_data_path (str): path to store avro files in.
     """
 
-    def __init__(self, schema_path, store_data_path, *args, **kwargs):
+    def __init__(self, 
+                schema_path: str, 
+                output_sub_dir: str = "avro_packets", 
+                *args,
+                **kwargs):
         super(AvroPacketMaker, self).__init__(*args, **kwargs)
-        self.schema_path = schema_path
-        self.store_data_path = store_data_path
+        # self.schema_path = schema_path
+        self.output_sub_dir = output_sub_dir
         
 
     def _apply_to_image(
@@ -161,8 +166,17 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         return alert
 
-    def _save_local(candid, records, schema):
-        out = open('%d.avro'%candid, 'wb')
+    def _save_local(self, candid, records, schema):
+        """Save avro file in given schema to output subdirectory.
+        
+        Args:
+            candid (number type): candidate id.
+            records (list): a list of dictionaries
+            avro_schema (avro.schema.RecordSchema): schema definition.
+        """
+        avro_sub_dir = '%d.avro'%candid
+        filename = get_output_dir(avro_sub_dir, self.output_sub_dir) # possible wrong order
+        out = open(filename, 'wb')
         logger.info(f'avro alert saved to {out}')
         fastavro.writer(out, schema, records)
         out.close()
@@ -182,7 +196,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
                 self._save_local(cand['candid'], [packet], schema)
                 logger.info('Saved candid %d name %s'%(cand['candid'], cand['objectId']))
             except:
-                logger.info('Could not send candid %d'%cand['candid'])
+                logger.info('Could not save candid %d'%cand['candid'])
         
 
     def make_alert(self, useDataBase=False, df=None):
