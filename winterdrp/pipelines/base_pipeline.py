@@ -82,7 +82,7 @@ class Pipeline:
     def reduce_images(
             self,
             batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]],
-    ) -> list:
+    ):
 
         for i, processor in enumerate(self.processors):
             logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
