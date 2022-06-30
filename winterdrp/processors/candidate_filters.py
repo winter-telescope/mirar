@@ -3,10 +3,12 @@ import logging
 import astropy.table
 import pandas as pd
 
-from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor, BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseDataframeProcessor
 import numpy as np
 from astropy.io import fits
 from collections.abc import Callable
+from winterdrp.catalog.base_catalog import BaseCatalog
+from pandas import DataFrame
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
 from winterdrp.utils.ldac_tools import get_table_from_ldac
@@ -64,4 +66,18 @@ class EdgeCandidatesMask(BaseDataframeProcessor):
 
 
 class BrightStarCandidateMask(BaseDataframeProcessor):
-    pass
+
+    def __init__(self,
+                 ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],
+                 bright_star_thresh_mag: float = 14,
+                 *args,
+                 **kwargs):
+        super(BrightStarCandidateMask, self).__init__(*args, **kwargs)
+        self.ref_catalog_generator = ref_catalog_generator
+        self.bright_star_thresh_mag = bright_star_thresh_mag
+
+    def _apply_to_images(
+            self,
+            tables: list[DataFrame]
+    ) -> list[DataFrame]:
+        pass
