@@ -56,9 +56,6 @@ class PhotCalibrator(BaseProcessor):
             logger.error('No sources found in reference catalog') # Errors should be logging.error
             return [{'Error': -1}] # Why not raise error?
 
-        print(ref_cat.dtype.names)
-        raise
-
         ref_coords = SkyCoord(ra=ref_cat['ra'], dec=ref_cat['dec'], unit=(u.deg, u.deg))
 
         clean_mask = (img_cat['FLAGS'] == 0) & \
