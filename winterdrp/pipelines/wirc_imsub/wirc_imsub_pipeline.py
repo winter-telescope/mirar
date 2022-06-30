@@ -12,6 +12,8 @@ import os
 from astropy.time import Time
 import logging
 from winterdrp.processors.candidates.edge_mask import EdgeCandidatesMask
+from winterdrp.processors.candidates.candidate_filter import FilterCandidates
+from winterdrp.processors.alert_packets.avro_alert import AvroPacketMaker
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +113,8 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
                              cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
             EdgeCandidatesMask(edge_boundary_size=100),
-            FilterCandidates()
+            FilterCandidates(),
+            AvroPacketMaker(output_sub_dir="avro")
         ]
     }
 
