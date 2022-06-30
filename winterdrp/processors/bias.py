@@ -22,7 +22,7 @@ def default_select_bias(
         images: list[np.ndarray],
         headers: list[astropy.io.fits.Header],
 ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-    return select_from_images(images, headers, target="bias")
+    return select_from_images(images, headers, target_values="bias")
 
 
 class BiasCalibrator(ProcessorWithCache):

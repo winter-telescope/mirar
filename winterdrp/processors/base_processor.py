@@ -116,7 +116,7 @@ class BaseProcessor:
     def save_fits(
             data,
             header,
-            path,
+            path: str,
     ):
         header[latest_save_key] = path
         logger.info(f"Saving to {path}")

@@ -16,7 +16,7 @@ def default_select_flat(
         images: list[np.ndarray],
         headers: list[astropy.io.fits.Header],
 ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-    return select_from_images(images, headers, target="flat")
+    return select_from_images(images, headers, target_values="flat")
 
 
 class FlatCalibrator(ProcessorWithCache):

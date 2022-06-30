@@ -1,22 +1,26 @@
 import astropy.io.fits
 import numpy as np
+import logging
 from winterdrp.processors.base_processor import BaseProcessor
+
+logger = logging.getLogger(__name__)
 
 
 def select_from_images(
         images: list[np.ndarray],
         headers: list[astropy.io.fits.Header],
-        target: str | list[str]
+        header_key: str = "target",
+        target_values: str | list[str] = "science",
 ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
-    if isinstance(target, str):
-        target = [target]
+    if isinstance(target_values, str):
+        target_values = [target_values]
 
     passing_images = []
     passing_headers = []
 
     for i, header in enumerate(headers):
-        if header["target"] in target:
+        if header[header_key] in target_values:
             passing_images.append(images[i])
             passing_headers.append(header)
 
@@ -29,19 +33,49 @@ class ImageSelector(BaseProcessor):
 
     def __init__(
             self,
-            target: str | list[str] = "science",
-            *args,
+            # header_keys: str | list[str] = "target",
+            # header_values: list[list[str] | str] = "science",
+            *args: tuple[str, str | list[str]],
             **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self.target = target
+
+        # if isinstance(header_keys, str):
+        #     header_keys = [header_keys]
+        #
+        # if isinstance(header_keys, str):
+        #     header_keys = [header_keys]
+
+        self.targets = args
+
+        # self.header_keys = header_keys
+        # self.target_values = header_values
+        #
+        # if len(self.header_keys) != len(self.target_values):
+        #     err = f"Mismatch in length. Each key should have a corresponding value/list of values.:\n " \
+        #           f"{self.header_keys}, {self.target_values}"
+        #     logger.error(err)
+        #     raise ValueError(err)
 
     def _apply_to_images(
             self,
             images: list[np.ndarray],
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        return select_from_images(images, headers, target=self.target)
+
+        for (header_key, target_values) in self.targets:
+
+            print(header_key, target_values)
+
+            images, headers = select_from_images(
+                images,
+                headers,
+                header_key=header_key,
+                target_values=target_values
+            )
+            print(len(images))
+
+        return images, headers
 
 
 def split_images_into_batches(
