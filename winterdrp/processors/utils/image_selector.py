@@ -33,29 +33,11 @@ class ImageSelector(BaseProcessor):
 
     def __init__(
             self,
-            # header_keys: str | list[str] = "target",
-            # header_values: list[list[str] | str] = "science",
             *args: tuple[str, str | list[str]],
             **kwargs
     ):
         super().__init__(*args, **kwargs)
-
-        # if isinstance(header_keys, str):
-        #     header_keys = [header_keys]
-        #
-        # if isinstance(header_keys, str):
-        #     header_keys = [header_keys]
-
         self.targets = args
-
-        # self.header_keys = header_keys
-        # self.target_values = header_values
-        #
-        # if len(self.header_keys) != len(self.target_values):
-        #     err = f"Mismatch in length. Each key should have a corresponding value/list of values.:\n " \
-        #           f"{self.header_keys}, {self.target_values}"
-        #     logger.error(err)
-        #     raise ValueError(err)
 
     def _apply_to_images(
             self,
@@ -65,17 +47,21 @@ class ImageSelector(BaseProcessor):
 
         for (header_key, target_values) in self.targets:
 
-            print(header_key, target_values)
-
             images, headers = select_from_images(
                 images,
                 headers,
                 header_key=header_key,
                 target_values=target_values
             )
-            print(len(images))
 
         return images, headers
+
+    def update_batches(
+        self,
+        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
+    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
+        # Remove empty batches
+        return [x for x in batches if len(x[0]) > 0]
 
 
 def split_images_into_batches(
