@@ -2,10 +2,9 @@ import astropy.io.fits
 import numpy as np
 import os
 import logging
-from winterdrp.processors.base_processor import BaseProcessor, ProcessorWithCache
-from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, get_untemp_path
+from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.paths import get_output_dir, copy_temp_file
 from collections.abc import Callable
-from winterdrp.paths import cal_output_dir
 from winterdrp.catalog.base_catalog import BaseCatalog
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor, sextractor_header_key
 from winterdrp.utils.ldac_tools import get_table_from_ldac
@@ -165,13 +164,13 @@ class PhotCalibrator(BaseProcessor):
             logger.error(err)
             raise ValueError
 
-        # sextractor_steps = np.array(self.preceding_steps)[mask]
-        #
-        # for processor in sextractor_steps:
-        #     print(processor)
-        #
-        # raise
-        #
-        # check_fwhm
+        sextractor_steps = np.array(self.preceding_steps)[mask]
+
+        for processor in sextractor_steps:
+            print(processor)
+
+        raise
+
+        check_fwhm
 
 
