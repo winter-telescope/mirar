@@ -124,3 +124,30 @@ class ImageBatcher(BaseProcessor):
 
         return new_batches
 
+
+class ImageDebatcher(BaseProcessor):
+
+    base_key = "debatch"
+
+    def _apply_to_images(
+            self,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.Header],
+    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+        return images, headers
+
+    def update_batches(
+        self,
+        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
+    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
+
+        new_batches = [[[], []]]
+
+        for batch in batches:
+            for i in range(2):
+                new_batches[0][i] += batch[i]
+
+        return new_batches
+
+
+

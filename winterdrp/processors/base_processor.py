@@ -7,9 +7,10 @@ import os
 import socket
 import getpass
 import datetime
+import hashlib
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
-    ProcessingError
+    ProcessingError, base_name_key, proc_history_key
 from winterdrp.errors import ErrorReport
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ class BaseProcessor:
             headers: list,
     ) -> list:
         for header in headers:
-            header["CALSTEPS"] += self.base_key + ","
+            header[proc_history_key] += self.base_key + ","
             header['REDUCER'] = getpass.getuser()
             header['REDMACH'] = socket.gethostname()
             header['REDTIME'] = str(datetime.datetime.now())
@@ -134,12 +135,17 @@ class BaseProcessor:
         self.save_fits(mask, header, mask_path)
         return mask_path
 
+    @staticmethod
+    def get_hash(headers: list[astropy.io.fits.Header]):
+        key = "".join(sorted([x[base_name_key]+x[proc_history_key] for x in headers]))
+        return hashlib.sha1(key.encode()).hexdigest()
+
 
 class ProcessorWithCache(BaseProcessor, ABC):
 
     def __init__(
             self,
-            try_load_cache: bool = False,
+            try_load_cache: bool = True,
             write_to_cache: bool = True,
             overwrite: bool = True,
             cache_sub_dir: str = cal_output_sub_dir,
@@ -173,7 +179,7 @@ class ProcessorWithCache(BaseProcessor, ABC):
             images: list[np.ndarray],
             headers: list[astropy.io.fits.Header],
     ) -> str:
-        raise NotImplementedError
+        return f"{self.base_key}_{self.get_hash(headers)}.fits"
 
     def get_cache_file(
             self,
@@ -186,6 +192,7 @@ class ProcessorWithCache(BaseProcessor, ABC):
         exists = os.path.exists(path)
 
         if np.logical_and(self.try_load_cache, exists):
+            logger.info(f"Loading cached file {path}")
             return self.open_fits(path)
 
         else:
@@ -208,6 +215,7 @@ class ProcessorWithCache(BaseProcessor, ABC):
 
 class TransitionProcessor:
     pass
+
 
 class ProcessorwithDataframe:
     pass

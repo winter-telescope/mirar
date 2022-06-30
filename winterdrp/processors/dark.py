@@ -33,13 +33,6 @@ class DarkCalibrator(ProcessorWithCache):
         super().__init__(*args, **kwargs)
         self.select_cache_images = select_cache_images
 
-    def get_cache_file_name(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> str:
-        return f"master_dark_{headers[0][base_name_key]}"
-
     def _apply_to_images(
             self,
             images: list[np.ndarray],

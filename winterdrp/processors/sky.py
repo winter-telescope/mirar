@@ -6,7 +6,7 @@ import pandas as pd
 from collections.abc import Callable
 from astropy.time import Time
 from winterdrp.processors.base_processor import ProcessorWithCache
-from winterdrp.processors.flat import SkyFlatCalibrator, OldSkyFlatCalibrator
+from winterdrp.processors.flat import SkyFlatCalibrator
 from winterdrp.paths import cal_output_dir, saturate_key
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 class NightSkyMedianCalibrator(SkyFlatCalibrator):
 
     base_key = "sky"
-    base_name = "master_sky"
 
     def _apply_to_images(
             self,
@@ -45,11 +44,11 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
         return os.path.join(cal_dir, name)
 
 
-class OldNightSkyMedianCalibrator(
-    NightSkyMedianCalibrator,
-    OldSkyFlatCalibrator
-):
-    pass
+# class OldNightSkyMedianCalibrator(
+#     NightSkyMedianCalibrator,
+#     OldSkyFlatCalibrator
+# ):
+#     pass
 
     # def select_sky(
     #         self,

@@ -152,6 +152,7 @@ def parse_image_list(
 
 raw_img_key = "RAWIMAGEPATH"
 base_name_key = "BASENAME"
+proc_history_key = "CALSTEPS"
 latest_save_key = "SAVEPATH"
 latest_mask_save_key = "MASKPATH"
 saturate_key = "SATURATE"
