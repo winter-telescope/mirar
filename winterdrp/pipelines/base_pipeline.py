@@ -130,8 +130,9 @@ class Pipeline:
             batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]],
     ):
 
-        for processor in self.processors:
-            logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches")
+        for i, processor in enumerate(self.processors):
+            logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
+                         f"(Step {i+1}/{len(self.processors)})")
             batches, failures = processor.apply(
                 batches
             )
