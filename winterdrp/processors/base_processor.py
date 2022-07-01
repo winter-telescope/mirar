@@ -15,6 +15,7 @@ from winterdrp.errors import ErrorReport
 
 logger = logging.getLogger(__name__)
 
+
 class PrerequisiteError(BaseException):
     pass
 
@@ -174,6 +175,11 @@ class ProcessorWithCache(BaseProcessor, ABC):
             dir_root=self.cache_sub_dir,
             sub_dir=self.night_sub_dir
         )
+
+        try:
+            os.makedirs(os.path.dirname(output_path))
+        except OSError:
+            pass
 
         return output_path
 

@@ -20,6 +20,7 @@ from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors import MaskPixels, BiasCalibrator, SkyFlatCalibrator, FlatCalibrator
+from winterdrp.processors.csvlog import CSVLog
 
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -203,6 +204,7 @@ class SummerPipeline(Pipeline):
                 input_sub_dir="raw",
                 load_image=load_raw_summer_image
             ),
+            CSVLog(),
             DatabaseExporter(
                 db_name=pipeline_name,
                 db_table="exposures",
