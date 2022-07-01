@@ -17,7 +17,16 @@ logger = logging.getLogger(__name__)
 
 
 # All the Sextractor parameters required for this script to run
-REQUIRED_PARAMETERS = ["X_IMAGE", "Y_IMAGE", "FWHM_WORLD", 'FLAGS']
+REQUIRED_PARAMETERS = [
+    "X_IMAGE",
+    "Y_IMAGE",
+    "FWHM_WORLD",
+    'FLAGS',
+    'ALPHAWIN_J2000',
+    'DELTAWIN_J2000',
+    'MAG_APER',
+    'MAG_AUTO'
+]
 
 
 class PhotCalibrator(BaseProcessor):
