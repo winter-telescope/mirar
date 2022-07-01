@@ -5,6 +5,7 @@ import pandas as pd
 
 import io, gzip, os
 import avro, fastavro
+from avro import schema
 import json
 import time
 
@@ -24,7 +25,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
     """
 
     def __init__(self, 
-                schema_path: str, 
                 output_sub_dir: str = "avro_packets", 
                 *args,
                 **kwargs):
@@ -33,13 +33,13 @@ class AvroPacketMaker(BaseDataframeProcessor):
         self.output_sub_dir = output_sub_dir
         
 
-    def _apply_to_image(
+    def _apply_to_images(
         self,
         tables: list[pd.DataFrame]
     ) -> list[pd.DataFrame]:
-        logger.info('in _apply_to_image')
-        self.make_alert(False, tables[0])
-        return tables # TODO fix
+        logger.info('in AvroPacketMaker: _apply_to_image')
+        # self.make_alert(False, tables[0]) # TODO go thru entire list
+        return tables 
 
     def combine_schemas(self, schema_files):
         """Combine multiple nested schemas into a single schema.
@@ -48,7 +48,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         known_schemas = avro.schema.Names()
         #print(known_schemas)
         for s in schema_files:
-            schema = self.load_single_avsc(s, known_schemas)
+            schema = self.load_single_avsc(s, known_schemas) # not working 
+            #     schema = avro.schema.SchemaFromJSONData(json_data, names)
+            # AttributeError: module 'avro.schema' has no attribute 'SchemaFromJSONData'
         # using schema.to_json() doesn't fully propagate the nested schemas
         # work around as below
         props = dict(schema.props)
@@ -65,7 +67,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         with open(file_path) as file_text:
             json_data = json.load(file_text)
-            
+        
+        # SchemaFromJSONData not working
         schema = avro.schema.SchemaFromJSONData(json_data, names)
         return schema
 
@@ -82,15 +85,23 @@ class AvroPacketMaker(BaseDataframeProcessor):
             list[dict]: list of dictionaries, each a candidate.
         """
         all_candidates = []
-        for i in range(df.shape[0]):
-            candidate = {}
-            for key in df.keys():
-                try: 
-                    candidate[key] = df[key][i].item() # change to native python type
-                except AttributeError: # for IOBytes objs
-                    candidate[key] = (df[key].loc[i].getvalue())
+        # logger.info(f'{df}')
+        # logger.info(f'{df.shape[0]}')
+        # zp = 'ZP'
+        # logger.info(f'{df[zp]}')
+        # for i in range(df.shape[0]):
+        candidate = {}
+        for key in df.keys():
+            logger.info(f'key: {key}')
+            logger.info(f'key value: {df[key]}')
+            logger.info(f'key value []: {df.shape}')
+
+            try: 
+                candidate[key] = df[key][0].item() # change to native python type
+            except AttributeError: # for IOBytes objs
+                candidate[key] = (df[key].loc[0].getvalue())
                     
-            all_candidates.append(candidate)
+        all_candidates.append(candidate)
 
         return all_candidates
 
@@ -207,7 +218,13 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Returns:
             dict: schema in dictionary format
         """
-        t0 = time.time()
+        t0 = time.time()       
+        
+        if not useDataBase and df is not None:
+            # input dataframe to avro_creation processor
+            all_cands = self.read_input_df(df)
+            logger.info(f'{df.shape[0]} candidates in dataframe')
+            # print(all_cands[0]['ZP'])
         
         # TODO change to self.schema_path & string concat
         schema = self.combine_schemas(["alert_schema/candidate.avsc", 
@@ -218,11 +235,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         # df = pd.DataFrame() #TODO fix!
         # all_cands = self.read_input_df(df)
 
-        if not useDataBase and df is not None:
-            # input dataframe to avro_creation processor
-            all_cands = self.read_input_df(df)
-            logger.info(f'{df.shape[0]} candidates in dataframe')
-            # print(all_cands[0]['ZP'])
+
 
         num_cands = len(all_cands)
         logger.info(f'{num_cands} candidates found...making packets')
