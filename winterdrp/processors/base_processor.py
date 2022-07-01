@@ -15,6 +15,7 @@ from winterdrp.errors import ErrorReport
 
 logger = logging.getLogger(__name__)
 
+
 class PrerequisiteError(BaseException):
     pass
 
