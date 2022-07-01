@@ -2,18 +2,22 @@ import astropy.io.fits
 import numpy as np
 import os
 import logging
-from winterdrp.processors.base_processor import BaseProcessor, ProcessorWithCache
-from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, get_untemp_path
+from winterdrp.processors.base_processor import BaseProcessor, PrerequisiteError
+from winterdrp.paths import get_output_dir, copy_temp_file
 from collections.abc import Callable
-from winterdrp.paths import cal_output_dir
 from winterdrp.catalog.base_catalog import BaseCatalog
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor, sextractor_header_key
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from winterdrp.errors import ProcessorError
 from astropy.stats import sigma_clip, sigma_clipped_stats
 
 logger = logging.getLogger(__name__)
+
+
+# All the Sextractor parameters required for this script to run
+REQUIRED_PARAMETERS = ["X_IMAGE", "Y_IMAGE", "FWHM_WORLD", 'FLAGS']
 
 
 class PhotCalibrator(BaseProcessor):
@@ -32,7 +36,7 @@ class PhotCalibrator(BaseProcessor):
                  *args,
                  **kwargs):
         super(PhotCalibrator, self).__init__(*args, **kwargs)
-        self.redo = redo # What is this for?
+        self.redo = redo  # What is this for?
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
         self.x_lower_limit = x_lower_limit
@@ -53,8 +57,9 @@ class PhotCalibrator(BaseProcessor):
         img_cat = get_table_from_ldac(img_cat_path)
 
         if len(ref_cat) == 0:
-            logger.error('No sources found in reference catalog') # Errors should be logging.error
-            return [{'Error': -1}] # Why not raise error?
+            err = 'No sources found in reference catalog'
+            logger.error(err)
+            raise ProcessorError(err)
 
         ref_coords = SkyCoord(ra=ref_cat['ra'], dec=ref_cat['dec'], unit=(u.deg, u.deg))
 
@@ -72,8 +77,9 @@ class PhotCalibrator(BaseProcessor):
                                     unit=(u.deg, u.deg))
 
         if 0 == len(clean_img_coords):
-            logger.info('No clean sources found in image')  # Error
-            return [{'Error': -2}]
+            err = 'No clean sources found in image'
+            logger.error(err)
+            raise ProcessorError(err)
 
         idx, d2d, d3d = ref_coords.match_to_catalog_sky(clean_img_coords)
         match_mask = d2d < 1.0 * u.arcsec
@@ -81,9 +87,10 @@ class PhotCalibrator(BaseProcessor):
         matched_img_cat = clean_img_cat[idx[match_mask]]
         logger.info(f'Cross-matched {len(matched_img_cat)} sources from catalog to the image.')
 
-        if len(matched_img_cat)< self.num_matches_threshold:
-            logger.info(f'Not enough cross-matched sources found to calculate a reliable zeropoint.')  # Error
-            return [{'Error': -3}]
+        if len(matched_img_cat) < self.num_matches_threshold:
+            err = f'Not enough cross-matched sources found to calculate a reliable zeropoint.'
+            logger.error(err)
+            raise ProcessorError(err)
 
         apertures = np.array([2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])  # aperture diameters
         zeropoints = []
@@ -100,8 +107,8 @@ class PhotCalibrator(BaseProcessor):
             if np.isnan(zp_std):
                 zp_std = -99
             zero_dict = {'diameter': apertures[i], 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
-                        'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
-                        'mag_apers': matched_img_cat['MAG_APER'][:, i][np.invert(cl_offset.mask)]}
+                         'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
+                         'mag_apers': matched_img_cat['MAG_APER'][:, i][np.invert(cl_offset.mask)]}
             zeropoints.append(zero_dict)
 
         offsets = np.ma.array(matched_ref_cat['magnitude'] - matched_img_cat['MAG_AUTO'])
@@ -110,7 +117,7 @@ class PhotCalibrator(BaseProcessor):
         zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets, sigma=3)
         zero_auto_mag_cat = matched_ref_cat['magnitude'][np.invert(cl_offset.mask)]
         zero_auto_mag_img = matched_img_cat['MAG_AUTO'][np.invert(cl_offset.mask)]
-        zeropoints.append({'diameter':'AUTO','zp_mean':zp_mean,'zp_median':zp_med,'zp_std':zp_std,
+        zeropoints.append({'diameter': 'AUTO', 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
                            'nstars': num_stars, 'mag_cat': zero_auto_mag_cat,
                            'mag_apers': zero_auto_mag_img
                            })
@@ -140,19 +147,12 @@ class PhotCalibrator(BaseProcessor):
 
             zp_dicts = self.calculate_zeropoint(ref_cat_path, temp_cat_path)
 
-            # Try: / Except PhotCalError:
-
-            if 'Error' in zp_dicts[0].keys():
-                logger.info(f'Failed to run photometric calibration for ')
-                header['PHOTCAL'] = 'FAILED'
-                continue
-
             for zpvals in zp_dicts:
                 header['ZP_%s' % (zpvals['diameter'])] = zpvals['zp_mean']
                 header['ZP_%s_std' % (zpvals['diameter'])] = zpvals['zp_std']
                 header['ZP_%s_nstars' % (zpvals['diameter'])] = zpvals['nstars']
 
-            #header.add_history('Calibrated to SDSS')
+            # header.add_history('Calibrated to SDSS')
             header['PHOTCAL'] = 'SUCCESS'
 
         return images, headers
@@ -160,11 +160,27 @@ class PhotCalibrator(BaseProcessor):
     def check_prerequisites(
             self,
     ):
-        check = np.sum([isinstance(x, Sextractor) for x in self.preceding_steps])
-        if check < 1:
+
+        mask = [isinstance(x, Sextractor) for x in self.preceding_steps]
+        if np.sum(mask) < 1:
             err = f"{self.__module__} requires {Sextractor} as a prerequisite. " \
                   f"However, the following steps were found: {self.preceding_steps}."
             logger.error(err)
-            raise ValueError
+            raise PrerequisiteError(err)
 
+        latest_sextractor_param_path = np.array(self.preceding_steps)[mask][-1].parameters_name
+
+        logger.debug(f"Checking file {latest_sextractor_param_path}")
+
+        with open(latest_sextractor_param_path, "rb") as f:
+            sextractor_params = [x.strip().decode() for x in f.readlines() if len(x.strip()) > 0]
+            sextractor_params = [x for x in sextractor_params if x[0] not in ["#"]]
+
+        for param in REQUIRED_PARAMETERS:
+            if param not in sextractor_params:
+                err = f"Missing parameter: {self.__module__} requires {param} to run, " \
+                      f"but this parameter was not found in sextractor config file '{latest_sextractor_param_path}' . " \
+                      f"Please add the parameter to this list!"
+                logger.error(err)
+                raise PrerequisiteError(err)
 

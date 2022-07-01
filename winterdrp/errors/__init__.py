@@ -1,5 +1,10 @@
 from winterdrp.paths import base_name_key
 
+
+class ProcessorError(BaseException):
+    pass
+
+
 class ErrorReport:
 
     def __init__(
