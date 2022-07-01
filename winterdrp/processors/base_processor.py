@@ -175,6 +175,11 @@ class ProcessorWithCache(BaseProcessor, ABC):
             sub_dir=self.night_sub_dir
         )
 
+        try:
+            os.makedirs(os.path.dirname(output_path))
+        except OSError:
+            pass
+
         return output_path
 
     def get_cache_file_name(

@@ -57,10 +57,6 @@ class Pipeline:
             skip_build_cache: bool = False,
             remake_logs: bool = False
     ):
-        self.remake_logs = remake_logs
-
-        if log_history_nights is None:
-            log_history_nights = self.default_log_history_nights
 
         self.night_sub_dir = os.path.join(self.name, night)
 
@@ -68,10 +64,15 @@ class Pipeline:
 
         self.observing_logs_cache = dict()
 
-        observing_logs = self.load_observing_log_block(
-            night_sub_dir=self.night_sub_dir,
-            log_history_nights=log_history_nights
-        )
+        # self.remake_logs = remake_logs
+        #
+        # if log_history_nights is None:
+        #     log_history_nights = self.default_log_history_nights
+
+        # observing_logs = self.load_observing_log_block(
+        #     night_sub_dir=self.night_sub_dir,
+        #     log_history_nights=log_history_nights
+        # )
 
         self.configure_processors(sub_dir=self.night_sub_dir)
 
