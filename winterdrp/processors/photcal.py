@@ -2,7 +2,7 @@ import astropy.io.fits
 import numpy as np
 import os
 import logging
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseProcessor, PrerequisiteError
 from winterdrp.paths import get_output_dir, copy_temp_file
 from collections.abc import Callable
 from winterdrp.catalog.base_catalog import BaseCatalog
@@ -14,6 +14,10 @@ from winterdrp.errors import ProcessorError
 from astropy.stats import sigma_clip, sigma_clipped_stats
 
 logger = logging.getLogger(__name__)
+
+
+# All the Sextractor parameters required for this script to run
+REQUIRED_PARAMETERS = ["X_IMAGE", "Y_IMAGE", "FWHM_WORLD", 'FLAGS']
 
 
 class PhotCalibrator(BaseProcessor):
@@ -113,7 +117,7 @@ class PhotCalibrator(BaseProcessor):
         zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets, sigma=3)
         zero_auto_mag_cat = matched_ref_cat['magnitude'][np.invert(cl_offset.mask)]
         zero_auto_mag_img = matched_img_cat['MAG_AUTO'][np.invert(cl_offset.mask)]
-        zeropoints.append({'diameter':'AUTO','zp_mean':zp_mean,'zp_median':zp_med,'zp_std':zp_std,
+        zeropoints.append({'diameter': 'AUTO', 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
                            'nstars': num_stars, 'mag_cat': zero_auto_mag_cat,
                            'mag_apers': zero_auto_mag_img
                            })
@@ -162,15 +166,21 @@ class PhotCalibrator(BaseProcessor):
             err = f"{self.__module__} requires {Sextractor} as a prerequisite. " \
                   f"However, the following steps were found: {self.preceding_steps}."
             logger.error(err)
-            raise ValueError
+            raise PrerequisiteError(err)
 
-        sextractor_steps = np.array(self.preceding_steps)[mask]
+        latest_sextractor_param_path = np.array(self.preceding_steps)[mask][-1].parameters_name
 
-        for processor in sextractor_steps:
-            print(processor)
+        logger.debug(f"Checking file {latest_sextractor_param_path}")
 
-        raise
+        with open(latest_sextractor_param_path, "rb") as f:
+            sextractor_params = [x.strip().decode() for x in f.readlines() if len(x.strip()) > 0]
+            sextractor_params = [x for x in sextractor_params if x[0] not in ["#"]]
 
-        check_fwhm
-
+        for param in REQUIRED_PARAMETERS:
+            if param not in sextractor_params:
+                err = f"Missing parameter: {self.__module__} requires {param} to run, " \
+                      f"but this parameter was not found in sextractor config file {latest_sextractor_param_path}. " \
+                      f"Please add the parameter to this list!"
+                logger.error(err)
+                raise PrerequisiteError(err)
 

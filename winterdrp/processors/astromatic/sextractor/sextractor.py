@@ -68,16 +68,13 @@ class Sextractor(BaseProcessor):
 
             det_image, measure_image, det_header, measure_header = None, None, None, None
             if self.dual:
-                try:
-                    det_header = headers[i][0]
-                    measure_header = headers[i][1]
-                    det_image = images[i][0]
-                    measure_image = images[i][1]
-                    header = det_header
-                    data = det_image
-                    self.gain = measure_header["GAIN"]
-                except:
-                    ValueError()
+                det_header = headers[i][0]
+                measure_header = headers[i][1]
+                det_image = images[i][0]
+                measure_image = images[i][1]
+                header = det_header
+                data = det_image
+                self.gain = measure_header["GAIN"]
 
             temp_path = get_temp_path(sextractor_out_dir, header["BASENAME"])
 
