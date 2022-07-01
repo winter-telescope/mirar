@@ -106,9 +106,6 @@ class PhotCalibrator(BaseProcessor):
 
         for i, aperture in enumerate(apertures):
 
-            print(matched_ref_cat['magnitude'])
-            print(matched_img_cat['MAG_APER'])
-
             offsets = np.ma.array(matched_ref_cat['magnitude'] - matched_img_cat['MAG_APER'][:, i])
             cl_offset = sigma_clip(offsets)
             num_stars = np.sum(np.invert(cl_offset.mask))
