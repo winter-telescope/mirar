@@ -119,7 +119,13 @@ class PhotCalibrator(BaseProcessor):
                 logger.error(err)
                 raise ProcessorError(err)
 
-            zero_dict = {'diameter': aperture, 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
+            if np.isnan(zp_mean):
+                zp_mean = -99
+            if np.isnan(zp_med):
+                zp_med = -99
+            if np.isnan(zp_std):
+                zp_std = -99
+            zero_dict = {'diameter': apertures[i], 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
                          'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
                          'mag_apers': matched_img_cat['MAG_APER'][:, i][np.invert(cl_offset.mask)]}
             zeropoints.append(zero_dict)
