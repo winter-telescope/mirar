@@ -67,6 +67,7 @@ class Gaia2Mass(BaseCatalog):
         t['ra_errdeg'] = t['ra_error'] / 3.6e6
         t['dec_errdeg'] = t['dec_error'] / 3.6e6
         t['FLAGS'] = 0
+        t["magnitude"] = t[f"{self.filter_name.lower()}_m"]
 
         logger.info(f'Found {len(t)} sources in Gaia')
         if self.trim:
