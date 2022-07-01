@@ -183,7 +183,7 @@ class PhotCalibrator(BaseProcessor):
 
         with open(latest_sextractor_param_path, "rb") as f:
             sextractor_params = [x.strip().decode() for x in f.readlines() if len(x.strip()) > 0]
-            sextractor_params = [x for x in sextractor_params if x[0] not in ["#"]]
+            sextractor_params = [x.split("(")[0] for x in sextractor_params if x[0] not in ["#"]]
 
         for param in REQUIRED_PARAMETERS:
             if param not in sextractor_params:
