@@ -1,3 +1,4 @@
+import logging
 import os
 import astropy.io.fits
 import numpy as np
@@ -23,10 +24,11 @@ from winterdrp.processors import MaskPixels, BiasCalibrator, FlatCalibrator
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.paths import core_fields, base_name_key
 
-
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
 summer_pixel_scale = 0.466
+
+logger = logging.getLogger(__name__)
 
 
 def summer_astrometric_catalog_generator(
@@ -140,6 +142,10 @@ def load_raw_summer_image(
         if header['ITID'] != 1:
             header['FIELDID'] = -99
 
+        if 'COADDS' not in header.keys():
+            header['COADDS'] = 1
+            logger.debug('Setting COADDS to 1')
+
         crds = SkyCoord(ra=header['RA'], dec=header['DEC'], unit=(u.deg, u.deg))
         header['RA'] = crds.ra.deg
         header['DEC'] = crds.dec.deg
@@ -152,7 +158,6 @@ pipeline_name = "summer"
 
 
 class SummerPipeline(Pipeline):
-
     name = pipeline_name
 
     pipeline_configurations = {
@@ -163,8 +168,9 @@ class SummerPipeline(Pipeline):
             ),
             CSVLog(
                 export_keys=[
-                    "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE", base_name_key
-                ] + core_fields
+                                "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE",
+                                base_name_key
+                            ] + core_fields
             ),
             # DatabaseExporter(
             #     db_name=pipeline_name,
@@ -205,13 +211,14 @@ class SummerPipeline(Pipeline):
                 ref_catalog_generator=summer_astrometric_catalog_generator,
                 scamp_config_path=scamp_path,
             ),
+            ImageSaver(output_dir_name="testd"),
             Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
             ImageSaver(output_dir_name="photprocess"),
             Sextractor(output_sub_dir="photprocess",
                        checkimage_name='NONE',
                        checkimage_type='NONE',
                        **sextractor_photometry_config),
-            ImageSaver(output_dir_name="testd"),
+            ImageSaver(output_dir_name="teste"),
             PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator)
         ]
     }
