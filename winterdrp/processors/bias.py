@@ -8,6 +8,7 @@ from winterdrp.processors.utils.image_selector import select_from_images
 
 logger = logging.getLogger(__name__)
 
+
 def default_select_bias(
         images: list[np.ndarray],
         headers: list[astropy.io.fits.Header],
