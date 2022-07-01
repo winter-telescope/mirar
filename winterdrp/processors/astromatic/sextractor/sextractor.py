@@ -77,6 +77,7 @@ class Sextractor(BaseProcessor):
                 self.gain = measure_header["GAIN"]
 
             temp_path = get_temp_path(sextractor_out_dir, header["BASENAME"])
+            temp_files = [temp_path]
 
             mask_path = None
             if latest_mask_save_key in header.keys():
@@ -87,7 +88,7 @@ class Sextractor(BaseProcessor):
             if mask_path is None:
                 self.save_fits(data, header, temp_path)
                 mask_path = self.save_mask(data, header, temp_path)
-
+                temp_files.append(mask_path)
             output_cat = os.path.join(sextractor_out_dir, header["BASENAME"].replace(".fits", ".cat"))
 
             if not self.dual:
@@ -125,8 +126,9 @@ class Sextractor(BaseProcessor):
                     catalog_name=output_cat
                 )
 
-            os.remove(temp_path)
-            logger.info(f"Deleted temporary image {temp_path}")
+            for temp_file in temp_files:
+                os.remove(temp_file)
+                logger.info(f"Deleted temporary file {temp_file}")
 
             header[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
 
