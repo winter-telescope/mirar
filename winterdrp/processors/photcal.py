@@ -80,7 +80,7 @@ class PhotCalibrator(BaseProcessor):
         matched_img_cat = clean_img_cat[idx[match_mask]]
         logger.info(f'Cross-matched {len(matched_img_cat)} sources from catalog to the image.')
 
-        if len(matched_img_cat)< self.num_matches_threshold:
+        if len(matched_img_cat) < self.num_matches_threshold:
             logger.info(f'Not enough cross-matched sources found to calculate a reliable zeropoint.')
             return [{'Error': -3}]
 
@@ -99,8 +99,8 @@ class PhotCalibrator(BaseProcessor):
             if np.isnan(zp_std):
                 zp_std = -99
             zero_dict = {'diameter': apertures[i], 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
-                        'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
-                        'mag_apers': matched_img_cat['MAG_APER'][:, i][np.invert(cl_offset.mask)]}
+                         'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
+                         'mag_apers': matched_img_cat['MAG_APER'][:, i][np.invert(cl_offset.mask)]}
             zeropoints.append(zero_dict)
 
         offsets = np.ma.array(matched_ref_cat['magnitude'] - matched_img_cat['MAG_AUTO'])
@@ -109,13 +109,12 @@ class PhotCalibrator(BaseProcessor):
         zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets, sigma=3)
         zero_auto_mag_cat = matched_ref_cat['magnitude'][np.invert(cl_offset.mask)]
         zero_auto_mag_img = matched_img_cat['MAG_AUTO'][np.invert(cl_offset.mask)]
-        zeropoints.append({'diameter':'AUTO','zp_mean':zp_mean,'zp_median':zp_med,'zp_std':zp_std,
+        zeropoints.append({'diameter': 'AUTO', 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
                            'nstars': num_stars, 'mag_cat': zero_auto_mag_cat,
                            'mag_apers': zero_auto_mag_img
                            })
 
         return zeropoints
-
 
     def _apply_to_images(
             self,
@@ -132,13 +131,13 @@ class PhotCalibrator(BaseProcessor):
 
         for header in headers:
             ref_catalog = self.ref_catalog_generator(header)
-            ref_cat_path = ref_catalog.write_catalog(header,output_dir=phot_output_dir)
+            ref_cat_path = ref_catalog.write_catalog(header, output_dir=phot_output_dir)
             temp_cat_path = copy_temp_file(
                 output_dir=phot_output_dir,
                 file_path=header[sextractor_header_key]
             )
 
-            zp_dicts = self.calculate_zeropoint(ref_cat_path,temp_cat_path)
+            zp_dicts = self.calculate_zeropoint(ref_cat_path, temp_cat_path)
 
             if 'Error' in zp_dicts[0].keys():
                 logger.info(f'Failed to run photometric calibration for ')
@@ -150,11 +149,10 @@ class PhotCalibrator(BaseProcessor):
                 header['ZP_%s_std' % (zpvals['diameter'])] = zpvals['zp_std']
                 header['ZP_%s_nstars' % (zpvals['diameter'])] = zpvals['nstars']
 
-            #header.add_history('Calibrated to SDSS')
+            # header.add_history('Calibrated to SDSS')
             header['PHOTCAL'] = 'SUCCESS'
 
         return images, headers
-
 
     def check_prerequisites(
             self,
@@ -165,5 +163,3 @@ class PhotCalibrator(BaseProcessor):
                   f"However, the following steps were found: {self.preceding_steps}."
             logger.error(err)
             raise ValueError
-
-
