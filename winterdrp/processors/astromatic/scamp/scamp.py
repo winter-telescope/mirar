@@ -12,7 +12,7 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
-scamp_header_key = ""
+scamp_header_key = "SCMPHEAD"
 
 
 def run_scamp(
