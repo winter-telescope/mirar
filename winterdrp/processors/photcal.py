@@ -179,7 +179,7 @@ class PhotCalibrator(BaseProcessor):
         for param in REQUIRED_PARAMETERS:
             if param not in sextractor_params:
                 err = f"Missing parameter: {self.__module__} requires {param} to run, " \
-                      f"but this parameter was not found in sextractor config file {latest_sextractor_param_path}. " \
+                      f"but this parameter was not found in sextractor config file '{latest_sextractor_param_path}' . " \
                       f"Please add the parameter to this list!"
                 logger.error(err)
                 raise PrerequisiteError(err)
