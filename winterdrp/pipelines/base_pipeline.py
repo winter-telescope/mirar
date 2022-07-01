@@ -37,16 +37,6 @@ class Pipeline:
     def non_linear_level(self):
         raise NotImplementedError()
 
-    # Fix keys from header to save in log
-    # The first key should sort images in order
-
-    header_keys = list()
-
-    # Key from log which defines batch grouping
-    # By default this is the raw image path, i.e each image is processed separately
-
-    batch_split_keys = ["RAWIMAGEPATH"]
-
     def __init__(
             self,
             pipeline_configuration: str = None,
@@ -135,56 +125,14 @@ class Pipeline:
         else:
             return copy.copy(configuration)
 
-    # def split_raw_images_into_batches(
-    #         self,
-    #         select_batch: str = None
-    # ) -> list:
-    #
-    #     observing_log = self.load_observing_log(night_sub_dir=self.night_sub_dir)
-    #
-    #     mask = observing_log["OBSCLASS"] == "science"
-    #     obs = observing_log[mask]
-    #
-    #     split_vals = []
-    #
-    #     for row in obs.itertuples():
-    #         sv = []
-    #         for key in self.batch_split_keys:
-    #             sv.append(str(getattr(row, key)))
-    #
-    #         split_vals.append("_".join(sv))
-    #
-    #     split_vals = np.array(split_vals)
-    #
-    #     batches = sorted(list(set(split_vals)))
-    #
-    #     logger.debug(f"Selecting unique combinations of {self.batch_split_keys}, "
-    #                  f"found the following batches: {batches}")
-    #
-    #     if select_batch is not None:
-    #         if select_batch in batches:
-    #             logger.debug(f"Only selecting '{select_batch}'")
-    #             batches = [select_batch]
-    #         else:
-    #             err = f"The batch '{select_batch}' was selected, " \
-    #                   f"but was not found in the batch list."
-    #             logger.error(err)
-    #             raise KeyError(err)
-    #
-    #     raw_image_path_batches = [
-    #         list(obs[split_vals == x][raw_img_key])
-    #         for x in batches
-    #     ]
-    #
-    #     return sorted(raw_image_path_batches)
-
     def reduce_images(
             self,
             batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]],
     ):
 
-        for processor in self.processors:
-            logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches")
+        for i, processor in enumerate(self.processors):
+            logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
+                         f"(Step {i+1}/{len(self.processors)})")
             batches, failures = processor.apply(
                 batches
             )
