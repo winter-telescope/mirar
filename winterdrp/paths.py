@@ -160,7 +160,7 @@ sextractor_header_key = 'SRCCAT'
 psfex_header_key = 'PSFCAT'
 norm_psfex_header_key = 'NPSFCAT'
 
-core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
+core_fields = ["OBSCLASS", "TARGET", "UTCTIME", "COADDS"]
 
 
 class ProcessingError(Exception):
