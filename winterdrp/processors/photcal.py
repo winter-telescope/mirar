@@ -15,7 +15,6 @@ from astropy.stats import sigma_clip, sigma_clipped_stats
 
 logger = logging.getLogger(__name__)
 
-
 # All the Sextractor parameters required for this script to run
 REQUIRED_PARAMETERS = [
     "X_IMAGE",
@@ -60,8 +59,9 @@ class PhotCalibrator(BaseProcessor):
 
     def calculate_zeropoint(
             self,
-            ref_cat_path,
-            img_cat_path) -> list[dict]:
+            ref_cat_path: str,
+            img_cat_path: str
+    ) -> list[dict]:
         ref_cat = get_table_from_ldac(ref_cat_path)
         img_cat = get_table_from_ldac(img_cat_path)
 
@@ -73,7 +73,7 @@ class PhotCalibrator(BaseProcessor):
         ref_coords = SkyCoord(ra=ref_cat['ra'], dec=ref_cat['dec'], unit=(u.deg, u.deg))
 
         clean_mask = (img_cat['FLAGS'] == 0) & \
-                     (img_cat['FWHM_WORLD'] < self.fwhm_threshold_arcsec / 3600) & \
+                     (img_cat['FWHM_WORLD'] < self.fwhm_threshold_arcsec / 3600.) & \
                      (img_cat['X_IMAGE'] > self.x_lower_limit) & \
                      (img_cat['X_IMAGE'] < self.x_upper_limit) & \
                      (img_cat['Y_IMAGE'] > self.y_lower_limit) & \
@@ -101,17 +101,18 @@ class PhotCalibrator(BaseProcessor):
             logger.error(err)
             raise ProcessorError(err)
 
-        apertures = np.array([2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])  # aperture diameters
+        apertures = self.get_sextractor_apetures()  # aperture diameters
         zeropoints = []
-        for i in range(len(apertures)):
 
-            print(matched_ref_cat['magnitude'].shape)
-            print(matched_img_cat['MAG_APER'][:, i])
+        for i, aperture in enumerate(apertures):
+
+            print(matched_ref_cat['magnitude'])
+            print(matched_img_cat['MAG_APER'])
 
             offsets = np.ma.array(matched_ref_cat['magnitude'] - matched_img_cat['MAG_APER'][:, i])
             cl_offset = sigma_clip(offsets)
             num_stars = np.sum(np.invert(cl_offset.mask))
-            # print(np.median(cl_offset))
+
             zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets)
 
             check = [np.isnan(x) for x in [zp_mean, zp_med, zp_std]]
@@ -121,7 +122,7 @@ class PhotCalibrator(BaseProcessor):
                 logger.error(err)
                 raise ProcessorError(err)
 
-            zero_dict = {'diameter': apertures[i], 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
+            zero_dict = {'diameter': aperture, 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
                          'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
                          'mag_apers': matched_img_cat['MAG_APER'][:, i][np.invert(cl_offset.mask)]}
             zeropoints.append(zero_dict)
@@ -154,7 +155,7 @@ class PhotCalibrator(BaseProcessor):
 
         for header in headers:
             ref_catalog = self.ref_catalog_generator(header)
-            ref_cat_path = ref_catalog.write_catalog(header,output_dir=phot_output_dir)
+            ref_cat_path = ref_catalog.write_catalog(header, output_dir=phot_output_dir)
             temp_cat_path = copy_temp_file(
                 output_dir=phot_output_dir,
                 file_path=header[sextractor_header_key]
@@ -167,10 +168,11 @@ class PhotCalibrator(BaseProcessor):
                 header['ZP_%s_std' % (zpvals['diameter'])] = zpvals['zp_std']
                 header['ZP_%s_nstars' % (zpvals['diameter'])] = zpvals['nstars']
 
-            # header.add_history('Calibrated to SDSS')
-            header['PHOTCAL'] = 'SUCCESS'
-
         return images, headers
+
+    def get_sextractor_module(self) -> Sextractor:
+        mask = [isinstance(x, Sextractor) for x in self.preceding_steps]
+        return np.array(self.preceding_steps)[mask][-1]
 
     def check_prerequisites(
             self,
@@ -183,19 +185,35 @@ class PhotCalibrator(BaseProcessor):
             logger.error(err)
             raise PrerequisiteError(err)
 
-        latest_sextractor_param_path = np.array(self.preceding_steps)[mask][-1].parameters_name
+        sextractor_param_path = self.get_sextractor_module().parameters_name
 
-        logger.debug(f"Checking file {latest_sextractor_param_path}")
+        logger.debug(f"Checking file {sextractor_param_path}")
 
-        with open(latest_sextractor_param_path, "rb") as f:
+        with open(sextractor_param_path, "rb") as f:
             sextractor_params = [x.strip().decode() for x in f.readlines() if len(x.strip()) > 0]
             sextractor_params = [x.split("(")[0] for x in sextractor_params if x[0] not in ["#"]]
 
         for param in REQUIRED_PARAMETERS:
             if param not in sextractor_params:
                 err = f"Missing parameter: {self.__module__} requires {param} to run, " \
-                      f"but this parameter was not found in sextractor config file '{latest_sextractor_param_path}' . " \
+                      f"but this parameter was not found in sextractor config file '{sextractor_param_path}' . " \
                       f"Please add the parameter to this list!"
                 logger.error(err)
                 raise PrerequisiteError(err)
 
+    def get_sextractor_apetures(self) -> list[float]:
+        sextractor_config_path = self.get_sextractor_module().config
+
+        with open(sextractor_config_path, "rb") as f:
+            apeture_lines = [
+                x.decode() for x in f.readlines() if np.logical_and(b"PHOT_APERTURES" in x, x.decode()[0] != "#")
+            ]
+
+        if len(apeture_lines) > 1:
+            err = f"The config file {sextractor_config_path} has multiple entries for PHOT_APETURES."
+            logger.error(err)
+            raise ProcessorError(err)
+
+        line = apeture_lines[0].replace("PHOT_APERTURES", " ").split("#")[0]
+
+        return [float(x) for x in line.split(",") if x not in [""]]
