@@ -104,17 +104,23 @@ class PhotCalibrator(BaseProcessor):
         apertures = np.array([2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])  # aperture diameters
         zeropoints = []
         for i in range(len(apertures)):
+
+            print(matched_ref_cat['magnitude'].shape)
+            print(matched_img_cat['MAG_APER'][:, i])
+
             offsets = np.ma.array(matched_ref_cat['magnitude'] - matched_img_cat['MAG_APER'][:, i])
             cl_offset = sigma_clip(offsets)
             num_stars = np.sum(np.invert(cl_offset.mask))
             # print(np.median(cl_offset))
             zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets)
-            if np.isnan(zp_mean):
-                zp_mean = -99
-            if np.isnan(zp_med):
-                zp_med = -99
-            if np.isnan(zp_std):
-                zp_std = -99
+
+            check = [np.isnan(x) for x in [zp_mean, zp_med, zp_std]]
+            if np.sum(check) > 0:
+                err = f"Error with nan when calculating sigma stats: \n " \
+                      f"mean: {zp_mean}, median: {zp_med}, std: {zp_std}"
+                logger.error(err)
+                raise ProcessorError(err)
+
             zero_dict = {'diameter': apertures[i], 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
                          'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
                          'mag_apers': matched_img_cat['MAG_APER'][:, i][np.invert(cl_offset.mask)]}
