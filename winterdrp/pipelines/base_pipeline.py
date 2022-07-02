@@ -3,15 +3,8 @@ import os
 
 import astropy.io.fits
 import numpy as np
-from glob import glob
-import pandas as pd
 import copy
-from astropy.time import Time
-from astropy import units as u
-from winterdrp.paths import cal_output_dir, raw_img_dir, observing_log_dir, raw_img_key, saturate_key, \
-    get_preprocess_path, ProcessingError
-from winterdrp.processors.base_processor import ProcessorWithCache
-from winterdrp.io import save_to_path
+from winterdrp.paths import saturate_key
 
 
 logger = logging.getLogger(__name__)
@@ -89,20 +82,6 @@ class Pipeline:
                 raise KeyError(err)
 
         return data.astype(np.float64), header
-
-    def open_raw_image_batch(
-            self,
-            paths: list
-    ) -> tuple[list, list]:
-
-        images = []
-        headers = []
-        for path in paths:
-            data, header = self.open_raw_image(path)
-            images.append(data)
-            headers.append(header)
-
-        return images, headers
 
     @staticmethod
     def load_raw_image(

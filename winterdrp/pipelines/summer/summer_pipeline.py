@@ -163,7 +163,6 @@ class SummerPipeline(Pipeline):
     pipeline_configurations = {
         None: [
             ImageLoader(
-                input_sub_dir="raw",
                 load_image=load_raw_summer_image
             ),
             CSVLog(

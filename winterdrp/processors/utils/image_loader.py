@@ -2,9 +2,9 @@ import os
 
 import astropy.io.fits
 import numpy as np
-from winterdrp.paths import get_output_path, get_output_dir, latest_save_key, latest_mask_save_key
+from winterdrp.paths import base_raw_dir, raw_img_sub_dir
 from winterdrp.processors.base_processor import BaseProcessor
-from winterdrp.paths import raw_img_key, core_fields
+from winterdrp.paths import core_fields
 import logging
 from collections.abc import Callable
 from winterdrp.io import open_fits
@@ -19,7 +19,8 @@ class ImageLoader(BaseProcessor):
 
     def __init__(
             self,
-            input_sub_dir: str,
+            input_sub_dir: str = raw_img_sub_dir,
+            input_img_dir: str = base_raw_dir,
             load_image: Callable = open_fits,
             *args,
             **kwargs
@@ -27,6 +28,7 @@ class ImageLoader(BaseProcessor):
         super().__init__(*args, **kwargs)
         self.input_sub_dir = input_sub_dir
         self.load_image = load_image
+        self.input_img_dir = input_img_dir
 
     def open_raw_image(
             self,
@@ -64,9 +66,9 @@ class ImageLoader(BaseProcessor):
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
-        input_dir = get_output_dir(
-            self.input_sub_dir,
-            sub_dir=self.night_sub_dir
+        input_dir = os.path.join(
+            self.input_img_dir,
+            os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
 
         img_list = glob(f'{input_dir}/*.fits')
