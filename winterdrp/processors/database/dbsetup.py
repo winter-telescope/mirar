@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def create_db(db_name, db_user, password):
-    with psycopg.connect(f"user={db_user} password={password}") as conn:
+    db_user = os.environ['PG_DEFAULT_USER']
+    password = os.environ['PG_DEFAULT_PWD']
+    with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
         conn.autocommit = True
         sql = f'''CREATE database {db_name}'''
         conn.execute(sql)
@@ -28,8 +30,44 @@ def create_table(schema_path, db_name, db_user, password, db_host='localhost'): 
             conn.execute(f.read())
 
 
-def check_if_db_exists(db_name, db_user, password):  # db_host?
-    with psycopg.connect(f"user={db_user} password={password}") as conn:
+def create_user(db_user, password):
+    default_user = os.environ['PG_DEFAULT_USER']
+    default_password = os.environ['PG_DEFAULT_PWD']
+    with psycopg.connect(f"dbname=postgres user={default_user} password={default_password}") as conn:
+        conn.autocommit = True
+        command = f'''CREATE ROLE {db_user} WITH password '{password}';'''
+        conn.execute(command)
+
+
+def grant_privileges(db_name, db_user):
+    default_user = os.environ['PG_DEFAULT_USER']
+    default_password = os.environ['PG_DEFAULT_PWD']
+    with psycopg.connect(f"dbname=postgres user={default_user} password={default_password}") as conn:
+        conn.autocommit = True
+        command = f'''GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {db_user};'''
+        conn.execute(command)
+
+def check_if_user_exists(user_name):
+    db_user = os.environ['PG_DEFAULT_USER']
+    password = os.environ['PG_DEFAULT_PWD']
+
+    with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
+        conn.autocommit = True
+        command = '''SELECT usename FROM pg_user;'''
+        data = conn.execute(command).fetchall()
+    existing_user_names = [x[0] for x in data]
+    logger.debug(f"Found the following users: {existing_user_names}")
+
+    user_exist_bool = user_name in existing_user_names
+    logger.info(f"User '{user_name}' {['does not exist', 'already exists'][user_exist_bool]}")
+    return user_exist_bool
+
+
+def check_if_db_exists(db_name):  # db_host?
+    db_user = os.environ['PG_DEFAULT_USER']
+    password = os.environ['PG_DEFAULT_PWD']
+    # logger.debug(f'Setting user={db_user}')
+    with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
         conn.autocommit = True
         command = '''SELECT datname FROM pg_database;'''
         data = conn.execute(command).fetchall()
