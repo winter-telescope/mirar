@@ -32,7 +32,7 @@ class Pipeline:
 
     def __init__(
             self,
-            pipeline_configuration: str = None,
+            pipeline_configuration: str | list = None,
             night: int | str = "",
     ):
 
