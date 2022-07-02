@@ -6,9 +6,7 @@ import logging
 from winterdrp.processors.database.postgres import DataBaseError, export_to_db
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
 
-
 logger = logging.getLogger(__name__)
-
 
 class DatabaseExporter(BaseDatabaseProcessor, BaseImageProcessor):
     base_key = "dbexport"
@@ -31,3 +29,4 @@ class DatabaseExporter(BaseDatabaseProcessor, BaseImageProcessor):
             for ind, key in enumerate(primary_keys):
                 header[key] = primary_key_values[ind]
         return images, headers
+

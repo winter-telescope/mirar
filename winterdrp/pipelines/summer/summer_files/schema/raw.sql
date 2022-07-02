@@ -31,5 +31,8 @@ CREATE TABLE IF NOT EXISTS raw (
     dec REAL,
     altitude REAL,
     azimuth REAL,
-    procflag INT
+    procflag INT,
+    CONSTRAINT fk_programs_raw
+        FOREIGN KEY(progid)
+            REFERENCES programs(progid)
 );

@@ -15,6 +15,7 @@ from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
 from astropy.io import fits
 from winterdrp.pipelines.summer.summer_files import get_summer_schema_path, summer_mask_path, summer_weight_path, \
     sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_path
+from winterdrp.pipelines.summer.summer_files.schema import summer_schema_dir
 from winterdrp.processors.split import SplitImage
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.utils.image_loader import ImageLoader
@@ -144,7 +145,7 @@ def load_raw_summer_image(
 
         if 'COADDS' not in header.keys():
             header['COADDS'] = 1
-            logger.debug('Setting COADDS to 1')
+            # logger.debug('Setting COADDS to 1')
 
         crds = SkyCoord(ra=header['RA'], dec=header['DEC'], unit=(u.deg, u.deg))
         header['RA'] = crds.ra.deg
@@ -172,10 +173,12 @@ class SummerPipeline(Pipeline):
                             ] + core_fields
             ),
             DatabaseExporter(
-                 db_name=pipeline_name,
-                 db_table="exposures",
-                 schema_path=get_summer_schema_path("exposures")
-             ),
+                db_name=pipeline_name,
+                db_table="exposures",
+                schema_path=get_summer_schema_path("exposures"),
+                full_setup=True,
+                schema_dir=summer_schema_dir
+            ),
             MaskPixels(mask_path=summer_mask_path),
             # SplitImage(
             #     buffer_pixels=0,
@@ -184,10 +187,10 @@ class SummerPipeline(Pipeline):
             # ),
             # ImageSaver(output_dir_name="rawimages"),
             DatabaseExporter(
-                 db_name=pipeline_name,
-                 db_table="raw",
-                 schema_path=get_summer_schema_path("raw")
-             ),
+                db_name=pipeline_name,
+                db_table="raw",
+                schema_path=get_summer_schema_path("raw")
+            ),
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),

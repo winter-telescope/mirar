@@ -47,6 +47,7 @@ def grant_privileges(db_name, db_user):
         command = f'''GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {db_user};'''
         conn.execute(command)
 
+
 def check_if_user_exists(user_name):
     db_user = os.environ['PG_DEFAULT_USER']
     password = os.environ['PG_DEFAULT_PWD']
@@ -80,8 +81,9 @@ def check_if_db_exists(db_name):  # db_host?
 
     return db_exist_bool
 
+
 def check_if_table_exists(db_name, db_table, db_user, password):  # db_host?
-    with psycopg.connect(f"user={db_user} password={password}") as conn:
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
         command = '''SELECT datname FROM pg_database;'''
         data = conn.execute(command).fetchall()
@@ -95,8 +97,62 @@ def check_if_table_exists(db_name, db_table, db_user, password):  # db_host?
     return db_exist_bool
 
 
-def insert_exposures(header2, db_user, password, db_name='commissioning'):
+def get_foreign_tables_list(schema_files):
+    foreign_tables_list = []
+    for schema_file in schema_files:
+        table_names = []
+        with open(schema_file, 'r') as f:
+            schema = f.read()
+        if not "FOREIGN KEY" in schema:
+            pass
+        else:
+            schema = schema.replace("\n", "")
+            schema = schema.replace("\t", "")
+            schema_split = np.array(schema.split(","))
+            fkrows = np.array(["FOREIGN KEY" in x for x in schema_split])
+            for row in schema_split[fkrows]:
+                words = np.array(row.split(" "))
+                refmask = np.array(["REFERENCES" in x for x in words])
+                idx = np.where(refmask)[0][0] + 1
+                tablename = words[idx].split("(")[0]
+                table_names.append(tablename)
+        foreign_tables_list.append(np.array(table_names))
+    foreign_tables_list = np.array(foreign_tables_list)
+    return foreign_tables_list
 
+
+def get_ordered_schema_list(schema_files):
+    foreign_tables_list = get_foreign_tables_list(schema_files)
+    ordered_schema_list = []
+    tables_created = []
+    schema_table_names = [x.split('/')[-1].split('.sql')[0] for x in schema_files]
+    while len(tables_created) < len(schema_files):
+        for ind, schema_file in enumerate(schema_files):
+            table_name = schema_table_names[ind]
+            if table_name in tables_created:
+                pass
+            else:
+                foreign_tables = foreign_tables_list[ind]
+                if len(foreign_tables) == 0:
+                    ordered_schema_list.append(schema_file)
+                    tables_created.append(table_name)
+                else:
+                    if np.all(np.isin(foreign_tables, tables_created)):
+                        ordered_schema_list.append(schema_file)
+                        tables_created.append(table_name)
+
+    return ordered_schema_list
+
+
+def create_tables_from_schema(schema_dir, db_name, db_user, db_password):
+    schema_files = glob(f'{schema_dir}/*.sql')
+    ordered_schema_files = get_ordered_schema_list(schema_files)
+    logger.info(f"Creating the following tables - {ordered_schema_files}")
+    for schema_file in ordered_schema_files:
+        create_table(schema_path=schema_file, db_name=db_name, db_user=db_user, password=db_password)
+
+
+def insert_exposures(header2, db_user, password, db_name='commissioning'):
     header = dict(header2)
 
     header['OBSDATE'] = int(header['UTC'].split('_')[0])
@@ -177,7 +233,7 @@ def insert_exposures(header2, db_user, password, db_name='commissioning'):
                 logger.debug(f"{c}, {header[c.upper()]}")
                 txt += f"'{str(header[c.upper()])}', "
 
-            txt = txt+');'
+            txt = txt + ');'
             txt = txt.replace(', )', ')')
             logger.debug(txt)
             command = txt
@@ -185,7 +241,7 @@ def insert_exposures(header2, db_user, password, db_name='commissioning'):
 
 
 def export_to_db(
-    header, db_user, password, db_name, db_table
+        header, db_user, password, db_name, db_table
 ):
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
@@ -201,16 +257,16 @@ def export_to_db(
             AND Col.Table_Name = '{db_table}'
         """
 
-#         sql_query = f"""
-#
-# SELECT COLUMN_NAME
-# FROM INFORMATION_SCHEMA.COLUMNS
-# WHERE TABLE_NAME = {db_table}
-# EXCEPT
-# SELECT COLUMN_NAME
-# FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS [tc]
-# JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE [ku] ON tc.CONSTRAINT_NAME = ku.CONSTRAINT_NAME AND ku.table_name = {db_table} AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
-# """
+        #         sql_query = f"""
+        #
+        # SELECT COLUMN_NAME
+        # FROM INFORMATION_SCHEMA.COLUMNS
+        # WHERE TABLE_NAME = {db_table}
+        # EXCEPT
+        # SELECT COLUMN_NAME
+        # FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS [tc]
+        # JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE [ku] ON tc.CONSTRAINT_NAME = ku.CONSTRAINT_NAME AND ku.table_name = {db_table} AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+        # """
 
         # primary_key = conn.execute(sql_query).fetchone()
         # print(primary_key)
@@ -252,7 +308,6 @@ def set_up_db(
         db_name: str = 'commissioning_1',
         user: str = os.path.basename(os.environ["HOME"]),
 ):
-
     # We should find a more secure method for this
     # secrets = ascii.read(secrets_file)
     # user = secrets['user'][0]
@@ -264,9 +319,9 @@ def set_up_db(
     if not check_if_db_exists(db_name, user, pwd):
         create_db(db_name, user, pwd)
 
-    table_names = ['fields', 'filters', 'nights', 'itid', 'exposures', 'programs']#, 'detfiles']
+    table_names = ['fields', 'filters', 'nights', 'itid', 'exposures', 'programs']  # , 'detfiles']
     for table in table_names:
-        schema = os.path.join(schema_dir, table+'.sql')
+        schema = os.path.join(schema_dir, table + '.sql')
         create_table(schema, db_name, user, pwd)
 
     image_list = glob(os.path.join(data_dir, 'SUMMER_*.fits'))
@@ -280,6 +335,5 @@ def set_up_db(
             logger.error(err)
         # except FileExistsError:
         #     pass
-                # except KeyboardInterrupt:
-                #     pass
-
+        # except KeyboardInterrupt:
+        #     pass
