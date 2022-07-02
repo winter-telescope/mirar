@@ -171,11 +171,11 @@ class SummerPipeline(Pipeline):
                                 base_name_key
                             ] + core_fields
             ),
-            # DatabaseExporter(
-            #     db_name=pipeline_name,
-            #     db_table="exposures",
-            #     schema_path=get_summer_schema_path("exposures")
-            # ),
+            DatabaseExporter(
+                 db_name=pipeline_name,
+                 db_table="exposures",
+                 schema_path=get_summer_schema_path("exposures")
+             ),
             MaskPixels(mask_path=summer_mask_path),
             # SplitImage(
             #     buffer_pixels=0,
@@ -183,11 +183,11 @@ class SummerPipeline(Pipeline):
             #     n_y=2
             # ),
             # ImageSaver(output_dir_name="rawimages"),
-            # DatabaseExporter(
-            #     db_name=pipeline_name,
-            #     db_table="raw",
-            #     schema_path=get_summer_schema_path("raw")
-            # ),
+            DatabaseExporter(
+                 db_name=pipeline_name,
+                 db_table="raw",
+                 schema_path=get_summer_schema_path("raw")
+             ),
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
