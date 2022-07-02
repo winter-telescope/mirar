@@ -2,7 +2,7 @@ import os
 
 import astropy.io.fits
 import numpy as np
-from winterdrp.paths import get_output_path, get_output_dir, latest_save_key, latest_mask_save_key
+from winterdrp.paths import get_output_path, get_output_dir, latest_save_key, latest_mask_save_key, base_output_dir
 from winterdrp.processors.base_processor import BaseProcessor
 
 
@@ -14,12 +14,14 @@ class ImageSaver(BaseProcessor):
             self,
             output_dir_name: str,
             write_mask: bool = True,
+            output_dir: str = base_output_dir,
             *args,
             **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.output_dir_name = output_dir_name
         self.write_mask = write_mask
+        self.output_dir = output_dir
 
     def _apply_to_images(
             self,
@@ -28,7 +30,11 @@ class ImageSaver(BaseProcessor):
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
         try:
-            os.makedirs(get_output_dir(dir_root=self.output_dir_name, sub_dir=self.night_sub_dir))
+            os.makedirs(get_output_dir(
+                dir_root=self.output_dir_name,
+                sub_dir=self.night_sub_dir,
+                output_dir=self.output_dir
+            ))
         except OSError:
             pass
 
@@ -39,7 +45,8 @@ class ImageSaver(BaseProcessor):
             path = get_output_path(
                 header["BASENAME"],
                 dir_root=self.output_dir_name,
-                sub_dir=self.night_sub_dir
+                sub_dir=self.night_sub_dir,
+                output_dir=self.output_dir
             )
 
             header[latest_save_key] = path
