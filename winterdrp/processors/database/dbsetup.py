@@ -284,7 +284,7 @@ def export_to_db(
                 desc[0] for desc in conn.execute(f"SELECT * FROM {db_table} LIMIT 1").description
                 if desc[0] not in primary_key
             ]
-
+            logger.debug(primary_key)
             logger.debug(colnames)
 
             txt = f'INSERT INTO {db_table} ({colnames}) VALUES ('
@@ -296,12 +296,19 @@ def export_to_db(
                 logger.debug(f"{c}, {header[c.upper()]}")
                 txt += f"'{str(header[c.upper()])}', "
 
-            txt = txt + ');'
+            txt = txt + ') '
             txt = txt.replace(', )', ')')
+            txt += f"RETURNING "
+            for key in primary_key:
+                txt += f"{key},"
+            txt += ";"
+            txt = txt.replace(',;', ';')
+
             logger.debug(txt)
             command = txt
             cursor.execute(command)
-
+            primary_key_values = cursor.fetchall()[0]
+            return primary_key, primary_key_values
 
 def set_up_db(
         data_dir: str,
