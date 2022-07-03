@@ -165,7 +165,21 @@ class PhotCalibrator(BaseProcessor):
                 header['ZP_%s_std' % (zpvals['diameter'])] = zpvals['zp_std']
                 header['ZP_%s_nstars' % (zpvals['diameter'])] = zpvals['nstars']
 
+            fwhm_med, fwhm_mean, fwhm_std = self.get_fwhm(temp_cat_path)
+            header['FWHM_MED'] = fwhm_med
+            header['FWHM_STD'] = fwhm_std
         return images, headers
+
+    @staticmethod
+    def get_fwhm(img_cat_path):
+        imcat = get_table_from_ldac(img_cat_path)
+        nemask = (imcat['X_IMAGE'] > 50) & (imcat['X_IMAGE'] < 2000) & (imcat['Y_IMAGE'] > 50) & (
+                    imcat['Y_IMAGE'] < 2000)
+        imcat = imcat[nemask]
+        med_fwhm = np.median(imcat['FWHM_WORLD'])
+        mean_fwhm = np.mean(imcat['FWHM_WORLD'])
+        std_fwhm = np.std(imcat['FWHM_WORLD'])
+        return med_fwhm, mean_fwhm, std_fwhm
 
     def get_sextractor_module(self) -> Sextractor:
         mask = [isinstance(x, Sextractor) for x in self.preceding_steps]
