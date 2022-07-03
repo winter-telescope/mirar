@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS raw (
     rawid SERIAL PRIMARY KEY,
+    savepath VARCHAR(255),
     obsdate INT,
     obsID INT,
     itid INT,
@@ -31,8 +32,5 @@ CREATE TABLE IF NOT EXISTS raw (
     dec REAL,
     altitude REAL,
     azimuth REAL,
-    procflag INT,
-    CONSTRAINT fk_programs_raw
-        FOREIGN KEY(progid)
-            REFERENCES programs(progid)
+    procflag INT
 );
