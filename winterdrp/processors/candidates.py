@@ -3,7 +3,7 @@ import logging
 import astropy.table
 import pandas as pd
 
-from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor, BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor, BaseCandidateGenerator, BaseDataframeProcessor
 import numpy as np
 from astropy.io import fits
 from collections.abc import Callable
@@ -34,7 +34,7 @@ class FilterCandidates(BaseDataframeProcessor):
         return tables
 
 
-class DetectCandidates(BaseImage_DataframeProcessor):
+class DetectCandidates(BaseCandidateGenerator):
     base_key = "DETCANDS"
 
     def __init__(self,

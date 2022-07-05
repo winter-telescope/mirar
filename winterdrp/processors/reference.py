@@ -2,7 +2,7 @@ import logging
 import os.path
 
 import numpy as np
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from astropy.io import fits
 from winterdrp.paths import get_output_dir, copy_temp_file, base_name_key, sextractor_header_key, latest_mask_save_key, \
     raw_img_dir, psfex_header_key, norm_psfex_header_key
@@ -17,7 +17,7 @@ from astropy.wcs import WCS
 logger = logging.getLogger(__name__)
 
 
-class Reference(BaseProcessor):
+class Reference(BaseImageProcessor):
     base_key = "REFPREP"
     def __init__(self,
                  ref_image_generator: Callable[[fits.Header], BaseReferenceGenerator],

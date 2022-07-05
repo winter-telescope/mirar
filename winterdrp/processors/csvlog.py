@@ -1,7 +1,7 @@
 import astropy.io.fits
 import numpy as np
 import os
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import core_fields, base_name_key, get_output_path
 import logging
 import pandas as pd
@@ -13,7 +13,7 @@ default_keys = [
 ] + core_fields
 
 
-class CSVLog(BaseProcessor):
+class CSVLog(BaseImageProcessor):
 
     base_key = "csvlog"
 

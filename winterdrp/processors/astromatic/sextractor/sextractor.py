@@ -4,7 +4,7 @@ import logging
 import astropy.io.fits
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation, \
     run_sextractor_dual
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import get_output_dir, get_temp_path, latest_mask_save_key
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 sextractor_header_key = 'SRCCAT'
 
 
-class Sextractor(BaseProcessor):
+class Sextractor(BaseImageProcessor):
     base_key = "sextractor"
 
     def __init__(

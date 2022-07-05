@@ -2,7 +2,7 @@ import logging
 import os
 import numpy as np
 import astropy.io.fits
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_name_key, latest_mask_save_key
 from winterdrp.utils import execute
 from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
@@ -104,7 +104,7 @@ def run_swarp(
 #     return os.path.splitext(cat_path)[0] + ".head"
 
 
-class Swarp(BaseProcessor):
+class Swarp(BaseImageProcessor):
 
     base_key = "swarp"
 

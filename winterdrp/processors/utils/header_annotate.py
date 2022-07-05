@@ -1,13 +1,13 @@
 import logging
 import astropy.io.fits
 import numpy as np
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 
 logger = logging.getLogger(__name__)
 
 
-class HeaderAnnotator(BaseProcessor):
+class HeaderAnnotator(BaseImageProcessor):
 
     base_key = "header_reader"
 
