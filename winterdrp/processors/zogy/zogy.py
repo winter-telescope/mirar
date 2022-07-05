@@ -1,6 +1,6 @@
 import logging
 
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import get_output_dir, latest_mask_save_key
 from astropy.io import fits
 import numpy as np
@@ -16,7 +16,7 @@ import os
 logger = logging.getLogger(__name__)
 
 
-class ZOGY(BaseProcessor):
+class ZOGY(BaseImageProcessor):
     base_key = "ZOGY"
     def __init__(self,
                  output_sub_dir: str = "sub",
@@ -81,7 +81,7 @@ class ZOGY(BaseProcessor):
         return images, headers
 
 
-class ZOGYPrepare(BaseProcessor):
+class ZOGYPrepare(BaseImageProcessor):
     base_key = "ZOGYPREP"
 
     def __init__(self,

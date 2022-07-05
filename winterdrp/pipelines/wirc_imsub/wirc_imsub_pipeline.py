@@ -5,20 +5,20 @@ from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.psfex import PSFex
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare
-from winterdrp.processors.candidates import DetectCandidates, FilterCandidates
+from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 import numpy as np
 from astropy.io import fits
 import os
 from astropy.time import Time
 import logging
-from winterdrp.processors.candidate_filters import EdgeCandidatesMask
+from winterdrp.processors.candidates.edge_mask import EdgeCandidatesMask
 
 logger = logging.getLogger(__name__)
 
 
 def wirc_reference_image_generator(
         header: fits.header,
-        images_directory: str = os.environ['REF_IMG_DIR'],
+        images_directory: str = os.environ.get('REF_IMG_DIR'),
 ):
     object_name = header['OBJECT']
     filter_name = header['FILTER']

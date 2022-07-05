@@ -22,98 +22,7 @@ logger = logging.getLogger(__name__)
 class PrerequisiteError(BaseException):
     pass
 
-
-class BaseProcessor:
-
-    @property
-    def base_key(self):
-        raise NotImplementedError()
-
-    requires = []
-
-    subclasses = {}
-
-    def __init__(
-            self,
-            *args,
-            **kwargs
-    ):
-
-        self.night = None
-        self.night_sub_dir = None
-        self.preceding_steps = None
-
-    @classmethod
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        cls.subclasses[cls.base_key] = cls
-
-    def _apply_to_images(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        raise NotImplementedError
-
-    def set_preceding_steps(
-            self,
-            previous_steps: list
-    ):
-        self.preceding_steps = previous_steps
-
-    def set_night(
-            self,
-            night_sub_dir: str | int = ""
-    ):
-        self.night_sub_dir = night_sub_dir
-        self.night = night_sub_dir.split("/")[-1]
-
-    def _update_processing_history(
-            self,
-            headers: list,
-    ) -> list:
-        for header in headers:
-            header[proc_history_key] += self.base_key + ","
-            header['REDUCER'] = getpass.getuser()
-            header['REDMACH'] = socket.gethostname()
-            header['REDTIME'] = str(datetime.datetime.now())
-            header["REDSOFT"] = "winterdrp"
-        return headers
-
-    def apply(
-            self,
-            batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> tuple[list[list[list[np.ndarray], list[astropy.io.fits.header]]], list]:
-
-        passed_batches = []
-        failures = []
-
-        for i, [images, headers] in enumerate(batches):
-
-            try:
-                images, headers = self._apply_to_images(images, headers)
-                headers = self._update_processing_history(headers)
-                passed_batches.append([images, headers])
-            except ProcessingError as e:
-                err = ErrorReport(e, self.__module__, images, headers)
-                logger.error(err.generate_log_message())
-                failures.append(err)
-
-        batches = self.update_batches(passed_batches)
-
-        return batches, failures
-
-    @staticmethod
-    def update_batches(
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
-        return batches
-
-    def check_prerequisites(
-            self,
-    ):
-        pass
-
+class ImageHandler:
     @staticmethod
     def open_fits(
             path: str
@@ -144,11 +53,118 @@ class BaseProcessor:
 
     @staticmethod
     def get_hash(headers: list[astropy.io.fits.Header]):
-        key = "".join(sorted([x[base_name_key]+x[proc_history_key] for x in headers]))
+        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in headers]))
         return hashlib.sha1(key.encode()).hexdigest()
 
 
-class ProcessorWithCache(BaseProcessor, ABC):
+class BaseProcessor:
+
+    @property
+    def base_key(self):
+        raise NotImplementedError()
+
+    subclasses = {}
+
+    def __init__(
+            self,
+            *args,
+            **kwargs
+    ):
+
+        self.night = None
+        self.night_sub_dir = None
+        self.preceding_steps = None
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.subclasses[cls.base_key] = cls
+
+    def set_preceding_steps(
+            self,
+            previous_steps: list
+    ):
+        self.preceding_steps = previous_steps
+
+    def set_night(
+            self,
+            night_sub_dir: str | int = ""
+    ):
+        self.night_sub_dir = night_sub_dir
+        self.night = night_sub_dir.split("/")[-1]
+
+    @staticmethod
+    def update_batches(
+        batches: list
+    ) -> list:
+        return batches
+
+    def check_prerequisites(
+            self,
+    ):
+        pass
+
+    def base_apply(
+            self,
+            batches: list
+    ) -> tuple[list, list[ErrorReport]]:
+
+        passed_batches = []
+        failures = []
+
+        for i, batch in enumerate(batches):
+
+            try:
+                batch = self.apply(batch)
+                passed_batches.append(batch)
+            except ProcessingError as e:
+                err = ErrorReport(e, self.__module__, batch)
+                logger.error(err.generate_log_message())
+                failures.append(err)
+
+        batches = self.update_batches(passed_batches)
+
+        return batches, failures
+
+    def apply(self, batch):
+        raise NotImplementedError
+
+
+class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
+
+    def apply(
+            self,
+            batch: list[list[np.ndarray], list[astropy.io.fits.header]]
+    ) -> list[list[np.ndarray], list[astropy.io.fits.header]]:
+
+        [images, headers] = batch
+
+        images, headers = self._apply_to_images(images, headers)
+        headers = self._update_processing_history(headers)
+
+        return [images, headers]
+
+    def _apply_to_images(
+            self,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.Header],
+    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+        raise NotImplementedError
+
+    def _update_processing_history(
+            self,
+            headers: list,
+    ) -> list:
+        for header in headers:
+            header[proc_history_key] += self.base_key + ","
+            header['REDUCER'] = getpass.getuser()
+            header['REDMACH'] = socket.gethostname()
+            header['REDTIME'] = str(datetime.datetime.now())
+            header["REDSOFT"] = "winterdrp"
+        return headers
+
+
+class ProcessorWithCache(BaseImageProcessor, ABC):
 
     def __init__(
             self,
@@ -225,7 +241,7 @@ class ProcessorWithCache(BaseProcessor, ABC):
         raise NotImplementedError
 
 
-class BaseImage_DataframeProcessor(BaseProcessor, ABC):
+class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -234,18 +250,17 @@ class BaseImage_DataframeProcessor(BaseProcessor, ABC):
 
     def apply(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.header],
-    ) -> list[pd.DataFrame]:
-        tables = self._apply_to_images(images, headers)
-        # headers = self._update_processing_history(headers)
-        return tables
+            batch: tuple[list[np.ndarray], list[astropy.io.fits.Header]]
+    ) -> pd.DataFrame:
+        [images, headers] = batch
+        candidate_table = self._apply_to_images(images, headers)
+        return candidate_table
 
     def _apply_to_images(
             self,
             images: list[np.ndarray],
             headers: list[astropy.io.fits.Header],
-    ) -> list[pd.DataFrame]:
+    ) -> pd.DataFrame:
         raise NotImplementedError
 
 
@@ -258,19 +273,13 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
 
     def apply(
             self,
-            tables: list[pd.DataFrame],
-            headers: list[astropy.io.fits.header],
-    ) -> list[pd.DataFrame]:
-        tables = self._apply_to_images(tables)
-        return tables
+            batch: pd.DataFrame
+    ) -> pd.DataFrame:
+        batch = self._apply_to_candidates(batch)
+        return batch
 
-    def _apply_to_images(
+    def _apply_to_candidates(
             self,
-            tables: list[pd.DataFrame],
-            headers: list[astropy.io.fits.header],
-    ) -> list[pd.DataFrame]:
+            candidate_table: pd.DataFrame,
+    ) -> pd.DataFrame:
         raise NotImplementedError
-
-
-class ProcessorwithDataframe:
-    pass

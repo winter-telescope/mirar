@@ -3,10 +3,10 @@ import os
 import astropy.io.fits
 import numpy as np
 from winterdrp.paths import get_output_path, get_output_dir, latest_save_key, latest_mask_save_key, base_output_dir
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 
-class ImageSaver(BaseProcessor):
+class ImageSaver(BaseImageProcessor):
 
     base_key = "save"
 

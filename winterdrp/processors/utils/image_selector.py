@@ -1,7 +1,7 @@
 import astropy.io.fits
 import numpy as np
 import logging
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def select_from_images(
     return passing_images, passing_headers
 
 
-class ImageSelector(BaseProcessor):
+class ImageSelector(BaseImageProcessor):
 
     base_key = "select"
 
@@ -92,7 +92,7 @@ def split_images_into_batches(
     return [x for x in groups.values()]
 
 
-class ImageBatcher(BaseProcessor):
+class ImageBatcher(BaseImageProcessor):
 
     base_key = "batch"
 
@@ -125,7 +125,7 @@ class ImageBatcher(BaseProcessor):
         return new_batches
 
 
-class ImageDebatcher(BaseProcessor):
+class ImageDebatcher(BaseImageProcessor):
 
     base_key = "debatch"
 
