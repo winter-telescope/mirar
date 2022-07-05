@@ -9,12 +9,11 @@ from avro import schema
 import json
 import time
 
-from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor, BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseDataframeProcessor
 from winterdrp.paths import get_output_dir
-import numpy as np
-from astropy.io import fits
 
 logger = logging.getLogger(__name__)
+
 
 class AvroPacketMaker(BaseDataframeProcessor):
     """Class to generate Avro Packets from a dataframe of candidates.
@@ -24,21 +23,22 @@ class AvroPacketMaker(BaseDataframeProcessor):
         store_data_path (str): path to store avro files in.
     """
 
+    base_key = "avro"
+
     def __init__(self, 
                 output_sub_dir: str = "avro_packets", 
                 *args,
                 **kwargs):
         super(AvroPacketMaker, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
-        
 
-    def _apply_to_images(
-        self,
-        tables: list[pd.DataFrame]
-    ) -> list[pd.DataFrame]:
+    def _apply_to_candidates(
+            self,
+            candidate_table: pd.DataFrame,
+    ) -> pd.DataFrame:
         logger.info('in AvroPacketMaker: _apply_to_image')
-        self.make_alert(False, tables[0]) # TODO go thru entire list
-        return tables
+        self.make_alert(False, candidate_table[0]) # TODO go thru entire list
+        return candidate_table
     
     def read_input_df(
         self, 
