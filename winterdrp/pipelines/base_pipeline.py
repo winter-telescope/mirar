@@ -81,12 +81,6 @@ class Pipeline:
         return data.astype(np.float64), header
 
     @staticmethod
-    def load_raw_image(
-            path: str
-    ) -> tuple[np.array, astropy.io.fits.Header]:
-        raise NotImplementedError
-
-    @staticmethod
     def download_raw_images_for_night(
             night: str | int
     ):
