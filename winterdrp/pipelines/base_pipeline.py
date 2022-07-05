@@ -104,7 +104,7 @@ class Pipeline:
             logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
                          f"(Step {i+1}/{len(self.processors)})")
 
-            batches, failures = processor.apply(
+            batches, failures = processor.base_apply(
                 batches
             )
 
