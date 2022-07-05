@@ -2,6 +2,8 @@
     "namespace": "winter.alert",
      "type": "record",
      "name": "candidate",
+     "doc": "avro alert schema",
+     "version": "0.1",
      "fields": [
          {"name": "NUMBER", "type": ["int","null"]},
          {"name": "FLUX_APER", "type": ["float", "null"]},
