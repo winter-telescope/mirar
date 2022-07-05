@@ -22,6 +22,40 @@ logger = logging.getLogger(__name__)
 class PrerequisiteError(BaseException):
     pass
 
+class ImageHandler:
+    @staticmethod
+    def open_fits(
+            path: str
+    ) -> tuple[np.ndarray, astropy.io.fits]:
+        return open_fits(path)
+
+    @staticmethod
+    def save_fits(
+            data,
+            header,
+            path: str,
+    ):
+        header[latest_save_key] = path
+        logger.info(f"Saving to {path}")
+        save_to_path(data, header, path)
+
+    def save_mask(
+            self,
+            data: np.ndarray,
+            header: astropy.io.fits.Header,
+            img_path: str
+    ) -> str:
+        mask = (~np.isnan(data)).astype(float)
+        mask_path = get_mask_path(img_path)
+        header[latest_mask_save_key] = mask_path
+        self.save_fits(mask, header, mask_path)
+        return mask_path
+
+    @staticmethod
+    def get_hash(headers: list[astropy.io.fits.Header]):
+        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in headers]))
+        return hashlib.sha1(key.encode()).hexdigest()
+
 
 class BaseProcessor:
 
@@ -96,7 +130,7 @@ class BaseProcessor:
         raise NotImplementedError
 
 
-class BaseImageProcessor(BaseProcessor, ABC):
+class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
 
     def apply(
             self,
@@ -128,39 +162,6 @@ class BaseImageProcessor(BaseProcessor, ABC):
             header['REDTIME'] = str(datetime.datetime.now())
             header["REDSOFT"] = "winterdrp"
         return headers
-
-    @staticmethod
-    def open_fits(
-            path: str
-    ) -> tuple[np.ndarray, astropy.io.fits]:
-        return open_fits(path)
-
-    @staticmethod
-    def save_fits(
-            data,
-            header,
-            path: str,
-    ):
-        header[latest_save_key] = path
-        logger.info(f"Saving to {path}")
-        save_to_path(data, header, path)
-
-    def save_mask(
-            self,
-            data: np.ndarray,
-            header: astropy.io.fits.Header,
-            img_path: str
-    ) -> str:
-        mask = (~np.isnan(data)).astype(float)
-        mask_path = get_mask_path(img_path)
-        header[latest_mask_save_key] = mask_path
-        self.save_fits(mask, header, mask_path)
-        return mask_path
-
-    @staticmethod
-    def get_hash(headers: list[astropy.io.fits.Header]):
-        key = "".join(sorted([x[base_name_key]+x[proc_history_key] for x in headers]))
-        return hashlib.sha1(key.encode()).hexdigest()
 
 
 class ProcessorWithCache(BaseImageProcessor, ABC):
@@ -240,7 +241,7 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         raise NotImplementedError
 
 
-class BaseCandidateGenerator(BaseProcessor, ABC):
+class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
