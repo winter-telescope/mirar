@@ -1,13 +1,10 @@
 import logging
 
-import astropy.table
 import pandas as pd
 
-from winterdrp.processors.base_processor import BaseImageProcessor, BaseCandidateGenerator, BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseCandidateGenerator
 import numpy as np
 from astropy.io import fits
-from collections.abc import Callable
-from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 from winterdrp.paths import get_output_dir
@@ -19,26 +16,19 @@ import os
 logger = logging.getLogger(__name__)
 
 
-class FilterCandidates(BaseDataframeProcessor):
-
-    def __init__(self,
-                 *args,
-                 **kwargs):
-        super(FilterCandidates, self).__init__(*args, **kwargs)
-        pass
-
-
 class DetectCandidates(BaseCandidateGenerator):
     base_key = "DETCANDS"
 
-    def __init__(self,
-                 cand_det_sextractor_config: str,
-                 cand_det_sextractor_filter: str,
-                 cand_det_sextractor_nnw: str,
-                 cand_det_sextractor_params: str,
-                 output_sub_dir: str = "candidates",
-                 *args,
-                 **kwargs):
+    def __init__(
+            self,
+            cand_det_sextractor_config: str,
+            cand_det_sextractor_filter: str,
+            cand_det_sextractor_nnw: str,
+            cand_det_sextractor_params: str,
+            output_sub_dir: str = "candidates",
+            *args,
+            **kwargs
+    ):
         super(DetectCandidates, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
         self.cand_det_sextractor_config = cand_det_sextractor_config
@@ -50,8 +40,12 @@ class DetectCandidates(BaseCandidateGenerator):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     @staticmethod
-    def make_alert_cutouts(imagename, position, half_size):
-        data = fits.getdata(imagename)
+    def make_alert_cutouts(
+            image_path: str,
+            position,
+            half_size
+    ):
+        data = fits.getdata(image_path)
         y_image_size, x_image_size = np.shape(data)
         x, y = position
         logger.debug(f'{x},{y},{np.shape(data)}')
