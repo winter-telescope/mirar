@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def wirc_reference_image_generator(
         header: fits.header,
-        images_directory: str = os.environ['REF_IMG_DIR'],
+        images_directory: str = os.environ.get('REF_IMG_DIR'),
 ):
     object_name = header['OBJECT']
     filter_name = header['FILTER']
