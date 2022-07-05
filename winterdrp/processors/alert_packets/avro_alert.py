@@ -29,7 +29,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
                 *args,
                 **kwargs):
         super(AvroPacketMaker, self).__init__(*args, **kwargs)
-        # self.schema_path = schema_path
         self.output_sub_dir = output_sub_dir
         
 
@@ -38,14 +37,42 @@ class AvroPacketMaker(BaseDataframeProcessor):
         tables: list[pd.DataFrame]
     ) -> list[pd.DataFrame]:
         logger.info('in AvroPacketMaker: _apply_to_image')
-        # self.make_alert(False, tables[0]) # TODO go thru entire list
-        return tables 
+        self.make_alert(False, tables[0]) # TODO go thru entire list
+        return tables
+    
+    def read_input_df(
+        self, 
+        df
+    ) -> list[dict]:
+        """Takes a DataFrame (single table from input list[pd.DataFrame])
+        which has multiple candidate & creates list of dictionaries, 
+        each dictionary representing a single candidate.
+
+        Args:
+            df (pandas.core.frame.DataFrame): dataframe of all candidates.
+        
+        returns:
+            list[dict]: list of dictionaries, each a candidate.
+        """
+        all_candidates = []   
+        
+        for i in range(0, len(df)):
+            candidate = {} 
+            for key in df.keys():
+                try: 
+                    candidate[key] = df.iloc[i].get(key).item() # change to native python type
+                except AttributeError: # for IOBytes objs
+                    candidate[key] = df.iloc[i].get(key).getvalue()
+            all_candidates.append(candidate)
+
+        return all_candidates 
 
     def combine_schemas(self, schema_files):
         """Combine multiple nested schemas into a single schema.
         Modified from https://github.com/dekishalay/pgirdps
         """
         known_schemas = avro.schema.Names()
+        logger.info(f'known schemas: {known_schemas}')
         #print(known_schemas)
         for s in schema_files:
             schema = self.load_single_avsc(s, known_schemas) # not working 
@@ -53,6 +80,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             # AttributeError: module 'avro.schema' has no attribute 'SchemaFromJSONData'
         # using schema.to_json() doesn't fully propagate the nested schemas
         # work around as below
+        logger.info(f'props: {schema.props}')
+        logger.info(f'props type: {type(schema.props)}')
+
         props = dict(schema.props)
         fields_json = [field.to_json() for field in props['fields']]
         props['fields'] = fields_json
@@ -63,47 +93,21 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Modified from https://github.com/dekishalay/pgirdps
         """
         curdir = os.path.dirname(__file__)
+        logger.info(f'cur_dir: {curdir}')
         file_path = os.path.join(curdir, file_path)
+        logger.info(f'fil path: {file_path}')
 
         with open(file_path) as file_text:
             json_data = json.load(file_text)
-        
+            logger.info(f'json_data type: {type(json_data)}')
+            logger.info(f'json_data dumps type: {type(json.dumps(json_data))}')
+
         # SchemaFromJSONData not working
-        schema = avro.schema.SchemaFromJSONData(json_data, names)
+        # schema = avro.schema.SchemaFromJSONData(json_data, names)
+        schema = avro.schema.parse(json.dumps(json_data))
+        logger.info(f'schema type: {type(schema)}')
+
         return schema
-
-    def read_input_df(
-        self, 
-        df
-    ) -> list[dict]:
-        """Takes a DataFrame with multiple candidate & creates list 
-        of dictionaries, each dictionary representing a single candidate.
-        Args:
-            df (DataFrame): dataframe of all candidates.
-        
-        returns:
-            list[dict]: list of dictionaries, each a candidate.
-        """
-        all_candidates = []
-        # logger.info(f'{df}')
-        # logger.info(f'{df.shape[0]}')
-        # zp = 'ZP'
-        # logger.info(f'{df[zp]}')
-        # for i in range(df.shape[0]):
-        candidate = {}
-        for key in df.keys():
-            logger.info(f'key: {key}')
-            logger.info(f'key value: {df[key]}')
-            logger.info(f'key value []: {df.shape}')
-
-            try: 
-                candidate[key] = df[key][0].item() # change to native python type
-            except AttributeError: # for IOBytes objs
-                candidate[key] = (df[key].loc[0].getvalue())
-                    
-        all_candidates.append(candidate)
-
-        return all_candidates
 
     def write_avro_data(json, avro_schema):
         """Encode json into avro format given a schema.
@@ -113,7 +117,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Returns:
             _io.BytesIO object: input json in schema format.
         """
-
         writer = avro.io.DatumWriter(avro_schema)
         bytes_io = io.BytesIO()
         encoder = avro.io.BinaryEncoder(bytes_io)
@@ -162,8 +165,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
         scicut = cand['SciBitIm'] # should be bytes
         refcut = cand['RefBitIm']
         diffcut = cand['DiffBitIm']
-
-
 
         alert = {"schemavsn": "0.1", "publisher": "winter_test", 
 		"cutoutScience": scicut,
@@ -222,29 +223,31 @@ class AvroPacketMaker(BaseDataframeProcessor):
         
         if not useDataBase and df is not None:
             # input dataframe to avro_creation processor
+            logger.info(f'{len(df)} candidates in df')
             all_cands = self.read_input_df(df)
-            logger.info(f'{df.shape[0]} candidates in dataframe')
-            # print(all_cands[0]['ZP'])
+            logger.info('####################################')
+            logger.info(f'{len(all_cands)} candidates in dict')
         
-        # TODO change to self.schema_path & string concat
-        schema = self.combine_schemas(["alert_schema/candidate.avsc", 
-                                    "alert_schema/prv_candidate.avsc", 
-                                    "alert_schema/alert.avsc"])
+        ####### Commenting out for push 
+        # # TODO change to self.schema_path & string concat
+        # schema = self.combine_schemas(["alert_schema/candidate.avsc", 
+        #                             "alert_schema/prv_candidate.avsc", 
+        #                             "alert_schema/alert.avsc"])
 
-        # input dataframe to avro_creation processor
-        # df = pd.DataFrame() #TODO fix!
-        # all_cands = self.read_input_df(df)
+        # # input dataframe to avro_creation processor
+        # # df = pd.DataFrame() #TODO fix!
+        # # all_cands = self.read_input_df(df)
 
 
 
         num_cands = len(all_cands)
-        logger.info(f'{num_cands} candidates found...making packets')
+        # logger.info(f'{num_cands} candidates found...making packets')
 
-        for cand in all_cands:
-            scicut = cand.pop('SciBitIm')
-            refcut = cand.pop('RefBitIm')
-            diffcut = cand.pop('DiffBitIm')
-            self.save_alert_packet(cand, scicut, refcut, diffcut, schema, True)
+        # for cand in all_cands:
+        #     scicut = cand.pop('SciBitIm')
+        #     refcut = cand.pop('RefBitIm')
+        #     diffcut = cand.pop('DiffBitIm')
+        #     self.save_alert_packet(cand, scicut, refcut, diffcut, schema, True)
 
         t1 = time.time()
         print('Took %.2f seconds to process %d candidates'%(t1 - t0, num_cands))
