@@ -27,12 +27,6 @@ class FilterCandidates(BaseDataframeProcessor):
         super(FilterCandidates, self).__init__(*args, **kwargs)
         pass
 
-    def _apply_to_images(
-            self,
-            tables: list[pd.DataFrame]
-    ) -> list[pd.DataFrame]:
-        return tables
-
 
 class DetectCandidates(BaseCandidateGenerator):
     base_key = "DETCANDS"
@@ -233,7 +227,7 @@ class DetectCandidates(BaseCandidateGenerator):
             self,
             images: list[np.ndarray],
             headers: list[fits.Header],
-    ) -> list[pd.DataFrame]:
+    ) -> pd.DataFrame:
 
         all_cands_list = []
         for ind, header in enumerate(headers):
@@ -274,6 +268,4 @@ class DetectCandidates(BaseCandidateGenerator):
             cands_table['Y_SHAPE'] = y_shape
             all_cands_list.append(cands_table)
 
-        return all_cands_list
-        # Need to get this to return a dataframe and not images+headers, but that will require some coding
-        # return all_cands_list
+        return pd.concat(all_cands_list)
