@@ -15,6 +15,8 @@ from winterdrp.processors.candidates.edge_mask import EdgeCandidatesMask
 from winterdrp.processors.candidates.candidate_filter import FilterCandidates
 from winterdrp.processors.alert_packets.avro_alert import AvroPacketMaker
 from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
+from winterdrp.paths import core_fields, base_name_key
 
 
 logger = logging.getLogger(__name__)
@@ -64,14 +66,16 @@ def wirc_reference_sextractor(output_sub_dir, gain):
                       filter_path='winterdrp/pipelines/wirc_imsub/config/default.conv',
                       starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                       gain=gain,
-                      output_sub_dir=output_sub_dir
+                      output_sub_dir=output_sub_dir,
+                      cache=True
                       )
 
 
 def wirc_reference_psfex(output_sub_dir, norm_fits):
     return PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
                  output_sub_dir=output_sub_dir,
-                 norm_fits=norm_fits
+                 norm_fits=norm_fits,
+                 cache=True
                  )
 
 
@@ -131,7 +135,8 @@ class WircImsubPipeline(Pipeline):
                        parameter_path='winterdrp/pipelines/wirc_imsub/config/photom.param',
                        filter_path='winterdrp/pipelines/wirc_imsub/config/default.conv',
                        starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
-                       output_sub_dir='subtract'),
+                       output_sub_dir='subtract',
+                       cache=True),
             PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
                   output_sub_dir="subtract",
                   norm_fits=True),
