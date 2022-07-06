@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class Reference(BaseImageProcessor):
-
     base_key = "REFPREP"
 
     def __init__(self,
@@ -100,8 +99,8 @@ class Reference(BaseImageProcessor):
             [[resampled_ref_image], [resampled_ref_header]] = ref_resampler.apply([[ref_data], [ref_header]])
 
             ref_resamp_x_cent, ref_resamp_y_cent, ref_resamp_ra_cent, ref_resamp_dec_cent, \
-                ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
-                ref_resamp_gain = self.get_image_header_params(resampled_ref_header)
+            ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
+            ref_resamp_gain = self.get_image_header_params(resampled_ref_header)
 
             sci_resampler = self.ref_swarp_resampler(
                 pixsize=ref_resamp_pixscale,
@@ -119,23 +118,24 @@ class Reference(BaseImageProcessor):
             [[resampled_sci_image], [resampled_sci_header]] = sci_resampler.apply([[image], [header]])
 
             ref_sextractor = self.ref_sextractor(
-                                                 output_sub_dir=self.temp_output_subtract_dir,
-                                                 gain=ref_resamp_gain
-                                                 )
+                output_sub_dir=self.temp_output_subtract_dir,
+                gain=ref_resamp_gain
+            )
             ref_sextractor.set_night(night_sub_dir=self.night_sub_dir)
             [[resampled_ref_sex_image], [resampled_ref_sex_header]] \
                 = ref_sextractor.apply([[resampled_ref_image], [resampled_ref_header]])
-            save_to_path(data=resampled_ref_sex_image, header=resampled_ref_sex_header, \
-                         path=os.path.join(self.get_sub_output_dir(),resampled_ref_sex_header['BASENAME']))
-            logger.info(f"Saved reference image to {os.path.join(self.get_sub_output_dir(),resampled_ref_sex_header['BASENAME'])}")
+            save_to_path(data=resampled_ref_sex_image, header=resampled_ref_sex_header,
+                         path=os.path.join(self.get_sub_output_dir(), resampled_ref_sex_header['BASENAME']))
+            logger.info(
+                f"Saved reference image to {os.path.join(self.get_sub_output_dir(), resampled_ref_sex_header['BASENAME'])}")
 
             sci_resamp_x_cent, sci_resamp_y_cent, sci_resamp_ra_cent, sci_resamp_dec_cent, \
             sci_resamp_pixscale, sci_resamp_x_imgsize, sci_resamp_y_imgsize, \
             sci_resamp_gain = self.get_image_header_params(resampled_sci_header)
             sci_sextractor = self.ref_sextractor(
-                                                 output_sub_dir=self.temp_output_subtract_dir,
-                                                 gain=sci_resamp_gain
-                                                 )
+                output_sub_dir=self.temp_output_subtract_dir,
+                gain=sci_resamp_gain
+            )
             [[resampled_sci_sex_image], [resampled_sci_sex_header]] \
                 = ref_sextractor.apply([[resampled_sci_image], [resampled_sci_header]])
 
