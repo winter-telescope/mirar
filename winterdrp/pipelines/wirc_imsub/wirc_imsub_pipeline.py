@@ -124,6 +124,7 @@ class WircImsubPipeline(Pipeline):
                 input_sub_dir="raw",
                 load_image=load_raw_wirc_image
             ),
+            ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210330.fits")),
             Reference(
                 ref_image_generator=wirc_reference_image_generator,
                 ref_swarp_resampler=wirc_reference_image_resampler,
@@ -148,7 +149,7 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
                              cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
             EdgeCandidatesMask(edge_boundary_size=100),
-            FilterCandidates(),
+            # FilterCandidates(),
             AvroPacketMaker(output_sub_dir="avro")
         ]
     }
