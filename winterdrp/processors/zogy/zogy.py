@@ -45,6 +45,8 @@ class ZOGY(BaseImageProcessor):
             ast_unc_x = header["ASTUNCX"]
             ast_unc_y = header["ASTUNCY"]
 
+            temp_files = [sci_image_path, ref_image_path, sci_rms_image, ref_rms_image]
+
             D, P_D, S_corr = py_zogy(sci_image_path, ref_image_path, sci_psf, ref_psf, sci_rms_image,
                                      ref_rms_image, sci_rms, ref_rms, dx=ast_unc_x, dy=ast_unc_y)
 
@@ -78,6 +80,9 @@ class ZOGY(BaseImageProcessor):
             header["DIFFSCR"] = scorr_image_path
             header["DIFFUNC"] = diff_rms_path
 
+            for temp_file in temp_files:
+                os.remove(temp_file)
+                logger.info(f"Deleted temporary file {temp_file}")
         return images, headers
 
 
@@ -195,8 +200,8 @@ class ZOGYPrepare(BaseImageProcessor):
                     np.percentile(ref_data[ref_data != 0], 84.13) - np.percentile(ref_data[ref_data != 0], 15.86))
             logger.info('Science RMS is %.2f. Reference RMS is %.2f' % (sci_rms, ref_rms))
 
-            sci_weight_path = header[latest_mask_save_key]
-            ref_weight_path = header[latest_mask_save_key]
+            sci_weight_path = os.path.join(self.get_sub_output_dir(),header[latest_mask_save_key])
+            ref_weight_path = os.path.join(self.get_sub_output_dir(),header[latest_mask_save_key])
             sci_weight_data, _ = open_fits(sci_weight_path)
             ref_weight_data, _ = open_fits(ref_weight_path)
 
