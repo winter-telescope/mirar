@@ -48,7 +48,7 @@ class DetectCandidates(BaseCandidateGenerator):
         data = fits.getdata(image_path)
         y_image_size, x_image_size = np.shape(data)
         x, y = position
-        logger.debug(f'{x},{y},{np.shape(data)}')
+        # logger.debug(f'{x},{y},{np.shape(data)}')
         if y < half_size:
             cutout = data[0:y + half_size + 1, x - half_size:x + half_size + 1]
             n_pix = half_size - y
@@ -181,7 +181,7 @@ class DetectCandidates(BaseCandidateGenerator):
 
             diff_cutout = self.make_alert_cutouts(diff_filename, (xpeak, ypeak), cutout_size_psf_phot)
             diff_unc_cutout = self.make_alert_cutouts(diff_unc_filename, (xpeak, ypeak), cutout_size_psf_phot)
-            logger.debug(f'Cutout dimensions {diff_cutout.shape}')
+            # logger.debug(f'Cutout dimensions {diff_cutout.shape}')
             psf_flux, psf_fluxunc, minchi2, xshift, yshift = self.psf_photometry(diff_cutout, diff_unc_cutout,
                                                                                  psfmodels)
 
