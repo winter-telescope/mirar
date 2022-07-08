@@ -150,7 +150,8 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
             EdgeCandidatesMask(edge_boundary_size=100),
             # FilterCandidates(),
-            AvroPacketMaker(output_sub_dir="avro")
+            AvroPacketMaker(output_sub_dir="avro",
+                            base_name="WNTR")
         ]
     }
 
