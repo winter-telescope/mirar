@@ -16,6 +16,8 @@ from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.catalog import Gaia2Mass
 from winterdrp.downloader.caltech import download_via_ssh
+from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
 
 
 def wirc_astrometric_catalog_generator(
@@ -32,6 +34,22 @@ def wirc_photometric_catalog_generator(
 
 
 pipeline_name = "wirc"
+
+
+def load_raw_wirc_image(
+        path: str
+) -> tuple[np.array, astropy.io.fits.Header]:
+    with fits.open(path) as img:
+        data = img[0].data
+        header = img[0].header
+        header["FILTER"] = header["AFT"].split("__")[0]
+        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
+        header["CALSTEPS"] = ""
+        header["BASENAME"] = os.path.basename(path)
+        header["TARGET"] = header["OBJECT"].lower()
+        header["UTCTIME"] = header["UTSHUT"]
+        header["MJD-OBS"] = Time(header['UTSHUT']).mjd
+    return data, header
 
 
 class WircPipeline(Pipeline):
@@ -55,10 +73,21 @@ class WircPipeline(Pipeline):
 
     pipeline_configurations = {
         None: [
+            ImageLoader(
+                input_sub_dir="raw",
+                load_image=load_raw_wirc_image
+            ),
             MaskPixels(mask_path=wirc_mask_path),
+            ImageBatcher(split_key="exptime"),
             DarkCalibrator(),
+            ImageDebatcher(),
+            ImageBatcher(split_key="filter"),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
+            ImageSelector(
+                ("object", "ZTF21acbnfos"),
+                ("filter", "J")
+            ),
             AutoAstrometry(catalog="tmc"),
             Sextractor(
                 output_sub_dir="postprocess",
@@ -78,31 +107,13 @@ class WircPipeline(Pipeline):
         ]
     }
 
-    def load_raw_image(
-            self,
-            path: str
-    ) -> tuple[np.array, astropy.io.fits.Header]:
-        with fits.open(path) as img:
-            data = img[0].data
-            header = img[0].header
-            header["FILTER"] = header["AFT"].split("__")[0]
-            header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
-            header["CALSTEPS"] = ""
-            header["BASENAME"] = os.path.basename(path)
-            header["TARGET"] = header["OBJECT"].lower()
-            header["UTCTIME"] = header["UTSHUT"]
-            header["MJD-OBS"] = Time(header['UTSHUT']).mjd
-            header.append(('GAIN', self.gain, 'Gain in electrons / ADU'), end=True)
-            header = self.set_saturation(header)
-        return data, header
-
     @staticmethod
     def download_raw_images_for_night(
             night: str | int
     ):
         download_via_ssh(
             server="gayatri.caltech.edu",
-            base_dir="/data/sanand/WIRC/",
+            base_dir="/scr2/ptf/observation_data",
             night=night,
             pipeline=pipeline_name,
             server_sub_dir="raw"

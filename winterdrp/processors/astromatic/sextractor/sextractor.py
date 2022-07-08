@@ -4,7 +4,7 @@ import logging
 import astropy.io.fits
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation, \
     run_sextractor_dual
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import get_output_dir, get_temp_path, latest_mask_save_key
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 sextractor_header_key = 'SRCCAT'
 
 
-class Sextractor(BaseProcessor):
+class Sextractor(BaseImageProcessor):
     base_key = "sextractor"
 
     def __init__(
@@ -68,18 +68,16 @@ class Sextractor(BaseProcessor):
 
             det_image, measure_image, det_header, measure_header = None, None, None, None
             if self.dual:
-                try:
-                    det_header = headers[i][0]
-                    measure_header = headers[i][1]
-                    det_image = images[i][0]
-                    measure_image = images[i][1]
-                    header = det_header
-                    data = det_image
-                    self.gain = measure_header["GAIN"]
-                except:
-                    ValueError()
+                det_header = headers[i][0]
+                measure_header = headers[i][1]
+                det_image = images[i][0]
+                measure_image = images[i][1]
+                header = det_header
+                data = det_image
+                self.gain = measure_header["GAIN"]
 
             temp_path = get_temp_path(sextractor_out_dir, header["BASENAME"])
+            temp_files = [temp_path]
 
             mask_path = None
             if latest_mask_save_key in header.keys():
@@ -90,7 +88,7 @@ class Sextractor(BaseProcessor):
             if mask_path is None:
                 self.save_fits(data, header, temp_path)
                 mask_path = self.save_mask(data, header, temp_path)
-
+                temp_files.append(mask_path)
             output_cat = os.path.join(sextractor_out_dir, header["BASENAME"].replace(".fits", ".cat"))
 
             if not self.dual:
@@ -128,8 +126,9 @@ class Sextractor(BaseProcessor):
                     catalog_name=output_cat
                 )
 
-            os.remove(temp_path)
-            logger.info(f"Deleted temporary image {temp_path}")
+            for temp_file in temp_files:
+                os.remove(temp_file)
+                logger.info(f"Deleted temporary file {temp_file}")
 
             header[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
 

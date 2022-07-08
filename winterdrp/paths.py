@@ -11,22 +11,26 @@ logger = logging.getLogger(__name__)
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 
 if base_raw_dir is None:
-    err = "No raw data directory specified. Run 'export RAW_DATA_DIR=/path/to/data'"
-    logger.error(err)
-    raise ValueError(err)
-    
+    err = "No raw data directory specified. Run 'export RAW_DATA_DIR=/path/to/data' to set. " \
+          "The raw data directory will need to be specified manually for path function."
+    logger.warning(err)
+
 base_output_dir = os.getenv("OUTPUT_DATA_DIR")
 
 if base_output_dir is None:
-    err = "No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data'"
-    logger.error(err)
-    raise ValueError(err)
+    err = "No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. " \
+          "The output directory will need to be specified manually for path functions."
+    logger.warning(err)
+
+
+raw_img_sub_dir = "raw"
 
 
 def raw_img_dir(
-        sub_dir: str = ""
+        sub_dir: str = "",
+        raw_dir: str = base_raw_dir
 ) -> str:
-    return os.path.join(base_raw_dir, os.path.join(str(sub_dir), "raw"))
+    return os.path.join(raw_dir, os.path.join(str(sub_dir), raw_img_sub_dir))
 
 
 def get_preprocess_path(
@@ -37,49 +41,52 @@ def get_preprocess_path(
 
 def get_output_dir(
         dir_root: str,
-        sub_dir: str | int = ""
+        sub_dir: str | int = "",
+        output_dir: str = base_output_dir
 ) -> str:
-    return os.path.join(base_output_dir, os.path.join(str(sub_dir), dir_root))
+    return os.path.join(output_dir, os.path.join(str(sub_dir), dir_root))
 
 
 def get_output_path(
         base_name: str,
         dir_root: str,
-        sub_dir: str | int = ""
+        sub_dir: str | int = "",
+        output_dir: str = base_output_dir
 ) -> str:
-    return os.path.join(get_output_dir(dir_root, sub_dir=str(sub_dir)), base_name)
+    return os.path.join(get_output_dir(dir_root, sub_dir=str(sub_dir), output_dir=output_dir), base_name)
 
 
 def cal_output_dir(
-        sub_dir: str | int = ""
+        sub_dir: str | int = "",
+        output_dir: str = base_output_dir
 ) -> str:
-    return get_output_dir("calibration", sub_dir=str(sub_dir))
+    return get_output_dir("calibration", sub_dir=str(sub_dir), output_dir=output_dir)
+
+
+cal_output_sub_dir = "calibration"
 
 
 def reduced_img_dir(
-        sub_dir: str | int = ""
+        sub_dir: str | int = "",
+        output_dir: str = base_output_dir
 ) -> str:
-    return get_output_dir("redux", sub_dir=str(sub_dir))
+    return get_output_dir("redux", sub_dir=str(sub_dir), output_dir=output_dir)
 
 
 def reduced_img_path(
         img_name: str,
-        sub_dir: str | int = ""
+        sub_dir: str | int = "",
+        output_dir: str = base_output_dir
 ) -> str:
-    return os.path.join(reduced_img_dir(str(sub_dir)), img_name)
-
-
-def observing_log_dir(
-        sub_dir: str | int = ""
-) -> str:
-    return os.path.join(base_raw_dir, str(sub_dir))
+    return os.path.join(reduced_img_dir(str(sub_dir), output_dir=output_dir), img_name)
 
 
 def astrometry_output_dir(
         sub_dir: str = "",
-        astro_pass: int = 1
+        astro_pass: int = 1,
+        output_dir: str = base_output_dir
 ) -> str:
-    return get_output_dir(f"astrometry_{astro_pass}", sub_dir=str(sub_dir))
+    return get_output_dir(f"astrometry_{astro_pass}", sub_dir=str(sub_dir), output_dir=output_dir)
 
 
 def get_mask_path(
@@ -149,6 +156,7 @@ def parse_image_list(
 
 raw_img_key = "RAWIMAGEPATH"
 base_name_key = "BASENAME"
+proc_history_key = "CALSTEPS"
 latest_save_key = "SAVEPATH"
 latest_mask_save_key = "MASKPATH"
 saturate_key = "SATURATE"
@@ -156,4 +164,9 @@ sextractor_header_key = 'SRCCAT'
 psfex_header_key = 'PSFCAT'
 norm_psfex_header_key = 'NPSFCAT'
 
-core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
+core_fields = ["OBSCLASS", "TARGET", "UTCTIME", "COADDS"]
+
+
+class ProcessingError(Exception):
+    pass
+

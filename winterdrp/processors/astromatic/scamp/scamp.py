@@ -2,7 +2,7 @@ import logging
 import os
 import numpy as np
 import astropy.io.fits
-from winterdrp.processors.base_processor import ProcessorWithCache, BaseProcessor
+from winterdrp.processors.base_processor import ProcessorWithCache, BaseImageProcessor
 from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, get_untemp_path
 from winterdrp.utils import execute
 from winterdrp.catalog.base_catalog import BaseCatalog
@@ -12,7 +12,7 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
-scamp_header_key = ""
+scamp_header_key = "SCMPHEAD"
 
 
 def run_scamp(
@@ -35,7 +35,7 @@ def get_scamp_output_head_path(
     return os.path.splitext(cat_path)[0] + ".head"
 
 
-class Scamp(BaseProcessor):
+class Scamp(BaseImageProcessor):
 
     base_key = "scamp"
 

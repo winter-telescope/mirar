@@ -2,14 +2,14 @@ import logging
 import os
 import numpy as np
 import astropy.io.fits
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.processors.autoastrometry.autoastrometry import run_autoastrometry_single
 from winterdrp.paths import get_output_dir
 
 logger = logging.getLogger(__name__)
 
 
-class AutoAstrometry(BaseProcessor):
+class AutoAstrometry(BaseImageProcessor):
 
     base_key = "autoastrometry"
 

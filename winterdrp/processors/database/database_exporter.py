@@ -1,14 +1,14 @@
 import astropy.io.fits
 import numpy as np
 import os
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 import logging
 from winterdrp.processors.database.setup import check_if_db_exists, create_db, export_to_db, create_table
 
 logger = logging.getLogger(__name__)
 
 
-class DatabaseExporter(BaseProcessor):
+class DatabaseExporter(BaseImageProcessor):
 
     base_key = "db"
 

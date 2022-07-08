@@ -1,7 +1,7 @@
 import astropy.io.fits
 import numpy as np
 import logging
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 mask_value = np.nan
 
 
-class MaskPixels(BaseProcessor):
+class MaskPixels(BaseImageProcessor):
 
     base_key = "mask"
 

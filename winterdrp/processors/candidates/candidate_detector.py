@@ -1,13 +1,14 @@
 import logging
 
-import astropy.table
 import pandas as pd
 
+<<<<<<< HEAD:winterdrp/processors/candidates.py
 from winterdrp.processors.base_processor import BaseProcessor, BaseImage_DataframeProcessor, BaseDataframeProcessor
+=======
+from winterdrp.processors.base_processor import BaseCandidateGenerator
+>>>>>>> 1860a120b79d96efe36cc03ec917e9855b1003ac:winterdrp/processors/candidates/candidate_detector.py
 import numpy as np
 from astropy.io import fits
-from collections.abc import Callable
-from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 from winterdrp.paths import get_output_dir
@@ -19,6 +20,7 @@ import os
 logger = logging.getLogger(__name__)
 
 
+<<<<<<< HEAD:winterdrp/processors/candidates.py
 class FilterCandidates(BaseDataframeProcessor):
 
     def __init__(self,
@@ -26,9 +28,14 @@ class FilterCandidates(BaseDataframeProcessor):
                  **kwargs):
         super(FilterCandidates, self).__init__(*args, **kwargs)
         pass
+=======
+class DetectCandidates(BaseCandidateGenerator):
+    base_key = "DETCANDS"
+>>>>>>> 1860a120b79d96efe36cc03ec917e9855b1003ac:winterdrp/processors/candidates/candidate_detector.py
 
-    def _apply_to_images(
+    def __init__(
             self,
+<<<<<<< HEAD:winterdrp/processors/candidates.py
             tables: list[pd.DataFrame]
     ) -> list[pd.DataFrame]:
         return tables
@@ -45,6 +52,16 @@ class DetectCandidates(BaseImage_DataframeProcessor):
                  output_sub_dir: str = "candidates",
                  *args,
                  **kwargs):
+=======
+            cand_det_sextractor_config: str,
+            cand_det_sextractor_filter: str,
+            cand_det_sextractor_nnw: str,
+            cand_det_sextractor_params: str,
+            output_sub_dir: str = "candidates",
+            *args,
+            **kwargs
+    ):
+>>>>>>> 1860a120b79d96efe36cc03ec917e9855b1003ac:winterdrp/processors/candidates/candidate_detector.py
         super(DetectCandidates, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
         self.cand_det_sextractor_config = cand_det_sextractor_config
@@ -56,8 +73,12 @@ class DetectCandidates(BaseImage_DataframeProcessor):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     @staticmethod
-    def make_alert_cutouts(imagename, position, half_size):
-        data = fits.getdata(imagename)
+    def make_alert_cutouts(
+            image_path: str,
+            position,
+            half_size
+    ):
+        data = fits.getdata(image_path)
         y_image_size, x_image_size = np.shape(data)
         x, y = position
         logger.debug(f'{x},{y},{np.shape(data)}')
@@ -233,7 +254,7 @@ class DetectCandidates(BaseImage_DataframeProcessor):
             self,
             images: list[np.ndarray],
             headers: list[fits.Header],
-    ) -> list[pd.DataFrame]:
+    ) -> pd.DataFrame:
 
         all_cands_list = []
         for ind, header in enumerate(headers):
@@ -274,6 +295,10 @@ class DetectCandidates(BaseImage_DataframeProcessor):
             cands_table['Y_SHAPE'] = y_shape
             all_cands_list.append(cands_table)
 
+<<<<<<< HEAD:winterdrp/processors/candidates.py
         return all_cands_list
         # Need to get this to return a dataframe and not images+headers, but that will require some coding
         # return all_cands_list
+=======
+        return pd.concat(all_cands_list)
+>>>>>>> 1860a120b79d96efe36cc03ec917e9855b1003ac:winterdrp/processors/candidates/candidate_detector.py
