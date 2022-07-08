@@ -1,4 +1,6 @@
 import os
+import shutil
+
 import numpy as np
 import logging
 import astropy.io.fits
@@ -79,16 +81,22 @@ class Sextractor(BaseImageProcessor):
                 self.gain = measure_header["GAIN"]
 
             temp_path = get_temp_path(sextractor_out_dir, header["BASENAME"])
+            if not os.path.exists(temp_path):
+                self.save_fits(data, header, temp_path)
             temp_files = [temp_path]
 
             mask_path = None
             if latest_mask_save_key in header.keys():
-                mask_path = get_temp_path(sextractor_out_dir, header[latest_mask_save_key])
-                if not os.path.exists(mask_path):
+                image_mask_path = os.path.join(sextractor_out_dir, header[latest_mask_save_key])
+                temp_mask_path = get_temp_path(sextractor_out_dir, header[latest_mask_save_key])
+                if os.path.exists(image_mask_path):
+                    shutil.copyfile(image_mask_path,temp_mask_path)
+                    mask_path = temp_mask_path
+                    temp_files.append(mask_path)
+                else:
                     mask_path = None
 
             if mask_path is None:
-                self.save_fits(data, header, temp_path)
                 mask_path = self.save_mask(data, header, temp_path)
                 temp_files.append(mask_path)
             output_cat = os.path.join(sextractor_out_dir, header["BASENAME"].replace(".fits", ".cat"))
