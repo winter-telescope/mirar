@@ -35,9 +35,11 @@ class ImageHandler:
             header,
             path: str,
     ):
-        header[latest_save_key] = path
+        if header is not None:
+            header[latest_save_key] = path
         logger.info(f"Saving to {path}")
         save_to_path(data, header, path)
+
 
     def save_mask(
             self,

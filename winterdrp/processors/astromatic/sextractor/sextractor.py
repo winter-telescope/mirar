@@ -28,6 +28,7 @@ class Sextractor(BaseImageProcessor):
             checkimage_type: str | list = None,
             gain: float = None,
             dual: bool = False,
+            cache: bool = False,
             *args,
             **kwargs
     ):
@@ -44,6 +45,7 @@ class Sextractor(BaseImageProcessor):
         self.checkimage_type = checkimage_type
         self.gain = gain
         self.dual = dual
+        self.cache = cache
 
     def get_sextractor_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
@@ -126,9 +128,11 @@ class Sextractor(BaseImageProcessor):
                     catalog_name=output_cat
                 )
 
-            for temp_file in temp_files:
-                os.remove(temp_file)
-                logger.info(f"Deleted temporary file {temp_file}")
+            logger.info(f'Cache save is {self.cache}')
+            if not self.cache:
+                for temp_file in temp_files:
+                    os.remove(temp_file)
+                    logger.info(f"Deleted temporary file {temp_file}")
 
             header[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
 

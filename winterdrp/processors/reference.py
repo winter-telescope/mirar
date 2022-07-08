@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class Reference(BaseImageProcessor):
-
     base_key = "REFPREP"
 
     def __init__(self,
@@ -97,12 +96,11 @@ class Reference(BaseImageProcessor):
             )
 
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
-            resampled_ref_images, resampled_ref_headers = ref_resampler.apply([ref_data, ref_header])
-            resampled_ref_image, resampled_ref_header = resampled_ref_images[0], resampled_ref_headers[0]
+            [[resampled_ref_image], [resampled_ref_header]] = ref_resampler.apply([[ref_data], [ref_header]])
 
             ref_resamp_x_cent, ref_resamp_y_cent, ref_resamp_ra_cent, ref_resamp_dec_cent, \
-                ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
-                ref_resamp_gain = self.get_image_header_params(resampled_ref_header)
+            ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
+            ref_resamp_gain = self.get_image_header_params(resampled_ref_header)
 
             sci_resampler = self.ref_swarp_resampler(
                 pixsize=ref_resamp_pixscale,
@@ -117,33 +115,33 @@ class Reference(BaseImageProcessor):
                 combine=False
             )
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
-            resampled_sci_images, resampled_sci_headers = sci_resampler.apply([[image], [header]])
+            [[resampled_sci_image], [resampled_sci_header]] = sci_resampler.apply([[image], [header]])
 
-            resampled_sci_image, resampled_sci_header = resampled_sci_images[0], resampled_sci_headers[0]
             ref_sextractor = self.ref_sextractor(
-                                                 output_sub_dir=self.temp_output_subtract_dir,
-                                                 gain=ref_resamp_gain
-                                                 )
+                output_sub_dir=self.temp_output_subtract_dir,
+                gain=ref_resamp_gain
+            )
             ref_sextractor.set_night(night_sub_dir=self.night_sub_dir)
-            [resampled_ref_sex_image], [resampled_ref_sex_header] \
+            [[resampled_ref_sex_image], [resampled_ref_sex_header]] \
                 = ref_sextractor.apply([[resampled_ref_image], [resampled_ref_header]])
-            save_to_path(data=resampled_ref_sex_image, header=resampled_ref_sex_header, \
-                         path=os.path.join(self.get_sub_output_dir(),resampled_ref_sex_header['BASENAME']))
-            logger.info(f"Saved reference image to {os.path.join(self.get_sub_output_dir(),resampled_ref_sex_header['BASENAME'])}")
+            save_to_path(data=resampled_ref_sex_image, header=resampled_ref_sex_header,
+                         path=os.path.join(self.get_sub_output_dir(), resampled_ref_sex_header['BASENAME']))
+            logger.info(
+                f"Saved reference image to {os.path.join(self.get_sub_output_dir(), resampled_ref_sex_header['BASENAME'])}")
 
             sci_resamp_x_cent, sci_resamp_y_cent, sci_resamp_ra_cent, sci_resamp_dec_cent, \
             sci_resamp_pixscale, sci_resamp_x_imgsize, sci_resamp_y_imgsize, \
             sci_resamp_gain = self.get_image_header_params(resampled_sci_header)
             sci_sextractor = self.ref_sextractor(
-                                                 output_sub_dir=self.temp_output_subtract_dir,
-                                                 gain=sci_resamp_gain
-                                                 )
-            [resampled_sci_sex_image], [resampled_sci_sex_header] \
-                = ref_sextractor.apply([resampled_sci_image, resampled_sci_header])
+                output_sub_dir=self.temp_output_subtract_dir,
+                gain=sci_resamp_gain
+            )
+            [[resampled_sci_sex_image], [resampled_sci_sex_header]] \
+                = ref_sextractor.apply([[resampled_sci_image], [resampled_sci_header]])
 
             ref_psfex = self.ref_psfex(output_sub_dir=self.temp_output_subtract_dir, norm_fits=True)
 
-            [resampled_ref_sex_image], [resampled_ref_sex_psf_header] = ref_psfex.apply(
+            [[resampled_ref_sex_image], [resampled_ref_sex_psf_header]] = ref_psfex.apply(
                 [[resampled_ref_sex_image], [resampled_ref_sex_header]])
 
             resampled_sci_sex_header["REFPSF"] = resampled_ref_sex_psf_header[norm_psfex_header_key]
