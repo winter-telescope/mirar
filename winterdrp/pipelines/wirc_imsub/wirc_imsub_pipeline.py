@@ -67,7 +67,7 @@ def wirc_reference_sextractor(output_sub_dir, gain):
                       starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                       gain=gain,
                       output_sub_dir=output_sub_dir,
-                      cache=True
+                      cache=False
                       )
 
 
@@ -138,7 +138,7 @@ class WircImsubPipeline(Pipeline):
                        filter_path='winterdrp/pipelines/wirc_imsub/config/default.conv',
                        starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                        output_sub_dir='subtract',
-                       cache=True),
+                       cache=False),
             PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
                   output_sub_dir="subtract",
                   norm_fits=True),
