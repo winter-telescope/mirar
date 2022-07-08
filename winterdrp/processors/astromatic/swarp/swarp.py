@@ -40,6 +40,7 @@ def run_swarp(
 ):  # resample and stack images with swarp
     """
     Resample and stack given images with swarp
+
     Parameters
     ----------
     stack_list_path : string
@@ -119,7 +120,6 @@ class Swarp(BaseImageProcessor):
             center_dec: float = None,
             include_scamp: bool = True,
             combine=False,
-            cache=False,
             *args,
             **kwargs
     ):
@@ -134,7 +134,6 @@ class Swarp(BaseImageProcessor):
         self.y_imgpixsize = y_imgpixsize
         self.include_scamp = include_scamp
         self.combine = combine
-        self.cache = cache
         logger.info(f'Night is {self.night}')
 
     def get_swarp_output_dir(self):
@@ -153,6 +152,7 @@ class Swarp(BaseImageProcessor):
         except OSError:
             pass
 
+        logger.info(headers[0]["BASENAME"])
         swarp_image_list_path = os.path.join(
             swarp_output_dir,
             os.path.splitext(headers[0]["BASENAME"])[0] + "_swarp_img_list.txt"
