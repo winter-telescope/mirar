@@ -36,7 +36,9 @@ def run_swarp(
         propogate_headerlist: list = None,
         center_ra: float = None,
         center_dec: float = None,
-        combine: bool = True
+        combine: bool = True,
+        gain: float = None,
+        subtract_bkg: bool = False
 ):  # resample and stack images with swarp
     """
     Resample and stack given images with swarp
@@ -59,9 +61,12 @@ def run_swarp(
     swarp_command = f'swarp -c {swarp_config_path} ' \
                     f'@{stack_list_path} ' \
                     f'-IMAGEOUT_NAME {out_path} ' \
-                    f'-RESAMPLE Y -RESAMPLE_DIR {os.path.dirname(out_path)} ' \
-                    f'-SUBTRACT_BACK N '
+                    f'-RESAMPLE Y -RESAMPLE_DIR {os.path.dirname(out_path)} '
 
+    if subtract_bkg:
+        swarp_command += f'-SUBTRACT Y '
+    else:
+        swarp_command += f'-SUBTRACT N '
     if combine:
         swarp_command += f'-COMBINE Y -COMBINE_TYPE MEDIAN '
     else:
@@ -92,7 +97,8 @@ def run_swarp(
         if y_imgpixsize is not None:
             swarp_command += f',{y_imgpixsize}'
 
-    print(swarp_command)
+    if gain is not None:
+        swarp_command += f' -GAIN {gain}'
 
     execute(swarp_command)
 
@@ -116,9 +122,11 @@ class Swarp(BaseImageProcessor):
             propogate_headerlist: list = None,
             center_ra: float = None,
             center_dec: float = None,
+            gain: float = None,
             include_scamp: bool = True,
-            combine=False,
-            cache=False,
+            combine: bool =False,
+            cache: bool =False,
+            subtract_bkg: bool = False,
             *args,
             **kwargs
     ):
@@ -134,6 +142,8 @@ class Swarp(BaseImageProcessor):
         self.include_scamp = include_scamp
         self.combine = combine
         self.cache = cache
+        self.gain = gain
+        self.subtract_bkg = subtract_bkg
         logger.info(f'Night is {self.night}')
 
     def get_swarp_output_dir(self):
@@ -259,7 +269,9 @@ class Swarp(BaseImageProcessor):
             propogate_headerlist=self.propogate_headerlist,
             center_ra=self.center_ra,
             center_dec=self.center_dec,
-            combine=self.combine
+            combine=self.combine,
+            gain=self.gain,
+            subtract_bkg=self.subtract_bkg
         )
 
         # Check if output image exists if combine is no
@@ -297,9 +309,10 @@ class Swarp(BaseImageProcessor):
         # here.....load
         # up
         # comps
-        for temp_file in temp_files:
-            os.remove(temp_file)
-            logger.info(f"Deleted temporary file {temp_file}")
+        if not self.cache:
+            for temp_file in temp_files:
+                os.remove(temp_file)
+                logger.info(f"Deleted temporary file {temp_file}")
 
         new_header[base_name_key] = os.path.basename(output_image_path)
         new_header[latest_mask_save_key] = os.path.basename(output_image_weight_path)

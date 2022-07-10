@@ -97,7 +97,8 @@ class Reference(BaseImageProcessor):
                 night_sub_dir=self.night_sub_dir,
                 include_scamp=False,
                 combine=False,
-                gain=ref_gain
+                gain=ref_gain,
+                subtract_bkg=True
             )
 
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
@@ -122,7 +123,8 @@ class Reference(BaseImageProcessor):
                 night_sub_dir=self.night_sub_dir,
                 include_scamp=False,
                 combine=False,
-                gain=sci_gain
+                gain=sci_gain,
+                subtract_bkg=True
             )
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
             [[resampled_sci_image], [resampled_sci_header]] = sci_resampler.apply([[image], [header]])
