@@ -89,7 +89,7 @@ class ZOGY(BaseImageProcessor):
             #     logger.info(f"Deleted temporary file {temp_file}")
             diff_images.append(D)
             diff_headers.append(header)
-        return images, headers
+        return diff_images, diff_headers
 
 
 class ZOGYPrepare(BaseImageProcessor):
