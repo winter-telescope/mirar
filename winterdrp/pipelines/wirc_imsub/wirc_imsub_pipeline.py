@@ -17,7 +17,8 @@ from winterdrp.processors.candidates.candidate_filter import FilterCandidates
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
 from winterdrp.paths import core_fields, base_name_key
-from winterdrp.processors.candidates.utils import RegionsWriter
+from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
+from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
 logger = logging.getLogger(__name__)
 
 
@@ -156,7 +157,9 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                              cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
                              cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
-            RegionsWriter(output_dir_name='subtract'),
+            RegionsWriter(output_dir_name='candidates'),
+            PSFPhotometry(),
+            DataframeWriter(output_dir_name='candidates'),
             EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
             # AvroPacketMaker(output_sub_dir="avro")
