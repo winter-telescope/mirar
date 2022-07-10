@@ -31,6 +31,7 @@ class Sextractor(BaseImageProcessor):
             gain: float = None,
             dual: bool = False,
             cache: bool = False,
+            mag_zp :float = None,
             *args,
             **kwargs
     ):
@@ -48,6 +49,7 @@ class Sextractor(BaseImageProcessor):
         self.gain = gain
         self.dual = dual
         self.cache = cache
+        self.mag_zp = mag_zp
 
     def get_sextractor_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
@@ -71,6 +73,9 @@ class Sextractor(BaseImageProcessor):
             data = images[i]
 
             det_image, measure_image, det_header, measure_header = None, None, None, None
+            if self.gain is None:
+                if 'GAIN' in header.keys():
+                    self.gain = header['GAIN']
             if self.dual:
                 det_header = headers[i][0]
                 measure_header = headers[i][1]
@@ -133,7 +138,8 @@ class Sextractor(BaseImageProcessor):
                     checkimage_name=self.checkimage_name,
                     checkimage_type=self.checkimage_type,
                     gain=self.gain,
-                    catalog_name=output_cat
+                    catalog_name=output_cat,
+                    mag_zp=self.mag_zp
                 )
 
             logger.info(f'Cache save is {self.cache}')
