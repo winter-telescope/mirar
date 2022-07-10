@@ -1,0 +1,1 @@
+from winterdrp.processors.candidates.utils.regions_writer import RegionsWriter
