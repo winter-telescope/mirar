@@ -175,7 +175,7 @@ class DetectCandidates(BaseCandidateGenerator):
         display_diff_ims = []
 
         for ind, src in enumerate(det_srcs):
-            logger.info(f'Cand # {ind}')
+            # logger.info(f'Cand # {ind}')
             xpeak, ypeak = int(xpeaks[ind]), int(ypeaks[ind])
             scorr_peak = scorr_peaks[ind]
 
@@ -212,9 +212,13 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs['psf_magerr'] = 1.086 * det_srcs['psf_fluxunc'] / det_srcs['psf_flux']
         det_srcs['ZP'] = diff_zp
 
+        det_srcs['diffimname'] = diff_filename
+        det_srcs['sciimname'] = sci_resamp_imagename
+        det_srcs['refimname'] = ref_resamp_imagename
+
         # det_srcs.write(sci_resamp_imagename + '.candidates.dat', format='ascii', overwrite=True)
         det_srcs = det_srcs.to_pandas()
-        det_srcs.to_pickle(sci_resamp_imagename + '.candidates.pkl')
+        # det_srcs.to_pickle(sci_resamp_imagename + '.candidates.pkl')
         return det_srcs
 
     def _apply_to_images(
@@ -232,6 +236,7 @@ class DetectCandidates(BaseCandidateGenerator):
             diff_psf_path = os.path.join(self.get_sub_output_dir(), header["DIFFPSF"])
             diff_unc_path = os.path.join(self.get_sub_output_dir(), header["DIFFUNC"])
 
+            scorr_mask_path = os.path.join(self.get_sub_output_dir(),header["SCORMASK"])
             cands_catalog_name = diff_image_path.replace('.fits', '.dets')
             cands_catalog_name = run_sextractor_dual(
                 det_image=scorr_image_path,
@@ -242,6 +247,7 @@ class DetectCandidates(BaseCandidateGenerator):
                 parameters_name=self.cand_det_sextractor_params,
                 filter_name=self.cand_det_sextractor_filter,
                 starnnw_name=self.cand_det_sextractor_nnw,
+                weight_image=scorr_mask_path,
                 gain=1.0
             )
 
