@@ -17,8 +17,7 @@ from winterdrp.processors.candidates.candidate_filter import FilterCandidates
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
 from winterdrp.paths import core_fields, base_name_key
-
-
+from winterdrp.processors.candidates.utils import RegionsWriter
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +34,7 @@ def wirc_reference_image_generator(
     )
 
 
-def wirc_reference_image_resampler(pixsize,
+def wirc_reference_image_resampler(pixscale,
                                    x_imgpixsize,
                                    y_imgpixsize,
                                    center_ra,
@@ -44,10 +43,12 @@ def wirc_reference_image_resampler(pixsize,
                                    temp_output_sub_dir,
                                    night_sub_dir,
                                    include_scamp,
-                                   combine):
+                                   combine,
+                                   gain,
+                                   subtract_bkg):
     logger.debug(f'Night sub dir is {night_sub_dir}')
     return Swarp(swarp_config_path='~/wirc_imsub/config/config.swarp',
-                 pixsize=pixsize,
+                 pixscale=pixscale,
                  x_imgpixsize=x_imgpixsize,
                  y_imgpixsize=y_imgpixsize,
                  center_ra=center_ra,
@@ -56,7 +57,10 @@ def wirc_reference_image_resampler(pixsize,
                  temp_output_sub_dir=temp_output_sub_dir,
                  night_sub_dir=night_sub_dir,
                  include_scamp=include_scamp,
-                 combine=combine
+                 combine=combine,
+                 gain=gain,
+                 cache=False,
+                 subtract_bkg=subtract_bkg
                  )
 
 
@@ -75,7 +79,7 @@ def wirc_reference_psfex(output_sub_dir, norm_fits):
     return PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
                  output_sub_dir=output_sub_dir,
                  norm_fits=norm_fits,
-                 cache=True
+                 cache=False
                  )
 
 
@@ -105,6 +109,8 @@ def load_raw_wirc_image(
         if not 'CALSTEPS' in header.keys():
             logger.debug('Setting CALSTEPS to blank')
             header['CALSTEPS'] = ''
+
+        data[data == 0] = np.nan
     return data, header
 
 
@@ -125,6 +131,7 @@ class WircImsubPipeline(Pipeline):
                 input_sub_dir="raw",
                 load_image=load_raw_wirc_image
             ),
+            ImageBatcher(split_key='UTSHUT'),
             ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210330.fits")),
             Reference(
                 ref_image_generator=wirc_reference_image_generator,
@@ -149,9 +156,9 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                              cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
                              cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
-            EdgeCandidatesMask(edge_boundary_size=100),
+            RegionsWriter(output_dir_name='subtract'),
+            EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
             # AvroPacketMaker(output_sub_dir="avro")
         ]
     }
-
