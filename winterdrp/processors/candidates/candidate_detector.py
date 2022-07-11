@@ -207,3 +207,4 @@ class DetectCandidates(BaseCandidateGenerator):
             all_cands_list.append(cands_table)
 
         return pd.concat(all_cands_list)
+
