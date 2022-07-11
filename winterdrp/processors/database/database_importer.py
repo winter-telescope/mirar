@@ -6,7 +6,6 @@ import pandas as pd
 
 from winterdrp.processors.base_processor import BaseImageProcessor, BaseDataframeProcessor
 import logging
-from winterdrp.processors.database.postgres import export_to_db
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
 
 logger = logging.getLogger(__name__)
