@@ -282,34 +282,69 @@ def export_to_db(
     return primary_key, primary_key_values
 
 
-def import_entry_from_db(
+def import_from_db(
         db_name: str,
         db_table: str,
-        db_query_column: str,
-        db_accepted_value: str | int | float,
+        db_query_columns: str | list[str],
+        db_accepted_values: str | int | float | list[str | float | int],
         db_output_columns: str | list[str],
         db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
         password: str = os.environ.get('PG_DEFAULT_PWD'),
-) -> dict:
+) -> list[dict]:
+    """Query an SQL database with constraints, and return a list of dictionaries.
+    One dictionary per entry returned from the query.
+
+    Parameters
+    ----------
+    db_name: Name of database to query
+    db_table: Name of database table to query
+    db_query_columns: Name of column to query
+    db_accepted_values: Accepted value for query for column
+    db_output_columns: Name(s) of columns to return for matched database entries
+    db_user: Username for database
+    password: password for database
+
+    Returns
+    -------
+    A list of dictionaries (one per entry)
+    """
+
+    if not isinstance(db_query_columns, list):
+        db_query_columns = [db_query_columns]
+
+    if not isinstance(db_accepted_values, list):
+        db_accepted_values = [db_accepted_values]
 
     if not isinstance(db_output_columns, list):
         db_output_columns = [db_output_columns]
 
-    query_res = dict()
+    assert len(db_query_columns) == len(db_accepted_values)
+
+    all_query_res = []
+
+    constraints = " AND ".join([f"{x} = {db_accepted_values[i]}" for i, x in enumerate(db_query_columns)])
 
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
         sql_query = f"""
         SELECT {', '.join(db_output_columns)} from {db_table}
-            WHERE {db_query_column} = {db_accepted_value}
+            WHERE {constraints};
         """
 
+        logger.debug(f"Query: {sql_query}")
+
         with conn.execute(sql_query) as cursor:
-            primary_key_values = cursor.fetchall()[0]
+            query_output = cursor.fetchall()
 
-        assert len(primary_key_values) == len(db_output_columns)
+        for entry in query_output:
 
-        for i, key in enumerate(db_output_columns):
-            query_res[key] = primary_key_values[i]
+            assert len(entry) == len(db_output_columns)
 
-    return query_res
+            query_res = dict()
+
+            for i, key in enumerate(db_output_columns):
+                query_res[key] = entry[i]
+
+            all_query_res.append(query_res)
+
+    return all_query_res
