@@ -21,11 +21,6 @@ import time
 from winterdrp.processors.base_processor import BaseDataframeProcessor
 from winterdrp.paths import get_output_dir
 
-# TODO remove once candids are being read in
-# generate random integer values
-from random import seed
-from random import randint
-
 logger = logging.getLogger(__name__)
 
 
@@ -59,6 +54,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         self.make_alert(False, candidate_table) 
         return candidate_table
     
+    def get_sub_output_dir(self):
+        return get_output_dir(self.output_sub_dir, self.night_sub_dir)
+
     def read_input_df(self, df):
         """Takes a DataFrame, which has multiple candidate 
         and creates list of dictionaries, each dictionary 
@@ -142,9 +140,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Returns:
             (str): next candidate name in sequence.
         """ 
-
         curyear = Time(candjd, format = 'jd').datetime.strftime('%Y')[2:4]
-        logger.info(f'curr year: {curyear}')
 
         if lastname is None:
             #If this is the first source being named
@@ -269,33 +265,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             candid (number type): candidate id.
             records (list): a list of dictionaries
             avro_schema (avro.schema.RecordSchema): schema definition.
-        """
-        # avro_sub_dir = '%d.avro'%candid
-        
-        # filename = get_output_dir(self.output_sub_dir)
-        # logger.info(f'exists? {os.path.exists(filename)}')
-
-        # logger.info(f'output dir: {filename}')
-        # full = os.path.join(filename, str(candid) + '.avro')
-        # logger.info(f'full {full}')
-
-        # ## Write data to an avro file
-        # with open(full, 'wb') as f:
-        #     writer = avro.io.DataFileWriter(f, avro.io.DatumWriter(), schema)
-        #     writer.append(records)
-        #     writer.close() 
-
-        # out = open(full, 'wb')
-        # logger.info(f'avro alert saved to {out}')
-        # fastavro.writer(out, schema, records)
-        # out.close()
-
-        # TODO remove once candid being read in
-        # generate some integers
-        value = randint(0, 500)
-        candid = candid + value
-
-        out = open('%d.avro'%candid, 'wb')
+        """        
+        avro_packet_path = os.path.join(self.get_sub_output_dir(), str(candid) + '.avro')
+        out = open(avro_packet_path, 'wb')
         logger.info(f'out file: {out}')
         fastavro.writer(out, schema, records)
         out.close()
@@ -355,10 +327,10 @@ class AvroPacketMaker(BaseDataframeProcessor):
         logger.info('####################################')
         logger.info(f'{num_cands} candidates in dict...making packets')
 
-        # TODO: lastname needs to updated from database
+        # TODO: fake!! remove; lastname, cand_id needs to updated from database
         last_name = None
-
         first = True
+        cand_id = 100
 
         for cand in all_cands:
 
@@ -371,9 +343,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             cand_name = self.get_next_name(last_name, fake_jd)
             # logger.info(f'cand name: {cand_name}')
             
-            # TODO candid should be coming from naming database?
-            cand_id = 111
+            # TODO candid should be coming from naming database
             cand['candid'] = cand_id
+            cand_id += 1
 
             # TODO
             # check if cand is new? 
@@ -399,17 +371,17 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
 
         # Read data from an avro file
-        with open('111.avro', 'rb') as f:
+        first_packet_path = os.path.join(self.get_sub_output_dir(), '100.avro')
+        with open(first_packet_path, 'rb') as f:
             reader = DataFileReader(f, DatumReader())
             metadata = copy.deepcopy(reader.meta)
             schema_from_file = json.loads(metadata['avro.schema'])
             cand_data = [field_data for field_data in reader]
             reader.close()
 
-        # logger.info(f'Schema that we specified:\n {schema}')
         logger.info(f'Schema that we parsed:\n {schema}')
         logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
-        logger.info(f'Candidate:\n {cand_data}')
-        logger.info(f'type{type(cand_data)}')
+        # logger.info(f'Candidate:\n {cand_data}')
+        # logger.info(f'type{type(cand_data)}')
 
 
