@@ -111,33 +111,12 @@ class DetectCandidates(BaseCandidateGenerator):
         cutout_size_psf_phot = 20
         cutout_size_display = 40
 
-        # psfmodels = self.make_psf_shifted_array(diff_psf_filename, cutout_size_psf_phot)
-
-        # det_srcs['psf_flux'] = np.zeros(len(det_srcs))
-        # det_srcs['psf_fluxunc'] = np.zeros(len(det_srcs))
-        # det_srcs['minchi2'] = np.zeros(len(det_srcs))
-        # det_srcs['xshift'] = np.zeros(len(det_srcs))
-        # det_srcs['yshift'] = np.zeros(len(det_srcs))
-
         display_sci_ims = []
         display_ref_ims = []
         display_diff_ims = []
 
         for ind, src in enumerate(det_srcs):
-            # logger.info(f'Cand # {ind}')
             xpeak, ypeak = int(xpeaks[ind]), int(ypeaks[ind])
-            scorr_peak = scorr_peaks[ind]
-
-            # diff_cutout = self.make_alert_cutouts(diff_filename, (xpeak, ypeak), cutout_size_psf_phot)
-            # diff_unc_cutout = self.make_alert_cutouts(diff_unc_filename, (xpeak, ypeak), cutout_size_psf_phot)
-            # psf_flux, psf_fluxunc, minchi2, xshift, yshift = self.psf_photometry(diff_cutout, diff_unc_cutout,
-            #                                                                      psfmodels)
-
-            # src['psf_flux'] = psf_flux
-            # src['psf_fluxunc'] = psf_fluxunc
-            # src['minchi2'] = minchi2
-            # src['xshift'] = xshift
-            # src['yshift'] = yshift
 
             display_sci_cutout = self.make_alert_cutouts(sci_resamp_imagename, (xpeak, ypeak), cutout_size_display)
             display_ref_cutout = self.make_alert_cutouts(ref_resamp_imagename, (xpeak, ypeak), cutout_size_display)
@@ -156,19 +135,28 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs['DiffBitIm'] = display_diff_ims
 
         diff_zp = float(fits.getval(diff_filename, 'TMC_ZP'))
-        # det_srcs['psf_mag'] = diff_zp - 2.5 * np.log10(det_srcs['psf_flux'])
-        # det_srcs['psf_magerr'] = 1.086 * det_srcs['psf_fluxunc'] / det_srcs['psf_flux']
-        det_srcs['ZP'] = diff_zp
+        det_srcs['magzpsci'] = diff_zp
+        diff_zp_unc = float(fits.getval(diff_filename,'TMC_ZPSD'))
+        det_srcs['magzpsciunc'] = diff_zp_unc
 
         det_srcs['diffimname'] = diff_filename
         det_srcs['sciimname'] = sci_resamp_imagename
         det_srcs['refimname'] = ref_resamp_imagename
         det_srcs['diffpsfname'] = diff_psf_filename
         det_srcs['diffuncname'] = diff_unc_filename
+        det_srcs['ra'] = det_srcs['ALPHA_J2000']
+        det_srcs['dec'] = det_srcs['DELTA_J2000']
+        det_srcs['fwhm'] = det_srcs['FWHM_IMAGE']
+        det_srcs['aimage'] = det_srcs['A_IMAGE']
+        det_srcs['bimage'] = det_srcs['B_IMAGE']
+        det_srcs['aimagerat'] = det_srcs['aimage']/det_srcs['fwhm']
+        det_srcs['bimagerat'] = det_srcs['bimage']/det_srcs['fwhm']
+        det_srcs['elong'] = det_srcs['ELONGATION']
 
-        # det_srcs.write(sci_resamp_imagename + '.candidates.dat', format='ascii', overwrite=True)
+        det_srcs['jd'] = fits.getval(sci_resamp_imagename,'MJD-OBS')+2400000.5
+        det_srcs['exptime'] = fits.getval(diff_filename,'EXPTIME')
         det_srcs = det_srcs.to_pandas()
-        # det_srcs.to_pickle(sci_resamp_imagename + '.candidates.pkl')
+
         return det_srcs
 
     def _apply_to_images(
