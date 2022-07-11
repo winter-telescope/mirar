@@ -8,7 +8,7 @@ from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.downloader.caltech import download_via_ssh
 from astropy.time import Time
 from winterdrp.catalog import Gaia2Mass, PS1
-from winterdrp.processors.database.database_exporter import DatabaseExporter
+from winterdrp.processors.database.database_exporter import DatabaseImageExporter
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
@@ -173,7 +173,7 @@ class SummerPipeline(Pipeline):
                                 base_name_key
                             ] + core_fields
             ),
-            DatabaseExporter(
+            DatabaseImageExporter(
                 db_name=pipeline_name,
                 db_table="exposures",
                 schema_path=get_summer_schema_path("exposures"),
@@ -187,7 +187,7 @@ class SummerPipeline(Pipeline):
             #     n_y=2
             # ),
             # ImageSaver(output_dir_name="rawimages"),
-            DatabaseExporter(
+            DatabaseImageExporter(
                 db_name=pipeline_name,
                 db_table="raw",
                 schema_path=get_summer_schema_path("raw")
@@ -224,7 +224,7 @@ class SummerPipeline(Pipeline):
             ImageSaver(output_dir_name="processed"),
             PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
             ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG']),
-            DatabaseExporter(
+            DatabaseImageExporter(
                 db_name=pipeline_name,
                 db_table="proc",
                 schema_path=get_summer_schema_path("proc")
