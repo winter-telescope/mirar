@@ -2,8 +2,12 @@ import astropy.table
 import os
 import logging
 import astropy.io.fits
+import pandas as pd
+
 from winterdrp.utils.ldac_tools import save_table_as_ldac
 from winterdrp.paths import base_name_key
+from penquins import Kowalski
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +74,7 @@ class BaseCatalog:
     def get_catalog_from_header(
             self,
             header: astropy.io.fits.header
-            ) -> astropy.table:
+    ) -> astropy.table:
         ra_deg = header['CRVAL1']
         dec_deg = header['CRVAL2']
 
@@ -80,3 +84,80 @@ class BaseCatalog:
         )
 
         return cat
+
+
+class BaseXMatchCatalog:
+
+    @property
+    def abbreviation(self):
+        raise NotImplementedError
+
+    @property
+    def catalog_name(self):
+        raise NotImplementedError
+
+    @property
+    def projection(self):
+        raise NotImplementedError
+
+    @property
+    def column_names(self):
+        raise NotImplementedError
+
+    @property
+    def column_dtypes(self):
+        raise NotImplementedError
+
+    def __init__(self,
+                 search_radius_arcsec: float = 10,
+                 num_sources: int = 1,
+                 *args,
+                 **kwargs
+                 ):
+        super(BaseXMatchCatalog, self).__init__(*args, **kwargs)
+        self.search_radius_arcsec = search_radius_arcsec
+        self.num_sources = num_sources
+
+    def query(self, coords: dict) -> dict:
+        raise NotImplementedError
+
+
+class BaseKowalskiXMatch(BaseXMatchCatalog):
+
+    def __init__(self,
+                 kowalski: Kowalski,
+                 max_time_ms: float = 10000,
+                 *args,
+                 **kwargs):
+        super(BaseKowalskiXMatch, self).__init__(*args,**kwargs)
+        self.kowalski = kowalski
+        self.max_time_ms = max_time_ms
+
+    def near_query_kowalski(self, coords: dict) -> dict:
+        query = {
+            "query_type": "near",
+            "query": {
+                "max_distance": self.search_radius_arcsec,
+                "distance_units": "arcsec",
+                "radec": coords,
+                "catalogs": {
+                    f"{self.catalog_name}": {
+                        "filter": {},
+                        "projection": self.projection,
+                    }
+                }
+            },
+            "kwargs": {
+                "max_time_ms": self.max_time_ms,
+                "limit": self.num_sources,
+            },
+        }
+        logger.info(f'Kowalski is {self.kowalski}')
+        response = self.kowalski.query(query=query)
+        data = response.get("data")
+        return data[self.catalog_name]
+
+    def query(self, coords) -> dict:
+        logger.info('Querying kowalski')
+        data = self.near_query_kowalski(coords)
+        return data

@@ -66,6 +66,7 @@ class Reference(BaseImageProcessor):
 
             ref_image = self.ref_image_generator(header)
             ref_image_path = ref_image.write_reference(header=header, output_dir=self.get_sub_output_dir())
+
             ref_data, ref_header = open_fits(ref_image_path)
 
             if not (base_name_key in ref_header.keys()):
@@ -73,17 +74,20 @@ class Reference(BaseImageProcessor):
                 ref_header[base_name_key] = os.path.basename(ref_image_path)
 
             # ref_header[base_name_key] = ref_header[base_name_key] + '_ref'
+            ref_gain = ref_header['GAIN']
 
             sci_x_cent, sci_y_cent = header['NAXIS1'] / 2, header['NAXIS2'] / 2
             wcs = WCS(header)
             [sci_ra_cent, sci_dec_cent] = wcs.all_pix2world(sci_x_cent, sci_y_cent, 1)
+
             sci_pixscale = np.abs(header['CD1_1']) * 3600
             sci_x_imgsize, sci_y_imgsize = header['NAXIS1'], header['NAXIS2']
             sci_gain = header['GAIN']
+            logger.info(f'{sci_pixscale}, {sci_gain}')
 
             propogate_headerlist = ['TMC_ZP', 'TMC_ZPSD']
             ref_resampler = self.ref_swarp_resampler(
-                pixsize=sci_pixscale,
+                pixscale=sci_pixscale,
                 x_imgpixsize=sci_x_imgsize,
                 y_imgpixsize=sci_y_imgsize,
                 center_ra=sci_ra_cent,
@@ -92,18 +96,26 @@ class Reference(BaseImageProcessor):
                 temp_output_sub_dir=self.temp_output_subtract_dir,
                 night_sub_dir=self.night_sub_dir,
                 include_scamp=False,
-                combine=False
+                combine=False,
+                gain=ref_gain,
+                subtract_bkg=True
             )
 
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
             [[resampled_ref_image], [resampled_ref_header]] = ref_resampler.apply([[ref_data], [ref_header]])
 
+
+            save_to_path(data=resampled_ref_image, header=resampled_ref_header,
+                         path=os.path.join(self.get_sub_output_dir(), resampled_ref_header['BASENAME']))
+
+
             ref_resamp_x_cent, ref_resamp_y_cent, ref_resamp_ra_cent, ref_resamp_dec_cent, \
             ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
             ref_resamp_gain = self.get_image_header_params(resampled_ref_header)
 
+            sci_gain = header['GAIN']
             sci_resampler = self.ref_swarp_resampler(
-                pixsize=ref_resamp_pixscale,
+                pixscale=ref_resamp_pixscale,
                 x_imgpixsize=ref_resamp_x_imgsize,
                 y_imgpixsize=ref_resamp_y_imgsize,
                 center_ra=ref_resamp_ra_cent,
@@ -112,7 +124,9 @@ class Reference(BaseImageProcessor):
                 temp_output_sub_dir=self.temp_output_subtract_dir,
                 night_sub_dir=self.night_sub_dir,
                 include_scamp=False,
-                combine=False
+                combine=False,
+                gain=sci_gain,
+                subtract_bkg=True
             )
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
             [[resampled_sci_image], [resampled_sci_header]] = sci_resampler.apply([[image], [header]])
@@ -124,6 +138,7 @@ class Reference(BaseImageProcessor):
             ref_sextractor.set_night(night_sub_dir=self.night_sub_dir)
             [[resampled_ref_sex_image], [resampled_ref_sex_header]] \
                 = ref_sextractor.apply([[resampled_ref_image], [resampled_ref_header]])
+
             save_to_path(data=resampled_ref_sex_image, header=resampled_ref_sex_header,
                          path=os.path.join(self.get_sub_output_dir(), resampled_ref_sex_header['BASENAME']))
             logger.info(
@@ -138,6 +153,10 @@ class Reference(BaseImageProcessor):
             )
             [[resampled_sci_sex_image], [resampled_sci_sex_header]] \
                 = ref_sextractor.apply([[resampled_sci_image], [resampled_sci_header]])
+
+            save_to_path(data=resampled_sci_sex_image, header=resampled_sci_sex_header,
+                         path=os.path.join(self.get_sub_output_dir(), resampled_sci_sex_header['BASENAME']))
+
 
             ref_psfex = self.ref_psfex(output_sub_dir=self.temp_output_subtract_dir, norm_fits=True)
 

@@ -2,7 +2,7 @@ import astropy.io.fits
 import numpy as np
 import os
 import logging
-from winterdrp.processors.base_processor import BaseImageProcessor, PrerequisiteError
+from winterdrp.processors.base_processor import BaseProcessor, PrerequisiteError
 from winterdrp.paths import get_output_dir, copy_temp_file
 from collections.abc import Callable
 from winterdrp.catalog.base_catalog import BaseCatalog
@@ -28,7 +28,7 @@ REQUIRED_PARAMETERS = [
 ]
 
 
-class PhotCalibrator(BaseImageProcessor):
+class PhotCalibrator(BaseProcessor):
     base_key = 'photcalibrator'
 
     def __init__(self,
@@ -119,13 +119,7 @@ class PhotCalibrator(BaseImageProcessor):
                 logger.error(err)
                 raise ProcessorError(err)
 
-            if np.isnan(zp_mean):
-                zp_mean = -99
-            if np.isnan(zp_med):
-                zp_med = -99
-            if np.isnan(zp_std):
-                zp_std = -99
-            zero_dict = {'diameter': apertures[i], 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
+            zero_dict = {'diameter': aperture, 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
                          'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
                          'mag_apers': matched_img_cat['MAG_APER'][:, i][np.invert(cl_offset.mask)]}
             zeropoints.append(zero_dict)

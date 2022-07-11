@@ -3,6 +3,7 @@ import logging
 import astropy.io.fits
 from winterdrp.utils.fits_tools import save_HDU_as_fits
 from winterdrp.paths import base_name_key
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +42,8 @@ class BaseReferenceGenerator:
 
         # This is because Swarp requires the COADDS keyword. I am setting it to zero manually
         if not 'COADDS' in refHDU.header.keys():
-            logger.debug('Setting COADDS to 0')
-            refHDU.header['COADDS'] = 0
+            logger.debug('Setting COADDS to 1')
+            refHDU.header['COADDS'] = 1
         if not 'CALSTEPS' in refHDU.header.keys():
             logger.debug('Setting CALSTEPS to blank')
             refHDU.header['CALSTEPS'] = ''
@@ -51,7 +52,8 @@ class BaseReferenceGenerator:
             os.remove(output_path)
 
         logger.info(f"Saving reference image to {output_path}")
-
+        refHDU.header[base_name_key] = os.path.basename(output_path)
+        refHDU.data[refHDU.data==0] = np.nan
         save_HDU_as_fits(refHDU, output_path)
 
         return output_path

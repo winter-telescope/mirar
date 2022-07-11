@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class ZOGY(BaseImageProcessor):
     base_key = "ZOGY"
+
     def __init__(self,
                  output_sub_dir: str = "sub",
                  *args,
@@ -33,22 +34,25 @@ class ZOGY(BaseImageProcessor):
             images: list[np.ndarray],
             headers: list[fits.Header],
     ) -> tuple[list[np.ndarray], list[fits.Header]]:
+        diff_images, diff_headers = [], []
         for ind, header in enumerate(headers):
             sci_image_path = os.path.join(self.get_sub_output_dir(), header["SCISCL"])
             ref_image_path = os.path.join(self.get_sub_output_dir(), header["REFSCL"])
             sci_rms = header["SCIRMS"]
             ref_rms = header["REFRMS"]
-            sci_psf = os.path.join(self.get_sub_output_dir(),header[norm_psfex_header_key])
-            ref_psf = os.path.join(self.get_sub_output_dir(),header["REFPSF"])
-            sci_rms_image = os.path.join(self.get_sub_output_dir(),header["SCUNCPTH"])
+            sci_psf = os.path.join(self.get_sub_output_dir(), header[norm_psfex_header_key])
+            ref_psf = os.path.join(self.get_sub_output_dir(), header["REFPSF"])
+            sci_rms_image = os.path.join(self.get_sub_output_dir(), header["SCUNCPTH"])
             ref_rms_image = os.path.join(self.get_sub_output_dir(), header["RFUNCPTH"])
             ast_unc_x = header["ASTUNCX"]
             ast_unc_y = header["ASTUNCY"]
 
+            temp_files = [sci_image_path, ref_image_path, sci_rms_image, ref_rms_image]
+
             D, P_D, S_corr = py_zogy(sci_image_path, ref_image_path, sci_psf, ref_psf, sci_rms_image,
                                      ref_rms_image, sci_rms, ref_rms, dx=ast_unc_x, dy=ast_unc_y)
 
-            diff_image_path = sci_image_path.replace('.fits','')+ '.diff.fits'
+            diff_image_path = sci_image_path.replace('.fits', '') + '.diff.fits'
             self.save_fits(data=D,
                            header=header,
                            path=os.path.join(self.get_sub_output_dir(), diff_image_path))
@@ -58,9 +62,11 @@ class ZOGY(BaseImageProcessor):
                            header=None,
                            path=os.path.join(self.get_sub_output_dir(), diff_psf_path))
 
-            scorr_image_path = sci_image_path.replace('.fits','') + '.scorr.fits'
+            scorr_image_path = sci_image_path.replace('.fits', '') + '.scorr.fits'
+            scorr_header = header.copy()
+            scorr_header[latest_mask_save_key] = header['SCORMASK']
             self.save_fits(data=S_corr,
-                           header=header,
+                           header=scorr_header,
                            path=os.path.join(self.get_sub_output_dir(), scorr_image_path))
             scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(S_corr)
             logger.info(f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}")
@@ -78,7 +84,12 @@ class ZOGY(BaseImageProcessor):
             header["DIFFSCR"] = scorr_image_path
             header["DIFFUNC"] = diff_rms_path
 
-        return images, headers
+            # for temp_file in temp_files:
+            #     os.remove(temp_file)
+            #     logger.info(f"Deleted temporary file {temp_file}")
+            diff_images.append(D)
+            diff_headers.append(header)
+        return diff_images, diff_headers
 
 
 class ZOGYPrepare(BaseImageProcessor):
@@ -166,18 +177,36 @@ class ZOGYPrepare(BaseImageProcessor):
 
             ref_data, ref_header = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_img_path))
             ref_catalog_path = ref_header["SRCCAT"]
+            ref_mask_path = ref_header["MASKPATH"]
+
             sci_catalog_path = header["SRCCAT"]
+            sci_mask_path = header["MASKPATH"]
+
+            ref_weight_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_mask_path))
+            sci_weight_data, sci_weight_header = self.open_fits(os.path.join(self.get_sub_output_dir(), sci_mask_path))
+
+            image_mask = (sci_weight_data == 0) | (ref_weight_data == 0)
+            sci_data[image_mask] = 0
+            ref_data[image_mask] = 0
+
+            scorr_mask_data = sci_weight_data*ref_weight_data
+            scorr_header = sci_weight_header
+            scorr_mask_path = sci_img_path.replace('.fits', '.scorr.weight.fits')
+            self.save_fits(data=scorr_mask_data,
+                           header=scorr_header,
+                           path=os.path.join(self.get_sub_output_dir(), scorr_mask_path)
+                           )
 
             ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(ref_catalog_path, sci_catalog_path)
 
             ref_data = ref_data * flux_scale
             ref_unscaled_zp = ref_header['TMC_ZP']
-            ref_header['TMC_ZP'] = float(ref_header['TMC_ZP']) + 2.5*np.log10(flux_scale)
+            ref_header['TMC_ZP'] = float(ref_header['TMC_ZP']) + 2.5 * np.log10(flux_scale)
 
             ref_scaled_path = ref_img_path + '.scaled'
             self.save_fits(data=ref_data,
                            header=ref_header,
-                           path=os.path.join(os.path.join(self.get_sub_output_dir(), ref_scaled_path))
+                           path=os.path.join(self.get_sub_output_dir(), ref_scaled_path)
                            )
 
             logger.info(f"Zeropoints are reference : {ref_unscaled_zp}, scaled reference : {ref_header['TMC_ZP']} and "
@@ -195,8 +224,8 @@ class ZOGYPrepare(BaseImageProcessor):
                     np.percentile(ref_data[ref_data != 0], 84.13) - np.percentile(ref_data[ref_data != 0], 15.86))
             logger.info('Science RMS is %.2f. Reference RMS is %.2f' % (sci_rms, ref_rms))
 
-            sci_weight_path = header[latest_mask_save_key]
-            ref_weight_path = header[latest_mask_save_key]
+            sci_weight_path = os.path.join(self.get_sub_output_dir(), header[latest_mask_save_key])
+            ref_weight_path = os.path.join(self.get_sub_output_dir(), header[latest_mask_save_key])
             sci_weight_data, _ = open_fits(sci_weight_path)
             ref_weight_data, _ = open_fits(ref_weight_path)
 
@@ -230,5 +259,6 @@ class ZOGYPrepare(BaseImageProcessor):
             header["RFUNCPTH"] = ref_rms_path
             header["SCISCL"] = sci_scaled_path
             header["REFSCL"] = ref_scaled_path
+            header['SCORMASK'] = scorr_mask_path
 
         return images, headers
