@@ -90,10 +90,13 @@ class PSFPhotometry(BaseDataframeProcessor):
             xshifts.append(xshift)
             yshifts.append(yshift)
 
+
         candidate_table['psf_flux'] = fluxes
         candidate_table['psf_fluxunc'] = fluxuncs
-        candidate_table['minchi2'] = minchi2s
+        candidate_table['chipsf'] = minchi2s
         candidate_table['xshift'] = xshifts
         candidate_table['yshift'] = yshifts
 
+        candidate_table['magpsf'] = candidate_table['magzpsci'] - 2.5 * np.log10(candidate_table['psf_flux'])
+        candidate_table['sigmapsf'] = 1.086 * candidate_table['psf_fluxunc'] / candidate_table['psf_flux']
         return candidate_table
