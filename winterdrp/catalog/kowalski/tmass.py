@@ -5,8 +5,9 @@ import penquins
 
 class TMASS(BaseKowalskiXMatch):
     catalog_name = "2MASS_PSC"
-
+    abbreviation = "tm"
     projection = {
+        "_id":0,
         "designation": 1,
         "ra": 1,
         "decl": 1,
@@ -21,14 +22,15 @@ class TMASS(BaseKowalskiXMatch):
 
     column_names = {
         "ra": "tmra",
-        "dec": "tmdec",
+        "decl": "tmdec",
         "j_m": "tmjmag",
         "h_m": "tmhmag",
         "k_m": "tmkmag",
         "j_msigcom": "tmjmagerr",
-        "h_msigcom": "tmhmagerr",
-        "k_msigcom": "tmkmagerr",
+        "h_cmsigcom": "tmhmagerr",
+        "k_cmsigcom": "tmkmagerr",
         "designation": "tmobjectid",
+        "ph_qual":"tmph_qual",
     }
 
     column_dtypes = {
@@ -41,6 +43,7 @@ class TMASS(BaseKowalskiXMatch):
         "tmhmagerr": float,
         "tmkmagerr": float,
         "tmobjectid": str,
+        "tmph_qual": str
     }
 
     def __init__(self,
