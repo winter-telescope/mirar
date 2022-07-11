@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseExporter(BaseDatabaseProcessor, BaseImageProcessor):
-    base_key = "dbexport"
 
     def _apply_to_images(
             self,
