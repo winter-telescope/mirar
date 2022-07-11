@@ -7,18 +7,19 @@ from winterdrp.processors.reference import Reference
 from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare
 from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 import numpy as np
-from astropy.io import fits
+from astropy.io import fits, ascii
 import os
 from astropy.time import Time
 import logging
-from winterdrp.processors.candidates.edge_mask import EdgeCandidatesMask
-from winterdrp.processors.candidates.candidate_filter import FilterCandidates
 # from winterdrp.processors.alert_packets.avro_alert import AvroPacketMaker
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
 from winterdrp.paths import core_fields, base_name_key
 from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
 from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
+from penquins import Kowalski
+from winterdrp.catalog.kowalski import TMASS, PS1
+from winterdrp.processors.xmatch import XMatch
 logger = logging.getLogger(__name__)
 
 
@@ -83,10 +84,18 @@ def wirc_reference_psfex(output_sub_dir, norm_fits):
                  cache=False
                  )
 
-
 def detect_candidates_sextractor():
     pass
 
+def get_kowalski():
+    secrets = ascii.read('/Users/viraj/ztf_utils/secrets.csv', format='csv')
+    username_kowalski = secrets['kowalski_user'][0]
+    password_kowalski = secrets['kowalski_pwd'][0]
+    protocol, host, port = "https", "kowalski.caltech.edu", 443
+    k = Kowalski(username=username_kowalski, password=password_kowalski, protocol=protocol, host=host, port=port)
+    connection_ok = k.ping()
+    logger.info(f'Connection OK: {connection_ok}')
+    return k
 
 def load_raw_wirc_image(
         path: str
@@ -160,7 +169,18 @@ class WircImsubPipeline(Pipeline):
             RegionsWriter(output_dir_name='candidates'),
             PSFPhotometry(),
             DataframeWriter(output_dir_name='candidates'),
-            EdgeCandidatesMask(edge_boundary_size=100)
+            XMatch(
+                catalog=TMASS(kowalski=get_kowalski()),
+                num_stars=3,
+                search_radius_arcsec=30
+                   ),
+            XMatch(
+                catalog=PS1(kowalski=get_kowalski()),
+                num_stars=3,
+                search_radius_arcsec=30
+            ),
+            DataframeWriter(output_dir_name='kowalski')
+            # EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
             # AvroPacketMaker(output_sub_dir="avro")
         ]
