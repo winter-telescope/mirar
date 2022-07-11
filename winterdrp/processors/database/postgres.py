@@ -1,3 +1,4 @@
+import astropy.io.fits
 import psycopg
 from astropy.io import fits
 import os
@@ -225,7 +226,11 @@ def create_tables_from_schema(
 
 
 def export_to_db(
-        header, db_user, password, db_name, db_table
+        value_dict: dict | astropy.io.fits.Header,
+        db_name: str,
+        db_table: str,
+        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        password: str = os.environ.get('PG_DEFAULT_PWD'),
 ) -> tuple[str, list]:
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
@@ -258,8 +263,8 @@ def export_to_db(
                 txt = txt.replace(char, '')
 
             for c in colnames:
-                logger.debug(f"{c}, {header[c.upper()]}")
-                txt += f"'{str(header[c.upper()])}', "
+                logger.debug(f"{c}, {value_dict[c.upper()]}")
+                txt += f"'{str(value_dict[c.upper()])}', "
 
             txt = txt + ') '
             txt = txt.replace(', )', ')')
@@ -275,3 +280,36 @@ def export_to_db(
             primary_key_values = cursor.fetchall()[0]
 
     return primary_key, primary_key_values
+
+
+def import_entry_from_db(
+        db_name: str,
+        db_table: str,
+        db_query_column: str,
+        db_accepted_value: str | int | float,
+        db_output_columns: str | list[str],
+        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        password: str = os.environ.get('PG_DEFAULT_PWD'),
+) -> dict:
+
+    if not isinstance(db_output_columns, list):
+        db_output_columns = [db_output_columns]
+
+    query_res = dict()
+
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        conn.autocommit = True
+        sql_query = f"""
+        SELECT {', '.join(db_output_columns)} from {db_table}
+            WHERE {db_query_column} = {db_accepted_value}
+        """
+
+        with conn.execute(sql_query) as cursor:
+            primary_key_values = cursor.fetchall()[0]
+
+        assert len(primary_key_values) == len(db_output_columns)
+
+        for i, key in enumerate(db_output_columns):
+            query_res[key] = primary_key_values[i]
+
+    return query_res
