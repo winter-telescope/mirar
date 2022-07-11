@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 pg_default_user = os.getenv('PG_DEFAULT_USER')
+
 if pg_default_user is None:
     err = "No default psql user for database (postgres) specified. Run 'export PG_DEFAULT_USER=user (usually home or " \
           "pgadmin)' "
@@ -16,6 +17,3 @@ if pg_default_user is None:
     logger.error(err)
     raise ValueError(err)
 
-
-class DataBaseError(ProcessorError):
-    pass

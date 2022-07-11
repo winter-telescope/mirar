@@ -8,6 +8,7 @@ from winterdrp.processors.database.base_database_processor import BaseDatabasePr
 
 logger = logging.getLogger(__name__)
 
+
 class DatabaseExporter(BaseDatabaseProcessor, BaseImageProcessor):
     base_key = "dbexport"
 

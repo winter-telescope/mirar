@@ -9,13 +9,41 @@ import astropy.units as u
 from winterdrp.processors.database.paths import schema_dir
 from psycopg.errors import Error
 import logging
+from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
 
+default_db_user = os.path.basename(os.environ["HOME"])
 
-def create_db(db_name, db_user, password):
-    db_user = os.environ['PG_DEFAULT_USER']
-    password = os.environ['PG_DEFAULT_PWD']
+
+class DataBaseError(ProcessorError):
+    pass
+
+
+def validate_credentials(
+        db_user: str,
+        password: str
+):
+    if db_user is None:
+        err = "'db_user' is set as None. Please pass a db_user as an argument, " \
+              "or set the environment variable 'PG_DEFAULT_USER'. Using "
+        logger.warning(err)
+        raise DataBaseError(err)
+
+    if password is None:
+        err = "'password' is set as None. Please pass a password as an argument, " \
+              "or set the environment variable 'PG_DEFAULT_PWD'."
+        logger.error(err)
+        raise DataBaseError(err)
+
+
+def create_db(
+        db_name: str,
+        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        password: str = os.environ.get('PG_DEFAULT_PWD')
+):
+    validate_credentials(db_user=db_user, password=password)
+
     with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
         conn.autocommit = True
         sql = f'''CREATE database {db_name}'''
@@ -23,34 +51,57 @@ def create_db(db_name, db_user, password):
         logger.info(f'Created db {db_name}')
 
 
-def create_table(schema_path, db_name, db_user, password, db_host='localhost'):  # db_host?
+def create_table(
+        schema_path: str,
+        db_name: str,
+        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        password: str = os.environ.get('PG_DEFAULT_PWD')
+):
+    validate_credentials(db_user, password)
+
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
         with open(schema_path, "r") as f:
             conn.execute(f.read())
 
 
-def create_user(db_user, password):
-    default_user = os.environ['PG_DEFAULT_USER']
-    default_password = os.environ['PG_DEFAULT_PWD']
+def create_new_user(
+        new_db_user: str,
+        new_password: str
+):
+    default_user = os.environ.get('PG_DEFAULT_USER')
+    default_password = os.environ.get('PG_DEFAULT_PWD')
+
+    validate_credentials(new_db_user, new_password)
+    validate_credentials(db_user=default_user, password=default_password)
+
     with psycopg.connect(f"dbname=postgres user={default_user} password={default_password}") as conn:
         conn.autocommit = True
-        command = f'''CREATE ROLE {db_user} WITH password '{password}';'''
+        command = f'''CREATE ROLE {new_db_user} WITH password '{new_password}';'''
         conn.execute(command)
 
 
-def grant_privileges(db_name, db_user):
-    default_user = os.environ['PG_DEFAULT_USER']
-    default_password = os.environ['PG_DEFAULT_PWD']
+def grant_privileges(
+        db_name: str,
+        db_user: str
+):
+    default_user = os.environ.get('PG_DEFAULT_USER')
+    default_password = os.environ.get('PG_DEFAULT_PWD')
+    validate_credentials(default_user, default_password)
+
     with psycopg.connect(f"dbname=postgres user={default_user} password={default_password}") as conn:
         conn.autocommit = True
         command = f'''GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {db_user};'''
         conn.execute(command)
 
 
-def check_if_user_exists(user_name):
-    db_user = os.environ['PG_DEFAULT_USER']
-    password = os.environ['PG_DEFAULT_PWD']
+def check_if_user_exists(
+        user_name: str,
+        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        password: str = os.environ.get('PG_DEFAULT_PWD')
+) -> bool:
+
+    validate_credentials(db_user, password)
 
     with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
         conn.autocommit = True
@@ -64,10 +115,14 @@ def check_if_user_exists(user_name):
     return user_exist_bool
 
 
-def check_if_db_exists(db_name):  # db_host?
-    db_user = os.environ['PG_DEFAULT_USER']
-    password = os.environ['PG_DEFAULT_PWD']
-    # logger.debug(f'Setting user={db_user}')
+def check_if_db_exists(
+        db_name: str,
+        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        password: str = os.environ.get('PG_DEFAULT_PWD')
+) -> bool:
+
+    validate_credentials(db_user, password)
+
     with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
         conn.autocommit = True
         command = '''SELECT datname FROM pg_database;'''
@@ -82,7 +137,15 @@ def check_if_db_exists(db_name):  # db_host?
     return db_exist_bool
 
 
-def check_if_table_exists(db_name, db_table, db_user, password):  # db_host?
+def check_if_table_exists(
+        db_name: str,
+        db_table: str,
+        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        password: str = os.environ.get('PG_DEFAULT_PWD')
+) -> bool:
+
+    validate_credentials(db_user=db_user, password=password)
+
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
         command = '''SELECT datname FROM pg_database;'''
@@ -97,31 +160,34 @@ def check_if_table_exists(db_name, db_table, db_user, password):  # db_host?
     return db_exist_bool
 
 
-def get_foreign_tables_list(schema_files):
+def get_foreign_tables_list(
+        schema_files: list[str]
+) -> np.ndarray:
     foreign_tables_list = []
     for schema_file in schema_files:
         table_names = []
         with open(schema_file, 'r') as f:
             schema = f.read()
-        if not "FOREIGN KEY" in schema:
+        if "FOREIGN KEY" not in schema:
             pass
         else:
             schema = schema.replace("\n", "")
             schema = schema.replace("\t", "")
             schema_split = np.array(schema.split(","))
-            fkrows = np.array(["FOREIGN KEY" in x for x in schema_split])
-            for row in schema_split[fkrows]:
+            fk_rows = np.array(["FOREIGN KEY" in x for x in schema_split])
+            for row in schema_split[fk_rows]:
                 words = np.array(row.split(" "))
                 refmask = np.array(["REFERENCES" in x for x in words])
                 idx = np.where(refmask)[0][0] + 1
                 tablename = words[idx].split("(")[0]
                 table_names.append(tablename)
         foreign_tables_list.append(np.array(table_names))
-    foreign_tables_list = np.array(foreign_tables_list)
-    return foreign_tables_list
+    return np.array(foreign_tables_list)
 
 
-def get_ordered_schema_list(schema_files):
+def get_ordered_schema_list(
+        schema_files: list[str]
+) -> list[str]:
     foreign_tables_list = get_foreign_tables_list(schema_files)
     ordered_schema_list = []
     tables_created = []
@@ -144,12 +210,17 @@ def get_ordered_schema_list(schema_files):
     return ordered_schema_list
 
 
-def create_tables_from_schema(schema_dir, db_name, db_user, db_password):
+def create_tables_from_schema(
+        schema_dir: str,
+        db_name: str,
+        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        password: str = os.environ.get('PG_DEFAULT_PWD')
+):
     schema_files = glob(f'{schema_dir}/*.sql')
     ordered_schema_files = get_ordered_schema_list(schema_files)
     logger.info(f"Creating the following tables - {ordered_schema_files}")
     for schema_file in ordered_schema_files:
-        create_table(schema_path=schema_file, db_name=db_name, db_user=db_user, password=db_password)
+        create_table(schema_path=schema_file, db_name=db_name, db_user=db_user, password=password)
 
 
 def insert_exposures(header2, db_user, password, db_name='commissioning'):
@@ -340,6 +411,7 @@ def set_up_db(
         except Error as e:
             err = f"Error processing image {path} :'{e}'"
             logger.error(err)
+            raise DataBaseError(err)
         # except FileExistsError:
         #     pass
         # except KeyboardInterrupt:
