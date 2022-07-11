@@ -6,7 +6,6 @@ from astropy.time import Time
 import numpy as np
 from astropy.coordinates import SkyCoord
 import astropy.units as u
-from winterdrp.processors.database.paths import schema_dir
 from psycopg.errors import Error
 import logging
 from winterdrp.errors import ProcessorError
@@ -14,6 +13,8 @@ from winterdrp.errors import ProcessorError
 logger = logging.getLogger(__name__)
 
 default_db_user = os.path.basename(os.environ["HOME"])
+
+schema_dir = os.path.join(os.path.dirname(__file__), "schema")
 
 
 class DataBaseError(ProcessorError):
