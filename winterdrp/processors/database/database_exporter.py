@@ -1,6 +1,6 @@
 import astropy.io.fits
 import numpy as np
-import os
+from abc import ABC
 from winterdrp.processors.base_processor import BaseImageProcessor
 import logging
 from winterdrp.processors.database.postgres import DataBaseError, export_to_db
@@ -9,7 +9,11 @@ from winterdrp.processors.database.base_database_processor import BaseDatabasePr
 logger = logging.getLogger(__name__)
 
 
-class DatabaseExporter(BaseDatabaseProcessor, BaseImageProcessor):
+class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
+    base_key = "dbexporter"
+
+
+class DatabaseExporter(BaseDatabaseExporter, BaseImageProcessor):
 
     def _apply_to_images(
             self,
