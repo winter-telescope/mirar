@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 class PrerequisiteError(BaseException):
     pass
 
+
 class ImageHandler:
     @staticmethod
     def open_fits(

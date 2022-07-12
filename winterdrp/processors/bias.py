@@ -4,7 +4,7 @@ from winterdrp.processors.base_processor import ProcessorWithCache
 from collections.abc import Callable
 import astropy.io.fits
 from winterdrp.processors.utils.image_selector import select_from_images
-
+from winterdrp.paths import latest_save_key, bias_frame_key
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,12 @@ class BiasCalibrator(ProcessorWithCache):
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
-        master_bias, _ = self.get_cache_file(images, headers)
+        master_bias, master_bias_header = self.get_cache_file(images, headers)
 
         for i, data in enumerate(images):
             data = data - master_bias
             images[i] = data
+            headers[i][bias_frame_key] = master_bias_header[latest_save_key]
 
         return images, headers
 

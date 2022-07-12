@@ -5,6 +5,7 @@ import sys
 from winterdrp.processors.base_processor import ProcessorWithCache
 from winterdrp.processors.utils.image_selector import select_from_images
 from collections.abc import Callable
+from winterdrp.paths import latest_save_key, flat_frame_key
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class FlatCalibrator(ProcessorWithCache):
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
-        master_flat, _ = self.get_cache_file(images, headers)
+        master_flat, master_flat_header = self.get_cache_file(images, headers)
 
         mask = master_flat <= self.flat_nan_threshold
 
@@ -57,6 +58,7 @@ class FlatCalibrator(ProcessorWithCache):
 
             data = data / master_flat
 
+            header[flat_frame_key] = master_flat_header[latest_save_key]
             images[i] = data
             headers[i] = header
 

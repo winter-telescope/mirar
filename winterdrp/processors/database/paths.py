@@ -1,1 +1,0 @@
-schema_dir = '/Users/viraj/winter_telescope/winter_drp/winterdrp/processors/database/schema'

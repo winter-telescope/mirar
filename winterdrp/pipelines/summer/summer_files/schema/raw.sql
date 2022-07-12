@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS raw (
     rawid SERIAL PRIMARY KEY,
-    subid INT,
+    savepath VARCHAR(255),
     obsdate INT,
     obsID INT,
     itid INT,
