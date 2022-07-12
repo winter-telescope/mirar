@@ -1,13 +1,8 @@
 import astropy.io.fits
 import psycopg
-from astropy.io import fits
 import os
 from glob import glob
-from astropy.time import Time
 import numpy as np
-from astropy.coordinates import SkyCoord
-import astropy.units as u
-from psycopg.errors import Error
 import logging
 from winterdrp.errors import ProcessorError
 
