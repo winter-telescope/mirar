@@ -18,6 +18,15 @@ class BaseDatabaseImporter(BaseDatabaseProcessor, ABC):
 
     base_key = "dbimporter"
 
+    def __init__(
+            self,
+            boolean_match_key: str = None,
+            *args,
+            **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.boolean_match_key = boolean_match_key
+
 
 def update_header_with_single_match(
         header: Header,
@@ -67,7 +76,12 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
                 password=self.db_password
             )
 
-            headers[i] = self.update_header(header, res)
+            new_header = self.update_header(header, res)
+
+            if self.boolean_match_key is not None:
+                new_header[self.boolean_match_key] = len(res) > 0
+
+            headers[i] = new_header
 
         return images, headers
 
@@ -89,9 +103,6 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
     def get_constraints(self, header) -> list[str]:
         accepted_values = [header[x.upper()] for x in self.db_query_columns]
         return accepted_values
-
-
-
 
 
 class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor):
