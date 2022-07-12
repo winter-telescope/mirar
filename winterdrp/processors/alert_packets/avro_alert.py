@@ -74,9 +74,14 @@ class AvroPacketMaker(BaseDataframeProcessor):
             candidate = {} 
             for key in df.keys():
                 try: 
-                    candidate[key] = df.iloc[i].get(key).item() # change to native python type
+                    if type(df.iloc[i].get(key)) is str:
+                        candidate[key] = df.iloc[i].get(key)   
+                    else:
+                        # change to native python type
+                        candidate[key] = df.iloc[i].get(key).item()
                 except AttributeError: # for IOBytes objs
                     candidate[key] = df.iloc[i].get(key).getvalue()
+                                                 
             all_candidates.append(candidate)
 
         return all_candidates 
