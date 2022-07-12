@@ -93,21 +93,34 @@ def detect_candidates_sextractor():
 
 
 def get_kowalski():
-    # secrets = ascii.read('/Users/viraj/ztf_utils/secrets.csv', format='csv')
-    username_kowalski = os.environ.get('kowalski_user')
-    password_kowalski = os.environ.get('kowalski_pwd')
-    if username_kowalski is None:
-        err = 'Kowalski username not provided, please run export kowalski_user=<user>'
-        logger.error(err)
-        raise ValueError
-    if password_kowalski is None:
-        err = 'Kowalski password not provided, please run export KOWALSKI_PWD=<user>'
-        logger.error(err)
-        raise ValueError
     protocol, host, port = "https", "kowalski.caltech.edu", 443
-    k = Kowalski(username=username_kowalski, password=password_kowalski, protocol=protocol, host=host, port=port)
+
+    token_kowalski = os.environ.get("kowalski_token")
+
+    if token_kowalski is not None:
+        logger.debug("Using kowalski token")
+
+        k = Kowalski(token=token_kowalski, protocol=protocol, host=host, port=port)
+
+    else:
+
+        username_kowalski = os.environ.get('kowalski_user')
+        password_kowalski = os.environ.get('kowalski_pwd')
+    
+        if username_kowalski is None:
+            err = 'Kowalski username not provided, please run export kowalski_user=<user>'
+            logger.error(err)
+            raise ValueError
+        if password_kowalski is None:
+            err = 'Kowalski password not provided, please run export KOWALSKI_PWD=<user>'
+            logger.error(err)
+            raise ValueError
+
+        k = Kowalski(username=username_kowalski, password=password_kowalski, protocol=protocol, host=host, port=port)
+
     connection_ok = k.ping()
-    logger.info(f'Connection OK: {connection_ok}')
+    logger.info(f'Connection OK?: {connection_ok}')
+
     return k
 
 
