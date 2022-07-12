@@ -4,7 +4,8 @@ from winterdrp.processors.base_processor import BaseProcessor
 import logging
 from abc import ABC
 from winterdrp.processors.database.postgres import check_if_db_exists, check_if_user_exists, check_if_table_exists,\
-    create_db, create_table, create_new_user, grant_privileges, create_tables_from_schema, DataBaseError
+    create_db, create_table, create_new_user, grant_privileges, create_tables_from_schema, DataBaseError, \
+    default_db_user
 
 
 logger = logging.getLogger(__name__)
@@ -17,8 +18,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             db_name: str,
             db_table: str,
             schema_path: str,
-            db_user: str = os.path.basename(os.environ["HOME"]),
-            db_password: str = "FIXME",
+            db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+            db_password: str = os.environ.get('PG_DEFAULT_PWD'),
             full_setup: bool = False,
             schema_dir: str = None,
             *args,
