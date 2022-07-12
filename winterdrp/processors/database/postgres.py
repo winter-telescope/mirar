@@ -13,8 +13,6 @@ from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
 
-default_db_user = os.path.basename(os.environ["HOME"])
-
 schema_dir = os.path.join(os.path.dirname(__file__), "schema")
 
 
@@ -41,7 +39,7 @@ def validate_credentials(
 
 def create_db(
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ):
     validate_credentials(db_user=db_user, password=password)
@@ -56,7 +54,7 @@ def create_db(
 def create_table(
         schema_path: str,
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ):
     validate_credentials(db_user, password)
@@ -99,7 +97,7 @@ def grant_privileges(
 
 def check_if_user_exists(
         user_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ) -> bool:
 
@@ -119,7 +117,7 @@ def check_if_user_exists(
 
 def check_if_db_exists(
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ) -> bool:
 
@@ -142,7 +140,7 @@ def check_if_db_exists(
 def check_if_table_exists(
         db_name: str,
         db_table: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ) -> bool:
 
@@ -215,7 +213,7 @@ def get_ordered_schema_list(
 def create_tables_from_schema(
         schema_dir: str,
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ):
     schema_files = glob(f'{schema_dir}/*.sql')
@@ -229,7 +227,7 @@ def export_to_db(
         value_dict: dict | astropy.io.fits.Header,
         db_name: str,
         db_table: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD'),
 ) -> tuple[str, list]:
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
@@ -289,7 +287,7 @@ def import_from_db(
         db_accepted_values: str | int | float | list[str | float | int],
         db_output_columns: str | list[str],
         output_alias_map: str | list[str],
-        db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+        db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD'),
 ) -> list[dict]:
     """Query an SQL database with constraints, and return a list of dictionaries.

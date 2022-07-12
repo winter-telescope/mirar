@@ -18,7 +18,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             db_name: str,
             db_table: str,
             schema_path: str,
-            db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
+            db_user: str = os.environ.get('PG_DEFAULT_USER'),
             db_password: str = os.environ.get('PG_DEFAULT_PWD'),
             full_setup: bool = False,
             schema_dir: str = None,
