@@ -104,10 +104,8 @@ class Reference(BaseImageProcessor):
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
             [[resampled_ref_image], [resampled_ref_header]] = ref_resampler.apply([[ref_data], [ref_header]])
 
-
             save_to_path(data=resampled_ref_image, header=resampled_ref_header,
                          path=os.path.join(self.get_sub_output_dir(), resampled_ref_header['BASENAME']))
-
 
             ref_resamp_x_cent, ref_resamp_y_cent, ref_resamp_ra_cent, ref_resamp_dec_cent, \
             ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
@@ -153,10 +151,8 @@ class Reference(BaseImageProcessor):
             )
             [[resampled_sci_sex_image], [resampled_sci_sex_header]] \
                 = ref_sextractor.apply([[resampled_sci_image], [resampled_sci_header]])
-
             save_to_path(data=resampled_sci_sex_image, header=resampled_sci_sex_header,
                          path=os.path.join(self.get_sub_output_dir(), resampled_sci_sex_header['BASENAME']))
-
 
             ref_psfex = self.ref_psfex(output_sub_dir=self.temp_output_subtract_dir, norm_fits=True)
 

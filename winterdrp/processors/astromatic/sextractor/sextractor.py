@@ -51,7 +51,6 @@ class Sextractor(BaseImageProcessor):
         self.cache = cache
         self.mag_zp = mag_zp
 
-
     def get_sextractor_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 

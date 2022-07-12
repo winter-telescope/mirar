@@ -96,7 +96,7 @@ def get_kowalski():
     username_kowalski = os.environ.get('kowalski_user')
     password_kowalski = os.environ.get('kowalski_pwd')
     if username_kowalski is None:
-        err = 'Kowalski username not provided, please run export KOWALSKI_USER=<user>'
+        err = 'Kowalski username not provided, please run export kowalski_user=<user>'
         logger.error(err)
         raise ValueError
     if password_kowalski is None:
