@@ -1,5 +1,7 @@
+astroplan
 astropy[recommended]
 astroquery
+avro-python3==1.10.1 
 docker
 ephem
 jupyter
@@ -7,7 +9,6 @@ matplotlib
 numpy
 pandas
 psycopg
-wget
-astroplan
 psycopg[binary]
 pyfftw
+wget
