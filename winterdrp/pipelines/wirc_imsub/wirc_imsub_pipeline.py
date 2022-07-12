@@ -137,30 +137,6 @@ def load_raw_wirc_image(
     return data, header
 
 
-def load_raw_wirc_image(
-        path: str
-) -> tuple[np.array, fits.Header]:
-    with fits.open(path) as img:
-        data = img[0].data
-        header = img[0].header
-        header["FILTER"] = header["AFT"].split("__")[0]
-        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
-        header["CALSTEPS"] = ""
-        header["BASENAME"] = os.path.basename(path)
-        header["TARGET"] = header["OBJECT"].lower()
-        header["UTCTIME"] = header["UTSHUT"]
-        header["MJD-OBS"] = Time(header['UTSHUT']).mjd
-        # header.append(('GAIN', self.gain, 'Gain in electrons / ADU'), end=True)
-        # header = self.set_saturation(header)
-        if not 'COADDS' in header.keys():
-            logger.debug('Setting COADDS to 0')
-            header['COADDS'] = 0
-        if not 'CALSTEPS' in header.keys():
-            logger.debug('Setting CALSTEPS to blank')
-            header['CALSTEPS'] = ''
-    return data, header
-
-
 class WircImsubPipeline(Pipeline):
     name = "wirc_imsub"
 
