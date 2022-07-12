@@ -51,7 +51,7 @@ def wirc_reference_image_resampler(pixscale,
                                    gain,
                                    subtract_bkg):
     logger.debug(f'Night sub dir is {night_sub_dir}')
-    return Swarp(swarp_config_path='~/wirc_imsub/config/config.swarp',
+    return Swarp(swarp_config_path='winterdrp/pipelines/wirc_imsub/config/config.swarp',
                  pixscale=pixscale,
                  x_imgpixsize=x_imgpixsize,
                  y_imgpixsize=y_imgpixsize,
