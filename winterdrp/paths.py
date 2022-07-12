@@ -167,7 +167,7 @@ flat_frame_key = 'FLATNAME'
 bias_frame_key = 'BIASNAME'
 dark_frame_key = 'DARKNAME'
 
-core_fields = ["OBSCLASS", "TARGET", "UTCTIME", "COADDS", raw_img_key]
+core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
 
 
 class ProcessingError(Exception):
