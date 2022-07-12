@@ -58,6 +58,8 @@ def load_raw_wirc_image(
             header[coadd_key] = 1
         if proc_history_key not in header.keys():
             header[proc_history_key] = ""
+
+        data[data == 0] = np.nan
     return data, header
 
 
