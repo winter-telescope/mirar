@@ -33,33 +33,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         self.full_setup = full_setup
         self.schema_path = schema_path
         self.schema_dir = schema_dir
-
-        # logger.error("Here...")
-
-        if np.logical_and(self.db_exists(), np.invert(self.user_exists())):
-            err = 'Database exists but user does not exist'
-            logger.error(err)
-            raise DataBaseError(err)
-
-        if not self.db_exists():
-            self.make_db()
-
-            if not self.user_exists():
-                self.make_user()
-
-            self.grant_privileges()
-
-            if self.full_setup:
-                if self.schema_dir is None:
-                    self.schema_dir = os.path.dirname(self.schema_path)
-                    logger.warning(f'Warning, full db setup requested, but no schema directory specified. \
-                    Will search for schema files in {self.schema_dir} directory.')
-                logger.info(f'Looking in {self.schema_dir} directory to search for schema files')
-
-                create_tables_from_schema(self.schema_dir, self.db_name, self.db_user, self.db_password)
-
-        if not self.table_exists():
-            self.make_table(schema_path)
+        self.db_check = False
 
     def db_exists(self):
         return check_if_db_exists(
@@ -96,5 +70,40 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             db_user=self.db_user,
             password=self.db_password
         )
+
+    def apply(self, batch):
+
+        if not self.db_check:
+            self.set_up_databases()
+            self.db_check = True
+
+        super(BaseDatabaseProcessor, self).apply(batch)
+        
+    def set_up_databases(self):
+
+        if np.logical_and(self.db_exists(), np.invert(self.user_exists())):
+            err = 'Database exists but user does not exist'
+            logger.error(err)
+            raise DataBaseError(err)
+
+        if not self.db_exists():
+            self.make_db()
+
+            if not self.user_exists():
+                self.make_user()
+
+            self.grant_privileges()
+
+            if self.full_setup:
+                if self.schema_dir is None:
+                    self.schema_dir = os.path.dirname(self.schema_path)
+                    logger.warning(f'Warning, full db setup requested, but no schema directory specified. \
+                    Will search for schema files in {self.schema_dir} directory.')
+                logger.info(f'Looking in {self.schema_dir} directory to search for schema files')
+
+                create_tables_from_schema(self.schema_dir, self.db_name, self.db_user, self.db_password)
+
+        if not self.table_exists():
+            self.make_table(self.schema_path)
 
 
