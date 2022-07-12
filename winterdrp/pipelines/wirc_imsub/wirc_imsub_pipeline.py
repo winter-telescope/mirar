@@ -86,18 +86,29 @@ def wirc_reference_psfex(output_sub_dir, norm_fits):
                  cache=False
                  )
 
+
 def detect_candidates_sextractor():
     pass
 
+
 def get_kowalski():
-    secrets = ascii.read('/Users/viraj/ztf_utils/secrets.csv', format='csv')
-    username_kowalski = secrets['kowalski_user'][0]
-    password_kowalski = secrets['kowalski_pwd'][0]
+    # secrets = ascii.read('/Users/viraj/ztf_utils/secrets.csv', format='csv')
+    username_kowalski = os.environ.get('kowalski_user')
+    password_kowalski = os.environ.get('kowalski_pwd')
+    if username_kowalski is None:
+        err = 'Kowalski username not provided, please run export KOWALSKI_USER=<user>'
+        logger.error(err)
+        raise ValueError
+    if password_kowalski is None:
+        err = 'Kowalski password not provided, please run export KOWALSKI_PWD=<user>'
+        logger.error(err)
+        raise ValueError
     protocol, host, port = "https", "kowalski.caltech.edu", 443
     k = Kowalski(username=username_kowalski, password=password_kowalski, protocol=protocol, host=host, port=port)
     connection_ok = k.ping()
     logger.info(f'Connection OK: {connection_ok}')
     return k
+
 
 def load_raw_wirc_image(
         path: str
@@ -199,7 +210,7 @@ class WircImsubPipeline(Pipeline):
                 catalog=TMASS(kowalski=get_kowalski()),
                 num_stars=3,
                 search_radius_arcsec=30
-                   ),
+            ),
             XMatch(
                 catalog=PS1(kowalski=get_kowalski()),
                 num_stars=3,
