@@ -63,7 +63,7 @@ def wirc_reference_image_resampler(pixscale,
                  include_scamp=include_scamp,
                  combine=combine,
                  gain=gain,
-                 cache=False,
+                 cache=True,
                  subtract_bkg=subtract_bkg
                  )
 
@@ -75,7 +75,7 @@ def wirc_reference_sextractor(output_sub_dir, gain):
                       starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
                       gain=gain,
                       output_sub_dir=output_sub_dir,
-                      cache=False
+                      cache=True
                       )
 
 
@@ -83,7 +83,7 @@ def wirc_reference_psfex(output_sub_dir, norm_fits):
     return PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
                  output_sub_dir=output_sub_dir,
                  norm_fits=norm_fits,
-                 cache=False
+                 cache=True
                  )
 
 
