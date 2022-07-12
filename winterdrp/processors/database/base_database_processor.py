@@ -4,8 +4,7 @@ from winterdrp.processors.base_processor import BaseProcessor
 import logging
 from abc import ABC
 from winterdrp.processors.database.postgres import check_if_db_exists, check_if_user_exists, check_if_table_exists,\
-    create_db, create_table, create_new_user, grant_privileges, create_tables_from_schema, DataBaseError, \
-    default_db_user
+    create_db, create_table, create_new_user, grant_privileges, create_tables_from_schema, DataBaseError
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +77,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             self.db_check = True
 
         super(BaseDatabaseProcessor, self).apply(batch)
-        
+
     def set_up_databases(self):
 
         if np.logical_and(self.db_exists(), np.invert(self.user_exists())):
