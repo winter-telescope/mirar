@@ -62,12 +62,12 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
                 db_query_columns=query_columns,
                 db_accepted_values=accepted_values,
                 db_output_columns=self.db_output_columns,
-                output_alias_map=output_alias_map,
+                output_alias_map=self.output_alias_map,
                 db_user=self.db_user,
                 password=self.db_password
             )
 
-            headers[i] = self.update_header(header, res, output_alias_map)
+            headers[i] = self.update_header(header, res)
 
         return images, headers
 
@@ -89,6 +89,9 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
     def get_constraints(self, header) -> list[str]:
         accepted_values = [header[x.upper()] for x in self.db_query_columns]
         return accepted_values
+
+
+
 
 
 class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor):
