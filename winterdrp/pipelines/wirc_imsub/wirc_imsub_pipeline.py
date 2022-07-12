@@ -21,6 +21,7 @@ from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
 from penquins import Kowalski
 from winterdrp.catalog.kowalski import TMASS, PS1
 from winterdrp.processors.xmatch import XMatch
+from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image
 
 logger = logging.getLogger(__name__)
 
@@ -108,33 +109,6 @@ def get_kowalski():
     connection_ok = k.ping()
     logger.info(f'Connection OK: {connection_ok}')
     return k
-
-
-def load_raw_wirc_image(
-        path: str
-) -> tuple[np.array, fits.Header]:
-    with fits.open(path) as img:
-        data = img[0].data
-        header = img[0].header
-        header["FILTER"] = header["AFT"].split("__")[0]
-        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
-        header["CALSTEPS"] = ""
-        header["BASENAME"] = os.path.basename(path)
-        logger.info(header["BASENAME"])
-        header["TARGET"] = header["OBJECT"].lower()
-        header["UTCTIME"] = header["UTSHUT"]
-        header["MJD-OBS"] = Time(header['UTSHUT']).mjd
-        # header.append(('GAIN', self.gain, 'Gain in electrons / ADU'), end=True)
-        # header = self.set_saturation(header)
-        if not 'COADDS' in header.keys():
-            logger.debug('Setting COADDS to 1')
-            header['COADDS'] = 1
-        if not 'CALSTEPS' in header.keys():
-            logger.debug('Setting CALSTEPS to blank')
-            header['CALSTEPS'] = ''
-
-        data[data == 0] = np.nan
-    return data, header
 
 
 class WircImsubPipeline(Pipeline):
