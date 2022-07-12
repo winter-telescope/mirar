@@ -288,6 +288,7 @@ def import_from_db(
         db_query_columns: str | list[str],
         db_accepted_values: str | int | float | list[str | float | int],
         db_output_columns: str | list[str],
+        output_alias_map: str | list[str],
         db_user: str = os.environ.get('PG_DEFAULT_USER', default_db_user),
         password: str = os.environ.get('PG_DEFAULT_PWD'),
 ) -> list[dict]:
@@ -301,6 +302,7 @@ def import_from_db(
     db_query_columns: Name of column to query
     db_accepted_values: Accepted value for query for column
     db_output_columns: Name(s) of columns to return for matched database entries
+    output_alias_map: Alias to assign for each output column
     db_user: Username for database
     password: password for database
 
@@ -319,6 +321,14 @@ def import_from_db(
         db_output_columns = [db_output_columns]
 
     assert len(db_query_columns) == len(db_accepted_values)
+
+    if output_alias_map is None:
+        output_alias_map = db_output_columns
+
+    if not isinstance(output_alias_map, list):
+        output_alias_map = [output_alias_map]
+
+    assert len(output_alias_map) == len(db_output_columns)
 
     all_query_res = []
 
@@ -342,7 +352,7 @@ def import_from_db(
 
             query_res = dict()
 
-            for i, key in enumerate(db_output_columns):
+            for i, key in enumerate(output_alias_map):
                 query_res[key] = entry[i]
 
             all_query_res.append(query_res)

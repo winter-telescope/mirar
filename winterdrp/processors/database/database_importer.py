@@ -36,6 +36,7 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
     def __init__(
             self,
             db_output_columns: str | list[str],
+            output_alias_map: str | list[str] = None,
             update_header: Callable[[Header, list[dict]], Header] = update_header_with_single_match,
             *args,
             **kwargs
@@ -43,6 +44,7 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
         super().__init__(*args, **kwargs)
         self.update_header = update_header
         self.db_output_columns = db_output_columns
+        self.output_alias_map = output_alias_map
 
     def _apply_to_images(
             self,
@@ -60,11 +62,12 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
                 db_query_columns=query_columns,
                 db_accepted_values=accepted_values,
                 db_output_columns=self.db_output_columns,
+                output_alias_map=output_alias_map,
                 db_user=self.db_user,
                 password=self.db_password
             )
 
-            headers[i] = self.update_header(header, res)
+            headers[i] = self.update_header(header, res, output_alias_map)
 
         return images, headers
 
