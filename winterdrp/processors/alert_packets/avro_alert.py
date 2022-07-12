@@ -50,6 +50,11 @@ class AvroPacketMaker(BaseDataframeProcessor):
         # logger.info(f'table: {(candidate_table)}')
         # logger.info(f'table keys: {(candidate_table.keys())}')
 
+        avro_output_dir = self.get_sub_output_dir()
+        try: # make 'avro' subdirectory if it doesn't exist
+            os.makedirs(avro_output_dir, exist_ok=True)
+        except OSError:
+            pass
 
         self.make_alert(False, candidate_table) 
         return candidate_table
