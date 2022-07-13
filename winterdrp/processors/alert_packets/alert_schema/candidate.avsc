@@ -3,7 +3,7 @@
 	"type": "record",
 	"name": "candidate",
 	"doc": "avro alert schema",
-	"version": "0.2",
+	"version": "0.3",
 	"fields": [
 		{"name": "jd", "type": "double", "doc": "Observation Julian date at start of exposure [days]"},
 		{"name": "xpos", "type": ["float", "null"], "default": null, "doc": "x-image position of candidate [pixels]"},

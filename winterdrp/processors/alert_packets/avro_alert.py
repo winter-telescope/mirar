@@ -339,15 +339,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         # TODO: fake!! remove; lastname, cand_id needs to updated from database
         last_name = None
-        first = True
         cand_id = 100
 
         for cand in all_cands:
-
-            if first:
-                pre_avro_sci_bytes = cand['SciBitIm']
-                first = False
-
             cand_jd = cand['jd']
             cand_name = self.get_next_name(last_name, str(cand_jd))
             
@@ -372,8 +366,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
             diffcut = cand.pop('DiffBitIm')
 
             packet = self.save_alert_packet(cand, scicut, refcut, diffcut, schema, True)
-            for key in cand.keys():
-                logger.info(f'key: {key}, val type: {type(cand[key])}')
             break
            
         t1 = time.time()
