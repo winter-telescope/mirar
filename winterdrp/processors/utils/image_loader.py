@@ -75,6 +75,11 @@ class ImageLoader(BaseProcessor):
 
         logger.info(f"Loading from {input_dir}, with {len(img_list)} images")
 
+        if len(img_list) < 1:
+            err = f"No images found in {input_dir}. Please check path is correct!"
+            logger.error(err)
+            raise FileNotFoundError(err)
+
         new_images = []
         new_headers = []
 
