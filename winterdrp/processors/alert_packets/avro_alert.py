@@ -48,7 +48,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         logger.info('in AvroPacketMaker: _apply_to_image')
         # logger.info(f'len table: {len(candidate_table)}')
         # logger.info(f'table: {(candidate_table)}')
-        # logger.info(f'table keys: {(candidate_table.keys())}')
+        logger.info(f'table keys: {(candidate_table.keys())}')
 
         avro_output_dir = self.get_sub_output_dir()
         try: # make 'avro' subdirectory if it doesn't exist
@@ -373,6 +373,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             diffcut = cand.pop('DiffBitIm')
 
             packet = self.save_alert_packet(cand, scicut, refcut, diffcut, schema, True)
+            for key in cand.keys():
+                logger.info(f'key: {key}, val type: {type(cand[key])}')
+            break
            
         t1 = time.time()
         logger.info('###############################################################')
@@ -389,8 +392,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
             cand_data = [field_data for field_data in reader]
             reader.close()
 
-        logger.info(f'Schema that we parsed:\n {schema}')
-        logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
+        # logger.info(f'Schema that we parsed:\n {schema}')
+        # logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
         # logger.info(f'Candidate:\n {cand_data}')
         # logger.info(f'type{type(cand_data)}')
 
