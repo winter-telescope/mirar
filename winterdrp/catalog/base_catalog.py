@@ -125,12 +125,13 @@ class BaseXMatchCatalog:
 class BaseKowalskiXMatch(BaseXMatchCatalog):
 
     def __init__(self,
+                 kowalski: Kowalski = None,
                  max_time_ms: float = 10000,
                  *args,
                  **kwargs):
         super(BaseKowalskiXMatch, self).__init__(*args,**kwargs)
         self.max_time_ms = max_time_ms
-        self.kowalski = None
+        self.kowalski = kowalski
 
     def get_kowalski(self) -> Kowalski:
         protocol, host, port = "https", "kowalski.caltech.edu", 443
@@ -189,7 +190,8 @@ class BaseKowalskiXMatch(BaseXMatchCatalog):
         return data[self.catalog_name]
 
     def query(self, coords) -> dict:
-        self.kowalski = self.get_kowalski()
+        if self.kowalski is None:
+            self.kowalski = self.get_kowalski()
         logger.info('Querying kowalski')
         data = self.near_query_kowalski(coords)
         return data
