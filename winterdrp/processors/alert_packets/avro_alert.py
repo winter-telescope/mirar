@@ -48,7 +48,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         logger.info('in AvroPacketMaker: _apply_to_image')
         # logger.info(f'len table: {len(candidate_table)}')
         # logger.info(f'table: {(candidate_table)}')
-        # logger.info(f'table keys: {(candidate_table.keys())}')
+        logger.info(f'table keys: {(candidate_table.keys())}')
 
         avro_output_dir = self.get_sub_output_dir()
         try: # make 'avro' subdirectory if it doesn't exist
@@ -339,19 +339,11 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         # TODO: fake!! remove; lastname, cand_id needs to updated from database
         last_name = None
-        first = True
         cand_id = 100
 
         for cand in all_cands:
-
-            if first:
-                pre_avro_sci_bytes = cand['SciBitIm']
-                first = False
-
-            # TODO use jd field in cand to make name
-            fake_jd = '2451544'
-            cand_name = self.get_next_name(last_name, fake_jd)
-            # logger.info(f'cand name: {cand_name}')
+            cand_jd = cand['jd']
+            cand_name = self.get_next_name(last_name, str(cand_jd))
             
             # TODO candid should be coming from naming database
             cand['candid'] = cand_id
@@ -368,11 +360,13 @@ class AvroPacketMaker(BaseDataframeProcessor):
                 last_name = cand_name    
             cand['objectId'] = cand_name
             
+            # Cutouts are include in the top level alert schema
             scicut = cand.pop('SciBitIm')
             refcut = cand.pop('RefBitIm')
             diffcut = cand.pop('DiffBitIm')
 
             packet = self.save_alert_packet(cand, scicut, refcut, diffcut, schema, True)
+            break
            
         t1 = time.time()
         logger.info('###############################################################')
@@ -389,8 +383,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
             cand_data = [field_data for field_data in reader]
             reader.close()
 
-        logger.info(f'Schema that we parsed:\n {schema}')
-        logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
+        # logger.info(f'Schema that we parsed:\n {schema}')
+        # logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
         # logger.info(f'Candidate:\n {cand_data}')
         # logger.info(f'type{type(cand_data)}')
 
