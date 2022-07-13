@@ -92,38 +92,6 @@ def detect_candidates_sextractor():
     pass
 
 
-def get_kowalski():
-    protocol, host, port = "https", "kowalski.caltech.edu", 443
-
-    token_kowalski = os.environ.get("kowalski_token")
-
-    if token_kowalski is not None:
-        logger.debug("Using kowalski token")
-
-        k = Kowalski(token=token_kowalski, protocol=protocol, host=host, port=port)
-
-    else:
-
-        username_kowalski = os.environ.get('kowalski_user')
-        password_kowalski = os.environ.get('kowalski_pwd')
-    
-        if username_kowalski is None:
-            err = 'Kowalski username not provided, please run export kowalski_user=<user>'
-            logger.error(err)
-            raise ValueError
-        if password_kowalski is None:
-            err = 'Kowalski password not provided, please run export KOWALSKI_PWD=<user>'
-            logger.error(err)
-            raise ValueError
-
-        k = Kowalski(username=username_kowalski, password=password_kowalski, protocol=protocol, host=host, port=port)
-
-    connection_ok = k.ping()
-    logger.info(f'Connection OK?: {connection_ok}')
-
-    return k
-
-
 class WircImsubPipeline(Pipeline):
     name = "wirc_imsub"
 
@@ -170,12 +138,12 @@ class WircImsubPipeline(Pipeline):
             PSFPhotometry(),
             DataframeWriter(output_dir_name='candidates'),
             XMatch(
-                catalog=TMASS(kowalski=get_kowalski()),
+                catalog=TMASS(),
                 num_stars=3,
                 search_radius_arcsec=30
             ),
             XMatch(
-                catalog=PS1(kowalski=get_kowalski()),
+                catalog=PS1(),
                 num_stars=3,
                 search_radius_arcsec=30
             ),

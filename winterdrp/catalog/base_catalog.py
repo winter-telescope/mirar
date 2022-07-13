@@ -125,13 +125,44 @@ class BaseXMatchCatalog:
 class BaseKowalskiXMatch(BaseXMatchCatalog):
 
     def __init__(self,
-                 kowalski: Kowalski,
                  max_time_ms: float = 10000,
                  *args,
                  **kwargs):
         super(BaseKowalskiXMatch, self).__init__(*args,**kwargs)
-        self.kowalski = kowalski
         self.max_time_ms = max_time_ms
+        self.kowalski = None
+
+    def get_kowalski(self) -> Kowalski:
+        protocol, host, port = "https", "kowalski.caltech.edu", 443
+
+        token_kowalski = os.environ.get("kowalski_token")
+
+        if token_kowalski is not None:
+            logger.debug("Using kowalski token")
+
+            k = Kowalski(token=token_kowalski, protocol=protocol, host=host, port=port)
+
+        else:
+
+            username_kowalski = os.environ.get('kowalski_user')
+            password_kowalski = os.environ.get('kowalski_pwd')
+
+            if username_kowalski is None:
+                err = 'Kowalski username not provided, please run export kowalski_user=<user>'
+                logger.error(err)
+                raise ValueError
+            if password_kowalski is None:
+                err = 'Kowalski password not provided, please run export KOWALSKI_PWD=<user>'
+                logger.error(err)
+                raise ValueError
+
+            k = Kowalski(username=username_kowalski, password=password_kowalski, protocol=protocol, host=host,
+                         port=port)
+
+        connection_ok = k.ping()
+        logger.info(f'Connection OK?: {connection_ok}')
+
+        return k
 
     def near_query_kowalski(self, coords: dict) -> dict:
         query = {
@@ -158,6 +189,7 @@ class BaseKowalskiXMatch(BaseXMatchCatalog):
         return data[self.catalog_name]
 
     def query(self, coords) -> dict:
+        self.kowalski = self.get_kowalski()
         logger.info('Querying kowalski')
         data = self.near_query_kowalski(coords)
         return data
