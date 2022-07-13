@@ -348,10 +348,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
                 pre_avro_sci_bytes = cand['SciBitIm']
                 first = False
 
-            # TODO use jd field in cand to make name
-            fake_jd = '2451544'
-            cand_name = self.get_next_name(last_name, fake_jd)
-            # logger.info(f'cand name: {cand_name}')
+            cand_jd = cand['jd']
+            cand_name = self.get_next_name(last_name, str(cand_jd))
             
             # TODO candid should be coming from naming database
             cand['candid'] = cand_id
@@ -368,6 +366,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
                 last_name = cand_name    
             cand['objectId'] = cand_name
             
+            # Cutouts are include in the top level alert schema
             scicut = cand.pop('SciBitIm')
             refcut = cand.pop('RefBitIm')
             diffcut = cand.pop('DiffBitIm')
