@@ -236,14 +236,14 @@ class AvroPacketMaker(BaseDataframeProcessor):
         message = reader.read(decoder)
         return message
 
-    def send(topicname, records, schema):
+    def send(self, topicname, records, schema):
         """ Send an avro "packet" to a particular topic at IPAC
             Modified from: https://github.com/dekishalay/pgirdps
 
         Args:
-            topicname(): name of the topic, e.g. ztf_20191221_programid2_zuds
-            records(list): a list of dictionaries (the avro packet to send)
-            schema(dict): schema definition
+            topicname(str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
+            records(list): a list of dictionaries (the avro packet to send).
+            schema(dict): schema definition.
         """
         # Parse the schema file
         #schema_definition = fastavro.schema.load_schema(schemafile)
@@ -341,11 +341,22 @@ class AvroPacketMaker(BaseDataframeProcessor):
     
     def broadcast_alert_packet(self, cand, scicut, refcut, diffcut, topicname, schema, mycandnum, numcands):
         """
-        TODO write docstring
-        Modified from https://github.com/dekishalay/pgirdps
-        
-        """
+        Creates and sends avro-formatted packets to specified topicname 
+        using Kafka. Modified from https://github.com/dekishalay/pgirdps
 
+        Args:
+            cand (dict): all data of a single candidate.
+            scicut (bytes): science image cutout.
+            refcut (bytes): reference image cutout.
+            diffcut (bytes): difference image cutout.
+            topicname (str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
+            records (list): a list of dictionaries (the avro packet to send).
+            mycandnum (int): number of current candidate being sent.
+            numcands (int): total number of candidates to send. 
+
+        Returns:
+            (int): candid or -1 if candidate not sent.
+        """
         packet = self.create_alert_packet(cand, scicut, refcut, diffcut)
         try:
             self.send(topicname, [packet], schema)
@@ -379,7 +390,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         # TODO: fake!! remove; lastname, cand_id needs to updated from database
         last_name = None
-        cand_id = 100
+        cand_id = 700
 
         cand_num = 1 # for keeping track of braodcast alerts
         for cand in all_cands:
@@ -393,9 +404,11 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
             # TODO create alert_date once (before loop)from list of jd_list 
             # Calculate the alert_date for this night
-            alert_date = Time(cand_jd, format = 'jd').tt.datetime.strftime('%Y%m%d')
-            topic_name = 'winter_%s'%alert_date
-
+            # alert_date = Time(cand_jd, format = 'jd').tt.datetime.strftime('%Y%m%d')
+            # logger.info(alert_date)
+            # topic_name = 'winter_%s'%alert_date
+            topic_name = 'winter_20220714'
+            
             # check if cand is new? 
             # cand_name, new_status = self.check_and_insert_source(cand_name, cand)
 
@@ -412,9 +425,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             diffcut = cand.pop('DiffBitIm')
 
             packet = self.save_alert_packet(cand, scicut, refcut, diffcut, schema, save_local)
-            packet_sent = self.broadcast_alert_packet(cand, scicut, refcut, diffcut, topic_name, schema, cand_num, num_cands)
+            broadcast_flag = self.broadcast_alert_packet(cand, scicut, refcut, diffcut, topic_name, schema, cand_num, num_cands)
 
-            break
+            cand_num += 1
            
         t1 = time.time()
         logger.info('###############################################################')
@@ -430,8 +443,31 @@ class AvroPacketMaker(BaseDataframeProcessor):
             schema_from_file = json.loads(metadata['avro.schema'])
             cand_data = [field_data for field_data in reader]
             reader.close()
+        
+        ## cand_data is a list with the first item as the nested
+        ## dictionary of the avro schema
+        ## length of cand_data: 1
+        ## 0-index item: dictionary, length 9, keys:
+        ## ['schemavsn', 'publisher', 'objectId', 'candid', 'candidate', 
+        ##  'prv_candidates', 'cutoutScience', 'cutoutTemplate', 'cutoutDifference'])]
+
+        cand_dict = cand_data[0]
+        single_cand = cand_dict['candidate']
+
 
         # logger.info(f'Schema that we parsed:\n {schema}')
         # logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
+        # logger.info(f'len: {len(cand_data)}')
+        # zero_cand = cand_data[0]
+        # logger.info(f'len 0. {len(zero_cand)}')
+        # logger.info(f'type 0. {type(zero_cand)}')
+        # logger.info(f'keys 0. {zero_cand.keys()}')
+        # cand_info = zero_cand['candidate']
+        # logger.info(f'Candidate type:\n {type(cand_info)}')
+        # logger.info(f'Candidate len:\n {len(cand_info)}')
+        # logger.info(f'Candidate keys:\n {cand_info.keys()}')
+        jd_val = single_cand['jd']
+        logger.info(f'jd: {jd_val}')
+
         # logger.info(f'Candidate:\n {cand_data}')
         # logger.info(f'type{type(cand_data)}')
