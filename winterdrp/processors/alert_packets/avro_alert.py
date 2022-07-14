@@ -14,6 +14,7 @@ import avro.io
 import avro.tool
 from avro.datafile import DataFileWriter, DataFileReader
 from avro.io import DatumWriter, DatumReader
+import confluent_kafka
 import copy
 import json
 import time
@@ -46,17 +47,15 @@ class AvroPacketMaker(BaseDataframeProcessor):
             candidate_table: pd.DataFrame,
     ) -> pd.DataFrame:
         logger.info('in AvroPacketMaker: _apply_to_image')
-        # logger.info(f'len table: {len(candidate_table)}')
-        # logger.info(f'table: {(candidate_table)}')
-        logger.info(f'table keys: {(candidate_table.keys())}')
 
+        # make 'avro' subdirectory for avro packet output
         avro_output_dir = self.get_sub_output_dir()
-        try: # make 'avro' subdirectory if it doesn't exist
+        try: # subdir doesn't exist
             os.makedirs(avro_output_dir, exist_ok=True)
         except OSError:
             pass
 
-        self.make_alert(False, candidate_table) 
+        self.make_alert(False, True, candidate_table) 
         return candidate_table
     
     def get_sub_output_dir(self):
@@ -99,7 +98,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             schema_files (list[str]): list of file paths to .avsc schemas.
 
         Returns:
-            (dict): built avro schema .
+            (dict): built avro schema.
         """
         known_schemas = avro.schema.Names() # avro.schema.Names object
         
@@ -237,6 +236,32 @@ class AvroPacketMaker(BaseDataframeProcessor):
         message = reader.read(decoder)
         return message
 
+    def send(topicname, records, schema):
+        """ Send an avro "packet" to a particular topic at IPAC
+            Modified from: https://github.com/dekishalay/pgirdps
+
+        Args:
+            topicname(): name of the topic, e.g. ztf_20191221_programid2_zuds
+            records(list): a list of dictionaries (the avro packet to send)
+            schema(dict): schema definition
+        """
+        # Parse the schema file
+        #schema_definition = fastavro.schema.load_schema(schemafile)
+
+        # Write into an in-memory "file"
+
+        out = io.BytesIO()
+        
+        fastavro.writer(out, schema, records)
+        out.seek(0) # go back to the beginning
+        
+        # Connect to the IPAC Kafka brokers
+        producer = confluent_kafka.Producer({'bootstrap.servers': 'ztfalerts04.ipac.caltech.edu:9092,ztfalerts05.ipac.caltech.edu:9092,ztfalerts06.ipac.caltech.edu:9092'})
+
+        # Send an avro alert
+        producer.produce(topic=topicname, value=out.read())
+        producer.flush()
+
     def create_alert_packet(self, cand, scicut, refcut, diffcut, cm_radius=8.0, search_history=90.0):
         """Create top level avro packet from input candidate.
         Args:
@@ -282,7 +307,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         fastavro.writer(out, schema, records)
         out.close()
 
-    def save_alert_packet(self, cand, scicut, refcut, diffcut, schema, make_file=False):
+    def save_alert_packet(self, cand, scicut, refcut, diffcut, schema, make_file):
         """Creates and returns candidate as avro alert packet (as dict), in given schema. 
         If make_file=True, saves packet as .avro to output subdirectory.
         
@@ -313,8 +338,24 @@ class AvroPacketMaker(BaseDataframeProcessor):
                 logger.info('Could not save candid %d'%cand['candid'])
         
         return packet
+    
+    def broadcast_alert_packet(self, cand, scicut, refcut, diffcut, topicname, schema, mycandnum, numcands):
+        """
+        TODO write docstring
+        Modified from https://github.com/dekishalay/pgirdps
+        
+        """
 
-    def make_alert(self, useDataBase=False, df=None):
+        packet = self.create_alert_packet(cand, scicut, refcut, diffcut)
+        try:
+            self.send(topicname, [packet], schema)
+            logger.info('Sent candid %d name %s, %d out of %d'%(cand['candid'], cand['objectId'], mycandnum, numcands))
+            return cand['candid']
+        except OSError:
+            logger.info('Could not send candid %d'%cand['candid'])
+            return -1
+
+    def make_alert(self, useDataBase=False, save_local=False, df=None):
         """Top level method to make avro alert
         
         Args:
@@ -328,20 +369,21 @@ class AvroPacketMaker(BaseDataframeProcessor):
             logger.info(f'{len(df)} candidates in df')
             all_cands = self.read_input_df(df)
         
+        num_cands = len(all_cands)
+        logger.info('####################################')
+        logger.info(f'{num_cands} candidates in dict...making packets')
 
         schema = self.combine_schemas(["alert_schema/candidate.avsc", 
                                     "alert_schema/prv_candidate.avsc", 
                                     "alert_schema/alert.avsc"])
 
-        num_cands = len(all_cands)
-        logger.info('####################################')
-        logger.info(f'{num_cands} candidates in dict...making packets')
-
         # TODO: fake!! remove; lastname, cand_id needs to updated from database
         last_name = None
         cand_id = 100
 
+        cand_num = 1 # for keeping track of braodcast alerts
         for cand in all_cands:
+
             cand_jd = cand['jd']
             cand_name = self.get_next_name(last_name, str(cand_jd))
             
@@ -349,7 +391,11 @@ class AvroPacketMaker(BaseDataframeProcessor):
             cand['candid'] = cand_id
             cand_id += 1
 
-            # TODO
+            # TODO create alert_date once (before loop)from list of jd_list 
+            # Calculate the alert_date for this night
+            alert_date = Time(cand_jd, format = 'jd').tt.datetime.strftime('%Y%m%d')
+            topic_name = 'winter_%s'%alert_date
+
             # check if cand is new? 
             # cand_name, new_status = self.check_and_insert_source(cand_name, cand)
 
@@ -365,7 +411,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             refcut = cand.pop('RefBitIm')
             diffcut = cand.pop('DiffBitIm')
 
-            packet = self.save_alert_packet(cand, scicut, refcut, diffcut, schema, True)
+            packet = self.save_alert_packet(cand, scicut, refcut, diffcut, schema, save_local)
+            packet_sent = self.broadcast_alert_packet(cand, scicut, refcut, diffcut, topic_name, schema, cand_num, num_cands)
+
             break
            
         t1 = time.time()
@@ -387,5 +435,3 @@ class AvroPacketMaker(BaseDataframeProcessor):
         # logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
         # logger.info(f'Candidate:\n {cand_data}')
         # logger.info(f'type{type(cand_data)}')
-
-
