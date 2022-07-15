@@ -36,9 +36,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
     def __init__(self, 
                 output_sub_dir: str, 
                 base_name: str,
-                save_local=True,
+                save_local=False,
                 use_database=False,
-                broadcast=False,
+                broadcast=True,
                 *args,
                 **kwargs):
         super(AvroPacketMaker, self).__init__(*args, **kwargs)
@@ -200,6 +200,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
     def write_avro_data(self, json, avro_schema):
         """Encode json into avro format given a schema.
+
         Args:
             json (dict): data to put into schema, can be dict.
             avro_schema (avro.schema.RecordSchema): output schema.
@@ -230,9 +231,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         message = reader.read(decoder)
         return message
 
-    def send(self, topicname, records, schema):
-        """ Send an avro "packet" to a particular topic at IPAC
-            Modified from: https://github.com/dekishalay/pgirdps
+    def _send_alert(self, topicname, records, schema):
+        """Send an avro "packet" to a particular topic at IPAC.
+        Modified from: https://github.com/dekishalay/pgirdps
 
         Args:
             topicname (str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
@@ -264,8 +265,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Returns:
             (dict): schema in dictionary format.
         """
-        # Make candidate subschema
-
         # TODO populate the candidate history (prv_candidate)
         prev_cands = []
         # logger.info(f' {len(prev_cands)} prev candidates found ########')
@@ -283,10 +282,11 @@ class AvroPacketMaker(BaseDataframeProcessor):
         return alert
     
     def get_sub_output_dir(self):
+        """Returns path of output subdirectory."""
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     def _make_avro_output_dir(self):
-        # make 'avro' subdirectory for avro packet output
+        """ Make 'avro' subdirectory for avro packet output. """
         avro_output_dir = self.get_sub_output_dir()
         try: # subdir doesn't exist
             os.makedirs(avro_output_dir, exist_ok=True)
@@ -300,7 +300,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Args:
             candid (number type): candidate id.
             records (list): a list of dictionaries
-            avro_schema (avro.schema.RecordSchema): schema definition.
+            schema (avro.schema.RecordSchema): schema definition.
         """
         self._make_avro_output_dir()        
         avro_packet_path = os.path.join(self.get_sub_output_dir(), str(candid) + '.avro')
@@ -315,10 +315,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Args:
             packet (dict): candidate data in avro packed dict format.
             cand (dict): all data of a single candidate.
-            scicut (bytes): science image cutout.
-            refcut (bytes): reference image cutout.
-            diffcut (bytes): difference image cutout.
-        
+            schema (avro.schema.RecordSchema): schema definition.
+
         Returns:
             (int): 1 if save successful. Else, -1.
         """        
@@ -333,8 +331,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
     
     def broadcast_alert_packet(self, packet, cand, schema, topic_name, cand_num, num_cands):
         """
-        Sends avro-formatted packets to specified topicname 
-        using Kafka. Modified from https://github.com/dekishalay/pgirdps
+        Sends avro-formatted packets to specified topicname using Kafka. 
+        Modified from https://github.com/dekishalay/pgirdps
 
         Args:
             packet (dict): candidate data in avro packed dict format.
@@ -348,8 +346,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
             (int): 1 if broadcast successful or -1 if candidate not sent.
         """
         try:
-            self.send(topic_name, [packet], schema)
-            logger.info(f"Sent candid {cand['candid']}, name {cand['objectId']}, {cand_num} out of {num_cands}")
+            self._send_alert(topic_name, [packet], schema)
+            # logger.info(f"Sent candid {cand['candid']}, name {cand['objectId']}, {cand_num} out of {num_cands}")
             return 1
         except OSError:
             logger.info(f"Could not send candid {cand['candid']}")
@@ -360,7 +358,10 @@ class AvroPacketMaker(BaseDataframeProcessor):
         
         Args:
             cand (dict): all data of a single candidate.
+            schema (dict): schema definition.
             topic_name (str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
+            cand_num (int): number of current candidate being sent.
+            num_cands (int): total number of candidates to send. 
 
         Returns:
             (int): 1 if broadcast successful,
@@ -388,7 +389,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
         """Top level method to make avro alert.
         
         Args:
-            useDataBase (bool): read candidates from database. #TODO, not implemented 07/08
             df (pandas.core.DataFrame): dataframe of candidates.
         """
         t0 = time.time()       
@@ -437,13 +437,15 @@ class AvroPacketMaker(BaseDataframeProcessor):
             cand['objectId'] = cand_name
             
             flag = self._make_ind_packet(cand, schema, topic_name, cand_num, num_cands)
-            successes += flag
+            cand_num += 1
+            if flag > 0:
+                successes += 1
            
         t1 = time.time()
-        logger.info('########################################################')
+        logger.info('###########################################')
         logger.info(f"Took {(t1 - t0):.2f} seconds to process {num_cands} candidates")
         logger.info(f'{successes} of {num_cands} successfully sent')
-        logger.info('########################################################')
+        logger.info('###########################################')
 
 
         # Read data from an avro file
