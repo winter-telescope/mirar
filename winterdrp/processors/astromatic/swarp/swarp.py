@@ -64,9 +64,9 @@ def run_swarp(
                     f'-RESAMPLE Y -RESAMPLE_DIR {os.path.dirname(out_path)} '
 
     if subtract_bkg:
-        swarp_command += f'-SUBTRACT Y '
+        swarp_command += f'-SUBTRACT_BACK Y '
     else:
-        swarp_command += f'-SUBTRACT N '
+        swarp_command += f'-SUBTRACT_BACK N '
     if combine:
         swarp_command += f'-COMBINE Y -COMBINE_TYPE MEDIAN '
     else:
@@ -99,7 +99,7 @@ def run_swarp(
 
     if gain is not None:
         swarp_command += f' -GAIN {gain}'
-
+    print(swarp_command)
     execute(swarp_command)
 
 
