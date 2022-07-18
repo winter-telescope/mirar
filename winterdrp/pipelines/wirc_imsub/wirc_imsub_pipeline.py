@@ -153,6 +153,8 @@ class WircImsubPipeline(Pipeline):
             # EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
             AvroPacketMaker(output_sub_dir="avro",
-                            base_name="WNTR")
+                            base_name="WNTR",
+                            broadcast=False,
+                            save_local=True)
         ]
     }
