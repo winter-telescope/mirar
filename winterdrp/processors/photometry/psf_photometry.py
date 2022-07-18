@@ -47,8 +47,8 @@ class PSFPhotometry(BaseDataframeProcessor):
     def make_psf_shifted_array(psf_filename, delta, ngrid=25):
         psf = fits.getdata(psf_filename)
         normpsf = psf / np.sum(psf)
-        ngrid = 25
-        xs = np.linspace(-2, 2, 5)
+        ngrid = 81
+        xs = np.linspace(-4, 4, 9)
         gx, gy = np.meshgrid(xs, xs)
         gx = np.ndarray.flatten(gx)
         gy = np.ndarray.flatten(gy)
