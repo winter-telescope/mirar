@@ -18,7 +18,7 @@ from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatche
 from winterdrp.paths import core_fields, base_name_key
 from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
 from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
-from penquins import Kowalski
+from winterdrp.processors.photometry.aperture_photometry import AperturePhotometry
 from winterdrp.catalog.kowalski import TMASS, PS1
 from winterdrp.processors.xmatch import XMatch
 from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image
@@ -136,6 +136,8 @@ class WircImsubPipeline(Pipeline):
                              cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
             RegionsWriter(output_dir_name='candidates'),
             PSFPhotometry(),
+            AperturePhotometry(aper_diameters=[16, 70], cutout_size_aper_phot=100, bkg_in_diameters=[25, 90],
+                               bkg_out_diameters=[40, 100]),
             DataframeWriter(output_dir_name='candidates'),
             XMatch(
                 catalog=TMASS(),
