@@ -31,6 +31,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
     Attributes:
         output_sub_dir (str): output data path.
         base_name (str): 4-letter code for telescope.
+        save_local (bool): save avro packets to out_sub_dir.
+        use_database (bool): read candidate info from database. #TODO
+        broadcast (bool): send to brokers at IPAC.
     """
 
     def __init__(self, 
@@ -129,6 +132,41 @@ class AvroPacketMaker(BaseDataframeProcessor):
         schema = avro.schema.SchemaFromJSONData(json_data, names) 
 
         return schema
+    
+    def write_avro_data(self, json, avro_schema):
+        """Encode json into avro format given a schema.
+        For testing packet integrity.
+
+        Args:
+            json (dict): data to put into schema, can be dict.
+            avro_schema (avro.schema.RecordSchema): output schema.
+
+        Returns:
+            (io.BytesIO object): input json in schema format.
+        """
+        writer = avro.io.DatumWriter(avro_schema)
+        bytes_io = io.BytesIO()
+        encoder = avro.io.BinaryEncoder(bytes_io)
+        writer.write(json, encoder)
+        return bytes_io
+
+    def read_avro_data(self, bytes_io, avro_schema):
+        """Read avro data and decode with a given schema.
+        For testing packet integrity.
+        
+        Args:
+            bytes_io (_io.BytesIO object): data to put into schema, can be dict.
+            avro_schema (avro.schema.RecordSchema): schema to decode from.
+
+        Returns:
+            (dict): schema in dictionary format.
+        """
+        raw_bytes = bytes_io.getvalue()
+        bytes_reader = io.BytesIO(raw_bytes)
+        decoder = avro.io.BinaryDecoder(bytes_reader)
+        reader = avro.io.DatumReader(avro_schema)
+        message = reader.read(decoder)
+        return message
 
     def get_next_name(self, lastname, candjd, bwfile = 'badwords.txt', begcount = 'aaaaaaa'):
         """Creates candidate name following the naming format of 'WNTR22aaaaaaa' .
@@ -197,60 +235,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
                 return self.get_next_name(newname, candjd)
             else:
                 return newname
-
-    def write_avro_data(self, json, avro_schema):
-        """Encode json into avro format given a schema.
-
-        Args:
-            json (dict): data to put into schema, can be dict.
-            avro_schema (avro.schema.RecordSchema): output schema.
-
-        Returns:
-            (io.BytesIO object): input json in schema format.
-        """
-        writer = avro.io.DatumWriter(avro_schema)
-        bytes_io = io.BytesIO()
-        encoder = avro.io.BinaryEncoder(bytes_io)
-        writer.write(json, encoder)
-        return bytes_io
-
-    def read_avro_data(self, bytes_io, avro_schema):
-        """Read avro data and decode with a given schema.
-        
-        Args:
-            bytes_io (_io.BytesIO object): data to put into schema, can be dict.
-            avro_schema (avro.schema.RecordSchema): schema to decode from.
-
-        Returns:
-            (dict): schema in dictionary format.
-        """
-        raw_bytes = bytes_io.getvalue()
-        bytes_reader = io.BytesIO(raw_bytes)
-        decoder = avro.io.BinaryDecoder(bytes_reader)
-        reader = avro.io.DatumReader(avro_schema)
-        message = reader.read(decoder)
-        return message
-
-    def _send_alert(self, topicname, records, schema):
-        """Send an avro "packet" to a particular topic at IPAC.
-        Modified from: https://github.com/dekishalay/pgirdps
-
-        Args:
-            topicname (str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
-            records (list): a list of dictionaries (the avro packet to send).
-            schema (dict): schema definition.
-        """
-        out = io.BytesIO()
-        
-        fastavro.writer(out, schema, records)
-        out.seek(0) # go back to the beginning
-        
-        # Connect to the IPAC Kafka brokers
-        producer = confluent_kafka.Producer({'bootstrap.servers': 'ztfalerts04.ipac.caltech.edu:9092,ztfalerts05.ipac.caltech.edu:9092,ztfalerts06.ipac.caltech.edu:9092'})
-
-        # Send an avro alert
-        producer.produce(topic=topicname, value=out.read())
-        producer.flush()
 
     def create_alert_packet(self, cand, scicut, refcut, diffcut, cm_radius=8.0, search_history=90.0):
         """Create top level avro packet from input candidate.
@@ -329,6 +313,27 @@ class AvroPacketMaker(BaseDataframeProcessor):
             logger.info(f"Could not save candid {cand['candid']}")
             return -1
     
+    def _send_alert(self, topicname, records, schema):
+        """Send an avro "packet" to a particular topic at IPAC.
+        Modified from: https://github.com/dekishalay/pgirdps
+
+        Args:
+            topicname (str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
+            records (list): a list of dictionaries (the avro packet to send).
+            schema (dict): schema definition.
+        """
+        out = io.BytesIO()
+        
+        fastavro.writer(out, schema, records)
+        out.seek(0) # go back to the beginning
+        
+        # Connect to the IPAC Kafka brokers
+        producer = confluent_kafka.Producer({'bootstrap.servers': 'ztfalerts04.ipac.caltech.edu:9092,ztfalerts05.ipac.caltech.edu:9092,ztfalerts06.ipac.caltech.edu:9092'})
+
+        # Send an avro alert
+        producer.produce(topic=topicname, value=out.read())
+        producer.flush()
+
     def broadcast_alert_packet(self, packet, cand, schema, topic_name, cand_num, num_cands):
         """
         Sends avro-formatted packets to specified topicname using Kafka. 
@@ -384,6 +389,18 @@ class AvroPacketMaker(BaseDataframeProcessor):
         
         return flag
 
+    def _success_message(self):
+        """Text for successful save and/or broadcast."""
+        message = ""
+        if self.save_local:
+            message += "saved"
+            if self.broadcast:
+                message += " and broadcasted"
+            return message
+        
+        if self.broadcast:
+            message += "broadcasted"
+        return message
 
     def make_alert(self, df=None):
         """Top level method to make avro alert.
@@ -437,14 +454,14 @@ class AvroPacketMaker(BaseDataframeProcessor):
             cand['objectId'] = cand_name
             
             flag = self._make_ind_packet(cand, schema, topic_name, cand_num, num_cands)
-            cand_num += 1
+            cand_num += 1 # for counting num of processed candidates
             if flag > 0:
                 successes += 1
            
         t1 = time.time()
         logger.info('###########################################')
-        logger.info(f"Took {(t1 - t0):.2f} seconds to process {num_cands} candidates")
-        logger.info(f'{successes} of {num_cands} successfully sent')
+        logger.info(f"Took {(t1 - t0):.2f} seconds to process {num_cands} candidates.")
+        logger.info(f'{successes} of {num_cands} successfully {self._success_message()}.')
         logger.info('###########################################')
 
 
@@ -468,7 +485,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         cand_dict = cand_data[0]
         single_cand = cand_dict['candidate']
         jd_val = single_cand['jd']
-        logger.info(f'jd: {jd_val}')
+        logger.info(f"jd: {jd_val}, date: {Time(jd_val, format = 'jd').tt.datetime.strftime('%Y%m%d')}")
 
         # logger.info(f'Schema that we parsed:\n {schema}')
         # logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
