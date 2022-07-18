@@ -57,7 +57,7 @@ class ZOGY(BaseImageProcessor):
                            header=header,
                            path=os.path.join(self.get_sub_output_dir(), diff_image_path))
 
-            diff_psf_path = sci_image_path + '.psf'
+            diff_psf_path = diff_image_path + '.psf'
             self.save_fits(data=P_D,
                            header=None,
                            path=os.path.join(self.get_sub_output_dir(), diff_psf_path))
