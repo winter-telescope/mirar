@@ -13,6 +13,7 @@ from astropy.time import Time
 import logging
 
 from winterdrp.processors.alert_packets.avro_alert import AvroPacketMaker
+from winterdrp.processors.send_to_fritz import SendToFritz
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
 from winterdrp.paths import core_fields, base_name_key
@@ -155,6 +156,7 @@ class WircImsubPipeline(Pipeline):
             AvroPacketMaker(output_sub_dir="avro",
                             base_name="WNTR",
                             broadcast=False,
-                            save_local=True)
+                            save_local=False),
+            SendToFritz(output_sub_dir="test")
         ]
     }
