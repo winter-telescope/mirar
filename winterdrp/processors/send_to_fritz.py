@@ -192,9 +192,9 @@ class SendToFritz(BaseDataframeProcessor):
             logger.info(f'cutout type: {type(cutout)}')
 
             buffer = io.BytesIO()
-            plt.figure(figsize=(6,6))
+            plt.figure(figsize=(3,3))
             mean, median, std = sigma_clipped_stats(cutout)
-            plt.imshow(cutout,origin='lower',cmap='gray',vmin=mean-1*std,vmax=median+3*std)
+            plt.imshow(cutout, origin='lower', cmap='gray',vmin=mean-1*std,vmax=median+3*std)
             plt.xticks([])
             plt.yticks([])
             logger.info(f'cutout shape {cutout.shape}')
@@ -245,5 +245,3 @@ class SendToFritz(BaseDataframeProcessor):
             source_response = self.add_new_source(cand)
             logger.info(source_response)
             thumbnail_response = self.upload_thumbnail(cand)
-
-            break
