@@ -3,9 +3,13 @@ import requests
 import pandas as pd
 import os, gzip, io
 
+import base64
 import astropy
 from astropy.time import Time
 from astropy.io import ascii
+from astropy.io import fits
+from astropy.stats import sigma_clipped_stats
+import matplotlib.pyplot as plt
 
 
 from winterdrp.processors.base_processor import BaseDataframeProcessor
@@ -34,6 +38,19 @@ class SendToFritz(BaseDataframeProcessor):
         self.make_alert(candidate_table) 
         return candidate_table
 
+    def open_bytes_obj(self, bytes_obj):
+        """Return numpy array of bytes_obj
+        
+        Args:
+            bytes_obj (_io.BytesIO object in memory): BytesIO obj representing image.
+
+        Returns:
+            numpy.ndarrary: representation of the image        
+        """
+        bytes_io = io.BytesIO(gzip.open(io.BytesIO(bytes_obj.getvalue())).read()) # io.BytesIO obj, ready to be read by fits.open    
+        cutout = fits.open(bytes_io)[0].data
+        return cutout
+
     def read_input_df(self, df):
         """Takes a DataFrame, which has multiple candidate 
         and creates list of dictionaries, each dictionary 
@@ -57,7 +74,8 @@ class SendToFritz(BaseDataframeProcessor):
                         # change to native python type
                         candidate[key] = df.iloc[i].get(key).item()
                 except AttributeError: # for IOBytes objs
-                    candidate[key] = df.iloc[i].get(key).getvalue()
+                    candidate[key] = self.open_bytes_obj(df.iloc[i].get(key))
+                    logger.info(f'type open_bytes {type(candidate[key])}')
                                                  
             all_candidates.append(candidate)
 
@@ -166,44 +184,45 @@ class SendToFritz(BaseDataframeProcessor):
         thumbnail_payload = {}
         thumbnail_payload["obj_id"] = cand['objectId']
 
-        buf = io.BytesIO(cand['SciBitIm']) 
-        gzip_f = gzip.GzipFile(fileobj=buf)
-        content = gzip_f.read() 
-        logger.info(f'content type{type(content)}')       
-        thumbnail_payload["data"] = content.decode('latin-1')
-        logger.info(f'data type to string: {type(thumbnail_payload["data"])}')
-        thumbnail_payload["ttype"] = "new"
+        for fritz_key in fritz_to_cand.keys():
+            thumbnail_payload['ttype'] = fritz_key
 
-        # for fritz_key in fritz_to_cand.keys():
-        #     cand_key = fritz_to_cand[fritz_key]
-        #     logger.info(f'data: {cand[cand_key]}')
-        #     logger.info(f'data type: {type(cand[cand_key])}')
-        #     logger.info(f'data type to string: {type(cand[cand_key].)}')
+            cand_key = fritz_to_cand[fritz_key]
+            cutout = cand[cand_key]
+            logger.info(f'cutout type: {type(cutout)}')
 
+            buffer = io.BytesIO()
+            plt.figure(figsize=(6,6))
+            mean, median, std = sigma_clipped_stats(cutout)
+            plt.imshow(cutout,origin='lower',cmap='gray',vmin=mean-1*std,vmax=median+3*std)
+            plt.xticks([])
+            plt.yticks([])
+            logger.info(f'cutout shape {cutout.shape}')
 
-        #     buf = io.BytesIO(cand[cand_key]) 
-        #     gzip_f = gzip.GzipFile(fileobj=buf)
-        #     content = gzip_f.read()
-        #     logger.info(f"data type 2: {type(content)}")
+            plt.savefig(buffer,format='png')
 
-        #     content = content.decode('latin-1')
-        #     logger.info(f"data type 3: {type(content)}")
+            cutoutb64 = base64.b64encode(buffer.getvalue())
+            cutoutb64_string = cutoutb64.decode('utf8')
+            logger.info(f'64 str type: {type(cutoutb64_string)}')
 
-        #     thumbnail_payload['data'] = content
-            
-        #     thumbnail_payload['ttype'] = fritz_key
-        #     logger.info(f'{fritz_key}: {type(thumbnail_payload["data"])}')
+            thumbnail_payload['data'] = cutoutb64_string
 
-        response = self.api('POST', 'https://fritz.science/api/thumbnail', thumbnail_payload)
-        logger.info(f'candid {cand["objectId"]}: {thumbnail_payload["ttype"]}, thumbnail response:{response}')
+            data_payload = {'obj_id':cand['objectId'],
+                            'data':cutoutb64_string,
+                            'ttype':fritz_key
+                        }
+
+            # response = self.api('POST', 'https://fritz.science/api/thumbnail', data=thumbnail_payload)
+            response = self.api('POST', 'https://fritz.science/api/thumbnail', data=data_payload)
+
+            logger.info(f'candid {cand["objectId"]}: {thumbnail_payload["ttype"]}, thumbnail response:{response.text}')
 
     def make_alert(self, cand_table):
         all_cands = self.read_input_df(cand_table)
 
         last_name = None
         cand_id = 700
-          
-    
+              
         for cand in all_cands:
             cand_jd = cand['jd']
             cand_name = self.get_next_name(last_name, str(cand_jd))
