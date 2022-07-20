@@ -23,16 +23,22 @@ setuptools.setup(
     ],
     python_requires='>=3.10',
     install_requires=[
+        "astroplan",
         "astropy[recommended]",
         "astroquery",
+        "avro-python3~=1.10.1",
         "docker",
         "ephem",
+        "fastavro",
         "jupyter",
         "matplotlib",
         "numpy",
         "pandas",
+        "penquins",
+        "photutils",
         "psycopg[binary]",
         "pyfftw",
+        "setuptools",
         "wget"
     ]
 )
