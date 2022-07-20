@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="winterdrp",
-    version="0.1.0",
+    version="0.2.0",
     author="Viraj Karambelkar, Robert Stein",
     author_email="rdstein@caltech.edu",
     description="Data reduction pipeline for WINTER",
@@ -23,16 +23,22 @@ setuptools.setup(
     ],
     python_requires='>=3.10',
     install_requires=[
+        "astroplan",
         "astropy[recommended]",
         "astroquery",
+        "avro-python3~=1.10.1",
         "docker",
         "ephem",
+        "fastavro",
         "jupyter",
         "matplotlib",
         "numpy",
         "pandas",
+        "penquins",
+        "photutils",
         "psycopg[binary]",
         "pyfftw",
+        "setuptools",
         "wget"
     ]
 )
