@@ -5,19 +5,31 @@ from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.psfex import PSFex
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare
-from winterdrp.processors.candidates import DetectCandidates
+from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 import numpy as np
-from astropy.io import fits
+from astropy.io import fits, ascii
 import os
 from astropy.time import Time
 import logging
+
+from winterdrp.processors.alert_packets.avro_alert import AvroPacketMaker
+from winterdrp.processors.send_to_fritz import SendToFritz
+from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
+from winterdrp.paths import core_fields, base_name_key
+from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
+from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
+from winterdrp.processors.photometry.aperture_photometry import AperturePhotometry
+from winterdrp.catalog.kowalski import TMASS, PS1
+from winterdrp.processors.xmatch import XMatch
+from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image
 
 logger = logging.getLogger(__name__)
 
 
 def wirc_reference_image_generator(
         header: fits.header,
-        images_directory: str = "/Users/viraj/wirc_imsub",
+        images_directory: str = os.environ.get('REF_IMG_DIR'),
 ):
     object_name = header['OBJECT']
     filter_name = header['FILTER']
@@ -28,7 +40,7 @@ def wirc_reference_image_generator(
     )
 
 
-def wirc_reference_image_resampler(pixsize,
+def wirc_reference_image_resampler(pixscale,
                                    x_imgpixsize,
                                    y_imgpixsize,
                                    center_ra,
@@ -37,10 +49,12 @@ def wirc_reference_image_resampler(pixsize,
                                    temp_output_sub_dir,
                                    night_sub_dir,
                                    include_scamp,
-                                   combine):
+                                   combine,
+                                   gain,
+                                   subtract_bkg):
     logger.debug(f'Night sub dir is {night_sub_dir}')
-    return Swarp(swarp_config_path='~/wirc_imsub/config/config.swarp',
-                 pixsize=pixsize,
+    return Swarp(swarp_config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/config.swarp',
+                 pixscale=pixscale,
                  x_imgpixsize=x_imgpixsize,
                  y_imgpixsize=y_imgpixsize,
                  center_ra=center_ra,
@@ -49,24 +63,29 @@ def wirc_reference_image_resampler(pixsize,
                  temp_output_sub_dir=temp_output_sub_dir,
                  night_sub_dir=night_sub_dir,
                  include_scamp=include_scamp,
-                 combine=combine
+                 combine=combine,
+                 gain=gain,
+                 cache=True,
+                 subtract_bkg=subtract_bkg
                  )
 
 
 def wirc_reference_sextractor(output_sub_dir, gain):
-    return Sextractor(config_path='~/wirc_imsub/config/photomCat.sex',
-                      parameter_path='~/wirc_imsub/config/photom.param',
-                      filter_path='~/wirc_imsub/config/default.conv',
-                      starnnw_path='~/wirc_imsub/config/default.nnw',
+    return Sextractor(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photomCat.sex',
+                      parameter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.param',
+                      filter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.conv',
+                      starnnw_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.nnw',
                       gain=gain,
-                      output_sub_dir=output_sub_dir
+                      output_sub_dir=output_sub_dir,
+                      cache=True
                       )
 
 
 def wirc_reference_psfex(output_sub_dir, norm_fits):
-    return PSFex(config_path='~/wirc_imsub/config/photom.psfex',
+    return PSFex(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.psfex',
                  output_sub_dir=output_sub_dir,
-                 norm_fits=norm_fits
+                 norm_fits=norm_fits,
+                 cache=True
                  )
 
 
@@ -87,6 +106,12 @@ class WircImsubPipeline(Pipeline):
 
     pipeline_configurations = {
         None: [
+            ImageLoader(
+                input_sub_dir="raw",
+                load_image=load_raw_wirc_image
+            ),
+            # ImageBatcher(split_key='UTSHUT'),
+            ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210330.fits")),
             Reference(
                 ref_image_generator=wirc_reference_image_generator,
                 ref_swarp_resampler=wirc_reference_image_resampler,
@@ -94,69 +119,44 @@ class WircImsubPipeline(Pipeline):
                 ref_psfex=wirc_reference_psfex
             ),
             # Swarp(),
-            Sextractor(config_path='~/wirc_imsub/config/photomCat.sex',
-                       parameter_path='~/wirc_imsub/config/photom.param',
-                       filter_path='~/wirc_imsub/config/default.conv',
-                       starnnw_path='~/wirc_imsub/config/default.nnw',
-                       output_sub_dir='subtract'),
-            PSFex(config_path='~/wirc_imsub/config/photom.psfex',
+            Sextractor(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photomCat.sex',
+                       parameter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.param',
+                       filter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.conv',
+                       starnnw_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.nnw',
+                       output_sub_dir='subtract',
+                       cache=False),
+            PSFex(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.psfex',
                   output_sub_dir="subtract",
                   norm_fits=True),
             ZOGYPrepare(output_sub_dir="subtract"),
             ZOGY(output_sub_dir="subtract"),
             DetectCandidates(output_sub_dir="subtract",
-                             cand_det_sextractor_config='~/wirc_imsub/config/photomCat.sex',
-                             cand_det_sextractor_nnw='~/wirc_imsub/config/default.nnw',
-                             cand_det_sextractor_filter='~/wirc_imsub/config/default.conv',
-                             cand_det_sextractor_params='~/wirc_imsub/config/Scorr.param')
+                             cand_det_sextractor_config='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photomCat.sex',
+                             cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.nnw',
+                             cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.conv',
+                             cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/Scorr.param'),
+            RegionsWriter(output_dir_name='candidates'),
+            PSFPhotometry(),
+            AperturePhotometry(aper_diameters=[16, 70], cutout_size_aper_phot=100, bkg_in_diameters=[25, 90],
+                               bkg_out_diameters=[40, 100], col_suffix_list=['', 'big']),
+            DataframeWriter(output_dir_name='candidates'),
+            XMatch(
+                catalog=TMASS(),
+                num_stars=3,
+                search_radius_arcsec=30
+            ),
+            XMatch(
+                catalog=PS1(),
+                num_stars=3,
+                search_radius_arcsec=30
+            ),
+            DataframeWriter(output_dir_name='kowalski'),
+            # EdgeCandidatesMask(edge_boundary_size=100)
+            # FilterCandidates(),
+            AvroPacketMaker(output_sub_dir="avro",
+                            base_name="WNTR",
+                            broadcast=False,
+                            save_local=False),
+            # SendToFritz(output_sub_dir="test")
         ]
     }
-
-    def load_raw_image(
-            self,
-            path: str
-    ) -> tuple[np.array, fits.Header]:
-        with fits.open(path) as img:
-            data = img[0].data
-            header = img[0].header
-            header["FILTER"] = header["AFT"].split("__")[0]
-            header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
-            header["CALSTEPS"] = ""
-            header["BASENAME"] = os.path.basename(path)
-            header["TARGET"] = header["OBJECT"].lower()
-            header["UTCTIME"] = header["UTSHUT"]
-            header["MJD-OBS"] = Time(header['UTSHUT']).mjd
-            # header.append(('GAIN', self.gain, 'Gain in electrons / ADU'), end=True)
-            # header = self.set_saturation(header)
-            if not 'COADDS' in header.keys():
-                logger.debug('Setting COADDS to 0')
-                header['COADDS'] = 0
-            if not 'CALSTEPS' in header.keys():
-                logger.debug('Setting CALSTEPS to blank')
-                header['CALSTEPS'] = ''
-        return data, header
-
-    '''
-            MaskPixels(mask_path=wirc_mask_path),
-            DarkCalibrator(),
-            SkyFlatCalibrator(),
-            NightSkyMedianCalibrator(),
-            AutoAstrometry(catalog="tmc"),
-            Sextractor(
-                output_sub_dir="postprocess",
-                **sextractor_astrometry_config
-            ),
-            Scamp(
-                ref_catalog_generator=wirc_astrometric_catalog_generator,
-                scamp_config_path=scamp_fp_path,
-            ),
-            Swarp(swarp_config_path=swarp_sp_path),
-            Sextractor(
-                output_sub_dir="final_sextractor",
-                **sextractor_astrometry_config
-            ),
-            ImageSaver(output_dir_name="final"),
-            PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
-        ]
-    }
-    '''

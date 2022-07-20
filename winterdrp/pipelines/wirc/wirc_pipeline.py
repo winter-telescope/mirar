@@ -18,6 +18,10 @@ from winterdrp.catalog import Gaia2Mass
 from winterdrp.downloader.caltech import download_via_ssh
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
+from winterdrp.paths import coadd_key, proc_history_key
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def wirc_astrometric_catalog_generator(
@@ -49,6 +53,23 @@ def load_raw_wirc_image(
         header["TARGET"] = header["OBJECT"].lower()
         header["UTCTIME"] = header["UTSHUT"]
         header["MJD-OBS"] = Time(header['UTSHUT']).mjd
+        if coadd_key not in header.keys():
+            logger.debug(f"No {coadd_key} entry. Setting coadds to 1.")
+            header[coadd_key] = 1
+        if proc_history_key not in header.keys():
+            header[proc_history_key] = ""
+
+        filter_dict = {'J': 1,'H': 2, 'Ks': 3}
+        if "FILTERID" not in header.keys():
+            header["FILTERID"] = filter_dict[header["FILTER"]]
+        if "FIELDID" not in header.keys():
+            header["FIELDID"] = 99999
+        if "PROGPI" not in header.keys():
+            header["PROGPI"] = "Kasliwal"
+        if "PROGID" not in header.keys():
+            header["PROGID"] = 0
+
+        data[data == 0] = np.nan
     return data, header
 
 

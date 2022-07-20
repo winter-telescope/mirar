@@ -3,7 +3,7 @@ import copy
 import astropy.io.fits
 import numpy as np
 import logging
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import base_name_key
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 sub_id_key = "SUBID"
 
 
-class SplitImage(BaseProcessor):
+class SplitImage(BaseImageProcessor):
 
     base_key = "split"
 

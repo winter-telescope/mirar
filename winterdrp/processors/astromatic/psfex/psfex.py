@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import astropy.io.fits
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import get_output_dir, base_name_key, psfex_header_key, norm_psfex_header_key, \
     sextractor_header_key
 from winterdrp.utils import execute
@@ -17,7 +17,7 @@ def run_psfex(sextractor_cat_path: str,
               psf_output_dir: str,
               norm_psf_output_name: str = None
               ):
-    psfex_command = f"psfex -c {config_path} {sextractor_cat_path} -PSF_DIR {psf_output_dir} "
+    psfex_command = f"psfex -c {config_path} {sextractor_cat_path} -PSF_DIR {psf_output_dir} -CHECKIMAGE_TYPE NONE"
     print(psfex_command)
 
     execute(psfex_command)
@@ -30,7 +30,7 @@ def run_psfex(sextractor_cat_path: str,
         psf_model_hdu.writeto(norm_psf_output_name, overwrite=True)
 
 
-class PSFex(BaseProcessor):
+class PSFex(BaseImageProcessor):
     base_key = "psfex"
 
     def __init__(self,
@@ -72,7 +72,7 @@ class PSFex(BaseProcessor):
 
             header[psfex_header_key] = psf_path
             header[norm_psfex_header_key] = norm_psf_path
-            assert False
+            # assert False
         return images, headers
 
     def check_prerequisites(

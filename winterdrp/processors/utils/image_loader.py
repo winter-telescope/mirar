@@ -3,7 +3,7 @@ import os
 import astropy.io.fits
 import numpy as np
 from winterdrp.paths import base_raw_dir, raw_img_sub_dir
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import core_fields
 import logging
 from collections.abc import Callable
@@ -13,7 +13,7 @@ from glob import glob
 logger = logging.getLogger(__name__)
 
 
-class ImageLoader(BaseProcessor):
+class ImageLoader(BaseImageProcessor):
 
     base_key = "load"
 

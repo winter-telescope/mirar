@@ -121,6 +121,7 @@ def run_sextractor_single(
         checkimage_name: str | list = None,
         checkimage_type: str | list = None,
         gain: float = None,
+        mag_zp: float = None
 ):
     if catalog_name is None:
         image_name = Path(img).stem
@@ -157,6 +158,8 @@ def run_sextractor_single(
     else:
         cmd += f"-WEIGHT_IMAGE {weight_image}"
 
+    if mag_zp is not None:
+        cmd += f" -MAG_ZEROPOINT {mag_zp}"
     try:
         execute(cmd, output_dir)
     except ExecutionError as e:
@@ -180,7 +183,7 @@ def run_sextractor_dual(
         checkimage_name: str | list = None,
         checkimage_type: str | list = None,
         gain: float = None,
-
+        mag_zp: float = None
 ):
     if catalog_name is None:
         image_name = Path(measure_image).stem
@@ -211,7 +214,7 @@ def run_sextractor_dual(
         checkimage_name=checkimage_name,
         image=det_image
     )
-
+    logger.info(weight_image)
     if weight_image is None:
         cmd += "-WEIGHT_TYPE None"
     else:

@@ -6,15 +6,12 @@ import numpy as np
 import copy
 from winterdrp.paths import saturate_key
 
-
 logger = logging.getLogger(__name__)
-
 
 core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
 
 
 class Pipeline:
-
     pipelines = {}
     name = None
 
@@ -67,28 +64,6 @@ class Pipeline:
         for processor in self.processors:
             processor.set_night(night_sub_dir=sub_dir)
 
-    def open_raw_image(
-            self,
-            path: str
-    ) -> tuple[np.array, astropy.io.fits.Header]:
-
-        data, header = self.load_raw_image(path)
-
-        for key in core_fields:
-            if key not in header.keys():
-                err = f"Essential key {key} not found in header. " \
-                      f"Please add this field first. Available fields are: {list(header.keys())}"
-                logger.error(err)
-                raise KeyError(err)
-
-        return data.astype(np.float64), header
-
-    @staticmethod
-    def load_raw_image(
-            path: str
-    ) -> tuple[np.array, astropy.io.fits.Header]:
-        raise NotImplementedError
-
     @staticmethod
     def download_raw_images_for_night(
             night: str | int
@@ -112,7 +87,8 @@ class Pipeline:
         for i, processor in enumerate(self.processors):
             logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
                          f"(Step {i+1}/{len(self.processors)})")
-            batches, failures = processor.apply(
+
+            batches, failures = processor.base_apply(
                 batches
             )
 

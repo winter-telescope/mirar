@@ -1,5 +1,5 @@
 # import logging
-from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.processors.bias import BiasCalibrator
 from winterdrp.processors.dark import DarkCalibrator
 from winterdrp.processors.mask import MaskPixels

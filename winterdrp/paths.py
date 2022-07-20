@@ -154,7 +154,7 @@ def parse_image_list(
     return object_dict
 
 
-raw_img_key = "RAWIMAGEPATH"
+raw_img_key = "RAWPATH"
 base_name_key = "BASENAME"
 proc_history_key = "CALSTEPS"
 latest_save_key = "SAVEPATH"
@@ -163,8 +163,12 @@ saturate_key = "SATURATE"
 sextractor_header_key = 'SRCCAT'
 psfex_header_key = 'PSFCAT'
 norm_psfex_header_key = 'NPSFCAT'
+flat_frame_key = 'FLATNAME'
+bias_frame_key = 'BIASNAME'
+dark_frame_key = 'DARKNAME'
+coadd_key = "COADDS"
 
-core_fields = ["OBSCLASS", "TARGET", "UTCTIME", "COADDS"]
+core_fields = ["OBSCLASS", "TARGET", "UTCTIME", coadd_key, proc_history_key]
 
 
 class ProcessingError(Exception):

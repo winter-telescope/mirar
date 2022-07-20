@@ -8,13 +8,14 @@ from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.downloader.caltech import download_via_ssh
 from astropy.time import Time
 from winterdrp.catalog import Gaia2Mass, PS1
-from winterdrp.processors.database.database_exporter import DatabaseExporter
+from winterdrp.processors.database.database_exporter import DatabaseImageExporter
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
 from astropy.io import fits
 from winterdrp.pipelines.summer.summer_files import get_summer_schema_path, summer_mask_path, summer_weight_path, \
     sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_path
+from winterdrp.pipelines.summer.summer_files.schema import summer_schema_dir
 from winterdrp.processors.split import SplitImage
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.utils.image_loader import ImageLoader
@@ -22,7 +23,7 @@ from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatche
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors import MaskPixels, BiasCalibrator, FlatCalibrator
 from winterdrp.processors.csvlog import CSVLog
-from winterdrp.paths import core_fields, base_name_key
+from winterdrp.paths import core_fields, base_name_key, latest_save_key
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
@@ -73,7 +74,8 @@ def load_raw_summer_image(
         header['TELDEC'] = tel_crd.dec.deg
         # filters = {'4': 'OPEN', '3': 'r', '1': 'u'}
         header['BZERO'] = 0
-
+        header[latest_save_key] = path
+        header["RAWPATH"] = path
         # print(img[0].data.shape)
         data[0].data = data[0].data * 1.0
         # img[0].data[2048, :] = np.nan
@@ -98,7 +100,7 @@ def load_raw_summer_image(
             header['SUBPROG'] = 'high_cadence'
 
         header['FILTER'] = header['FILTERID']
-
+        header['DARKNAME'] = ''
         # print('Time', header['shutopen'])
         try:
             header['SHUTOPEN'] = Time(header['SHUTOPEN'], format='iso').jd
@@ -144,7 +146,7 @@ def load_raw_summer_image(
 
         if 'COADDS' not in header.keys():
             header['COADDS'] = 1
-            logger.debug('Setting COADDS to 1')
+            # logger.debug('Setting COADDS to 1')
 
         crds = SkyCoord(ra=header['RA'], dec=header['DEC'], unit=(u.deg, u.deg))
         header['RA'] = crds.ra.deg
@@ -171,11 +173,13 @@ class SummerPipeline(Pipeline):
                                 base_name_key
                             ] + core_fields
             ),
-            # DatabaseExporter(
-            #     db_name=pipeline_name,
-            #     db_table="exposures",
-            #     schema_path=get_summer_schema_path("exposures")
-            # ),
+            DatabaseImageExporter(
+                db_name=pipeline_name,
+                db_table="exposures",
+                schema_path=get_summer_schema_path("exposures"),
+                full_setup=True,
+                schema_dir=summer_schema_dir
+            ),
             MaskPixels(mask_path=summer_mask_path),
             # SplitImage(
             #     buffer_pixels=0,
@@ -183,11 +187,11 @@ class SummerPipeline(Pipeline):
             #     n_y=2
             # ),
             # ImageSaver(output_dir_name="rawimages"),
-            # DatabaseExporter(
-            #     db_name=pipeline_name,
-            #     db_table="raw",
-            #     schema_path=get_summer_schema_path("raw")
-            # ),
+            DatabaseImageExporter(
+                db_name=pipeline_name,
+                db_table="raw",
+                schema_path=get_summer_schema_path("raw")
+            ),
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
@@ -217,8 +221,15 @@ class SummerPipeline(Pipeline):
                        checkimage_name='NONE',
                        checkimage_type='NONE',
                        **sextractor_photometry_config),
-            ImageSaver(output_dir_name="teste"),
-            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator)
+            ImageSaver(output_dir_name="processed"),
+            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
+            ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG']),
+            DatabaseImageExporter(
+                db_name=pipeline_name,
+                db_table="proc",
+                schema_path=get_summer_schema_path("proc")
+            )
+
         ]
     }
 

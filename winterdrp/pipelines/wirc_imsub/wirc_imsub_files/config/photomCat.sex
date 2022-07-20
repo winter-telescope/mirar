@@ -1,0 +1,97 @@
+# Default configuration file for SExtractor 2.5.0
+# EB 2006-07-14
+#
+ 
+#-------------------------------- Catalog ------------------------------------
+ 
+CATALOG_NAME     test.cat       # name of the output catalog
+CATALOG_TYPE     FITS_LDAC     # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
+                                # ASCII_VOTABLE, FITS_1.0 or FITS_LDAC
+PARAMETERS_NAME  /home/kde/reduxScripts/gattini/drp_commissioning/astrometry/photomCat.param  # name of the file containing catalog contents
+ 
+#------------------------------- Extraction ----------------------------------
+ 
+DETECT_TYPE      CCD            # CCD (linear) or PHOTO (with gamma correction)
+DETECT_MINAREA   10              # minimum number of pixels above threshold
+THRESH_TYPE	 RELATIVE	# threshold type: RELATIVE (in sigmas) or ABSOLUTE (in ADUs)
+
+DETECT_THRESH    5           # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+ANALYSIS_THRESH  5           # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+ 
+FILTER           Y              # apply filter for detection (Y or N)?
+FILTER_NAME      /home/kde/reduxScripts/gattini/drp_commissioning/astrometry/default.conv   # name of the file containing the filter
+ 
+DEBLEND_NTHRESH  32             # Number of deblending sub-thresholds
+DEBLEND_MINCONT  1e-4          # Minimum contrast parameter for deblending
+ 
+CLEAN            Y              # Clean spurious detections? (Y or N)?
+CLEAN_PARAM      1.0            # Cleaning efficiency
+ 
+MASK_TYPE        CORRECT        # type of detection MASKing: can be one of
+                                # NONE, BLANK or CORRECT
+ 
+#-------------------------------- WEIGHTing ----------------------------------
+
+WEIGHT_TYPE      MAP_WEIGHT     # type of WEIGHTing: NONE, BACKGROUND,
+                                # MAP_RMS, MAP_VAR or MAP_WEIGHT
+WEIGHT_IMAGE     weight.fits    # weight-map filename
+WEIGHT_GAIN      N              # modulate gain (E/ADU) with weights? (Y/N)
+WEIGHT_THRESH                   # weight threshold[s] for bad pixels
+                                
+
+
+#------------------------------ Photometry -----------------------------------
+
+PHOT_APERTURES   2, 3, 4, 5, 6, 7, 8           # MAG_APER aperture diameter(s) in pixels
+PHOT_FLUXFRAC    0.5        # flux fraction[s] used for FLUX_RADIUS
+#PHOT_AUTOPARAMS  1.0,2.0                        # MAG_AUTO parameters: <Kron_fact>,<min_radius>
+#PHOT_PETROPARAMS 1.0,2.0                        # MAG_PETRO parameters: <Petrosian_fact>,
+                                                # <min_radius>
+                                                #
+ 
+#PHOT_APERTURES   5              # MAG_APER aperture diameter(s) in pixels
+PHOT_AUTOPARAMS  2.5, 3.5       # MAG_AUTO parameters: <Kron_fact>,<min_radius>
+PHOT_PETROPARAMS 2.0, 3.5       # MAG_PETRO parameters: <Petrosian_fact>,
+                                # <min_radius>
+
+SATUR_KEY        SATURATE       # keyword for saturation level (in ADUs) 
+SATUR_LEVEL      25000        # level (in ADUs) at which arises saturation
+ 
+MAG_ZEROPOINT    0            # magnitude zero-point
+MAG_GAMMA        4.0            # gamma of emulsion (for photographic scans)
+GAIN             1            # detector gain in e-/ADU
+PIXEL_SCALE      0.466            # size of pixel in arcsec (0=use FITS WCS info)
+ 
+#------------------------- Star/Galaxy Separation ----------------------------
+ 
+SEEING_FWHM      2            # stellar FWHM in arcsec
+STARNNW_NAME     /home/kde/reduxScripts/gattini/drp_commissioning/astrometry/default.nnw    # Neural-Network_Weight table filename
+ 
+#------------------------------ Background -----------------------------------
+ 
+BACK_SIZE        256             # Background mesh: <size> or <width>,<height>
+BACK_FILTERSIZE  6              # Background filter: <size> or <width>,<height>
+ 
+BACK_TYPE        AUTO           # AUTO or MANUAL
+BACKPHOTO_TYPE   LOCAL        # can be GLOBAL or LOCAL
+
+#------------------------------ Check Image ----------------------------------
+ 
+CHECKIMAGE_TYPE  BACKGROUND,BACKGROUND_RMS           # can be NONE, BACKGROUND, BACKGROUND_RMS,
+                                # MINIBACKGROUND, MINIBACK_RMS, -BACKGROUND,
+                                # FILTERED, OBJECTS, -OBJECTS, SEGMENTATION,
+                                # or APERTURES
+CHECKIMAGE_NAME  sources.fits     # Filename for the check-image
+ 
+#--------------------- Memory (change with caution!) -------------------------
+
+NTHREADS         1		#Number of threads to use 
+MEMORY_OBJSTACK  10000           # number of objects in stack
+MEMORY_PIXSTACK  5000000         # number of pixels in stack
+MEMORY_BUFSIZE   1024           # number of lines in buffer
+ 
+#----------------------------- Miscellaneous ---------------------------------
+ 
+VERBOSE_TYPE     QUIET         # can be QUIET, NORMAL or FULL
+WRITE_XML        N              # Write XML file (Y/N)?
+XML_NAME         sex.xml        # Filename for XML output
