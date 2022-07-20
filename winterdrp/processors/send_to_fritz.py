@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 class SendToFritz(BaseDataframeProcessor):
     def __init__(self, 
                 output_sub_dir: str, 
-                token = 'b8d92664-f8ab-407d-b578-648d7237d437',
+                # token = '8f59cf92-c43a-4206-a6fe-64913da58bf6', #winter2
+                token = '18162129-49f8-4b85-9e0e-38f18fac32c1',
                 group_ids = [1431],
                 base_name = 'WIRC',
                 *args,
@@ -82,21 +83,6 @@ class SendToFritz(BaseDataframeProcessor):
             all_candidates.append(candidate)
 
         return all_candidates 
-
-    def generate_fritz_dict(self, cand):
-        """Make dictionary as per API formatting"""
-        formatted_dict = {}
-        for cand_key in cand.keys():
-            if cand_key == 'ra':
-                formatted_dict['ra'] = cand[cand_key]
-            if cand_key =='dec':
-                formatted_dict['dec'] = cand[cand_key]
-
-        formatted_dict['id'] = cand['objectId']
-        formatted_dict['group_ids'] = self.group_ids
-        logger.info(f"dict:{formatted_dict}")
-
-        return formatted_dict
 
     def get_next_name(self, lastname, candjd, bwfile = 'badwords.txt', begcount = 'aaaaaaa'):
         """Creates candidate name following the naming format of 'WNTR22aaaaaaa' .
@@ -172,7 +158,12 @@ class SendToFritz(BaseDataframeProcessor):
         return response
 
     def add_new_source(self, cand):
-        data = self.generate_fritz_dict(cand)
+        data = {'ra': cand['ra'],
+                        'dec': cand['dec'],
+                        'id': cand['objectId'],
+                        'group_ids': self.group_ids
+        }   
+        logger.info(f"dict:{data}")
         response = self.api('POST', 'https://fritz.science/api/sources', data)
         return response
     
@@ -207,7 +198,7 @@ class SendToFritz(BaseDataframeProcessor):
 
             response = self.api('POST', 'https://fritz.science/api/thumbnail', data=data_payload)
             # logger.info(f'candid {data_payload["obj_id"]}: {data_payload["ttype"]}, thumbnail response:{response}')
-            return response
+        return response
 
     def update_photometry(self, cand):
         """Send photometry to Fritz."""
@@ -224,41 +215,32 @@ class SendToFritz(BaseDataframeProcessor):
         # response = self.api('PATCH', 'https://fritz.science/api/photometry/photometry_id', data=data_payload)
         response = self.api('PUT', 'https://fritz.science/api/photometry', data=data_payload)
 
-        logger.info(f'candid {data_payload["obj_id"]} photo response:{response.text}')
+        # logger.info(f'candid {data_payload["obj_id"]} photo response:{response.text}')
         return response
 
-    def _generate_skyport_dict(self, cand):
-        """Create payload dictionary as specified by
-        """
-        logger.info(f'Time now: {Time(datetime.utcnow()).isot}')
-        logger.info(f'Time type {type(Time(datetime.utcnow()).isot)}')
-        payload = {"ra": cand["ra"],
-                    "dec": cand["dec"],
-                    "id": cand["objectId"],
-                    "filter_ids": [1130],
-                    "passing_alert_id": 1130,
-                    "passed_at": Time(datetime.utcnow()).isot
-        }
-        return payload
-        # ['group_ids'] = self.group_ids
-
-
-    def skyportal_create_new_cand(self, cand):
+    def create_new_cand(self, cand, id):
         """Create new candidate(s) (one per filter)"""
-        data = self._generate_skyport_dict(cand)
-        response = self.api('POST', 'https://skyportal.io/#tag/candidates/paths/~1api~1candidates/get/api/candidates', data)
-        logger.info(f'response {response.text}')
+        data = { "id": cand["objectId"],
+                    "filter_ids": [1147],
+                    "passing_alert_id": 1147,
+                    "passed_at": Time(datetime.utcnow()).isot,
+                    "ra": cand["ra"],
+                    "dec": cand["dec"],
+                    }
+        response = self.api('POST','https://fritz.science/api/candidates',data=data)        
+        # response = self.api('POST', 'https://fritz.science/#tag/candidates/paths/~1api~1candidates/get/api/candidates',data=data)        
+        logger.info(f'new create response {response.text}')
         return response
-        
+
+
     def make_alert(self, cand_table):
         all_cands = self.read_input_df(cand_table)
 
-        last_name = None
+        last_name = 'WIRC21aaaaaao'
         cand_id = 700
               
         for cand in all_cands:
-            cand_jd = cand['jd']
-            logger.info(f'jd type: {type(cand_jd)}')
+            cand_jd = cand['jd'] # float
             cand_name = self.get_next_name(last_name, str(cand_jd))
 
             #TODO candid should be coming from naming database
@@ -275,10 +257,12 @@ class SendToFritz(BaseDataframeProcessor):
                 last_name = cand_name    
             cand['objectId'] = cand_name
 
-            
             # source_response = self.add_new_source(cand)
-            source_response = self.skyportal_create_new_cand(cand)
+            source_response = self.create_new_cand(cand, id)
             logger.info(f'Add source {cand["objectId"]}: {source_response}')
             thumbnail_response = self.upload_thumbnail(cand)
+            logger.info(f'Upload thumbnail {cand["objectId"]}: {thumbnail_response}')
             photometry_response = self.update_photometry(cand)
+            logger.info(f'Photometry {cand["objectId"]}: {photometry_response}')
+
             
