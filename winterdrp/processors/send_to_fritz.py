@@ -5,6 +5,7 @@ import os, gzip, io
 
 import base64
 import astropy
+from datetime import datetime
 from astropy.time import Time
 from astropy.io import ascii
 from astropy.io import fits
@@ -82,7 +83,7 @@ class SendToFritz(BaseDataframeProcessor):
 
         return all_candidates 
 
-    def generate_dict(self, cand):
+    def generate_fritz_dict(self, cand):
         """Make dictionary as per API formatting"""
         formatted_dict = {}
         for cand_key in cand.keys():
@@ -171,7 +172,7 @@ class SendToFritz(BaseDataframeProcessor):
         return response
 
     def add_new_source(self, cand):
-        data = self.generate_dict(cand)
+        data = self.generate_fritz_dict(cand)
         response = self.api('POST', 'https://fritz.science/api/sources', data)
         return response
     
@@ -216,16 +217,38 @@ class SendToFritz(BaseDataframeProcessor):
                         "mag": cand["magpsf"],
                         "magerr": cand["sigmapsf"],
                         "instrument_id": 5,
-                        "mjd": cand['jd'],
+                        "mjd": cand['jd'] - 2400000.5,
                         "limiting_mag": 99,
                         "group_ids": self.group_ids
                         }
         # response = self.api('PATCH', 'https://fritz.science/api/photometry/photometry_id', data=data_payload)
-        # response = self.api('PUT', 'https://fritz.science/api/photometry', data=data_payload)
+        response = self.api('PUT', 'https://fritz.science/api/photometry', data=data_payload)
 
         logger.info(f'candid {data_payload["obj_id"]} photo response:{response.text}')
         return response
 
+    def _generate_skyport_dict(self, cand):
+        """Create payload dictionary as specified by
+        """
+        logger.info(f'Time now: {Time(datetime.utcnow()).isot}')
+        logger.info(f'Time type {type(Time(datetime.utcnow()).isot)}')
+        payload = {"ra": cand["ra"],
+                    "dec": cand["dec"],
+                    "id": cand["objectId"],
+                    "filter_ids": [1130],
+                    "passing_alert_id": 1130,
+                    "passed_at": Time(datetime.utcnow()).isot
+        }
+        return payload
+        # ['group_ids'] = self.group_ids
+
+
+    def skyportal_create_new_cand(self, cand):
+        """Create new candidate(s) (one per filter)"""
+        data = self._generate_skyport_dict(cand)
+        response = self.api('POST', 'https://skyportal.io/#tag/candidates/paths/~1api~1candidates/get/api/candidates', data)
+        logger.info(f'response {response.text}')
+        return response
         
     def make_alert(self, cand_table):
         all_cands = self.read_input_df(cand_table)
@@ -253,8 +276,9 @@ class SendToFritz(BaseDataframeProcessor):
             cand['objectId'] = cand_name
 
             
-            source_response = self.add_new_source(cand)
-            logger.info(source_response)
+            # source_response = self.add_new_source(cand)
+            source_response = self.skyportal_create_new_cand(cand)
+            logger.info(f'Add source {cand["objectId"]}: {source_response}')
             thumbnail_response = self.upload_thumbnail(cand)
             photometry_response = self.update_photometry(cand)
-            break
+            
