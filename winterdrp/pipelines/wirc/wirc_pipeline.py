@@ -59,6 +59,16 @@ def load_raw_wirc_image(
         if proc_history_key not in header.keys():
             header[proc_history_key] = ""
 
+        filter_dict = {'J': 1,'H': 2, 'Ks': 3}
+        if "FILTERID" not in header.keys():
+            header["FILTERID"] = filter_dict[header["FILTER"]]
+        if "FIELDID" not in header.keys():
+            header["FIELDID"] = 99999
+        if "PROGPI" not in header.keys():
+            header["PROGPI"] = "Kasliwal"
+        if "PROGID" not in header.keys():
+            header["PROGID"] = 0
+
         data[data == 0] = np.nan
     return data, header
 

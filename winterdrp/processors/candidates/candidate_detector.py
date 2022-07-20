@@ -155,6 +155,12 @@ class DetectCandidates(BaseCandidateGenerator):
 
         det_srcs['jd'] = fits.getval(sci_resamp_imagename,'MJD-OBS')+2400000.5
         det_srcs['exptime'] = fits.getval(diff_filename,'EXPTIME')
+        det_srcs['field'] = fits.getval(sci_resamp_imagename, 'FIELDID')
+        det_srcs['programpi'] = fits.getval(sci_resamp_imagename, 'PROGPI')
+        det_srcs['programid'] = fits.getval(sci_resamp_imagename, 'PROGID')
+        det_srcs['fid'] = fits.getval(sci_resamp_imagename, 'FILTERID')
+        det_srcs['candid'] = np.array(det_srcs['jd']*100, dtype=int)*10000 + np.arange(len(det_srcs))
+        det_srcs['name'] = ''
         det_srcs = det_srcs.to_pandas()
 
         return det_srcs

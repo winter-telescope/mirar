@@ -53,7 +53,7 @@ def wirc_reference_image_resampler(pixscale,
                                    gain,
                                    subtract_bkg):
     logger.debug(f'Night sub dir is {night_sub_dir}')
-    return Swarp(swarp_config_path='winterdrp/pipelines/wirc_imsub/config/config.swarp',
+    return Swarp(swarp_config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/config.swarp',
                  pixscale=pixscale,
                  x_imgpixsize=x_imgpixsize,
                  y_imgpixsize=y_imgpixsize,
@@ -71,10 +71,10 @@ def wirc_reference_image_resampler(pixscale,
 
 
 def wirc_reference_sextractor(output_sub_dir, gain):
-    return Sextractor(config_path='winterdrp/pipelines/wirc_imsub/config/photomCat.sex',
-                      parameter_path='winterdrp/pipelines/wirc_imsub/config/photom.param',
-                      filter_path='winterdrp/pipelines/wirc_imsub/config/default.conv',
-                      starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
+    return Sextractor(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photomCat.sex',
+                      parameter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.param',
+                      filter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.conv',
+                      starnnw_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.nnw',
                       gain=gain,
                       output_sub_dir=output_sub_dir,
                       cache=True
@@ -82,7 +82,7 @@ def wirc_reference_sextractor(output_sub_dir, gain):
 
 
 def wirc_reference_psfex(output_sub_dir, norm_fits):
-    return PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
+    return PSFex(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.psfex',
                  output_sub_dir=output_sub_dir,
                  norm_fits=norm_fits,
                  cache=True
@@ -119,26 +119,26 @@ class WircImsubPipeline(Pipeline):
                 ref_psfex=wirc_reference_psfex
             ),
             # Swarp(),
-            Sextractor(config_path='winterdrp/pipelines/wirc_imsub/config/photomCat.sex',
-                       parameter_path='winterdrp/pipelines/wirc_imsub/config/photom.param',
-                       filter_path='winterdrp/pipelines/wirc_imsub/config/default.conv',
-                       starnnw_path='winterdrp/pipelines/wirc_imsub/config/default.nnw',
+            Sextractor(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photomCat.sex',
+                       parameter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.param',
+                       filter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.conv',
+                       starnnw_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.nnw',
                        output_sub_dir='subtract',
                        cache=False),
-            PSFex(config_path='winterdrp/pipelines/wirc_imsub/config/photom.psfex',
+            PSFex(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.psfex',
                   output_sub_dir="subtract",
                   norm_fits=True),
             ZOGYPrepare(output_sub_dir="subtract"),
             ZOGY(output_sub_dir="subtract"),
             DetectCandidates(output_sub_dir="subtract",
-                             cand_det_sextractor_config='winterdrp/pipelines/wirc_imsub/config/photomCat.sex',
-                             cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/config/default.nnw',
-                             cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/config/default.conv',
-                             cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/config/Scorr.param'),
+                             cand_det_sextractor_config='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photomCat.sex',
+                             cand_det_sextractor_nnw='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.nnw',
+                             cand_det_sextractor_filter='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.conv',
+                             cand_det_sextractor_params='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/Scorr.param'),
             RegionsWriter(output_dir_name='candidates'),
             PSFPhotometry(),
             AperturePhotometry(aper_diameters=[16, 70], cutout_size_aper_phot=100, bkg_in_diameters=[25, 90],
-                               bkg_out_diameters=[40, 100]),
+                               bkg_out_diameters=[40, 100], col_suffix_list=['', 'big']),
             DataframeWriter(output_dir_name='candidates'),
             XMatch(
                 catalog=TMASS(),
@@ -157,6 +157,6 @@ class WircImsubPipeline(Pipeline):
                             base_name="WNTR",
                             broadcast=False,
                             save_local=False),
-            SendToFritz(output_sub_dir="test")
+            # SendToFritz(output_sub_dir="test")
         ]
     }
