@@ -56,6 +56,8 @@ class SendToFritz(BaseDataframeProcessor):
         and creates list of dictionaries, each dictionary 
         representing a single candidate.
 
+        NOTE: saves images as np.arrays for thumbnail sending.
+
         Args:
             df (pandas.core.frame.DataFrame): dataframe of all candidates.
         
@@ -75,7 +77,6 @@ class SendToFritz(BaseDataframeProcessor):
                         candidate[key] = df.iloc[i].get(key).item()
                 except AttributeError: # for IOBytes objs
                     candidate[key] = self.open_bytes_obj(df.iloc[i].get(key))
-                    logger.info(f'type open_bytes {type(candidate[key])}')
                                                  
             all_candidates.append(candidate)
 
@@ -181,15 +182,10 @@ class SendToFritz(BaseDataframeProcessor):
         { "obj_id": "string",  "data": "string",  "ttype": "string"}
         """
         fritz_to_cand = {"new": 'SciBitIm', "ref": 'RefBitIm', "sub": 'DiffBitIm'}
-        thumbnail_payload = {}
-        thumbnail_payload["obj_id"] = cand['objectId']
 
         for fritz_key in fritz_to_cand.keys():
-            thumbnail_payload['ttype'] = fritz_key
-
             cand_key = fritz_to_cand[fritz_key]
             cutout = cand[cand_key]
-            logger.info(f'cutout type: {type(cutout)}')
 
             buffer = io.BytesIO()
             plt.figure(figsize=(3,3))
@@ -197,26 +193,40 @@ class SendToFritz(BaseDataframeProcessor):
             plt.imshow(cutout, origin='lower', cmap='gray',vmin=mean-1*std,vmax=median+3*std)
             plt.xticks([])
             plt.yticks([])
-            logger.info(f'cutout shape {cutout.shape}')
 
             plt.savefig(buffer,format='png')
 
             cutoutb64 = base64.b64encode(buffer.getvalue())
             cutoutb64_string = cutoutb64.decode('utf8')
-            logger.info(f'64 str type: {type(cutoutb64_string)}')
-
-            thumbnail_payload['data'] = cutoutb64_string
 
             data_payload = {'obj_id':cand['objectId'],
                             'data':cutoutb64_string,
                             'ttype':fritz_key
                         }
 
-            # response = self.api('POST', 'https://fritz.science/api/thumbnail', data=thumbnail_payload)
             response = self.api('POST', 'https://fritz.science/api/thumbnail', data=data_payload)
+            # logger.info(f'candid {data_payload["obj_id"]}: {data_payload["ttype"]}, thumbnail response:{response}')
+            return response
 
-            logger.info(f'candid {cand["objectId"]}: {thumbnail_payload["ttype"]}, thumbnail response:{response.text}')
+    def update_photometry(self, cand):
+        """Send photometry to Fritz."""
+        data_payload = {"filter": "cspjs",
+                        "magsys": "vega",
+                        "obj_id": cand["objectId"],
+                        "mag": cand["magpsf"],
+                        "magerr": cand["sigmapsf"],
+                        "instrument_id": 5,
+                        "mjd": cand['jd'],
+                        "limiting_mag": 99,
+                        "group_ids": self.group_ids
+                        }
+        # response = self.api('PATCH', 'https://fritz.science/api/photometry/photometry_id', data=data_payload)
+        # response = self.api('PUT', 'https://fritz.science/api/photometry', data=data_payload)
 
+        logger.info(f'candid {data_payload["obj_id"]} photo response:{response.text}')
+        return response
+
+        
     def make_alert(self, cand_table):
         all_cands = self.read_input_df(cand_table)
 
@@ -225,6 +235,7 @@ class SendToFritz(BaseDataframeProcessor):
               
         for cand in all_cands:
             cand_jd = cand['jd']
+            logger.info(f'jd type: {type(cand_jd)}')
             cand_name = self.get_next_name(last_name, str(cand_jd))
 
             #TODO candid should be coming from naming database
@@ -245,3 +256,5 @@ class SendToFritz(BaseDataframeProcessor):
             source_response = self.add_new_source(cand)
             logger.info(source_response)
             thumbnail_response = self.upload_thumbnail(cand)
+            photometry_response = self.update_photometry(cand)
+            break
