@@ -30,6 +30,7 @@ class SendToFritz(BaseDataframeProcessor):
         self.token = None
         self.group_ids = group_ids
         self.base_name = base_name
+        self.origin = base_name
 
     def _apply_to_candidates(
             self,
@@ -232,20 +233,23 @@ class SendToFritz(BaseDataframeProcessor):
     def post_annotation(self, cand):
         """Post an annotation 
         """
-        data = {}
-        payload = {"origin": cand["objectId"],
+        data = {"chipsf": cand["chipsf"],
+                "fwhm": cand["fwhm"],
+                "scorr": cand["scorr"]}
+        payload = {"origin": self.origin,
             "data": data,
             "group_ids": self.group_ids
             }
 
-        response = self.api('POST', 'https://fritz.science/api/associated_resource_type/resource_id', payload)
+        path = 'https://fritz.science/api/sources/' + str(cand["objectId"]) + '/annotations'
+        response = self.api('POST', path, payload)
         logger.info(f'candid {cand["objectId"]} annotation response:{response.text}')
 
     def create_new_cand(self, cand, id):
         """Create new candidate(s) (one per filter)"""
         data = { "id": cand["objectId"],
-                    "filter_ids": [1147],
-                    "passing_alert_id": 1147,
+                    "filter_ids": [1130],
+                    "passing_alert_id": 1130,
                     "passed_at": Time(datetime.utcnow()).isot,
                     "ra": cand["ra"],
                     "dec": cand["dec"],
@@ -254,6 +258,11 @@ class SendToFritz(BaseDataframeProcessor):
         # response = self.api('POST', 'https://fritz.science/#tag/candidates/paths/~1api~1candidates/get/api/candidates',data=data)        
         logger.info(f'new create response {response.text}')
         return response
+
+    def retrieve_cand(self, cand):
+        """Checks whether a candidate already exist."""
+        path = https://fritz.science/api/candidates/ + str(cand["objectId"])
+        response = self.api('GET', path)        
 
 
     def make_alert(self, cand_table):
