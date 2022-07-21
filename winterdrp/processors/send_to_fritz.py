@@ -21,14 +21,13 @@ logger = logging.getLogger(__name__)
 class SendToFritz(BaseDataframeProcessor):
     def __init__(self, 
                 output_sub_dir: str, 
-                # token = '8f59cf92-c43a-4206-a6fe-64913da58bf6', #winter2
-                token = '18162129-49f8-4b85-9e0e-38f18fac32c1',
+                token = None,
                 group_ids = [1431],
                 base_name = 'WIRC',
                 *args,
                 **kwargs):
         super(SendToFritz, self).__init__(*args, **kwargs)
-        self.token = token
+        self.token = None
         self.group_ids = group_ids
         self.base_name = base_name
 
@@ -37,8 +36,20 @@ class SendToFritz(BaseDataframeProcessor):
             candidate_table: pd.DataFrame,
     ) -> pd.DataFrame:
         logger.info("In SendToFritz")
+        self.token = self._get_fritz_token()
         self.make_alert(candidate_table) 
         return candidate_table
+
+    def _get_fritz_token(self):
+        token_fritz = os.getenv("FRITZ_TOKEN")
+
+        if token_fritz is None:
+            err = "No Fritz token specified. Run 'export FRITZ_TOKEN=<token>' to set. " \
+                "The Fritz token will need to be specified manually for Fritz API queries."
+            logger.warning(err)
+            raise ValueError
+        # logger.info(f'token: {token_fritz}')
+        return token_fritz
 
     def open_bytes_obj(self, bytes_obj):
         """Return numpy array of bytes_obj
