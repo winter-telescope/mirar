@@ -229,6 +229,18 @@ class SendToFritz(BaseDataframeProcessor):
         # logger.info(f'candid {data_payload["obj_id"]} photo response:{response.text}')
         return response
 
+    def post_annotation(self, cand):
+        """Post an annotation 
+        """
+        data = {}
+        payload = {"origin": cand["objectId"],
+            "data": data,
+            "group_ids": self.group_ids
+            }
+
+        response = self.api('POST', 'https://fritz.science/api/associated_resource_type/resource_id', payload)
+        logger.info(f'candid {cand["objectId"]} annotation response:{response.text}')
+
     def create_new_cand(self, cand, id):
         """Create new candidate(s) (one per filter)"""
         data = { "id": cand["objectId"],
@@ -275,5 +287,7 @@ class SendToFritz(BaseDataframeProcessor):
             logger.info(f'Upload thumbnail {cand["objectId"]}: {thumbnail_response}')
             photometry_response = self.update_photometry(cand)
             logger.info(f'Photometry {cand["objectId"]}: {photometry_response}')
+            annotation_response = self.post_annotation(cand)
+            
 
             
