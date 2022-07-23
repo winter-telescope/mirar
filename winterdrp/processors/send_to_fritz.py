@@ -12,6 +12,7 @@ from astropy.io import ascii
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 from winterdrp.processors.base_processor import BaseDataframeProcessor
@@ -268,7 +269,7 @@ class SendToFritz(BaseDataframeProcessor):
         }
         response = self.api('PUT', path, payload)
         logger.info(f'update annotation status: {response.json()["status"]}')
-        logger.info(f'update message: {response.json()["message"]}')
+        logger.info(f'update message: {response.text}')
 
         return response
     
@@ -295,10 +296,19 @@ class SendToFritz(BaseDataframeProcessor):
 
         json_response= response.json()
 
+        annotation_posted = False
         if json_response["status"] == "success":
             logger.info(f'Annotation for {cand["objectId"]} already exists...trying to update')
-            annotation_id =json_response["data"][0]["id"]
-            self.update_annotation(cand, annotation_id)
+            origins = np.array([x["origin"] for x in json_response["data"]])
+            annotation_ids = np.array([x["id"] for x in json_response["data"]])
+            if np.sum((origins==self.origin)>0):
+
+                annotation_id = annotation_ids[origins == self.origin][0]
+                self.update_annotation(cand, annotation_id)
+                annotation_posted = True
+            # annotation_id =json_response["data"][0]["id"]
+
+        if not annotation_posted:
             self.post_annotation(cand)
 
     def make_alert(self, cand_table):
