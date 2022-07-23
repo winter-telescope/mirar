@@ -5,6 +5,7 @@ import os, gzip, io
 
 import base64
 import astropy
+import json, time
 from datetime import datetime
 from astropy.time import Time
 from astropy.io import ascii
@@ -230,8 +231,49 @@ class SendToFritz(BaseDataframeProcessor):
         # logger.info(f'candid {data_payload["obj_id"]} photo response:{response.text}')
         return response
 
+    def create_new_cand(self, cand, id):
+        """Create new candidate(s) (one per filter)"""
+        data = { "id": cand["objectId"],
+                    "filter_ids": [1152],
+                    "passing_alert_id": 1152,
+                    "passed_at": Time(datetime.utcnow()).isot,
+                    "ra": cand["ra"],
+                    "dec": cand["dec"],
+                    }
+        response = self.api('POST','https://fritz.science/api/candidates',data=data)        
+        # response = self.api('POST', 'https://fritz.science/#tag/candidates/paths/~1api~1candidates/get/api/candidates',data=data)        
+        # logger.info(f'new create response {response.text}')
+        return response
+
+    def retrieve_cand(self, cand):
+        """Checks whether a candidate already exist."""
+        path = 'https://fritz.science/api/candidates/' + str(cand["objectId"])
+        response = self.api('GET', path)        
+
+    def update_annotation(self, cand, annotation_id):
+        """Update an annotation."""
+        # https://fritz.science/api/associated_resource_type/resource_id/annotations/annotation_id
+        path_parms = os.path.join(cand["objectId"], "annotations", str(annotation_id))
+        path = 'https://fritz.science/api/sources/' + path_parms
+
+        data = {"fwhm":cand["fwhm"] + 1,
+                "scorr": cand["scorr"],
+                "chipsf": cand["chipsf"]
+        }
+        payload = {"data": data,
+                    "origin": self.origin,
+                    "author_id": 32,
+                    "obj_id": cand["objectId"],
+                    "group_ids": self.group_ids                    
+        }
+        response = self.api('PUT', path, payload)
+        logger.info(f'update annotation status: {response.json()["status"]}')
+        logger.info(f'update message: {response.json()["message"]}')
+
+        return response
+    
     def post_annotation(self, cand):
-        """Post an annotation 
+        """Post an annotation. For new cand? 
         """
         data = {"chipsf": cand["chipsf"],
                 "fwhm": cand["fwhm"],
@@ -245,25 +287,19 @@ class SendToFritz(BaseDataframeProcessor):
         response = self.api('POST', path, payload)
         logger.info(f'candid {cand["objectId"]} annotation response:{response.text}')
 
-    def create_new_cand(self, cand, id):
-        """Create new candidate(s) (one per filter)"""
-        data = { "id": cand["objectId"],
-                    "filter_ids": [1130],
-                    "passing_alert_id": 1130,
-                    "passed_at": Time(datetime.utcnow()).isot,
-                    "ra": cand["ra"],
-                    "dec": cand["dec"],
-                    }
-        response = self.api('POST','https://fritz.science/api/candidates',data=data)        
-        # response = self.api('POST', 'https://fritz.science/#tag/candidates/paths/~1api~1candidates/get/api/candidates',data=data)        
-        logger.info(f'new create response {response.text}')
-        return response
+    def retrieve_annotation_specified_source(self, cand):
+        """Retrieve an annotation to check if it exists already."""
+        resource_id = str(cand["objectId"])
+        path = 'https://fritz.science/api/sources/' + resource_id+ '/annotations'
+        response = self.api('GET', path)
 
-    def retrieve_cand(self, cand):
-        """Checks whether a candidate already exist."""
-        path = https://fritz.science/api/candidates/ + str(cand["objectId"])
-        response = self.api('GET', path)        
+        json_response= response.json()
 
+        if json_response["status"] == "success":
+            logger.info(f'Annotation for {cand["objectId"]} already exists...trying to update')
+            annotation_id =json_response["data"][0]["id"]
+            self.update_annotation(cand, annotation_id)
+            self.post_annotation(cand)
 
     def make_alert(self, cand_table):
         all_cands = self.read_input_df(cand_table)
@@ -290,13 +326,15 @@ class SendToFritz(BaseDataframeProcessor):
             cand['objectId'] = cand_name
 
             # source_response = self.add_new_source(cand)
-            source_response = self.create_new_cand(cand, id)
-            logger.info(f'Add source {cand["objectId"]}: {source_response}')
-            thumbnail_response = self.upload_thumbnail(cand)
-            logger.info(f'Upload thumbnail {cand["objectId"]}: {thumbnail_response}')
-            photometry_response = self.update_photometry(cand)
-            logger.info(f'Photometry {cand["objectId"]}: {photometry_response}')
-            annotation_response = self.post_annotation(cand)
+            # source_response = self.create_new_cand(cand, id)
+            # logger.info(f'Add source {cand["objectId"]}: {source_response}')
+            # thumbnail_response = self.upload_thumbnail(cand)
+            # logger.info(f'Upload thumbnail {cand["objectId"]}: {thumbnail_response}')
+            # photometry_response = self.update_photometry(cand)
+            # logger.info(f'Photometry {cand["objectId"]}: {photometry_response}')
+
+            self.retrieve_annotation_specified_source(cand)
+            # annotation_response = self.post_annotation(cand)
             
 
             
