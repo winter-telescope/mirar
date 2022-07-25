@@ -100,6 +100,7 @@ class SendToFritz(BaseDataframeProcessor):
         adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
+        self.origin = base_name # used for sending updates to Fritz
 
     def _apply_to_candidates(
             self,
