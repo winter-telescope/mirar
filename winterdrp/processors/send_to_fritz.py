@@ -51,8 +51,21 @@ class SendToFritz(BaseDataframeProcessor):
                 "The Fritz token will need to be specified manually for Fritz API queries."
             logger.warning(err)
             raise ValueError
-        # logger.info(f'token: {token_fritz}')
+        
         return token_fritz
+
+    def _get_author_id(self):
+        """Fritz author id is used in update calls.
+        Can be found """
+        authid_fritz = os.getenv("FRITZ_AUTHID")
+
+        if authid_fritz is None:
+            err = "No Fritz author id specified. Run 'export FRITZ_AUTHID=<id>' to set. " \
+                "Author id needs to be specified for updates sent by Fritz API queries."
+            logger.warning(err)
+            raise ValueError
+
+        return authid_fritz
 
     def open_bytes_obj(self, bytes_obj):
         """Return numpy array of bytes_obj
@@ -257,19 +270,20 @@ class SendToFritz(BaseDataframeProcessor):
         path_parms = os.path.join(cand["objectId"], "annotations", str(annotation_id))
         path = 'https://fritz.science/api/sources/' + path_parms
 
-        data = {"fwhm":cand["fwhm"] + 1,
+        data = {"fwhm":cand["fwhm"],
                 "scorr": cand["scorr"],
                 "chipsf": cand["chipsf"]
         }
+        authid = self._get_author_id()
         payload = {"data": data,
                     "origin": self.origin,
-                    "author_id": 32,
+                    "author_id": authid,
                     "obj_id": cand["objectId"],
                     "group_ids": self.group_ids                    
         }
         response = self.api('PUT', path, payload)
         logger.info(f'update annotation status: {response.json()["status"]}')
-        logger.info(f'update message: {response.text}')
+        # logger.info(f'update message: {response.text}')
 
         return response
     
@@ -294,20 +308,19 @@ class SendToFritz(BaseDataframeProcessor):
         path = 'https://fritz.science/api/sources/' + resource_id+ '/annotations'
         response = self.api('GET', path)
 
+        # logger.info(f'json {response}')
         json_response= response.json()
 
         annotation_posted = False
         if json_response["status"] == "success":
-            logger.info(f'Annotation for {cand["objectId"]} already exists...trying to update')
+            logger.info(f'Annotation for {cand["objectId"]} already exists...updating')
             origins = np.array([x["origin"] for x in json_response["data"]])
-            annotation_ids = np.array([x["id"] for x in json_response["data"]])
-            if np.sum((origins==self.origin)>0):
-
+            if self.origin in origins:
+                annotation_ids = np.array([x["id"] for x in json_response["data"]])
                 annotation_id = annotation_ids[origins == self.origin][0]
                 self.update_annotation(cand, annotation_id)
-                annotation_posted = True
-            # annotation_id =json_response["data"][0]["id"]
-
+                annotation_posted = True             
+            
         if not annotation_posted:
             self.post_annotation(cand)
 
@@ -345,6 +358,4 @@ class SendToFritz(BaseDataframeProcessor):
 
             self.retrieve_annotation_specified_source(cand)
             # annotation_response = self.post_annotation(cand)
-            
-
             
