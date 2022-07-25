@@ -26,13 +26,15 @@ class SendToFritz(BaseDataframeProcessor):
                 token = None,
                 group_ids = [1431],
                 base_name = 'WIRC',
+                filter_id = 1152,
                 *args,
                 **kwargs):
         super(SendToFritz, self).__init__(*args, **kwargs)
         self.token = None
         self.group_ids = group_ids
         self.base_name = base_name
-        self.origin = base_name
+        self.filter_id = filter_id
+        self.origin = base_name # used for sending updates to Fritz
 
     def _apply_to_candidates(
             self,
@@ -248,8 +250,8 @@ class SendToFritz(BaseDataframeProcessor):
     def create_new_cand(self, cand, id):
         """Create new candidate(s) (one per filter)"""
         data = { "id": cand["objectId"],
-                    "filter_ids": [1152],
-                    "passing_alert_id": 1152,
+                    "filter_ids": [self.filter_id],
+                    "passing_alert_id": self.filter_id,
                     "passed_at": Time(datetime.utcnow()).isot,
                     "ra": cand["ra"],
                     "dec": cand["dec"],
@@ -283,7 +285,7 @@ class SendToFritz(BaseDataframeProcessor):
         }
         response = self.api('PUT', path, payload)
         logger.info(f'update annotation status: {response.json()["status"]}')
-        # logger.info(f'update message: {response.text}')
+        logger.info(f'update message: {response.text}')
 
         return response
     
