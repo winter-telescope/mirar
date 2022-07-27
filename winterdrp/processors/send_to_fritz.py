@@ -61,6 +61,7 @@ class SendToFritz(BaseDataframeProcessor):
                 stream_id = 1005,
                 protocol = 'http',
                 verbose = 2,
+                *args,
                 **kwargs):
         super(SendToFritz, self).__init__(**kwargs)
         self.token = None
@@ -236,7 +237,7 @@ class SendToFritz(BaseDataframeProcessor):
             else:
                 return newname
 
-    def api_old(self, method, endpoint, data=None):
+    def api(self, method, endpoint, data=None):
         """Skyportal API Query"""
         headers = {'Authorization': f'token {self.token}'}
         response = requests.request(method, endpoint, json=data, headers=headers)
