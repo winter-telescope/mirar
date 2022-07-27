@@ -27,6 +27,7 @@ class SendToFritz(BaseDataframeProcessor):
                 group_ids = [1431],
                 base_name = 'WIRC',
                 filter_id = 1152,
+                instrument_id = 5,
                 *args,
                 **kwargs):
         super(SendToFritz, self).__init__(*args, **kwargs)
@@ -34,6 +35,7 @@ class SendToFritz(BaseDataframeProcessor):
         self.group_ids = group_ids
         self.base_name = base_name
         self.filter_id = filter_id
+        self.instrument_id = instrument_id
         self.origin = base_name # used for sending updates to Fritz
 
     def _apply_to_candidates(
@@ -182,6 +184,7 @@ class SendToFritz(BaseDataframeProcessor):
                 return newname
 
     def api(self, method, endpoint, data=None):
+        """Skyportal API Query"""
         headers = {'Authorization': f'token {self.token}'}
         response = requests.request(method, endpoint, json=data, headers=headers)
         return response
@@ -236,7 +239,7 @@ class SendToFritz(BaseDataframeProcessor):
                         "obj_id": cand["objectId"],
                         "mag": cand["magpsf"],
                         "magerr": cand["sigmapsf"],
-                        "instrument_id": 5,
+                        "instrument_id": self.instrument_id,
                         "mjd": cand['jd'] - 2400000.5,
                         "limiting_mag": 99,
                         "group_ids": self.group_ids
@@ -256,8 +259,7 @@ class SendToFritz(BaseDataframeProcessor):
                     "ra": cand["ra"],
                     "dec": cand["dec"],
                     }
-        response = self.api('POST','https://fritz.science/api/candidates',data=data)        
-        # response = self.api('POST', 'https://fritz.science/#tag/candidates/paths/~1api~1candidates/get/api/candidates',data=data)        
+        response = self.api('POST','https://fritz.science/api/candidates',data=data)             
         # logger.info(f'new create response {response.text}')
         return response
 
@@ -327,7 +329,9 @@ class SendToFritz(BaseDataframeProcessor):
             self.post_annotation(cand)
 
     def make_alert(self, cand_table):
+        t0 = time.time()
         all_cands = self.read_input_df(cand_table)
+        num_cands = len(all_cands)
 
         last_name = 'WIRC21aaaaaao'
         cand_id = 700
@@ -360,4 +364,8 @@ class SendToFritz(BaseDataframeProcessor):
 
             self.retrieve_annotation_specified_source(cand)
             # annotation_response = self.post_annotation(cand)
-            
+
+        t1 = time.time()
+        logger.info('###########################################')
+        logger.info(f"Took {(t1 - t0):.2f} seconds to Fritz process {num_cands} candidates.")
+        logger.info('###########################################')    
