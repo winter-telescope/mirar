@@ -13,3 +13,6 @@ Instructions for running the focusloop:
 4. Run python focusLoop.py --d <data_dir_path> --plot
 This will go through all files in the data directory to check for files that are "focus" files and do the analysis on them, and plot the results in a file named "focusloop.pdf'
 
+Instructions for .env
+1. Copy the `.env.example` file to the root of the project and update the environment variables.
+2. Name this file `.env`
