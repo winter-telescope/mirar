@@ -5,12 +5,14 @@ import os, gzip, io
 
 import base64
 import astropy
+import json, time
 from datetime import datetime
 from astropy.time import Time
 from astropy.io import ascii
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 from winterdrp.processors.base_processor import BaseDataframeProcessor
@@ -21,24 +23,49 @@ logger = logging.getLogger(__name__)
 class SendToFritz(BaseDataframeProcessor):
     def __init__(self, 
                 output_sub_dir: str, 
-                # token = '8f59cf92-c43a-4206-a6fe-64913da58bf6', #winter2
-                token = '18162129-49f8-4b85-9e0e-38f18fac32c1',
+                token = None,
                 group_ids = [1431],
                 base_name = 'WIRC',
                 *args,
                 **kwargs):
         super(SendToFritz, self).__init__(*args, **kwargs)
-        self.token = token
+        self.token = None
         self.group_ids = group_ids
         self.base_name = base_name
+        self.origin = base_name
 
     def _apply_to_candidates(
             self,
             candidate_table: pd.DataFrame,
     ) -> pd.DataFrame:
         logger.info("In SendToFritz")
+        self.token = self._get_fritz_token()
         self.make_alert(candidate_table) 
         return candidate_table
+
+    def _get_fritz_token(self):
+        token_fritz = os.getenv("FRITZ_TOKEN")
+
+        if token_fritz is None:
+            err = "No Fritz token specified. Run 'export FRITZ_TOKEN=<token>' to set. " \
+                "The Fritz token will need to be specified manually for Fritz API queries."
+            logger.warning(err)
+            raise ValueError
+        
+        return token_fritz
+
+    def _get_author_id(self):
+        """Fritz author id is used in update calls.
+        Can be found """
+        authid_fritz = os.getenv("FRITZ_AUTHID")
+
+        if authid_fritz is None:
+            err = "No Fritz author id specified. Run 'export FRITZ_AUTHID=<id>' to set. " \
+                "Author id needs to be specified for updates sent by Fritz API queries."
+            logger.warning(err)
+            raise ValueError
+
+        return authid_fritz
 
     def open_bytes_obj(self, bytes_obj):
         """Return numpy array of bytes_obj
@@ -221,17 +248,81 @@ class SendToFritz(BaseDataframeProcessor):
     def create_new_cand(self, cand, id):
         """Create new candidate(s) (one per filter)"""
         data = { "id": cand["objectId"],
-                    "filter_ids": [1147],
-                    "passing_alert_id": 1147,
+                    "filter_ids": [1152],
+                    "passing_alert_id": 1152,
                     "passed_at": Time(datetime.utcnow()).isot,
                     "ra": cand["ra"],
                     "dec": cand["dec"],
                     }
         response = self.api('POST','https://fritz.science/api/candidates',data=data)        
         # response = self.api('POST', 'https://fritz.science/#tag/candidates/paths/~1api~1candidates/get/api/candidates',data=data)        
-        logger.info(f'new create response {response.text}')
+        # logger.info(f'new create response {response.text}')
         return response
 
+    def retrieve_cand(self, cand):
+        """Checks whether a candidate already exist."""
+        path = 'https://fritz.science/api/candidates/' + str(cand["objectId"])
+        response = self.api('GET', path)        
+
+    def update_annotation(self, cand, annotation_id):
+        """Update an annotation."""
+        # https://fritz.science/api/associated_resource_type/resource_id/annotations/annotation_id
+        path_parms = os.path.join(cand["objectId"], "annotations", str(annotation_id))
+        path = 'https://fritz.science/api/sources/' + path_parms
+
+        data = {"fwhm":cand["fwhm"],
+                "scorr": cand["scorr"],
+                "chipsf": cand["chipsf"]
+        }
+        authid = self._get_author_id()
+        payload = {"data": data,
+                    "origin": self.origin,
+                    "author_id": authid,
+                    "obj_id": cand["objectId"],
+                    "group_ids": self.group_ids                    
+        }
+        response = self.api('PUT', path, payload)
+        logger.info(f'update annotation status: {response.json()["status"]}')
+        # logger.info(f'update message: {response.text}')
+
+        return response
+    
+    def post_annotation(self, cand):
+        """Post an annotation. For new cand? 
+        """
+        data = {"chipsf": cand["chipsf"],
+                "fwhm": cand["fwhm"],
+                "scorr": cand["scorr"]}
+        payload = {"origin": self.origin,
+            "data": data,
+            "group_ids": self.group_ids
+            }
+
+        path = 'https://fritz.science/api/sources/' + str(cand["objectId"]) + '/annotations'
+        response = self.api('POST', path, payload)
+        logger.info(f'candid {cand["objectId"]} annotation response:{response.text}')
+
+    def retrieve_annotation_specified_source(self, cand):
+        """Retrieve an annotation to check if it exists already."""
+        resource_id = str(cand["objectId"])
+        path = 'https://fritz.science/api/sources/' + resource_id+ '/annotations'
+        response = self.api('GET', path)
+
+        # logger.info(f'json {response}')
+        json_response= response.json()
+
+        annotation_posted = False
+        if json_response["status"] == "success":
+            logger.info(f'Annotation for {cand["objectId"]} already exists...updating')
+            origins = np.array([x["origin"] for x in json_response["data"]])
+            if self.origin in origins:
+                annotation_ids = np.array([x["id"] for x in json_response["data"]])
+                annotation_id = annotation_ids[origins == self.origin][0]
+                self.update_annotation(cand, annotation_id)
+                annotation_posted = True             
+            
+        if not annotation_posted:
+            self.post_annotation(cand)
 
     def make_alert(self, cand_table):
         all_cands = self.read_input_df(cand_table)
@@ -258,11 +349,13 @@ class SendToFritz(BaseDataframeProcessor):
             cand['objectId'] = cand_name
 
             # source_response = self.add_new_source(cand)
-            source_response = self.create_new_cand(cand, id)
-            logger.info(f'Add source {cand["objectId"]}: {source_response}')
-            thumbnail_response = self.upload_thumbnail(cand)
-            logger.info(f'Upload thumbnail {cand["objectId"]}: {thumbnail_response}')
-            photometry_response = self.update_photometry(cand)
-            logger.info(f'Photometry {cand["objectId"]}: {photometry_response}')
+            # source_response = self.create_new_cand(cand, id)
+            # logger.info(f'Add source {cand["objectId"]}: {source_response}')
+            # thumbnail_response = self.upload_thumbnail(cand)
+            # logger.info(f'Upload thumbnail {cand["objectId"]}: {thumbnail_response}')
+            # photometry_response = self.update_photometry(cand)
+            # logger.info(f'Photometry {cand["objectId"]}: {photometry_response}')
 
+            self.retrieve_annotation_specified_source(cand)
+            # annotation_response = self.post_annotation(cand)
             

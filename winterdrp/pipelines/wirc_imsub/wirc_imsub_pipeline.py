@@ -153,10 +153,10 @@ class WircImsubPipeline(Pipeline):
             DataframeWriter(output_dir_name='kowalski'),
             # EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
-            AvroPacketMaker(output_sub_dir="avro",
-                            base_name="WNTR",
-                            broadcast=False,
-                            save_local=False),
-            # SendToFritz(output_sub_dir="test")
+            # AvroPacketMaker(output_sub_dir="avro",
+                            # base_name="WNTR",
+                            # broadcast=False,
+                            # save_local=False),
+            SendToFritz(output_sub_dir="test")
         ]
     }
