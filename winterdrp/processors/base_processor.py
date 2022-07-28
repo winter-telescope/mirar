@@ -59,7 +59,6 @@ class ImageHandler:
         return hashlib.sha1(key.encode()).hexdigest()
 
     def image_batch_error_report(self, exception: Exception, batch):
-        print(len(batch))
         contents = [x[base_name_key] for x in batch[1]]
         return ErrorReport(exception, self.__module__, contents)
 
@@ -296,3 +295,7 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
             candidate_table: pd.DataFrame,
     ) -> pd.DataFrame:
         raise NotImplementedError
+
+    def generate_error_report(self, exception: Exception, batch: pd.DataFrame):
+        contents = batch[base_name_key]
+        return ErrorReport(exception, self.__module__, contents)
