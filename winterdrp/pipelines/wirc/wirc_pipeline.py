@@ -69,7 +69,8 @@ def load_raw_wirc_image(
         if "PROGID" not in header.keys():
             header["PROGID"] = 0
 
-        data[data == 0] = np.nan
+        data = data.astype(float)
+        data[data == 0.] = np.nan
     return data, header
 
 

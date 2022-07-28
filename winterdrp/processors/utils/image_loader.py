@@ -71,7 +71,7 @@ class ImageLoader(BaseImageProcessor):
             os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
 
-        img_list = glob(f'{input_dir}/*.fits')
+        img_list = sorted(glob(f'{input_dir}/*.fits'))
 
         logger.info(f"Loading from {input_dir}, with {len(img_list)} images")
 
