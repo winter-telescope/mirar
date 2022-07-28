@@ -28,7 +28,7 @@ def download_via_ssh(
     except OSError:
         pass
 
-    cmd = f"rsync -a -v --include '*.fits' --exclude '*' {source_dir} {output_dir}"
+    cmd = f"rsync -a -v --exclude 'sub*' --exclude 'diff*' --include '*.fits' --exclude '*' {source_dir} {output_dir}"
 
     logger.info(f"Executing '{cmd}'")
 
