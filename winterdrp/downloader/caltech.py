@@ -11,11 +11,12 @@ def download_via_ssh(
         base_dir: str,
         night: str | int,
         pipeline: str,
+        prefix: str = "",
         server_sub_dir: str = None
 ):
     username = input(f"Please enter your username for {server}: \n")
 
-    source_dir = f"{username}@{server}:{os.path.join(base_dir, night)}/"
+    source_dir = f"{username}@{server}:{os.path.join(base_dir, prefix+night)}/"
 
     if server_sub_dir is not None:
         source_dir += f"{server_sub_dir}/"

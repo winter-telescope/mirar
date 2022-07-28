@@ -135,6 +135,7 @@ class WircPipeline(Pipeline):
         download_via_ssh(
             server="gayatri.caltech.edu",
             base_dir="/scr2/ptf/observation_data",
+            prefix="WIRC_",
             night=night,
             pipeline=pipeline_name,
             server_sub_dir="raw"
