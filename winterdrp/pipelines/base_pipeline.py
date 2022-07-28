@@ -5,6 +5,7 @@ import astropy.io.fits
 import numpy as np
 import copy
 from winterdrp.paths import saturate_key
+from winterdrp.errors import ErrorReport, summarise_error_reports
 
 logger = logging.getLogger(__name__)
 
@@ -82,17 +83,22 @@ class Pipeline:
     def reduce_images(
             self,
             batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]],
+            output_error_path: str = None
     ):
+        all_errors = []
 
         for i, processor in enumerate(self.processors):
             logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
                          f"(Step {i+1}/{len(self.processors)})")
 
-            batches, failures = processor.base_apply(
+            batches, errors = processor.base_apply(
                 batches
             )
+            all_errors.append(errors)
 
-        return batches
+        error_summary = summarise_error_reports(all_errors, output_path=output_error_path)
+
+        return batches, all_errors, error_summary
 
     def set_saturation(
             self,
