@@ -19,6 +19,7 @@ from winterdrp.downloader.caltech import download_via_ssh
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
 from winterdrp.paths import coadd_key, proc_history_key
+from winterdrp.processors.csvlog import CSVLog
 import logging
 
 logger = logging.getLogger(__name__)
@@ -99,6 +100,7 @@ class WircPipeline(Pipeline):
                 input_sub_dir="raw",
                 load_image=load_raw_wirc_image
             ),
+            CSVLog(),
             MaskPixels(mask_path=wirc_mask_path),
             ImageBatcher(split_key="exptime"),
             DarkCalibrator(),
