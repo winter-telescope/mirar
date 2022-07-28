@@ -48,8 +48,14 @@ def load_raw_wirc_image(
         data = img[0].data
         header = img[0].header
         header["FILTER"] = header["AFT"].split("__")[0]
+
+        if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
+            header["OBSTYPE"] = "calibration"
+
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
+
         header["CALSTEPS"] = ""
+
         header["BASENAME"] = os.path.basename(path)
         header["TARGET"] = header["OBJECT"].lower()
         header["UTCTIME"] = header["UTSHUT"]
@@ -100,11 +106,14 @@ class WircPipeline(Pipeline):
                 input_sub_dir="raw",
                 load_image=load_raw_wirc_image
             ),
-            CSVLog(),
+            CSVLog(
+                export_keys=["OBJECT", "FILTER", "UTSHUT", "EXPTIME", "COADDS", "OBSTYPE", "OBSCLASS"]
+            ),
             MaskPixels(mask_path=wirc_mask_path),
             ImageBatcher(split_key="exptime"),
             DarkCalibrator(),
             ImageDebatcher(),
+            ImageSelector(("obsclass", "science")),
             ImageBatcher(split_key="filter"),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
