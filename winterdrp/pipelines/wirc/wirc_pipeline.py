@@ -118,7 +118,7 @@ class WircPipeline(Pipeline):
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
             ImageSelector(
-                ("object", "ZTF21acbnfos"),
+                ("object", "ZTF21aagppzg"),
                 ("filter", "J")
             ),
             AutoAstrometry(catalog="tmc"),
