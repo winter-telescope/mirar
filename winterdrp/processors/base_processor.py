@@ -41,7 +41,6 @@ class ImageHandler:
         logger.info(f"Saving to {path}")
         save_to_path(data, header, path)
 
-
     def save_mask(
             self,
             data: np.ndarray,
@@ -58,6 +57,10 @@ class ImageHandler:
     def get_hash(headers: list[astropy.io.fits.Header]):
         key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in headers]))
         return hashlib.sha1(key.encode()).hexdigest()
+
+    def image_batch_error_report(self, exception: Exception, batch):
+        contents = [x[base_name_key] for x in batch[1]]
+        return ErrorReport(exception, self.__module__, contents)
 
 
 class BaseProcessor:
@@ -120,8 +123,8 @@ class BaseProcessor:
             try:
                 batch = self.apply(batch)
                 passed_batches.append(batch)
-            except ProcessingError as e:
-                err = ErrorReport(e, self.__module__, batch)
+            except Exception as e:
+                err = self.generate_error_report(e, batch)
                 logger.error(err.generate_log_message())
                 failures.append(err)
 
@@ -130,6 +133,9 @@ class BaseProcessor:
         return batches, failures
 
     def apply(self, batch):
+        raise NotImplementedError
+
+    def generate_error_report(self, exception: Exception, batch) -> ErrorReport:
         raise NotImplementedError
 
 
@@ -165,6 +171,9 @@ class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
             header['REDTIME'] = str(datetime.datetime.now())
             header["REDSOFT"] = "winterdrp"
         return headers
+
+    def generate_error_report(self, exception: Exception, batch) -> ErrorReport:
+        return self.image_batch_error_report(exception, batch)
 
 
 class ProcessorWithCache(BaseImageProcessor, ABC):
@@ -286,3 +295,7 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
             candidate_table: pd.DataFrame,
     ) -> pd.DataFrame:
         raise NotImplementedError
+
+    def generate_error_report(self, exception: Exception, batch: pd.DataFrame):
+        contents = batch[base_name_key]
+        return ErrorReport(exception, self.__module__, contents)
