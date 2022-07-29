@@ -49,13 +49,16 @@ jobs:
      # Setting up dependencies
       - name: Install dependencies
         run: |
-          eval `ssh-agent -s`
-          ssh-add - <<< '${{ secrets.WIRC_STARTERPACK_TOKEN }}'
           pip install --upgrade pip
           pip install -e .
 
+
       # Runs a set of commands using the runners shell
       - name: Test the code
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+         ssh-private-key: |
+         ${{ secrets.WIRC_STARTERPACK_TOKEN }}
         run: |
           python -m unittest tests/test_wirc_pipeline.py
 
