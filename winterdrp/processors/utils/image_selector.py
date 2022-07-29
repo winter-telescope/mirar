@@ -13,14 +13,17 @@ def select_from_images(
         target_values: str | list[str] = "science",
 ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
-    if isinstance(target_values, str):
-        target_values = [target_values]
+    # Enforce string in list for later matching
+    if not isinstance(target_values, list):
+        target_values = [str(target_values)]
+    else:
+        target_values = [str(x) for x in target_values]
 
     passing_images = []
     passing_headers = []
 
     for i, header in enumerate(headers):
-        if header[header_key] in target_values:
+        if str(header[header_key]) in target_values:
             passing_images.append(images[i])
             passing_headers.append(header)
 
