@@ -76,7 +76,8 @@ class ErrorStack:
 
     def summarise_error_stack(
             self,
-            output_path=None
+            output_path=None,
+            verbose: bool = True
     ) -> str:
 
         is_known_error = [x.known_error_bool for x in self.reports]
@@ -96,7 +97,10 @@ class ErrorStack:
             logger.error(f"Found {len(self.reports)} errors caught by code.")
 
             for report in self.reports:
-                summary += str(report.generate_full_traceback())
+                if verbose:
+                    summary += str(report.generate_full_traceback())
+                else:
+                    summary += report.generate_log_message()
 
             if output_path is not None:
 
