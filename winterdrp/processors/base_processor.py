@@ -253,6 +253,25 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         raise NotImplementedError
 
 
+class ProcessorPremadeCache(ProcessorWithCache, ABC):
+
+    def __init__(
+            self,
+            master_image_path: str,
+            *args,
+            **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.master_image_path = master_image_path
+
+    def get_cache_path(
+            self,
+            images: list[np.ndarray],
+            headers: list[astropy.io.fits.Header],
+    ) -> str:
+        return self.master_image_path
+
+
 class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
 
     @classmethod
