@@ -54,12 +54,14 @@ jobs:
 
 
       # Runs a set of commands using the runners shell
-      - name: Test the code
+      - name: set up ssh
         uses: webfactory/ssh-agent@v0.5.4
         with:
           ssh-private-key: |
             ${{ secrets.WIRC_STARTERPACK_TOKEN }}
-          
+
+      - name: Run tests
+        run: |
           python -m unittest tests/test_wirc_pipeline.py
 
 #      - name: Run Coveralls
