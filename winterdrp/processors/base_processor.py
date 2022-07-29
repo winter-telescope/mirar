@@ -14,7 +14,7 @@ import pandas as pd
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
     ProcessingError, base_name_key, proc_history_key
-from winterdrp.errors import ErrorReport
+from winterdrp.errors import ErrorReport, ErrorStack
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +113,10 @@ class BaseProcessor:
     def base_apply(
             self,
             batches: list
-    ) -> tuple[list, list[ErrorReport]]:
+    ) -> tuple[list, ErrorStack]:
 
         passed_batches = []
-        failures = []
+        err_stack = ErrorStack()
 
         for i, batch in enumerate(batches):
 
@@ -126,11 +126,11 @@ class BaseProcessor:
             except Exception as e:
                 err = self.generate_error_report(e, batch)
                 logger.error(err.generate_log_message())
-                failures.append(err)
+                err_stack.add_report(err)
 
         batches = self.update_batches(passed_batches)
 
-        return batches, failures
+        return batches, err_stack
 
     def apply(self, batch):
         raise NotImplementedError

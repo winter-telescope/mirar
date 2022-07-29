@@ -5,7 +5,7 @@ import astropy.io.fits
 import numpy as np
 import copy
 from winterdrp.paths import saturate_key
-from winterdrp.errors import ErrorReport, summarise_error_reports
+from winterdrp.errors import ErrorStack
 
 logger = logging.getLogger(__name__)
 
@@ -85,20 +85,20 @@ class Pipeline:
             batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]],
             output_error_path: str = None
     ):
-        all_errors = []
+        err_stack = ErrorStack()
 
         for i, processor in enumerate(self.processors):
             logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
                          f"(Step {i+1}/{len(self.processors)})")
 
-            batches, errors = processor.base_apply(
+            batches, new_err_stack = processor.base_apply(
                 batches
             )
-            all_errors.append(errors)
+            print(new_err_stack, err_stack)
+            err_stack += new_err_stack
 
-        error_summary = summarise_error_reports(all_errors, output_path=output_error_path)
-
-        return batches, all_errors, error_summary
+        err_stack.summarise_error_stack(output_path=output_error_path)
+        return batches, err_stack
 
     def set_saturation(
             self,
