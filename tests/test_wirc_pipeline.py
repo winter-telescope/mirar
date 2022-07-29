@@ -9,9 +9,10 @@ from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
 from winterdrp.paths import coadd_key, proc_history_key
 from winterdrp.pipelines.base_pipeline import Pipeline
-from winterdrp.processors.dark import DarkCalibrator
-from winterdrp.processors.flat import SkyFlatCalibrator
-from winterdrp.processors.sky import NightSkyMedianCalibrator
+from winterdrp.io import open_fits
+from winterdrp.processors.dark import DarkCalibrator, MasterDarkCalibrator
+from winterdrp.processors.flat import SkyFlatCalibrator, MasterFlatCalibrator
+from winterdrp.processors.sky import NightSkyMedianCalibrator, MasterSkyCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, sextractor_astrometry_config, scamp_fp_path, \
@@ -30,7 +31,6 @@ import os
 from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image, WircPipeline, \
     wirc_astrometric_catalog_generator, wirc_photometric_catalog_generator
 from winterdrp.processors.csvlog import CSVLog
-
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +57,13 @@ expected_zp = {
     "ZP_AUTO_nstars": 15,
 }
 
+
+def get_cal_path(name: str):
+    return os.path.join(test_data_dir, f"wirc/cals/test_{name}.fits")
+
 test_pipeline = [
     ImageLoader(
+        input_img_dir=test_data_dir,
         input_sub_dir="raw",
         load_image=load_raw_wirc_image
     ),
@@ -67,12 +72,12 @@ test_pipeline = [
     ),
     MaskPixels(mask_path=wirc_mask_path),
     ImageSelector(("exptime", "45.0")),
-    DarkCalibrator(lambda x: os.path.join(test_data_dir, "test_dark.fits")),
+    MasterDarkCalibrator(master_image_path=get_cal_path("dark")),
     ImageDebatcher(),
     ImageSelector(("obsclass", "science")),
     ImageBatcher(split_key="filter"),
-    SkyFlatCalibrator(lambda x: os.path.join(test_data_dir, "test_flat.fits")),
-    NightSkyMedianCalibrator(lambda x: os.path.join(test_data_dir, "test_sky.fits")),
+    MasterFlatCalibrator(get_cal_path("flat")),
+    MasterSkyCalibrator(get_cal_path("sky")),
     ImageSelector(
         ("object", "ZTF21aagppzg"),
         ("filter", "J")
@@ -107,7 +112,7 @@ class TestWircPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images([[[], []]])
+        res, errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
 
@@ -128,7 +133,7 @@ if __name__ == "__main__":
 
     # Code to generate updated ZP dict of the results change
 
-    new_res, new_errorstack = pipeline.reduce_images([[[], []]])
+    new_res, new_errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
 
     new_header = new_res[0][1][0]
 
