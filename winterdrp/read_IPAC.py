@@ -27,16 +27,26 @@ class AlertConsumer:
     """
     Creates an alert stream Kafka consumer for a given topic.
     """
-
+   
     def __init__(
         self,
-        bootstrap_server_str, 
-        topic,
-        group_id,
+        bootstrap_server_str:str, 
+        topic:str,
+        group_id:str,
         verbose = 2
         
     ):
-        # placeholder bootrsrap_servers_str = 
+        """
+        :param bootstrap_server_str: IP addresses of brokers to subscribe to, comma-separated
+        e.g. 192.168.0.64:9092,192.168.0.65:9092,192.168.0.66:9092
+        :type bootstrap_server_str: str
+        :param topic: name of topic to poll from, e.g. winter_20220728
+        :type topic: str
+        :param group_id: id, typically prefix of topic name, e.g. winter
+        :type group_id: str
+        :param verbose: _description_, defaults to 2
+        :type verbose: int, optional
+        """
         # Configure consumer connection to Kafka broker
         bootstrap_servers = {bootstrap_server_str} 
 
@@ -226,10 +236,10 @@ class AlertConsumer:
                 print(_err)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Read broadcasts from Kafka Producer")
+    parser = argparse.ArgumentParser(description="Read broadcasts from a Kafka Producer")
     parser.add_argument("--topic", help="Topic name to query")
     parser.add_argument("--group_id", help="prefix of topic, bit redundant")
-    parser.add_argument("--servers", help="comma-seperated server addresses")
+    parser.add_argument("--servers", help="comma-seperated string of server IP addresses")
     
 
     args = parser.parse_args()
