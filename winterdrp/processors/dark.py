@@ -5,7 +5,7 @@ import os
 import logging
 import pandas as pd
 from collections.abc import Callable
-from winterdrp.processors.base_processor import ProcessorWithCache
+from winterdrp.processors.base_processor import ProcessorWithCache, ProcessorPremadeCache
 from winterdrp.paths import base_name_key
 from winterdrp.processors.utils.image_selector import select_from_images
 
@@ -70,3 +70,7 @@ class DarkCalibrator(ProcessorWithCache):
         master_dark = np.nanmedian(darks, axis=2)
 
         return master_dark, headers[0]
+
+
+class MasterDarkCalibrator(ProcessorPremadeCache, DarkCalibrator):
+    pass

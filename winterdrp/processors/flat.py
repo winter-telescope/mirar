@@ -2,7 +2,7 @@ import astropy.io.fits
 import numpy as np
 import logging
 import sys
-from winterdrp.processors.base_processor import ProcessorWithCache
+from winterdrp.processors.base_processor import ProcessorWithCache, ProcessorPremadeCache
 from winterdrp.processors.utils.image_selector import select_from_images
 from collections.abc import Callable
 from winterdrp.paths import latest_save_key, flat_frame_key
@@ -103,7 +103,8 @@ class SkyFlatCalibrator(FlatCalibrator):
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
         return select_from_images(images, headers, header_key="obsclass", target_values="science")
 
-
+class MasterFlatCalibrator(ProcessorPremadeCache, FlatCalibrator):
+    pass
 # class OldSkyFlatCalibrator(SkyFlatCalibrator):
 #
 #     def select_cache_images(
