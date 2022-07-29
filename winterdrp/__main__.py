@@ -57,6 +57,12 @@ parser.add_argument(
     action='store_true',
     default=False
 )
+parser.add_argument(
+    "-e",
+    "--errorpath",
+    default="errorlog.txt",
+    help="Path to output errors"
+)
 # parser.add_argument(
 #     '-skipfail',
 #     help='If processing of one image set fails, proceed with other objects/filters',
@@ -94,6 +100,6 @@ pipe = get_pipeline(
     night=args.night,
 )
 
-pipe.reduce_images([[[], []]])
+pipe.reduce_images([[[], []]], output_error_path=args.errorpath)
 
 logger.info('End of winterdrp execution')
