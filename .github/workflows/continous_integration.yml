@@ -57,8 +57,8 @@ jobs:
       - name: Test the code
         uses: webfactory/ssh-agent@v0.5.4
         with:
-         ssh-private-key: |
-         ${{ secrets.WIRC_STARTERPACK_TOKEN }}
+          ssh-private-key: |
+            ${{ secrets.WIRC_STARTERPACK_TOKEN }}
         run: |
           python -m unittest tests/test_wirc_pipeline.py
 
