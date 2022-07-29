@@ -1,18 +1,7 @@
 import unittest
-from winterdrp.processors.dark import DarkCalibrator
-from winterdrp.processors.flat import SkyFlatCalibrator
-from winterdrp.processors.sky import NightSkyMedianCalibrator
-from winterdrp.processors.mask import MaskPixels
-from winterdrp.processors.utils import ImageSaver
-from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
-from winterdrp.paths import coadd_key, proc_history_key
-from winterdrp.pipelines.base_pipeline import Pipeline
-from winterdrp.io import open_fits
-from winterdrp.processors.dark import DarkCalibrator, MasterDarkCalibrator
-from winterdrp.processors.flat import SkyFlatCalibrator, MasterFlatCalibrator
-from winterdrp.processors.sky import NightSkyMedianCalibrator, MasterSkyCalibrator
+from winterdrp.processors.dark import MasterDarkCalibrator
+from winterdrp.processors.flat import MasterFlatCalibrator
+from winterdrp.processors.sky import MasterSkyCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, sextractor_astrometry_config, scamp_fp_path, \
@@ -61,6 +50,7 @@ expected_zp = {
 def get_cal_path(name: str):
     return os.path.join(test_data_dir, f"wirc/cals/test_{name}.fits")
 
+
 test_pipeline = [
     ImageLoader(
         input_img_dir=test_data_dir,
@@ -68,11 +58,11 @@ test_pipeline = [
         load_image=load_raw_wirc_image
     ),
     CSVLog(
-        export_keys=["OBJECT", "FILTER", "UTSHUT", "EXPTIME", "COADDS", "OBSTYPE", "OBSCLASS"]
+        export_keys=["OBJECT", "FILTER", "UTSHUT", "EXPTIME", "COADDS", "OBSTYPE", "OBSCLASS"],
     ),
     MaskPixels(mask_path=wirc_mask_path),
     ImageSelector(("exptime", "45.0")),
-    MasterDarkCalibrator(master_image_path=get_cal_path("dark")),
+    MasterDarkCalibrator(get_cal_path("dark")),
     ImageDebatcher(),
     ImageSelector(("obsclass", "science")),
     ImageBatcher(split_key="filter"),
