@@ -43,8 +43,7 @@ jobs:
       - name: Install conda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          auto-activate-base: true
-          activate-environment: ""
+          activate-environment: "winterdrp-env"
           python-version: ${{ matrix.python-version }}
 
       # Set up conda and install astro packages
