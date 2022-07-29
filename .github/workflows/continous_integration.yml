@@ -47,14 +47,15 @@ jobs:
           python-version: "3.10"
           auto-update-conda: true
           add-pip-as-python-dependency: False
+          environment-file: environment.yml
 
-      # Set up conda and install astro packages
-      - name: Set up conda
-        run: |
-          conda info
-          conda install -c conda-forge astromatic-source-extractor
-          conda install -c conda-forge astromatic-swarp
-          conda install -c conda-forge astromatic-scamp
+#      # Set up conda and install astro packages
+#      - name: Set up conda
+#        run: |
+#          conda info
+#          conda install -c conda-forge astromatic-source-extractor
+#          conda install -c conda-forge astromatic-swarp
+#          conda install -c conda-forge astromatic-scamp
 
       # Setting up dependencies
       - name: Install dependencies

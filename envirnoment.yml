@@ -1,0 +1,23 @@
+name: winterdrp-env
+
+dependencies:
+  -astroplan
+  -astromatic-swarp
+  -astropy[recommended]
+  -astroquery
+  -avro-python3~=1.10.1
+  -confluent_kafka
+  -docker
+  -ephem
+  -fastavro
+  -jupyter
+  -matplotlib
+  -numpy
+  -pandas
+  -penquins
+  -photutils
+  -psycopg
+  -psycopg[binary]
+  -pyfftw
+  -setuptools
+  -wget
