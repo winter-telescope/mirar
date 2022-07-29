@@ -44,7 +44,9 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: "winterdrp-env"
-          python-version: 3.10
+          python-version: "3.10"
+          auto-update-conda: true
+          add_pip_as_python_dependency: False
 
       # Set up conda and install astro packages
       - name: Set up conda
