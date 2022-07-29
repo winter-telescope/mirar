@@ -49,11 +49,12 @@ jobs:
       - name: Install conda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: whatever
+          activate-environment: winterdrp_env
 
       # Set up conda and install astro packages
       - name: Set up conda
         run: |
+          conda activate winterdrp_env
           conda install -c conda-forge astromatic-source-extractor
           conda install -c conda-forge astromatic-swarp
           conda install -c conda-forge astromatic-scamp
