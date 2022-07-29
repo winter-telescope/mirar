@@ -58,6 +58,8 @@ jobs:
 
       # Setting up dependencies
       - name: Install dependencies
+        env:
+          PYTHONPATH: /usr/share/miniconda/envs/winterdrp-env/bin/python
         run: |
           conda info
           which python
