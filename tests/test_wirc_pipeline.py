@@ -20,10 +20,11 @@ import os
 from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image, WircPipeline, \
     wirc_astrometric_catalog_generator, wirc_photometric_catalog_generator
 from winterdrp.processors.csvlog import CSVLog
+from winterdrp.downloader.get_test_data import get_wirc_test_data
 
 logger = logging.getLogger(__name__)
 
-test_data_dir = "/Users/robertstein/Code/winterdrp_staterpack/"
+test_data_dir = get_wirc_test_data()
 
 expected_zp = {
     "ZP_2.0": 25.774316787719727,
