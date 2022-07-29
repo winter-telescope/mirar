@@ -8,7 +8,7 @@ dependencies:
   - astromatic-scamp
   - astromatic-source-extractor
   - astromatic-swarp
-  - pip=21.2.4=py310hecd8cb5_0
+  - pip=22.2.1
   - python=3.10.5
   - python_abi=3.10=2_cp310
   - pip:
