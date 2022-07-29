@@ -47,7 +47,7 @@ jobs:
           python-version: "3.10"
           auto-update-conda: true
           add-pip-as-python-dependency: False
-          environment-file: ../environment.yml
+          environment-file: environment.yml
 
 #      # Set up conda and install astro packages
 #      - name: Set up conda
