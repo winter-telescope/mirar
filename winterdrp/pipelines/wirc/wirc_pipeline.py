@@ -19,6 +19,7 @@ from winterdrp.downloader.caltech import download_via_ssh
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
 from winterdrp.paths import coadd_key, proc_history_key
+from winterdrp.processors.csvlog import CSVLog
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,8 +48,14 @@ def load_raw_wirc_image(
         data = img[0].data
         header = img[0].header
         header["FILTER"] = header["AFT"].split("__")[0]
+
+        if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
+            header["OBSTYPE"] = "calibration"
+
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
+
         header["CALSTEPS"] = ""
+
         header["BASENAME"] = os.path.basename(path)
         header["TARGET"] = header["OBJECT"].lower()
         header["UTCTIME"] = header["UTSHUT"]
@@ -99,15 +106,19 @@ class WircPipeline(Pipeline):
                 input_sub_dir="raw",
                 load_image=load_raw_wirc_image
             ),
+            CSVLog(
+                export_keys=["OBJECT", "FILTER", "UTSHUT", "EXPTIME", "COADDS", "OBSTYPE", "OBSCLASS"]
+            ),
             MaskPixels(mask_path=wirc_mask_path),
             ImageBatcher(split_key="exptime"),
             DarkCalibrator(),
             ImageDebatcher(),
+            ImageSelector(("obsclass", "science")),
             ImageBatcher(split_key="filter"),
             SkyFlatCalibrator(),
             NightSkyMedianCalibrator(),
             ImageSelector(
-                ("object", "ZTF21acbnfos"),
+                ("object", "ZTF21aagppzg"),
                 ("filter", "J")
             ),
             AutoAstrometry(catalog="tmc"),
@@ -126,6 +137,29 @@ class WircPipeline(Pipeline):
             ),
             ImageSaver(output_dir_name="final"),
             PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
+            # ImageDebatcher(),
+            # ImageBatcher(split_key="filter"),
+            # SkyFlatCalibrator(),
+            # NightSkyMedianCalibrator(),
+            # ImageSelector(
+            #     ("object", "ZTF21acbnfos"),
+            # ),
+            # AutoAstrometry(catalog="tmc"),
+            # Sextractor(
+            #     output_sub_dir="postprocess",
+            #     **sextractor_astrometry_config
+            # ),
+            # Scamp(
+            #     ref_catalog_generator=wirc_astrometric_catalog_generator,
+            #     scamp_config_path=scamp_fp_path,
+            # ),
+            # Swarp(swarp_config_path=swarp_sp_path),
+            # Sextractor(
+            #     output_sub_dir="final_sextractor",
+            #     **sextractor_astrometry_config
+            # ),
+            # ImageSaver(output_dir_name="final"),
+            # PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
         ]
     }
 
