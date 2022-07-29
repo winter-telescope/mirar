@@ -27,9 +27,10 @@ from winterdrp.paths import coadd_key, proc_history_key
 from winterdrp.processors.csvlog import CSVLog
 import logging
 import os
-from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image, WircPipeline
+from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image, WircPipeline, \
+    wirc_astrometric_catalog_generator, wirc_photometric_catalog_generator
 from winterdrp.processors.csvlog import CSVLog
-from winterdrp.pipelines.wirc.wirc_pipeline import test_pipeline
+
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,44 @@ expected_zp = {
     "ZP_AUTO_std": 0.18256542086601257,
     "ZP_AUTO_nstars": 15,
 }
+
+test_pipeline = [
+    ImageLoader(
+        input_sub_dir="raw",
+        load_image=load_raw_wirc_image
+    ),
+    CSVLog(
+        export_keys=["OBJECT", "FILTER", "UTSHUT", "EXPTIME", "COADDS", "OBSTYPE", "OBSCLASS"]
+    ),
+    MaskPixels(mask_path=wirc_mask_path),
+    ImageSelector(("exptime", "45.0")),
+    DarkCalibrator(lambda x: os.path.join(test_data_dir, "test_dark.fits")),
+    ImageDebatcher(),
+    ImageSelector(("obsclass", "science")),
+    ImageBatcher(split_key="filter"),
+    SkyFlatCalibrator(lambda x: os.path.join(test_data_dir, "test_flat.fits")),
+    NightSkyMedianCalibrator(lambda x: os.path.join(test_data_dir, "test_sky.fits")),
+    ImageSelector(
+        ("object", "ZTF21aagppzg"),
+        ("filter", "J")
+    ),
+    AutoAstrometry(catalog="tmc"),
+    Sextractor(
+        output_sub_dir="postprocess",
+        **sextractor_astrometry_config
+    ),
+    Scamp(
+        ref_catalog_generator=wirc_astrometric_catalog_generator,
+        scamp_config_path=scamp_fp_path,
+    ),
+    Swarp(swarp_config_path=swarp_sp_path),
+    Sextractor(
+        output_sub_dir="final_sextractor",
+        **sextractor_astrometry_config
+    ),
+    ImageSaver(output_dir_name="final"),
+    PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator)
+]
 
 pipeline = WircPipeline(pipeline_configuration=test_pipeline, night="20210330")
 
