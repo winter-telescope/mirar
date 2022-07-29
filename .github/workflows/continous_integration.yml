@@ -59,7 +59,7 @@ jobs:
         with:
           ssh-private-key: |
             ${{ secrets.WIRC_STARTERPACK_TOKEN }}
-        run: |
+          
           python -m unittest tests/test_wirc_pipeline.py
 
 #      - name: Run Coveralls
