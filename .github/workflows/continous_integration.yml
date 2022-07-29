@@ -51,7 +51,7 @@ jobs:
       - name: Set up conda
         run: |
           conda init
-          conda activat winterdrp-env
+          conda activate winterdrp-env
           conda info
           conda install -c conda-forge astromatic-source-extractor
           conda install -c conda-forge astromatic-swarp
