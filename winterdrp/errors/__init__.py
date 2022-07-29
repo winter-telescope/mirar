@@ -23,20 +23,11 @@ class ErrorReport:
         self.contents = contents
         self.t_error = Time.now()
 
-    def generate_log_message(self):
+    def generate_log_message(self) -> str:
         return f"Error for processor {self.processor_name} at time {self.t_error} UT: " \
                f"{type(self.error).__name__} affected batch of length {len(self.contents)}."
 
-    def generate_full_traceback(self):
-
-        # print(vars(self.error))
-        # print(self.error)
-        # print(dir(self.error))
-        # # print(self.error.with_traceback())
-        # print(self.error.__traceback__)
-        # print(traceback.format_tb(self.error.__traceback__))
-        # print("um")
-
+    def generate_full_traceback(self) -> str:
         msg = f"Error for processor {self.processor_name} at time {self.t_error} UT: \n " \
               f"{''.join(traceback.format_tb(self.error.__traceback__))} \n " \
               f"This error affected the following files: {self.contents} \n"
