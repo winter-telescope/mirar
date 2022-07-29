@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from winterdrp.processors.base_processor import ProcessorWithCache
+from winterdrp.processors.base_processor import ProcessorWithCache, ProcessorPremadeCache
 from collections.abc import Callable
 import astropy.io.fits
 from winterdrp.processors.utils.image_selector import select_from_images
@@ -64,3 +64,7 @@ class BiasCalibrator(ProcessorWithCache):
         master_bias = np.nanmedian(biases, axis=2)
 
         return master_bias, headers[0]
+
+
+class MasterBiasCalibrator(ProcessorPremadeCache, BiasCalibrator):
+    pass
