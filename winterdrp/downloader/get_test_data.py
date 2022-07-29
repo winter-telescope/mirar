@@ -1,24 +1,52 @@
 import wget
 import os
-from winterdrp.paths import raw_img_dir
+from winterdrp.paths import winter_code_dir
+import logging
+from glob import glob
+import zipfile
+import numpy as np
+from winterdrp.utils import execute, ExecutionError
 
-TEST_DATA_URL = "https://raw.githubusercontent.com/robertdstein/wircpipe/raw/master/master_flats/master_flat_H.fits"
+logger = logging.getLogger(__name__)
 
+TEST_DATA_URL = "git@github.com:winter-telescope/wirc_starterpack.git"
 
-def download_test_data(
-        url: str = TEST_DATA_URL
-):
+test_data_dir = os.path.join(
+    os.path.dirname(winter_code_dir),
+    os.path.basename(TEST_DATA_URL.replace(".git", ""))
+)
 
-    test_data_dir = raw_img_dir("summer/testdata/")
-
+def check_gitlfs():
     try:
-        os.makedirs(test_data_dir)
-    except OSError:
-        pass
-
-    output_path = os.path.join(test_data_dir, os.path.basename(TEST_DATA_URL))
-
-    wget.download(TEST_DATA_URL, output_path)
+        execute("which git-lfs")
+    except ExecutionError:
+        raise FileNotFoundError("Downloading test data requires git-lfs. "
+                                "See install instructions: https://git-lfs.github.com/")
 
 
-download_test_data()
+def get_wirc_test_data() -> str:
+
+    if not os.path.isdir(test_data_dir):
+
+        cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
+
+        logger.info(f"No test data found. Downloading. Executing: {cmd}")
+
+        check_gitlfs()
+
+        os.system(cmd)
+
+    zip_data_path = glob(f"{test_data_dir}/*.zip")
+    for path in zip_data_path:
+        logger.info(f"Unzipping {path}")
+        with zipfile.ZipFile(path, 'r') as zip_ref:
+            zip_ref.extractall(test_data_dir)
+
+    sub_dirs = [
+        x for x in glob(f"{test_data_dir}/*")
+        if np.logical_and(os.path.isdir(x), os.path.basename(x)[0] not in [".", "_"])
+    ]
+    assert len(sub_dirs) == 1
+    test_data_path = sub_dirs[0]
+
+    return test_data_path
