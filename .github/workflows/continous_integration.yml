@@ -45,12 +45,11 @@ jobs:
         with:
           activate-environment: "winterdrp-env"
           python-version: ${{ matrix.python-version }}
-          auto-activate-base: false
+          auto-activate-base: true
 
       # Set up conda and install astro packages
       - name: Set up conda
         run: |
-          conda init
           conda activate winterdrp-env
           conda info
           conda install -c conda-forge astromatic-source-extractor
