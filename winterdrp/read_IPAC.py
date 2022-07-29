@@ -1,19 +1,19 @@
 import argparse
 from ast import literal_eval
+from copy import deepcopy
 import datetime
 from ensurepip import bootstrap
+import io
 import logging
 import sys
-import io
 import traceback
-from copy import deepcopy
 from typing import Mapping
 
 # specific, copied from kowalski repo
+# https://github.com/dmitryduev/kowalski
 from winterdrp.utils_kowalski import (
     deg2dms,
     deg2hms,
-    log,
     radec2lb,
     timer
 )
@@ -21,11 +21,15 @@ from winterdrp.utils_kowalski import (
 import confluent_kafka
 import fastavro
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  
+logger.setLevel(logging.INFO)
 
 class AlertConsumer:
     """
-    Creates an alert stream Kafka consumer for a given topic.
+    Creates an alert stream Kafka consumer for a given topic,
+    reads incoming packets, and ingests stream into database
+    based on applied filters. 
+
     """
    
     def __init__(
@@ -37,6 +41,8 @@ class AlertConsumer:
         
     ):
         """
+        Initializes Kafka consumer.
+
         :param bootstrap_server_str: IP addresses of brokers to subscribe to, comma-separated
         e.g. 192.168.0.64:9092,192.168.0.65:9092,192.168.0.66:9092
         :type bootstrap_server_str: str
@@ -49,13 +55,14 @@ class AlertConsumer:
         """
         # Configure consumer connection to Kafka broker
         bootstrap_servers = {bootstrap_server_str} 
-
+        logger.info(f'testingggggg')
         conf = {
             "bootstrap.servers": bootstrap_servers,
             "default.topic.config": {"auto.offset.reset": "earliest"},
         }
 
         conf["group.id"] = group_id
+        # make it unique
         conf["group.id"] = f"{conf['group.id']}_{datetime.datetime.utcnow().strftime('%Y-%m-%d_%H:%M:%S.%f')}"
         
         # keep track of disconnected partitions
@@ -77,7 +84,6 @@ class AlertConsumer:
                     )
 
         self.consumer = confluent_kafka.Consumer(conf)
-        print(f'Successful self.consumer')
         self.num_partitions = 0
 
         def on_assign(consumer, partitions, _self=self):
@@ -96,7 +102,8 @@ class AlertConsumer:
 
     @staticmethod
     def read_schema_data(bytes_io):
-        """Read data that already has an Avro schema.
+        """
+        Read data that already has an Avro schema.
 
         :param bytes_io: `_io.BytesIO` Data to be decoded.
         :return: `dict` Decoded data.
@@ -174,7 +181,10 @@ class AlertConsumer:
 
     
     def process_alert(self, alert: Mapping, topic: str):
-        """NOT REALLY DOING ANYTHING (shell from kowalski)
+        """
+        Main function that runs on a single alert.
+            -Read top-level packet field
+            -Separate alert and prv_candidate in MongoDB prep
 
         :param alert: decoded alert from Kafka stream
         :param topic: Kafka stream topic name for bookkeeping
@@ -201,7 +211,13 @@ class AlertConsumer:
         ]
 
     def poll(self):
-        """Polls Kafka broker to consume a topic."""
+        """
+        Polls Kafka broker to consume a topic.
+        If receives message, for each packet:
+            - decodes avro schema
+            - processess alert (#TODO)
+        
+        """
         msg = self.consumer.poll()
 
         if msg is None:
@@ -250,7 +266,7 @@ if __name__ == "__main__":
 
     # For testing
     i = 1
-    while i < 2:
+    while i < 5:
         test_consumer.poll()
         print(f'Finished poll {i}')
         i += 1
