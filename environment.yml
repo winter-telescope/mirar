@@ -1,44 +1,16 @@
-name: winter_env
+name: winter-env
 channels:
   - conda-forge
   - http://astroconda.gemini.edu/public
   - http://ssb.stsci.edu/astroconda
   - defaults
 dependencies:
-  - astromatic-scamp=2.10.0=h5ad2557_0
-  - astromatic-source-extractor=2.25.0=h49ae774_0
-  - bzip2=1.0.8=h1de35cc_0
-  - c-ares=1.18.1=h0d85af4_0
-  - ca-certificates=2021.10.8=h033912b_0
-  - certifi=2021.10.8=py310h2ec42d9_1
-  - fftw=3.3.10=nompi_hf082fe4_102
-  - krb5=1.19.2=hcfbf3a7_3
-  - libblas=3.9.0=13_osx64_openblas
-  - libcblas=3.9.0=13_osx64_openblas
-  - libcurl=7.80.0=h6dfd666_0
-  - libcxx=12.0.0=h2f01273_0
-  - libedit=3.1.20191231=h0678c8f_2
-  - libev=4.33=haf1e3a3_1
-  - libffi=3.3=hb1e8313_2
-  - libgfortran=5.0.0=9_3_0_h6c81a4c_23
-  - libgfortran5=9.3.0=h6c81a4c_23
-  - liblapack=3.9.0=13_osx64_openblas
-  - liblapacke=3.9.0=13_osx64_openblas
-  - libnghttp2=1.46.0=ha29bfda_0
-  - libopenblas=0.3.18=openmp_h3351f45_0
-  - libssh2=1.10.0=h52ee1ee_2
-  - llvm-openmp=13.0.1=hda6cdc1_0
-  - ncurses=6.3=hca72f7f_2
-  - openssl=1.1.1l=h0d85af4_0
+  - astromatic-scamp
+  - astromatic-source-extractor
+  - astromatic-swarp
   - pip=21.2.4=py310hecd8cb5_0
-  - python=3.10.0=hdfd78df_3
+  - python=3.10.5
   - python_abi=3.10=2_cp310
-  - readline=8.1=h9ed2024_0
-  - sqlite=3.36.0=hce871da_0
-  - tk=8.6.11=h7bc2e8c_0
-  - tzdata=2021e=hda174b7_0
-  - xz=5.2.5=h1de35cc_0
-  - zlib=1.2.11=h1de35cc_3
   - pip:
     - appnope==0.1.2
     - argon2-cffi==21.1.0
