@@ -33,13 +33,6 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-#      # Set up conda and install astro packages
-#      - name: Set up conda
-#        run: |
-#          - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-#          - bash Miniconda3-latest-Linux-x86_64.sh -b
-#          - export PATH=$PATH:/root/miniconda3/bin
-
       # Set up the python versions
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -58,6 +51,16 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -e .
+
+      # Set up conda and install astro packages
+      - name: Set up conda
+        run: |
+          - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+          - bash Miniconda3-latest-Linux-x86_64.sh -b
+          - export PATH=$PATH:/root/miniconda3/bin
+          - conda install -c conda-forge astromatic-source-extractor
+          - conda install -c conda-forge astromatic-swarp
+          - conda install -c conda-forge astromatic-scamp
 
       - name: Run tests
         env:
