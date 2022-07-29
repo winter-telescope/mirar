@@ -2,11 +2,20 @@ from winterdrp.paths import base_name_key
 import traceback
 from astropy.time import Time
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-class ProcessorError(BaseException):
+class BaseProcessorError(Exception):
+    pass
+
+
+class ProcessorError(BaseProcessorError):
+    pass
+
+
+class NoncriticalProcessingError(BaseProcessorError):
     pass
 
 
@@ -22,15 +31,23 @@ class ErrorReport:
         self.processor_name = processor_name
         self.contents = contents
         self.t_error = Time.now()
+        self.known_error_bool = isinstance(self.error, BaseProcessorError)
+
+    def message_known_error(self) -> str:
+        return f"This error {['was not', 'was'][self.known_error_bool]} a known error raised by winterdrp."
 
     def generate_log_message(self) -> str:
         return f"Error for processor {self.processor_name} at time {self.t_error} UT: " \
-               f"{type(self.error).__name__} affected batch of length {len(self.contents)}."
+               f"{type(self.error).__name__} affected batch of length {len(self.contents)}. " \
+               f"{self.message_known_error()}" \
+
 
     def generate_full_traceback(self) -> str:
         msg = f"Error for processor {self.processor_name} at time {self.t_error} UT: \n " \
-              f"{''.join(traceback.format_tb(self.error.__traceback__))} \n " \
-              f"This error affected the following files: {self.contents} \n"
+              f"{''.join(traceback.format_tb(self.error.__traceback__))}" \
+              f"{type(self.error).__name__}: {self.error} \n  " \
+              f"This error affected the following files: {self.contents} \n" \
+              f"{self.message_known_error()} \n \n"
         return msg
 
 
@@ -62,13 +79,19 @@ class ErrorStack:
             output_path=None
     ) -> str:
 
-        summary = f"Error report summarising {len(self.reports)} errors. \n" \
+        is_known_error = [x.known_error_bool for x in self.reports]
+
+        summary = f"Error report summarising {len(self.reports)} errors. \n \n" \
+                  f"{np.sum(is_known_error)}/{len(is_known_error)} errors were known errors " \
+                  f"raised by winterdrp. \n" \
+                  f"The remaining {len(is_known_error) - np.sum(is_known_error)}/{len(is_known_error)} " \
+                  f"errors were known errors raised by winterdrp.\n  \n" \
 
         if len(self.reports) > 0:
 
-            summary += f"The following images were affected by at least one error during processing \n: " \
+            summary += f"The following images were affected by at least one error during processing: \n " \
                        f"{self.failed_images} \n \n" \
-                       f"Summarising each error: \n"
+                       f"Summarising each error: \n\n"
 
             logger.error(f"Found {len(self.reports)} errors caught by code.")
 

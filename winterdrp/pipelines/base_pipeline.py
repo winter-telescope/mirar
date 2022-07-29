@@ -94,7 +94,6 @@ class Pipeline:
             batches, new_err_stack = processor.base_apply(
                 batches
             )
-            print(new_err_stack, err_stack)
             err_stack += new_err_stack
 
         err_stack.summarise_error_stack(output_path=output_error_path)
