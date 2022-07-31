@@ -41,7 +41,6 @@ class XMatch(BaseDataframeProcessor):
             if catalog.projection[k] == 1:
                 available_projection_keys += [k]
 
-
         for key in available_projection_keys:
             for num in range(self.num_stars):
                 colname = catalog.column_names[key]
