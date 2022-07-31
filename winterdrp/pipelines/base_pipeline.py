@@ -84,7 +84,7 @@ class Pipeline:
             self,
             batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]],
             output_error_path: str = None,
-            catch_all_errors: bool = True
+            catch_all_errors: bool = False
     ):
         err_stack = ErrorStack()
 
