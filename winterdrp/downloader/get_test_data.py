@@ -16,13 +16,6 @@ test_data_dir = os.path.join(
     os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
 
-def check_gitlfs():
-    try:
-        execute("which git-lfs")
-    except ExecutionError:
-        raise FileNotFoundError("Downloading test data requires git-lfs. "
-                                "See install instructions: https://git-lfs.github.com/")
-
 
 def get_wirc_test_data() -> str:
 
@@ -32,21 +25,10 @@ def get_wirc_test_data() -> str:
 
         logger.info(f"No test data found. Downloading. Executing: {cmd}")
 
-        check_gitlfs()
-
         os.system(cmd)
 
-    zip_data_path = glob(f"{test_data_dir}/*.zip")
-    for path in zip_data_path:
-        logger.info(f"Unzipping {path}")
-        with zipfile.ZipFile(path, 'r') as zip_ref:
-            zip_ref.extractall(test_data_dir)
+    return test_data_dir
 
-    sub_dirs = [
-        x for x in glob(f"{test_data_dir}/*")
-        if np.logical_and(os.path.isdir(x), os.path.basename(x)[0] not in [".", "_"])
-    ]
-    assert len(sub_dirs) == 1
-    test_data_path = sub_dirs[0]
 
-    return test_data_path
+if __name__ == "__main__":
+    get_wirc_test_data()
