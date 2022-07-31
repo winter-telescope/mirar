@@ -4,6 +4,7 @@ from winterdrp.utils.send_email import send_gmail
 import logging
 import numpy as np
 from astropy.time import Time
+from astropy import units as u
 from winterdrp.paths import get_output_path, base_output_dir
 
 logger = logging.getLogger(__name__)
@@ -61,17 +62,20 @@ class Watchdog:
 
 
 if __name__ == "__main__":
-    tonight = str(Time.now()).split(" ")[0].replace("-", "")
+
+    ln = Time.now() - 1. * u.day
+    
+    last_night = str(ln).split(" ")[0].replace("-", "")
 
     watchdog = Watchdog(
         pipeline="summer",
-        night=tonight,
+        night=last_night,
         email_sender="winter.data.reduction.pipeline@gmail.com",
         email_recipients=["rdstein@caltech.edu"]
     )
 
     log_output_path = get_output_path(
-        base_name=f"{tonight}_processing_log.txt",
+        base_name=f"{last_night}_processing_log.txt",
         dir_root=watchdog.pipeline.night_sub_dir,
     )
 
