@@ -95,7 +95,6 @@ def check_if_user_exists(
         db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ) -> bool:
-
     validate_credentials(db_user, password)
 
     with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
@@ -115,7 +114,6 @@ def check_if_db_exists(
         db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ) -> bool:
-
     validate_credentials(db_user, password)
 
     with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
@@ -138,7 +136,6 @@ def check_if_table_exists(
         db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD')
 ) -> bool:
-
     validate_credentials(db_user=db_user, password=password)
 
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
@@ -275,15 +272,40 @@ def export_to_db(
     return primary_key, primary_key_values
 
 
+def parse_constraints(db_query_columns,
+                      db_comparison_types,
+                      db_accepted_values
+                      ):
+    assert len(db_comparison_types) == len(db_accepted_values)
+    assert np.isin(np.all(np.unique(db_comparison_types), ['=', '<', '>', 'between']))
+    constraints = ""
+    for i, x in enumerate(db_query_columns):
+        if db_comparison_types[i] == 'between':
+            assert len(db_accepted_values[i]) == 2
+            constraints += f"{x} between {db_accepted_values[i][0]} and {db_accepted_values[i][1]} AND "
+        else:
+            constraints += f"{x} {db_comparison_types[i]} {db_accepted_values[i]} AND "
+
+        constraints = constraints[:-4]  # strip the last AND
+
+    return constraints
+
+
+def parse_select():
+    pass
+
+
 def import_from_db(
         db_name: str,
         db_table: str,
         db_query_columns: str | list[str],
-        db_accepted_values: str | int | float | list[str | float | int],
+        db_accepted_values: str | int | float | list[str | float | int | list],
         db_output_columns: str | list[str],
         output_alias_map: str | list[str],
         db_user: str = os.environ.get('PG_DEFAULT_USER'),
         password: str = os.environ.get('PG_DEFAULT_PWD'),
+        max_num_results: int = None,
+        db_comparison_types: list[str] = None
 ) -> list[dict]:
     """Query an SQL database with constraints, and return a list of dictionaries.
     One dictionary per entry returned from the query.
@@ -325,14 +347,28 @@ def import_from_db(
 
     all_query_res = []
 
-    constraints = " AND ".join([f"{x} = {db_accepted_values[i]}" for i, x in enumerate(db_query_columns)])
+    if db_comparison_types is None:
+        db_comparison_types = ['='] * len(db_accepted_values)
+    assert len(db_comparison_types) == len(db_accepted_values)
+    assert np.isin(np.all(np.unique(db_comparison_types), ['=', '<', '>', 'between']))
+
+    constraints = parse_constraints(db_query_columns,
+                                    db_comparison_types,
+                                    db_accepted_values)
+    # constraints = " AND ".join([f"{x} {db_comparison_types[i]} {db_accepted_values[i]}" for i, x in enumerate(
+    # db_query_columns)])
 
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
         sql_query = f"""
         SELECT {', '.join(db_output_columns)} from {db_table}
-            WHERE {constraints};
+            WHERE {constraints}
         """
+
+        if max_num_results is not None:
+            sql_query += f" LIMIT {max_num_results}"
+
+        sql_query += f";"
 
         logger.debug(f"Query: {sql_query}")
 
@@ -351,3 +387,73 @@ def import_from_db(
             all_query_res.append(query_res)
 
     return all_query_res
+
+
+def execute_query(sql_query, db_name, db_user, password):
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        conn.autocommit = True
+        logger.debug(f"Query: {sql_query}")
+
+        with conn.execute(sql_query) as cursor:
+            query_output = cursor.fetchall()
+
+        return query_output
+
+
+def xmatch_import_db(db_name: str,
+                     db_table: str,
+                     db_query_columns: str | list[str],
+                     db_accepted_values: str | int | float | list[str | float | int],
+                     db_output_columns: str | list[str],
+                     output_alias_map: str | list[str],
+                     ra: float,
+                     dec: float,
+                     xmatch_radius_arcsec: float,
+                     ra_field_name: str = 'ra',
+                     dec_field_name: str = 'dec',
+                     query_dist=False,
+                     q3c=False,
+                     db_comparison_types: list[str] = None,
+                     order_field_name: str = None,
+                     order_ascending: bool = True,
+                     num_limit: int = None,
+                     db_user: str = os.environ.get('PG_DEFAULT_USER'),
+                     db_password: str = os.environ.get('PG_DEFAULT_PWD'),
+                     ) -> list[dict]:
+    xmatch_radius_deg = xmatch_radius_arcsec / 3600.0
+    constraints = f"""q3c_radial_query({ra_field_name},{dec_field_name},{ra},{dec},{xmatch_radius_deg}) """ \
+                  + parse_constraints(db_query_columns,
+                                      db_comparison_types,
+                                      db_accepted_values)
+
+    select = f"""{', '.join(db_output_columns)}"""
+    if query_dist:
+        if q3c:
+            select = f"""q3c_dist({ra_field_name},{dec_field_name},{ra},{dec}) AS xdist,""" + select
+        else:
+            select = f"""{ra_field_name} - ra AS xdist,""" + select
+
+    query = f"""SELECT {select} FROM {db_table} WHERE {constraints}"""
+    order_seq = ["asc", "desc"][np.sum(order_ascending)]
+    if order_field_name is not None:
+        query += f""" ORDER BY {order_field_name}"""
+    if num_limit is not None:
+        query += f""" LIMIT {num_limit}"""
+
+    query += ";"
+
+    query_output = execute_query(query, db_name, db_user, db_password)
+    all_query_res = []
+    for entry in query_output:
+        if not query_dist:
+            assert len(entry) == len(db_output_columns)
+        else:
+            assert len(entry) == len(db_output_columns) + 1
+        query_res = dict()
+        for i, key in enumerate(output_alias_map):
+            query_res[key] = entry[i]
+            if query_dist:
+                query_res['dist'] = entry['xdist']
+        all_query_res.append(query_res)
+    return all_query_res
+
