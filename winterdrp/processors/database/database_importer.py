@@ -175,7 +175,7 @@ def update_xmatch_dataframe(
     return candidate_table
 
 
-class DatabaseXMatchImporter(DatabaseDataframeImporter):
+class DatabaseXMatchImporter(DatabaseDataframeImporter, BaseDataframeProcessor):
     def __init__(self,
                  xmatch_radius_arcsec: float,
                  user_defined_constraints: Callable[[pd.DataFrame], tuple] = no_additional_constraints,
@@ -197,6 +197,7 @@ class DatabaseXMatchImporter(DatabaseDataframeImporter):
         self.order_field_name = order_field_name
         self.order_ascending = order_ascending
         self.query_dist = query_dist
+        self.update_dataframe = update_dataframe
 
     def get_constraints(self, cand):
         query_columns, comparison_types, accepted_values = self.user_defined_constraints(cand)
@@ -250,9 +251,11 @@ class DatabaseHistoryImporter(DatabaseXMatchImporter):
                  update_dataframe: Callable[
                      [pd.DataFrame, list[list[dict]]], pd.DataFrame] = update_history_dataframe,
                  *args, **kwargs):
-        super(DatabaseHistoryImporter, self).__init__(update_dataframe=update_dataframe, *args, **kwargs)
+        super(DatabaseHistoryImporter, self).__init__(*args, **kwargs)
         self.history_duration_days = history_duration_days
         self.time_field_name = time_field_name
+        self.update_dataframe = update_dataframe
+        logger.info(f'Update db is {self.update_dataframe}')
 
     def get_constraints(self, cand):
         query_columns, comparison_types, accepted_values = self.user_defined_constraints(cand)
