@@ -457,3 +457,12 @@ def xmatch_import_db(db_name: str,
         all_query_res.append(query_res)
     return all_query_res
 
+def get_colnames_from_schema(schema_file):
+    with open(schema_file,'r') as f:
+        dat = f.read()
+    dat = dat.split(');')[0]
+    dat = dat.split('\n')[1:-1]
+    pkstrip = [x.strip(',').split('PRIMARY KEY')[0].strip() for x in dat]
+    fkstrip = [x.strip(',').split('FOREIGN KEY')[0].strip() for x in pkstrip]
+    colnames = [x.split(' ')[0] for x in fkstrip]
+    return colnames
