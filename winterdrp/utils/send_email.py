@@ -3,11 +3,14 @@ import smtplib
 from email.message import EmailMessage
 import ssl
 import getpass
+import logging
+
+logger = logging.getLogger(__name__)
 
 port = 465  # For SSL
 
 
-def send_email(
+def send_gmail(
         email_recipients: str | list[str],
         email_subject: str,
         email_text: str,
@@ -28,7 +31,7 @@ def send_email(
     msg['From'] = email_sender
     msg['To'] = ', '.join(email_recipients)
 
-    print(msg)
+    logger.info(f"Sending email to {email_recipients}")
 
     if email_password is None:
         email_password = getpass.getpass()
@@ -42,10 +45,11 @@ def send_email(
 
 
 if __name__ == "__main__":
+    from astropy.time import Time
 
-    send_email(
+    send_gmail(
         email_sender="winter.data.reduction.pipeline@gmail.com",
         email_recipients="rdstein@caltech.edu",
         email_subject="Tester",
-        email_text="a"
+        email_text=f"Test at time: {Time.now()}"
     )
