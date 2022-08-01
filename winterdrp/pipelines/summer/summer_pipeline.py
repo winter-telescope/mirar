@@ -21,6 +21,7 @@ from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
 from winterdrp.processors.split import SplitImage, sub_id_key
 from winterdrp.processors.utils import ImageSaver, HeaderAnnotator, ImageLoader, ImageSelector, ImageBatcher
+from winterdrp.processors.utils.image_rejector import ImageRejector
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors import MaskPixels, BiasCalibrator, FlatCalibrator
 from winterdrp.processors.csvlog import CSVLog
@@ -180,6 +181,7 @@ class SummerPipeline(Pipeline):
                                 base_name_key
                             ] + core_fields
             ),
+            ImageRejector(("OBSTYPE", "FOCUS")),
             # DatabaseImageExporter(
             #     db_name=pipeline_name,
             #     db_table="exposures",
@@ -196,9 +198,8 @@ class SummerPipeline(Pipeline):
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
-            ImageSelector(
-                (base_name_key, "SUMMER_20220402_214324_Camera0.fits"),
-            ),
+            ImageBatcher(base_name_key),
+            ImageSelector(("OBSTYPE", "SCIENCE")),
             AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
             Sextractor(
                 output_sub_dir="testb",
@@ -212,12 +213,12 @@ class SummerPipeline(Pipeline):
                 scamp_config_path=scamp_path,
             ),
             Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
-            ImageSaver(output_dir_name="photprocess"),
+            # ImageSaver(output_dir_name="photprocess"),
             Sextractor(output_sub_dir="photprocess",
                        checkimage_name='NONE',
                        checkimage_type='NONE',
                        **sextractor_photometry_config),
-            ImageSaver(output_dir_name="processed"),
+            # ImageSaver(output_dir_name="processed"),
             PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
             ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG']),
             # DatabaseImageExporter(
