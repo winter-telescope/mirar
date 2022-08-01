@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 schema_dir = os.path.join(os.path.dirname(__file__), "schema")
 
+pg_admin_user_key = 'PG_ADMIN_USER'
+pg_admin_pwd_key = 'PG_ADMIN_PWD'
 
 class DataBaseError(ProcessorError):
     pass
@@ -17,29 +19,41 @@ class DataBaseError(ProcessorError):
 
 def validate_credentials(
         db_user: str,
-        password: str
+        password: str,
+        admin=False
 ):
+
     if db_user is None:
-        err = "'db_user' is set as None. Please pass a db_user as an argument, " \
-              "or set the environment variable 'PG_DEFAULT_USER'. Using "
+        user = 'db_user'
+        env_user_var = 'DB_USER'
+        if admin:
+            user = 'admin_db_user'
+            env_user_var = pg_admin_user_key
+        err = f"'{user}' is set as None. Please pass a db_user as an argument, " \
+              f"or set the environment variable '{env_user_var}'. Using "
         logger.warning(err)
         raise DataBaseError(err)
 
     if password is None:
-        err = "'password' is set as None. Please pass a password as an argument, " \
-              "or set the environment variable 'PG_DEFAULT_PWD'."
+        pwd = 'password'
+        env_pwd_var = 'DB_PWD'
+        if admin:
+            pwd = 'db_admin_password'
+            env_pwd_var = pg_admin_pwd_key
+        err = f"'{pwd}' is set as None. Please pass a password as an argument, " \
+              f"or set the environment variable '{env_pwd_var}'."
         logger.error(err)
         raise DataBaseError(err)
 
 
 def create_db(
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
 ):
-    validate_credentials(db_user=db_user, password=password)
+    admin_user = os.environ.get(pg_admin_user_key)
+    admin_password = os.environ.get(pg_admin_pwd_key)
+    validate_credentials(db_user=admin_user, password=admin_password)
 
-    with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
+    with psycopg.connect(f"dbname=postgres user={admin_user} password={admin_password}") as conn:
         conn.autocommit = True
         sql = f'''CREATE database {db_name}'''
         conn.execute(sql)
@@ -49,8 +63,8 @@ def create_db(
 def create_table(
         schema_path: str,
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
+        db_user: str,
+        password: str
 ):
     validate_credentials(db_user, password)
 
@@ -59,20 +73,22 @@ def create_table(
         with open(schema_path, "r") as f:
             conn.execute(f.read())
 
+    logger.info(f'Created table from schema path {schema_path}')
+
 
 def create_new_user(
         new_db_user: str,
         new_password: str
 ):
-    default_user = os.environ.get('PG_DEFAULT_USER')
-    default_password = os.environ.get('PG_DEFAULT_PWD')
+    admin_user = os.environ.get(pg_admin_user_key)
+    admin_password = os.environ.get(pg_admin_pwd_key)
 
     validate_credentials(new_db_user, new_password)
-    validate_credentials(db_user=default_user, password=default_password)
+    validate_credentials(db_user=admin_user, password=admin_password,admin=True)
 
-    with psycopg.connect(f"dbname=postgres user={default_user} password={default_password}") as conn:
+    with psycopg.connect(f"dbname=postgres user={admin_user} password={admin_password}") as conn:
         conn.autocommit = True
-        command = f'''CREATE ROLE {new_db_user} WITH password '{new_password}';'''
+        command = f'''CREATE ROLE {new_db_user} WITH password '{new_password}' LOGIN;'''
         conn.execute(command)
 
 
@@ -80,11 +96,11 @@ def grant_privileges(
         db_name: str,
         db_user: str
 ):
-    default_user = os.environ.get('PG_DEFAULT_USER')
-    default_password = os.environ.get('PG_DEFAULT_PWD')
-    validate_credentials(default_user, default_password)
+    admin_user = os.environ.get(pg_admin_user_key)
+    admin_password = os.environ.get(pg_admin_pwd_key)
+    validate_credentials(admin_user, admin_password, admin=True)
 
-    with psycopg.connect(f"dbname=postgres user={default_user} password={default_password}") as conn:
+    with psycopg.connect(f"dbname=postgres user={admin_user} password={admin_password}") as conn:
         conn.autocommit = True
         command = f'''GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {db_user};'''
         conn.execute(command)
@@ -92,10 +108,9 @@ def grant_privileges(
 
 def check_if_user_exists(
         user_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key)
 ) -> bool:
-
     validate_credentials(db_user, password)
 
     with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
@@ -112,10 +127,9 @@ def check_if_user_exists(
 
 def check_if_db_exists(
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key)
 ) -> bool:
-
     validate_credentials(db_user, password)
 
     with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
@@ -135,24 +149,23 @@ def check_if_db_exists(
 def check_if_table_exists(
         db_name: str,
         db_table: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
+        db_user: str ,
+        password: str
 ) -> bool:
-
     validate_credentials(db_user=db_user, password=password)
 
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
-        command = '''SELECT datname FROM pg_database;'''
+        command = '''SELECT table_name FROM information_schema.tables WHERE table_schema='public';'''
         data = conn.execute(command).fetchall()
 
-    existing_db_names = [x[0] for x in data]
-    logger.debug(f"Found the following databases: {existing_db_names}")
+    existing_table_names = [x[0] for x in data]
+    logger.debug(f"Found the following tables: {existing_table_names}")
 
-    db_exist_bool = db_name in existing_db_names
-    logger.info(f"Database table '{db_table}' {['does not exist', 'already exists'][db_exist_bool]}")
+    table_exist_bool = db_table in existing_table_names
+    logger.info(f"Database table '{db_table}' {['does not exist', 'already exists'][table_exist_bool]}")
 
-    return db_exist_bool
+    return table_exist_bool
 
 
 def get_foreign_tables_list(
@@ -208,8 +221,8 @@ def get_ordered_schema_list(
 def create_tables_from_schema(
         schema_dir: str,
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key)
 ):
     schema_files = glob(f'{schema_dir}/*.sql')
     ordered_schema_files = get_ordered_schema_list(schema_files)
@@ -222,8 +235,8 @@ def export_to_db(
         value_dict: dict | astropy.io.fits.Header,
         db_name: str,
         db_table: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD'),
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key),
 ) -> tuple[str, list]:
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
@@ -242,10 +255,14 @@ def export_to_db(
         with conn.execute(sql_query) as cursor:
 
             primary_key = [x[0] for x in cursor.fetchall()]
-
+            sequences = [x[0] for x in conn.execute(f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';").fetchall()]
+            seq_tables = np.array([x.split('_')[0] for x in sequences])
+            seq_columns = np.array([x.split('_')[1] for x in sequences])
+            serial_keys = seq_columns[(seq_tables==db_table)]
+            logger.debug(serial_keys)
             colnames = [
                 desc[0] for desc in conn.execute(f"SELECT * FROM {db_table} LIMIT 1").description
-                if desc[0] not in primary_key
+                if desc[0] not in serial_keys
             ]
             logger.debug(primary_key)
             logger.debug(colnames)
@@ -256,8 +273,8 @@ def export_to_db(
                 txt = txt.replace(char, '')
 
             for c in colnames:
-                logger.debug(f"{c}, {value_dict[c.upper()]}")
-                txt += f"'{str(value_dict[c.upper()])}', "
+                logger.debug(f"{c}, {value_dict[c]}")
+                txt += f"'{str(value_dict[c])}', "
 
             txt = txt + ') '
             txt = txt.replace(', )', ')')
@@ -275,15 +292,40 @@ def export_to_db(
     return primary_key, primary_key_values
 
 
+def parse_constraints(db_query_columns,
+                      db_comparison_types,
+                      db_accepted_values
+                      ):
+    assert len(db_comparison_types) == len(db_accepted_values)
+    assert np.all(np.isin(np.unique(db_comparison_types), ['=', '<', '>', 'between']))
+    constraints = ""
+    for i, x in enumerate(db_query_columns):
+        if db_comparison_types[i] == 'between':
+            assert len(db_accepted_values[i]) == 2
+            constraints += f"{x} between {db_accepted_values[i][0]} and {db_accepted_values[i][1]} AND "
+        else:
+            constraints += f"{x} {db_comparison_types[i]} {db_accepted_values[i]} AND "
+
+        constraints = constraints[:-4]  # strip the last AND
+
+    return constraints
+
+
+def parse_select():
+    pass
+
+
 def import_from_db(
         db_name: str,
         db_table: str,
         db_query_columns: str | list[str],
-        db_accepted_values: str | int | float | list[str | float | int],
+        db_accepted_values: str | int | float | list[str | float | int | list],
         db_output_columns: str | list[str],
         output_alias_map: str | list[str],
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD'),
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key),
+        max_num_results: int = None,
+        db_comparison_types: list[str] = None
 ) -> list[dict]:
     """Query an SQL database with constraints, and return a list of dictionaries.
     One dictionary per entry returned from the query.
@@ -325,14 +367,28 @@ def import_from_db(
 
     all_query_res = []
 
-    constraints = " AND ".join([f"{x} = {db_accepted_values[i]}" for i, x in enumerate(db_query_columns)])
+    if db_comparison_types is None:
+        db_comparison_types = ['='] * len(db_accepted_values)
+    assert len(db_comparison_types) == len(db_accepted_values)
+    assert np.isin(np.all(np.unique(db_comparison_types), ['=', '<', '>', 'between']))
+
+    constraints = parse_constraints(db_query_columns,
+                                    db_comparison_types,
+                                    db_accepted_values)
+    # constraints = " AND ".join([f"{x} {db_comparison_types[i]} {db_accepted_values[i]}" for i, x in enumerate(
+    # db_query_columns)])
 
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
         sql_query = f"""
         SELECT {', '.join(db_output_columns)} from {db_table}
-            WHERE {constraints};
+            WHERE {constraints}
         """
+
+        if max_num_results is not None:
+            sql_query += f" LIMIT {max_num_results}"
+
+        sql_query += f";"
 
         logger.debug(f"Query: {sql_query}")
 
@@ -351,3 +407,102 @@ def import_from_db(
             all_query_res.append(query_res)
 
     return all_query_res
+
+
+def execute_query(sql_query, db_name, db_user, password):
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        conn.autocommit = True
+        logger.debug(f"Query: {sql_query}")
+
+        with conn.execute(sql_query) as cursor:
+            query_output = cursor.fetchall()
+
+        return query_output
+
+
+def xmatch_import_db(db_name: str,
+                     db_table: str,
+                     db_query_columns: str | list[str],
+                     db_accepted_values: str | int | float | list[str | float | int],
+                     db_output_columns: str | list[str],
+                     output_alias_map: str | list[str],
+                     ra: float,
+                     dec: float,
+                     xmatch_radius_arcsec: float,
+                     ra_field_name: str = 'ra',
+                     dec_field_name: str = 'dec',
+                     query_dist=False,
+                     q3c=False,
+                     db_comparison_types: list[str] = None,
+                     order_field_name: str = None,
+                     order_ascending: bool = True,
+                     num_limit: int = None,
+                     db_user: str = os.environ.get(pg_admin_user_key),
+                     db_password: str = os.environ.get(pg_admin_pwd_key),
+                     ) -> list[dict]:
+
+    if output_alias_map is None:
+        output_alias_map = {}
+        for col in db_output_columns:
+            output_alias_map[col] = col
+
+    xmatch_radius_deg = xmatch_radius_arcsec / 3600.0
+
+    if q3c:
+        constraints = f"""q3c_radial_query({ra_field_name},{dec_field_name},{ra},{dec},{xmatch_radius_deg}) """ \
+
+    else:
+        ra_min = ra - xmatch_radius_deg
+        ra_max = ra + xmatch_radius_deg
+        dec_min = dec - xmatch_radius_deg
+        dec_max = dec + xmatch_radius_deg
+        constraints = f""" {ra_field_name} between {ra_min} and {ra_max} AND {dec_field_name} between {dec_min} and {dec_max} """
+
+    parsed_constraints = parse_constraints(db_query_columns,
+                                           db_comparison_types,
+                                           db_accepted_values)
+    if len(parsed_constraints) > 0:
+        constraints += f"""AND {constraints}"""
+
+    select = f"""{', '.join(db_output_columns)}"""
+    if query_dist:
+        if q3c:
+            select = f"""q3c_dist({ra_field_name},{dec_field_name},{ra},{dec}) AS xdist,""" + select
+        else:
+            select = f"""{ra_field_name} - ra AS xdist,""" + select
+
+    query = f"""SELECT {select} FROM {db_table} WHERE {constraints}"""
+    order_seq = ["asc", "desc"][np.sum(order_ascending)]
+    if order_field_name is not None:
+        query += f""" ORDER BY {order_field_name}"""
+    if num_limit is not None:
+        query += f""" LIMIT {num_limit}"""
+
+    query += ";"
+
+    query_output = execute_query(query, db_name, db_user, db_password)
+    all_query_res = []
+
+    for entry in query_output:
+        if not query_dist:
+            assert len(entry) == len(db_output_columns)
+        else:
+            assert len(entry) == len(db_output_columns) + 1
+        query_res = dict()
+        for i, key in enumerate(output_alias_map):
+            query_res[key] = entry[i]
+            if query_dist:
+                query_res['dist'] = entry['xdist']
+        all_query_res.append(query_res)
+    return all_query_res
+
+
+def get_colnames_from_schema(schema_file):
+    with open(schema_file,'r') as f:
+        dat = f.read()
+    dat = dat.split(');')[0]
+    dat = dat.split('\n')[1:-1]
+    pkstrip = [x.strip(',').split('PRIMARY KEY')[0].strip() for x in dat]
+    fkstrip = [x.strip(',').split('FOREIGN KEY')[0].strip() for x in pkstrip]
+    colnames = [x.split(' ')[0] for x in fkstrip]
+    return colnames

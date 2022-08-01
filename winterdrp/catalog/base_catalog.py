@@ -129,7 +129,7 @@ class BaseKowalskiXMatch(BaseXMatchCatalog):
                  max_time_ms: float = 10000,
                  *args,
                  **kwargs):
-        super(BaseKowalskiXMatch, self).__init__(*args,**kwargs)
+        super(BaseKowalskiXMatch, self).__init__(*args, **kwargs)
         self.max_time_ms = max_time_ms
         self.kowalski = kowalski
 

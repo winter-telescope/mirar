@@ -17,8 +17,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             db_name: str,
             db_table: str,
             schema_path: str,
-            db_user: str = os.environ.get('PG_DEFAULT_USER'),
-            db_password: str = os.environ.get('PG_DEFAULT_PWD'),
+            db_user: str = os.environ.get('DB_USER'),
+            db_password: str = os.environ.get('DB_PWD'),
             full_setup: bool = False,
             schema_dir: str = None,
             *args,
@@ -41,17 +41,17 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
 
     def make_db(self):
         create_db(
-            db_name=self.db_name,
-            db_user=self.db_user,
-            password=self.db_password
+            db_name=self.db_name
         )
 
     def user_exists(self):
         return check_if_user_exists(self.db_user)
 
-    @staticmethod
-    def make_user():
-        return create_new_user
+    def make_user(self):
+        return create_new_user(
+                               new_db_user=self.db_user,
+                               new_password=self.db_password
+        )
 
     def grant_privileges(self):
         return grant_privileges(self.db_name, self.db_user)
@@ -76,7 +76,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             self.set_up_databases()
             self.db_check = True
 
-        super(BaseDatabaseProcessor, self).apply(batch)
+        batch = super(BaseDatabaseProcessor, self).apply(batch)
+        return batch
 
     def set_up_databases(self):
 

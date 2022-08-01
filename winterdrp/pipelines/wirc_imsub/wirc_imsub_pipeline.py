@@ -6,10 +6,8 @@ from winterdrp.processors.astromatic.psfex import PSFex
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare
 from winterdrp.processors.candidates.candidate_detector import DetectCandidates
-import numpy as np
 from astropy.io import fits, ascii
 import os
-from astropy.time import Time
 import logging
 
 from winterdrp.processors.alert_packets.avro_alert import AvroPacketMaker
@@ -23,7 +21,10 @@ from winterdrp.processors.photometry.aperture_photometry import AperturePhotomet
 from winterdrp.catalog.kowalski import TMASS, PS1
 from winterdrp.processors.xmatch import XMatch
 from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image
-
+from winterdrp.processors.database.database_importer import DatabaseHistoryImporter
+from winterdrp.processors.database.postgres import get_colnames_from_schema
+from winterdrp.processors.candidates.namer import CandidateNamer
+from winterdrp.processors.database.database_exporter import DatabaseDataframeExporter
 logger = logging.getLogger(__name__)
 
 
@@ -104,6 +105,8 @@ class WircImsubPipeline(Pipeline):
     ]
     batch_split_keys = ["UTSHUT"]
 
+    candidates_db_columns = get_colnames_from_schema('winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema'
+                                                     '/candidates.sql')
     pipeline_configurations = {
         None: [
             ImageLoader(
@@ -111,7 +114,7 @@ class WircImsubPipeline(Pipeline):
                 load_image=load_raw_wirc_image
             ),
             # ImageBatcher(split_key='UTSHUT'),
-            ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210330.fits")),
+            ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210702.fits")),
             Reference(
                 ref_image_generator=wirc_reference_image_generator,
                 ref_swarp_resampler=wirc_reference_image_resampler,
@@ -150,13 +153,43 @@ class WircImsubPipeline(Pipeline):
                 num_stars=3,
                 search_radius_arcsec=30
             ),
+            # History(),
             DataframeWriter(output_dir_name='kowalski'),
+            DatabaseHistoryImporter(
+                xmatch_radius_arcsec=2,
+                time_field_name='jd',
+                history_duration_days=500,
+                db_name="wirc",
+                db_user=os.environ.get('DB_USER'),
+                db_pwd=os.environ.get('DB_PWD'),
+                db_table='candidates',
+                db_output_columns=candidates_db_columns,
+                schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql',
+                q3c=False
+            ),
+            CandidateNamer(
+                 db_name='wirc',
+                 cand_table_name='candidates',
+                 base_name='WIRC',
+                 name_start='aaaaa',
+                 xmatch_radius_arcsec=2
+            ),
+            DatabaseDataframeExporter(
+                db_name='wirc',
+                db_table='candidates',
+                schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql'
+            )
             # EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
             # AvroPacketMaker(output_sub_dir="avro",
                             # base_name="WNTR",
                             # broadcast=False,
                             # save_local=False),
-            SendToFritz(output_sub_dir="test")
+            # SendToFritz(output_sub_dir="test")
+
+            #                 base_name="WNTR",
+            #                 broadcast=False,
+            #                 save_local=False),
+            # SendToFritz(output_sub_dir="test")
         ]
     }

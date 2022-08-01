@@ -1,7 +1,6 @@
 from winterdrp.processors.base_processor import BaseDataframeProcessor
 import pandas as pd
 import numpy as np
-from astropy.io import fits
 from winterdrp.processors.photometry.utils import make_cutouts
 import matplotlib.pyplot as plt
 from astropy.stats import sigma_clipped_stats
@@ -29,8 +28,8 @@ class AperturePhotometry(BaseDataframeProcessor):
             self.col_suffix_list = self.aper_diameters
 
     @staticmethod
-    def aperture_photometry(diff_cutout, diff_unc_cutout, aper_diameter, bkg_in_diameter, bkg_out_diameter,
-                            plot=False):
+    def aper_photometry(diff_cutout, diff_unc_cutout, aper_diameter, bkg_in_diameter, bkg_out_diameter,
+                        plot=False):
 
         #     w = WCS(header)
         #     x,y = w.all_world2pix(ra,dec,0)
@@ -94,22 +93,22 @@ class AperturePhotometry(BaseDataframeProcessor):
 
             for cand_ind in range(len(candidate_table)):
                 row = candidate_table.iloc[cand_ind]
-                ximage, yimage = int(row['X_IMAGE'])-1, int(row['Y_IMAGE'])-1
+                ximage, yimage = int(row['X_IMAGE']) - 1, int(row['Y_IMAGE']) - 1
                 diff_filename = row['diffimname']
                 diff_psf_filename = row['diffpsfname']
                 diff_unc_filename = row['diffuncname']
                 diff_cutout = make_cutouts(diff_filename, (ximage, yimage), self.cutout_size_aper_phot)
                 diff_unc_cutout = make_cutouts(diff_unc_filename, (ximage, yimage), self.cutout_size_aper_phot)
 
-                flux, fluxunc = self.aperture_photometry(diff_cutout, diff_unc_cutout, aper_diam, bkg_in_diameter,
-                                                         bkg_out_diameter)
+                flux, fluxunc = self.aper_photometry(diff_cutout, diff_unc_cutout, aper_diam, bkg_in_diameter,
+                                                     bkg_out_diameter)
                 fluxes.append(flux)
                 fluxuncs.append(fluxunc)
             candidate_table[f'fluxap{suffix}'] = fluxes
             candidate_table[f'fluxuncap{suffix}'] = fluxuncs
 
             candidate_table[f'magap{suffix}'] = candidate_table['magzpsci'] - \
-                                                        2.5 * np.log10(candidate_table[f'fluxap{suffix}'])
+                                                2.5 * np.log10(candidate_table[f'fluxap{suffix}'])
             candidate_table[f'sigmagap{suffix}'] = 1.086 * candidate_table[f'fluxuncap{suffix}'] \
-                                                           / candidate_table[f'fluxap{suffix}']
+                                                   / candidate_table[f'fluxap{suffix}']
         return candidate_table

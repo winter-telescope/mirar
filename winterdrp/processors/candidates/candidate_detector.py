@@ -130,9 +130,9 @@ class DetectCandidates(BaseCandidateGenerator):
             display_ref_ims.append(display_ref_bit)
             display_diff_ims.append(display_diff_bit)
 
-        det_srcs['SciBitIm'] = display_sci_ims
-        det_srcs['RefBitIm'] = display_ref_ims
-        det_srcs['DiffBitIm'] = display_diff_ims
+        det_srcs['scibitim'] = display_sci_ims
+        det_srcs['refbitim'] = display_ref_ims
+        det_srcs['diffbitim'] = display_diff_ims
 
         diff_zp = float(fits.getval(diff_filename, 'TMC_ZP'))
         det_srcs['magzpsci'] = diff_zp
@@ -160,7 +160,6 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs['programid'] = fits.getval(sci_resamp_imagename, 'PROGID')
         det_srcs['fid'] = fits.getval(sci_resamp_imagename, 'FILTERID')
         det_srcs['candid'] = np.array(det_srcs['jd']*100, dtype=int)*10000 + np.arange(len(det_srcs))
-        det_srcs['name'] = ''
         det_srcs = det_srcs.to_pandas()
 
         return det_srcs
