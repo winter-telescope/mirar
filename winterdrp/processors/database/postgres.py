@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 schema_dir = os.path.join(os.path.dirname(__file__), "schema")
 
+pg_admin_user_key = 'PG_ADMIN_USER'
+pg_admin_pwd_key = 'PG_ADMIN_PWD'
 
 class DataBaseError(ProcessorError):
     pass
@@ -26,7 +28,7 @@ def validate_credentials(
         env_user_var = 'DB_USER'
         if admin:
             user = 'admin_db_user'
-            env_user_var = 'PG_DEFAULT_USER'
+            env_user_var = pg_admin_user_key
         err = f"'{user}' is set as None. Please pass a db_user as an argument, " \
               f"or set the environment variable '{env_user_var}'. Using "
         logger.warning(err)
@@ -37,7 +39,7 @@ def validate_credentials(
         env_pwd_var = 'DB_PWD'
         if admin:
             pwd = 'db_admin_password'
-            env_pwd_var = 'PG_DEFAULT_PWD'
+            env_pwd_var = pg_admin_pwd_key
         err = f"'{pwd}' is set as None. Please pass a password as an argument, " \
               f"or set the environment variable '{env_pwd_var}'."
         logger.error(err)
@@ -47,8 +49,8 @@ def validate_credentials(
 def create_db(
         db_name: str,
 ):
-    admin_user = os.environ.get('PG_DEFAULT_USER')
-    admin_password = os.environ.get('PG_DEFAULT_PWD')
+    admin_user = os.environ.get(pg_admin_user_key)
+    admin_password = os.environ.get(pg_admin_pwd_key)
     validate_credentials(db_user=admin_user, password=admin_password)
 
     with psycopg.connect(f"dbname=postgres user={admin_user} password={admin_password}") as conn:
@@ -78,8 +80,8 @@ def create_new_user(
         new_db_user: str,
         new_password: str
 ):
-    admin_user = os.environ.get('PG_DEFAULT_USER')
-    admin_password = os.environ.get('PG_DEFAULT_PWD')
+    admin_user = os.environ.get(pg_admin_user_key)
+    admin_password = os.environ.get(pg_admin_pwd_key)
 
     validate_credentials(new_db_user, new_password)
     validate_credentials(db_user=admin_user, password=admin_password,admin=True)
@@ -94,8 +96,8 @@ def grant_privileges(
         db_name: str,
         db_user: str
 ):
-    admin_user = os.environ.get('PG_DEFAULT_USER')
-    admin_password = os.environ.get('PG_DEFAULT_PWD')
+    admin_user = os.environ.get(pg_admin_user_key)
+    admin_password = os.environ.get(pg_admin_pwd_key)
     validate_credentials(admin_user, admin_password, admin=True)
 
     with psycopg.connect(f"dbname=postgres user={admin_user} password={admin_password}") as conn:
@@ -106,8 +108,8 @@ def grant_privileges(
 
 def check_if_user_exists(
         user_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key)
 ) -> bool:
     validate_credentials(db_user, password)
 
@@ -125,8 +127,8 @@ def check_if_user_exists(
 
 def check_if_db_exists(
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key)
 ) -> bool:
     validate_credentials(db_user, password)
 
@@ -219,8 +221,8 @@ def get_ordered_schema_list(
 def create_tables_from_schema(
         schema_dir: str,
         db_name: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD')
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key)
 ):
     schema_files = glob(f'{schema_dir}/*.sql')
     ordered_schema_files = get_ordered_schema_list(schema_files)
@@ -233,8 +235,8 @@ def export_to_db(
         value_dict: dict | astropy.io.fits.Header,
         db_name: str,
         db_table: str,
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD'),
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key),
 ) -> tuple[str, list]:
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
@@ -320,8 +322,8 @@ def import_from_db(
         db_accepted_values: str | int | float | list[str | float | int | list],
         db_output_columns: str | list[str],
         output_alias_map: str | list[str],
-        db_user: str = os.environ.get('PG_DEFAULT_USER'),
-        password: str = os.environ.get('PG_DEFAULT_PWD'),
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key),
         max_num_results: int = None,
         db_comparison_types: list[str] = None
 ) -> list[dict]:
@@ -435,8 +437,8 @@ def xmatch_import_db(db_name: str,
                      order_field_name: str = None,
                      order_ascending: bool = True,
                      num_limit: int = None,
-                     db_user: str = os.environ.get('PG_DEFAULT_USER'),
-                     db_password: str = os.environ.get('PG_DEFAULT_PWD'),
+                     db_user: str = os.environ.get(pg_admin_user_key),
+                     db_password: str = os.environ.get(pg_admin_pwd_key),
                      ) -> list[dict]:
 
     if output_alias_map is None:
