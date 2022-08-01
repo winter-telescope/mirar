@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS proc (
     FWHM_MED REAL,
     FWHM_STD REAL,
     flatname VARCHAR(255),
-    darkname VARCHAR(255),
     biasname VARCHAR(255),
     ASTR_DPA FLOAT,
     ASTR_OFF FLOAT,
