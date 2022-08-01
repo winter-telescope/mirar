@@ -437,7 +437,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             # alert_date = Time(cand_jd, format = 'jd').tt.datetime.strftime('%Y%m%d')
             # logger.info(alert_date)
             # topic_name = 'winter_%s'%alert_date
-            topic_name = 'winter_20220714'
+            topic_name = 'winter_20220801'
 
             # TODO candid should be coming from naming database
             cand['candid'] = cand_id

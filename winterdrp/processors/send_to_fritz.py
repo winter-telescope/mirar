@@ -4,6 +4,7 @@ import pandas as pd
 import os, gzip, io
 
 import base64
+from contextlib import contextmanager
 import astropy
 import json, time
 from datetime import datetime
@@ -20,6 +21,24 @@ from winterdrp.paths import get_output_dir
 
 logger = logging.getLogger(__name__)
 
+def time_stamp():
+    """
+
+    :return: UTC time -> string
+    """
+    return datetime.utcnow().strftime("%Y%m%d_%H:%M:%S")
+
+def log(message):
+    print(f"{time_stamp()}: {message}")
+
+@contextmanager
+def timer(description, verbose: bool = True):
+    tic = time.time()
+    yield
+    toc = time.time()
+    if verbose:
+        log(f"{description} took {toc-tic} s")
+
 class SendToFritz(BaseDataframeProcessor):
     def __init__(self, 
                 output_sub_dir: str, 
@@ -28,15 +47,16 @@ class SendToFritz(BaseDataframeProcessor):
                 base_name = 'WIRC',
                 filter_id = 1152,
                 instrument_id = 5,
-                *args,
+                verbose = 2,
                 **kwargs):
-        super(SendToFritz, self).__init__(*args, **kwargs)
+        super(SendToFritz, self).__init__(**kwargs)
         self.token = None
         self.group_ids = group_ids
         self.base_name = base_name
         self.filter_id = filter_id
         self.instrument_id = instrument_id
         self.origin = base_name # used for sending updates to Fritz
+        self.verbose = verbose
 
     def _apply_to_candidates(
             self,
@@ -328,6 +348,42 @@ class SendToFritz(BaseDataframeProcessor):
         if not annotation_posted:
             self.post_annotation(cand)
 
+    def alert_skyportal_manager(self, alert):
+        """Posts alerts to SkyPortal if criteria is met
+
+        :param alert: _description_
+        :type alert: _type_
+        """
+        # check if candidate/source exists in SkyPortal
+        # log.info(f"Checking if {alert['objectId']} is candidate in SkyPortal")
+        with timer(
+            f"Checking if {alert['objectId']} is candidate in SkyPortal",
+            self.verbose > 1,
+        ):
+            response = self.api(
+                "HEAD", f"https://fritz.science/api/candidates/{alert['objectId']}"
+            )
+        is_candidate = response.status_code == 200
+
+        # logger.info(f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal")
+        if self.verbose > 1:
+            log(
+                f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal"
+            )
+        # logger.info(f"Checking if {alert['objectId']} is source in SkyPortal")
+        with timer(
+            f"Checking if {alert['objectId']} is source in SkyPortal", self.verbose > 1
+        ):
+            response = self.api("HEAD", f"https://fritz.science/api/sources/{alert['objectId']}")
+        is_source = response.status_code == 200
+        log(
+                f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal"
+            )
+        if self.verbose > 1:
+            log(
+                f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal"
+            )
+
     def make_alert(self, cand_table):
         t0 = time.time()
         all_cands = self.read_input_df(cand_table)
@@ -363,6 +419,7 @@ class SendToFritz(BaseDataframeProcessor):
             # logger.info(f'Photometry {cand["objectId"]}: {photometry_response}')
 
             self.retrieve_annotation_specified_source(cand)
+            self.alert_skyportal_manager(cand)
             # annotation_response = self.post_annotation(cand)
 
         t1 = time.time()
