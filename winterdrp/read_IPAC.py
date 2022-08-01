@@ -1,3 +1,14 @@
+"""
+Stand alone script to read an Kafka stream of Avro packets
+from brokers. Used to test sending to and receiving from 
+IPAC when setting up WINTER.
+
+Modified from:
+https://github.com/dmitryduev/kowalski
+alert_broker
+
+2022 Aug 01
+"""
 import argparse
 from ast import literal_eval
 from copy import deepcopy
@@ -55,7 +66,7 @@ class AlertConsumer:
         """
         # Configure consumer connection to Kafka broker
         bootstrap_servers = {bootstrap_server_str} 
-        logger.info(f'testingggggg')
+        
         conf = {
             "bootstrap.servers": bootstrap_servers,
             "default.topic.config": {"auto.offset.reset": "earliest"},
@@ -178,7 +189,6 @@ class AlertConsumer:
             prv_candidates = []
 
         return doc, prv_candidates
-
     
     def process_alert(self, alert: Mapping, topic: str):
         """
@@ -264,7 +274,7 @@ if __name__ == "__main__":
     test_consumer = AlertConsumer(args.servers, args.topic, args.group_id)
     print(f'Successfully created AlertConsumer')
 
-    # For testing
+    # For testing purposes
     i = 1
     while i < 5:
         test_consumer.poll()
