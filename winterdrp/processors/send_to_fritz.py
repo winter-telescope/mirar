@@ -102,6 +102,7 @@ class SendToFritz(BaseDataframeProcessor):
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
         self.origin = base_name # used for sending updates to Fritz
+        self.verbose = verbose
 
     def _apply_to_candidates(
             self,
@@ -748,6 +749,42 @@ class SendToFritz(BaseDataframeProcessor):
             # self.alert_put_photometry(alert)
 
         logger.info(f'======== Manager complete for {alert["objectId"]} =======')
+
+    def alert_skyportal_manager(self, alert):
+        """Posts alerts to SkyPortal if criteria is met
+
+        :param alert: _description_
+        :type alert: _type_
+        """
+        # check if candidate/source exists in SkyPortal
+        # log.info(f"Checking if {alert['objectId']} is candidate in SkyPortal")
+        with timer(
+            f"Checking if {alert['objectId']} is candidate in SkyPortal",
+            self.verbose > 1,
+        ):
+            response = self.api(
+                "HEAD", f"https://fritz.science/api/candidates/{alert['objectId']}"
+            )
+        is_candidate = response.status_code == 200
+
+        # logger.info(f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal")
+        if self.verbose > 1:
+            log(
+                f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal"
+            )
+        # logger.info(f"Checking if {alert['objectId']} is source in SkyPortal")
+        with timer(
+            f"Checking if {alert['objectId']} is source in SkyPortal", self.verbose > 1
+        ):
+            response = self.api("HEAD", f"https://fritz.science/api/sources/{alert['objectId']}")
+        is_source = response.status_code == 200
+        log(
+                f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal"
+            )
+        if self.verbose > 1:
+            log(
+                f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal"
+            )
 
     def make_alert(self, cand_table):
         t0 = time.time()
