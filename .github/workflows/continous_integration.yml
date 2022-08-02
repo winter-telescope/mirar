@@ -42,11 +42,11 @@ jobs:
 
       - name: install packages
         run: |
-          apt-get install source-extracter
+          sudo apt-get install source-extracter
           ln -s /usr/bin/source-extractor /usr/bin/sex
           pip install --upgrade pip
           pip install -e .
-          
+
       # Runs a set of commands using the runners shell
       - name: Test the code
         run: |
