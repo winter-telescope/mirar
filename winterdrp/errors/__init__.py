@@ -86,7 +86,7 @@ class ErrorStack:
                   f"{np.sum(is_known_error)}/{len(is_known_error)} errors were known errors " \
                   f"raised by winterdrp. \n" \
                   f"The remaining {len(is_known_error) - np.sum(is_known_error)}/{len(is_known_error)} " \
-                  f"errors were known errors raised by winterdrp.\n  \n" \
+                  f"errors were other errors not raised by winterdrp.\n  \n" \
 
         if len(self.reports) > 0:
 
