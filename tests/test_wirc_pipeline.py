@@ -111,7 +111,7 @@ class TestWircPipeline(unittest.TestCase):
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=6)
+                self.assertAlmostEqual(value, header[key], places=5)
             elif isinstance(value, int):
                 self.assertEqual(value, header[key])
             else:
