@@ -1,3 +1,5 @@
+import os
+
 from winterdrp.pipelines import get_pipeline
 from winterdrp.errors import ErrorStack
 from winterdrp.utils.send_email import send_gmail
@@ -5,7 +7,7 @@ import logging
 import numpy as np
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.paths import get_output_path, base_output_dir
+from winterdrp.paths import get_output_path
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class Watchdog:
         self.night = night
         self.pipeline_name = pipeline
         self.pipeline = get_pipeline(pipeline, configuration=configuration, night=night)
+        self.processed_images = []
 
         check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
         if np.sum(check_email) == 1:
@@ -36,7 +39,11 @@ class Watchdog:
         else:
             self.email_info = None
 
-    def summarise_errors(self, errorstack: ErrorStack):
+    def summarise_errors(
+            self,
+            errorstack: ErrorStack,
+            attachments: str | list[str] = None
+    ):
 
         summary = errorstack.summarise_error_stack()
 
@@ -50,15 +57,19 @@ class Watchdog:
                 email_sender=sender,
                 email_recipients=recipients,
                 email_subject=subject,
-                email_text=summary
+                email_text=summary,
+                attachments=attachments
             )
 
     def process_images(self):
         pass
 
-    def process_full_night(self):
+    def process_full_night(
+            self,
+            attachments: str | list[str] = None
+    ):
         batches, errorstack = self.pipeline.reduce_images([[[], []]], catch_all_errors=True)
-        self.summarise_errors(errorstack=errorstack)
+        self.summarise_errors(errorstack=errorstack, attachments=attachments)
 
 
 if __name__ == "__main__":
@@ -79,16 +90,24 @@ if __name__ == "__main__":
         dir_root=watchdog.pipeline.night_sub_dir,
     )
 
+    try:
+        os.makedirs(os.path.dirname(log_output_path))
+    except OSError:
+        pass
+
+    try:
+        os.remove(log_output_path)
+    except FileNotFoundError:
+        pass
+
     log = logging.getLogger("winterdrp")
-    #
+
     handler = logging.FileHandler(log_output_path)
-    #
+
     formatter = logging.Formatter('%(name)s [l %(lineno)d] - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     log.addHandler(handler)
     log.setLevel("INFO")
-    #
-    #
-    #
-    watchdog.process_full_night()
+
+    watchdog.process_full_night(attachments=[log_output_path])
 
