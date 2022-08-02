@@ -170,7 +170,7 @@ pipeline_name = "summer"
 class SummerPipeline(Pipeline):
     name = pipeline_name
 
-    pipeline_configurations = {
+    all_pipeline_configurations = {
         None: [
             ImageLoader(
                 load_image=load_raw_summer_image
