@@ -56,6 +56,8 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Test the code
+        env:
+          OUTPUT_DATA_DIR : /home/runner/
         run: |
           python -m unittest tests/test_wirc_pipeline.py
 
