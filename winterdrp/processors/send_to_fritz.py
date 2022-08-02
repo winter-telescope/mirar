@@ -53,7 +53,6 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 class SendToFritz(BaseDataframeProcessor):
     def __init__(self, 
-                output_sub_dir: str, 
                 token = None,
                 group_ids = [1431],
                 base_name = 'WIRC',
