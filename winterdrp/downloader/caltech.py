@@ -1,5 +1,6 @@
 import os
 import logging
+import os
 from winterdrp.paths import raw_img_dir
 
 
@@ -12,9 +13,11 @@ def download_via_ssh(
         night: str | int,
         pipeline: str,
         prefix: str = "",
-        server_sub_dir: str = None
+        server_sub_dir: str = None,
+        username: str = os.getenv("SSH_USER")
 ):
-    username = input(f"Please enter your username for {server}: \n")
+    if username is None:
+        username = input(f"Please enter your username for {server}: \n")
 
     source_dir = f"{username}@{server}:{os.path.join(base_dir, prefix+night)}/"
 
