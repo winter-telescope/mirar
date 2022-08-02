@@ -5,16 +5,22 @@ import sys
 import logging
 from winterdrp.pipelines import get_pipeline, Pipeline
 from winterdrp.paths import raw_img_dir
+from astropy.time import Time
+from astropy import units as u
+from winterdrp.watchdog.base_watchdog import Watchdog
 
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(
     description="winterdrp: An automated image reduction pipeline, developed for WINTER"
 )
+
+ln = Time.now() - 1. * u.day
+last_night = str(ln).split(" ")[0].replace("-", "")
 parser.add_argument(
     "-n",
     "--night",
-    default="",
+    default=last_night,
     help="Sub-directory to use in the data directory"
 )
 parser.add_argument(
@@ -51,40 +57,20 @@ parser.add_argument(
     action='store_true',
     default=False
 )
+
 parser.add_argument(
-    '--db',
-    help='Set up database',
-    action='store_true',
+    "-w",
+    "--watchdog",
+    action="store_true",
     default=False
 )
 parser.add_argument(
-    "-e",
-    "--errorpath",
-    default="errorlog.txt",
-    help="Path to output errors"
+    "--emailrecipients",
+    default=None,
+    help='Spaceless comma-separated values of email recipients',
 )
-# parser.add_argument(
-#     '-skipfail',
-#     help='If processing of one image set fails, proceed with other objects/filters',
-#     action='store_true',
-#     default=False
-# )
 
 args = parser.parse_args()
-
-# Set up logging
-
-log = logging.getLogger("winterdrp")
-
-if args.logfile is None:
-    handler = logging.StreamHandler(sys.stdout)
-else:
-    handler = logging.FileHandler(args.logfile)
-
-formatter = logging.Formatter('%(name)s [l %(lineno)d] - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-log.addHandler(handler)
-log.setLevel(args.level)
 
 if args.download:
 
@@ -94,12 +80,40 @@ if args.download:
 
     logger.info("Download complete")
 
-pipe = get_pipeline(
-    args.pipeline,
-    selected_configurations=args.config,
-    night=args.night,
-)
+if args.watchdog:
 
-pipe.reduce_images([[[], []]], output_error_path=args.errorpath)
+    watchdog = Watchdog(
+        pipeline=args.pipeline,
+        configuration=args.config,
+        night=args.night,
+        email_sender=os.getenv("WATCHDOG_EMAIL_ADDRESS"),
+        email_recipients=args.emailrecipients.split(",")
+    )
 
-logger.info('End of winterdrp execution')
+    watchdog.process_full_night()
+
+else:
+
+    # Set up logging
+
+    log = logging.getLogger("winterdrp")
+
+    if args.logfile is None:
+        handler = logging.StreamHandler(sys.stdout)
+    else:
+        handler = logging.FileHandler(args.logfile)
+
+    formatter = logging.Formatter('%(name)s [l %(lineno)d] - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    log.setLevel(args.level)
+
+    pipe = get_pipeline(
+        args.pipeline,
+        selected_configurations=args.config,
+        night=args.night,
+    )
+
+    pipe.reduce_images([[[], []]], output_error_path=args.errorpath)
+
+    logger.info('End of winterdrp execution')
