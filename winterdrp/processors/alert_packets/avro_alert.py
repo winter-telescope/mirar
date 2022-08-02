@@ -5,6 +5,7 @@ import astropy.table
 from astropy.time import Time
 from astropy.io import ascii
 import pandas as pd
+import datetime
 
 import io, gzip, os, sys
 import avro, fastavro
@@ -437,7 +438,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
             # alert_date = Time(cand_jd, format = 'jd').tt.datetime.strftime('%Y%m%d')
             # logger.info(alert_date)
             # topic_name = 'winter_%s'%alert_date
-            topic_name = 'winter_20220801'
+            topic_name = f"winter_{datetime.datetime.utcnow().strftime('%Y%m%d')}"
+            logger.info(f'topic name {topic_name}')
 
             # TODO candid should be coming from naming database
             cand['candid'] = cand_id
