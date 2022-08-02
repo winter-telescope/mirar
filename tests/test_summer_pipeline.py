@@ -13,11 +13,16 @@ from winterdrp.processors.csvlog import CSVLog
 from winterdrp.paths import core_fields, base_name_key
 from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image, summer_pixel_scale, \
     summer_astrometric_catalog_generator, summer_photometric_catalog_generator, SummerPipeline
+from winterdrp.downloader.get_test_data import get_test_data_dir
 
 logger = logging.getLogger(__name__)
 
+test_data_dir = get_test_data_dir()
+
 test_pipeline = [
     ImageLoader(
+        input_img_dir=test_data_dir,
+        input_sub_dir="raw",
         load_image=load_raw_summer_image
     ),
     CSVLog(
@@ -46,9 +51,7 @@ test_pipeline = [
     BiasCalibrator(),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
-    ImageSelector(
-        (base_name_key, "SUMMER_20220402_214324_Camera0.fits"),
-    ),
+    ImageSelector(("OBSTYPE", "SCIENCE")),
     AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
     Sextractor(
         output_sub_dir="test",
@@ -94,6 +97,8 @@ expected_zp = {
     "ZP_8.0_nstars": 43
 }
 
+pipeline = SummerPipeline(pipeline_configuration=test_pipeline, night="20220402")
+
 
 class TestSummerPipeline(unittest.TestCase):
     def setUp(self):
@@ -103,10 +108,9 @@ class TestSummerPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        pipeline = SummerPipeline(pipeline_configuration=test_pipeline, night="20220402")
         res, errorstack = pipeline.reduce_images([[[], []]])
         self.assertEqual(len(errorstack.reports), 0)
-        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res[0][0]), 1)
 
         header = res[0][1][0]
 
@@ -117,4 +121,23 @@ class TestSummerPipeline(unittest.TestCase):
                 self.assertEqual(value, header[key])
             else:
                 raise TypeError(f"Type for value ({type(value)} is neither float not int.")
+
+
+if __name__ == "__main__":
+
+    print("Calculating latest ZP dictionary")
+
+    # Code to generate updated ZP dict of the results change
+
+    new_res, new_errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+
+    new_header = new_res[0][1][0]
+
+    new_exp = "expected_zp = { \n"
+    for header_key in new_header.keys():
+        if "ZP_" in header_key:
+            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
+    new_exp += "}"
+    print(new_exp)
+
 
