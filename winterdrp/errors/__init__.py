@@ -1,6 +1,6 @@
 from winterdrp.paths import base_name_key
 import traceback
-from astropy.time import Time
+from datetime import datetime
 import logging
 import numpy as np
 
@@ -30,7 +30,7 @@ class ErrorReport:
         self.error = error
         self.processor_name = processor_name
         self.contents = contents
-        self.t_error = Time.now()
+        self.t_error = datetime.now()
         self.known_error_bool = isinstance(self.error, BaseProcessorError)
 
     def message_known_error(self) -> str:
@@ -43,7 +43,7 @@ class ErrorReport:
 
 
     def generate_full_traceback(self) -> str:
-        msg = f"Error for processor {self.processor_name} at time {self.t_error} UT: \n " \
+        msg = f"Error for processor {self.processor_name} at {self.t_error} (local time): \n " \
               f"{''.join(traceback.format_tb(self.error.__traceback__))}" \
               f"{type(self.error).__name__}: {self.error} \n  " \
               f"This error affected the following files: {self.contents} \n" \
