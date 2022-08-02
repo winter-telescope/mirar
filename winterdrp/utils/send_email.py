@@ -1,6 +1,8 @@
 import os
 import smtplib
-from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from email.mime.text import MIMEText
 import ssl
 import getpass
 import logging
@@ -15,12 +17,13 @@ def send_gmail(
         email_subject: str,
         email_text: str,
         email_sender: str,
-        email_password: str = os.getenv("EMAIL_PASSWORD")
+        email_password: str = os.getenv("EMAIL_PASSWORD"),
+        attachments: str | list[str] = None
 ):
 
     # Create a text/plain message
-    msg = EmailMessage()
-    msg.set_content(email_text)
+    msg = MIMEMultipart()
+    msg.attach(MIMEText(email_text))
 
     if not isinstance(email_recipients, list):
         email_recipients = [email_recipients]
@@ -30,6 +33,25 @@ def send_gmail(
     msg['Subject'] = email_subject
     msg['From'] = email_sender
     msg['To'] = ', '.join(email_recipients)
+
+    if attachments is None:
+        attachments = []
+
+    if not isinstance(attachments, list):
+        attachments = [attachments]
+
+    for file_path in attachments:
+
+        base_name = os.path.basename(file_path)
+
+        with open(file_path, "rb") as f:
+            part = MIMEApplication(
+                f.read(),
+                Name=base_name
+            )
+        # After the file is closed
+        part['Content-Disposition'] = f"attachment; filename={base_name}"
+        msg.attach(part)
 
     logger.info(f"Sending email to {email_recipients}")
 
