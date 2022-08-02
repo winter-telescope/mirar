@@ -61,12 +61,12 @@ jobs:
         run: |
           python -m unittest tests/test_wirc_pipeline.py
 
-#      - name: Run Coveralls
-#        if: ${{ success() }}
-#        run: |
-#          coveralls --service=github
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Coveralls
+        if: ${{ success() }}
+        run: |
+          coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #
 #      - name: Echo tag name
 #        run: echo "Tag is ${{ github.ref }}, Deploy is ${{ startsWith(github.ref, 'refs/tags/') && matrix.python-version == 3.9}}"
