@@ -17,7 +17,7 @@ test_data_dir = os.path.join(
 )
 
 
-def get_wirc_test_data() -> str:
+def get_test_data_dir() -> str:
 
     if not os.path.isdir(test_data_dir):
 
@@ -31,4 +31,4 @@ def get_wirc_test_data() -> str:
 
 
 if __name__ == "__main__":
-    get_wirc_test_data()
+    get_test_data_dir()
