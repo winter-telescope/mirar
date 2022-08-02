@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 test_data_dir = get_test_data_dir()
 
-test_pipeline = [
+test_configuration = [
     ImageLoader(
         input_img_dir=test_data_dir,
         input_sub_dir="raw",
@@ -97,7 +97,10 @@ expected_zp = {
     "ZP_8.0_nstars": 43
 }
 
-pipeline = SummerPipeline(pipeline_configuration=test_pipeline, night="20220402")
+test_config_name = "test"
+
+pipeline = SummerPipeline(night="20220402", selected_configurations=[test_config_name])
+pipeline.add_configuration(configuration_name=test_config_name, configuration=test_configuration)
 
 
 class TestSummerPipeline(unittest.TestCase):
