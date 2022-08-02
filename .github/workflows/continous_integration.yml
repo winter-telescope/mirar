@@ -42,8 +42,9 @@ jobs:
 
       - name: install packages
         run: |
-          sudo apt-get install sextractor
-          ln -s /usr/bin/source-extractor /usr/bin/sex
+          sudo apt-get install -y sextractor scamp swarp
+          sudo ln -s /usr/bin/source-extractor /usr/bin/sex
+          sudo ln -s /usr/bin/SWarp /usr/bin/swarp
           pip install --upgrade pip
           pip install -e .
 
