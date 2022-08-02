@@ -104,6 +104,34 @@ class SendToFritz(BaseDataframeProcessor):
         self.origin = base_name # used for sending updates to Fritz
         self.verbose = verbose
 
+        def _get_fritz_token():
+            token_fritz = os.getenv("FRITZ_TOKEN")
+
+            if token_fritz is None:
+                err = "No Fritz token specified. Run 'export FRITZ_TOKEN=<token>' to set. " \
+                    "The Fritz token will need to be specified manually for Fritz API queries."
+                logger.warning(err)
+                raise ValueError
+            
+            return token_fritz
+        
+        # session to talk to SkyPortal/Fritz
+        self.session = requests.Session()
+        self.session_headers = {
+            "Authorization": f"token {_get_fritz_token()}",
+            "User-Agent": f"winterdrp",
+        }
+
+        retries = Retry(
+            total=5,
+            backoff_factor=2,
+            status_forcelist=[405, 429, 500, 502, 503, 504],
+            method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH"],
+        )
+        adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
+
     def _apply_to_candidates(
             self,
             candidate_table: pd.DataFrame,
@@ -238,7 +266,7 @@ class SendToFritz(BaseDataframeProcessor):
             else:
                 return newname
 
-    def api(self, method, endpoint, data=None):
+    def api_old(self, method, endpoint, data=None):
         """Skyportal API Query"""
         headers = {'Authorization': f'token {self.token}'}
         response = requests.request(method, endpoint, json=data, headers=headers)
@@ -756,35 +784,74 @@ class SendToFritz(BaseDataframeProcessor):
         :param alert: _description_
         :type alert: _type_
         """
-        # check if candidate/source exists in SkyPortal
-        # log.info(f"Checking if {alert['objectId']} is candidate in SkyPortal")
-        with timer(
-            f"Checking if {alert['objectId']} is candidate in SkyPortal",
-            self.verbose > 1,
-        ):
-            response = self.api(
-                "HEAD", f"https://fritz.science/api/candidates/{alert['objectId']}"
-            )
+        # check if candidate exists in SkyPortal
+        logger.info(f"Checking if {alert['objectId']} is candidate in SkyPortal")
+        response = self.api("HEAD", f"https://fritz.science/api/candidates/{alert['objectId']}")
         is_candidate = response.status_code == 200
-
-        # logger.info(f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal")
-        if self.verbose > 1:
-            log(
-                f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal"
-            )
-        # logger.info(f"Checking if {alert['objectId']} is source in SkyPortal")
-        with timer(
-            f"Checking if {alert['objectId']} is source in SkyPortal", self.verbose > 1
-        ):
-            response = self.api("HEAD", f"https://fritz.science/api/sources/{alert['objectId']}")
+        logger.info(f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal")
+        
+        # check if source exists in SkyPortal
+        logger.info(f"Checking if {alert['objectId']} is source in SkyPortal")
+        response = self.api("HEAD", f"https://fritz.science/api/sources/{alert['objectId']}")
         is_source = response.status_code == 200
-        log(
-                f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal"
-            )
-        if self.verbose > 1:
-            log(
-                f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal"
-            )
+        logger.info(f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal")
+
+        # object does not exist in SkyPortal: neither cand nor source 
+        if (not is_candidate) and (not is_source):
+            # post candidate
+            self.alert_post_candidate(alert)
+
+            # post annotations
+            self.alert_post_annotation(alert)
+
+            # post full light curve
+            self.alert_put_photometry(alert)
+
+            # post thumbnails
+            self.alert_post_thumbnails(alert)
+
+            # TODO autosave stuff, necessary?
+        
+        # obj already exists in SkyPortal
+        else:
+            # TODO passed_filters logic 
+            
+            # post candidate with new filter ids
+            self.alert_post_candidate(alert)
+
+            # put (*not* post) annotations
+            self.alert_put_annotation(alert)
+
+            # exists in SkyPortal & already saved as a source
+            if is_source:
+                # get info on the corresponding groups:
+                logger.info(
+                    f"Getting source groups info on {alert['objectId']} from SkyPortal",
+                )
+                response = self.api(
+                        "GET", f"https://fritz.science/api/sources/{alert['objectId']}/groups"
+                    )
+                if response.json()["status"] == "success":
+                    existing_groups = response.json()["data"]
+                    existing_group_ids = [g["id"] for g in existing_groups]
+
+                    for existing_gid in existing_group_ids:
+                        if existing_gid in self.group_ids:
+                            self.alert_post_source(alert, str(existing_gid))    
+                else:
+                    logger.info(f"Failed to get source groups info on {alert['objectId']}")
+            else: # exists in SkyPortal but NOT saved as a source
+                self.alert_post_source(alert)
+
+            # post alert photometry in single call to /api/photometry
+            prv_cand_exists = "prv_candidates" in alert.keys()
+            logger.info(f'!!!!!PREV CANDIDATES IN {alert["objectId"]}: {prv_cand_exists}!!!!!')
+            # alert["prv_candidates"] = prv_candidates
+
+            # TODO
+            # self.alert_put_photometry(alert)
+
+        logger.info(f'======== Manager complete for {alert["objectId"]} =======')
 
     def make_alert(self, cand_table):
         t0 = time.time()
