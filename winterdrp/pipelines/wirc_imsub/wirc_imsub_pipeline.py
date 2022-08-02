@@ -107,7 +107,7 @@ class WircImsubPipeline(Pipeline):
 
     candidates_db_columns = get_colnames_from_schema('winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema'
                                                      '/candidates.sql')
-    pipeline_configurations = {
+    all_pipeline_configurations = {
         None: [
             ImageLoader(
                 input_sub_dir="raw",

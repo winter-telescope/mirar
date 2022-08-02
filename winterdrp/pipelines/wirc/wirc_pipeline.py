@@ -144,7 +144,7 @@ class WircPipeline(Pipeline):
 
     batch_split_keys = ["OBJECT", "FILTER"]
 
-    pipeline_configurations = {
+    all_pipeline_configurations = {
         None: test_pipeline
     }
 

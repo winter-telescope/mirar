@@ -52,7 +52,7 @@ def get_cal_path(name: str):
     return os.path.join(test_data_dir, f"wirc/cals/test_{name}.fits")
 
 
-test_pipeline = [
+test_configuration = [
     ImageLoader(
         input_img_dir=test_data_dir,
         input_sub_dir="raw",
@@ -91,7 +91,8 @@ test_pipeline = [
     PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator)
 ]
 
-pipeline = WircPipeline(pipeline_configuration=test_pipeline, night="20210330")
+pipeline = WircPipeline(night="20210330", selected_configurations="test")
+pipeline.add_configuration(configuration_name="test", configuration=test_configuration)
 
 
 class TestWircPipeline(unittest.TestCase):
