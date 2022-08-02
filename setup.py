@@ -27,6 +27,7 @@ setuptools.setup(
         "astropy[recommended]",
         "astroquery",
         "avro-python3~=1.10.1",
+        "coveralls",
         "confluent_kafka",
         "docker",
         "ephem",
