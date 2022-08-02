@@ -43,7 +43,7 @@ jobs:
       - name: install packages
         run: |
           sudo apt-get install source-extracter
-          ln -s /usr/bin/source-extractor /usr/bin/sex
+          ln -s /usr/bin/sextractor /usr/bin/sex
           pip install --upgrade pip
           pip install -e .
 
