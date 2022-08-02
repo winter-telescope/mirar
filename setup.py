@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="winterdrp",
-    version="0.3.0",
+    version="0.3.1",
     author="Viraj Karambelkar, Robert Stein",
     author_email="rdstein@caltech.edu",
     description="Data reduction pipeline for WINTER",
