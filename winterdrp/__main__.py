@@ -7,7 +7,7 @@ from winterdrp.pipelines import get_pipeline, Pipeline
 from winterdrp.paths import raw_img_dir
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.watchdog.base_watchdog import Watchdog
+from winterdrp.scrutineer.base_watchdog import Scrutineer
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ if args.download:
 
 if args.watchdog:
 
-    watchdog = Watchdog(
+    watchdog = Scrutineer(
         pipeline=args.pipeline,
         configuration=args.config,
         night=args.night,

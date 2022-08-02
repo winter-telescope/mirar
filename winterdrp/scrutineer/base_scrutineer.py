@@ -7,18 +7,20 @@ import logging
 import numpy as np
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.paths import get_output_path
+from winterdrp.paths import get_output_path, raw_img_dir
+import watchdog
+
 
 logger = logging.getLogger(__name__)
 
 
-class Watchdog:
+class Scrutineer:
 
     def __init__(
             self,
             night: str,
             pipeline: str,
-            configuration: str = None,
+            configurations: str | list[str] = None,
             email_sender: str = None,
             email_recipients: str | list = None,
             log_level="INFO"
@@ -26,7 +28,15 @@ class Watchdog:
 
         self.night = night
         self.pipeline_name = pipeline
-        self.pipeline = get_pipeline(pipeline, configuration=configuration, night=night)
+
+        if not isinstance(configurations, list):
+            configurations = [configurations]
+
+        self.configurations = configurations
+
+        self.pipeline = get_pipeline(pipeline, night=night)
+
+        self.raw_image_directory = raw_img_dir(sub_dir=self.pipeline.night_sub_dir)
 
         self.log_level = log_level
         self.log_path = self.configure_logs(log_level)
@@ -106,18 +116,55 @@ class Watchdog:
         return log_output_path
 
 
-if __name__ == "__main__":
+import time
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
+
+class Watcher:
+
+    def __init__(self, directory=".", handler=FileSystemEventHandler()):
+        self.observer = Observer()
+        self.handler = handler
+        self.directory = directory
+
+    def run(self):
+        self.observer.schedule(
+            self.handler, self.directory, recursive=True)
+        self.observer.start()
+        print("\nWatcher Running in {}/\n".format(self.directory))
+        try:
+            while True:
+                time.sleep(1)
+        except:
+            self.observer.stop()
+        self.observer.join()
+        print("\nWatcher Terminated\n")
+
+
+class MyHandler(FileSystemEventHandler):
+
+    def on_any_event(self, event):
+        print(event) # Your code here
+
+
+if __name__ == "__main__":
     ln = Time.now() - 1. * u.day
-    
     last_night = str(ln).split(" ")[0].replace("-", "")
 
-    watchdog = Watchdog(
+    print(last_night)
+
+    # raw_img_dir =
+    #
+    # glob(f'{base_dir_f(sub_dir)}/*.fits')
+
+    scrutineer = Scrutineer(
         pipeline="summer",
         night=last_night,
         email_sender="winter.data.reduction.pipeline@gmail.com",
         email_recipients=["rdstein@caltech.edu"]
     )
+    # scrutineer.process_full_night()
 
-    watchdog.process_full_night()
-
+    # w = Watcher(".", MyHandler())
+    # w.run()
