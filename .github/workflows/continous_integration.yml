@@ -40,37 +40,17 @@ jobs:
           ssh-private-key: |
             ${{ secrets.WIRC_STARTERPACK_TOKEN }}
 
-      - name: Install conda
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          activate-environment: "winterdrp-env"
-          python-version: "3.10"
-          auto-update-conda: true
-          add-pip-as-python-dependency: False
-          environment-file: environment.yml
-
-#      # Set up conda and install astro packages
-#      - name: Set up conda
-#        run: |
-#          conda info
-#          conda install -c conda-forge astromatic-source-extractor
-#          conda install -c conda-forge astromatic-swarp
-#          conda install -c conda-forge astromatic-scamp
-
-      # Setting up dependencies
-      - name: Install dependencies
+      - name: install packages
         run: |
-          echo $PYTHONPATH
-          export PYTHONPATH=/usr/share/miniconda/envs/winterdrp-env/bin/python
-          echo $PYTHONPATH
-          conda info
-          /usr/share/miniconda/envs/winterdrp-env/bin/pip install -e .
-
-      - name: Run tests
-        env:
-          OUTPUT_DATA_DIR: /home/runner/
+          apt-get install source-extracter
+          ln -s /usr/bin/source-extractor /usr/bin/sex
+          pip install --upgrade pip
+          pip install -e .
+          
+      # Runs a set of commands using the runners shell
+      - name: Test the code
         run: |
-          /usr/share/miniconda/envs/winterdrp-env/bin/python -m unittest tests/test_wirc_pipeline.py
+          python -m unittest tests/test_wirc_pipeline.py
 
 #      - name: Run Coveralls
 #        if: ${{ success() }}
