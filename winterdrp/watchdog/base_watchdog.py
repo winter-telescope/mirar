@@ -103,8 +103,7 @@ if __name__ == "__main__":
     log = logging.getLogger("winterdrp")
 
     handler = logging.FileHandler(log_output_path)
-
-    formatter = logging.Formatter('%(name)s [l %(lineno)d] - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s: %(name)s [l %(lineno)d] - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     log.addHandler(handler)
     log.setLevel("INFO")
