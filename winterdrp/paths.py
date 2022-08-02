@@ -5,8 +5,12 @@ from astropy.io import fits
 from glob import glob
 import logging
 from collections.abc import Callable
+import pathlib
 
 logger = logging.getLogger(__name__)
+
+winter_code_dir = pathlib.Path(__file__).parent.parent.resolve()
+
 
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 

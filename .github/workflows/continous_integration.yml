@@ -1,0 +1,94 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+
+  pull_request:
+
+  # run the pipeline on the 0th minute of the 0th hour of day 1 and 15 every month
+  schedule:
+    - cron: '0 0 1,15 * *'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    
+    # Specify the python versions to test
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # Set up the python versions
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Runs a set of commands using the runners shell
+      - name: set up ssh
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: |
+            ${{ secrets.WIRC_STARTERPACK_TOKEN }}
+
+      - name: install packages
+        run: |
+          sudo apt-get install -y sextractor scamp swarp
+          sudo ln -s /usr/bin/source-extractor /usr/bin/sex
+          sudo ln -s /usr/bin/SWarp /usr/bin/swarp
+          pip install --upgrade pip
+          pip install -e .
+
+      # Runs a set of commands using the runners shell
+      - name: Test the code
+        env:
+          OUTPUT_DATA_DIR : /home/runner/
+        run: |
+          python -m unittest tests/test_wirc_pipeline.py
+
+#      - name: Run Coveralls
+#        if: ${{ success() }}
+#        run: |
+#          coveralls --service=github
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Echo tag name
+#        run: echo "Tag is ${{ github.ref }}, Deploy is ${{ startsWith(github.ref, 'refs/tags/') && matrix.python-version == 3.9}}"
+#
+#      - name: Install pypa/build
+#        run: >-
+#          python -m
+#          pip install
+#          build
+#          --user
+#
+#      - name: Build a binary wheel and a source tarball
+#        run: >-
+#          python -m
+#          build
+#          --sdist
+#          --wheel
+#          --outdir dist/
+#          .
+#
+#      - name: Publish distribution 📦 to PyPI
+#        if: ${{ startsWith(github.ref, 'refs/tags/') && success() && matrix.python-version == 3.9}}
+#        uses: pypa/gh-action-pypi-publish@master
+#        with:
+#          password: ${{ secrets.PYPI_API_TOKEN }}
