@@ -280,6 +280,7 @@ pipeline_name = "summer"
 
 
 class SummerPipeline(Pipeline):
+
     name = pipeline_name
 
     all_pipeline_configurations = {
@@ -446,3 +447,7 @@ class SummerPipeline(Pipeline):
             night=night,
             pipeline=pipeline_name
         )
+
+    @staticmethod
+    def load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
+        return load_raw_summer_image(path)
