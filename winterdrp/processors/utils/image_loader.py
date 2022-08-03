@@ -9,8 +9,12 @@ import logging
 from collections.abc import Callable
 from winterdrp.io import open_fits
 from glob import glob
+from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
+
+class ImageNotFoundError(ProcessorError):
+    pass
 
 
 class ImageLoader(BaseImageProcessor):
@@ -71,24 +75,49 @@ class ImageLoader(BaseImageProcessor):
             os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
 
-        img_list = sorted(glob(f'{input_dir}/*.fits'))
+        return load_from_dir(input_dir, open_f=self.open_raw_image)
 
-        logger.info(f"Loading from {input_dir}, with {len(img_list)} images")
 
-        if len(img_list) < 1:
-            err = f"No images found in {input_dir}. Please check path is correct!"
-            logger.error(err)
-            raise FileNotFoundError(err)
+def load_from_dir(input_dir: str, open_f: Callable):
 
-        new_images = []
-        new_headers = []
+    img_list = sorted(glob(f'{input_dir}/*.fits'))
 
-        for path in img_list:
-            img, header = self.open_raw_image(path)
-            new_images.append(img)
-            new_headers.append(header)
+    logger.info(f"Loading from {input_dir}, with {len(img_list)} images")
 
-        return new_images, new_headers
+    if len(img_list) < 1:
+        err = f"No images found in {input_dir}. Please check path is correct!"
+        logger.error(err)
+        raise ImageNotFoundError(err)
+
+    new_images = []
+    new_headers = []
+
+    for path in img_list:
+        img, header = open_f(path)
+        new_images.append(img)
+        new_headers.append(header)
+
+    return new_images, new_headers
+
+
+# class RecentCalLoader(ImageLoader):
+#
+#     def _apply_to_images(
+#             self,
+#             images: list[np.ndarray],
+#             headers: list[astropy.io.fits.Header],
+#     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+#
+#         input_dir = os.path.join(
+#             self.input_img_dir,
+#             os.path.join(self.night_sub_dir, self.input_sub_dir)
+#         )
+#
+#         return self.load_from_dir(input_dir)
+
+
+
+
 
 
 
