@@ -1,3 +1,6 @@
+import astropy.io
+import numpy as np
+
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.references.wirc import WIRCRef
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
@@ -96,6 +99,7 @@ def detect_candidates_sextractor():
 
 
 class WircImsubPipeline(Pipeline):
+
     name = "wirc_imsub"
 
     header_keys = [
@@ -190,3 +194,9 @@ class WircImsubPipeline(Pipeline):
             # SendToFritz(update_thumbnails = True)
         ]
     }
+    
+    @staticmethod
+    def load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
+        return load_raw_wirc_image(path)
+
+
