@@ -57,6 +57,10 @@ class Pipeline:
         return copy.copy(self.all_pipeline_configurations[configuration])
 
     @staticmethod
+    def load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
+        raise NotImplementedError
+
+    @staticmethod
     def configure_processors(
             processors: list[BaseProcessor],
             sub_dir: str = ""
@@ -112,7 +116,7 @@ class Pipeline:
         for j, configuration in enumerate(selected_configurations):
 
             logger.info(f"Using pipeline configuration {configuration} "
-                        f"({j}/{len(selected_configurations)})")
+                        f"({j+1}/{len(selected_configurations)})")
 
             processors = self.set_configuration(configuration)
 

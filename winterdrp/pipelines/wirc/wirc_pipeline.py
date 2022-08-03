@@ -160,3 +160,8 @@ class WircPipeline(Pipeline):
             pipeline=pipeline_name,
             server_sub_dir="raw"
         )
+
+    @staticmethod
+    def load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
+        return load_raw_wirc_image(path)
+
