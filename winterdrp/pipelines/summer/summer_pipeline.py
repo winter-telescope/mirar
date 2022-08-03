@@ -227,6 +227,54 @@ class SummerPipeline(Pipeline):
                 db_table="proc",
                 schema_path=get_summer_schema_path("proc")
             )
+        ],
+        "realtime": [
+            CSVLog(
+                export_keys=[
+                                "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE",
+                                base_name_key
+                            ] + core_fields
+            ),
+            DatabaseImageExporter(
+                db_name=pipeline_name,
+                db_table="exposures",
+                schema_path=get_summer_schema_path("exposures"),
+                full_setup=True,
+                schema_dir=summer_schema_dir
+            ),
+            MaskPixels(mask_path=summer_mask_path),
+            BiasCalibrator(),
+            ImageBatcher(split_key="filter"),
+            FlatCalibrator(),
+            ImageSelector(("OBSTYPE", "SCIENCE")),
+            ImageSaver(output_dir_name="processed"),
+            AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
+            Sextractor(
+                output_sub_dir="test",
+                weight_image=summer_weight_path,
+                checkimage_name=None,
+                checkimage_type=None,
+                **sextractor_astrometry_config
+            ),
+            Scamp(
+                ref_catalog_generator=summer_astrometric_catalog_generator,
+                scamp_config_path=scamp_path,
+            ),
+            Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
+            Sextractor(output_sub_dir="test",
+                       checkimage_name='NONE',
+                       checkimage_type='NONE',
+                       **sextractor_photometry_config),
+            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
+            # ImageSaver(output_dir_name="test")
+            ImageSaver(output_dir_name="final"),
+            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
+            ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG']),
+            # DatabaseImageExporter(
+            #     db_name=pipeline_name,
+            #     db_table="proc",
+            #     schema_path=get_summer_schema_path("proc")
+            # )
         ]
     }
 

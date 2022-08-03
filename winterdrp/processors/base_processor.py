@@ -193,6 +193,9 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         self.overwrite = overwrite
         self.cache_sub_dir = cache_sub_dir
 
+    def select_cache_images(self, images, headers):
+        raise NotImplementedError
+
     def get_cache_path(
             self,
             images: list[np.ndarray],
@@ -219,7 +222,8 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
             images: list[np.ndarray],
             headers: list[astropy.io.fits.Header],
     ) -> str:
-        return f"{self.base_key}_{self.get_hash(headers)}.fits"
+        cache_image, cache_headers = self.select_cache_images(images, headers)
+        return f"{self.base_key}_{self.get_hash(cache_headers)}.fits"
 
     def get_cache_file(
             self,
