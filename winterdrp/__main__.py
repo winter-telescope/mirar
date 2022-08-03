@@ -96,7 +96,7 @@ if args.download:
 
 pipe = get_pipeline(
     args.pipeline,
-    configuration=args.config,
+    selected_configurations=args.config,
     night=args.night,
 )
 
