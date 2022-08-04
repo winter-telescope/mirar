@@ -18,39 +18,9 @@ from astropy import units as u
 from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image
 from winterdrp.processors.utils.image_selector import select_from_images
 from winterdrp.processors.utils.image_loader import load_from_dir, ImageNotFoundError
+from winterdrp.processors.utils.supplement_cals import CalHunter, CalRequirement
 
 logger = logging.getLogger(__name__)
-
-
-class CalRequirement:
-
-    def __init__(self, target_name, required_field: str, required_values: str | list[str]):
-        self.target_name = target_name
-        self.required_field = required_field
-        self.required_values = required_values
-        self.success = False
-        self.data = dict()
-
-    def check_images(self, images, headers):
-
-        new_images, new_headers = select_from_images(
-            images, headers,
-            header_key="TARGET",
-            target_values=self.target_name
-        )
-
-        if len(new_images) > 0:
-            for value in self.required_values:
-                if value not in self.data.keys():
-                    sub_images, sub_headers = select_from_images(
-                        new_images, new_headers,
-                        header_key=self.required_field,
-                        target_values=value
-                    )
-                    if len(sub_images) > 0:
-                        self.data[value] = [sub_images, sub_headers]
-
-        self.success = len(self.data) == len(self.required_values)
 
 
 class NewImageHandler(FileSystemEventHandler):
