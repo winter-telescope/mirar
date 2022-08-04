@@ -19,6 +19,10 @@ class NoncriticalProcessingError(BaseProcessorError):
     pass
 
 
+class ImageNotFoundError(ProcessorError, FileNotFoundError):
+    pass
+
+
 class ErrorReport:
 
     def __init__(
