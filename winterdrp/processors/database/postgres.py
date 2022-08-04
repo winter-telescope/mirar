@@ -238,6 +238,7 @@ def export_to_db(
         db_table: str,
         db_user: str = os.environ.get(pg_admin_user_key),
         password: str = os.environ.get(pg_admin_pwd_key),
+        skip_duplicates: bool = True
 ) -> tuple[str, list]:
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
@@ -259,14 +260,11 @@ def export_to_db(
             sequences = [x[0] for x in conn.execute(f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';").fetchall()]
             seq_tables = np.array([x.split('_')[0] for x in sequences])
             seq_columns = np.array([x.split('_')[1] for x in sequences])
-            serial_keys = seq_columns[(seq_tables==db_table)]
-            logger.debug(serial_keys)
+            serial_keys = seq_columns[(seq_tables == db_table)]
             colnames = [
                 desc[0] for desc in conn.execute(f"SELECT * FROM {db_table} LIMIT 1").description
                 if desc[0] not in serial_keys
             ]
-            logger.debug(primary_key)
-            logger.debug(colnames)
 
             txt = f'INSERT INTO {db_table} ({colnames}) VALUES ('
 
@@ -274,7 +272,6 @@ def export_to_db(
                 txt = txt.replace(char, '')
 
             for c in colnames:
-                logger.debug(f"{c}, {value_dict[c]}")
                 txt += f"'{str(value_dict[c])}', "
 
             txt = txt + ') '
@@ -289,9 +286,12 @@ def export_to_db(
             command = txt
             try:
                 cursor.execute(command)
+                primary_key_values = cursor.fetchall()[0]
             except psycopg.errors.UniqueViolation as e:
-                raise DataBaseError(e)
-            primary_key_values = cursor.fetchall()[0]
+                if skip_duplicates:
+                    primary_key_values = tuple([value_dict[primary_key[0]], ])
+                else:
+                    raise DataBaseError(e)
 
     return primary_key, primary_key_values
 
