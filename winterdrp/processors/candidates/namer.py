@@ -19,7 +19,7 @@ class CandidateNamer(BaseDataframeProcessor):
                  cand_table_name: str = 'candidates',
                  db_user: str = os.environ.get('DB_USER'),
                  db_pwd: str = os.environ.get('DB_PWD'),
-                 db_name_field: str = 'name',
+                 db_name_field: str = 'objectId',
                  db_order_field: str = 'candid',
                  date_field: str = 'jd',
                  *args,
