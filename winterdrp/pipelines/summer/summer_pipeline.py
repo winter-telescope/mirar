@@ -21,6 +21,7 @@ from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
 from winterdrp.processors.split import SplitImage, sub_id_key
 from winterdrp.processors.utils import ImageSaver, HeaderAnnotator, ImageLoader, ImageSelector, ImageBatcher
+from winterdrp.processors.utils.supplement_cals import CalHunter, CalRequirement
 from winterdrp.processors.utils.image_rejector import ImageRejector
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors import MaskPixels, BiasCalibrator, FlatCalibrator
@@ -197,19 +198,19 @@ class SummerPipeline(Pipeline):
                 schema_dir=summer_schema_dir
             ),
             ImageRejector(("OBSTYPE", ["FOCUS", "DARK"])),
-            MaskPixels(mask_path=summer_mask_path),
-            DatabaseImageExporter(
-                db_name=pipeline_name,
-                db_table="raw",
-                schema_path=get_summer_schema_path("raw")
+            CalHunter(
+                load_image=load_raw_summer_image,
+                requirements=[
+                    CalRequirement(target_name="bias", required_field="EXPTIME", required_values=["0.0"]),
+                    CalRequirement(target_name="flat", required_field="FILTERID", required_values=["u", "g", "r", "i"]),
+                ]
             ),
             BiasCalibrator(),
             ImageRejector(("OBSTYPE", ["BIAS"])),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
-            # ImageSelector(("UTC", "20220403_050304.506320")),
-            # ImageBatcher(base_name_key),
             ImageSelector(("OBSTYPE", "SCIENCE")),
+            ImageBatcher(base_name_key),
             AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
             Sextractor(
                 output_sub_dir="testb",
@@ -223,12 +224,10 @@ class SummerPipeline(Pipeline):
                 scamp_config_path=scamp_path,
             ),
             Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
-            # ImageSaver(output_dir_name="photprocess"),
             Sextractor(output_sub_dir="photprocess",
                        checkimage_name='NONE',
                        checkimage_type='NONE',
                        **sextractor_photometry_config),
-            # ImageSaver(output_dir_name="processed"),
             PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
             ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG']),
             DatabaseImageExporter(
