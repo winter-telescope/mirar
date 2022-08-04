@@ -267,7 +267,11 @@ def export_to_db(
             logger.debug(primary_key)
             logger.debug(colnames)
 
-            txt = f'INSERT INTO {db_table} ({colnames}) VALUES ('
+            colnames_str = ''
+            for x in colnames:
+                colnames_str += f'"{x}",'
+            colnames_str = colnames_str[:-1]
+            txt = f'INSERT INTO {db_table} ({colnames_str}) VALUES ('
 
             for char in ["[", "]", "'"]:
                 txt = txt.replace(char, '')
@@ -464,7 +468,7 @@ def xmatch_import_db(db_name: str,
     if len(parsed_constraints) > 0:
         constraints += f"""AND {constraints}"""
 
-    select = f"""{', '.join(db_output_columns)}"""
+    select = f""" {'"' + '","'.join(db_output_columns) + '"'}"""
     if query_dist:
         if q3c:
             select = f"""q3c_dist({ra_field_name},{dec_field_name},{ra},{dec}) AS xdist,""" + select
@@ -504,5 +508,5 @@ def get_colnames_from_schema(schema_file):
     dat = dat.split('\n')[1:-1]
     pkstrip = [x.strip(',').split('PRIMARY KEY')[0].strip() for x in dat]
     fkstrip = [x.strip(',').split('FOREIGN KEY')[0].strip() for x in pkstrip]
-    colnames = [x.split(' ')[0] for x in fkstrip]
+    colnames = [x.split(' ')[0].strip('"') for x in fkstrip]
     return colnames

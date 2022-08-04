@@ -76,7 +76,7 @@ class CandidateNamer(BaseDataframeProcessor):
     def get_next_name(self, candjd, lastname=None):
         candyear = Time(candjd, format='jd').datetime.year % 1000
         if lastname is None:
-            query = f"""SELECT name FROM {self.cand_table_name} ORDER BY {self.db_order_field} desc LIMIT 1;"""
+            query = f"""SELECT "{self.db_name_field}" FROM {self.cand_table_name} ORDER BY {self.db_order_field} desc LIMIT 1;"""
             res = execute_query(query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd)
             if len(res) == 0:
                 name = self.base_name + str(candyear) + self.name_start
@@ -95,7 +95,6 @@ class CandidateNamer(BaseDataframeProcessor):
 
         return name
 
-
     def is_detected_previously(self, ra, dec):
         name = xmatch_import_db(db_name=self.db_name,
                                 db_user=self.db_user,
@@ -112,7 +111,7 @@ class CandidateNamer(BaseDataframeProcessor):
                                 db_accepted_values=[]
                                 )
         logger.info(name)
-        return len(name)>0, name
+        return len(name) > 0, name
 
     def _apply_to_candidates(
             self,
@@ -127,7 +126,7 @@ class CandidateNamer(BaseDataframeProcessor):
                 cand_name = cand['prv_candidates'][0][self.db_name_field]
 
             else:
-                prv_det, prv_name=self.is_detected_previously(cand['ra'], cand['dec'])
+                prv_det, prv_name = self.is_detected_previously(cand['ra'], cand['dec'])
                 if prv_det:
                     cand_name = prv_name[0]
                 else:
