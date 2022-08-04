@@ -21,7 +21,7 @@ from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
 from winterdrp.processors.split import SplitImage, sub_id_key
 from winterdrp.processors.utils import ImageSaver, HeaderAnnotator, ImageLoader, ImageSelector, ImageBatcher
-from winterdrp.processors.utils.supplement_cals import CalHunter, CalRequirement
+from winterdrp.processors.utils.cal_hunter import CalHunter, CalRequirement
 from winterdrp.processors.utils.image_rejector import ImageRejector
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors import MaskPixels, BiasCalibrator, FlatCalibrator
