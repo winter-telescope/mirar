@@ -100,11 +100,18 @@ def load_raw_summer_image(
         header['NIGHT'] = np.floor((obstime - t0).jd).astype(int)
 
         header['EXPMJD'] = header['OBSMJD']
+
+        default_id = 0
         
         for key in ["PROGID", "OBSID"]:
             if key not in header.keys():
                 # logger.warning(f"No {key} found in header of {path}")
-                header[key] = 0
+                header[key] = default_id
+            else:
+                try:
+                    header[key] = int(header[key])
+                except ValueError:
+                    header[key] = default_id
 
         if "SUBPROG" not in header.keys():
             # logger.warning(f"No SUBPROG found in header of {path}")
@@ -182,7 +189,6 @@ class SummerPipeline(Pipeline):
                                 base_name_key
                             ] + core_fields
             ),
-            ImageRejector(("OBSTYPE", "FOCUS")),
             DatabaseImageExporter(
                 db_name=pipeline_name,
                 db_table="exposures",
@@ -190,6 +196,7 @@ class SummerPipeline(Pipeline):
                 full_setup=True,
                 schema_dir=summer_schema_dir
             ),
+            ImageRejector(("OBSTYPE", ["FOCUS", "DARK"])),
             MaskPixels(mask_path=summer_mask_path),
             DatabaseImageExporter(
                 db_name=pipeline_name,
@@ -197,6 +204,7 @@ class SummerPipeline(Pipeline):
                 schema_path=get_summer_schema_path("raw")
             ),
             BiasCalibrator(),
+            ImageRejector(("OBSTYPE", ["BIAS"])),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
             # ImageSelector(("UTC", "20220403_050304.506320")),
