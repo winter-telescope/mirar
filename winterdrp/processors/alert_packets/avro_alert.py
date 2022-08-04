@@ -33,7 +33,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
         output_sub_dir (str): output data path.
         base_name (str): 4-letter code for telescope.
         save_local (bool): save avro packets to out_sub_dir.
-        use_database (bool): read candidate info from database. #TODO
         broadcast (bool): send to brokers at IPAC.
     """
 
@@ -41,7 +40,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
                 output_sub_dir: str, 
                 base_name: str,
                 save_local=False,
-                use_database=False,
                 broadcast=True,
                 *args,
                 **kwargs):
@@ -49,7 +47,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
         self.output_sub_dir = output_sub_dir
         self.base_name = base_name
         self.save_local = save_local
-        self.use_database = use_database
         self.broadcast = broadcast
 
     def _apply_to_candidates(
@@ -374,9 +371,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
                   -1 if candidate not sent or saved.
         """
         # Cutouts are include in the top level alert schema
-        scicut = cand.pop('scibitim')
-        refcut = cand.pop('refbitim')
-        diffcut = cand.pop('diffbitim')
+        scicut = cand.pop('cutoutScience')
+        refcut = cand.pop('cutoutTemplate')
+        diffcut = cand.pop('cutoutDifference')
 
         packet = self.create_alert_packet(cand, scicut, refcut, diffcut)
 
@@ -402,7 +399,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             message += "broadcasted"
         return message
 
-    def make_alert(self, df=None):
+    def make_alert(self, df):
         """Top level method to make avro alert.
         
         Args:
@@ -410,10 +407,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         """
         t0 = time.time()       
         
-        if not self.use_database and df is not None:
-            # input dataframe to avro_creation processor
-            logger.info(f'Avro Packet Maker: parsing {len(df)} candidates from dataframe')
-            all_cands = self.read_input_df(df)
+
+        logger.info(f'Avro Packet Maker: parsing {len(df)} candidates from dataframe')
+        all_cands = self.read_input_df(df)
         
         num_cands = len(all_cands)
         successes = 0
@@ -423,14 +419,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
                                     "alert_schema/prv_candidate.avsc", 
                                     "alert_schema/alert.avsc"])
 
-        # TODO: fake!! remove; lastname, cand_id needs to updated from database
-        last_name = None
-        cand_id = 700
         cand_num = 1 # for keeping track of broadcast alerts
 
         for cand in all_cands:
-            cand_jd = cand['jd']
-            cand_name = self.get_next_name(last_name, str(cand_jd))
 
              # TODO create alert_date once (before loop)from list of jd_list 
             # Calculate the alert_date for this night
@@ -439,25 +430,13 @@ class AvroPacketMaker(BaseDataframeProcessor):
             # topic_name = 'winter_%s'%alert_date
             topic_name = f"winter_{datetime.datetime.utcnow().strftime('%Y%m%d')}"
             logger.info(f'topic name {topic_name}')
-
-            # TODO candid should be coming from naming database
-            cand['candid'] = cand_id
-            cand_id += 1
-            
-            # TODO check if cand is new? 
-            # cand_name, new_status = self.check_and_insert_source(cand_name, cand)
-
-            #TODO remove once new_status is up-to-date: dummy line
-            new_status = True
-
-            if new_status:
-                last_name = cand_name    
-            cand['objectId'] = cand_name
             
             flag = self._make_ind_packet(cand, schema, topic_name, cand_num, num_cands)
             cand_num += 1 # for counting num of processed candidates
             if flag > 0:
                 successes += 1
+
+            cand_id = cand["candid"] # used for testing opening the avro packets
            
         t1 = time.time()
         logger.info('###########################################')
@@ -467,7 +446,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
 
         # Read data from an avro file
-        last_file = str(cand_id - 1) + '.avro'
+        last_file = str(cand_id) + '.avro'
         last_packet_path = os.path.join(self.get_sub_output_dir(), last_file)
         with open(last_packet_path, 'rb') as f:
             reader = DataFileReader(f, DatumReader())
