@@ -178,9 +178,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Returns:
             (dict): schema in dictionary format.
         """
-        # TODO populate the candidate history (prv_candidate)
-        prev_cands = []
-        # logger.info(f' {len(prev_cands)} prev candidates found ########')
+        prev_cands = cand["prv_candidates"]
 
         alert = {"schemavsn": "0.1", "publisher": "winter_test", 
 		"cutoutScience": scicut,
