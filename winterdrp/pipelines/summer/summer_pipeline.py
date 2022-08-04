@@ -16,10 +16,6 @@ from astropy.io import fits
 from winterdrp.pipelines.summer.summer_files import get_summer_schema_path, summer_mask_path, summer_weight_path, \
     sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_path
 from winterdrp.pipelines.summer.summer_files.schema import summer_schema_dir
-from winterdrp.processors.utils import ImageSaver
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
-from winterdrp.processors.split import SplitImage, sub_id_key
 from winterdrp.processors.utils import ImageSaver, HeaderAnnotator, ImageLoader, ImageSelector, ImageBatcher
 from winterdrp.processors.utils.cal_hunter import CalHunter, CalRequirement
 from winterdrp.processors.utils.image_rejector import ImageRejector
@@ -44,6 +40,11 @@ summer_gain = 1.0
 summer_pixel_scale = 0.466
 
 logger = logging.getLogger(__name__)
+
+summer_cal_requirements = [
+    CalRequirement(target_name="bias", required_field="EXPTIME", required_values=["0.0"]),
+    CalRequirement(target_name="flat", required_field="FILTERID", required_values=["u", "g", "r", "i"]),
+]
 
 
 def summer_astrometric_catalog_generator(
@@ -290,6 +291,7 @@ pipeline_name = "summer"
 class SummerPipeline(Pipeline):
 
     name = pipeline_name
+    default_cal_requirements = summer_cal_requirements
 
     all_pipeline_configurations = {
         None: [
@@ -312,10 +314,7 @@ class SummerPipeline(Pipeline):
             ImageRejector(("OBSTYPE", ["FOCUS", "DARK"])),
             CalHunter(
                 load_image=load_raw_summer_image,
-                requirements=[
-                    CalRequirement(target_name="bias", required_field="EXPTIME", required_values=["0.0"]),
-                    CalRequirement(target_name="flat", required_field="FILTERID", required_values=["u", "g", "r", "i"]),
-                ]
+                requirements=summer_cal_requirements
             ),
             BiasCalibrator(),
             ImageRejector(("OBSTYPE", ["BIAS"])),
