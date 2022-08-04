@@ -345,11 +345,8 @@ class SendToFritz(BaseDataframeProcessor):
         :param alert_packet_type: <Science|Template|Difference> survey naming
         :return:
         """
-        alert = deepcopy(alert)
-
-        # TODO
-        cutout_data = alert[f"{alert_packet_type}bitim"]        
-        # cutout_data = alert[f"cutout{alert_packet_type}"]
+        alert = deepcopy(alert)      
+        cutout_data = alert[f"cutout{alert_packet_type}"]
     
         with gzip.open(io.BytesIO(cutout_data), "rb") as f:
             with fits.open(io.BytesIO(f.read()), ignore_missing_simple=True) as hdu:
@@ -413,12 +410,9 @@ class SendToFritz(BaseDataframeProcessor):
         :return:
         """
         for ttype, instrument_type in [
-            # ("new", "Science"),
-            # ("ref", "Template"),
-            # ("sub", "Difference"),
-            ("new", "sci"),
-            ("ref", "ref"),
-            ("sub", "diff"),
+            ("new", "Science"),
+            ("ref", "Template"),
+            ("sub", "Difference"),
         ]:
             logger.info(
                 f"Making {instrument_type} thumbnail for {alert['objectId']} {alert['candid']}",
@@ -531,11 +525,11 @@ class SendToFritz(BaseDataframeProcessor):
         )
 
         # TODO add back once diffmaglim in df
-        # filter out bad data:
+        # # filter out bad data:
         # mask_good_diffmaglim = df_light_curve["diffmaglim"] > 0
         # df_light_curve = df_light_curve.loc[mask_good_diffmaglim]
 
-        # convert from mag to flux
+        # # convert from mag to flux
 
         # # step 1: calculate the coefficient that determines whether the
         # # flux should be negative or positive
@@ -865,7 +859,6 @@ class SendToFritz(BaseDataframeProcessor):
                 self.alert_post_source(alert)
 
             # post alert photometry in single call to /api/photometry
-            # TODO
             self.alert_put_photometry(alert)
 
         logger.info(f'======== Manager complete for {alert["objectId"]} =======')
@@ -875,11 +868,7 @@ class SendToFritz(BaseDataframeProcessor):
         all_cands = self.read_input_df(cand_table)
         num_cands = len(all_cands)
               
-        for cand in all_cands:   
-            # TODO remove once "name" is update to "objectID"
-            cand['objectId'] = cand['name']
-            cand.pop('name')
-
+        for cand in all_cands:  
             # Old: 
             # source_response = self.add_new_source(cand)
             # source_response = self.create_new_cand(cand, id)
