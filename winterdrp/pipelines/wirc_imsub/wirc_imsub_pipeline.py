@@ -113,7 +113,7 @@ class WircImsubPipeline(Pipeline):
                 input_sub_dir="raw",
                 load_image=load_raw_wirc_image
             ),
-            # ImageBatcher(split_key='UTSHUT'),
+            ImageBatcher(split_key='UTSHUT'),
             # ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210702.fits")),
             Reference(
                 ref_image_generator=wirc_reference_image_generator,
