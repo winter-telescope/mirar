@@ -130,15 +130,14 @@ class DetectCandidates(BaseCandidateGenerator):
             display_ref_ims.append(display_ref_bit)
             display_diff_ims.append(display_diff_bit)
 
-        det_srcs['scibitim'] = display_sci_ims
-        det_srcs['refbitim'] = display_ref_ims
-        det_srcs['diffbitim'] = display_diff_ims
+        det_srcs['cutoutScience'] = display_sci_ims
+        det_srcs['cutoutTemplate'] = display_ref_ims
+        det_srcs['cutoutDifference'] = display_diff_ims
 
         diff_zp = float(fits.getval(diff_filename, 'TMC_ZP'))
         det_srcs['magzpsci'] = diff_zp
         diff_zp_unc = float(fits.getval(diff_filename,'TMC_ZPSD'))
         det_srcs['magzpsciunc'] = diff_zp_unc
-
         det_srcs['diffimname'] = diff_filename
         det_srcs['sciimname'] = sci_resamp_imagename
         det_srcs['refimname'] = ref_resamp_imagename
