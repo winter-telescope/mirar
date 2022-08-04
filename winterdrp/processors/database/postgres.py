@@ -506,7 +506,7 @@ def xmatch_import_db(db_name: str,
 
 
 def get_colnames_from_schema(schema_file):
-    with open(schema_file,'r') as f:
+    with open(schema_file, 'r') as f:
         dat = f.read()
     dat = dat.split(');')[0]
     dat = dat.split('\n')[1:-1]
