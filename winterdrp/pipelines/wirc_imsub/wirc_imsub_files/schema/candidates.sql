@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS candidates (
     candid BIGINT PRIMARY KEY,
-    name VARCHAR(15),
+    objectId VARCHAR(15),
     ra REAL,
     dec REAL,
     fwhm REAL,
