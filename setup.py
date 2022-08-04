@@ -41,6 +41,7 @@ setuptools.setup(
         "psycopg[binary]",
         "pyfftw",
         "setuptools",
+        "watchdog",
         "wget"
     ]
 )
