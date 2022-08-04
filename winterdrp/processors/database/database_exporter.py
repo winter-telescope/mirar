@@ -60,4 +60,3 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
             new_table.append(candidate_row, ignore_index=True)
 
         return new_table
-

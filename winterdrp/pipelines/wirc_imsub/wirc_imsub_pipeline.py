@@ -178,7 +178,8 @@ class WircImsubPipeline(Pipeline):
                 db_name='wirc',
                 db_table='candidates',
                 schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql'
-            )
+            ),
+            DataframeWriter(output_dir_name='dbop')
             # EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
             # AvroPacketMaker(output_sub_dir="avro",
