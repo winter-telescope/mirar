@@ -137,7 +137,6 @@ class SendToFritz(BaseDataframeProcessor):
             candidate_table: pd.DataFrame,
     ) -> pd.DataFrame:
         logger.info("In SendToFritz")
-        # self.token = self._get_fritz_token()
         self.make_alert(candidate_table) 
         return candidate_table
 
@@ -186,14 +185,14 @@ class SendToFritz(BaseDataframeProcessor):
             candidate = {} 
             for key in df.keys():
                 try: 
-                    if type(df.iloc[i].get(key)) is str:
+                    if type(df.iloc[i].get(key)) is str or type(df.iloc[i].get(key)) is list:
                         candidate[key] = df.iloc[i].get(key)   
                     else:
                         # change to native python type
                         candidate[key] = df.iloc[i].get(key).item()
                 except AttributeError: # for IOBytes objs
                     candidate[key] = self.open_bytes_obj(df.iloc[i].get(key))
-                                                 
+
             all_candidates.append(candidate)
 
         return all_candidates 
@@ -348,7 +347,9 @@ class SendToFritz(BaseDataframeProcessor):
         """
         alert = deepcopy(alert)
 
-        cutout_data = alert[f"cutout{alert_packet_type}"]
+        # TODO
+        cutout_data = alert[f"{alert_packet_type}bitim"]        
+        # cutout_data = alert[f"cutout{alert_packet_type}"]
     
         with gzip.open(io.BytesIO(cutout_data), "rb") as f:
             with fits.open(io.BytesIO(f.read()), ignore_missing_simple=True) as hdu:
@@ -412,9 +413,12 @@ class SendToFritz(BaseDataframeProcessor):
         :return:
         """
         for ttype, instrument_type in [
-            ("new", "Science"),
-            ("ref", "Template"),
-            ("sub", "Difference"),
+            # ("new", "Science"),
+            # ("ref", "Template"),
+            # ("sub", "Difference"),
+            ("new", "sci"),
+            ("ref", "ref"),
+            ("sub", "diff"),
         ]:
             logger.info(
                 f"Making {instrument_type} thumbnail for {alert['objectId']} {alert['candid']}",
@@ -479,15 +483,27 @@ class SendToFritz(BaseDataframeProcessor):
         :param cand: candidate dictionary
         :param jd_start: date from which to start photometry from
         """
-        print(cand.keys())
+        # print(cand.keys())
         cand = deepcopy(cand)
-        print(cand.keys())
         # df_candidate = pd.DataFrame(cand["candidate"], index=[0])
-        df_candidate = pd.DataFrame(cand, index=[0])
+        top_level = ["schemavsn","publisher","objectId",
+                    "candid","candidate","prv_candidates",
+                    "cutoutScience","cutoutTemplate","cutoutDifference"]
+        cand["candidate"] = {}
 
-        #TODO fix!!
-        # df_prv_candidates = pd.DataFrame(cand["prv_candidates"])
-        df_prv_candidates = pd.DataFrame(cand)
+        # (keys having value in 3.)
+        delete = [key for key in cand.keys() if key not in top_level]
+        
+        # delete the key/s
+        for key in delete:
+            cand["candidate"][key] = cand[key]
+            del cand[key]
+        
+        cand["candidate"] = [cand["candidate"]]
+        df_candidate = pd.DataFrame(cand["candidate"], index=[0])
+
+
+        df_prv_candidates = pd.DataFrame(cand["prv_candidates"])
 
         df_light_curve = pd.concat(
             [df_candidate, df_prv_candidates], ignore_index=True, sort=False
@@ -514,52 +530,54 @@ class SendToFritz(BaseDataframeProcessor):
             .sort_values(by=["mjd"])
         )
 
+        # TODO add back once diffmaglim in df
         # filter out bad data:
-        mask_good_diffmaglim = df_light_curve["diffmaglim"] > 0
-        df_light_curve = df_light_curve.loc[mask_good_diffmaglim]
+        # mask_good_diffmaglim = df_light_curve["diffmaglim"] > 0
+        # df_light_curve = df_light_curve.loc[mask_good_diffmaglim]
 
         # convert from mag to flux
 
-        # step 1: calculate the coefficient that determines whether the
-        # flux should be negative or positive
-        coeff = df_light_curve["isdiffpos"].apply(
-            lambda x: 1.0 if x in [True, 1, "y", "Y", "t", "1"] else -1.0
-        )
+        # # step 1: calculate the coefficient that determines whether the
+        # # flux should be negative or positive
+        # coeff = df_light_curve["isdiffpos"].apply(
+        #     lambda x: 1.0 if x in [True, 1, "y", "Y", "t", "1"] else -1.0
+        # )
 
-        # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
-        # 23.9 (results in flux in uJy)
-        df_light_curve["flux"] = coeff * 10 ** (
-            -0.4 * (df_light_curve["magpsf"] - 23.9)
-        )
 
-        # step 3: separate detections from non detections
-        detected = np.isfinite(df_light_curve["magpsf"])
-        undetected = ~detected
+        # # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
+        # # 23.9 (results in flux in uJy)
+        # df_light_curve["flux"] = coeff * 10 ** (
+        #     -0.4 * (df_light_curve["magpsf"] - 23.9)
+        # )
 
-        # step 4: calculate the flux error
-        df_light_curve["fluxerr"] = None  # initialize the column
+        # # step 3: separate detections from non detections
+        # detected = np.isfinite(df_light_curve["magpsf"])
+        # undetected = ~detected
 
-        # step 4a: calculate fluxerr for detections using sigmapsf
-        df_light_curve.loc[detected, "fluxerr"] = np.abs(
-            df_light_curve.loc[detected, "sigmapsf"]
-            * df_light_curve.loc[detected, "flux"]
-            * np.log(10)
-            / 2.5
-        )
+        # # step 4: calculate the flux error
+        # df_light_curve["fluxerr"] = None  # initialize the column
 
-        # step 4b: calculate fluxerr for non detections using diffmaglim
-        df_light_curve.loc[undetected, "fluxerr"] = (
-            10 ** (-0.4 * (df_light_curve.loc[undetected, "diffmaglim"] - 23.9)) / 5.0
-        )  # as diffmaglim is the 5-sigma depth
+        # # step 4a: calculate fluxerr for detections using sigmapsf
+        # df_light_curve.loc[detected, "fluxerr"] = np.abs(
+        #     df_light_curve.loc[detected, "sigmapsf"]
+        #     * df_light_curve.loc[detected, "flux"]
+        #     * np.log(10)
+        #     / 2.5
+        # )
 
-        # step 5: set the zeropoint and magnitude system
-        df_light_curve["zp"] = 23.9
-        df_light_curve["zpsys"] = "ab"
+        # # step 4b: calculate fluxerr for non detections using diffmaglim
+        # df_light_curve.loc[undetected, "fluxerr"] = (
+        #     10 ** (-0.4 * (df_light_curve.loc[undetected, "diffmaglim"] - 23.9)) / 5.0
+        # )  # as diffmaglim is the 5-sigma depth
 
-        # only "new" photometry requested?
-        if jd_start is not None:
-            w_after_jd = df_light_curve["jd"] > jd_start
-            df_light_curve = df_light_curve.loc[w_after_jd]
+        # # step 5: set the zeropoint and magnitude system
+        # df_light_curve["zp"] = 23.9
+        # df_light_curve["zpsys"] = "ab"
+
+        # # only "new" photometry requested?
+        # if jd_start is not None:
+        #     w_after_jd = df_light_curve["jd"] > jd_start
+        #     df_light_curve = df_light_curve.loc[w_after_jd]
 
         return df_light_curve
 
@@ -572,33 +590,41 @@ class SendToFritz(BaseDataframeProcessor):
         # post photometry
         photometry = {
             "obj_id": cand["objectId"],
-            "stream_ids": [int(self.pgir_stream_id)],
+            "stream_ids": [int(self.stream_id)],
             "instrument_id": self.instrument_id,
             "mjd": df_photometry["mjd"].tolist(),
-            "flux": df_photometry["flux"].tolist(),
-            "fluxerr": df_photometry["fluxerr"].tolist(),
-            "zp": df_photometry["zp"].tolist(),
-            "magsys": df_photometry["zpsys"].tolist(),
+            # TODO uncomment once added (see make_photometry())
+            # "flux": df_photometry["flux"].tolist(),
+            # "fluxerr": df_photometry["fluxerr"].tolist(),
+            # "zp": df_photometry["zp"].tolist(),
+            # "magsys": df_photometry["zpsys"].tolist()
+            # ## hardcoded ##,
+            "magsys": "vega",
+            "limiting_mag": 99,
+            "mag": cand["magpsf"],
+            "magerr": cand["sigmapsf"],
+            # ## end of hard coding ##
             "filter": df_photometry["filter"].tolist(),
             "ra": df_photometry["ra"].tolist(),
             "dec": df_photometry["dec"].tolist(),
         }
 
-        if (len(photometry.get("flux", ())) > 0) or (
-            len(photometry.get("fluxerr", ())) > 0
-        ):
-            logger.info(f"Posting photometry of {cand['objectId']} {cand['candid']}, "
-                    f"stream_id={self.stream_id} to SkyPortal")
-            response = self.api_skyportal("PUT", "https://fritz.science/api/photometry", photometry)
-            if response.json()["status"] == "success":
-                logger.info(
-                    f"Posted {cand['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
-                )
-            else:
-                logger.info(
-                    f"Failed to post {cand['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
-                )
-                logger.info(response.json())
+        # TODO uncomment
+        # if (len(photometry.get("flux", ())) > 0) or (
+        #     len(photometry.get("fluxerr", ())) > 0
+        # ):
+        logger.info(f"Posting photometry of {cand['objectId']} {cand['candid']}, "
+                f"stream_id={self.stream_id} to SkyPortal")
+        response = self.api("PUT", "https://fritz.science/api/photometry", photometry)
+        if response.json()["status"] == "success":
+            logger.info(
+                f"Posted {cand['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
+            )
+        else:
+            logger.info(
+                f"Failed to post {cand['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
+            )
+            logger.info(response.json())
 
     # updated: equivalent to create_new_cand:
     def alert_post_candidate(self, cand):
@@ -768,15 +794,10 @@ class SendToFritz(BaseDataframeProcessor):
             else: # exists in SkyPortal but NOT saved as a source
                 self.alert_post_source(alert)
 
-            # post alert photometry in single call to /api/photometry
-            prv_cand_exists = "prv_candidates" in alert.keys()
-            logger.info(f'!!!!!PREV CANDIDATES IN {alert["objectId"]}: {prv_cand_exists}!!!!!')
-            # alert["prv_candidates"] = prv_candidates
-
             # TODO
             # self.alert_put_photometry(alert)
 
-        logger.info(f'======== Manager complete for {alert["objectId"]} =======')
+        logger.info(f'======== SendToFritz Manager complete for {alert["objectId"]} =======')
 
     def alert_skyportal_manager(self, alert):
         """Posts alerts to SkyPortal if criteria is met
@@ -844,12 +865,8 @@ class SendToFritz(BaseDataframeProcessor):
                 self.alert_post_source(alert)
 
             # post alert photometry in single call to /api/photometry
-            prv_cand_exists = "prv_candidates" in alert.keys()
-            logger.info(f'!!!!!PREV CANDIDATES IN {alert["objectId"]}: {prv_cand_exists}!!!!!')
-            # alert["prv_candidates"] = prv_candidates
-
             # TODO
-            # self.alert_put_photometry(alert)
+            self.alert_put_photometry(alert)
 
         logger.info(f'======== Manager complete for {alert["objectId"]} =======')
 
@@ -857,27 +874,11 @@ class SendToFritz(BaseDataframeProcessor):
         t0 = time.time()
         all_cands = self.read_input_df(cand_table)
         num_cands = len(all_cands)
-
-        last_name = 'WIRC21aaaaaao'
-        cand_id = 700
               
-        for cand in all_cands:
-            cand_jd = cand['jd'] # float
-            cand_name = self.get_next_name(last_name, str(cand_jd))
-
-            #TODO candid should be coming from naming database
-            cand['candid'] = cand_id
-            cand_id += 1
-            
-            # TODO check if cand is new? 
-            # cand_name, new_status = self.check_and_insert_source(cand_name, cand)
-
-            #TODO remove once new_status is up-to-date: dummy line
-            new_status = True
-
-            if new_status:
-                last_name = cand_name    
-            cand['objectId'] = cand_name
+        for cand in all_cands:   
+            # TODO remove once "name" is update to "objectID"
+            cand['objectId'] = cand['name']
+            cand.pop('name')
 
             # Old: 
             # source_response = self.add_new_source(cand)
