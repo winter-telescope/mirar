@@ -115,6 +115,6 @@ else:
         night=args.night,
     )
 
-    pipe.reduce_images([[[], []]])
+    pipe.reduce_images([[[], []]], catch_all_errors=True)
 
     logger.info('End of winterdrp execution')
