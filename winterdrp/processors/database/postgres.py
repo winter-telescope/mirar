@@ -13,6 +13,7 @@ schema_dir = os.path.join(os.path.dirname(__file__), "schema")
 pg_admin_user_key = 'PG_ADMIN_USER'
 pg_admin_pwd_key = 'PG_ADMIN_PWD'
 
+
 class DataBaseError(ProcessorError):
     pass
 
@@ -286,7 +287,10 @@ def export_to_db(
 
             logger.debug(txt)
             command = txt
-            cursor.execute(command)
+            try:
+                cursor.execute(command)
+            except psycopg.errors.UniqueViolation as e:
+                raise DataBaseError(e)
             primary_key_values = cursor.fetchall()[0]
 
     return primary_key, primary_key_values
