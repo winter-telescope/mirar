@@ -5,6 +5,7 @@ from collections.abc import Callable
 import astropy.io.fits
 from winterdrp.processors.utils.image_selector import select_from_images
 from winterdrp.paths import latest_save_key, bias_frame_key
+from winterdrp.errors import ImageNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,10 @@ class BiasCalibrator(ProcessorWithCache):
         images, headers = self.select_cache_images(images, headers)
 
         n_frames = len(images)
+        if n_frames == 0:
+            err = f"Found {n_frames} suitable biases in batch"
+            logger.error(err)
+            raise ImageNotFoundError(err)
 
         nx, ny = images[0].shape
 

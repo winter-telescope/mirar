@@ -8,6 +8,7 @@ from collections.abc import Callable
 from winterdrp.processors.base_processor import ProcessorWithCache, ProcessorPremadeCache
 from winterdrp.paths import base_name_key
 from winterdrp.processors.utils.image_selector import select_from_images
+from winterdrp.errors import ImageNotFoundError
 
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,10 @@ class DarkCalibrator(ProcessorWithCache):
         images, headers = self.select_cache_images(images, headers)
 
         n_frames = len(images)
+        if n_frames == 0:
+            err = f"Found {n_frames} suitable darks in batch"
+            logger.error(err)
+            raise ImageNotFoundError(err)
 
         nx, ny = images[0].shape
 
