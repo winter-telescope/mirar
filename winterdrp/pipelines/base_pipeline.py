@@ -17,6 +17,8 @@ class Pipeline:
     pipelines = {}
     name = None
 
+    default_cal_requirements = None
+
     @property
     def all_pipeline_configurations(self):
         raise NotImplementedError()

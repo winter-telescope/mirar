@@ -16,9 +16,8 @@ import logging
 from astropy.time import Time
 from astropy import units as u
 from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image
-from winterdrp.processors.utils.image_selector import select_from_images
 from winterdrp.processors.utils.image_loader import load_from_dir, ImageNotFoundError
-from winterdrp.processors.utils.supplement_cals import CalHunter, CalRequirement
+from winterdrp.processors.utils.cal_hunter import CalHunter, CalRequirement, find_required_cals
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +63,17 @@ class Monitor:
 
         self.processed_science = []
 
+        # default to "pipeline default cal requirements"
+
+        if cal_requirements is None:
+            cal_requirements = self.pipeline.cal_requirements
+
         if cal_requirements is not None:
-            self.cal_images, self.cal_headers = self.get_latest_cals(cal_requirements)
+            self.cal_images, self.cal_headers = find_required_cals(
+                latest_dir=self.raw_image_directory,
+                open_f=self.pipeline.load_raw_image,
+                requirements=cal_requirements
+            )
         else:
             self.cal_images = self.cal_headers = []
 
@@ -208,60 +216,60 @@ class Monitor:
             else:
                 time.sleep(1)
 
-    def get_latest_cals(self, requirements):
-
-        latest_dir = self.raw_image_directory
-
-        preceding_dirs = []
-
-        for x in os.listdir(os.path.dirname(os.path.dirname(latest_dir))):
-            if x[0] not in ["."]:
-                if len(str(x)) == len(str(self.night)):
-                    try:
-                        if not float(x) > float(self.night):
-                            preceding_dirs.append(x)
-                    except ValueError:
-                        pass
-
-        ordered_nights = sorted(preceding_dirs)[::-1]
-
-        while np.sum([x.success for x in requirements]) != len(requirements):
-
-            if len(ordered_nights) == 0:
-                raise ImageNotFoundError("Ran out of nights!")
-
-            new_latest_night = ordered_nights[0]
-            ordered_nights = ordered_nights[1:]
-
-            try:
-
-                logger.info(f"Checking night {new_latest_night}")
-
-                dir_to_load = self.raw_image_directory.replace(self.night, new_latest_night)
-
-                images, headers = load_from_dir(
-                    dir_to_load, open_f=load_raw_summer_image
-                )
-
-                for requirement in requirements:
-                    if not requirement.success:
-                        requirement.check_images(images, headers)
-
-            except ImageNotFoundError:
-                pass
-
-        all_images = []
-        all_headers = []
-
-        for requirement in requirements:
-            for key, (imgs, headers) in requirement.data.items():
-                print(key, len(imgs))
-                all_images += imgs
-                all_headers += headers
-
-        logger.info(f"Found {len(all_images)} calibration images")
-
-        return all_images, all_headers
+    # def get_latest_cals(self, requirements):
+    #
+    #     latest_dir = self.raw_image_directory
+    #
+    #     preceding_dirs = []
+    #
+    #     for x in os.listdir(os.path.dirname(os.path.dirname(latest_dir))):
+    #         if x[0] not in ["."]:
+    #             if len(str(x)) == len(str(self.night)):
+    #                 try:
+    #                     if not float(x) > float(self.night):
+    #                         preceding_dirs.append(x)
+    #                 except ValueError:
+    #                     pass
+    #
+    #     ordered_nights = sorted(preceding_dirs)[::-1]
+    #
+    #     while np.sum([x.success for x in requirements]) != len(requirements):
+    #
+    #         if len(ordered_nights) == 0:
+    #             raise ImageNotFoundError("Ran out of nights!")
+    #
+    #         new_latest_night = ordered_nights[0]
+    #         ordered_nights = ordered_nights[1:]
+    #
+    #         try:
+    #
+    #             logger.info(f"Checking night {new_latest_night}")
+    #
+    #             dir_to_load = self.raw_image_directory.replace(self.night, new_latest_night)
+    #
+    #             images, headers = load_from_dir(
+    #                 dir_to_load, open_f=load_raw_summer_image
+    #             )
+    #
+    #             for requirement in requirements:
+    #                 if not requirement.success:
+    #                     requirement.check_images(images, headers)
+    #
+    #         except ImageNotFoundError:
+    #             pass
+    #
+    #     all_images = []
+    #     all_headers = []
+    #
+    #     for requirement in requirements:
+    #         for key, (imgs, headers) in requirement.data.items():
+    #             print(key, len(imgs))
+    #             all_images += imgs
+    #             all_headers += headers
+    #
+    #     logger.info(f"Found {len(all_images)} calibration images")
+    #
+    #     return all_images, all_headers
 
 
 if __name__ == '__main__':
