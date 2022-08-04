@@ -9,12 +9,9 @@ import logging
 from collections.abc import Callable
 from winterdrp.io import open_fits
 from glob import glob
-from winterdrp.errors import ProcessorError
+from winterdrp.errors import ProcessorError, ImageNotFoundError
 
 logger = logging.getLogger(__name__)
-
-class ImageNotFoundError(ProcessorError):
-    pass
 
 
 class ImageLoader(BaseImageProcessor):
