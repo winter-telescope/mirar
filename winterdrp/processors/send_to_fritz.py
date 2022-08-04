@@ -191,7 +191,8 @@ class SendToFritz(BaseDataframeProcessor):
                         # change to native python type
                         candidate[key] = df.iloc[i].get(key).item()
                 except AttributeError: # for IOBytes objs
-                    candidate[key] = self.open_bytes_obj(df.iloc[i].get(key))
+                    # candidate[key] = self.open_bytes_obj(df.iloc[i].get(key))
+                    candidate[key] = df.iloc[i].get(key) # leave as is?   
 
             all_candidates.append(candidate)
 
@@ -860,6 +861,8 @@ class SendToFritz(BaseDataframeProcessor):
 
             # post alert photometry in single call to /api/photometry
             self.alert_put_photometry(alert)
+            self.alert_post_thumbnails(alert)
+
 
         logger.info(f'======== Manager complete for {alert["objectId"]} =======')
 

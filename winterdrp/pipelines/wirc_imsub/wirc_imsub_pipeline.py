@@ -174,18 +174,18 @@ class WircImsubPipeline(Pipeline):
                  name_start='aaaaa',
                  xmatch_radius_arcsec=2
             ),
-            DatabaseDataframeExporter(
-                db_name='wirc',
-                db_table='candidates',
-                schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql'
-            ),
+            # DatabaseDataframeExporter(
+            #     db_name='wirc',
+            #     db_table='candidates',
+            #     schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql'
+            # ),
             DataframeWriter(output_dir_name='dbop'),
             # EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
-            AvroPacketMaker(output_sub_dir="avro",
-                            base_name="WNTR",
-                            broadcast=False,
-                            save_local=False),
+            # AvroPacketMaker(output_sub_dir="avro",
+            #                 base_name="WNTR",
+            #                 broadcast=False,
+            #                 save_local=False),
             SendToFritz()
         ]
     }
