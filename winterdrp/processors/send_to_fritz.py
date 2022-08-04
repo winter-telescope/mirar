@@ -171,7 +171,6 @@ class SendToFritz(BaseDataframeProcessor):
         and creates list of dictionaries, each dictionary 
         representing a single candidate.
 
-        NOTE: saves images as np.arrays for thumbnail sending.
 
         Args:
             df (pandas.core.frame.DataFrame): dataframe of all candidates.
@@ -191,8 +190,7 @@ class SendToFritz(BaseDataframeProcessor):
                         # change to native python type
                         candidate[key] = df.iloc[i].get(key).item()
                 except AttributeError: # for IOBytes objs
-                    # candidate[key] = self.open_bytes_obj(df.iloc[i].get(key))
-                    candidate[key] = df.iloc[i].get(key) # leave as is?   
+                    candidate[key] = df.iloc[i].get(key).getvalue() # leave as is?   
 
             all_candidates.append(candidate)
 
@@ -355,10 +353,10 @@ class SendToFritz(BaseDataframeProcessor):
 
         # TODO  for WNTR
         # Survey-specific transformations to get North up and West on the right
-        if self.instrument == "ZTF":
-            image_data = np.flipud(image_data)
-        elif self.instrument == "PGIR":
-            image_data = np.rot90(np.fliplr(image_data), 3)
+        # if self.instrument == "ZTF":
+        #     image_data = np.flipud(image_data)
+        # elif self.instrument == "PGIR":
+        #     image_data = np.rot90(np.fliplr(image_data), 3)
 
         buff = io.BytesIO()
         plt.close("all")
