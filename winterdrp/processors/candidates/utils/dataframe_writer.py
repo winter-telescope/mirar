@@ -31,8 +31,7 @@ class DataframeWriter(BaseDataframeProcessor):
             ))
         except OSError:
             pass
-
-        df_basepath = os.path.basename(candidate_table.iloc[0]['diffimname']).replace('.fits', '.candidates.pkl')
+        df_basepath = os.path.basename(candidate_table.loc[0]['diffimname']).replace('.fits', '.candidates.pkl')
         df_path = get_output_path(df_basepath,
                                   dir_root=self.output_dir_name,
                                   sub_dir=self.night_sub_dir,
