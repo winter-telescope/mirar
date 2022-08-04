@@ -45,8 +45,7 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
             candidate_table: pd.DataFrame
     ) -> pd.DataFrame:
 
-        new_table = pd.DataFrame()
-
+        primary_key_dict = {}
         for index, candidate_row in candidate_table.iterrows():
             primary_keys, primary_key_values = export_to_db(
                 candidate_row.to_dict(),
@@ -56,8 +55,15 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
                 password=self.db_password
             )
             for ind, key in enumerate(primary_keys):
-                candidate_row[key] = primary_key_values[ind]
-            new_table.append(candidate_row, ignore_index=True)
+                if key not in primary_key_dict:
+                    primary_key_dict[key] = [primary_key_values[ind]]
+                else:
+                    primary_key_dict[key].append(primary_key_values[ind])
+                # candidate_row[key] = primary_key_values[ind]
 
-        return new_table
+            # new_table = pd.concat([new_table,candidate_row])
+            # new_table.append(candidate_row, ignore_index=True)
+        for k in primary_key_dict:
+            candidate_table[k] = primary_key_dict[k]
 
+        return candidate_table
