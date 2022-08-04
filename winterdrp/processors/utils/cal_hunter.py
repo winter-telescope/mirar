@@ -6,7 +6,11 @@ import numpy as np
 import logging
 from winterdrp.processors.utils.image_selector import select_from_images
 from winterdrp.processors.utils.image_loader import ImageLoader, load_from_dir, BaseImageProcessor
-from winterdrp.errors import ImageNotFoundError
+from winterdrp.errors import ImageNotFoundError, ProcessorError
+from winterdrp.io import open_fits
+from collections.abc import Callable
+from winterdrp.paths import raw_img_sub_dir
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +46,93 @@ class CalRequirement:
         self.success = len(self.data) == len(self.required_values)
 
 
+def update_requirements(
+        requirements: list[CalRequirement],
+        images: list[np.ndarray],
+        headers: list[astropy.io.fits.Header]
+) -> list[CalRequirement]:
+
+    for requirement in requirements:
+        if not requirement.success:
+            requirement.check_images(images, headers)
+
+    return requirements
+
+
+def find_required_cals(
+        latest_dir: str,
+        requirements: list[CalRequirement],
+        open_f: Callable = open_fits,
+        images: list[np.ndarray] = None,
+        headers: list[astropy.io.fits.Header] = None,
+        skip_latest_night: bool = False
+):
+
+    if images is None:
+        if headers is not None:
+            err = f"Mismatch between images and headers. " \
+                  f"Images is None but headers is  not None. "
+            logger.error(err)
+            raise ProcessorError(err)
+        else:
+            images = []
+            headers = []
+
+    path = Path(latest_dir)
+    night = path.parents[0].name
+
+    preceding_dirs = []
+
+    for x in [x for x in path.parents[1].iterdir() if x.is_dir()]:
+        if x.name[0] not in ["."]:
+            if len(str(x.name)) == len(str(night)):
+                try:
+                    if float(x.name) < float(night):
+                        preceding_dirs.append(x)
+                except ValueError:
+                    pass
+
+    if not skip_latest_night:
+        preceding_dirs.append(path.parent)
+
+    ordered_nights = sorted(preceding_dirs)[::-1]
+
+    while np.sum([x.success for x in requirements]) != len(requirements):
+
+        if len(ordered_nights) == 0:
+            raise ImageNotFoundError("Ran out of nights!")
+
+        dir_to_load = ordered_nights[0].joinpath(raw_img_sub_dir)
+
+        ordered_nights = ordered_nights[1:]
+
+        try:
+            logger.info(f"Checking night {dir_to_load}")
+            new_images, new_headers = load_from_dir(
+                str(dir_to_load), open_f=open_f
+            )
+            requirements = update_requirements(requirements, new_images, new_headers)
+
+        except ImageNotFoundError:
+            pass
+
+    n_cal = 0
+
+    for requirement in requirements:
+        for key, (cal_imgs, cal_headers) in requirement.data.items():
+            for i, cal_header in enumerate(cal_headers):
+                if cal_header not in headers:
+                    images.append(cal_imgs[i])
+                    headers.append(cal_header)
+                    n_cal += 1
+
+    if n_cal > 0:
+        logger.warning(f"Some required calibration images were missing from image set. "
+                       f"Found {n_cal} additional calibration images from older nights")
+
+    return images, headers
+
+
 class CalHunter(ImageLoader):
 
     base_key = "calhunt"
@@ -66,74 +157,21 @@ class CalHunter(ImageLoader):
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
         requirements = copy.deepcopy(self.requirements)
-        requirements = self.update_requirements(requirements, images, headers)
+        requirements = update_requirements(requirements, images, headers)
 
         latest_dir = os.path.join(
             self.input_img_dir,
             os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
 
-        preceding_dirs = []
-
-        for x in os.listdir(os.path.dirname(os.path.dirname(latest_dir))):
-            if x[0] not in ["."]:
-                if len(str(x)) == len(str(self.night)):
-                    try:
-                        if float(x) < float(self.night):
-                            preceding_dirs.append(x)
-                    except ValueError:
-                        pass
-
-        ordered_nights = sorted(preceding_dirs)[::-1]
-
-        while np.sum([x.success for x in requirements]) != len(requirements):
-
-            if len(ordered_nights) == 0:
-                raise ImageNotFoundError("Ran out of nights!")
-
-            new_latest_night = ordered_nights[0]
-            ordered_nights = ordered_nights[1:]
-
-            try:
-
-                logger.info(f"Checking night {new_latest_night}")
-
-                dir_to_load = latest_dir.replace(self.night, new_latest_night)
-
-                new_images, new_headers = load_from_dir(
-                    dir_to_load, open_f=self.open_raw_image
-                )
-
-                requirements = self.update_requirements(requirements, new_images, new_headers)
-
-            except ImageNotFoundError:
-                pass
-
-        n_cal = 0
-
-        for requirement in requirements:
-            for key, (cal_imgs, cal_headers) in requirement.data.items():
-                for i, cal_header in enumerate(cal_headers):
-                    if cal_header not in headers:
-                        images.append(cal_imgs[i])
-                        headers.append(cal_header)
-                        n_cal += 1
-
-        if n_cal > 0:
-            logger.warning(f"Some required calibration images were missing from image set. "
-                           f"Found {n_cal} additional calibration images from older nights")
+        images, headers = find_required_cals(
+            latest_dir=latest_dir,
+            requirements=requirements,
+            images=images,
+            headers=headers,
+            skip_latest_night=True
+        )
 
         return images, headers
 
-    @staticmethod
-    def update_requirements(
-            requirements: list[CalRequirement],
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header]
-    ) -> list[CalRequirement]:
 
-        for requirement in requirements:
-            if not requirement.success:
-                requirement.check_images(images, headers)
-
-        return requirements
