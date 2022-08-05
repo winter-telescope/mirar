@@ -186,6 +186,6 @@ class WircImsubPipeline(Pipeline):
             #                 base_name="WNTR",
             #                 broadcast=False,
             #                 save_local=False),
-            SendToFritz()
+            # SendToFritz(update_thumbnails = True)
         ]
     }
