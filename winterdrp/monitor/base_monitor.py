@@ -18,6 +18,7 @@ from astropy import units as u
 from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image
 from winterdrp.processors.utils.image_loader import load_from_dir, ImageNotFoundError
 from winterdrp.processors.utils.cal_hunter import CalHunter, CalRequirement, find_required_cals
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,10 @@ class Monitor:
 
         self.pipeline = get_pipeline(pipeline, night=night, selected_configurations=realtime_configurations)
 
-        self.raw_image_directory = raw_img_dir(sub_dir=self.pipeline.night_sub_dir)
+        self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir))
+
+        if not self.raw_image_directory.exists():
+            self.raw_image_directory.mkdir()
 
         self.log_level = log_level
         self.log_path = self.configure_logs(log_level)
@@ -216,73 +220,8 @@ class Monitor:
             else:
                 time.sleep(1)
 
-    # def get_latest_cals(self, requirements):
-    #
-    #     latest_dir = self.raw_image_directory
-    #
-    #     preceding_dirs = []
-    #
-    #     for x in os.listdir(os.path.dirname(os.path.dirname(latest_dir))):
-    #         if x[0] not in ["."]:
-    #             if len(str(x)) == len(str(self.night)):
-    #                 try:
-    #                     if not float(x) > float(self.night):
-    #                         preceding_dirs.append(x)
-    #                 except ValueError:
-    #                     pass
-    #
-    #     ordered_nights = sorted(preceding_dirs)[::-1]
-    #
-    #     while np.sum([x.success for x in requirements]) != len(requirements):
-    #
-    #         if len(ordered_nights) == 0:
-    #             raise ImageNotFoundError("Ran out of nights!")
-    #
-    #         new_latest_night = ordered_nights[0]
-    #         ordered_nights = ordered_nights[1:]
-    #
-    #         try:
-    #
-    #             logger.info(f"Checking night {new_latest_night}")
-    #
-    #             dir_to_load = self.raw_image_directory.replace(self.night, new_latest_night)
-    #
-    #             images, headers = load_from_dir(
-    #                 dir_to_load, open_f=load_raw_summer_image
-    #             )
-    #
-    #             for requirement in requirements:
-    #                 if not requirement.success:
-    #                     requirement.check_images(images, headers)
-    #
-    #         except ImageNotFoundError:
-    #             pass
-    #
-    #     all_images = []
-    #     all_headers = []
-    #
-    #     for requirement in requirements:
-    #         for key, (imgs, headers) in requirement.data.items():
-    #             print(key, len(imgs))
-    #             all_images += imgs
-    #             all_headers += headers
-    #
-    #     logger.info(f"Found {len(all_images)} calibration images")
-    #
-    #     return all_images, all_headers
-
 
 if __name__ == '__main__':
-
-
-    # root = logging.getLogger()
-    # root.setLevel(logging.DEBUG)
-    #
-    # handler = logging.StreamHandler(sys.stdout)
-    # handler.setLevel(logging.DEBUG)
-    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # handler.setFormatter(formatter)
-    # root.addHandler(handler)
 
     ln = Time.now() - 1. * u.day
     last_night = str(ln).split(" ")[0].replace("-", "")
