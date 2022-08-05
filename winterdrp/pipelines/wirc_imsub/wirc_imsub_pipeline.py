@@ -114,7 +114,7 @@ class WircImsubPipeline(Pipeline):
                 load_image=load_raw_wirc_image
             ),
             # ImageBatcher(split_key='UTSHUT'),
-            ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210702.fits")),
+            ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210330.fits")),
             Reference(
                 ref_image_generator=wirc_reference_image_generator,
                 ref_swarp_resampler=wirc_reference_image_resampler,
@@ -174,23 +174,18 @@ class WircImsubPipeline(Pipeline):
                  name_start='aaaaa',
                  xmatch_radius_arcsec=2
             ),
-            DatabaseDataframeExporter(
-                db_name='wirc',
-                db_table='candidates',
-                schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql'
-            ),
-            DataframeWriter(output_dir_name='dbop')
+            # DatabaseDataframeExporter(
+            #     db_name='wirc',
+            #     db_table='candidates',
+            #     schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql'
+            # ),
+            DataframeWriter(output_dir_name='dbop'),
             # EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
             # AvroPacketMaker(output_sub_dir="avro",
-                            # base_name="WNTR",
-                            # broadcast=False,
-                            # save_local=False),
-            # SendToFritz(output_sub_dir="test")
-
             #                 base_name="WNTR",
             #                 broadcast=False,
             #                 save_local=False),
-            # SendToFritz(output_sub_dir="test")
+            # SendToFritz(update_thumbnails = True)
         ]
     }

@@ -1,0 +1,11 @@
+astropy[recommended]
+astroquery
+docker
+ephem
+jupyter
+matplotlib
+numpy
+pandas
+psycopg[binary]
+pyfftw
+wget

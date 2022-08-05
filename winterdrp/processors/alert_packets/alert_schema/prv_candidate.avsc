@@ -6,8 +6,6 @@
     "type": "record",
     "fields": [
 		{"name": "jd", "type": "double", "doc": "Observation Julian date at start of exposure [days]"},
-		{"name": "subid", "type": "long", "doc": "Processing ID for subtraction image"},
-		{"name": "stackquadid", "type": "long", "doc": "Processing ID for science image"},
 		{"name": "diffmaglim", "type": ["float", "null"], "default": null, "doc": "Expected 5-sigma mag limit in difference image based on global noise estimate [mag]"},
 		{"name": "program", "type": ["string", "null"], "default": null, "doc": "Observing program associated with data"},
 		{"name": "candid", "type": ["long", "null"], "doc": "Candidate ID from operations DB"},
