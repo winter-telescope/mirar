@@ -167,6 +167,7 @@ class CalHunter(ImageLoader):
         images, headers = find_required_cals(
             latest_dir=latest_dir,
             requirements=requirements,
+            open_f=self.load_image,
             images=images,
             headers=headers,
             skip_latest_night=True
