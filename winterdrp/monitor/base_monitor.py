@@ -16,9 +16,9 @@ import logging
 from astropy.time import Time
 from astropy import units as u
 from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image
-from winterdrp.processors.utils.image_loader import load_from_dir, ImageNotFoundError
-from winterdrp.processors.utils.cal_hunter import CalHunter, CalRequirement, find_required_cals
+from winterdrp.processors.utils.cal_hunter import CalRequirement, find_required_cals
 from pathlib import Path
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class Monitor:
             log_level="INFO",
     ):
 
-        self.errorstack = ErrorStack
+        self.errorstack = ErrorStack()
         self.night = night
         self.pipeline_name = pipeline
 
@@ -60,6 +60,8 @@ class Monitor:
         self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir))
 
         if not self.raw_image_directory.exists():
+            for x in self.raw_image_directory.parents[::-1]:
+                x.mkdir(exist_ok=True)
             self.raw_image_directory.mkdir()
 
         self.log_level = log_level
@@ -74,7 +76,7 @@ class Monitor:
 
         if cal_requirements is not None:
             self.cal_images, self.cal_headers = find_required_cals(
-                latest_dir=self.raw_image_directory,
+                latest_dir=str(self.raw_image_directory),
                 open_f=self.pipeline.load_raw_image,
                 requirements=cal_requirements
             )
@@ -167,13 +169,12 @@ class Monitor:
         worker.start()
 
         # setup watchdog to monitor directory for trigger files
-        # event_handler = SqlLoaderWatchdog(watchdog_queue)
 
-        print(f"Watching {self.raw_image_directory}")
+        logger.info(f"Watching {self.raw_image_directory}")
 
         event_handler = NewImageHandler(watchdog_queue)
         observer = Observer()
-        observer.schedule(event_handler, self.raw_image_directory, recursive=True)
+        observer.schedule(event_handler, path=str(self.raw_image_directory), recursive=True)
         observer.start()
 
         try:
@@ -203,20 +204,21 @@ class Monitor:
 
                 is_science = header["OBSCLASS"] == "science"
 
-                all_img = [img] + self.cal_images
-                all_headers = [header] + self.cal_headers
+                all_img = [img] + copy.deepcopy(self.cal_images)
+                all_headers = [header] + copy.deepcopy(self.cal_headers)
 
                 if not is_science:
-                    pass
-                    # self.raw_cals.append(event.src_path)
+                    logger.info(f"Skipping {event.src_path} (calibration image)")
                 else:
+                    logger.info(f"Reducing {event.src_path} (calibration image)")
                     _, errorstack = self.pipeline.reduce_images(
                         batches=[[all_img, all_headers]],
                         selected_configurations=self.realtime_configurations,
-                        catch_all_errors=False
+                        catch_all_errors=True
                     )
                     self.processed_science.append(event.src_path)
                     self.errorstack += errorstack
+                    errorstack.summarise_error_stack(verbose=True)
             else:
                 time.sleep(1)
 
@@ -236,5 +238,6 @@ if __name__ == '__main__':
         night=last_night,
         cal_requirements=required_cals,
         realtime_configurations=["realtime"],
+        log_level="DEBUG"
     )
     scrutineer.process_realtime()
