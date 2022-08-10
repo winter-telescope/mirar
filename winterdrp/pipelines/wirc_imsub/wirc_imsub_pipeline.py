@@ -25,6 +25,7 @@ from winterdrp.processors.database.database_importer import DatabaseHistoryImpor
 from winterdrp.processors.database.postgres import get_colnames_from_schema
 from winterdrp.processors.candidates.namer import CandidateNamer
 from winterdrp.processors.database.database_exporter import DatabaseDataframeExporter
+
 logger = logging.getLogger(__name__)
 
 
@@ -168,24 +169,24 @@ class WircImsubPipeline(Pipeline):
                 q3c=False
             ),
             CandidateNamer(
-                 db_name='wirc',
-                 cand_table_name='candidates',
-                 base_name='WIRC',
-                 name_start='aaaaa',
-                 xmatch_radius_arcsec=2
+                db_name='wirc',
+                cand_table_name='candidates',
+                base_name='WIRC',
+                name_start='aaaaa',
+                xmatch_radius_arcsec=2
             ),
-            # DatabaseDataframeExporter(
-            #     db_name='wirc',
-            #     db_table='candidates',
-            #     schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql'
-            # ),
+            DatabaseDataframeExporter(
+                db_name='wirc',
+                db_table='candidates',
+                schema_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema/candidates.sql'
+            ),
             DataframeWriter(output_dir_name='dbop'),
             # EdgeCandidatesMask(edge_boundary_size=100)
             # FilterCandidates(),
-            # AvroPacketMaker(output_sub_dir="avro",
-            #                 base_name="WNTR",
-            #                 broadcast=False,
-            #                 save_local=False),
+            AvroPacketMaker(output_sub_dir="avro",
+                            base_name="WNTR",
+                            broadcast=False,
+                            save_local=True),
             # SendToFritz(update_thumbnails = True)
         ]
     }
