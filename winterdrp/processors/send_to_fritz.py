@@ -512,8 +512,8 @@ class SendToFritz(BaseDataframeProcessor):
             # ## hardcoded ##,
             "magsys": "vega",
             "limiting_mag": 99,
-            "mag": alert["magpsf"],
-            "magerr": alert["sigmapsf"],
+            "mag": df_photometry["magpsf"].tolist(),
+            "magerr": df_photometry["sigmapsf"].tolist(),
             # ## end of hard coding ##
             "filter": df_photometry["filter"].tolist(),
             "ra": df_photometry["ra"].tolist(),
