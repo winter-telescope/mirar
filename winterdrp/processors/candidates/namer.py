@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from winterdrp.processors.database.postgres import execute_query, xmatch_import_db
 from astropy.time import Time
+from time import sleep
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,9 @@ class CandidateNamer(BaseDataframeProcessor):
                  db_name_field: str = 'objectId',
                  db_order_field: str = 'candid',
                  date_field: str = 'jd',
+                 naming_sequence_name: str = 'name_count',
+                 year_sequence_name: str = 'year_count',
+                 num_letters : int = 5,
                  *args,
                  **kwargs):
         super(CandidateNamer, self).__init__(*args, **kwargs)
@@ -35,6 +39,9 @@ class CandidateNamer(BaseDataframeProcessor):
         self.name_start = name_start
         self.date_field = date_field
         self.xmatch_radius_arcsec = xmatch_radius_arcsec
+        self.naming_sequence_name = naming_sequence_name
+        self.year_sequence_name = year_sequence_name
+        self.num_letters = num_letters
 
     @staticmethod
     def increment_string(string: str):
@@ -73,11 +80,80 @@ class CandidateNamer(BaseDataframeProcessor):
 
         return newstring
 
+    @staticmethod
+    def numberToBase(n, b):
+        if n == 0:
+            return [0]
+        digits = []
+        while n:
+            digits.append(int(n % b))
+            n //= b
+        return digits[::-1]
+
+    def get_char_name_from_num(self, number):
+        base27 = self.numberToBase(number-1, 27)
+        text = [chr(97 + x) for x in base27]
+        name = "".join(text).rjust(self.num_letters, 'a')
+        return name
+
+    def get_next_num_year(self):
+        query = f"""SELECT nextval('{self.naming_sequence_name}');"""
+        res = execute_query(query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd)
+        nextseq_num = res[0][0]
+
+        query = f"""SELECT last_value FROM {self.year_sequence_name};"""
+        res = execute_query(query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd)
+        naming_cur_year = res[0][0]
+        return nextseq_num, naming_cur_year
+
     def get_next_name(self, candjd, lastname=None):
-        candyear = Time(candjd, format='jd').datetime.year % 1000
+        candyear = Time(candjd, format='jd').datetime.year % 100
+
+        nextseq_num, naming_cur_year = self.get_next_num_year()
+
+        assert naming_cur_year <= candyear
+
+        if candyear != naming_cur_year:
+            niter = 5
+            year_incremented = False
+            for i in range(niter):
+                # This needs to be supplemented with a cron that runs every day at noon PT to update the year counter,
+                # to avoid any potential race conditions
+
+                # Wait for 25 seconds in case some other process resets the year
+                requery_nextseq_num, requery_naming_cur_year = self.get_next_num_year()
+                if requery_naming_cur_year == candyear:
+                    nextseq_num = requery_nextseq_num
+                    naming_cur_year = requery_naming_cur_year
+                    year_incremented = True
+                    break
+                elif requery_naming_cur_year > candyear:
+                    query = f"""ALTER SEQUENCE {self.year_sequence_name} RESTART {candyear};"""
+                    res = execute_query(query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd)
+                    year_incremented = True
+                    break
+                sleep(5)
+
+            if not year_incremented:
+                query = f"""ALTER SEQUENCE {self.naming_sequence_name} RESTART {1};"""
+                res = execute_query(query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd)
+
+                query = f"""SELECT nextval('{self.year_sequence_name}');"""
+                res = execute_query(query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd)
+
+                nextseq_num, naming_cur_year = self.get_next_num_year()
+                assert naming_cur_year == candyear
+
+        next_char_name = self.get_char_name_from_num(int(str(nextseq_num)[2:]))
+        name = str(naming_cur_year)+next_char_name
+
+        '''
         if lastname is None:
-            query = f"""SELECT "{self.db_name_field}" FROM {self.cand_table_name} ORDER BY {self.db_order_field} desc LIMIT 1;"""
+            # query = f"""SELECT "{self.db_name_field}" FROM {self.cand_table_name} ORDER BY {self.db_order_field} desc LIMIT 1;"""
+            query = f"""SELECT nextval('{self.naming_sequence_name}');"""
             res = execute_query(query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd)
+            
+            
             if len(res) == 0:
                 name = self.base_name + str(candyear) + self.name_start
                 return name
@@ -92,7 +168,7 @@ class CandidateNamer(BaseDataframeProcessor):
             newname_letters = self.increment_string(lastname_letters)
             name = self.base_name + str(candyear) + newname_letters
         logger.info(name)
-
+        '''
         return name
 
     def is_detected_previously(self, ra, dec):
