@@ -29,3 +29,11 @@ CREATE TABLE IF NOT EXISTS candidates (
     "tmkmag1" REAL,
     "tmobjectid1" VARCHAR(25)
 );
+
+CREATE SEQUENCE IF NOT EXISTS name_count
+    START 1
+    INCREMENT 1;
+
+CREATE SEQUENCE IF NOT EXISTS year_count
+    START 22
+    INCREMENT 1;
