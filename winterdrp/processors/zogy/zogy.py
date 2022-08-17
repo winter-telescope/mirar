@@ -12,8 +12,14 @@ from winterdrp.io import open_fits
 from winterdrp.processors.zogy.py_zogy import py_zogy
 from winterdrp.paths import norm_psfex_header_key
 import os
+from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
+from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
+
+
+class ZOGYError(ProcessorError):
+    pass
 
 
 class ZOGY(BaseImageProcessor):
@@ -102,10 +108,12 @@ class ZOGYPrepare(BaseImageProcessor):
 
     def __init__(self,
                  output_sub_dir: str = "sub",
+                 sci_zp_header_key: str = "TMC_ZP",
                  *args,
                  **kwargs):
         super(ZOGYPrepare, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
+        self.sci_zp_header_key = sci_zp_header_key
 
     def get_sub_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
@@ -121,13 +129,26 @@ class ZOGYPrepare(BaseImageProcessor):
         good_sci_sources = (sci_catalog['FLAGS'] == 0) & (sci_catalog['SNR_WIN'] > 5) & (
                 sci_catalog['FWHM_WORLD'] < 4. / 3600) & (sci_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
                                    sci_catalog['SNR_WIN'] < 1000)
-        good_ref_sources = (ref_catalog['FLAGS'] == 0) & (ref_catalog['SNR_WIN'] > 5) & (
-                ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
-                                   ref_catalog['SNR_WIN'] < 1000)
+        # good_ref_sources = (ref_catalog['FLAGS'] == 0) & (ref_catalog['SNR_WIN'] > 5) & (
+        #         ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
+        #                            ref_catalog['SNR_WIN'] < 1000)
+
+        good_ref_sources = (ref_catalog['SNR_WIN'] > 5) & (
+                ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600)
 
         logger.info(f'Number of good sources SCI: {np.sum(good_sci_sources)} REF: {np.sum(good_ref_sources)}')
         ref_catalog = ref_catalog[good_ref_sources]
         sci_catalog = sci_catalog[good_sci_sources]
+
+        ref_reg_name = ref_catalog_name + '.goodsources.reg'
+        sci_reg_name = sci_catalog_name + '.goodsources.reg'
+        write_regions_file(regions_path=ref_reg_name,
+                           x_coords=ref_catalog['X_IMAGE'],
+                           y_coords=ref_catalog['Y_IMAGE'])
+
+        write_regions_file(regions_path=sci_reg_name,
+                           x_coords=sci_catalog['X_IMAGE'],
+                           y_coords=sci_catalog['Y_IMAGE'])
 
         sci_coords = SkyCoord(ra=sci_catalog['ALPHAWIN_J2000'], dec=sci_catalog['DELTAWIN_J2000'], frame='icrs')
         ref_coords = SkyCoord(ra=ref_catalog['ALPHAWIN_J2000'], dec=ref_catalog['DELTAWIN_J2000'], frame='icrs')
@@ -135,6 +156,11 @@ class ZOGYPrepare(BaseImageProcessor):
         # Cross match the catalogs
         idx_ref, idx_sci, d2d, d3d = sci_coords.search_around_sky(ref_coords, 1.0 * u.arcsec)
 
+        if len(d2d) == 0:
+            err = 'No stars matched between science and reference image catalogs. Likely there is a huge mismatch in ' \
+                  'the sensitivites of the two'
+            logger.error(err)
+            raise ZogyError(err)
         xpos_sci = sci_catalog['XWIN_IMAGE']
         ypos_sci = sci_catalog['YWIN_IMAGE']
         xpos_ref = ref_catalog['XWIN_IMAGE']
@@ -194,7 +220,7 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_data[image_mask] = 0
             ref_data[image_mask] = 0
 
-            scorr_mask_data = sci_weight_data*ref_weight_data
+            scorr_mask_data = sci_weight_data * ref_weight_data
             scorr_header = sci_weight_header
             scorr_mask_path = sci_img_path.replace('.fits', '.scorr.weight.fits')
             self.save_fits(data=scorr_mask_data,
@@ -205,8 +231,8 @@ class ZOGYPrepare(BaseImageProcessor):
             ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(ref_catalog_path, sci_catalog_path)
 
             ref_data = ref_data * flux_scale
-            ref_unscaled_zp = ref_header['TMC_ZP']
-            ref_header['TMC_ZP'] = float(ref_header['TMC_ZP']) + 2.5 * np.log10(flux_scale)
+            ref_unscaled_zp = ref_header['ZP']
+            ref_header['ZP'] = float(ref_header['ZP']) + 2.5 * np.log10(flux_scale)
 
             ref_scaled_path = ref_img_path + '.scaled'
             self.save_fits(data=ref_data,
@@ -214,8 +240,8 @@ class ZOGYPrepare(BaseImageProcessor):
                            path=os.path.join(self.get_sub_output_dir(), ref_scaled_path)
                            )
 
-            logger.info(f"Zeropoints are reference : {ref_unscaled_zp}, scaled reference : {ref_header['TMC_ZP']} and "
-                        f"science : {header['TMC_ZP']}")
+            logger.info(f"Zeropoints are reference : {ref_unscaled_zp}, scaled reference : {ref_header['ZP']} and "
+                        f"science : {header[self.sci_zp_header_key]}")
             # assert(False)
             sci_scaled_path = sci_img_path + '.scaled'
             self.save_fits(data=sci_data,
