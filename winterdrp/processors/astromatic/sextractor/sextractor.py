@@ -8,6 +8,8 @@ from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextr
     run_sextractor_dual
 from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import get_output_dir, get_temp_path, latest_mask_save_key
+from winterdrp.utils.ldac_tools import get_table_from_ldac
+from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,7 @@ class Sextractor(BaseImageProcessor):
             dual: bool = False,
             cache: bool = False,
             mag_zp :float = None,
+            write_regions_file: bool = False,
             *args,
             **kwargs
     ):
@@ -50,6 +53,7 @@ class Sextractor(BaseImageProcessor):
         self.dual = dual
         self.cache = cache
         self.mag_zp = mag_zp
+        self.write_regions = write_regions_file
 
     def get_sextractor_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
@@ -57,7 +61,7 @@ class Sextractor(BaseImageProcessor):
     def _apply_to_images(
             self,
             images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
+            headers: list[astropy.io.fits.Header]
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
 
         sextractor_out_dir = self.get_sextractor_output_dir()
@@ -147,6 +151,16 @@ class Sextractor(BaseImageProcessor):
                 for temp_file in temp_files:
                     os.remove(temp_file)
                     logger.info(f"Deleted temporary file {temp_file}")
+
+            if self.write_regions:
+                output_catalog = get_table_from_ldac(output_cat)
+                x, y = output_catalog['X_IMAGE'], output_catalog['Y_IMAGE']
+                regions_path = output_cat+'.reg'
+                write_regions_file(regions_path=regions_path,
+                                   x_coords=x,
+                                   y_coords=y,
+                                   system='image',
+                                   region_radius=5)
 
             header[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
 
