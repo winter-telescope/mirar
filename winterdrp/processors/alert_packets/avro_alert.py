@@ -5,6 +5,7 @@ import astropy.table
 from astropy.time import Time
 from astropy.io import ascii
 import pandas as pd
+import numpy as np
 import datetime
 
 import io, gzip, os, sys
@@ -261,7 +262,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         producer.produce(topic=topicname, value=out.read())
         producer.flush()
 
-    def broadcast_alert_packet(self, packet, cand, schema, topic_name, cand_num, num_cands):
+    def broadcast_alert_packet(self, packet, cand, schema, topic_name):
         """
         Sends avro-formatted packets to specified topicname using Kafka. 
         Modified from https://github.com/dekishalay/pgirdps
@@ -285,7 +286,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             logger.info(f"Could not send candid {cand['candid']}")
             return -1
 
-    def _make_ind_packet(self, cand, schema, topic_name, cand_num, num_cands):
+    def _make_ind_packet(self, cand, schema, topic_name):
         """Makes a single avro alert. Saves or broadcasts alert based on global var.
         
         Args:
@@ -312,7 +313,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             flag += self.save_alert_packet(packet, cand, schema)
         if self.broadcast:
             flag += self.broadcast_alert_packet(packet, cand, schema, 
-                                                    topic_name, cand_num, num_cands)
+                                                    topic_name)
         
         return flag
 
@@ -337,53 +338,55 @@ class AvroPacketMaker(BaseDataframeProcessor):
         """
         t0 = time.time()       
         
-
         logger.info(f'Avro Packet Maker: parsing {len(df)} candidates from dataframe')
+        # Read dataframe into dictionary of candidates
         all_cands = self.read_input_df(df)
         
-        num_cands = len(all_cands)
-        successes = 0
+        num_cands = len(all_cands) # total candidates to process
+        successes = 0 # successful kafka producing of a candidate
 
-        # Make top level alert schema
+        # Make top level alert schema (in json/avro packing format)
         schema = self.combine_schemas(["alert_schema/candidate.avsc", 
                                     "alert_schema/prv_candidate.avsc", 
                                     "alert_schema/alert.avsc"])
 
-        cand_num = 1 # for keeping track of broadcast alerts
+        # TODO topic_name should match night of images
+        # # Calculate the alert_date from list of jds for this night
+        # jd_list = np.array([o['jd'] for o in all_cands])
+        # minjd = np.min(jd_list)
+        # alert_date = Time(minjd, format = 'jd').tt.datetime.strftime('%Y%m%d')
+        # topic_name = f'winter_{alert_date}'
+        # logger.info(f'Sending to topic: {topic_name}')
 
+        # TODO topic_name creation used for testing 
+        topic_name = f"winter_{datetime.datetime.utcnow().strftime('%Y%m%d')}"
+        logger.info(f'topic name {topic_name}')
+
+        # Send/make avro packet for each candidate from the dataframe
         for cand in all_cands:
-
-             # TODO create alert_date once (before loop)from list of jd_list 
-            # Calculate the alert_date for this night
-            # alert_date = Time(cand_jd, format = 'jd').tt.datetime.strftime('%Y%m%d')
-            # logger.info(alert_date)
-            # topic_name = 'winter_%s'%alert_date
-            topic_name = f"winter_{datetime.datetime.utcnow().strftime('%Y%m%d')}"
-            logger.info(f'topic name {topic_name}')
-            
-            flag = self._make_ind_packet(cand, schema, topic_name, cand_num, num_cands)
-            cand_num += 1 # for counting num of processed candidates
+            flag = self._make_ind_packet(cand, schema, topic_name)
             if flag > 0:
                 successes += 1
 
-            cand_id = cand["candid"] # used for testing opening the avro packets
-           
+            # used for testing script below for checking/opening avro packets
+            # cand_id = cand["candid"] # save candid of avro packet to open
+
         t1 = time.time()
         logger.info('###########################################')
         logger.info(f"Took {(t1 - t0):.2f} seconds to process {num_cands} candidates.")
         logger.info(f'{successes} of {num_cands} successfully {self._success_message()}.')
         logger.info('###########################################')
 
-
-        # Read data from an avro file
-        last_file = str(cand_id) + '.avro'
-        last_packet_path = os.path.join(self.get_sub_output_dir(), last_file)
-        with open(last_packet_path, 'rb') as f:
-            reader = DataFileReader(f, DatumReader())
-            metadata = copy.deepcopy(reader.meta)
-            schema_from_file = json.loads(metadata['avro.schema'])
-            cand_data = [field_data for field_data in reader]
-            reader.close()
+        # ########## Testing avro packet creation script ##########
+        # # Read data from an avro file
+        # last_file = str(cand_id) + '.avro'
+        # last_packet_path = os.path.join(self.get_sub_output_dir(), last_file)
+        # with open(last_packet_path, 'rb') as f:
+        #     reader = DataFileReader(f, DatumReader())
+        #     metadata = copy.deepcopy(reader.meta)
+        #     schema_from_file = json.loads(metadata['avro.schema'])
+        #     cand_data = [field_data for field_data in reader]
+        #     reader.close()
         
         ## cand_data is a list with the first item as the nested
         ## dictionary of the avro schema
@@ -392,10 +395,10 @@ class AvroPacketMaker(BaseDataframeProcessor):
         ## ['schemavsn', 'publisher', 'objectId', 'candid', 'candidate', 
         ##  'prv_candidates', 'cutoutScience', 'cutoutTemplate', 'cutoutDifference'])]
 
-        cand_dict = cand_data[0]
-        single_cand = cand_dict['candidate']
-        jd_val = single_cand['jd']
-        logger.info(f"jd: {jd_val}, date: {Time(jd_val, format = 'jd').tt.datetime.strftime('%Y%m%d')}")
+        # cand_dict = cand_data[0]
+        # single_cand = cand_dict['candidate']
+        # jd_val = single_cand['jd']
+        # logger.info(f"jd: {jd_val}, date: {Time(jd_val, format = 'jd').tt.datetime.strftime('%Y%m%d')}")
 
         # logger.info(f'Schema that we parsed:\n {schema}')
         # logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
