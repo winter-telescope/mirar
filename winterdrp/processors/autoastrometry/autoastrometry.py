@@ -30,7 +30,8 @@ import urllib.request
 import math
 import numpy as np
 from astropy.io import fits
-from winterdrp.paths import base_output_dir, ProcessingError
+from winterdrp.paths import base_output_dir
+from winterdrp.errors import NoncriticalProcessingError, ProcessorError
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation
 import logging
 import ephem
@@ -49,7 +50,7 @@ fast_match = True
 show_matches = False
 
 
-class AstrometryError(ProcessingError):
+class AstrometryError(ProcessorError):
     pass
 
 
@@ -1291,15 +1292,16 @@ def get_ref_sources_from_catalog(
     logger.debug(f'Source density of {cat_density} /arcmin^2')
 
     if n_cat == 0:
-        logger.error('No objects found in catalog.')
-        logger.error('The web query failed, all stars were excluded by the FHWM clip, or the image')
-        logger.error('is too small.  Check input parameters or your internet connection.')
-        raise AstrometryError
+        err = 'No objects found in catalog.\
+               The web query failed, all stars were excluded by the FHWM clip, or the image \
+                is too small.  Check input parameters or your internet connection.'
+        logger.error(err)
+        raise AstrometryError(err)
 
     elif 0 < n_cat < 5:
-        logger.error(f'Only {n_cat} catalog objects in the search zone.'
-                     f'Increase the magnitude threshold or box size.')
-        raise AstrometryError
+        err = f'Only {n_cat} catalog objects in the search zone. Increase the magnitude threshold or box size.'
+        logger.error(err)
+        raise AstrometryError(err)
 
     return ref_src_list, n_cat, cat_density
 
