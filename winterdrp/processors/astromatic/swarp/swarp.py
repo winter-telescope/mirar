@@ -231,6 +231,7 @@ class Swarp(BaseImageProcessor):
                     )
 
                 temp_img_path = get_temp_path(swarp_output_dir, header["BASENAME"])
+                logger.info(header['CRVAL2'])
                 self.save_fits(data, header, temp_img_path)
                 temp_mask_path = self.save_mask(data, header, temp_img_path)
 
@@ -297,6 +298,7 @@ class Swarp(BaseImageProcessor):
                 if key not in new_header:
                     new_header[key] = headers[0][key]
 
+        image[image == 0] = np.nan
         new_header["COADDS"] = np.sum([x["COADDS"] for x in headers])
         # print(new_header["COADDS"], len(headers))
         # print(header["SATURATION"])
