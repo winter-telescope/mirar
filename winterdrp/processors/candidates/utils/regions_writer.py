@@ -7,6 +7,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def write_regions_file(regions_path, x_coords, y_coords, system='image', region_radius=5):
+    logger.info(f'Writing regions path to {regions_path}')
+    with open(f"{regions_path}", 'w') as f:
+        f.write('image\n')
+        for ind in range(len(x_coords)):
+            f.write(f"CIRCLE({x_coords[ind]},{y_coords[ind]},{region_radius})\n")
+
+
 class RegionsWriter(BaseDataframeProcessor):
 
     def __init__(self,
