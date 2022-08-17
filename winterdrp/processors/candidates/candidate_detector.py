@@ -134,9 +134,9 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs['cutoutTemplate'] = display_ref_ims
         det_srcs['cutoutDifference'] = display_diff_ims
 
-        diff_zp = float(fits.getval(diff_filename, 'TMC_ZP'))
+        diff_zp = float(fits.getval(diff_filename, 'ZP_AUTO'))
         det_srcs['magzpsci'] = diff_zp
-        diff_zp_unc = float(fits.getval(diff_filename,'TMC_ZPSD'))
+        diff_zp_unc = float(fits.getval(diff_filename,'ZP_AUTO_std'))
         det_srcs['magzpsciunc'] = diff_zp_unc
         det_srcs['diffimname'] = diff_filename
         det_srcs['sciimname'] = sci_resamp_imagename
