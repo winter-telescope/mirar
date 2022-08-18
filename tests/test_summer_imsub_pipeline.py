@@ -89,7 +89,7 @@ class TestSummerPipeline(unittest.TestCase):
 
         for key, value in expected_values.items():
             if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=4)
+                self.assertAlmostEqual(value, header[key], places=2)
             elif isinstance(value, int):
                 self.assertEqual(value, header[key])
             else:
