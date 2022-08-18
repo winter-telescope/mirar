@@ -96,7 +96,8 @@ class DetectCandidates(BaseCandidateGenerator):
     def generate_candidates_table(self, scorr_catalog_name, sci_resamp_imagename, ref_resamp_imagename, diff_filename,
                                   diff_scorr_filename, diff_psf_filename, diff_unc_filename) -> pd.DataFrame:
         det_srcs = get_table_from_ldac(scorr_catalog_name)
-
+        if len(det_srcs) ==0:
+            return pd.DataFrame()
         logger.info(f'Found {len(det_srcs)} candidates in image {diff_filename}.')
         det_srcs['xpos'] = det_srcs['X_IMAGE'] - 1
         det_srcs['ypos'] = det_srcs['Y_IMAGE'] - 1
@@ -208,9 +209,10 @@ class DetectCandidates(BaseCandidateGenerator):
                 diff_unc_filename=diff_unc_path
             )
 
-            x_shape, y_shape = image.shape
-            cands_table['X_SHAPE'] = x_shape
-            cands_table['Y_SHAPE'] = y_shape
+            if len(cands_table)>0:
+                x_shape, y_shape = image.shape
+                cands_table['X_SHAPE'] = x_shape
+                cands_table['Y_SHAPE'] = y_shape
             all_cands_list.append(cands_table)
 
         return pd.concat(all_cands_list)
