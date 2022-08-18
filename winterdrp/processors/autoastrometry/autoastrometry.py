@@ -582,7 +582,7 @@ def get_catalog_astroquery(catalog: str,
         max_mag = 22
         catalog_str = 'V/147/sdss12'
 
-    if catalog =='usno':
+    if catalog == 'usno':
         ra_col_key = 'RAJ2000'
         dec_col_key = 'DEJ2000'
         mag_col_key = 'R1mag'
@@ -591,22 +591,23 @@ def get_catalog_astroquery(catalog: str,
         max_mag = 21
         catalog_str = 'I/284/out'
 
-    if catalog=='tmc':
+    if catalog == 'tmc':
         ra_col_key = 'RAJ2000'
         dec_col_key = 'DEJ2000'
         mag_col_key = 'Jmag'
         pm_ra_key = 'pmRA'
         pm_dec_key = 'pmDE'
         max_mag = 17
-        catalog_str = 'I/317/sample' #using the PPMXL catalog of 2MASS + proper motions
+        catalog_str = 'I/317/sample'  # using the PPMXL catalog of 2MASS + proper motions
 
     crd = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg))
     v = Vizier(columns=[ra_col_key, dec_col_key, mag_col_key, pm_ra_key, pm_dec_key],
                column_filters={f"{mag_col_key}": f"<{max_mag}"})
     v.ROW_LIMIT = -1
-    logger.info(f'Querying {catalog} around {ra},{dec} and a radius {int(box_size_arcsec/60)} arcminutes using - {v.columns}, {v.column_filters}')
-    result = v.query_region(crd, width=f"{int(box_size_arcsec/60)}m", catalog=catalog_str)
-    if len(result)==0:
+    logger.info(
+        f'Querying {catalog} around {ra},{dec} and a radius {int(box_size_arcsec / 60)} arcminutes using - {v.columns}, {v.column_filters}')
+    result = v.query_region(crd, width=f"{int(box_size_arcsec / 60)}m", catalog=catalog_str)
+    if len(result) == 0:
         return []
     table = result[0]
 
@@ -616,7 +617,7 @@ def get_catalog_astroquery(catalog: str,
     logger.debug(f'Source density of {cat_density} /arcmin^2')
 
     mask = (table[mag_col_key] < max_mag) & (table[mag_col_key] > min_mag) & (np.abs(table[pm_ra_key]) < max_pm) & (
-                np.abs(table[pm_dec_key]) < max_pm)
+            np.abs(table[pm_dec_key]) < max_pm)
     cat = table[mask]
     cat_list = []
 
@@ -1318,7 +1319,7 @@ def get_ref_sources_from_catalog_astroquery(catalog: str,
     ref_src_list = []
     if catalog is None:
         try:
-            trycats = ['sdss','usno','tmc']
+            trycats = ['sdss', 'usno', 'tmc']
             for trycat in trycats:
                 ref_src_list = get_catalog_astroquery(catalog=trycat,
                                                       ra=center_ra,
@@ -1677,18 +1678,20 @@ def autoastrometry(
 
     # Block D
 
-    # ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog(
-    #     catalog=catalog,
-    #     center_ra=center_ra,
-    #     center_dec=center_dec,
-    #     box_size_arcsec=box_size_arcsec,
-    # )
-    ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog_astroquery(
-        catalog=catalog,
-        center_ra=center_ra,
-        center_dec=center_dec,
-        box_size_arcsec=box_size_arcsec,
-    )
+    try:
+        ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog(
+            catalog=catalog,
+            center_ra=center_ra,
+            center_dec=center_dec,
+            box_size_arcsec=box_size_arcsec,
+        )
+    except TimeoutError:
+        ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog_astroquery(
+            catalog=catalog,
+            center_ra=center_ra,
+            center_dec=center_dec,
+            box_size_arcsec=box_size_arcsec,
+        )
     # Block E
 
     img_src_list, n_img, img_density, ref_src_list, n_ref, ref_density = crosscheck_source_lists(
