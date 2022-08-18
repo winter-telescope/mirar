@@ -199,14 +199,8 @@ class Swarp(BaseImageProcessor):
             for i, data in enumerate(images):
                 header = headers[i]
 
-                pixscale_to_use, x_imgpixsize_to_use, y_imgpixsize_to_use, center_ra_to_use, center_dec_to_use = None, None, None, None, None
-
-                if not ((self.pixscale is None) | (self.x_imgpixsize is None) | (self.y_imgpixsize is None) | (self.center_ra is None) | (self.center_dec is None)):
-                    pixscale_to_use = self.pixscale
-                    x_imgpixsize_to_use = self.x_imgpixsize
-                    y_imgpixsize_to_use = self.y_imgpixsize
-                    center_ra_to_use = self.center_ra
-                    center_dec_to_use = self.center_dec
+                if not ((self.pixscale is None) | (self.x_imgpixsize is None) | (self.y_imgpixsize is None)):
+                    pass
                 else:
                     w = WCS(header)
                     cd11 = header['CD1_1']
@@ -227,7 +221,6 @@ class Swarp(BaseImageProcessor):
                     all_imgpixsizes.append(imgpixsize)
                     all_ras.append(ra)
                     all_decs.append(dec)
-                logger.info(f"{all_ras}, {all_decs}")
 
                 if self.include_scamp:
                     print(str(header[scamp_header_key]).replace('\n', ''))
@@ -252,18 +245,16 @@ class Swarp(BaseImageProcessor):
 
                 # out_files.append(out_path)
 
-        if pixscale_to_use is None:
-            pixscale_to_use = np.max(all_pixscales)
-        if x_imgpixsize_to_use is None:
-            x_imgpixsize_to_use = np.max(all_imgpixsizes)
-        if y_imgpixsize_to_use is None:
-            y_imgpixsize_to_use = np.max(all_imgpixsizes)
-        if center_ra_to_use is None:
-            center_ra_to_use = np.median(all_ras)
-        if center_dec_to_use is None:
-            center_dec_to_use = np.median(all_decs)
-
-        logger.info(f"{self.center_ra}, {center_ra_to_use}")
+        if self.pixscale is None:
+            self.pixscale = np.max(all_pixscales)
+        if self.x_imgpixsize is None:
+            self.x_imgpixsize = np.max(all_imgpixsizes)
+        if self.y_imgpixsize is None:
+            self.y_imgpixsize = np.max(all_imgpixsizes)
+        if self.center_ra is None:
+            self.center_ra = np.median(all_ras)
+        if self.center_dec is None:
+            self.center_dec = np.median(all_decs)
 
         output_image_weight_path = output_image_path.replace(".fits", ".weight.fits")
 
@@ -273,12 +264,12 @@ class Swarp(BaseImageProcessor):
             out_path=output_image_path,
             weight_list_path=swarp_weight_list_path,
             weight_out_path=output_image_weight_path,
-            pixscale=pixscale_to_use,
-            x_imgpixsize=x_imgpixsize_to_use,
-            y_imgpixsize=y_imgpixsize_to_use,
+            pixscale=self.pixscale,
+            x_imgpixsize=self.x_imgpixsize,
+            y_imgpixsize=self.y_imgpixsize,
             propogate_headerlist=self.propogate_headerlist,
-            center_ra=center_ra_to_use,
-            center_dec=center_dec_to_use,
+            center_ra=self.center_ra,
+            center_dec=self.center_dec,
             combine=self.combine,
             gain=self.gain,
             subtract_bkg=self.subtract_bkg
@@ -307,7 +298,7 @@ class Swarp(BaseImageProcessor):
                 if key not in new_header:
                     new_header[key] = headers[0][key]
 
-        image[image == 0] = np.nan
+        # image[image == 0] = np.nan
         new_header["COADDS"] = np.sum([x["COADDS"] for x in headers])
         # print(new_header["COADDS"], len(headers))
         # print(header["SATURATION"])
