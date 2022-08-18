@@ -442,55 +442,54 @@ class SendToFritz(BaseDataframeProcessor):
             .sort_values(by=["mjd"])
         )
 
-        # TODO add back once diffmaglim in df
-        # # filter out bad data:
-        # mask_good_diffmaglim = df_light_curve["diffmaglim"] > 0
-        # df_light_curve = df_light_curve.loc[mask_good_diffmaglim]
+        # filter out bad data:
+        mask_good_diffmaglim = df_light_curve["diffmaglim"] > 0
+        df_light_curve = df_light_curve.loc[mask_good_diffmaglim]
 
-        # # convert from mag to flux
+        # convert from mag to flux
 
-        # # step 1: calculate the coefficient that determines whether the
-        # # flux should be negative or positive
-        # coeff = df_light_curve["isdiffpos"].apply(
-        #     lambda x: 1.0 if x in [True, 1, "y", "Y", "t", "1"] else -1.0
-        # )
+        # step 1: calculate the coefficient that determines whether the
+        # flux should be negative or positive
+        coeff = df_light_curve["isdiffpos"].apply(
+            lambda x: 1.0 if x in [True, 1, "y", "Y", "t", "1"] else -1.0
+        )
 
 
-        # # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
-        # # 23.9 (results in flux in uJy)
-        # df_light_curve["flux"] = coeff * 10 ** (
-        #     -0.4 * (df_light_curve["magpsf"] - 23.9)
-        # )
+        # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
+        # 23.9 (results in flux in uJy)
+        df_light_curve["flux"] = coeff * 10 ** (
+            -0.4 * (df_light_curve["magpsf"] - 23.9)
+        )
 
-        # # step 3: separate detections from non detections
-        # detected = np.isfinite(df_light_curve["magpsf"])
-        # undetected = ~detected
+        # step 3: separate detections from non detections
+        detected = np.isfinite(df_light_curve["magpsf"])
+        undetected = ~detected
 
-        # # step 4: calculate the flux error
-        # df_light_curve["fluxerr"] = None  # initialize the column
+        # step 4: calculate the flux error
+        df_light_curve["fluxerr"] = None  # initialize the column
 
-        # # step 4a: calculate fluxerr for detections using sigmapsf
-        # df_light_curve.loc[detected, "fluxerr"] = np.abs(
-        #     df_light_curve.loc[detected, "sigmapsf"]
-        #     * df_light_curve.loc[detected, "flux"]
-        #     * np.log(10)
-        #     / 2.5
-        # )
+        # step 4a: calculate fluxerr for detections using sigmapsf
+        df_light_curve.loc[detected, "fluxerr"] = np.abs(
+            df_light_curve.loc[detected, "sigmapsf"]
+            * df_light_curve.loc[detected, "flux"]
+            * np.log(10)
+            / 2.5
+        )
 
-        # # step 4b: calculate fluxerr for non detections using diffmaglim
-        # df_light_curve.loc[undetected, "fluxerr"] = (
-        #     10 ** (-0.4 * (df_light_curve.loc[undetected, "diffmaglim"] - 23.9)) / 5.0
-        # )  # as diffmaglim is the 5-sigma depth
+        # step 4b: calculate fluxerr for non detections using diffmaglim
+        df_light_curve.loc[undetected, "fluxerr"] = (
+            10 ** (-0.4 * (df_light_curve.loc[undetected, "diffmaglim"] - 23.9)) / 5.0
+        )  # as diffmaglim is the 5-sigma depth
 
-        # # step 5: set the zeropoint and magnitude system
-        # df_light_curve["zp"] = 23.9
-        # df_light_curve["zpsys"] = "ab"
+        # step 5: set the zeropoint and magnitude system
+        df_light_curve["zp"] = 23.9
+        df_light_curve["zpsys"] = "ab"
 
-        # # only "new" photometry requested?
-        # if jd_start is not None:
-        #     w_after_jd = df_light_curve["jd"] > jd_start
-        #     df_light_curve = df_light_curve.loc[w_after_jd]
-
+        # only "new" photometry requested?
+        if jd_start is not None:
+            w_after_jd = df_light_curve["jd"] > jd_start
+            df_light_curve = df_light_curve.loc[w_after_jd]
+            
         return df_light_curve
 
     def alert_put_photometry(self, alert):
