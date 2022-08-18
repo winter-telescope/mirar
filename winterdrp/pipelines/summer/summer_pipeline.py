@@ -186,6 +186,9 @@ def load_proc_summer_image(
     img = fits.open(path)
     data = img[0].data
     header = img[0].header
+    if 'ZP' not in header.keys():
+        header['ZP'] = header['ZP_AUTO']
+        header['ZP_std'] = header['ZP_AUTO_std']
     data[data == 0] = np.nan
     # logger.info(header['CRVAL2'])
     return data, header

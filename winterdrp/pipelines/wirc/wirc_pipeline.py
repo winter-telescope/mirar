@@ -75,9 +75,13 @@ def load_raw_wirc_image(
             header["PROGPI"] = "Kasliwal"
         if "PROGID" not in header.keys():
             header["PROGID"] = 0
-        if "TMC_ZP" in header.keys():
-            header['ZP_AUTO'] = header['TMC_ZP']
-            header['ZP_AUTO_std'] = header['TMC_ZPSD']
+        if "ZP" not in header.keys():
+            if "TMC_ZP" in header.keys():
+                header['ZP'] = header['TMC_ZP']
+                header['ZP_std'] = header['TMC_ZPSD']
+            if "ZP_AUTO" in header.keys():
+                header['ZP'] = header['ZP_AUTO']
+                header['ZP_std'] = header['ZP_AUTO_std']
         data = data.astype(float)
         data[data == 0.] = np.nan
     return data, header
