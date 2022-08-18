@@ -53,38 +53,43 @@ class ZOGY(BaseImageProcessor):
                                      ref_rms_image, sci_rms, ref_rms, dx=ast_unc_x, dy=ast_unc_y)
 
             diff_image_path = sci_image_path.replace('.fits', '') + '.diff.fits'
-            self.save_fits(data=D,
-                           header=header,
-                           path=os.path.join(self.get_sub_output_dir(), diff_image_path))
-
             diff_psf_path = diff_image_path + '.psf'
-            self.save_fits(data=P_D,
-                           header=None,
-                           path=os.path.join(self.get_sub_output_dir(), diff_psf_path))
-
             scorr_image_path = sci_image_path.replace('.fits', '') + '.scorr.fits'
-            scorr_header = header.copy()
-            scorr_header[latest_mask_save_key] = header['SCORMASK']
-            self.save_fits(data=S_corr,
-                           header=scorr_header,
-                           path=os.path.join(self.get_sub_output_dir(), scorr_image_path))
+
             scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(S_corr)
             logger.info(f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}")
             sci_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), sci_rms_image))
             ref_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_rms_image))
             diff_rms_image = np.sqrt(sci_rms_data ** 2 + ref_rms_data ** 2)
-
+            diff_rms_mean, diff_rms_median, diff_rms_std = sigma_clipped_stats(diff_rms_image)
             diff_rms_path = diff_image_path + '.unc'
-            self.save_fits(data=diff_rms_image,
-                           header=header,
-                           path=os.path.join(self.get_sub_output_dir(), diff_rms_path))
 
             header["DIFFIMG"] = diff_image_path
             header["DIFFPSF"] = diff_psf_path
             header["DIFFSCR"] = scorr_image_path
             header["DIFFUNC"] = diff_rms_path
+            noise = np.sqrt(np.nansum(np.square(P_D)*np.square(diff_rms_median)))/np.nansum(np.square(P_D))
+            header["DIFFMLIM"] = -2.5*np.log10(noise*5) + float(header["TMC_ZP"])
 
-            # for temp_file in temp_files:
+            self.save_fits(data=D,
+                           header=header,
+                           path=os.path.join(self.get_sub_output_dir(), diff_image_path))
+
+            self.save_fits(data=P_D,
+                           header=None,
+                           path=os.path.join(self.get_sub_output_dir(), diff_psf_path))
+
+            scorr_header = header.copy()
+            scorr_header[latest_mask_save_key] = header['SCORMASK']
+            self.save_fits(data=S_corr,
+                           header=scorr_header,
+                           path=os.path.join(self.get_sub_output_dir(), scorr_image_path))
+
+            self.save_fits(data=diff_rms_image,
+                           header=header,
+                           path=os.path.join(self.get_sub_output_dir(), diff_rms_path))
+            # logger.info(f"{diff_rms_std}, {diff_rms_median}, {diff_std} DIFFMAGLIM {header['DIFFMLIM']}")
+            # # for temp_file in temp_files:
             #     os.remove(temp_file)
             #     logger.info(f"Deleted temporary file {temp_file}")
             diff_images.append(D)
