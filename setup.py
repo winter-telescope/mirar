@@ -34,7 +34,7 @@ setuptools.setup(
         "fastavro",
         "jupyter",
         "matplotlib",
-        "numpy",
+        "numpy~=1.22.2",
         "pandas",
         "penquins",
         "photutils",
