@@ -178,13 +178,14 @@ def load_raw_summer_image(
         data[0].header = header
     return data[0].data, data[0].header
 
+
 def load_proc_summer_image(
         path: str
 ) -> tuple[np.array, astropy.io.fits.Header]:
     img = fits.open(path)
     data = img[0].data
     header = img[0].header
-    data[data==0] = np.nan
+    data[data == 0] = np.nan
     # logger.info(header['CRVAL2'])
     return data, header
 
@@ -268,7 +269,7 @@ class SummerPipeline(Pipeline):
                                 base_name_key
                             ] + core_fields
             ),
-            ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER","?")),
+            ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
             # DatabaseImageExporter(
             #     db_name=pipeline_name,
             #     db_table="exposures",
@@ -312,7 +313,7 @@ class SummerPipeline(Pipeline):
                        **sextractor_photometry_config),
             # ImageSaver(output_dir_name="processed"),
             PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
-            ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG'],write_mask=True),
+            ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG'], write_mask=True),
             DatabaseImageExporter(
                 db_name=pipeline_name,
                 db_table="proc",
@@ -326,7 +327,7 @@ class SummerPipeline(Pipeline):
             ),
             ImageBatcher(split_key=base_name_key),
             ImageSelector(('OBSTYPE', 'SCIENCE')),
-            ImageSelector(('FILTER',['u'])),
+            ImageSelector(('FILTER', ['u'])),
             # ImageSelector((base_name_key, "SUMMER_20220816_042926_Camera0.resamp.fits")),
             Reference(ref_image_generator=summer_reference_image_generator,
                       ref_psfex=summer_reference_psfex,
