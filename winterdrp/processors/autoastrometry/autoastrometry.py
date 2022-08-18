@@ -38,6 +38,9 @@ import ephem
 from winterdrp.processors.astromatic.sextractor.settings import write_param_file, write_config_file, \
     default_config_path, default_conv_path, default_param_path, default_starnnw_path
 from pathlib import Path
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+from astroquery.vizier import Vizier
 
 logger = logging.getLogger(__name__)
 
@@ -74,10 +77,10 @@ class BaseSource:
             ra0: float,
             dec0: float
     ):
-        dpa_rad = dpa_deg * math.pi/180
+        dpa_rad = dpa_deg * math.pi / 180
         sin_dpa = math.sin(dpa_rad)
         cos_dpa = math.cos(dpa_rad)
-        ra_scale = math.cos(dec0*math.pi/180)
+        ra_scale = math.cos(dec0 * math.pi / 180)
 
         # this is only valid for small fields away from the pole.
         x = (self.ra_deg - ra0) * ra_scale
@@ -125,7 +128,7 @@ def pixel_distance(
         obj1: SextractorSource,
         obj2: SextractorSource
 ) -> float:
-    return ((obj1.x - obj2.x)**2 + (obj1.y - obj2.y)**2)**0.5
+    return ((obj1.x - obj2.x) ** 2 + (obj1.y - obj2.y) ** 2) ** 0.5
 
 
 # Great circle distance between two points.
@@ -133,12 +136,11 @@ def distance(
         obj1: BaseSource,
         obj2: BaseSource
 ) -> float:
-
     ddec = obj2.dec_rad - obj1.dec_rad
     dra = obj2.ra_rad - obj1.ra_rad
     dist_rad = 2 * math.asin(math.sqrt(
-        (math.sin(ddec/2.))**2 +
-        math.cos(obj1.dec_rad) * math.cos(obj2.dec_rad) * (math.sin(dra/2.))**2
+        (math.sin(ddec / 2.)) ** 2 +
+        math.cos(obj1.dec_rad) * math.cos(obj2.dec_rad) * (math.sin(dra / 2.)) ** 2
     ))
 
     dist_deg = dist_rad * 180. / math.pi
@@ -156,7 +158,7 @@ def quickdistance(
     dra = obj2.ra_deg - obj1.ra_deg
     if dra > 180:
         dra = 360 - dra
-    return 3600 * math.sqrt(ddec**2 + (cosdec*dra)**2)
+    return 3600 * math.sqrt(ddec ** 2 + (cosdec * dra) ** 2)
 
 
 # Calculate the (spherical) position angle between two objects.
@@ -169,13 +171,13 @@ def position_angle(
         math.cos(obj1.dec_rad) * math.tan(obj2.dec_rad) - math.sin(obj1.dec_rad) * math.cos(dra),
         math.sin(dra)
     )
-    pa_deg = pa_rad * 180./math.pi
+    pa_deg = pa_rad * 180. / math.pi
     pa_deg = 90. - pa_deg  # defined as degrees east of north
     while pa_deg > 200:
-        pa_deg -= 360.   # make single-valued
+        pa_deg -= 360.  # make single-valued
     while pa_deg < -160:
         pa_deg += 360.  # note there is a crossing point at PA=200, images at this exact PA
-    return pa_deg                        # will have the number of matches cut by half at each comparison level
+    return pa_deg  # will have the number of matches cut by half at each comparison level
 
 
 # Compare objects using magnitude.
@@ -203,7 +205,6 @@ def stdev(
 def mode(
         float_list: list[float]
 ) -> float:
-
     if len(float_list) == 0:
         err = "Float list is empty, cannot calculate mode."
         logger.error(err)
@@ -213,7 +214,7 @@ def mode(
     d = s[1:] - s[:-1]
     nd = len(d)
     if nd >= 32:
-        g = nd/16
+        g = nd / 16
     elif nd >= 6:
         g = 2
     else:
@@ -223,7 +224,7 @@ def mode(
     i_mean = nd / 2
 
     for i in range(nd):
-        r = [int(max(i-g, 0)), int(min(i+g, nd))]
+        r = [int(max(i - g, 0)), int(min(i + g, nd))]
         m = d[r[0]:r[1]].mean()
         if m < min_mean:
             min_mean = m
@@ -241,7 +242,7 @@ def ra_str_2_deg(
     ra = ra_str.split(':')
     if len(ra) == 1:
         return float(ra_str)
-    return 15*(float(ra[0])+float(ra[1])/60.0 + float(ra[2])/3600.0)
+    return 15 * (float(ra[0]) + float(ra[1]) / 60.0 + float(ra[2]) / 3600.0)
 
 
 def dec_str_2_deg(
@@ -254,7 +255,7 @@ def dec_str_2_deg(
     sign = 1
     if dec_str[0] == '-':
         sign = -1
-    return sign*(abs(float(dec[0])) + float(dec[1])/60.0 + float(dec[2])/3600.0)
+    return sign * (abs(float(dec[0])) + float(dec[1]) / 60.0 + float(dec[2]) / 3600.0)
 
 
 def unique(
@@ -264,9 +265,9 @@ def unique(
     lis.sort()
     llen = len(lis)
     i = 0
-    while i < llen-1:
-        if lis[i+1] == lis[i]:
-            del lis[i+1]
+    while i < llen - 1:
+        if lis[i + 1] == lis[i]:
+            del lis[i + 1]
             llen = llen - 1
         else:
             i = i + 1
@@ -288,7 +289,6 @@ def get_img_src_list(
         output_catalog: str = None,
         write_crosscheck_files: bool = False
 ) -> list[SextractorSource]:
-
     if output_catalog is None:
         output_catalog = Path(base_output_path).with_suffix(".cat")
 
@@ -325,7 +325,7 @@ def get_img_src_list(
 
     min_x = border
     min_y = border
-    max_x = nx_pix - border    # This should be generalized
+    max_x = nx_pix - border  # This should be generalized
     max_y = ny_pix - border
 
     n_src_init = 0
@@ -396,13 +396,13 @@ def get_img_src_list(
             val_thresh = 1
             while txp > thresh_prob:
                 txp *= min((len(src_list) * 1.0 / nx_pix), 0.8)  # some strange way of estimating the threshold.
-                val_thresh += 1                          # what I really want is a general analytic expression for
+                val_thresh += 1  # what I really want is a general analytic expression for
 
-            remove_list = []                           # the 99.99% prob. threshold for value of n for >=n out
+            remove_list = []  # the 99.99% prob. threshold for value of n for >=n out
             val_list = [getattr(src, variable) for src in src_list]
-            mode_val = mode(val_list)                       # of N total sources to land in the same bin (of NX total bins)
+            mode_val = mode(val_list)  # of N total sources to land in the same bin (of NX total bins)
             for j, val in enumerate(val_list):
-                if (val > mode_val-1) and (val < mode_val+1):
+                if (val > mode_val - 1) and (val < mode_val + 1):
                     remove_list.append(j)
 
             remove_list.reverse()
@@ -420,7 +420,7 @@ def get_img_src_list(
 
     if len(fwhm_list) > 5:
         fwhm_list.sort()
-        fwhm_20 = fwhm_list[int(len(fwhm_list)/5)]
+        fwhm_20 = fwhm_list[int(len(fwhm_list) / 5)]
         fwhm_mode = mode(fwhm_list)
     else:
         fwhm_mode = min_fwhm
@@ -462,7 +462,6 @@ def get_catalog(
         max_mag: float = None,
         max_pm: float = 60.
 ) -> list[BaseSource]:
-
     # Get catalog from USNO
 
     if max_mag is None:
@@ -495,7 +494,7 @@ def get_catalog(
     with urllib.request.urlopen(query_url) as cat:
         cat_lines = cat.readlines()
 
-    if len(cat_lines) > 6400-20:
+    if len(cat_lines) > 6400 - 20:
         logger.warning('Reached maximum catalog query size. Gaps may be '
                        'present in the catalog, leading to a poor solution '
                        'or no solution. Decrease the search radius.')
@@ -510,10 +509,10 @@ def get_catalog(
 
         if inline[0:2] == '#:':
             inline_arg = inline[2:].split(',')
-            ra_col = int(inline_arg[0])-1
-            dec_col = int(inline_arg[1])-1
+            ra_col = int(inline_arg[0]) - 1
+            dec_col = int(inline_arg[1]) - 1
             if len(inline_arg) > 2:
-                mag_col = int(inline_arg[2])-1
+                mag_col = int(inline_arg[2]) - 1
             continue
 
         if (int(inline[0]) < ord('0') or int(inline[0]) > ord('9')) and str(inline[0]) != '.':
@@ -566,6 +565,68 @@ def get_catalog(
     return cat_list
 
 
+def get_catalog_astroquery(catalog: str,
+                           ra: float,
+                           dec: float,
+                           box_size_arcsec: float,
+                           min_mag: float = 8.0,
+                           max_mag: float = None,
+                           max_pm: float = 60.):
+    ra_col_key, dec_col_key, mag_col_key, catalog_str, pm_ra_key, pm_dec_key = '', '', '', '', '', ''
+    if catalog == 'sdss':
+        ra_col_key = 'RA_ICRS'
+        dec_col_key = 'DE_ICRS'
+        mag_col_key = 'rmag'
+        pm_ra_key = 'pmRA'
+        pm_dec_key = 'pmDE'
+        max_mag = 22
+        catalog_str = 'V/147/sdss12'
+
+    if catalog =='usno':
+        ra_col_key = 'RAJ2000'
+        dec_col_key = 'DEJ2000'
+        mag_col_key = 'R1mag'
+        pm_ra_key = 'pmRA'
+        pm_dec_key = 'pmDE'
+        max_mag = 21
+        catalog_str = 'I/284/out'
+
+    if catalog=='tmc':
+        ra_col_key = 'RAJ2000'
+        dec_col_key = 'DEJ2000'
+        mag_col_key = 'Jmag'
+        pm_ra_key = 'pmRA'
+        pm_dec_key = 'pmDE'
+        max_mag = 17
+        catalog_str = 'I/317/sample' #using the PPMXL catalog of 2MASS + proper motions
+
+    crd = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg))
+    v = Vizier(columns=[ra_col_key, dec_col_key, mag_col_key, pm_ra_key, pm_dec_key],
+               column_filters={f"{mag_col_key}": f"<{max_mag}"})
+    v.ROW_LIMIT = -1
+    logger.info(f'Querying {catalog} around {ra},{dec} and a radius {int(box_size_arcsec/60)} arcminutes using - {v.columns}, {v.column_filters}')
+    result = v.query_region(crd, width=f"{int(box_size_arcsec/60)}m", catalog=catalog_str)
+    if len(result)==0:
+        return []
+    table = result[0]
+
+    n_cat = len(table)
+    cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
+    logger.debug(f'{n_cat} good catalog objects.')
+    logger.debug(f'Source density of {cat_density} /arcmin^2')
+
+    mask = (table[mag_col_key] < max_mag) & (table[mag_col_key] > min_mag) & (np.abs(table[pm_ra_key]) < max_pm) & (
+                np.abs(table[pm_dec_key]) < max_pm)
+    cat = table[mask]
+    cat_list = []
+
+    for src in cat:
+        cat_list.append(BaseSource(src[ra_col_key], src[dec_col_key], src[mag_col_key]))
+
+    cat_list.sort(key=compare_mag)
+    return cat_list
+
+
 def distance_match(
         img_src_list: list[SextractorSource],
         ref_src_list: list[BaseSource],
@@ -578,7 +639,6 @@ def distance_match(
         unc_pa: float = None,
         write_crosscheck_files: bool = False
 ) -> tuple[list[int], list[int], list[float]]:
-
     if tolerance <= 0:
         err = f'Tolerance cannot be negative! Using {abs(tolerance)} not {tolerance}.'
         logger.error(err)
@@ -597,8 +657,8 @@ def distance_match(
     dec_list = list()
     for src in img_src_list:
         dec_list.append(src.dec_rad)
-    median_dec_rad = median(dec_list)       # faster distance computation
-    ra_scale = math.cos(median_dec_rad)          # will mess up meridian crossings, however
+    median_dec_rad = median(dec_list)  # faster distance computation
+    ra_scale = math.cos(median_dec_rad)  # will mess up meridian crossings, however
 
     # Calculate all the distances
 
@@ -614,7 +674,7 @@ def distance_match(
 
             if abs(src.dec_deg - src2.dec_deg) > max_rad:
                 continue
-            if ra_scale*abs(src.ra_deg - src2.ra_deg) > max_rad:
+            if ra_scale * abs(src.ra_deg - src2.ra_deg) > max_rad:
                 continue
 
             dist = quickdistance(src, src2, ra_scale)
@@ -639,7 +699,7 @@ def distance_match(
 
             if abs(src.dec_deg - src2.dec_deg) > max_rad:
                 continue
-            if ra_scale*abs(src.ra_deg - src2.ra_deg) > max_rad:
+            if ra_scale * abs(src.ra_deg - src2.ra_deg) > max_rad:
                 continue
 
             dist = quickdistance(src, src2, ra_scale)
@@ -708,7 +768,7 @@ def distance_match(
                     dpa.append(ddpa)
 
                 # If user was confident the initial PA was right, remove bad PA'src right away
-                for i in range(len(img_match_in)-1, -1, -1):
+                for i in range(len(img_match_in) - 1, -1, -1):
                     if abs(dpa[i]) > unc_pa:
                         del img_match_in[i]
                         del ref_match_in[i]
@@ -720,7 +780,7 @@ def distance_match(
                 mode_dpa = mode(dpa)
 
                 # Remove deviant matches by PA
-                for i in range(len(img_match_in)-1, -1, -1):
+                for i in range(len(img_match_in) - 1, -1, -1):
                     if abs(dpa[i] - mode_dpa) > pa_tolerance:
                         del img_match_in[i]
                         del ref_match_in[i]
@@ -761,7 +821,7 @@ def distance_match(
 
     # Get rid of matches that don't pass the reqmatch cut
     # if n_matches > 10 and max(match_ns) >= reqmatch:
-    for i in range(len(primary_match_img)-1, -1, -1):
+    for i in range(len(primary_match_img) - 1, -1, -1):
         if match_ns[i] < req_match:
             del mpa[i]
             del primary_match_img[i]
@@ -785,7 +845,7 @@ def distance_match(
 
     if len(match_ns) > 16 and count_not_min > 3:
         logger.debug(f'Too many matches: increasing reqmatch to {req_match + 1}')
-        for i in range(len(primary_match_img)-1, -1, -1):
+        for i in range(len(primary_match_img) - 1, -1, -1):
             if match_ns[i] == min_match:
                 del mpa[i]
                 del primary_match_img[i]
@@ -803,7 +863,7 @@ def distance_match(
 
     if len(img_match) > 2:
         # Coarse iteration for anything away from the mode
-        for i in range(len(primary_match_img)-1, -1, -1):
+        for i in range(len(primary_match_img) - 1, -1, -1):
             if abs(mpa[i] - offset_pa) > pa_tolerance:
                 del mpa[i]
                 del primary_match_img[i]
@@ -817,7 +877,7 @@ def distance_match(
         refined_tolerance = (2.2 * st_dev_pa)
 
         # Fine iteration to flag outliers now that we know most are reliable
-        for i in range(len(primary_match_img)-1, -1, -1):
+        for i in range(len(primary_match_img) - 1, -1, -1):
             if abs(mpa[i] - offset_pa) > refined_tolerance:
                 del mpa[i]
                 del primary_match_img[i]
@@ -854,8 +914,8 @@ def distance_match(
 
         # delete bad clusters
         n_test_matches = len(primary_match_img)
-        for i in range(n_test_matches-1, -1, -1):
-            if n_dist_flags[i] == n_test_matches-1:   # if every comparison is bad, this is a bad match
+        for i in range(n_test_matches - 1, -1, -1):
+            if n_dist_flags[i] == n_test_matches - 1:  # if every comparison is bad, this is a bad match
                 del mpa[i]
                 del primary_match_img[i]
                 del primary_match_ref[i]
@@ -874,8 +934,8 @@ def distance_match(
     # check the pixel scale while we're at it
     pix_scale_list = []
     if len(primary_match_img) >= 2:
-        for i in range(len(primary_match_img)-1):
-            for j in range(i+1, len(primary_match_img)):
+        for i in range(len(primary_match_img) - 1):
+            for j in range(i + 1, len(primary_match_img)):
                 img_i = primary_match_img[i]
                 ref_i = primary_match_ref[i]
                 img_j = primary_match_img[j]
@@ -905,11 +965,11 @@ def distance_match(
                 logger.debug(f'  {img_i} --> {img_match[i]}')
                 logger.debug(f'  {ref_i} --> {ref_match[i]}')
             else:
-                logger.debug(f'  {img_i} --> {img_match[i][0:10]} {len(img_match[i])-10} more')
-                logger.debug(f'  {ref_i} --> {ref_match[i][0:10]} {len(ref_match[i])-10} more')
-            if i+1 >= 10 and len(primary_match_img)-10 > 0:
+                logger.debug(f'  {img_i} --> {img_match[i][0:10]} {len(img_match[i]) - 10} more')
+                logger.debug(f'  {ref_i} --> {ref_match[i][0:10]} {len(ref_match[i]) - 10} more')
+            if i + 1 >= 10 and len(primary_match_img) - 10 > 0:
                 logger.debug(f''
-                             f'{(len(primary_match_img)-10)} additional matches not shown.')
+                             f'{(len(primary_match_img) - 10)} additional matches not shown.')
                 break
         else:
             logger.debug(
@@ -940,7 +1000,7 @@ def distance_match(
                         f"{img_src_list[img_j].y:.3f}) # line=0 0\n"
                     )
 
-        match_lines_wcs = os.path.splitext(base_output_path)[0]+'.matchlines.wcs.reg'
+        match_lines_wcs = os.path.splitext(base_output_path)[0] + '.matchlines.wcs.reg'
 
         logger.info(f"Writing match lines to {match_lines_wcs}")
 
@@ -965,6 +1025,7 @@ def distance_match(
 
     return primary_match_img, primary_match_ref, mpa
 
+
 ############################################
 
 
@@ -972,7 +1033,6 @@ def write_text_file(
         file_path: str,
         src_list: list[BaseSource]
 ):
-
     logger.info(f"Saving text file to {file_path}")
 
     with open(file_path, 'w') as out:
@@ -1006,11 +1066,11 @@ def write_region_file(
         if system == 'wcs':
             out.write('fk5\n')
             for i, src in enumerate(src_list):
-                out.write(f"point({src.ra_deg:.7f},{src.dec_deg:.7f}) # point=boxcircle text={{{i+1}}}\n")
+                out.write(f"point({src.ra_deg:.7f},{src.dec_deg:.7f}) # point=boxcircle text={{{i + 1}}}\n")
         elif system == 'img':
             out.write('image\n')
             for i, src in enumerate(src_list):
-                out.write(f"point({src.ra_deg:.3f},{src.dec_deg:.3f}) # point=boxcircle text={{{i+1}}}\n")
+                out.write(f"point({src.ra_deg:.3f},{src.dec_deg:.3f}) # point=boxcircle text={{{i + 1}}}\n")
 
 
 def parse_header(
@@ -1251,6 +1311,47 @@ def parse_header(
     return nxpix, nypix, cd11, cd12, cd21, cd22, crpix1, crpix2, cra, cdec
 
 
+def get_ref_sources_from_catalog_astroquery(catalog: str,
+                                            center_ra: float,
+                                            center_dec: float,
+                                            box_size_arcsec: float):
+    ref_src_list = []
+    if catalog is None:
+        try:
+            trycats = ['sdss','usno','tmc']
+            for trycat in trycats:
+                ref_src_list = get_catalog_astroquery(catalog=trycat,
+                                                      ra=center_ra,
+                                                      dec=center_dec,
+                                                      box_size_arcsec=box_size_arcsec)
+                if len(ref_src_list) > 15:
+                    break
+
+        except urllib.error.URLError:
+            err = 'No catalog is available.  Check your internet connection.'
+            logger.error(err)
+            raise AstrometryError(err)
+
+    n_cat = len(ref_src_list)
+    cat_density = n_cat / (2 * box_size_arcsec / 60.) ** 2
+    logger.debug(f'{n_cat} good catalog objects.')
+    logger.debug(f'Source density of {cat_density} /arcmin^2')
+
+    if n_cat == 0:
+        err = 'No objects found in catalog.\
+                   The web query failed, all stars were excluded by the FHWM clip, or the image \
+                    is too small.  Check input parameters or your internet connection.'
+        logger.error(err)
+        raise AstrometryError(err)
+
+    elif 0 < n_cat < 5:
+        err = f'Only {n_cat} catalog objects in the search zone. Increase the magnitude threshold or box size.'
+        logger.error(err)
+        raise AstrometryError(err)
+
+    return ref_src_list, n_cat, cat_density
+
+
 def get_ref_sources_from_catalog(
         catalog: str,
         center_ra: float,
@@ -1316,12 +1417,11 @@ def crosscheck_source_lists(
         box_size_arcsec: float,
         area_sq_min: float
 ) -> tuple[list[SextractorSource], int, float, list[BaseSource], int, float]:
-
     # If this image is actually shallower than reference catalog, trim the reference catalog down
     if n_ref > 16 and ref_density > 3 * img_density:
         logger.debug('Image is shallow.  Trimming reference catalog...')
         while ref_density > 3 * img_density:
-            ref_src_list = ref_src_list[0:int(len(ref_src_list)*4/5)]
+            ref_src_list = ref_src_list[0:int(len(ref_src_list) * 4 / 5)]
             n_ref = len(ref_src_list)
             ref_density = n_ref / (2 * box_size_arcsec / 60.) ** 2
 
@@ -1334,15 +1434,15 @@ def crosscheck_source_lists(
             img_density = n_img / area_sq_min
 
     # If too many objects, do some more trimming
-    if n_img*n_ref > 120*120*4:
+    if n_img * n_ref > 120 * 120 * 4:
         logger.debug('Image and/or catalog still too deep.  Trimming...')
-        while n_img*n_ref > 120*120*4:
+        while n_img * n_ref > 120 * 120 * 4:
             if img_density > ref_density:
                 img_src_list = img_src_list[0:int(len(img_src_list) * 4 / 5)]
                 n_img = len(img_src_list)
                 img_density = n_img / area_sq_min
             else:
-                ref_src_list = ref_src_list[0:int(len(ref_src_list)*4/5)]
+                ref_src_list = ref_src_list[0:int(len(ref_src_list) * 4 / 5)]
                 n_ref = len(ref_src_list)
                 ref_density = n_ref / (2 * box_size_arcsec / 60.) ** 2
 
@@ -1365,7 +1465,7 @@ def crosscheck_source_lists(
         del img_src_list[d]
 
     for i, src in enumerate(ref_src_list):
-        for j, src2 in enumerate(ref_src_list[i+1:]):
+        for j, src2 in enumerate(ref_src_list[i + 1:]):
 
             dist = distance(src, src2)
             if dist < min_sep:
@@ -1521,27 +1621,27 @@ def autoastrometry(
     else:
         parity = 1
 
-    x_scale = math.sqrt(cd11**2 + cd21**2)
-    y_scale = math.sqrt(cd12**2 + cd22**2)
+    x_scale = math.sqrt(cd11 ** 2 + cd21 ** 2)
+    y_scale = math.sqrt(cd12 ** 2 + cd22 ** 2)
     init_pa = -parity * np.arctan2(cd21 * y_scale, cd22 * x_scale) * 180 / math.pi
     x_scale = abs(x_scale)
     y_scale = abs(y_scale)
     field_width = max(x_scale * nx_pix, y_scale * ny_pix) * 3600.
     area_sq_deg = x_scale * nx_pix * y_scale * ny_pix
     area_sq_min = area_sq_deg * 3600.
-    center_x = nx_pix/2
-    center_y = ny_pix/2
+    center_x = nx_pix / 2
+    center_y = ny_pix / 2
     center_dx = center_x - crpix1
     center_dy = center_y - crpix2
     center_ra = (
             cra
-            - center_dx * x_scale * math.cos(init_pa*math.pi/180.)
-            + center_dy * y_scale * math.sin(init_pa*math.pi/180.)
+            - center_dx * x_scale * math.cos(init_pa * math.pi / 180.)
+            + center_dy * y_scale * math.sin(init_pa * math.pi / 180.)
     )
     center_dec = (
             cdec
-            + parity * center_dx * x_scale * math.sin(-init_pa * math.pi/180.)
-            + center_dy * y_scale * math.cos(init_pa * math.pi/180.)
+            + parity * center_dx * x_scale * math.sin(-init_pa * math.pi / 180.)
+            + center_dy * y_scale * math.cos(init_pa * math.pi / 180.)
     )
 
     if box_size_arcsec is None:
@@ -1551,7 +1651,7 @@ def autoastrometry(
 
     logger.debug(
         f'Initial WCS info: \n'
-        f'   pixel scale:     x={x_scale*3600:.4f}"/pix,   y={y_scale*3600:.4f}"/pix \n'
+        f'   pixel scale:     x={x_scale * 3600:.4f}"/pix,   y={y_scale * 3600:.4f}"/pix \n'
         f'   position angle: PA={init_pa:.2f}'
     )
 
@@ -1565,7 +1665,6 @@ def autoastrometry(
     n_img = len(img_src_list)
 
     if n_img < 4:
-
         err = f'Only {n_img} good stars were found in the image.  The image is too small or shallow, the ' \
               f'detection threshold is set too high, or stars and cosmic rays are being confused.'
         logger.error(err)
@@ -1578,13 +1677,18 @@ def autoastrometry(
 
     # Block D
 
-    ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog(
+    # ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog(
+    #     catalog=catalog,
+    #     center_ra=center_ra,
+    #     center_dec=center_dec,
+    #     box_size_arcsec=box_size_arcsec,
+    # )
+    ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog_astroquery(
         catalog=catalog,
         center_ra=center_ra,
         center_dec=center_dec,
         box_size_arcsec=box_size_arcsec,
     )
-
     # Block E
 
     img_src_list, n_img, img_density, ref_src_list, n_ref, ref_density = crosscheck_source_lists(
@@ -1619,7 +1723,7 @@ def autoastrometry(
         max_rad = 60 * (15 / (math.pi * min(img_density, ref_density))) ** 0.5
         max_rad = max(max_rad, 60.0)
         if max_rad == 60.0:
-            min_rad = 10.0   # in theory could scale this up further to reduce #comparisons
+            min_rad = 10.0  # in theory could scale this up further to reduce #comparisons
         max_rad = min(max_rad, field_width * 3. / 4)
 
         # note that img_density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
@@ -1649,12 +1753,12 @@ def autoastrometry(
 
     # RS: WTF is x**1 for?
     expect_false_trios = (
-            n_img * n_ref * circ_density**2
-            * circ_ref_density**2 * tolerance**2 * (pa_tolerance/360.)**1
+            n_img * n_ref * circ_density ** 2
+            * circ_ref_density ** 2 * tolerance ** 2 * (pa_tolerance / 360.) ** 1
     )
 
     # fraction of stars in image that are also in catalog - a guess
-    overlap_first_guess = 0.3 * min(1., ref_density/img_density)
+    overlap_first_guess = 0.3 * min(1., ref_density / img_density)
     # but how many matches >3 and >4?  some annoying binomial thing
     true_matches_per_star = (circ_density * overlap_first_guess)
 
@@ -1718,12 +1822,12 @@ def autoastrometry(
         #  should be solved now, but be alert for further problems.]]
 
         # Rotate....
-        rot = median_pa * math.pi/180
+        rot = median_pa * math.pi / 180
         # ...the image itself
-        header["CD1_1"] = math.cos(rot)*cd11 - math.sin(rot)*cd21
-        header["CD1_2"] = math.cos(rot)*cd12 - math.sin(rot)*cd22   # a parity issue may be involved here?
-        header["CD2_1"] = math.sin(rot)*cd11 + math.cos(rot)*cd21
-        header["CD2_2"] = math.sin(rot)*cd12 + math.cos(rot)*cd22
+        header["CD1_1"] = math.cos(rot) * cd11 - math.sin(rot) * cd21
+        header["CD1_2"] = math.cos(rot) * cd12 - math.sin(rot) * cd22  # a parity issue may be involved here?
+        header["CD2_1"] = math.sin(rot) * cd11 + math.cos(rot) * cd21
+        header["CD2_2"] = math.sin(rot) * cd12 + math.cos(rot) * cd22
         # ...the coordinates (so we don't have to resex)
         for i in range(len(img_src_list)):  # do all of them, though this is not necessary
             img_src_list[i].rotate(median_pa, cra, cdec)
@@ -1741,14 +1845,14 @@ def autoastrometry(
 
     ra_offset = -median(im_ra_offset)
     dec_offset = -median(im_dec_offset)
-    ra_std = stdev(im_ra_offset) * math.cos(cdec*math.pi/180)  # all of these are in degrees
+    ra_std = stdev(im_ra_offset) * math.cos(cdec * math.pi / 180)  # all of these are in degrees
     dec_std = stdev(im_dec_offset)
-    std_offset = math.sqrt(ra_std**2 + dec_std**2)
+    std_offset = math.sqrt(ra_std ** 2 + dec_std ** 2)
 
-    ra_offset_arcsec = ra_offset*3600*math.cos(cdec*math.pi/180)
-    dec_offset_arcsec = dec_offset*3600
-    tot_offset_arcsec = (ra_offset_arcsec**2 + dec_offset**2)**0.5
-    std_offset_arcsec = std_offset*3600
+    ra_offset_arcsec = ra_offset * 3600 * math.cos(cdec * math.pi / 180)
+    dec_offset_arcsec = dec_offset * 3600
+    tot_offset_arcsec = (ra_offset_arcsec ** 2 + dec_offset ** 2) ** 0.5
+    std_offset_arcsec = std_offset * 3600
 
     logger.debug('Spatial offset:')
 
@@ -1757,13 +1861,13 @@ def autoastrometry(
           f'  (unc. {std_offset_arcsec:.3f}")'
     logger.debug(msg)
 
-    if std_offset*3600 > 1.0:
+    if std_offset * 3600 > 1.0:
         logger.debug('WARNING: poor solution - some matches may be bad.  Check pixel scale?')
 
     header["CRVAL1"] = cra + ra_offset
     header["CRVAL2"] = cdec + dec_offset
 
-    logger.info(f'Updated header {header["CRVAL1"],header["CRVAL2"]}')
+    logger.info(f'Updated header {header["CRVAL1"], header["CRVAL2"]}')
     try:
         oldcat = header['ASTR_CAT']
         header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
@@ -1807,8 +1911,8 @@ def autoastrometry(
         outfile = filename
     elif outfile == '':
         slash_pos = filename.rfind('/')
-        dir_name = filename[0:slash_pos+1]
-        fil = filename[slash_pos+1:]
+        dir_name = filename[0:slash_pos + 1]
+        fil = filename[slash_pos + 1:]
         outfile = f"{dir_name}a{fil}"  # alternate behavior would always output to current directory
 
     if outfile is not None:
@@ -1819,7 +1923,6 @@ def autoastrometry(
             logger.info(f'Written updated file to {outfile}')
 
         logger.info(f"Derived center coordinates of {header['CRVAL1']}, {header['CRVAL2']}.")
-
 
     return n_match, sky_offset_pa, stdev_pa, ra_offset_arcsec, dec_offset_arcsec, std_offset_arcsec
 
@@ -1845,7 +1948,6 @@ def run_autoastrometry_single(
         no_rot: bool = False,
         write_crosscheck_files: bool = False
 ):
-
     if seeing is None:
         min_fwhm = default_min_fwhm  # 1.5
         max_fwhm = default_max_fwhm  # 40
@@ -2001,7 +2103,6 @@ def run_autoastrometry_batch(
             write_crosscheck_files=write_crosscheck_files
         )
 
-
         # WTF?
 
         if isinstance(fit_info, int):
@@ -2009,9 +2110,9 @@ def run_autoastrometry_batch(
 
         multi_info.append(fit_info)
 
-        if fit_info[0] == 0:   # number of matches
+        if fit_info[0] == 0:  # number of matches
             failures.append(img_path)
-        if fit_info[5] > 2:    # stdev of offset
+        if fit_info[5] > 2:  # stdev of offset
             questionable.append(img_path)
 
     if n_image > 1:
