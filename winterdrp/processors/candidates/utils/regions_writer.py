@@ -40,17 +40,25 @@ class RegionsWriter(BaseDataframeProcessor):
             ))
         except OSError:
             pass
-        regions_basepath = os.path.basename(candidate_table.iloc[0]['diffimname']).replace('.fits', '.reg')
-        regions_path = get_output_path(regions_basepath,
-                                       dir_root=self.output_dir_name,
-                                       sub_dir=self.night_sub_dir,
-                                       output_dir=self.output_dir
-                                       )
-        logger.info(f'Writing regions path to {regions_path}')
-        with open(f"{regions_path}", 'w') as f:
-            f.write('image\n')
-            for ind in range(len(candidate_table)):
-                row = candidate_table.iloc[ind]
+
+        started_regions_paths = []
+        for ind in range(len(candidate_table)):
+            row = candidate_table.iloc[ind]
+            regions_basepath = os.path.basename(row['diffimname']).replace('.fits', '.reg')
+            regions_path = get_output_path(regions_basepath,
+                                           dir_root=self.output_dir_name,
+                                           sub_dir=self.night_sub_dir,
+                                           output_dir=self.output_dir
+                                           )
+
+            if regions_path not in started_regions_paths:
+                logger.info(f'Writing regions path to {regions_path}')
+                with open(f"{regions_path}", 'w') as f:
+                    f.write('image\n')
+                f.close()
+                started_regions_paths.append(regions_path)
+            with open(f"{regions_path}", 'w') as f:
                 f.write(f"CIRCLE({row['X_IMAGE']},{row['Y_IMAGE']},{self.region_pix_radius})\n")
+            f.close()
 
         return candidate_table
