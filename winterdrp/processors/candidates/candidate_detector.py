@@ -160,6 +160,7 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs['fid'] = fits.getval(sci_resamp_imagename, 'FILTERID')
         det_srcs['candid'] = np.array(det_srcs['jd']*100, dtype=int)*10000 + np.arange(len(det_srcs))
         det_srcs['diffmaglim'] = fits.getval(diff_filename,'DIFFMLIM' )
+        det_srcs['isdiffpos'] = 1
         det_srcs = det_srcs.to_pandas()
         logger.info(det_srcs['diffmaglim'])
         
