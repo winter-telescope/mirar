@@ -29,13 +29,14 @@ from winterdrp.paths import core_fields, base_name_key, latest_save_key, raw_img
 
 # Image subtraction modules
 from winterdrp.processors.reference import Reference
-from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare
+from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare, default_summer_catalog_purifier
 from winterdrp.references.ps1 import PS1Ref
 from winterdrp.references.sdss import SDSSRef
 from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
 from winterdrp.processors.photometry.aperture_photometry import AperturePhotometry
 from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
+
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
@@ -286,9 +287,9 @@ class SummerPipeline(Pipeline):
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
-            ImageSelector(('FILTER', ["u"])),
             ImageBatcher(base_name_key),
             ImageSelector(("OBSTYPE", "SCIENCE")),
+            ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.fits")),
             # ImageSelector((base_name_key, "SUMMER_20220402_214324_Camera0.fits")),
             AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
             # ImageLoader(input_sub_dir='autoastrometry',
@@ -327,8 +328,8 @@ class SummerPipeline(Pipeline):
             ),
             ImageBatcher(split_key=base_name_key),
             ImageSelector(('OBSTYPE', 'SCIENCE')),
-            ImageSelector(('FILTER', ['u'])),
-            # ImageSelector((base_name_key, "SUMMER_20220816_042926_Camera0.resamp.fits")),
+            # ImageSelector(('FILTER', ['u'])),
+            ImageSelector((base_name_key, "SUMMER_20220816_0423")),
             Reference(ref_image_generator=summer_reference_image_generator,
                       ref_psfex=summer_reference_psfex,
                       ref_sextractor=summer_reference_sextractor,
@@ -344,7 +345,7 @@ class SummerPipeline(Pipeline):
                   output_sub_dir="subtract",
                   norm_fits=True),
             ImageSaver(output_dir_name='ref'),
-            ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO'),
+            ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO', catalog_purifier=default_summer_catalog_purifier),
             ZOGY(output_sub_dir="subtract"),
             DetectCandidates(output_sub_dir="subtract",
                              cand_det_sextractor_config='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',
