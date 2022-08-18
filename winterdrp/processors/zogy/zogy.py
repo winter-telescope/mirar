@@ -29,10 +29,12 @@ class ZOGY(BaseImageProcessor):
 
     def __init__(self,
                  output_sub_dir: str = "sub",
+                 sci_zp_header_key: str = "ZP",
                  *args,
                  **kwargs):
         super(ZOGY, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
+        self.sci_zp_header_key = sci_zp_header_key
 
     def get_sub_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
@@ -77,7 +79,7 @@ class ZOGY(BaseImageProcessor):
             header["DIFFSCR"] = scorr_image_path
             header["DIFFUNC"] = diff_rms_path
             noise = np.sqrt(np.nansum(np.square(P_D)*np.square(diff_rms_median)))/np.nansum(np.square(P_D))
-            header["DIFFMLIM"] = -2.5*np.log10(noise*5) + float(header["TMC_ZP"])
+            header["DIFFMLIM"] = -2.5*np.log10(noise*5) + float(header[self.sci_zp_header_key])
             header["SCORMEAN"] = scorr_mean
             header["SCORMED"] = scorr_median
             header["SCORSTD"] = scorr_std
@@ -140,7 +142,7 @@ class ZOGYPrepare(BaseImageProcessor):
 
     def __init__(self,
                  output_sub_dir: str = "sub",
-                 sci_zp_header_key: str = "TMC_ZP",
+                 sci_zp_header_key: str = "ZP",
                  catalog_purifier: Callable[[astropy.table.Table, astropy.table.Table],[astropy.table.Table, astropy.table.Table]] = default_wirc_catalog_purifier,
                  *args,
                  **kwargs):
