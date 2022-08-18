@@ -329,7 +329,7 @@ class SummerPipeline(Pipeline):
             ImageBatcher(split_key=base_name_key),
             ImageSelector(('OBSTYPE', 'SCIENCE')),
             # ImageSelector(('FILTER', ['u'])),
-            ImageSelector((base_name_key, "SUMMER_20220816_0423")),
+            ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.resamp.fits")),
             Reference(ref_image_generator=summer_reference_image_generator,
                       ref_psfex=summer_reference_psfex,
                       ref_sextractor=summer_reference_sextractor,
