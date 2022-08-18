@@ -49,8 +49,8 @@ class SDSS(BaseCatalog):
             t = Table()
         else:
             t = Q[0]
-            t['RA'] = t['RA_ICRS']
-            t['DEC'] = t['DE_ICRS']
+            t['ra'] = t['RA_ICRS']
+            t['dec'] = t['DE_ICRS']
             t['magnitude'] = t[f'{self.filter_name}mag']
             logger.info(f'{len(t)} matches found in the given radius in SDSS')
             t.write('phot_table.csv', overwrite=True)
