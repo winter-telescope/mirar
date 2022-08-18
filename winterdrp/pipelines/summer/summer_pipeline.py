@@ -7,7 +7,7 @@ import astropy.units as u
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.downloader.caltech import download_via_ssh
 from astropy.time import Time
-from winterdrp.catalog import Gaia2Mass, PS1
+from winterdrp.catalog import Gaia2Mass, PS1, SDSS
 from winterdrp.processors.database.database_exporter import DatabaseImageExporter
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from winterdrp.processors.autoastrometry import AutoAstrometry
@@ -51,7 +51,7 @@ def summer_astrometric_catalog_generator(
     cat = Gaia2Mass(
         min_mag=10,
         max_mag=20,
-        search_radius_arcmin=30,
+        search_radius_arcmin=7.5,
         trim=True,
         image_catalog_path=temp_cat_path,
         filter_name='j'
@@ -63,7 +63,10 @@ def summer_photometric_catalog_generator(
         header: astropy.io.fits.Header
 ):
     filter_name = header['FILTERID']
-    return PS1(min_mag=10, max_mag=20, search_radius_arcmin=30, filter_name=filter_name)
+    if filter_name == 'u':
+        return SDSS(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
+    else:
+        return PS1(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
 
 
 def load_raw_summer_image(
@@ -282,14 +285,14 @@ class SummerPipeline(Pipeline):
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
-            ImageSelector((base_name_key, "SUMMER_20220816_042926_Camera0.fits")),
-            # ImageBatcher(base_name_key),
+            ImageSelector(('FILTER', ["u"])),
+            ImageBatcher(base_name_key),
             ImageSelector(("OBSTYPE", "SCIENCE")),
             # ImageSelector((base_name_key, "SUMMER_20220402_214324_Camera0.fits")),
             AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
             # ImageLoader(input_sub_dir='autoastrometry',
             #             load_image=load_raw_summer_image),
-            # ImageSelector((base_name_key, "SUMMER_20220816_042926_Camera0.fits")),
+            # ImageSelector((base_name_key, "SUMMER_20220816_041023_Camera0.fits")),
             Sextractor(
                 output_sub_dir="testb",
                 weight_image=summer_weight_path,
@@ -322,6 +325,8 @@ class SummerPipeline(Pipeline):
                 load_image=load_proc_summer_image
             ),
             ImageBatcher(split_key=base_name_key),
+            ImageSelector(('OBSTYPE', 'SCIENCE')),
+            ImageSelector(('FILTER',['u'])),
             # ImageSelector((base_name_key, "SUMMER_20220816_042926_Camera0.resamp.fits")),
             Reference(ref_image_generator=summer_reference_image_generator,
                       ref_psfex=summer_reference_psfex,
