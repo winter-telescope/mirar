@@ -1,5 +1,7 @@
 import logging
 
+import astropy.table
+from collections.abc import Callable
 from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import get_output_dir, latest_mask_save_key
 from astropy.io import fits
@@ -76,6 +78,9 @@ class ZOGY(BaseImageProcessor):
             header["DIFFUNC"] = diff_rms_path
             noise = np.sqrt(np.nansum(np.square(P_D)*np.square(diff_rms_median)))/np.nansum(np.square(P_D))
             header["DIFFMLIM"] = -2.5*np.log10(noise*5) + float(header["TMC_ZP"])
+            header["SCORMEAN"] = scorr_mean
+            header["SCORMED"] = scorr_median
+            header["SCORSTD"] = scorr_std
 
             self.save_fits(data=D,
                            header=header,
@@ -96,11 +101,38 @@ class ZOGY(BaseImageProcessor):
                            path=os.path.join(self.get_sub_output_dir(), diff_rms_path))
             # logger.info(f"{diff_rms_std}, {diff_rms_median}, {diff_std} DIFFMAGLIM {header['DIFFMLIM']}")
             # # for temp_file in temp_files:
+
+            # for temp_file in temp_files:
+
             #     os.remove(temp_file)
             #     logger.info(f"Deleted temporary file {temp_file}")
             diff_images.append(D)
             diff_headers.append(header)
         return diff_images, diff_headers
+
+
+def default_wirc_catalog_purifier(sci_catalog, ref_catalog):
+    good_sci_sources = (sci_catalog['FLAGS'] == 0) & (sci_catalog['SNR_WIN'] > 5) & (
+            sci_catalog['FWHM_WORLD'] < 4. / 3600) & (sci_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
+                               sci_catalog['SNR_WIN'] < 1000)
+
+    good_ref_sources = (ref_catalog['FLAGS'] == 0) & (ref_catalog['SNR_WIN'] > 5) & (
+             ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
+                                ref_catalog['SNR_WIN'] < 1000)
+    return good_sci_sources, good_ref_sources
+
+
+def default_summer_catalog_purifier(sci_catalog, ref_catalog):
+    # Need to do this because the summer image is typically much shallower than the PS1 image, and only the brightest
+    # sources in PS1 xmatch to it.
+    good_sci_sources = (sci_catalog['FLAGS'] == 0) & (sci_catalog['SNR_WIN'] > 5) & (
+            sci_catalog['FWHM_WORLD'] < 4. / 3600) & (sci_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
+                               sci_catalog['SNR_WIN'] < 1000)
+
+    good_ref_sources = (ref_catalog['SNR_WIN'] > 5) & (
+            ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600)
+
+    return good_sci_sources, good_ref_sources
 
 
 class ZOGYPrepare(BaseImageProcessor):
@@ -109,33 +141,26 @@ class ZOGYPrepare(BaseImageProcessor):
     def __init__(self,
                  output_sub_dir: str = "sub",
                  sci_zp_header_key: str = "TMC_ZP",
+                 catalog_purifier: Callable[[astropy.table.Table, astropy.table.Table],[astropy.table.Table, astropy.table.Table]] = default_wirc_catalog_purifier,
                  *args,
                  **kwargs):
         super(ZOGYPrepare, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
         self.sci_zp_header_key = sci_zp_header_key
+        self.catalog_purifier = catalog_purifier
 
     def get_sub_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
-    @staticmethod
-    def get_ast_fluxscale(ref_catalog_name: str,
+
+    def get_ast_fluxscale(self, ref_catalog_name: str,
                           sci_catalog_name: str) -> tuple[float, float, float]:
         # Cross match science and reference image catalogs to get flux scaling factor and astometric uncertainties
         logger.info(f'Reference catalog is at {ref_catalog_name}')
         ref_catalog = get_table_from_ldac(ref_catalog_name)
         sci_catalog = get_table_from_ldac(sci_catalog_name)
 
-        good_sci_sources = (sci_catalog['FLAGS'] == 0) & (sci_catalog['SNR_WIN'] > 5) & (
-                sci_catalog['FWHM_WORLD'] < 4. / 3600) & (sci_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
-                                   sci_catalog['SNR_WIN'] < 1000)
-        # good_ref_sources = (ref_catalog['FLAGS'] == 0) & (ref_catalog['SNR_WIN'] > 5) & (
-        #         ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
-        #                            ref_catalog['SNR_WIN'] < 1000)
-
-        good_ref_sources = (ref_catalog['SNR_WIN'] > 5) & (
-                ref_catalog['FWHM_WORLD'] < 5. / 3600) & (ref_catalog['FWHM_WORLD'] > 0.5 / 3600)
-
+        good_sci_sources, good_ref_sources = self.catalog_purifier(sci_catalog, ref_catalog)
         logger.info(f'Number of good sources SCI: {np.sum(good_sci_sources)} REF: {np.sum(good_ref_sources)}')
         ref_catalog = ref_catalog[good_ref_sources]
         sci_catalog = sci_catalog[good_sci_sources]
@@ -160,7 +185,7 @@ class ZOGYPrepare(BaseImageProcessor):
             err = 'No stars matched between science and reference image catalogs. Likely there is a huge mismatch in ' \
                   'the sensitivites of the two'
             logger.error(err)
-            raise ZogyError(err)
+            raise ZOGYError(err)
         xpos_sci = sci_catalog['XWIN_IMAGE']
         ypos_sci = sci_catalog['YWIN_IMAGE']
         xpos_ref = ref_catalog['XWIN_IMAGE']
