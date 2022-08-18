@@ -42,5 +42,5 @@ class WIRCRef(BaseReferenceGenerator):
 
         logger.info(f'Found reference image {ref_image}')
         refHDU = fits.open(ref_image)[0]
-        refHDU['ZP'] = refHDU['TMC_ZP']
+        refHDU.header['ZP'] = refHDU.header['TMC_ZP']
         return refHDU
