@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS proc (
     OBSMJD FLOAT,
     progid INT,
     proccount SERIAL,
+    MAGLIM REAL,
     CONSTRAINT fk_expid
             FOREIGN KEY(expid)
                 REFERENCES raw(expid)
