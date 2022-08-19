@@ -302,7 +302,7 @@ class SummerPipeline(Pipeline):
             FlatCalibrator(),
             ImageBatcher(base_name_key),
             ImageSelector(("OBSTYPE", "SCIENCE")),
-            ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.fits")),
+            # ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.fits")),
             # ImageSelector((base_name_key, "SUMMER_20220402_214324_Camera0.fits")),
             AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
             # ImageLoader(input_sub_dir='autoastrometry',
