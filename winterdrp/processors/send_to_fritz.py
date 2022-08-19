@@ -442,55 +442,54 @@ class SendToFritz(BaseDataframeProcessor):
             .sort_values(by=["mjd"])
         )
 
-        # TODO add back once diffmaglim in df
-        # # filter out bad data:
-        # mask_good_diffmaglim = df_light_curve["diffmaglim"] > 0
-        # df_light_curve = df_light_curve.loc[mask_good_diffmaglim]
+        # filter out bad data:
+        mask_good_diffmaglim = df_light_curve["diffmaglim"] > 0
+        df_light_curve = df_light_curve.loc[mask_good_diffmaglim]
 
-        # # convert from mag to flux
+        # convert from mag to flux
 
-        # # step 1: calculate the coefficient that determines whether the
-        # # flux should be negative or positive
-        # coeff = df_light_curve["isdiffpos"].apply(
-        #     lambda x: 1.0 if x in [True, 1, "y", "Y", "t", "1"] else -1.0
-        # )
+        # step 1: calculate the coefficient that determines whether the
+        # flux should be negative or positive
+        coeff = df_light_curve["isdiffpos"].apply(
+            lambda x: 1.0 if x in [True, 1, "y", "Y", "t", "1"] else -1.0
+        )
 
 
-        # # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
-        # # 23.9 (results in flux in uJy)
-        # df_light_curve["flux"] = coeff * 10 ** (
-        #     -0.4 * (df_light_curve["magpsf"] - 23.9)
-        # )
+        # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
+        # 23.9 (results in flux in uJy)
+        df_light_curve["flux"] = coeff * 10 ** (
+            -0.4 * (df_light_curve["magpsf"] - 23.9)
+        )
 
-        # # step 3: separate detections from non detections
-        # detected = np.isfinite(df_light_curve["magpsf"])
-        # undetected = ~detected
+        # step 3: separate detections from non detections
+        detected = np.isfinite(df_light_curve["magpsf"])
+        undetected = ~detected
 
-        # # step 4: calculate the flux error
-        # df_light_curve["fluxerr"] = None  # initialize the column
+        # step 4: calculate the flux error
+        df_light_curve["fluxerr"] = None  # initialize the column
 
-        # # step 4a: calculate fluxerr for detections using sigmapsf
-        # df_light_curve.loc[detected, "fluxerr"] = np.abs(
-        #     df_light_curve.loc[detected, "sigmapsf"]
-        #     * df_light_curve.loc[detected, "flux"]
-        #     * np.log(10)
-        #     / 2.5
-        # )
+        # step 4a: calculate fluxerr for detections using sigmapsf
+        df_light_curve.loc[detected, "fluxerr"] = np.abs(
+            df_light_curve.loc[detected, "sigmapsf"]
+            * df_light_curve.loc[detected, "flux"]
+            * np.log(10)
+            / 2.5
+        )
 
-        # # step 4b: calculate fluxerr for non detections using diffmaglim
-        # df_light_curve.loc[undetected, "fluxerr"] = (
-        #     10 ** (-0.4 * (df_light_curve.loc[undetected, "diffmaglim"] - 23.9)) / 5.0
-        # )  # as diffmaglim is the 5-sigma depth
+        # step 4b: calculate fluxerr for non detections using diffmaglim
+        df_light_curve.loc[undetected, "fluxerr"] = (
+            10 ** (-0.4 * (df_light_curve.loc[undetected, "diffmaglim"] - 23.9)) / 5.0
+        )  # as diffmaglim is the 5-sigma depth
 
-        # # step 5: set the zeropoint and magnitude system
-        # df_light_curve["zp"] = 23.9
-        # df_light_curve["zpsys"] = "ab"
+        # step 5: set the zeropoint and magnitude system
+        df_light_curve["zp"] = 23.9
+        df_light_curve["zpsys"] = "ab"
 
-        # # only "new" photometry requested?
-        # if jd_start is not None:
-        #     w_after_jd = df_light_curve["jd"] > jd_start
-        #     df_light_curve = df_light_curve.loc[w_after_jd]
-
+        # only "new" photometry requested?
+        if jd_start is not None:
+            w_after_jd = df_light_curve["jd"] > jd_start
+            df_light_curve = df_light_curve.loc[w_after_jd]
+            
         return df_light_curve
 
     def alert_put_photometry(self, alert):
@@ -504,38 +503,30 @@ class SendToFritz(BaseDataframeProcessor):
             "stream_ids": [int(self.stream_id)],
             "instrument_id": self.instrument_id,
             "mjd": df_photometry["mjd"].tolist(),
-            # TODO uncomment once added (see make_photometry())
-            # "flux": df_photometry["flux"].tolist(),
-            # "fluxerr": df_photometry["fluxerr"].tolist(),
-            # "zp": df_photometry["zp"].tolist(),
-            # "magsys": df_photometry["zpsys"].tolist()
-            # ## hardcoded ##,
-            "magsys": "vega",
-            "limiting_mag": 99,
-            "mag": df_photometry["magpsf"].tolist(),
-            "magerr": df_photometry["sigmapsf"].tolist(),
-            # ## end of hard coding ##
+            "flux": df_photometry["flux"].tolist(),
+            "fluxerr": df_photometry["fluxerr"].tolist(),
+            "zp": df_photometry["zp"].tolist(),
+            "magsys": df_photometry["zpsys"].tolist(),
             "filter": df_photometry["filter"].tolist(),
             "ra": df_photometry["ra"].tolist(),
             "dec": df_photometry["dec"].tolist(),
         }
 
-        # TODO uncomment
-        # if (len(photometry.get("flux", ())) > 0) or (
-        #     len(photometry.get("fluxerr", ())) > 0
-        # ):
-        logger.info(f"Posting photometry of {alert['objectId']} {alert['candid']}, "
-                f"stream_id={self.stream_id} to SkyPortal")
-        response = self.api("PUT", "https://fritz.science/api/photometry", photometry)
-        if response.json()["status"] == "success":
-            logger.info(
-                f"Posted {alert['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
-            )
-        else:
-            logger.info(
-                f"Failed to post {alert['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
-            )
-            logger.info(response.json())
+        if (len(photometry.get("flux", ())) > 0) or (
+            len(photometry.get("fluxerr", ())) > 0
+        ):
+            logger.info(f"Posting photometry of {alert['objectId']} {alert['candid']}, "
+                    f"stream_id={self.stream_id} to SkyPortal")
+            response = self.api("PUT", "https://fritz.science/api/photometry", photometry)
+            if response.json()["status"] == "success":
+                logger.info(
+                    f"Posted {alert['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
+                )
+            else:
+                logger.info(
+                    f"Failed to post {alert['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
+                )
+                logger.info(response.json())
     
     def alert_post_annotation(self, alert):
         """Post an annotation. Works for both candidates and sources.
