@@ -66,8 +66,7 @@ test_configuration = [
     ),
     Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
     Sextractor(output_sub_dir="test",
-               checkimage_name='NONE',
-               checkimage_type='NONE',
+               checkimage_type='BACKGROUND_RMS',
                **sextractor_photometry_config),
     PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
     ImageSaver(output_dir_name="test")
