@@ -293,7 +293,6 @@ class SummerPipeline(Pipeline):
                                 base_name_key
                             ] + core_fields
             ),
-            ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
             DatabaseImageExporter(
                 db_name=pipeline_name,
                 db_table="exposures",
@@ -309,6 +308,7 @@ class SummerPipeline(Pipeline):
             ),
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
+            ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
             FlatCalibrator(),
             ImageBatcher(base_name_key),
             ImageSelector(("OBSTYPE", "SCIENCE")),
