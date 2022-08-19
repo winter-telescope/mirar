@@ -6,12 +6,13 @@ from winterdrp.processors.base_processor import BaseImageProcessor, Prerequisite
 from winterdrp.paths import get_output_dir, copy_temp_file
 from collections.abc import Callable
 from winterdrp.catalog.base_catalog import BaseCatalog
-from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor, sextractor_header_key
+from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor, sextractor_header_key, sextractor_checkimg_keys
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from winterdrp.errors import ProcessorError
 from astropy.stats import sigma_clip, sigma_clipped_stats
+from astropy.io import fits
 
 logger = logging.getLogger(__name__)
 
@@ -158,16 +159,35 @@ class PhotCalibrator(BaseImageProcessor):
                 file_path=header[sextractor_header_key]
             )
 
+            fwhm_med, fwhm_mean, fwhm_std, med_fwhm_pix, mean_fwhm_pix, std_fwhm_pix = self.get_fwhm(temp_cat_path)
+            header['FWHM_MED'] = fwhm_med
+            header['FWHM_STD'] = fwhm_std
+
             zp_dicts = self.calculate_zeropoint(ref_cat_path, temp_cat_path)
 
+            aperture_diameters = []
+            zp_values = []
             for zpvals in zp_dicts:
                 header['ZP_%s' % (zpvals['diameter'])] = zpvals['zp_mean']
                 header['ZP_%s_std' % (zpvals['diameter'])] = zpvals['zp_std']
                 header['ZP_%s_nstars' % (zpvals['diameter'])] = zpvals['nstars']
+                try:
+                    aperture_diameters.append(float(zpvals['diameter']))
+                    zp_values.append(zpvals['zp_mean'])
+                except ValueError:
+                    continue
 
-            fwhm_med, fwhm_mean, fwhm_std = self.get_fwhm(temp_cat_path)
-            header['FWHM_MED'] = fwhm_med
-            header['FWHM_STD'] = fwhm_std
+            aperture_diameters.append(med_fwhm_pix)
+            zp_values.append(header['ZP_AUTO'])
+
+            if sextractor_checkimg_keys['BACKGROUND_RMS'] in header.keys():
+                limmags = self.get_maglim(header[sextractor_checkimg_keys['BACKGROUND_RMS']], zp_values, np.array(aperture_diameters)/2)
+            else:
+                limmags = [-99]*len(aperture_diameters)
+
+            for ind, diam in enumerate(aperture_diameters):
+                header[f'MAGLIM_{int(diam)}'] = limmags[ind]
+            header['MAGLIM'] = limmags[-1]
         return images, headers
 
     @staticmethod
@@ -179,7 +199,26 @@ class PhotCalibrator(BaseImageProcessor):
         med_fwhm = np.median(imcat['FWHM_WORLD'])
         mean_fwhm = np.mean(imcat['FWHM_WORLD'])
         std_fwhm = np.std(imcat['FWHM_WORLD'])
-        return med_fwhm, mean_fwhm, std_fwhm
+
+        med_fwhm_pix = np.median(imcat['FWHM_IMAGE'])
+        mean_fwhm_pix = np.mean(imcat['FWHM_IMAGE'])
+        std_fwhm_pix = np.std(imcat['FWHM_IMAGE'])
+        return med_fwhm, mean_fwhm, std_fwhm, med_fwhm_pix, mean_fwhm_pix, std_fwhm_pix
+
+    @staticmethod
+    def get_maglim(bkg_rms_image_path, zp, aperture_radius_pixels):
+        if isinstance(zp,float):
+            zp = [zp]
+        if isinstance(aperture_radius_pixels, float):
+            aperture_radius_pixels = [aperture_radius_pixels]
+
+        zp = np.array(zp, dtype=float)
+        aperture_radius_pixels = np.array(aperture_radius_pixels, dtype=float)
+        bkg_rms_image = fits.getdata(bkg_rms_image_path)
+        bkg_rms_med = np.nanmedian(bkg_rms_image)
+        noise = bkg_rms_med*np.sqrt(np.pi*aperture_radius_pixels)
+        maglim = -2.5*np.log10(5*noise) + zp
+        return maglim
 
     def get_sextractor_module(self) -> Sextractor:
         mask = [isinstance(x, Sextractor) for x in self.preceding_steps]
