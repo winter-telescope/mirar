@@ -115,8 +115,8 @@ def load_raw_summer_image(
 
         obstime = Time(header['UTCISO'], format='iso')
         t0 = Time('2018-01-01', format='iso')
-        header['NIGHT'] = np.floor((obstime - t0).jd).astype(int)
-
+        #header['NIGHT'] = np.floor((obstime - t0).jd).astype(int)
+        header['NIGHT'] = int(obstime.jd) - int(t0.jd)
         header['EXPMJD'] = header['OBSMJD']
 
         for key in ["PROGID", "OBSID"]:
