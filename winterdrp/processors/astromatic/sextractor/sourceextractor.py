@@ -71,20 +71,20 @@ def parse_checkimage(
 
         else:
             if image is not None:
-                base_name = f'{os.path.basename(image).split(".")[0]}_'
+                base_name = f'{image.split(".fits")[0]}_'
             else:
                 base_name = ""
 
-            cmd += " -CHECKIMAGE_NAME " + ",".join([
-                f"{base_name}check_{x.lower()}.fits" for x in checkimage_type
-            ])
+            checkimage_name = [f"{base_name}check_{x.lower()}.fits" for x in checkimage_type]
+            cmd += " -CHECKIMAGE_NAME " + ",".join(checkimage_name)
 
         cmd += " "
 
     else:
 
         cmd = f" -CHECKIMAGE_TYPE NONE "
-    return cmd
+        checkimage_name = []
+    return cmd, checkimage_name
 
 
 def run_sextractor(
@@ -147,11 +147,12 @@ def run_sextractor_single(
     if starnnw_name is not None:
         cmd += f"-STARNNW_NAME {starnnw_name} "
 
-    cmd += parse_checkimage(
+    checkimage_cmd, checkimage_name = parse_checkimage(
         checkimage_type=checkimage_type,
         checkimage_name=checkimage_name,
         image=img
     )
+    cmd += checkimage_cmd
 
     if weight_image is None:
         cmd += "-WEIGHT_TYPE None"
@@ -165,7 +166,7 @@ def run_sextractor_single(
     except ExecutionError as e:
         raise SextractorError(e)
 
-    return catalog_name
+    return catalog_name, checkimage_name
 
 
 def run_sextractor_dual(

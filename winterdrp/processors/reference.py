@@ -79,11 +79,9 @@ class Reference(BaseImageProcessor):
             sci_x_cent, sci_y_cent = header['NAXIS1'] / 2, header['NAXIS2'] / 2
             wcs = WCS(header)
             [sci_ra_cent, sci_dec_cent] = wcs.all_pix2world(sci_x_cent, sci_y_cent, 1)
-
             sci_pixscale = np.abs(header['CD1_1']) * 3600
             sci_x_imgsize, sci_y_imgsize = header['NAXIS1'], header['NAXIS2']
             sci_gain = header['GAIN']
-            logger.info(f'{sci_pixscale}, {sci_gain}')
 
             propogate_headerlist = ['TMC_ZP', 'TMC_ZPSD']
             ref_resampler = self.ref_swarp_resampler(
@@ -126,6 +124,7 @@ class Reference(BaseImageProcessor):
                 gain=sci_gain,
                 subtract_bkg=True
             )
+
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
             [[resampled_sci_image], [resampled_sci_header]] = sci_resampler.apply([[image], [header]])
 

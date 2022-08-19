@@ -49,8 +49,11 @@ class ImageHandler:
     ) -> str:
         mask = (~np.isnan(data)).astype(float)
         mask_path = get_mask_path(img_path)
+        mask_header = header.__deepcopy__()
+        mask_header[latest_mask_save_key] = mask_path
         header[latest_mask_save_key] = mask_path
-        self.save_fits(mask, header, mask_path)
+        mask_header['OBSTYPE'] = 'MASK'
+        self.save_fits(mask, mask_header, mask_path)
         return mask_path
 
     @staticmethod
@@ -306,7 +309,8 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
             self,
             batch: pd.DataFrame
     ) -> pd.DataFrame:
-        batch = self._apply_to_candidates(batch)
+        if len(batch)>0:
+            batch = self._apply_to_candidates(batch)
         return batch
 
     def _apply_to_candidates(

@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 winter_code_dir = pathlib.Path(__file__).parent.parent.resolve()
 
-
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 
 if base_raw_dir is None:
@@ -25,7 +24,6 @@ if base_output_dir is None:
     err = "No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. " \
           "The output directory will need to be specified manually for path functions."
     logger.warning(err)
-
 
 raw_img_sub_dir = "raw"
 
@@ -131,26 +129,25 @@ def parse_image_list(
         group_by_object: bool = True,
         base_dir_f: Callable[[str], str] = raw_img_dir
 ):
-    
     object_dict = dict()
-        
+
     img_list = glob(f'{base_dir_f(sub_dir)}/*.fits')
 
     if not group_by_object:
         return sorted(img_list)
-    
+
     for img_file in img_list:
         img = fits.open(img_file)
-        
+
         obj = img[0].header['OBJECT']
-        
+
         if obj not in object_dict.keys():
             object_dict[obj] = [img_file]
         else:
             object_dict[obj].append(img_file)
-            
+
     logger.debug(f'Data contains {len(object_dict.keys())} objects: {list(object_dict.keys())}')
-    
+
     for key in ["dark", "flat", "bias"]:
         if key not in object_dict.keys():
             object_dict[key] = []
@@ -171,10 +168,11 @@ flat_frame_key = 'FLATNAME'
 bias_frame_key = 'BIASNAME'
 dark_frame_key = 'DARKNAME'
 coadd_key = "COADDS"
+sextractor_checkimg_keys = {'BACKGROUND': 'BKGPT', 'BACKGROUND_RMS': 'BKGRMS',
+                            'MINIBACKGROUND': 'MINIBKG', 'MINIBACK_RMS': 'MINIBGRM'}
 
 core_fields = ["OBSCLASS", "TARGET", "UTCTIME", coadd_key, proc_history_key]
 
 
 class ProcessingError(Exception):
     pass
-
