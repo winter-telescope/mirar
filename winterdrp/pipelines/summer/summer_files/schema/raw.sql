@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS raw (
-    rawid SERIAL PRIMARY KEY,
+    expid BIGINT PRIMARY KEY,
     savepath VARCHAR(255),
     obsdate INT,
     obsID INT,
@@ -32,5 +32,6 @@ CREATE TABLE IF NOT EXISTS raw (
     dec REAL,
     altitude REAL,
     azimuth REAL,
-    procflag INT
+    procflag INT,
+    rawcount SERIAL
 );

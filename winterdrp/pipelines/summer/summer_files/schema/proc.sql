@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS proc (
-    procid SERIAL PRIMARY KEY,
-    rawid SERIAL,
+    procid BIGINT PRIMARY KEY,
+    expid BIGINT,
     rawpath VARCHAR(255),
     savepath VARCHAR(255),
     OBSDATE INT,
@@ -26,5 +26,9 @@ CREATE TABLE IF NOT EXISTS proc (
     ZP_AUTO_NSTARS INT,
     ZP_AUTO_STD FLOAT,
     OBSMJD FLOAT,
-    progid INT
+    progid INT,
+    proccount SERIAL,
+    CONSTRAINT fk_expid
+            FOREIGN KEY(expid)
+                REFERENCES raw(expid)
 );
