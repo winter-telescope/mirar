@@ -36,7 +36,7 @@ from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
 from winterdrp.processors.photometry.aperture_photometry import AperturePhotometry
 from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
-
+import pkg_resources
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
@@ -103,8 +103,12 @@ def load_raw_summer_image(
 
         base_name = os.path.basename(path)
         header[base_name_key] = base_name
-        header["EXPID"] = int("".join(base_name.split("_")[1:3]))
+        header["EXPID"] = int("".join(base_name.split("_")[1:3])[2:])
+        # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
 
+        pipeline_version = pkg_resources.require("winterdrp")[0].version
+        pipeline_version_padded_str = "".join([x.rjust(2, "0") for x in pipeline_version.split(".")])
+        header["PROCID"] = int(str(header["EXPID"])+str(pipeline_version_padded_str))
         header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
 
         header['OBSDATE'] = int(header['UTC'].split('_')[0])
@@ -189,6 +193,12 @@ def load_proc_summer_image(
     if 'ZP' not in header.keys():
         header['ZP'] = header['ZP_AUTO']
         header['ZP_std'] = header['ZP_AUTO_std']
+
+    header['CENTRA'] = header['CRVAL1']
+    header['CENTDEC'] = header['CRVAL2']
+    pipeline_version = pkg_resources.require("winterdrp")[0].version
+    pipeline_version_padded_str = "".join([x.rjust(2, "0") for x in pipeline_version.split(".")])
+    header['DIFFID'] = int(str(header["EXPID"])+str(pipeline_version_padded_str))
     data[data == 0] = np.nan
     # logger.info(header['CRVAL2'])
     return data, header
@@ -274,19 +284,19 @@ class SummerPipeline(Pipeline):
                             ] + core_fields
             ),
             ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
-            # DatabaseImageExporter(
-            #     db_name=pipeline_name,
-            #     db_table="exposures",
-            #     schema_path=get_summer_schema_path("exposures"),
-            #     full_setup=True,
-            #     schema_dir=summer_schema_dir
-            # ),
+            DatabaseImageExporter(
+                db_name=pipeline_name,
+                db_table="exposures",
+                schema_path=get_summer_schema_path("exposures"),
+                full_setup=True,
+                schema_dir=summer_schema_dir
+            ),
             MaskPixels(mask_path=summer_mask_path),
-            # DatabaseImageExporter(
-            #     db_name=pipeline_name,
-            #     db_table="raw",
-            #     schema_path=get_summer_schema_path("raw")
-            # ),
+            DatabaseImageExporter(
+                db_name=pipeline_name,
+                db_table="raw",
+                schema_path=get_summer_schema_path("raw")
+            ),
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
@@ -350,6 +360,12 @@ class SummerPipeline(Pipeline):
             ImageSaver(output_dir_name='ref'),
             ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO', catalog_purifier=default_summer_catalog_purifier),
             ZOGY(output_sub_dir="subtract"),
+            DatabaseImageExporter(
+                db_name=pipeline_name,
+                db_table="diff",
+                schema_path=get_summer_schema_path("diff"),
+
+            ),
             DetectCandidates(output_sub_dir="subtract",
                              cand_det_sextractor_config='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',
                              cand_det_sextractor_nnw='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
