@@ -1376,7 +1376,7 @@ def get_ref_sources_from_catalog(
             with urllib.request.urlopen(testqueryurl, timeout=30) as check:
                 checklines = check.readlines()
             print(f'Found {len(checklines)}')
-            if len(checklines) > 15:
+            if len(checklines) > 0:
                 catalog = trycat
                 logger.info(f'Using catalog {catalog}')
 
