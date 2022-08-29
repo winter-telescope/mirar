@@ -93,10 +93,7 @@ expected_zp = {
     "ZP_7.0_nstars": 30,
     "ZP_8.0": 25.90134099756877,
     "ZP_8.0_std": 0.06359669923996372,
-    "ZP_8.0_nstars": 30,
-    "ZP_AUTO": 25.958851739120487,
-    "ZP_AUTO_std": 0.07433417136574226,
-    "ZP_AUTO_nstars": 30,
+    "ZP_8.0_nstars": 30
 }
 
 test_config_name = "test"
