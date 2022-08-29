@@ -132,8 +132,7 @@ class Pipeline:
                 err_stack += new_err_stack
 
                 if np.logical_and(not catch_all_errors, len(err_stack.reports) > 0):
-                    if input("stop Y/N?") in ["Y", "y"]:
-                        raise err_stack.reports[0].error
+                    raise err_stack.reports[0].error
 
         err_stack.summarise_error_stack(output_path=output_error_path)
         return batches, err_stack
