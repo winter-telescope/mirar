@@ -2,14 +2,10 @@ import logging
 import os
 import astropy.io.fits
 import numpy as np
-import pkg_resources
-from astropy.io import fits
 
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.downloader.caltech import download_via_ssh
-from winterdrp.catalog import Gaia2Mass, PS1, SDSS
 from winterdrp.processors.database.database_exporter import DatabaseImageExporter
-from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp, PSFex
 from winterdrp.pipelines.summer.summer_files import get_summer_schema_path, summer_weight_path, \
@@ -23,13 +19,14 @@ from winterdrp.processors.csvlog import CSVLog
 from winterdrp.paths import core_fields, base_name_key
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare, default_summer_catalog_purifier
-from winterdrp.references.ps1 import PS1Ref
-from winterdrp.references.sdss import SDSSRef
 from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
 from winterdrp.processors.photometry.aperture_photometry import AperturePhotometry
 from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
-from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image
+from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image, load_proc_summer_image
+from winterdrp.pipelines.summer.something import summer_astrometric_catalog_generator, \
+    summer_photometric_catalog_generator, summer_reference_image_generator, summer_reference_psfex, \
+    summer_reference_image_resampler, summer_reference_sextractor
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
@@ -41,113 +38,6 @@ summer_cal_requirements = [
     CalRequirement(target_name="bias", required_field="EXPTIME", required_values=["0.0"]),
     CalRequirement(target_name="flat", required_field="FILTERID", required_values=["u", "g", "r", "i"]),
 ]
-
-
-def summer_astrometric_catalog_generator(
-        header: astropy.io.fits.Header
-):
-    temp_cat_path = header[sextractor_header_key]
-    cat = Gaia2Mass(
-        min_mag=10,
-        max_mag=20,
-        search_radius_arcmin=7.5,
-        trim=True,
-        image_catalog_path=temp_cat_path,
-        filter_name='j'
-    )
-    return cat
-
-
-def summer_photometric_catalog_generator(
-        header: astropy.io.fits.Header
-):
-    filter_name = header['FILTERID']
-    if filter_name == 'u':
-        return SDSS(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
-    else:
-        return PS1(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
-
-
-def load_proc_summer_image(
-        path: str
-) -> tuple[np.array, astropy.io.fits.Header]:
-    img = fits.open(path)
-    data = img[0].data
-    header = img[0].header
-    if 'ZP' not in header.keys():
-        header['ZP'] = header['ZP_AUTO']
-        header['ZP_std'] = header['ZP_AUTO_std']
-
-    header['CENTRA'] = header['CRVAL1']
-    header['CENTDEC'] = header['CRVAL2']
-    pipeline_version = pkg_resources.require("winterdrp")[0].version
-    pipeline_version_padded_str = "".join([x.rjust(2, "0") for x in pipeline_version.split(".")])
-    header['DIFFID'] = int(str(header["EXPID"])+str(pipeline_version_padded_str))
-    data[data == 0] = np.nan
-    # logger.info(header['CRVAL2'])
-    return data, header
-
-
-def summer_reference_image_generator(
-        header: fits.header,
-):
-    filter_name = header['FILTER']
-    logger.info(f'Filter is {filter_name}')
-    if filter_name == 'u':
-        logger.info(f'Will query reference image from SDSS')
-        return SDSSRef(filter_name=filter_name)
-    else:
-        logger.info(f'Will query reference image from PS1')
-        return PS1Ref(filter_name=filter_name)
-
-
-def summer_reference_image_resampler(pixscale,
-                                     x_imgpixsize,
-                                     y_imgpixsize,
-                                     center_ra,
-                                     center_dec,
-                                     propogate_headerlist,
-                                     temp_output_sub_dir,
-                                     night_sub_dir,
-                                     include_scamp,
-                                     combine,
-                                     gain,
-                                     subtract_bkg):
-    logger.debug(f'Night sub dir is {night_sub_dir}')
-    return Swarp(swarp_config_path='winterdrp/pipelines/summer/summer_imsub_files/config/config.swarp',
-                 pixscale=pixscale,
-                 x_imgpixsize=x_imgpixsize,
-                 y_imgpixsize=y_imgpixsize,
-                 center_ra=center_ra,
-                 center_dec=center_dec,
-                 propogate_headerlist=propogate_headerlist,
-                 temp_output_sub_dir=temp_output_sub_dir,
-                 night_sub_dir=night_sub_dir,
-                 include_scamp=include_scamp,
-                 combine=combine,
-                 gain=gain,
-                 cache=True,
-                 subtract_bkg=subtract_bkg
-                 )
-
-
-def summer_reference_sextractor(output_sub_dir, gain):
-    return Sextractor(config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',
-                      parameter_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.param',
-                      filter_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',
-                      starnnw_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
-                      gain=gain,
-                      output_sub_dir=output_sub_dir,
-                      cache=True
-                      )
-
-
-def summer_reference_psfex(output_sub_dir, norm_fits):
-    return PSFex(config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.psfex',
-                 output_sub_dir=output_sub_dir,
-                 norm_fits=norm_fits,
-                 cache=True
-                 )
 
 
 pipeline_name = "summer"
@@ -218,12 +108,13 @@ class SummerPipeline(Pipeline):
             ),
             ImageBatcher(split_key=base_name_key),
             ImageSelector(('OBSTYPE', 'SCIENCE')),
-            # ImageSelector(('FILTER', ['u'])),
             # ImageSelector((base_name_key, ["SUMMER_20220816_042926_Camera0.resamp.fits","SUMMER_20220816_042743_Camera0.resamp.fits"])),
-            Reference(ref_image_generator=summer_reference_image_generator,
-                      ref_psfex=summer_reference_psfex,
-                      ref_sextractor=summer_reference_sextractor,
-                      ref_swarp_resampler=summer_reference_image_resampler),
+            Reference(
+                ref_image_generator=summer_reference_image_generator,
+                ref_psfex=summer_reference_psfex,
+                ref_sextractor=summer_reference_sextractor,
+                ref_swarp_resampler=summer_reference_image_resampler
+            ),
             Sextractor(config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',
                        parameter_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.param',
                        filter_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',

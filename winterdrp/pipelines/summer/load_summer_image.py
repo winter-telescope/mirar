@@ -6,6 +6,7 @@ import logging
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
+from astropy import units as u
 
 from winterdrp.paths import latest_save_key, raw_img_key, base_name_key
 
@@ -141,3 +142,22 @@ def load_raw_summer_image(
 
         data[0].header = header
     return data[0].data, data[0].header
+
+
+def load_proc_summer_image(
+        path: str
+) -> tuple[np.array, astropy.io.fits.Header]:
+    img = fits.open(path)
+    data = img[0].data
+    header = img[0].header
+    if 'ZP' not in header.keys():
+        header['ZP'] = header['ZP_AUTO']
+        header['ZP_std'] = header['ZP_AUTO_std']
+    header['CENTRA'] = header['CRVAL1']
+    header['CENTDEC'] = header['CRVAL2']
+    pipeline_version = pkg_resources.require("winterdrp")[0].version
+    pipeline_version_padded_str = "".join([x.rjust(2, "0") for x in pipeline_version.split(".")])
+    header['DIFFID'] = int(str(header["EXPID"])+str(pipeline_version_padded_str))
+    data[data == 0] = np.nan
+    # logger.info(header['CRVAL2'])
+    return data, header
