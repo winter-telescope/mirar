@@ -11,17 +11,18 @@ import logging
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor, DataBaseError
 from winterdrp.processors.database.postgres import modify_db_entry, get_sequence_keys_from_table
 from winterdrp.processors.database.database_importer import BaseDatabaseImporter, BaseImageDatabaseImporter
+
 logger = logging.getLogger(__name__)
 
 
-class BaseDatabaseModifier(BaseDatabaseProcessor, BaseDatabaseImporter, ABC):
+class BaseDatabaseModifier(BaseDatabaseImporter):
     base_key = "dbmodifier"
 
     def __init__(self,
                  db_alter_columns: str = None,
                  *args,
                  **kwargs):
-        super(BaseDatabaseModifier, self).__init__(*args, **kwargs)
+        super(BaseDatabaseModifier, self).__init__(db_output_columns=db_alter_columns, *args, **kwargs)
         self.db_alter_columns = db_alter_columns
 
 
@@ -37,9 +38,10 @@ class ImageDatabaseModifier(BaseDatabaseModifier, BaseImageDatabaseImporter):
             images: list[np.ndarray],
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        query_columns, accepted_values, accepted_types = self.get_constraints()
-
         for header in headers:
+            query_columns, accepted_values, accepted_types = self.get_constraints(header)
+            logger.info(f"{query_columns}, {accepted_values}, {accepted_types}")
+
             query_results = modify_db_entry(value_dict=header,
                                             db_query_columns=query_columns,
                                             db_query_values=accepted_values,
@@ -64,13 +66,13 @@ class ModifyImageDatabaseSeq(ImageDatabaseModifier):
 
     def get_constraints(self, header):
         if self.sequence_key is None:
-            self.sequence_key = get_sequence_keys_from_table(self.db_table,
-                                                             self.db_name,
-                                                             self.db_user,
-                                                             self.db_password)
+            self.sequence_key = [x for x in get_sequence_keys_from_table(self.db_table,
+                                                                         self.db_name,
+                                                                         self.db_user,
+                                                                         self.db_password)]
 
         accepted_values = [header[x.upper()] for x in self.sequence_key]
-        accepted_types = ['=']*len(accepted_values)
+        accepted_types = ['='] * len(accepted_values)
         return self.sequence_key, accepted_values, accepted_types
 
 
@@ -85,6 +87,4 @@ class DataframeDatabaseModifier(BaseDatabaseModifier, BaseDataframeProcessor):
             self,
             candidate_table: pd.DataFrame,
     ) -> pd.DataFrame:
-
-
         return candidate_table
