@@ -81,8 +81,8 @@ class TestSummerPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images([[[], []]])
-        self.assertEqual(len(errorstack.reports), 0)
+        res, errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+
         self.assertEqual(len(res[0][0]), 1)
 
         header = res[0][1][0]
