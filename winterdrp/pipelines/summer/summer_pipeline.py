@@ -288,68 +288,68 @@ def summer_reference_psfex(output_sub_dir, norm_fits):
 pipeline_name = "summer"
 
 
+standard_summer_reduction = [
+    CSVLog(
+        export_keys=[
+                        "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE","PROGID", "PROGPI",
+                        base_name_key
+                    ] + core_fields
+        ),
+    DatabaseImageExporter(
+        db_name=pipeline_name,
+        db_table="exposures",
+        schema_path=get_summer_schema_path("exposures"),
+        full_setup=True,
+        schema_dir=summer_schema_dir
+    ),
+    ImageRejector(("OBSTYPE", ["FOCUS", "DARK"])),
+    CalHunter(
+        load_image=load_raw_summer_image,
+        requirements=summer_cal_requirements
+    ),
+    BiasCalibrator(),
+    ImageRejector(("OBSTYPE", ["BIAS"])),
+    ImageBatcher(split_key="filter"),
+    ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
+    FlatCalibrator(),
+    ImageSelector(("OBSTYPE", "SCIENCE")),
+    ImageBatcher(base_name_key),
+    AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
+    # ImageLoader(input_sub_dir='autoastrometry',
+    #             load_image=load_raw_summer_image),
+    # ImageSelector((base_name_key, "SUMMER_20220816_041023_Camera0.fits")),
+    Sextractor(
+        output_sub_dir="testb",
+        weight_image=summer_weight_path,
+        checkimage_name=None,
+        checkimage_type=None,
+        **sextractor_astrometry_config
+    ),
+    Scamp(
+        ref_catalog_generator=summer_astrometric_catalog_generator,
+        scamp_config_path=scamp_path,
+    ),
+    Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
+    Sextractor(output_sub_dir="photprocess",
+               checkimage_type='BACKGROUND_RMS',
+               **sextractor_photometry_config),
+    PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
+    ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG'], write_mask=True),
+    DatabaseImageExporter(
+        db_name=pipeline_name,
+        db_table="proc",
+        schema_path=get_summer_schema_path("proc")
+    )
+]
+
+
 class SummerPipeline(Pipeline):
 
     name = pipeline_name
     default_cal_requirements = summer_cal_requirements
 
     all_pipeline_configurations = {
-        None: [
-            ImageLoader(
-                load_image=load_raw_summer_image
-            ),
-            CSVLog(
-                export_keys=[
-                                "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE","PROGID", "PROGPI",
-                                base_name_key
-                            ] + core_fields
-            ),
-            DatabaseImageExporter(
-                db_name=pipeline_name,
-                db_table="exposures",
-                schema_path=get_summer_schema_path("exposures"),
-                full_setup=True,
-                schema_dir=summer_schema_dir
-            ),
-            ImageRejector(("OBSTYPE", ["FOCUS", "DARK"])),
-            CalHunter(
-                load_image=load_raw_summer_image,
-                requirements=summer_cal_requirements
-            ),
-            BiasCalibrator(),
-            ImageRejector(("OBSTYPE", ["BIAS"])),
-            ImageBatcher(split_key="filter"),
-            ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
-            FlatCalibrator(),
-            ImageSelector(("OBSTYPE", "SCIENCE")),
-            ImageBatcher(base_name_key),
-            AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
-            # ImageLoader(input_sub_dir='autoastrometry',
-            #             load_image=load_raw_summer_image),
-            # ImageSelector((base_name_key, "SUMMER_20220816_041023_Camera0.fits")),
-            Sextractor(
-                output_sub_dir="testb",
-                weight_image=summer_weight_path,
-                checkimage_name=None,
-                checkimage_type=None,
-                **sextractor_astrometry_config
-            ),
-            Scamp(
-                ref_catalog_generator=summer_astrometric_catalog_generator,
-                scamp_config_path=scamp_path,
-            ),
-            Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
-            Sextractor(output_sub_dir="photprocess",
-                       checkimage_type='BACKGROUND_RMS',
-                       **sextractor_photometry_config),
-            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
-            ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG'], write_mask=True),
-            DatabaseImageExporter(
-                db_name=pipeline_name,
-                db_table="proc",
-                schema_path=get_summer_schema_path("proc")
-            )
-        ],
+        None: [ImageLoader(load_image=load_raw_summer_image)] + standard_summer_reduction,
         'imsub': [
             ImageLoader(
                 input_sub_dir='processed',
@@ -393,56 +393,7 @@ class SummerPipeline(Pipeline):
                                bkg_out_diameters=[40, 100], col_suffix_list=['', 'big']),
             DataframeWriter(output_dir_name='candidates'),
         ],
-        "realtime": [
-            CSVLog(
-                export_keys=[
-                                "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE",
-                                base_name_key
-                            ] + core_fields
-            ),
-            DatabaseImageExporter(
-                db_name=pipeline_name,
-                db_table="exposures",
-                schema_path=get_summer_schema_path("exposures"),
-                full_setup=True,
-                schema_dir=summer_schema_dir
-            ),
-            ImageRejector(("OBSTYPE", ["FOCUS", "DARK"])),
-            MaskPixels(mask_path=summer_mask_path),
-            BiasCalibrator(),
-            ImageRejector(("OBSTYPE", ["BIAS"])),
-            ImageBatcher(split_key="filter"),
-            FlatCalibrator(),
-            ImageSelector(("OBSTYPE", "SCIENCE")),
-            ImageSaver(output_dir_name="processed"),
-            AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
-            Sextractor(
-                output_sub_dir="test",
-                weight_image=summer_weight_path,
-                checkimage_name=None,
-                checkimage_type=None,
-                **sextractor_astrometry_config
-            ),
-            Scamp(
-                ref_catalog_generator=summer_astrometric_catalog_generator,
-                scamp_config_path=scamp_path,
-            ),
-            Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
-            Sextractor(output_sub_dir="test",
-                       checkimage_name='NONE',
-                       checkimage_type='NONE',
-                       **sextractor_photometry_config),
-            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
-            # ImageSaver(output_dir_name="test")
-            ImageSaver(output_dir_name="final"),
-            PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
-            ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG']),
-            # DatabaseImageExporter(
-            #     db_name=pipeline_name,
-            #     db_table="proc",
-            #     schema_path=get_summer_schema_path("proc")
-            # )
-        ]
+        "realtime": standard_summer_reduction
     }
 
     @staticmethod
