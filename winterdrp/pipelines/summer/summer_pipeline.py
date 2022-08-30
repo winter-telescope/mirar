@@ -24,7 +24,7 @@ from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
 from winterdrp.processors.photometry.aperture_photometry import AperturePhotometry
 from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
 from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image, load_proc_summer_image
-from winterdrp.pipelines.summer.something import summer_astrometric_catalog_generator, \
+from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_generator, \
     summer_photometric_catalog_generator, summer_reference_image_generator, summer_reference_psfex, \
     summer_reference_image_resampler, summer_reference_sextractor
 
