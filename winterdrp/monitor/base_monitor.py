@@ -96,7 +96,7 @@ class Monitor:
         # default to "pipeline default cal requirements"
 
         if cal_requirements is None:
-            cal_requirements = self.pipeline.cal_requirements
+            cal_requirements = self.pipeline.default_cal_requirements
 
         if cal_requirements is not None:
             self.cal_images, self.cal_headers = find_required_cals(
@@ -247,19 +247,13 @@ if __name__ == '__main__':
     ln = Time.now() - 1. * u.day
     last_night = str(ln).split(" ")[0].replace("-", "")
 
-    required_cals = [
-        CalRequirement(target_name="bias", required_field="EXPTIME", required_values=["0.0"]),
-        CalRequirement(target_name="flat", required_field="FILTERID", required_values=["u", "g", "r", "i"]),
-    ]
-
     monitor = Monitor(
         pipeline="summer",
         night=last_night,
-        cal_requirements=required_cals,
         realtime_configurations=["realtime"],
         log_level="DEBUG",
-        email_wait_hours=0.01,
         max_wait_hours=0.05,
+        email_wait_hours=0.01,
         # email_sender="winter.data.reduction.pipeline@gmail.com",
         # email_recipients="rdstein@caltech.edu"
     )
