@@ -255,10 +255,8 @@ def export_to_db(
         with conn.execute(sql_query) as cursor:
 
             primary_key = [x[0] for x in cursor.fetchall()]
-            sequences = [x[0] for x in conn.execute(f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';").fetchall()]
-            seq_tables = np.array([x.split('_')[0] for x in sequences])
-            seq_columns = np.array([x.split('_')[1] for x in sequences])
-            serial_keys = seq_columns[(seq_tables == db_table)]
+            serial_keys = get_sequence_keys_from_table(db_table, db_name, db_user, password)
+            logger.debug(serial_keys)
             colnames = [
                 desc[0] for desc in conn.execute(f"SELECT * FROM {db_table} LIMIT 1").description
                 if desc[0] not in serial_keys
@@ -278,18 +276,23 @@ def export_to_db(
 
             txt = txt + ') '
             txt = txt.replace(', )', ')')
-            txt += f"RETURNING "
-            for key in serial_keys:
-                txt += f"{key},"
-            txt += ";"
-            txt = txt.replace(',;', ';')
+
+            if len(serial_keys) > 0:
+                txt += f"RETURNING "
+                for key in serial_keys:
+                    txt += f"{key},"
+                txt += ";"
+                txt = txt.replace(',;', ';')
 
             logger.debug(txt)
             command = txt
 
             cursor.execute(command)
-            serial_key_values = cursor.fetchall()[0]
 
+            if len(serial_keys)>0:
+                serial_key_values = cursor.fetchall()[0]
+            else:
+                serial_key_values = []
     return serial_keys, serial_key_values
 
 
@@ -504,11 +507,10 @@ def get_sequence_keys_from_table(db_table: str,
                                  password: str):
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
-        all_sequence_keys = [x[0] for x in conn.execute(f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';").fetchall()]
-        table_sequence_keys = []
-        for seq_key in all_sequence_keys:
-            if db_table in seq_key:
-                table_sequence_keys.append(seq_key)
+        sequences = [x[0] for x in conn.execute(f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';").fetchall()]
+        seq_tables = np.array([x.split('_')[0] for x in sequences])
+        seq_columns = np.array([x.split('_')[1] for x in sequences])
+        table_sequence_keys = seq_columns[(seq_tables == db_table)]
     return table_sequence_keys
 
 
@@ -523,9 +525,10 @@ def modify_db_entry(
         db_user: str = os.environ.get(pg_admin_user_key),
         password: str = os.environ.get(pg_admin_pwd_key)
 ):
+    logger.info(db_query_columns)
     if not isinstance(db_query_columns, list):
         db_query_columns = [db_query_columns]
-
+    logger.info(db_query_columns)
     if not isinstance(db_query_values, list):
         db_query_values = [db_query_values]
 
@@ -537,14 +540,14 @@ def modify_db_entry(
     if db_query_comparison_types is None:
         db_query_comparison_types = ['='] * len(db_query_values)
     assert len(db_query_comparison_types) == len(db_query_values)
-    assert np.isin(np.all(np.unique(db_query_comparison_types), ['=', '<', '>', 'between']))
+    assert np.all(np.isin(np.unique(db_query_comparison_types), ['=', '<', '>', 'between']))
 
     parsed_constraints = parse_constraints(db_query_columns,
                                            db_query_comparison_types,
                                            db_query_values)
 
     constraints = f"""{parsed_constraints}"""
-
+    logger.info(db_query_columns)
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
 
@@ -553,10 +556,10 @@ def modify_db_entry(
         for c in db_alter_columns:
             logger.debug(f"{c}, {value_dict[c]}")
 
-        alter_values_txt = ','.join(db_alter_values)
+        alter_values_txt = [f'{db_alter_columns[ind]}={db_alter_values[ind]}' for ind in range(len(db_alter_columns))]
 
         sql_query = f"""
-                UPDATE TABLE {db_table} SET ({', '.join(db_alter_columns)})=({alter_values_txt}) WHERE {constraints}; 
+                UPDATE {db_table} SET {', '.join(alter_values_txt)} WHERE {constraints} RETURNING {', '.join(db_alter_columns)}; 
                 """
 
         query_output = execute_query(sql_query, db_name, db_user, password)
