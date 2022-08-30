@@ -16,11 +16,10 @@ parser = argparse.ArgumentParser(
 )
 
 ln = Time.now() - 1. * u.day
-last_night = str(ln).split(" ")[0].replace("-", "")
 parser.add_argument(
     "-n",
     "--night",
-    default=last_night,
+    default=None,
     help="Sub-directory to use in the data directory"
 )
 parser.add_argument(
@@ -102,9 +101,13 @@ if args.monitor:
     else:
         email_recipients = None
 
+    night = args.night
+    if night is None:
+        night = str(Time.now()).split(" ")[0].replace("-", "")
+
     monitor = Monitor(
         pipeline=args.pipeline,
-        night=args.night,
+        night=night,
         realtime_configurations=["realtime"],
         log_level=args.level,
         max_wait_hours=args.maxwaithours,
@@ -130,10 +133,14 @@ else:
     log.addHandler(handler)
     log.setLevel(args.level)
 
+    night = args.night
+    if night is None:
+        night = str(ln).split(" ")[0].replace("-", "")
+
     pipe = get_pipeline(
         args.pipeline,
         selected_configurations=args.config,
-        night=args.night,
+        night=night,
     )
 
     pipe.reduce_images([[[], []]], catch_all_errors=True)
