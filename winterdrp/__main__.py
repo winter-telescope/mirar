@@ -7,7 +7,7 @@ from winterdrp.pipelines import get_pipeline, Pipeline
 from winterdrp.paths import raw_img_dir
 from astropy.time import Time
 from astropy import units as u
-# from winterdrp.scrutineer.base_watchdog import Scrutineer
+from winterdrp.monitor.base_monitor import Monitor
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +59,8 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-w",
-    "--watchdog",
+    "-m",
+    "--monitor",
     action="store_true",
     default=False
 )
@@ -68,6 +68,21 @@ parser.add_argument(
     "--emailrecipients",
     default=None,
     help='Spaceless comma-separated values of email recipients',
+)
+parser.add_argument(
+    "--emailsender",
+    default=None,
+    help='One email sender',
+)
+parser.add_argument(
+    "--emailwaithours",
+    default=24.,
+    help='Time, in hours, to wait before sending a summary email',
+)
+parser.add_argument(
+    "--maxwaithours",
+    default=48.,
+    help='Time, in hours, to wait before ceasing monitoring for new images',
 )
 
 args = parser.parse_args()
@@ -80,16 +95,31 @@ if args.download:
 
     logger.info("Download complete")
 
-if args.watchdog:
+if args.monitor:
 
-    raise NotImplementedError
+    if args.emailrecipients is not None:
+
+        email_recipients = args.emailrecipients.split(",")
+    else:
+        email_recipients = None
+
+    monitor = Monitor(
+        pipeline="summer",
+        night=last_night,
+        realtime_configurations=["realtime"],
+        log_level="DEBUG",
+        max_wait_hours=args.maxwaithours,
+        email_wait_hours=args.emailwaithours,
+        email_sender=args.emailsender,
+        email_recipients=email_recipients
+    )
+    monitor.process_realtime()
 
     # watchdog = Scrutineer(
     #     pipeline=args.pipeline,
     #     configuration=args.config,
     #     night=args.night,
-    #     email_sender=os.getenv("WATCHDOG_EMAIL_ADDRESS"),
-    #     email_recipients=args.emailrecipients.split(",")
+
     # )
     # watchdog.process_full_night()
 
