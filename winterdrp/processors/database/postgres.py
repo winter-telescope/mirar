@@ -470,7 +470,7 @@ def xmatch_import_db(db_name: str,
                                            db_comparison_types,
                                            db_accepted_values)
     if len(parsed_constraints) > 0:
-        constraints += f"""AND {constraints}"""
+        constraints += f"""AND {parsed_constraints}"""
 
     select = f""" {'"' + '","'.join(db_output_columns) + '"'}"""
     if query_dist:
@@ -503,6 +503,72 @@ def xmatch_import_db(db_name: str,
                 query_res['dist'] = entry['xdist']
         all_query_res.append(query_res)
     return all_query_res
+
+
+def get_sequence_keys_from_table(db_table: str,
+                                 db_name: str,
+                                 db_user: str,
+                                 password: str):
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        conn.autocommit = True
+        all_sequence_keys = [x[0] for x in conn.execute(f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';").fetchall()]
+        table_sequence_keys = []
+        for seq_key in all_sequence_keys:
+            if db_table in seq_key:
+                table_sequence_keys.append(seq_key)
+    return table_sequence_keys
+
+
+def modify_db_entry(
+        db_name: str,
+        db_table: str,
+        db_query_columns: str | list[str],
+        db_query_values: str | int | float | list[str | float | int | list],
+        value_dict: dict | astropy.io.fits.Header,
+        db_alter_columns: str | list[str],
+        db_query_comparison_types: list[str] = None,
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key)
+):
+    if not isinstance(db_query_columns, list):
+        db_query_columns = [db_query_columns]
+
+    if not isinstance(db_query_values, list):
+        db_query_values = [db_query_values]
+
+    if not isinstance(db_alter_columns, list):
+        db_alter_columns = [db_alter_columns]
+
+    assert len(db_query_columns) == len(db_query_values)
+
+    if db_query_comparison_types is None:
+        db_query_comparison_types = ['='] * len(db_query_values)
+    assert len(db_query_comparison_types) == len(db_query_values)
+    assert np.isin(np.all(np.unique(db_query_comparison_types), ['=', '<', '>', 'between']))
+
+    parsed_constraints = parse_constraints(db_query_columns,
+                                           db_query_comparison_types,
+                                           db_query_values)
+
+    constraints = f"""{parsed_constraints}"""
+
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        conn.autocommit = True
+
+        alter_values_txt = ""
+        db_alter_values = [str(value_dict[c]) for c in db_alter_columns]
+        for c in db_alter_columns:
+            logger.debug(f"{c}, {value_dict[c]}")
+
+        alter_values_txt = ','.join(db_alter_values)
+
+        sql_query = f"""
+                UPDATE TABLE {db_table} SET ({', '.join(db_alter_columns)})=({alter_values_txt}) WHERE {constraints}; 
+                """
+
+        query_output = execute_query(sql_query, db_name, db_user, password)
+
+    return query_output
 
 
 def get_colnames_from_schema(schema_file):
