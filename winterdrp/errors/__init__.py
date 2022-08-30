@@ -102,7 +102,8 @@ class ErrorStack:
 
         if len(all_reports) > 0:
 
-            summary += f"The following images were affected by at least one error during processing: \n " \
+            summary += f"The following {len(self.failed_images)} images were affected " \
+                       f"by at least one error during processing: \n " \
                        f"{self.failed_images} \n \n" \
                        f"Summarising each error: \n\n"
 
