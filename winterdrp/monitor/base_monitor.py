@@ -125,8 +125,7 @@ class Monitor:
         summary = f"Processed a total of {len(self.processed_science)} science images. \n\n" + error_summary + " \n"
 
         logger.info(f"Writing error log to {self.error_path}")
-        with open(self.error_path, "w") as f:
-            f.write(errorstack.summarise_error_stack(verbose=True))
+        errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
 
         if self.email_info is not None:
 
