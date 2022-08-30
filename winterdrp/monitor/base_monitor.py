@@ -76,8 +76,21 @@ class Monitor:
             logger.error(err)
             raise ValueError(err)
 
+        self.max_wait_hours = float(max_wait_hours) * u.hour
+        logger.info(f"Will terminate after {max_wait_hours} hours.")
+        self.t_start = Time.now()
+
+        self.email_wait_hours = float(email_wait_hours) * u.hour
+
         if np.sum(check_email) == 2:
-            logger.info(f"Will send an email summary after {email_wait_hours} hours.")
+
+            if self.email_wait_hours > self.max_wait_hours:
+                logger.warning(f"Email was set to {self.email_wait_hours}, "
+                               f"but the monitor has a shorter termination period of {self.max_wait_hours}. "
+                               f"Setting email to 95% of max wait.")
+                self.email_wait_hours = 0.95 * self.max_wait_hours
+            
+            logger.info(f"Will send an email summary after {self.email_wait_hours} hours.")
             self.email_info = (email_sender, email_recipients)
             self.email_to_send = True
 
@@ -85,11 +98,6 @@ class Monitor:
             logger.info("No email notification configured.")
             self.email_info = None
             self.email_to_send = False
-
-        self.email_wait_hours = email_wait_hours * u.hour
-        self.max_wait_hours = max_wait_hours * u.hour
-        logger.info(f"Will terminate after {max_wait_hours} hours.")
-        self.t_start = Time.now()
 
         self.processed_science = []
 
