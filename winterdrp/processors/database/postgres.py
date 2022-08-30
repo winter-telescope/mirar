@@ -231,14 +231,12 @@ def create_tables_from_schema(
     for schema_file in ordered_schema_files:
         create_table(schema_path=schema_file, db_name=db_name, db_user=db_user, password=password)
 
-
 def export_to_db(
         value_dict: dict | astropy.io.fits.Header,
         db_name: str,
         db_table: str,
         db_user: str = os.environ.get(pg_admin_user_key),
-        password: str = os.environ.get(pg_admin_pwd_key),
-        skip_duplicates: bool = True
+        password: str = os.environ.get(pg_admin_pwd_key)
 ) -> tuple[str, list]:
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
@@ -281,23 +279,18 @@ def export_to_db(
             txt = txt + ') '
             txt = txt.replace(', )', ')')
             txt += f"RETURNING "
-            for key in primary_key:
+            for key in serial_keys:
                 txt += f"{key},"
             txt += ";"
             txt = txt.replace(',;', ';')
 
             logger.debug(txt)
             command = txt
-            try:
-                cursor.execute(command)
-                primary_key_values = cursor.fetchall()[0]
-            except psycopg.errors.UniqueViolation as e:
-                if skip_duplicates:
-                    primary_key_values = tuple([value_dict[primary_key[0]], ])
-                else:
-                    raise DataBaseError(e)
 
-    return primary_key, primary_key_values
+            cursor.execute(command)
+            serial_key_values = cursor.fetchall()[0]
+
+    return serial_keys, serial_key_values
 
 
 def parse_constraints(db_query_columns,
