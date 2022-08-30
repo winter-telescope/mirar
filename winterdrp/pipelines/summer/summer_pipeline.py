@@ -52,7 +52,7 @@ def summer_astrometric_catalog_generator(
     cat = Gaia2Mass(
         min_mag=10,
         max_mag=20,
-        search_radius_arcmin=30,
+        search_radius_arcmin=7.5,
         trim=True,
         image_catalog_path=temp_cat_path,
         filter_name='j'
@@ -65,9 +65,9 @@ def summer_photometric_catalog_generator(
 ):
     filter_name = header['FILTERID']
     if filter_name == 'u':
-        return SDSS(min_mag=10, max_mag=20, search_radius_arcmin=30, filter_name=filter_name)
+        return SDSS(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
     else:
-        return PS1(min_mag=10, max_mag=20, search_radius_arcmin=30, filter_name=filter_name)
+        return PS1(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
 
 
 def load_raw_summer_image(
@@ -115,8 +115,8 @@ def load_raw_summer_image(
 
         obstime = Time(header['UTCISO'], format='iso')
         t0 = Time('2018-01-01', format='iso')
-        header['NIGHT'] = np.floor((obstime - t0).jd).astype(int)
-
+        #header['NIGHT'] = np.floor((obstime - t0).jd).astype(int)
+        header['NIGHT'] = int(obstime.jd) - int(t0.jd)
         header['EXPMJD'] = header['OBSMJD']
 
         for key in ["PROGID", "OBSID"]:
@@ -159,6 +159,7 @@ def load_raw_summer_image(
             'POINTING': 4,
             'OTHER': 5
         }
+        
 
         if not header['OBSTYPE'] in itid_dict.keys():
             header['ITID'] = 5
@@ -176,6 +177,15 @@ def load_raw_summer_image(
 
         if header['PROGID'] == '' or header['PROGID'] == 'WINTER':
             header['PROGID'] = 2
+        try:
+            header['PROGID'] = int(header['PROGID'])
+        except:
+            try:
+                progpi = header['PROGID']
+                header['PROGID'] = int(header['PROGPI'])
+                header['PROGPI'] = progpi
+            except:
+                header['PROGID']=0
         crds = SkyCoord(ra=header['RA'], dec=header['DEC'], unit=(u.deg, u.deg))
         header['RA'] = crds.ra.deg
         header['DEC'] = crds.dec.deg
@@ -279,11 +289,10 @@ class SummerPipeline(Pipeline):
             ),
             CSVLog(
                 export_keys=[
-                                "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE",
+                                "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE","PROGID", "PROGPI",
                                 base_name_key
                             ] + core_fields
             ),
-            ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
             DatabaseImageExporter(
                 db_name=pipeline_name,
                 db_table="exposures",
@@ -299,6 +308,7 @@ class SummerPipeline(Pipeline):
             ),
             BiasCalibrator(),
             ImageBatcher(split_key="filter"),
+            ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
             FlatCalibrator(),
             ImageBatcher(base_name_key),
             ImageSelector(("OBSTYPE", "SCIENCE")),
