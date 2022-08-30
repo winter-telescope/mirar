@@ -98,30 +98,21 @@ if args.download:
 if args.monitor:
 
     if args.emailrecipients is not None:
-
         email_recipients = args.emailrecipients.split(",")
     else:
         email_recipients = None
 
     monitor = Monitor(
-        pipeline="summer",
-        night=last_night,
+        pipeline=args.pipeline,
+        night=args.night,
         realtime_configurations=["realtime"],
-        log_level="DEBUG",
+        log_level=args.level,
         max_wait_hours=args.maxwaithours,
         email_wait_hours=args.emailwaithours,
         email_sender=args.emailsender,
         email_recipients=email_recipients
     )
     monitor.process_realtime()
-
-    # watchdog = Scrutineer(
-    #     pipeline=args.pipeline,
-    #     configuration=args.config,
-    #     night=args.night,
-
-    # )
-    # watchdog.process_full_night()
 
 else:
 
