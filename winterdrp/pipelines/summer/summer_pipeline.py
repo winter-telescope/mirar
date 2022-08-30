@@ -407,8 +407,10 @@ class SummerPipeline(Pipeline):
                 full_setup=True,
                 schema_dir=summer_schema_dir
             ),
+            ImageRejector(("OBSTYPE", ["FOCUS", "DARK"])),
             MaskPixels(mask_path=summer_mask_path),
             BiasCalibrator(),
+            ImageRejector(("OBSTYPE", ["BIAS"])),
             ImageBatcher(split_key="filter"),
             FlatCalibrator(),
             ImageSelector(("OBSTYPE", "SCIENCE")),
