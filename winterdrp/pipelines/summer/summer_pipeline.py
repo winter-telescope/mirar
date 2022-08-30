@@ -140,7 +140,7 @@ def load_raw_summer_image(
         header['FILTER'] = header['FILTERID']
         try:
             header['SHUTOPEN'] = Time(header['SHUTOPEN'], format='iso').jd
-        except (KeyError, ValueError):
+        except ValueError:
             logger.warning(f"Error parsing 'SHUTOPEN' of {path}: ({header['SHUTOPEN']})")
 
         try:
@@ -168,7 +168,6 @@ def load_raw_summer_image(
             'POINTING': 4,
             'OTHER': 5
         }
-        
 
         if not header['OBSTYPE'] in itid_dict.keys():
             header['ITID'] = 5
@@ -184,17 +183,19 @@ def load_raw_summer_image(
         if 'COADDS' not in header.keys():
             header['COADDS'] = 1
 
-        if header['PROGID'] == '' or header['PROGID'] == 'WINTER':
+        if header['PROGID'] in ['', 'WINTER']:
             header['PROGID'] = 2
+
         try:
             header['PROGID'] = int(header['PROGID'])
-        except:
+        except ValueError:
             try:
                 progpi = header['PROGID']
                 header['PROGID'] = int(header['PROGPI'])
                 header['PROGPI'] = progpi
-            except:
-                header['PROGID']=0
+            except KeyError:
+                header['PROGID'] = 0
+
         crds = SkyCoord(ra=header['RA'], dec=header['DEC'], unit=(u.deg, u.deg))
         header['RA'] = crds.ra.deg
         header['DEC'] = crds.dec.deg
@@ -291,10 +292,10 @@ pipeline_name = "summer"
 standard_summer_reduction = [
     CSVLog(
         export_keys=[
-                        "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE","PROGID", "PROGPI",
-                        base_name_key
-                    ] + core_fields
-        ),
+            "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE","PROGID", "PROGPI",
+            base_name_key
+        ] + core_fields
+    ),
     DatabaseImageExporter(
         db_name=pipeline_name,
         db_table="exposures",
@@ -302,24 +303,20 @@ standard_summer_reduction = [
         full_setup=True,
         schema_dir=summer_schema_dir
     ),
-    ImageRejector(("OBSTYPE", ["FOCUS", "DARK"])),
+    ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
     CalHunter(
         load_image=load_raw_summer_image,
         requirements=summer_cal_requirements
     ),
     BiasCalibrator(),
-    ImageRejector(("OBSTYPE", ["BIAS"])),
+    ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
-    ImageRejector(("OBSTYPE", "FOCUS"), ("FILTER", "?")),
     FlatCalibrator(),
-    ImageSelector(("OBSTYPE", "SCIENCE")),
+    ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageBatcher(base_name_key),
     AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
-    # ImageLoader(input_sub_dir='autoastrometry',
-    #             load_image=load_raw_summer_image),
-    # ImageSelector((base_name_key, "SUMMER_20220816_041023_Camera0.fits")),
     Sextractor(
-        output_sub_dir="testb",
+        output_sub_dir="sextractor",
         weight_image=summer_weight_path,
         checkimage_name=None,
         checkimage_type=None,
