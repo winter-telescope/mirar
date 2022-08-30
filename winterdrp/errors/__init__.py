@@ -93,10 +93,10 @@ class ErrorStack:
 
         summary = f"Error report summarising {len(self.reports)} errors. \n \n" \
                   f"{int(len(is_known_error) - np.sum(is_known_error))}/{len(is_known_error)} " \
-                  f"errors were other errors not raised by winterdrp.\n  " \
+                  f"errors were errors not raised by winterdrp.\n " \
                   f"The remaining {int(np.sum(is_known_error))}/{len(is_known_error)} errors were known errors " \
                   f"raised by winterdrp. \n" \
-                  f" An additional {len(self.noncritical_reports)} non-critical errors were raised. \n" \
+                  f"An additional {len(self.noncritical_reports)} non-critical errors were raised. \n" \
 
         all_reports = self.reports + self.noncritical_reports
 
@@ -115,16 +115,14 @@ class ErrorStack:
                 else:
                     summary += report.generate_log_message()
 
-            if output_path is not None:
-
-                logger.error(f"Saving tracebacks of caught errors to {output_path}")
-
-                with open(output_path, "w") as f:
-                    f.write(summary)
-
         else:
             msg = "No raised errors found in processing"
             logger.info(msg)
             summary += f"\n {msg}"
+
+        if output_path is not None:
+            logger.error(f"Saving tracebacks of caught errors to {output_path}")
+            with open(output_path, "w") as f:
+                f.write(summary)
 
         return summary
