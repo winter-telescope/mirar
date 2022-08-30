@@ -44,6 +44,8 @@ class Monitor:
             realtime_configurations: str | list[str] = None,
             email_sender: str = None,
             email_recipients: str | list = None,
+            email_wait_hours: float = 24.,
+            max_wait_hours: float = 48.,
             log_level="INFO",
     ):
 
@@ -67,6 +69,28 @@ class Monitor:
         self.log_level = log_level
         self.log_path = self.configure_logs(log_level)
 
+        check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
+        if np.sum(check_email) == 1:
+            err = "In order to send emails, you must specify both a a sender and a recipient. \n" \
+                  f"In this case, sender is {email_sender} and recipent is {email_recipients}."
+            logger.error(err)
+            raise ValueError(err)
+
+        if np.sum(check_email) == 2:
+            logger.info(f"Will send an email summary after {email_wait_hours} hours.")
+            self.email_info = (email_sender, email_recipients)
+            self.email_to_send = True
+
+        else:
+            logger.info("No email notification configured.")
+            self.email_info = None
+            self.email_to_send = False
+
+        self.email_wait_hours = email_wait_hours * u.hour
+        self.max_wait_hours = max_wait_hours * u.hour
+        logger.info(f"Will terminate after {max_wait_hours} hours.")
+        self.t_start = Time.now()
+
         self.processed_science = []
 
         # default to "pipeline default cal requirements"
@@ -83,26 +107,13 @@ class Monitor:
         else:
             self.cal_images = self.cal_headers = []
 
-        # self.cal_cache = self.get_latest_cals(required_cals)
-
-        check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
-        if np.sum(check_email) == 1:
-            err = "In order to send emails, you must specify both a a sender and a recipient. \n" \
-                  f"In this case, sender is {email_sender} and recipent is {email_recipients}."
-            logger.error(err)
-            raise ValueError(err)
-
-        if np.sum(check_email) == 2:
-            self.email_info = (email_sender, email_recipients)
-        else:
-            self.email_info = None
-
     def summarise_errors(
             self,
             errorstack: ErrorStack,
     ):
 
-        summary = errorstack.summarise_error_stack()
+        error_summary = errorstack.summarise_error_stack(verbose=False)
+        summary = f"Successfully processed {len(self.processed_science)} science images. \n\n" + error_summary
 
         if self.email_info is not None:
 
@@ -115,7 +126,7 @@ class Monitor:
                 email_recipients=recipients,
                 email_subject=subject,
                 email_text=summary,
-                # attachments=[self.log_path]
+                attachments=[self.log_path]
             )
         else:
             print(summary)
@@ -138,14 +149,14 @@ class Monitor:
         except OSError:
             pass
 
-        # log = logging.getLogger("winterdrp")
-        #
-        # handler = logging.FileHandler(log_output_path)
-        # # handler = logging.StreamHandler(sys.stdout)
-        # formatter = logging.Formatter('%(asctime)s: %(name)s [l %(lineno)d] - %(levelname)s - %(message)s')
-        # handler.setFormatter(formatter)
-        # log.addHandler(handler)
-        # log.setLevel(log_level)
+        log = logging.getLogger("winterdrp")
+
+        handler = logging.FileHandler(log_output_path)
+        # handler = logging.StreamHandler(sys.stdout)
+        formatter = logging.Formatter('%(asctime)s: %(name)s [l %(lineno)d] - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        log.addHandler(handler)
+        log.setLevel(log_level)
 
         root = logging.getLogger()
         root.setLevel(log_level)
@@ -174,16 +185,17 @@ class Monitor:
 
         event_handler = NewImageHandler(watchdog_queue)
         observer = Observer()
-        observer.schedule(event_handler, path=str(self.raw_image_directory), recursive=True)
+        observer.schedule(event_handler, path=str(self.raw_image_directory))
         observer.start()
 
         try:
-            while True:
+            while (Time.now() - self.t_start) < self.max_wait_hours:
                 time.sleep(2)
-        except KeyboardInterrupt:
+        finally:
+            logger.info(f"More than the maximum {self.max_wait_hours} hours have elapsed. "
+                        f"No longer waiting for new images.")
             observer.stop()
-
-        observer.join()
+            observer.join()
 
     def process_load_queue(self, q):
         '''This is the worker thread function. It is run as a daemon
@@ -194,6 +206,13 @@ class Monitor:
              q:  Queue() object
         '''
         while True:
+
+            if self.email_to_send:
+                if Time.now() - self.t_start > self.email_wait_hours:
+                    logger.info(f"More than {self.email_wait_hours} hours have elapsed. Sending summary email.")
+                    self.summarise_errors(errorstack=self.errorstack)
+                    self.email_to_send = False
+
             if not q.empty():
                 event = q.get()
                 now = datetime.datetime.utcnow()
@@ -233,11 +252,15 @@ if __name__ == '__main__':
         CalRequirement(target_name="flat", required_field="FILTERID", required_values=["u", "g", "r", "i"]),
     ]
 
-    scrutineer = Monitor(
+    monitor = Monitor(
         pipeline="summer",
         night=last_night,
         cal_requirements=required_cals,
         realtime_configurations=["realtime"],
-        log_level="DEBUG"
+        log_level="DEBUG",
+        email_wait_hours=0.01,
+        max_wait_hours=0.05,
+        # email_sender="winter.data.reduction.pipeline@gmail.com",
+        # email_recipients="rdstein@caltech.edu"
     )
-    scrutineer.process_realtime()
+    monitor.process_realtime()
