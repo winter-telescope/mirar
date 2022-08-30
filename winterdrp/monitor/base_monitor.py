@@ -122,7 +122,7 @@ class Monitor:
     ):
 
         error_summary = errorstack.summarise_error_stack(verbose=False)
-        summary = f"Processed a total of {len(self.processed_science)} science images. \n\n" + error_summary
+        summary = f"Processed a total of {len(self.processed_science)} science images. \n\n" + error_summary + " \n"
 
         logger.info(f"Writing error log to {self.error_path}")
         with open(self.error_path, "w") as f:
