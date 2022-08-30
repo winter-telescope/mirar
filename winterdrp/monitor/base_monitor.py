@@ -68,6 +68,7 @@ class Monitor:
 
         self.log_level = log_level
         self.log_path = self.configure_logs(log_level)
+        self.error_path = self.get_error_output_path()
 
         check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
         if np.sum(check_email) == 1:
@@ -89,7 +90,7 @@ class Monitor:
                                f"but the monitor has a shorter termination period of {self.max_wait_hours}. "
                                f"Setting email to 95% of max wait.")
                 self.email_wait_hours = 0.95 * self.max_wait_hours
-            
+
             logger.info(f"Will send an email summary after {self.email_wait_hours} hours.")
             self.email_info = (email_sender, email_recipients)
             self.email_to_send = True
@@ -123,6 +124,10 @@ class Monitor:
         error_summary = errorstack.summarise_error_stack(verbose=False)
         summary = f"Successfully processed {len(self.processed_science)} science images. \n\n" + error_summary
 
+        logger.info(f"Writing error log to {self.error_path}")
+        with open(self.error_path, "w") as f:
+            f.write(errorstack.summarise_error_stack(verbose=True))
+
         if self.email_info is not None:
 
             sender, recipients = self.email_info
@@ -134,7 +139,7 @@ class Monitor:
                 email_recipients=recipients,
                 email_subject=subject,
                 email_text=summary,
-                attachments=[self.log_path]
+                attachments=[self.log_path, self.error_path]
             )
         else:
             print(summary)
@@ -144,6 +149,19 @@ class Monitor:
     ):
         batches, errorstack = self.pipeline.reduce_images([[[], []]], catch_all_errors=True)
         self.summarise_errors(errorstack=errorstack)
+
+    def get_error_output_path(self) -> str:
+        error_output_path = get_output_path(
+            base_name=f"{self.night}_error_stack.txt",
+            dir_root=self.pipeline.night_sub_dir,
+        )
+
+        try:
+            os.makedirs(os.path.dirname(error_output_path))
+        except OSError:
+            pass
+
+        return error_output_path
 
     def configure_logs(self, log_level="INFO"):
 
