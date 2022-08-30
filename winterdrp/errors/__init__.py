@@ -92,9 +92,9 @@ class ErrorStack:
         is_known_error = [x.known_error_bool for x in self.reports]
 
         summary = f"Error report summarising {len(self.reports)} errors. \n \n" \
-                  f"{len(is_known_error) - np.sum(is_known_error)}/{len(is_known_error)} " \
+                  f"{int(len(is_known_error) - np.sum(is_known_error))}/{len(is_known_error)} " \
                   f"errors were other errors not raised by winterdrp.\n  " \
-                  f"The remaining {np.sum(is_known_error)}/{len(is_known_error)} errors were known errors " \
+                  f"The remaining {int(np.sum(is_known_error))}/{len(is_known_error)} errors were known errors " \
                   f"raised by winterdrp. \n" \
                   f" An additional {len(self.noncritical_reports)} non-critical errors were raised. \n" \
 
