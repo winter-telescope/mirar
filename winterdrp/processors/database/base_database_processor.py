@@ -21,6 +21,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             db_password: str = os.environ.get('DB_PWD'),
             full_setup: bool = False,
             schema_dir: str = None,
+            duplicate_protocol: str = 'fail',
             *args,
             **kwargs
     ):
@@ -33,6 +34,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         self.schema_path = schema_path
         self.schema_dir = schema_dir
         self.db_check = False
+        self.duplicate_protocol = duplicate_protocol
+        assert self.duplicate_protocol in ['fail', 'ignore', 'replace']
 
     def db_exists(self):
         return check_if_db_exists(
