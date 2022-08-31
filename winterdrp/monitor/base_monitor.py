@@ -10,7 +10,7 @@ from watchdog.observers import Observer
 from winterdrp.pipelines import get_pipeline
 from winterdrp.errors import ErrorStack
 from winterdrp.utils.send_email import send_gmail
-from winterdrp.paths import get_output_path, raw_img_dir
+from winterdrp.paths import get_output_path, raw_img_dir, base_raw_dir
 import numpy as np
 import logging
 from astropy.time import Time
@@ -47,6 +47,7 @@ class Monitor:
             email_wait_hours: float = 24.,
             max_wait_hours: float = 48.,
             log_level="INFO",
+            raw_dir: str = base_raw_dir
     ):
 
         self.errorstack = ErrorStack()
@@ -59,7 +60,9 @@ class Monitor:
 
         self.pipeline = get_pipeline(pipeline, night=night, selected_configurations=realtime_configurations)
 
-        self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir))
+        self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir, img_sub_dir=raw_dir))
+        
+        print(self.raw_image_directory)
 
         if not self.raw_image_directory.exists():
             for x in self.raw_image_directory.parents[::-1]:

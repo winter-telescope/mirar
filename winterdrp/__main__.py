@@ -8,6 +8,7 @@ from winterdrp.paths import raw_img_dir
 from astropy.time import Time
 from astropy import units as u
 from winterdrp.monitor.base_monitor import Monitor
+from winterdrp.paths import base_raw_dir
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,11 @@ parser.add_argument(
     default=48.,
     help='Time, in hours, to wait before ceasing monitoring for new images',
 )
+parser.add_argument(
+    "--rawdir",
+    default=base_raw_dir,
+    help="Subdirectory to look in for raw images of a given night"
+)
 
 args = parser.parse_args()
 
@@ -113,7 +119,8 @@ if args.monitor:
         max_wait_hours=args.maxwaithours,
         email_wait_hours=args.emailwaithours,
         email_sender=args.emailsender,
-        email_recipients=email_recipients
+        email_recipients=email_recipients,
+        raw_dir=args.rawdir
     )
     monitor.process_realtime()
 
