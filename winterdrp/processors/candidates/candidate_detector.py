@@ -135,9 +135,9 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs['cutoutTemplate'] = display_ref_ims
         det_srcs['cutoutDifference'] = display_diff_ims
 
-        diff_zp = float(fits.getval(diff_filename, 'ZP_AUTO'))
+        diff_zp = float(fits.getval(diff_filename, 'ZP'))
         det_srcs['magzpsci'] = diff_zp
-        diff_zp_unc = float(fits.getval(diff_filename,'ZP_AUTO_std'))
+        diff_zp_unc = float(fits.getval(diff_filename,'ZP_std'))
         det_srcs['magzpsciunc'] = diff_zp_unc
         det_srcs['diffimname'] = diff_filename
         det_srcs['sciimname'] = sci_resamp_imagename
@@ -184,7 +184,7 @@ class DetectCandidates(BaseCandidateGenerator):
 
             scorr_mask_path = os.path.join(self.get_sub_output_dir(),header["SCORMASK"])
             cands_catalog_name = diff_image_path.replace('.fits', '.dets')
-            cands_catalog_name = run_sextractor_dual(
+            cands_catalog_name, _ = run_sextractor_dual(
                 det_image=scorr_image_path,
                 measure_image=diff_image_path,
                 output_dir=self.get_sub_output_dir(),

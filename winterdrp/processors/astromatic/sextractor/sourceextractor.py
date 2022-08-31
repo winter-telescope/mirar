@@ -210,11 +210,13 @@ def run_sextractor_dual(
     if starnnw_name is not None:
         cmd += f"-STARNNW_NAME {starnnw_name} "
 
-    cmd += parse_checkimage(
+    checkimage_cmd, checkimage_name = parse_checkimage(
         checkimage_type=checkimage_type,
         checkimage_name=checkimage_name,
         image=det_image
     )
+
+    cmd += checkimage_cmd
     logger.info(weight_image)
     if weight_image is None:
         cmd += "-WEIGHT_TYPE None"
@@ -226,4 +228,4 @@ def run_sextractor_dual(
     except ExecutionError as e:
         raise SextractorError(e)
 
-    return catalog_name
+    return catalog_name, checkimage_name
