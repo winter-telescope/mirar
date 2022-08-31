@@ -2,8 +2,7 @@ import unittest
 import logging
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
-from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_weight_path, \
-    sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_config_path
+from winterdrp.pipelines.summer.summer_files import sextractor_photometry_config, psfex_config_path
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
@@ -36,14 +35,13 @@ test_configuration = [
                       ref_psfex=summer_reference_psfex,
                       ref_sextractor=summer_reference_sextractor,
                       ref_swarp_resampler=summer_reference_image_resampler),
-            Sextractor(config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',
-                       parameter_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.param',
-                       filter_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',
-                       starnnw_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
-                       output_sub_dir='subtract',
-                       cache=False,
-                       write_regions_file=True),
-            PSFex(config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.psfex',
+            Sextractor(
+                output_sub_dir='subtract',
+                cache=False,
+                write_regions_file=True,
+                **sextractor_photometry_config
+            ),
+            PSFex(config_path=psfex_config_path,
                   output_sub_dir="subtract",
                   norm_fits=True),
             ImageSaver(output_dir_name='ref'),
