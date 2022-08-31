@@ -21,13 +21,8 @@ sextractor_photometry_config = {
     "starnnw_path": os.path.join(astromatic_config_dir, 'default.nnw')
 }
 
-astrom_scamp = 'config/scamp.conf'
-astrom_sex = 'config/astrom.sex'
-astrom_param = 'config/astrom.param'
-astrom_filter = 'config/default.conv'
-astrom_swarp = 'config/config.swarp'
-astrom_nnw = 'config/default.nnw'
-
 scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
 
-swarp_path = os.path.join(astromatic_config_dir, "config.swarp")
+swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+
+psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")

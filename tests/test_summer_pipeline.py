@@ -3,7 +3,7 @@ import logging
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
 from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_weight_path, \
-    sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_path
+    sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_config_path
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
@@ -64,7 +64,7 @@ test_configuration = [
         ref_catalog_generator=summer_astrometric_catalog_generator,
         scamp_config_path=scamp_path,
     ),
-    Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
+    Swarp(swarp_config_path=swarp_config_path, imgpixsize=2400),
     Sextractor(output_sub_dir="test",
                checkimage_type='BACKGROUND_RMS',
                **sextractor_photometry_config),
