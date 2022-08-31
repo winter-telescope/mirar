@@ -9,7 +9,7 @@ from winterdrp.processors.database.database_exporter import DatabaseImageExporte
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp, PSFex
 from winterdrp.pipelines.summer.summer_files import get_summer_schema_path, summer_weight_path, \
-    sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_path
+    sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_config_path
 from winterdrp.pipelines.summer.summer_files.schema import summer_schema_dir
 from winterdrp.processors.utils import ImageSaver, ImageLoader, ImageSelector, ImageBatcher
 from winterdrp.processors.utils.cal_hunter import CalHunter, CalRequirement
@@ -27,6 +27,7 @@ from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image, 
 from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_generator, \
     summer_photometric_catalog_generator, summer_reference_image_generator, summer_reference_psfex, \
     summer_reference_image_resampler, summer_reference_sextractor
+from winterdrp.pipelines.summer.summer_files import psfex_config_path
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 summer_gain = 1.0
@@ -80,7 +81,7 @@ standard_summer_reduction = [
         ref_catalog_generator=summer_astrometric_catalog_generator,
         scamp_config_path=scamp_path,
     ),
-    Swarp(swarp_config_path=swarp_path, imgpixsize=2400),
+    Swarp(swarp_config_path=swarp_config_path, imgpixsize=2400),
     Sextractor(output_sub_dir="photprocess",
                checkimage_type='BACKGROUND_RMS',
                **sextractor_photometry_config),
@@ -115,14 +116,13 @@ class SummerPipeline(Pipeline):
                 ref_sextractor=summer_reference_sextractor,
                 ref_swarp_resampler=summer_reference_image_resampler
             ),
-            Sextractor(config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',
-                       parameter_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.param',
-                       filter_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',
-                       starnnw_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
-                       output_sub_dir='subtract',
-                       cache=False,
-                       write_regions_file=True),
-            PSFex(config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.psfex',
+            Sextractor(
+                output_sub_dir='subtract',
+                cache=False,
+                write_regions_file=True,
+                **sextractor_photometry_config
+            ),
+            PSFex(config_path=psfex_config_path,
                   output_sub_dir="subtract",
                   norm_fits=True),
             ImageSaver(output_dir_name='ref'),
@@ -132,13 +132,14 @@ class SummerPipeline(Pipeline):
                 db_name=pipeline_name,
                 db_table="diff",
                 schema_path=get_summer_schema_path("diff"),
-
             ),
-            DetectCandidates(output_sub_dir="subtract",
-                             cand_det_sextractor_config='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',
-                             cand_det_sextractor_nnw='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
-                             cand_det_sextractor_filter='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',
-                             cand_det_sextractor_params='winterdrp/pipelines/summer/summer_imsub_files/config/Scorr.param'),
+            DetectCandidates(
+                output_sub_dir="subtract",
+                cand_det_sextractor_config='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex', # Delete
+                cand_det_sextractor_nnw='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
+                cand_det_sextractor_filter='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',
+                cand_det_sextractor_params='winterdrp/pipelines/summer/summer_imsub_files/config/Scorr.param'
+            ),
             RegionsWriter(output_dir_name='candidates'),
             PSFPhotometry(),
             AperturePhotometry(aper_diameters=[8, 40], cutout_size_aper_phot=100, bkg_in_diameters=[25, 90],

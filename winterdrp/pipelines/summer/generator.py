@@ -8,6 +8,7 @@ from winterdrp.references.sdss import SDSSRef
 from winterdrp.catalog import Gaia2Mass, PS1, SDSS
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from winterdrp.processors.astromatic import Sextractor, Swarp, PSFex
+from winterdrp.pipelines.summer.summer_files import swarp_config_path, sextractor_photometry_config, psfex_config_path
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def summer_reference_image_resampler(
         **kwargs
 ) -> Swarp:
     return Swarp(
-        swarp_config_path='winterdrp/pipelines/summer/summer_imsub_files/config/config.swarp',
+        swarp_config_path=swarp_config_path,
         cache=True,
         **kwargs
         )
@@ -62,19 +63,16 @@ def summer_reference_image_resampler(
 
 def summer_reference_sextractor(output_sub_dir, gain):
     return Sextractor(
-        config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',
-        parameter_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.param',
-        filter_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',
-        starnnw_path='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
         gain=gain,
         output_sub_dir=output_sub_dir,
-        cache=True
+        cache=True,
+        **sextractor_photometry_config
         )
 
 
 def summer_reference_psfex(output_sub_dir, norm_fits):
     return PSFex(
-        config_path='winterdrp/pipelines/summer/summer_imsub_files/config/photom.psfex',
+        config_path=psfex_config_path,
         output_sub_dir=output_sub_dir,
         norm_fits=norm_fits,
         cache=True
