@@ -42,13 +42,15 @@ standard_summer_reduction = [
         db_table="exposures",
         schema_path=get_summer_schema_path("exposures"),
         full_setup=True,
-        schema_dir=summer_schema_dir
+        schema_dir=summer_schema_dir,
+        duplicate_protocol='ignore'
     ),
     MaskPixels(mask_path=summer_mask_path),
     DatabaseImageExporter(
         db_name=DB_NAME,
         db_table="raw",
         schema_path=get_summer_schema_path("raw"),
+        duplicate_protocol='replace'
     ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
     CalHunter(
@@ -82,7 +84,8 @@ standard_summer_reduction = [
     DatabaseImageExporter(
         db_name=DB_NAME,
         db_table="proc",
-        schema_path=get_summer_schema_path("proc")
+        schema_path=get_summer_schema_path("proc"),
+        duplicate_protocol='replace'
     ),
     ModifyImageDatabaseSeq(
                 db_name=DB_NAME,
