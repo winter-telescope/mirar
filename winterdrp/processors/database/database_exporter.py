@@ -30,7 +30,8 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
                 db_name=self.db_name,
                 db_table=self.db_table,
                 db_user=self.db_user,
-                password=self.db_password
+                password=self.db_password,
+                duplicate_protocol=self.duplicate_protocol
             )
 
             for ind, key in enumerate(primary_keys):
