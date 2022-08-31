@@ -24,17 +24,19 @@ from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_gene
     summer_reference_image_resampler, summer_reference_sextractor
 
 
-load_raw = [ImageLoader(load_image=load_raw_summer_image)]
+load_raw = [
+    ImageLoader(load_image=load_raw_summer_image),
+    CSVLog(
+        export_keys=[
+                        "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE", "PROGID", "PROGPI",
+                        base_name_key
+                    ] + core_fields
+    ),
+]
 
 load_processed = [ImageLoader(input_sub_dir='processed', load_image=load_proc_summer_image)]
 
 standard_summer_reduction = [
-    CSVLog(
-        export_keys=[
-            "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE","PROGID", "PROGPI",
-            base_name_key
-        ] + core_fields
-    ),
     DatabaseImageExporter(
         db_name=PIPELINE_NAME,
         db_table="exposures",
