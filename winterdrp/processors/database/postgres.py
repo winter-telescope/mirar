@@ -5,6 +5,7 @@ from glob import glob
 import numpy as np
 import logging
 from winterdrp.errors import ProcessorError
+from psycopg import errors
 
 logger = logging.getLogger(__name__)
 
@@ -236,8 +237,9 @@ def export_to_db(
         db_name: str,
         db_table: str,
         db_user: str = os.environ.get(pg_admin_user_key),
-        password: str = os.environ.get(pg_admin_pwd_key)
-) -> tuple[str, list]:
+        password: str = os.environ.get(pg_admin_pwd_key),
+        duplicate_protocol: str = 'fail'
+) -> tuple[list, list]:
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
 
@@ -251,11 +253,11 @@ def export_to_db(
             AND Constraint_Type = 'PRIMARY KEY'
             AND Col.Table_Name = '{db_table}'
         """
-
+        serial_keys, serial_key_values = [],[]
         with conn.execute(sql_query) as cursor:
 
             primary_key = [x[0] for x in cursor.fetchall()]
-            serial_keys = get_sequence_keys_from_table(db_table, db_name, db_user, password)
+            serial_keys = [x for x in get_sequence_keys_from_table(db_table, db_name, db_user, password)]
             logger.debug(serial_keys)
             colnames = [
                 desc[0] for desc in conn.execute(f"SELECT * FROM {db_table} LIMIT 1").description
@@ -287,12 +289,38 @@ def export_to_db(
             logger.debug(txt)
             command = txt
 
-            cursor.execute(command)
+            try:
+                cursor.execute(command)
+                if len(serial_keys) > 0:
+                    serial_key_values = cursor.fetchall()[0]
+                else:
+                    serial_key_values = []
 
-            if len(serial_keys)>0:
-                serial_key_values = cursor.fetchall()[0]
-            else:
-                serial_key_values = []
+            except errors.UniqueViolation:
+                primary_key_values = [value_dict[x] for x in primary_key]
+                if duplicate_protocol == 'fail':
+                    err = f"Duplicate error, entry with {primary_key}={primary_key_values} already exists in {db_name}."
+                    logger.error(err)
+                    raise errors.UniqueViolation
+                elif duplicate_protocol == 'ignore':
+                    logger.info(f"Found duplicate entry with {primary_key}={primary_key_values} in {db_name}. Ignoring.")
+                    pass
+                elif duplicate_protocol == 'replace':
+                    logger.info(f"Updating duplicate entry with {primary_key}={primary_key_values} in {db_name}.")
+                    update_colnames = []
+                    for x in colnames:
+                        if not x in primary_key:
+                            update_colnames.append(x)
+                    serial_key_values = modify_db_entry(db_query_columns=primary_key,
+                                                        db_query_values=primary_key_values,
+                                                        value_dict=value_dict,
+                                                        db_alter_columns=update_colnames,
+                                                        db_table=db_table,
+                                                        db_name=db_name,
+                                                        db_user=db_user,
+                                                        password=password,
+                                                        return_columns=serial_keys)
+
     return serial_keys, serial_key_values
 
 
@@ -521,6 +549,7 @@ def modify_db_entry(
         db_query_values: str | int | float | list[str | float | int | list],
         value_dict: dict | astropy.io.fits.Header,
         db_alter_columns: str | list[str],
+        return_columns: str | list[str] = None,
         db_query_comparison_types: list[str] = None,
         db_user: str = os.environ.get(pg_admin_user_key),
         password: str = os.environ.get(pg_admin_pwd_key)
@@ -534,6 +563,11 @@ def modify_db_entry(
 
     if not isinstance(db_alter_columns, list):
         db_alter_columns = [db_alter_columns]
+
+    if return_columns is None:
+        return_columns = db_alter_columns
+    if not isinstance(return_columns, list):
+        return_columns = [return_columns]
 
     assert len(db_query_columns) == len(db_query_values)
 
@@ -551,17 +585,19 @@ def modify_db_entry(
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
 
-        alter_values_txt = ""
         db_alter_values = [str(value_dict[c]) for c in db_alter_columns]
         for c in db_alter_columns:
             logger.debug(f"{c}, {value_dict[c]}")
 
-        alter_values_txt = [f'{db_alter_columns[ind]}={db_alter_values[ind]}' for ind in range(len(db_alter_columns))]
+        alter_values_txt = [f"{db_alter_columns[ind]}='{db_alter_values[ind]}'" for ind in range(len(db_alter_columns))]
 
         sql_query = f"""
-                UPDATE {db_table} SET {', '.join(alter_values_txt)} WHERE {constraints} RETURNING {', '.join(db_alter_columns)}; 
+                UPDATE {db_table} SET {', '.join(alter_values_txt)} WHERE {constraints}  
                 """
-
+        if len(return_columns)>0:
+            logger.info(return_columns)
+            sql_query += f""" RETURNING {', '.join(return_columns)}"""
+        sql_query += ";"
         query_output = execute_query(sql_query, db_name, db_user, password)
 
     return query_output
