@@ -31,10 +31,12 @@ test_configuration = [
             ImageSelector(('OBSTYPE', 'SCIENCE')),
             # ImageSelector(('FILTER', ['u'])),
             ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.resamp.fits")),
-            Reference(ref_image_generator=summer_reference_image_generator,
-                      ref_psfex=summer_reference_psfex,
-                      ref_sextractor=summer_reference_sextractor,
-                      ref_swarp_resampler=summer_reference_image_resampler),
+            Reference(
+                ref_image_generator=summer_reference_image_generator,
+                ref_psfex=summer_reference_psfex,
+                ref_sextractor=summer_reference_sextractor,
+                ref_swarp_resampler=summer_reference_image_resampler
+            ),
             Sextractor(
                 output_sub_dir='subtract',
                 cache=False,
@@ -44,7 +46,6 @@ test_configuration = [
             PSFex(config_path=psfex_config_path,
                   output_sub_dir="subtract",
                   norm_fits=True),
-            ImageSaver(output_dir_name='ref'),
             ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO', catalog_purifier=default_summer_catalog_purifier),
             ZOGY(output_sub_dir="subtract"),
             # DetectCandidates(output_sub_dir="subtract",
