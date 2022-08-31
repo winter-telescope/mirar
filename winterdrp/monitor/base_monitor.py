@@ -31,6 +31,7 @@ class NewImageHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if event.event_type == "created":
+            print(event.src_path)
             self.queue.put(event)
 
 
@@ -221,10 +222,10 @@ class Monitor:
             while (Time.now() - self.t_start) < self.max_wait_hours:
                 time.sleep(2)
         finally:
-            logger.info(f"More than the maximum {self.max_wait_hours} hours have elapsed. "
-                        f"No longer waiting for new images.")
+            logger.info(f"No longer waiting for new images.")
             observer.stop()
             observer.join()
+            self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
 
     def process_load_queue(self, q):
         '''This is the worker thread function. It is run as a daemon
@@ -244,29 +245,32 @@ class Monitor:
 
             if not q.empty():
                 event = q.get()
-                now = datetime.datetime.utcnow()
 
-                print(now)
+                if event.src_path[-5:] == ".fits":
 
-                img, header = load_raw_summer_image(event.src_path)
+                    now = datetime.datetime.utcnow()
 
-                is_science = header["OBSCLASS"] == "science"
+                    print(now)
 
-                all_img = [img] + copy.deepcopy(self.cal_images)
-                all_headers = [header] + copy.deepcopy(self.cal_headers)
+                    img, header = load_raw_summer_image(event.src_path)
 
-                if not is_science:
-                    logger.info(f"Skipping {event.src_path} (calibration image)")
-                else:
-                    logger.info(f"Reducing {event.src_path} (calibration image)")
-                    _, errorstack = self.pipeline.reduce_images(
-                        batches=[[all_img, all_headers]],
-                        selected_configurations=self.realtime_configurations,
-                        catch_all_errors=True
-                    )
-                    self.processed_science.append(event.src_path)
-                    self.errorstack += errorstack
-                    errorstack.summarise_error_stack(verbose=True)
+                    is_science = header["OBSCLASS"] == "science"
+
+                    all_img = [img] + copy.deepcopy(self.cal_images)
+                    all_headers = [header] + copy.deepcopy(self.cal_headers)
+
+                    if not is_science:
+                        logger.info(f"Skipping {event.src_path} (calibration image)")
+                    else:
+                        logger.info(f"Reducing {event.src_path} (calibration image)")
+                        _, errorstack = self.pipeline.reduce_images(
+                            batches=[[all_img, all_headers]],
+                            selected_configurations=self.realtime_configurations,
+                            catch_all_errors=True
+                        )
+                        self.processed_science.append(event.src_path)
+                        self.errorstack += errorstack
+                        self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
             else:
                 time.sleep(1)
 
