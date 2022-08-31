@@ -44,6 +44,10 @@ summer_cal_requirements = [
 pipeline_name = "summer"
 
 
+load_raw = [ImageLoader(load_image=load_raw_summer_image)]
+
+load_processed = [ImageLoader(input_sub_dir='processed', load_image=load_proc_summer_image)]
+
 standard_summer_reduction = [
     CSVLog(
         export_keys=[
@@ -94,6 +98,48 @@ standard_summer_reduction = [
     )
 ]
 
+imsub = [
+    ImageBatcher(split_key=base_name_key),
+    ImageSelector(('OBSTYPE', 'SCIENCE')),
+    # ImageSelector((base_name_key, ["SUMMER_20220816_042926_Camera0.resamp.fits","SUMMER_20220816_042743_Camera0.resamp.fits"])),
+    Reference(
+        ref_image_generator=summer_reference_image_generator,
+        ref_psfex=summer_reference_psfex,
+        ref_sextractor=summer_reference_sextractor,
+        ref_swarp_resampler=summer_reference_image_resampler
+    ),
+    Sextractor(
+        output_sub_dir='subtract',
+        cache=False,
+        write_regions_file=True,
+        **sextractor_photometry_config
+    ),
+    PSFex(config_path=psfex_config_path,
+          output_sub_dir="subtract",
+          norm_fits=True),
+    ImageSaver(output_dir_name='ref'),
+    ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO',
+                catalog_purifier=default_summer_catalog_purifier),
+    ZOGY(output_sub_dir="subtract"),
+    DatabaseImageExporter(
+        db_name=pipeline_name,
+        db_table="diff",
+        schema_path=get_summer_schema_path("diff"),
+    ),
+    DetectCandidates(
+        output_sub_dir="subtract",
+        cand_det_sextractor_config='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',  # Delete
+        cand_det_sextractor_nnw='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
+        cand_det_sextractor_filter='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',
+        cand_det_sextractor_params='winterdrp/pipelines/summer/summer_imsub_files/config/Scorr.param'
+    ),
+    RegionsWriter(output_dir_name='candidates'),
+    PSFPhotometry(),
+    AperturePhotometry(aper_diameters=[8, 40], cutout_size_aper_phot=100, bkg_in_diameters=[25, 90],
+                       bkg_out_diameters=[40, 100], col_suffix_list=['', 'big']),
+    DataframeWriter(output_dir_name='candidates'),
+]
+
 
 class SummerPipeline(Pipeline):
 
@@ -101,52 +147,10 @@ class SummerPipeline(Pipeline):
     default_cal_requirements = summer_cal_requirements
 
     all_pipeline_configurations = {
-        None: [ImageLoader(load_image=load_raw_summer_image)] + standard_summer_reduction,
-        'imsub': [
-            ImageLoader(
-                input_sub_dir='processed',
-                load_image=load_proc_summer_image
-            ),
-            ImageBatcher(split_key=base_name_key),
-            ImageSelector(('OBSTYPE', 'SCIENCE')),
-            # ImageSelector((base_name_key, ["SUMMER_20220816_042926_Camera0.resamp.fits","SUMMER_20220816_042743_Camera0.resamp.fits"])),
-            Reference(
-                ref_image_generator=summer_reference_image_generator,
-                ref_psfex=summer_reference_psfex,
-                ref_sextractor=summer_reference_sextractor,
-                ref_swarp_resampler=summer_reference_image_resampler
-            ),
-            Sextractor(
-                output_sub_dir='subtract',
-                cache=False,
-                write_regions_file=True,
-                **sextractor_photometry_config
-            ),
-            PSFex(config_path=psfex_config_path,
-                  output_sub_dir="subtract",
-                  norm_fits=True),
-            ImageSaver(output_dir_name='ref'),
-            ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO', catalog_purifier=default_summer_catalog_purifier),
-            ZOGY(output_sub_dir="subtract"),
-            DatabaseImageExporter(
-                db_name=pipeline_name,
-                db_table="diff",
-                schema_path=get_summer_schema_path("diff"),
-            ),
-            DetectCandidates(
-                output_sub_dir="subtract",
-                cand_det_sextractor_config='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex', # Delete
-                cand_det_sextractor_nnw='winterdrp/pipelines/summer/summer_imsub_files/config/default.nnw',
-                cand_det_sextractor_filter='winterdrp/pipelines/summer/summer_imsub_files/config/default.conv',
-                cand_det_sextractor_params='winterdrp/pipelines/summer/summer_imsub_files/config/Scorr.param'
-            ),
-            RegionsWriter(output_dir_name='candidates'),
-            PSFPhotometry(),
-            AperturePhotometry(aper_diameters=[8, 40], cutout_size_aper_phot=100, bkg_in_diameters=[25, 90],
-                               bkg_out_diameters=[40, 100], col_suffix_list=['', 'big']),
-            DataframeWriter(output_dir_name='candidates'),
-        ],
-        "realtime": standard_summer_reduction
+        None: load_raw + standard_summer_reduction,
+        'imsub': load_processed + imsub,
+        "full": load_raw + standard_summer_reduction + imsub,
+        "realtime": standard_summer_reduction,
     }
 
     @staticmethod
