@@ -98,7 +98,7 @@ standard_summer_reduction = [
     )
 ]
 
-imsub = [
+subtract = [
     ImageBatcher(split_key=base_name_key),
     ImageSelector(('OBSTYPE', 'SCIENCE')),
     # ImageSelector((base_name_key, ["SUMMER_20220816_042926_Camera0.resamp.fits","SUMMER_20220816_042743_Camera0.resamp.fits"])),
@@ -121,11 +121,17 @@ imsub = [
     ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO',
                 catalog_purifier=default_summer_catalog_purifier),
     ZOGY(output_sub_dir="subtract"),
+]
+
+export_diff_to_db = [
     DatabaseImageExporter(
         db_name=pipeline_name,
         db_table="diff",
         schema_path=get_summer_schema_path("diff"),
     ),
+]
+
+extract_candidates = [
     DetectCandidates(
         output_sub_dir="subtract",
         cand_det_sextractor_config='winterdrp/pipelines/summer/summer_imsub_files/config/photomCat.sex',  # Delete
@@ -139,6 +145,8 @@ imsub = [
                        bkg_out_diameters=[40, 100], col_suffix_list=['', 'big']),
     DataframeWriter(output_dir_name='candidates'),
 ]
+
+imsub = subtract + export_diff_to_db + export_diff_to_db
 
 
 class SummerPipeline(Pipeline):
