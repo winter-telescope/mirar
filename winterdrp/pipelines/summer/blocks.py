@@ -3,7 +3,7 @@ from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp, PSFex
 from winterdrp.pipelines.summer.config import get_summer_schema_path, summer_weight_path, \
     sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_config_path, psfex_config_path, \
-    sextractor_candidates_config, PIPELINE_NAME, SUMMER_PIXEL_SCALE, summer_cal_requirements
+    sextractor_candidates_config, PIPELINE_NAME, SUMMER_PIXEL_SCALE, summer_cal_requirements, summer_mask_path
 from winterdrp.pipelines.summer.config.schema import summer_schema_dir
 from winterdrp.processors.utils import ImageSaver, ImageLoader, ImageSelector, ImageBatcher
 from winterdrp.processors.utils.cal_hunter import CalHunter
@@ -17,6 +17,7 @@ from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
 from winterdrp.processors.photometry.aperture_photometry import AperturePhotometry
 from winterdrp.processors.candidates.utils import RegionsWriter, DataframeWriter
+from winterdrp.processors.mask import MaskPixels
 from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image, load_proc_summer_image
 from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_generator, \
     summer_photometric_catalog_generator, summer_reference_image_generator, summer_reference_psfex, \
@@ -40,6 +41,12 @@ standard_summer_reduction = [
         schema_path=get_summer_schema_path("exposures"),
         full_setup=True,
         schema_dir=summer_schema_dir
+    ),
+    MaskPixels(mask_path=summer_mask_path),
+    DatabaseImageExporter(
+        db_name=PIPELINE_NAME,
+        db_table="raw",
+        schema_path=get_summer_schema_path("raw"),
     ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
     CalHunter(
