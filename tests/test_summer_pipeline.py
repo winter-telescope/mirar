@@ -11,8 +11,10 @@ from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors import MaskPixels, BiasCalibrator, FlatCalibrator
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.paths import core_fields, base_name_key
-from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image, summer_pixel_scale, \
-    summer_astrometric_catalog_generator, summer_photometric_catalog_generator, SummerPipeline
+from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image, SummerPipeline
+from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_generator, \
+    summer_photometric_catalog_generator
+from winterdrp.pipelines.summer.config import SUMMER_PIXEL_SCALE
 from winterdrp.downloader.get_test_data import get_test_data_dir
 
 logger = logging.getLogger(__name__)
@@ -31,28 +33,12 @@ test_configuration = [
                         base_name_key
                     ] + core_fields
     ),
-    # DatabaseExporter(
-    #     db_name=pipeline_name,
-    #     db_table="exposures",
-    #     schema_path=get_summer_schema_path("exposures")
-    # ),
     MaskPixels(mask_path=summer_mask_path),
-    # SplitImage(
-    #     buffer_pixels=0,
-    #     n_x=1,
-    #     n_y=2
-    # ),
-    # ImageSaver(output_dir_name="rawimages"),
-    # DatabaseExporter(
-    #     db_name=pipeline_name,
-    #     db_table="raw",
-    #     schema_path=get_summer_schema_path("raw")
-    # ),
     BiasCalibrator(),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector(("OBSTYPE", "SCIENCE")),
-    AutoAstrometry(pa=0, inv=True, pixel_scale=summer_pixel_scale),
+    AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
     Sextractor(
         output_sub_dir="test",
         weight_image=summer_weight_path,
