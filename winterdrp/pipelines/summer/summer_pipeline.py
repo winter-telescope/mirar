@@ -24,6 +24,7 @@ class SummerPipeline(Pipeline):
         "realtime": standard_summer_reduction,
     }
 
+
     @staticmethod
     def download_raw_images_for_night(
             night: str | int
