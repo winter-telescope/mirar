@@ -8,7 +8,7 @@ from winterdrp.references.sdss import SDSSRef
 from winterdrp.catalog import Gaia2Mass, PS1, SDSS
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from winterdrp.processors.astromatic import Sextractor, Swarp, PSFex
-from winterdrp.pipelines.summer.summer_files import swarp_config_path, sextractor_photometry_config, psfex_config_path
+from winterdrp.pipelines.summer.config import swarp_config_path, sextractor_photometry_config, psfex_config_path
 
 logger = logging.getLogger(__name__)
 

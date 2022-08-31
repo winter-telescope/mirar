@@ -2,7 +2,7 @@ import unittest
 import logging
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
-from winterdrp.pipelines.summer.summer_files import summer_mask_path, summer_weight_path, \
+from winterdrp.pipelines.summer.config import summer_mask_path, summer_weight_path, \
     sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_config_path
 from winterdrp.processors.utils import ImageSaver
 from winterdrp.processors.utils.image_loader import ImageLoader
