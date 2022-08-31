@@ -9,6 +9,7 @@ from astropy.time import Time
 from astropy import units as u
 from winterdrp.monitor.base_monitor import Monitor
 from winterdrp.paths import base_raw_dir
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,7 @@ if args.monitor:
 
     night = args.night
     if night is None:
-        night = str(Time.now()).split(" ")[0].replace("-", "")
+        night = str(datetime.now()).split(" ")[0].replace("-", "")
 
     monitor = Monitor(
         pipeline=args.pipeline,
