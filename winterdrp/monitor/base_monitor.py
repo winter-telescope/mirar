@@ -61,7 +61,7 @@ class Monitor:
         self.pipeline = get_pipeline(pipeline, night=night, selected_configurations=realtime_configurations)
 
         self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir, img_sub_dir=raw_dir))
-        
+
         print(self.raw_image_directory)
 
         if not self.raw_image_directory.exists():
@@ -113,6 +113,7 @@ class Monitor:
         if cal_requirements is not None:
             self.cal_images, self.cal_headers = find_required_cals(
                 latest_dir=str(self.raw_image_directory),
+                night=night,
                 open_f=self.pipeline.load_raw_image,
                 requirements=cal_requirements
             )

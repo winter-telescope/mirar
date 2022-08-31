@@ -61,6 +61,7 @@ def update_requirements(
 
 def find_required_cals(
         latest_dir: str,
+        night: str,
         requirements: list[CalRequirement],
         open_f: Callable = open_fits,
         images: list[np.ndarray] = None,
@@ -79,11 +80,18 @@ def find_required_cals(
             headers = []
 
     path = Path(latest_dir)
-    night = path.parents[0].name
+
+    split = latest_dir.split(night)
+    root = split[0]
+
+    if len(split) > 1:
+        subdir = split[1]
+    else:
+        subdir = ""
 
     preceding_dirs = []
 
-    for x in [x for x in path.parents[1].iterdir() if x.is_dir()]:
+    for x in [x for x in Path(root).iterdir() if x.is_dir()]:
         if x.name[0] not in ["."]:
             if len(str(x.name)) == len(str(night)):
                 try:
@@ -102,7 +110,7 @@ def find_required_cals(
         if len(ordered_nights) == 0:
             raise ImageNotFoundError("Ran out of nights!")
 
-        dir_to_load = ordered_nights[0].joinpath(raw_img_sub_dir)
+        dir_to_load = ordered_nights[0].joinpath(subdir)
 
         ordered_nights = ordered_nights[1:]
 
@@ -166,6 +174,7 @@ class CalHunter(ImageLoader):
 
         images, headers = find_required_cals(
             latest_dir=latest_dir,
+            night=self.night,
             requirements=requirements,
             open_f=self.load_image,
             images=images,
