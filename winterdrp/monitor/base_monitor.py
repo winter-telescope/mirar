@@ -1,6 +1,4 @@
-import subprocess
 import os
-import datetime
 from watchdog.events import FileSystemEventHandler
 from threading import Thread
 from queue import Queue
@@ -15,10 +13,13 @@ import numpy as np
 import logging
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image
 from winterdrp.processors.utils.cal_hunter import CalRequirement, find_required_cals
 from pathlib import Path
 import copy
+from astropy.io import fits
+from warnings import catch_warnings
+import warnings
+from astropy.utils.exceptions import AstropyUserWarning
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,6 @@ class NewImageHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if event.event_type == "created":
-            print(event.src_path)
             self.queue.put(event)
 
 
@@ -248,11 +248,30 @@ class Monitor:
 
                 if event.src_path[-5:] == ".fits":
 
-                    now = datetime.datetime.utcnow()
+                    # Verify that file transfer is complete, useful for rsync latency
 
-                    print(now)
+                    # Disclaimer: I (Robert) do not feel great about having written this code block
+                    # It seems to works though, let's hope no one finds out
+                    # I will cover my tracks by hiding the astropy warning which inspired this block,
+                    # informing the user that the file is not as long as expected
 
-                    img, header = load_raw_summer_image(event.src_path)
+                    check = False
+
+                    while not check:
+                        with catch_warnings():
+                            warnings.filterwarnings('ignore', category=AstropyUserWarning)
+                            try:
+                                with fits.open(event.src_path) as hdul:
+                                    check = hdul._file.tell() == hdul._file.size
+                            except OSError:
+                                pass
+
+                            if not check:
+                                print("Seems like the file is not fully transferred. "
+                                      "Waiting a couple of seconds before trying again.")
+                                time.sleep(3)
+
+                    img, header = self.pipeline.load_raw_image(event.src_path)
 
                     is_science = header["OBSCLASS"] == "science"
 
@@ -260,9 +279,9 @@ class Monitor:
                     all_headers = [header] + copy.deepcopy(self.cal_headers)
 
                     if not is_science:
-                        logger.info(f"Skipping {event.src_path} (calibration image)")
+                        print(f"Skipping {event.src_path} (calibration image)")
                     else:
-                        logger.info(f"Reducing {event.src_path} (calibration image)")
+                        print(f"Reducing {event.src_path} (science image)")
                         _, errorstack = self.pipeline.reduce_images(
                             batches=[[all_img, all_headers]],
                             selected_configurations=self.realtime_configurations,
@@ -271,6 +290,7 @@ class Monitor:
                         self.processed_science.append(event.src_path)
                         self.errorstack += errorstack
                         self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
+
             else:
                 time.sleep(1)
 
