@@ -60,7 +60,6 @@ def convert_table_to_ldac(
     del_list = [x for x in t.dtype.names if t.dtype[x].kind == "O"]
     t.remove_columns(del_list)
     f = tempfile.NamedTemporaryFile(suffix='.fits', mode='rb+')
-    print(t)
     t.write(f, format='fits')
     f.seek(0)
     hdulist = fits.open(f, mode='update')
