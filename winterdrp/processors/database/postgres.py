@@ -594,8 +594,6 @@ def modify_db_entry(
         conn.autocommit = True
 
         db_alter_values = [str(value_dict[c]) for c in db_alter_columns]
-        for c in db_alter_columns:
-            logger.debug(f"{c}, {value_dict[c]}")
 
         alter_values_txt = [f"{db_alter_columns[ind]}='{db_alter_values[ind]}'" for ind in range(len(db_alter_columns))]
 
