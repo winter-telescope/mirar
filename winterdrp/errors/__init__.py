@@ -108,11 +108,14 @@ class ErrorStack:
 
             logger.error(f"Found {len(self.reports)} errors caught by code.")
 
-            for report in all_reports:
-                if verbose:
+            errors = [type(x.error).__name__ for x in all_reports]
+
+            for error_type in list(set(errors)):
+                summary += f"Found {errors.count(error_type)} counts of error {error_type}. \n"
+
+            if verbose:
+                for report in all_reports:
                     summary += str(report.generate_full_traceback())
-                else:
-                    summary += report.generate_log_message()
 
         else:
             msg = "No raised errors found in processing"
