@@ -1,7 +1,5 @@
 import logging
 from abc import ABC
-from typing import Tuple
-
 import astropy.io.fits
 import numpy as np
 import os
@@ -358,7 +356,7 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
             self,
             batch: pd.DataFrame
     ) -> pd.DataFrame:
-        if len(batch)>0:
+        if len(batch) > 0:
             batch = self._apply_to_candidates(batch)
         return batch
 
