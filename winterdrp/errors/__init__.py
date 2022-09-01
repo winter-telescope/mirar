@@ -44,8 +44,7 @@ class ErrorReport:
     def generate_log_message(self) -> str:
         return f"Error for processor {self.processor_name} at time {self.t_error} UT: " \
                f"{type(self.error).__name__} affected batch of length {len(self.contents)}. " \
-               f"{self.message_known_error()}. \n" \
-
+               f"{self.message_known_error()}. \n"
 
     def generate_full_traceback(self) -> str:
         msg = f"Error for processor {self.processor_name} at {self.t_error} (local time): \n " \
