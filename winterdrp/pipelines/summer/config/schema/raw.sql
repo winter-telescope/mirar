@@ -36,8 +36,4 @@ CREATE TABLE IF NOT EXISTS raw (
     rawcount SERIAL
 );
 
-CREATE INDEX ON raw (q3c_ang2pix(ra, dec));
-CLUSTER raw_q3c_ang2pix_idx ON raw;
-ANALYZE raw;
-
-CREATE CLUSTERED INDEX raw_obsdate_idx ON raw (obsdate DESC);
+CREATE INDEX raw_obsdate_idx ON raw (obsdate DESC);
