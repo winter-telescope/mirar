@@ -5,15 +5,15 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="winterdrp",
-    version="0.4.0",
-    author="Viraj Karambelkar, Robert Stein",
+    version="0.4.1",
+    author="Viraj Karambelkar and Robert Stein",
     author_email="rdstein@caltech.edu",
     description="Data reduction pipeline for WINTER",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="MIT",
     keywords="astronomy image WINTER",
-    url="https://github.com/winter-telescope/winter_drp",
+    url="https://github.com/winter-telescope/winterdrp",
     packages=setuptools.find_packages(),
     classifiers=[
         "License :: OSI Approved :: MIT License",
