@@ -22,6 +22,7 @@ class SummerPipeline(Pipeline):
         'imsub': load_processed + imsub,
         "full": load_raw + standard_summer_reduction + imsub,
         "realtime": standard_summer_reduction,
+
     }
 
 
