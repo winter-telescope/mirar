@@ -49,8 +49,7 @@ def validate_credentials(
 
 
 def create_db(
-        db_name: str,
-        q3c: bool = False,
+        db_name: str
 ):
     admin_user = os.environ.get(pg_admin_user_key)
     admin_password = os.environ.get(pg_admin_pwd_key)
@@ -62,12 +61,12 @@ def create_db(
         conn.execute(sql)
         logger.info(f'Created db {db_name}')
 
-    if q3c:
-        with psycopg.connect(f"dbname={db_name} user={admin_user} password={admin_password}") as conn:
-            sql = f'''CREATE EXTENSION q3c;'''
-            conn.execute(sql)
-            logger.info(f'Created extension q3c on {db_name}')
+def run_sql_command_from_file(file_path, db_name, db_user, password):
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        with open(file_path,"r") as f:
+            conn.execute(f.read())
 
+        logger.info(f"Executed sql commands from file {file_path}")
 def create_table(
         schema_path: str,
         db_name: str,
