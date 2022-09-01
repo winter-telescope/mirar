@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class SummerPipeline(Pipeline):
     name = PIPELINE_NAME
     default_cal_requirements = summer_cal_requirements
-    
+
     all_pipeline_configurations = {
         None: load_raw + standard_summer_reduction,
         'imsub': load_processed + imsub,
