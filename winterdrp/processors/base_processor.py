@@ -13,13 +13,13 @@ import pandas as pd
 
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
-    ProcessingError, base_name_key, proc_history_key
-from winterdrp.errors import ErrorReport, ErrorStack
+    base_name_key, proc_history_key
+from winterdrp.errors import ErrorReport, ErrorStack, ProcessorError, NoncriticalProcessingError
 
 logger = logging.getLogger(__name__)
 
 
-class PrerequisiteError(BaseException):
+class PrerequisiteError(ProcessorError):
     pass
 
 
@@ -126,6 +126,11 @@ class BaseProcessor:
             try:
                 batch = self.apply(batch)
                 passed_batches.append(batch)
+            except NoncriticalProcessingError as e:
+                err = self.generate_error_report(e, batch)
+                logger.error(err.generate_log_message())
+                err_stack.add_report(err)
+                passed_batches.append(batch)
             except Exception as e:
                 err = self.generate_error_report(e, batch)
                 logger.error(err.generate_log_message())
@@ -140,6 +145,46 @@ class BaseProcessor:
 
     def generate_error_report(self, exception: Exception, batch) -> ErrorReport:
         raise NotImplementedError
+
+
+class ImageHandler:
+    @staticmethod
+    def open_fits(
+            path: str
+    ) -> tuple[np.ndarray, astropy.io.fits]:
+        return open_fits(path)
+
+    @staticmethod
+    def save_fits(
+            data,
+            header,
+            path: str,
+    ):
+        if header is not None:
+            header[latest_save_key] = path
+        logger.info(f"Saving to {path}")
+        save_to_path(data, header, path)
+
+    def save_mask(
+            self,
+            data: np.ndarray,
+            header: astropy.io.fits.Header,
+            img_path: str
+    ) -> str:
+        mask = (~np.isnan(data)).astype(float)
+        mask_path = get_mask_path(img_path)
+        header[latest_mask_save_key] = mask_path
+        self.save_fits(mask, header, mask_path)
+        return mask_path
+
+    @staticmethod
+    def get_hash(headers: list[astropy.io.fits.Header]):
+        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in headers]))
+        return hashlib.sha1(key.encode()).hexdigest()
+
+    def image_batch_error_report(self, exception: Exception, batch):
+        contents = [x[base_name_key] for x in batch[1]]
+        return ErrorReport(exception, self.__module__, contents)
 
 
 class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
@@ -196,6 +241,9 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         self.overwrite = overwrite
         self.cache_sub_dir = cache_sub_dir
 
+    def select_cache_images(self, images, headers):
+        raise NotImplementedError
+
     def get_cache_path(
             self,
             images: list[np.ndarray],
@@ -222,7 +270,8 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
             images: list[np.ndarray],
             headers: list[astropy.io.fits.Header],
     ) -> str:
-        return f"{self.base_key}_{self.get_hash(headers)}.fits"
+        cache_image, cache_headers = self.select_cache_images(images, headers)
+        return f"{self.base_key}_{self.get_hash(cache_headers)}.fits"
 
     def get_cache_file(
             self,

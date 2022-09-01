@@ -17,4 +17,5 @@ psycopg
 psycopg[binary]
 pyfftw
 setuptools
+watchdog
 wget

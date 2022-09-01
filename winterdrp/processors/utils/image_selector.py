@@ -2,8 +2,12 @@ import astropy.io.fits
 import numpy as np
 import logging
 from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
+
+class ParsingError(KeyError, ProcessorError):
+    pass
 
 
 def select_from_images(
@@ -23,9 +27,13 @@ def select_from_images(
     passing_headers = []
 
     for i, header in enumerate(headers):
-        if str(header[header_key]) in target_values:
-            passing_images.append(images[i])
-            passing_headers.append(header)
+        try:
+            if str(header[header_key]) in target_values:
+                passing_images.append(images[i])
+                passing_headers.append(header)
+        except KeyError as e:
+            logger.error(e)
+            raise ParsingError(e)
 
     return passing_images, passing_headers
 

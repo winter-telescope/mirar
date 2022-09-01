@@ -1,6 +1,6 @@
 from winterdrp.paths import base_name_key
 import traceback
-from astropy.time import Time
+from datetime import datetime
 import logging
 import numpy as np
 
@@ -19,6 +19,10 @@ class NoncriticalProcessingError(BaseProcessorError):
     pass
 
 
+class ImageNotFoundError(ProcessorError, FileNotFoundError):
+    pass
+
+
 class ErrorReport:
 
     def __init__(
@@ -30,8 +34,9 @@ class ErrorReport:
         self.error = error
         self.processor_name = processor_name
         self.contents = contents
-        self.t_error = Time.now()
+        self.t_error = datetime.now()
         self.known_error_bool = isinstance(self.error, BaseProcessorError)
+        self.non_critical_bool = isinstance(self.error, NoncriticalProcessingError)
 
     def message_known_error(self) -> str:
         return f"This error {['was not', 'was'][self.known_error_bool]} a known error raised by winterdrp."
@@ -43,7 +48,7 @@ class ErrorReport:
 
 
     def generate_full_traceback(self) -> str:
-        msg = f"Error for processor {self.processor_name} at time {self.t_error} UT: \n " \
+        msg = f"Error for processor {self.processor_name} at {self.t_error} (local time): \n " \
               f"{''.join(traceback.format_tb(self.error.__traceback__))}" \
               f"{type(self.error).__name__}: {self.error} \n  " \
               f"This error affected the following files: {self.contents} \n" \
@@ -58,6 +63,7 @@ class ErrorStack:
             reports: list[ErrorReport] = None
     ):
         self.reports = []
+        self.noncritical_reports = []
         self.failed_images = []
 
         if reports is not None:
@@ -65,7 +71,10 @@ class ErrorStack:
                 self.add_report(report)
 
     def add_report(self, report: ErrorReport):
-        self.reports.append(report)
+        if report.non_critical_bool:
+            self.noncritical_reports.append(report)
+        else:
+            self.reports.append(report)
         all_failed_images = self.failed_images + report.contents
         self.failed_images = sorted(list(set(all_failed_images)))
 
@@ -83,35 +92,37 @@ class ErrorStack:
         is_known_error = [x.known_error_bool for x in self.reports]
 
         summary = f"Error report summarising {len(self.reports)} errors. \n \n" \
-                  f"{np.sum(is_known_error)}/{len(is_known_error)} errors were known errors " \
+                  f"{int(len(is_known_error) - np.sum(is_known_error))}/{len(is_known_error)} " \
+                  f"errors were errors not raised by winterdrp.\n " \
+                  f"The remaining {int(np.sum(is_known_error))}/{len(is_known_error)} errors were known errors " \
                   f"raised by winterdrp. \n" \
-                  f"The remaining {len(is_known_error) - np.sum(is_known_error)}/{len(is_known_error)} " \
-                  f"errors were known errors raised by winterdrp.\n  \n" \
+                  f"An additional {len(self.noncritical_reports)} non-critical errors were raised. \n" \
 
-        if len(self.reports) > 0:
+        all_reports = self.reports + self.noncritical_reports
 
-            summary += f"The following images were affected by at least one error during processing: \n " \
+        if len(all_reports) > 0:
+
+            summary += f"The following {len(self.failed_images)} images were affected " \
+                       f"by at least one error during processing: \n " \
                        f"{self.failed_images} \n \n" \
                        f"Summarising each error: \n\n"
 
             logger.error(f"Found {len(self.reports)} errors caught by code.")
 
-            for report in self.reports:
+            for report in all_reports:
                 if verbose:
                     summary += str(report.generate_full_traceback())
                 else:
                     summary += report.generate_log_message()
 
-            if output_path is not None:
-
-                logger.error(f"Saving tracebacks of caught errors to {output_path}")
-
-                with open(output_path, "w") as f:
-                    f.write(summary)
-
         else:
             msg = "No raised errors found in processing"
             logger.info(msg)
             summary += f"\n {msg}"
+
+        if output_path is not None:
+            logger.error(f"Saving tracebacks of caught errors to {output_path}")
+            with open(output_path, "w") as f:
+                f.write(summary)
 
         return summary

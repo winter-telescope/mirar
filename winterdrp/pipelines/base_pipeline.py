@@ -17,6 +17,8 @@ class Pipeline:
     pipelines = {}
     name = None
 
+    default_cal_requirements = None
+
     @property
     def all_pipeline_configurations(self):
         raise NotImplementedError()
@@ -39,7 +41,6 @@ class Pipeline:
         if not isinstance(selected_configurations, list):
             selected_configurations = [selected_configurations]
         self.selected_configurations = selected_configurations
-        self.processors = list()
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -56,6 +57,10 @@ class Pipeline:
             configuration: str = None,
     ):
         return copy.copy(self.all_pipeline_configurations[configuration])
+
+    @staticmethod
+    def load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
+        raise NotImplementedError
 
     @staticmethod
     def configure_processors(
@@ -77,7 +82,7 @@ class Pipeline:
     def set_configuration(
             self,
             new_configuration: str = None
-    ):
+    ) -> list[BaseProcessor]:
         logger.debug(f"Setting pipeline configuration to {new_configuration}.")
 
         processors = self.load_pipeline_configuration(new_configuration)
@@ -87,7 +92,7 @@ class Pipeline:
             processor.set_preceding_steps(previous_steps=processors[:i])
             processor.check_prerequisites()
         logger.debug("Pipeline initialisation complete.")
-        self.processors = processors
+        return processors
 
     @staticmethod
     def download_raw_images_for_night(
@@ -113,13 +118,13 @@ class Pipeline:
         for j, configuration in enumerate(selected_configurations):
 
             logger.info(f"Using pipeline configuration {configuration} "
-                        f"({j}/{len(selected_configurations)})")
+                        f"({j+1}/{len(selected_configurations)})")
 
-            self.set_configuration(configuration)
+            processors = self.set_configuration(configuration)
 
-            for i, processor in enumerate(self.processors):
+            for i, processor in enumerate(processors):
                 logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
-                             f"(Step {i+1}/{len(self.processors)})")
+                             f"(Step {i+1}/{len(processors)})")
 
                 batches, new_err_stack = processor.base_apply(
                     batches
