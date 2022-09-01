@@ -57,6 +57,9 @@ class ErrorReport:
     def get_error_name(self) -> str:
         return type(self.error).__name__
 
+    def get_error_line(self) -> str:
+        return traceback.format_tb(self.error.__traceback__)[-1]
+
 
 class ErrorStack:
 
@@ -111,10 +114,12 @@ class ErrorStack:
 
             logger.error(f"Found {len(self.reports)} errors caught by code.")
 
-            errors = [x.get_error_name() for x in all_reports]
+            error_lines = [x.get_error_line() for x in all_reports]
 
-            for error_type in list(set(errors)):
-                summary += f"Found {errors.count(error_type)} counts of error {error_type}. \n"
+            for error_type in list(set(error_lines)):
+                line = error_type.split('\n')[0]
+                error_name = error_type.split('\n')[1].split("raise ")[1].split("(")[0]
+                summary += f"Found {error_lines.count(error_type)} counts of error {error_name}: \n{line}.\n"
 
             summary += " \n"
 
