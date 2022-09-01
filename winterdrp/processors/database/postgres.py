@@ -61,12 +61,15 @@ def create_db(
         conn.execute(sql)
         logger.info(f'Created db {db_name}')
 
-def run_sql_command_from_file(file_path, db_name, db_user, password):
+
+def run_sql_command_from_file(file_path, db_name, db_user, password, admin=False):
+    validate_credentials(db_name, db_user, admin)
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         with open(file_path,"r") as f:
             conn.execute(f.read())
 
         logger.info(f"Executed sql commands from file {file_path}")
+
 def create_table(
         schema_path: str,
         db_name: str,
