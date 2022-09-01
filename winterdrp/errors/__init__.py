@@ -57,8 +57,11 @@ class ErrorReport:
     def get_error_name(self) -> str:
         return type(self.error).__name__
 
-    def get_error_line(self) -> str:
+    def get_error_message(self) -> str:
         return traceback.format_tb(self.error.__traceback__)[-1]
+
+    def get_error_line(self) -> str:
+        return self.get_error_message().split('\n')[0]
 
 
 class ErrorStack:
@@ -98,7 +101,7 @@ class ErrorStack:
 
         summary = f"Error report summarising {len(self.reports)} errors. \n \n" \
                   f"{int(len(is_known_error) - np.sum(is_known_error))}/{len(is_known_error)} " \
-                  f"errors were errors not raised by winterdrp.\n " \
+                  f"errors were errors not raised by winterdrp. \n" \
                   f"The remaining {int(np.sum(is_known_error))}/{len(is_known_error)} errors were known errors " \
                   f"raised by winterdrp. \n" \
                   f"An additional {len(self.noncritical_reports)} non-critical errors were raised. \n" \
@@ -108,18 +111,30 @@ class ErrorStack:
         if len(all_reports) > 0:
 
             summary += f"The following {len(self.failed_images)} images were affected " \
-                       f"by at least one error during processing: \n " \
-                       f"{self.failed_images} \n \n" \
-                       f"Summarising each error: \n\n"
+                       f"by at least one error during processing: \n "
+
+            if verbose:
+                summary += f"{self.failed_images} \n \n"
+
+            summary += f"Summarising each error: \n\n"
 
             logger.error(f"Found {len(self.reports)} errors caught by code.")
 
-            error_lines = [x.get_error_line() for x in all_reports]
+            error_lines = [x.get_error_message() for x in all_reports]
 
             for error_type in list(set(error_lines)):
+
+                matching_errors = [x for x in all_reports if x.get_error_message() == error_type]
+
+                img_paths = []
+                for x in matching_errors:
+                    img_paths += x.contents
+                img_paths = list(set(img_paths))
+
                 line = error_type.split('\n')[0]
                 error_name = error_type.split('\n')[1].split("raise ")[1].split("(")[0]
-                summary += f"Found {error_lines.count(error_type)} counts of error {error_name}: \n{line}.\n"
+                summary += f"Found {error_lines.count(error_type)} counts of error {error_name}, " \
+                           f"affecting {len(img_paths)} images: \n{line}.\n \n"
 
             summary += " \n"
 

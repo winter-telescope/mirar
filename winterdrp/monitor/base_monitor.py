@@ -63,8 +63,6 @@ class Monitor:
 
         self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir, img_sub_dir=raw_dir))
 
-        print(self.raw_image_directory)
-
         if not self.raw_image_directory.exists():
             for x in self.raw_image_directory.parents[::-1]:
                 x.mkdir(exist_ok=True)
@@ -77,7 +75,7 @@ class Monitor:
         check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
         if np.sum(check_email) == 1:
             err = "In order to send emails, you must specify both a a sender and a recipient. \n" \
-                  f"In this case, sender is {email_sender} and recipent is {email_recipients}."
+                  f"In this case, sender is {email_sender} and recipient is {email_recipients}."
             logger.error(err)
             raise ValueError(err)
 
@@ -295,21 +293,3 @@ class Monitor:
 
             else:
                 time.sleep(1)
-
-
-if __name__ == '__main__':
-
-    ln = Time.now() - 1. * u.day
-    last_night = str(ln).split(" ")[0].replace("-", "")
-
-    monitor = Monitor(
-        pipeline="summer",
-        night=last_night,
-        realtime_configurations=["realtime"],
-        log_level="DEBUG",
-        max_wait_hours=0.05,
-        email_wait_hours=0.01,
-        # email_sender="winter.data.reduction.pipeline@gmail.com",
-        # email_recipients="rdstein@caltech.edu"
-    )
-    monitor.process_realtime()
