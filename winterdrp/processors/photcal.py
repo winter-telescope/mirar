@@ -6,7 +6,8 @@ from winterdrp.processors.base_processor import BaseImageProcessor, Prerequisite
 from winterdrp.paths import get_output_dir, copy_temp_file
 from collections.abc import Callable
 from winterdrp.catalog.base_catalog import BaseCatalog
-from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor, sextractor_header_key, sextractor_checkimg_keys
+from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor, sextractor_header_key, \
+    sextractor_checkimg_keys
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 from astropy.coordinates import SkyCoord
 import astropy.units as u
@@ -27,6 +28,26 @@ REQUIRED_PARAMETERS = [
     'MAG_APER',
     'MAG_AUTO'
 ]
+
+
+class PhotometryError(ProcessorError):
+    pass
+
+
+class PhotometryReferenceError(PhotometryError):
+    pass
+
+
+class PhotometrySourceError(PhotometryError):
+    pass
+
+
+class PhotometryCrossMatchError(PhotometryError):
+    pass
+
+
+class PhotometryCalculationError(PhotometryError):
+    pass
 
 
 class PhotCalibrator(BaseImageProcessor):
@@ -69,7 +90,7 @@ class PhotCalibrator(BaseImageProcessor):
         if len(ref_cat) == 0:
             err = 'No sources found in reference catalog'
             logger.error(err)
-            raise ProcessorError(err)
+            raise PhotometryReferenceError(err)
 
         ref_coords = SkyCoord(ra=ref_cat['ra'], dec=ref_cat['dec'], unit=(u.deg, u.deg))
 
@@ -89,7 +110,7 @@ class PhotCalibrator(BaseImageProcessor):
         if 0 == len(clean_img_coords):
             err = 'No clean sources found in image'
             logger.error(err)
-            raise ProcessorError(err)
+            raise PhotometrySourceError(err)
 
         idx, d2d, d3d = ref_coords.match_to_catalog_sky(clean_img_coords)
         match_mask = d2d < 1.0 * u.arcsec
@@ -100,7 +121,7 @@ class PhotCalibrator(BaseImageProcessor):
         if len(matched_img_cat) < self.num_matches_threshold:
             err = f'Not enough cross-matched sources found to calculate a reliable zeropoint.'
             logger.error(err)
-            raise ProcessorError(err)
+            raise PhotometryCrossMatchError(err)
 
         apertures = self.get_sextractor_apetures()  # aperture diameters
         zeropoints = []
@@ -118,7 +139,7 @@ class PhotCalibrator(BaseImageProcessor):
                 err = f"Error with nan when calculating sigma stats: \n " \
                       f"mean: {zp_mean}, median: {zp_med}, std: {zp_std}"
                 logger.error(err)
-                raise ProcessorError(err)
+                raise PhotometryCalculationError(err)
 
             zero_dict = {'diameter': aperture, 'zp_mean': zp_mean, 'zp_median': zp_med, 'zp_std': zp_std,
                          'nstars': num_stars, 'mag_cat': matched_ref_cat['magnitude'][np.invert(cl_offset.mask)],
