@@ -43,7 +43,8 @@ standard_summer_reduction = [
         schema_path=get_summer_schema_path("exposures"),
         full_setup=True,
         schema_dir=summer_schema_dir,
-        duplicate_protocol='ignore'
+        duplicate_protocol='ignore',
+        q3c=False
     ),
     MaskPixels(mask_path=summer_mask_path),
     DatabaseImageExporter(
