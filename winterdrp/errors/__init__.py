@@ -113,6 +113,8 @@ class ErrorStack:
             for error_type in list(set(errors)):
                 summary += f"Found {errors.count(error_type)} counts of error {error_type}. \n"
 
+            summary += " \n"
+
             if verbose:
                 for report in all_reports:
                     summary += str(report.generate_full_traceback())
