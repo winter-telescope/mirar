@@ -4,7 +4,8 @@ from winterdrp.processors.base_processor import BaseProcessor
 import logging
 from abc import ABC
 from winterdrp.processors.database.postgres import check_if_db_exists, check_if_user_exists, check_if_table_exists,\
-    create_db, create_table, create_new_user, grant_privileges, create_tables_from_schema, DataBaseError, run_sql_command_from_file
+    create_db, create_table, create_new_user, grant_privileges, create_tables_from_schema, DataBaseError, run_sql_command_from_file,\
+    pg_admin_user_key, pg_admin_pwd_key
 
 
 logger = logging.getLogger(__name__)
@@ -109,12 +110,14 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
                 create_tables_from_schema(self.schema_dir, self.db_name, self.db_user, self.db_password)
 
                 if self.q3c:
+                    admin_user = os.environ.get(pg_admin_user_key)
+                    admin_password = os.environ.get(pg_admin_pwd_key)
                     q3c_dir = os.path.join(self.schema_dir, 'q3c')
                     q3c_indexes_file = os.path.join(q3c_dir, 'q3c_indexes.sql')
                     run_sql_command_from_file(file_path=q3c_indexes_file,
                                               db_name=self.db_name,
-                                              db_user=self.db_user,
-                                              password=self.db_password)
+                                              db_user=admin_user,
+                                              password=admin_password)
                     logger.info(f"Created q3c indexes")
 
         if not self.table_exists():
@@ -122,10 +125,16 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             if self.q3c:
                 q3c_dir = os.path.join(self.schema_dir, 'q3c')
                 table_q3c_path = os.path.join(q3c_dir, f'q3c_{self.db_table}.sql')
+                admin_user = os.environ.get(pg_admin_user_key)
+                admin_password = os.environ.get(pg_admin_pwd_key)
                 if not os.path.exists(table_q3c_path):
                     err = f"q3c extension requested but no {table_q3c_path} file found. Please add it in."
                     logger.error(err)
                     raise DataBaseError(err)
-
+                else:
+                    run_sql_command_from_file(file_path=table_q3c_path,
+                                              db_name=self.db_name,
+                                              db_user=admin_user,
+                                              password=admin_password)
 
 
