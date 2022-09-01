@@ -15,9 +15,12 @@ core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
 
 class Pipeline:
     pipelines = {}
-    name = None
 
     default_cal_requirements = None
+    
+    @property
+    def name(self):
+        raise NotImplementedError()
 
     @property
     def all_pipeline_configurations(self):
