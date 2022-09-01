@@ -43,17 +43,19 @@ class ErrorReport:
 
     def generate_log_message(self) -> str:
         return f"Error for processor {self.processor_name} at time {self.t_error} UT: " \
-               f"{type(self.error).__name__} affected batch of length {len(self.contents)}. " \
-               f"{self.message_known_error()}" \
-
+               f"{self.get_error_name()} affected batch of length {len(self.contents)}. " \
+               f"{self.message_known_error()}. \n"
 
     def generate_full_traceback(self) -> str:
         msg = f"Error for processor {self.processor_name} at {self.t_error} (local time): \n " \
               f"{''.join(traceback.format_tb(self.error.__traceback__))}" \
-              f"{type(self.error).__name__}: {self.error} \n  " \
+              f"{self.get_error_name()}: {self.error} \n  " \
               f"This error affected the following files: {self.contents} \n" \
               f"{self.message_known_error()} \n \n"
         return msg
+
+    def get_error_name(self) -> str:
+        return type(self.error).__name__
 
 
 class ErrorStack:
@@ -109,11 +111,16 @@ class ErrorStack:
 
             logger.error(f"Found {len(self.reports)} errors caught by code.")
 
-            for report in all_reports:
-                if verbose:
+            errors = [x.get_error_name() for x in all_reports]
+
+            for error_type in list(set(errors)):
+                summary += f"Found {errors.count(error_type)} counts of error {error_type}. \n"
+
+            summary += " \n"
+
+            if verbose:
+                for report in all_reports:
                     summary += str(report.generate_full_traceback())
-                else:
-                    summary += report.generate_log_message()
 
         else:
             msg = "No raised errors found in processing"

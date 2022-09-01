@@ -82,10 +82,11 @@ def find_required_cals(
     path = Path(latest_dir)
 
     split = latest_dir.split(night)
+
     root = split[0]
 
     if len(split) > 1:
-        subdir = split[1]
+        subdir = split[1][1:]
     else:
         subdir = ""
 
