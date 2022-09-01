@@ -4,7 +4,7 @@ import os
 import sys
 import logging
 from winterdrp.pipelines import get_pipeline, Pipeline
-from winterdrp.paths import raw_img_dir
+from winterdrp.paths import raw_img_sub_dir
 from astropy.time import Time
 from astropy import units as u
 from winterdrp.monitor.base_monitor import Monitor
@@ -87,7 +87,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--rawdir",
-    default=base_raw_dir,
+    default=raw_img_sub_dir,
     help="Subdirectory to look in for raw images of a given night"
 )
 

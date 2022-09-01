@@ -8,7 +8,7 @@ from watchdog.observers import Observer
 from winterdrp.pipelines import get_pipeline
 from winterdrp.errors import ErrorStack
 from winterdrp.utils.send_email import send_gmail
-from winterdrp.paths import get_output_path, raw_img_dir, base_raw_dir
+from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir
 import numpy as np
 import logging
 from astropy.time import Time
@@ -48,7 +48,7 @@ class Monitor:
             email_wait_hours: float = 24.,
             max_wait_hours: float = 48.,
             log_level="INFO",
-            raw_dir: str = base_raw_dir
+            raw_dir: str = raw_img_sub_dir
     ):
 
         self.errorstack = ErrorStack()
