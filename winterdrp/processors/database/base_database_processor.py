@@ -22,6 +22,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             full_setup: bool = False,
             schema_dir: str = None,
             duplicate_protocol: str = 'fail',
+            q3c: bool = False,
             *args,
             **kwargs
     ):
@@ -35,6 +36,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         self.schema_dir = schema_dir
         self.db_check = False
         self.duplicate_protocol = duplicate_protocol
+        self.q3c = q3c
         assert self.duplicate_protocol in ['fail', 'ignore', 'replace']
 
     def db_exists(self):
@@ -44,7 +46,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
 
     def make_db(self):
         create_db(
-            db_name=self.db_name
+            db_name=self.db_name,
+            q3c=self.q3c
         )
 
     def user_exists(self):
