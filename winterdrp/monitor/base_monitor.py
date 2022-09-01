@@ -1,6 +1,4 @@
-import subprocess
 import os
-import datetime
 from watchdog.events import FileSystemEventHandler
 from threading import Thread
 from queue import Queue
@@ -10,15 +8,18 @@ from watchdog.observers import Observer
 from winterdrp.pipelines import get_pipeline
 from winterdrp.errors import ErrorStack
 from winterdrp.utils.send_email import send_gmail
-from winterdrp.paths import get_output_path, raw_img_dir
+from winterdrp.paths import get_output_path, raw_img_dir, base_raw_dir
 import numpy as np
 import logging
 from astropy.time import Time
 from astropy import units as u
-from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image
 from winterdrp.processors.utils.cal_hunter import CalRequirement, find_required_cals
 from pathlib import Path
 import copy
+from astropy.io import fits
+from warnings import catch_warnings
+import warnings
+from astropy.utils.exceptions import AstropyUserWarning
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ class Monitor:
             email_wait_hours: float = 24.,
             max_wait_hours: float = 48.,
             log_level="INFO",
+            raw_dir: str = base_raw_dir
     ):
 
         self.errorstack = ErrorStack()
@@ -59,7 +61,9 @@ class Monitor:
 
         self.pipeline = get_pipeline(pipeline, night=night, selected_configurations=realtime_configurations)
 
-        self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir))
+        self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir, img_sub_dir=raw_dir))
+
+        print(self.raw_image_directory)
 
         if not self.raw_image_directory.exists():
             for x in self.raw_image_directory.parents[::-1]:
@@ -110,6 +114,7 @@ class Monitor:
         if cal_requirements is not None:
             self.cal_images, self.cal_headers = find_required_cals(
                 latest_dir=str(self.raw_image_directory),
+                night=night,
                 open_f=self.pipeline.load_raw_image,
                 requirements=cal_requirements
             )
@@ -217,10 +222,10 @@ class Monitor:
             while (Time.now() - self.t_start) < self.max_wait_hours:
                 time.sleep(2)
         finally:
-            logger.info(f"More than the maximum {self.max_wait_hours} hours have elapsed. "
-                        f"No longer waiting for new images.")
+            logger.info(f"No longer waiting for new images.")
             observer.stop()
             observer.join()
+            self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
 
     def process_load_queue(self, q):
         '''This is the worker thread function. It is run as a daemon
@@ -240,29 +245,52 @@ class Monitor:
 
             if not q.empty():
                 event = q.get()
-                now = datetime.datetime.utcnow()
 
-                print(now)
+                if event.src_path[-5:] == ".fits":
 
-                img, header = load_raw_summer_image(event.src_path)
+                    # Verify that file transfer is complete, useful for rsync latency
 
-                is_science = header["OBSCLASS"] == "science"
+                    # Disclaimer: I (Robert) do not feel great about having written this code block
+                    # It seems to works though, let's hope no one finds out
+                    # I will cover my tracks by hiding the astropy warning which inspired this block,
+                    # informing the user that the file is not as long as expected
 
-                all_img = [img] + copy.deepcopy(self.cal_images)
-                all_headers = [header] + copy.deepcopy(self.cal_headers)
+                    check = False
 
-                if not is_science:
-                    logger.info(f"Skipping {event.src_path} (calibration image)")
-                else:
-                    logger.info(f"Reducing {event.src_path} (calibration image)")
-                    _, errorstack = self.pipeline.reduce_images(
-                        batches=[[all_img, all_headers]],
-                        selected_configurations=self.realtime_configurations,
-                        catch_all_errors=True
-                    )
-                    self.processed_science.append(event.src_path)
-                    self.errorstack += errorstack
-                    errorstack.summarise_error_stack(verbose=True)
+                    while not check:
+                        with catch_warnings():
+                            warnings.filterwarnings('ignore', category=AstropyUserWarning)
+                            try:
+                                with fits.open(event.src_path) as hdul:
+                                    check = hdul._file.tell() == hdul._file.size
+                            except OSError:
+                                pass
+
+                            if not check:
+                                print("Seems like the file is not fully transferred. "
+                                      "Waiting a couple of seconds before trying again.")
+                                time.sleep(3)
+
+                    img, header = self.pipeline.load_raw_image(event.src_path)
+
+                    is_science = header["OBSCLASS"] == "science"
+
+                    all_img = [img] + copy.deepcopy(self.cal_images)
+                    all_headers = [header] + copy.deepcopy(self.cal_headers)
+
+                    if not is_science:
+                        print(f"Skipping {event.src_path} (calibration image)")
+                    else:
+                        print(f"Reducing {event.src_path} (science image)")
+                        _, errorstack = self.pipeline.reduce_images(
+                            batches=[[all_img, all_headers]],
+                            selected_configurations=self.realtime_configurations,
+                            catch_all_errors=True
+                        )
+                        self.processed_science.append(event.src_path)
+                        self.errorstack += errorstack
+                        self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
+
             else:
                 time.sleep(1)
 

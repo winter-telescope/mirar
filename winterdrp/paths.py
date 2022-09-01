@@ -30,9 +30,10 @@ raw_img_sub_dir = "raw"
 
 def raw_img_dir(
         sub_dir: str = "",
-        raw_dir: str = base_raw_dir
+        raw_dir: str = base_raw_dir,
+        img_sub_dir: str = raw_img_sub_dir
 ) -> str:
-    return os.path.join(raw_dir, os.path.join(str(sub_dir), raw_img_sub_dir))
+    return os.path.join(raw_dir, os.path.join(str(sub_dir), img_sub_dir))
 
 
 def get_preprocess_path(
