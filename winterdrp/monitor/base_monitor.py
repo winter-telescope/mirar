@@ -210,7 +210,6 @@ class Monitor:
         worker.start()
 
         # setup watchdog to monitor directory for trigger files
-
         logger.info(f"Watching {self.raw_image_directory}")
 
         event_handler = NewImageHandler(watchdog_queue)
