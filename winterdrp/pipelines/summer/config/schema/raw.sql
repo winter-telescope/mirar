@@ -35,3 +35,9 @@ CREATE TABLE IF NOT EXISTS raw (
     procflag INT,
     rawcount SERIAL
 );
+
+CREATE INDEX ON raw (q3c_ang2pix(ra, dec));
+CLUSTER raw_q3c_ang2pix_idx ON raw;
+ANALYZE raw;
+
+CREATE CLUSTERED INDEX raw_obsdate_idx ON raw (obsdate DESC);
