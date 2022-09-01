@@ -224,7 +224,10 @@ class Monitor:
             logger.info(f"No longer waiting for new images.")
             observer.stop()
             observer.join()
-            self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
+            self.update_error_log()
+
+    def update_error_log(self):
+        self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
 
     def process_load_queue(self, q):
         '''This is the worker thread function. It is run as a daemon
@@ -288,7 +291,7 @@ class Monitor:
                         )
                         self.processed_science.append(event.src_path)
                         self.errorstack += errorstack
-                        self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
+                        self.update_error_log()
 
             else:
                 time.sleep(1)
