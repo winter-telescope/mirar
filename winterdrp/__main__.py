@@ -33,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     "-c",
     "--config",
-    default="default",
+    default=None,
     help="Pipeline configuration to be used"
 )
 parser.add_argument(
@@ -118,10 +118,15 @@ if args.monitor:
     if night is None:
         night = str(datetime.now()).split(" ")[0].replace("-", "")
 
+    config = args.config
+    if config is None:
+        config = "realtime"
+
     monitor = Monitor(
         pipeline=args.pipeline,
         night=night,
-        realtime_configurations=["realtime"],
+        realtime_configurations=config,
+        postprocess_configurations=args.postprocessconfig.split(",") if args.postprocessconfig is not None else None,
         log_level=args.level,
         max_wait_hours=args.maxwaithours,
         email_wait_hours=args.emailwaithours,
@@ -150,6 +155,10 @@ else:
     night = args.night
     if night is None:
         night = str(ln).split(" ")[0].replace("-", "")
+
+    config = args.config
+    if config is None:
+        config = "default"
 
     pipe = get_pipeline(
         args.pipeline,
