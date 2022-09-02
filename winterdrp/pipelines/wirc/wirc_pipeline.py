@@ -21,7 +21,7 @@ from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatche
 from winterdrp.paths import coadd_key
 from winterdrp.processors.csvlog import CSVLog
 import logging
-from winterdrp.paths import proc_fail_key, proc_history_key
+from winterdrp.paths import proc_fail_key, proc_history_key, raw_img_key, base_name_key
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,8 @@ def load_raw_wirc_image(
 
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
 
-        header["BASENAME"] = os.path.basename(path)
+        header[base_name_key] = os.path.basename(path)
+        header[raw_img_key] = path
         header["TARGET"] = header["OBJECT"].lower()
         header["UTCTIME"] = header["UTSHUT"]
         header["MJD-OBS"] = Time(header['UTSHUT']).mjd
