@@ -157,7 +157,7 @@ class Pipeline:
     def postprocess_configuration(
             self,
             errorstack: ErrorStack,
-            selected_configurations: str | list[str] = None
+            selected_configurations: str | list[str]
     ) -> list[BaseProcessor]:
 
         cleanup_config = [
