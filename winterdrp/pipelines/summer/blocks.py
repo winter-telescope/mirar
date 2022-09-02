@@ -27,11 +27,13 @@ from winterdrp.processors.utils.header_annotate import HeaderEditor
 
 load_raw = [
     ImageLoader(load_image=load_raw_summer_image),
+]
+
+build_log = [
     CSVLog(
         export_keys=[
-                        "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE", "PROGID", "PROGPI",
-                        base_name_key
-                    ] + core_fields
+            "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE", "PROGID", "PROGPI",
+            base_name_key] + core_fields
     ),
 ]
 
