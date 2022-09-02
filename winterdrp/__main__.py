@@ -129,7 +129,7 @@ if args.monitor:
         realtime_configurations=config,
         postprocess_configurations=args.postprocessconfig.split(",") if args.postprocessconfig is not None else None,
         log_level=args.level,
-        final_postprocess_hours=args.maxwaithours,
+        final_postprocess_hours=args.finalpostprocesshours,
         midway_postprocess_hours=args.midwaypostprocesshours,
         email_sender=args.emailsender,
         email_recipients=email_recipients,
