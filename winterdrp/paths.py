@@ -159,6 +159,7 @@ def parse_image_list(
 raw_img_key = "RAWPATH"
 base_name_key = "BASENAME"
 proc_history_key = "CALSTEPS"
+proc_fail_key = "PROCFAIL"
 latest_save_key = "SAVEPATH"
 latest_mask_save_key = "MASKPATH"
 saturate_key = "SATURATE"
@@ -172,8 +173,4 @@ coadd_key = "COADDS"
 sextractor_checkimg_keys = {'BACKGROUND': 'BKGPT', 'BACKGROUND_RMS': 'BKGRMS',
                             'MINIBACKGROUND': 'MINIBKG', 'MINIBACK_RMS': 'MINIBGRM'}
 
-core_fields = ["OBSCLASS", "TARGET", "UTCTIME", coadd_key, proc_history_key]
-
-
-class ProcessingError(Exception):
-    pass
+core_fields = ["OBSCLASS", "TARGET", "UTCTIME", coadd_key, proc_history_key, proc_fail_key]
