@@ -235,24 +235,32 @@ class Monitor:
     def postprocess(self):
         self.update_error_log()
 
+        logger.info("Running postprocess steps")
+
         if self.postprocess_configurations is not None:
 
             postprocess_config = [ImageLoader(
                 load_image=self.pipeline.load_raw_image,
                 input_sub_dir=self.sub_dir,
-                input_img_dir=str(Path(self.raw_image_directory).parent)
+                input_img_dir=str(Path(self.raw_image_directory)).split(self.pipeline_name)[0]
             )]
 
-            print(str(Path(self.raw_image_directory).parent))
-            raise
-            # self.pipeline.
-
-            postprocess_config = self.pipeline.postprocess_configuration(
+            postprocess_config += self.pipeline.postprocess_configuration(
                 errorstack=self.errorstack,
                 selected_configurations=self.postprocess_configurations
             )
 
+            protected_key = "_monitor"
 
+            self.pipeline.add_configuration(protected_key, postprocess_config)
+
+            _, errorstack = self.pipeline.reduce_images(
+                batches=[[[], []]],
+                selected_configurations=protected_key,
+                catch_all_errors=True
+            )
+            self.errorstack += errorstack
+            self.update_error_log()
 
     def process_load_queue(self, q):
         '''This is the worker thread function. It is run as a daemon

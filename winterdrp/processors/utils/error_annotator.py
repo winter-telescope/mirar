@@ -5,6 +5,7 @@ from winterdrp.paths import raw_img_key
 import logging
 from winterdrp.errors import ErrorStack
 from winterdrp.paths import proc_fail_key
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +49,10 @@ class ErrorStackAnnotator(BaseImageProcessor):
 
         for i, header in enumerate(headers):
 
-            if header[raw_img_key] in self.image_dict.keys():
-                header[proc_fail_key] += ",".join(self.image_dict[raw_img_key])
+            base_name = str(Path(header[raw_img_key]).name)
+
+            if base_name in self.image_dict.keys():
+                header[proc_fail_key] += ",".join(self.image_dict[base_name])
 
             headers[i] = header
 
