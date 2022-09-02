@@ -83,12 +83,12 @@ parser.add_argument(
     help='One email sender',
 )
 parser.add_argument(
-    "--emailwaithours",
-    default=24.,
+    "--midwaypostprocesshours",
+    default=16.,
     help='Time, in hours, to wait before sending a summary email',
 )
 parser.add_argument(
-    "--maxwaithours",
+    "----finalpostprocesshour",
     default=48.,
     help='Time, in hours, to wait before ceasing monitoring for new images',
 )
@@ -130,7 +130,7 @@ if args.monitor:
         postprocess_configurations=args.postprocessconfig.split(",") if args.postprocessconfig is not None else None,
         log_level=args.level,
         final_postprocess_hours=args.maxwaithours,
-        midway_postprocess_hours=args.emailwaithours,
+        midway_postprocess_hours=args.midwaypostprocesshours,
         email_sender=args.emailsender,
         email_recipients=email_recipients,
         raw_dir=args.rawdir
