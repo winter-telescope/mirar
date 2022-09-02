@@ -20,7 +20,7 @@ class SummerPipeline(Pipeline):
     default_cal_requirements = summer_cal_requirements
 
     all_pipeline_configurations = {
-        None: load_raw + standard_summer_reduction,
+        "default": load_raw + standard_summer_reduction,
         'imsub': load_processed + imsub,
         "full": load_raw + standard_summer_reduction + imsub,
         "realtime": standard_summer_reduction

@@ -42,12 +42,12 @@ class Monitor:
             night: str,
             pipeline: str,
             cal_requirements: list[CalRequirement] = None,
-            realtime_configurations: str | list[str] = None,
+            realtime_configurations: str | list[str] = "default",
             email_sender: str = None,
             email_recipients: str | list = None,
             email_wait_hours: float = 24.,
             max_wait_hours: float = 48.,
-            log_level="INFO",
+            log_level: str = "INFO",
             raw_dir: str = raw_img_sub_dir
     ):
 

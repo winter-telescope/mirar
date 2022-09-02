@@ -36,7 +36,7 @@ class Pipeline:
 
     def __init__(
             self,
-            selected_configurations: str | list[str] = None,
+            selected_configurations: str | list[str] = "default",
             night: int | str = "",
     ):
 
@@ -57,7 +57,7 @@ class Pipeline:
 
     def load_pipeline_configuration(
             self,
-            configuration: str = None,
+            configuration: str = "default",
     ):
         return copy.copy(self.all_pipeline_configurations[configuration])
 
@@ -84,7 +84,7 @@ class Pipeline:
 
     def set_configuration(
             self,
-            new_configuration: str = None
+            new_configuration: str = "default"
     ) -> list[BaseProcessor]:
         logger.debug(f"Setting pipeline configuration to {new_configuration}.")
 
