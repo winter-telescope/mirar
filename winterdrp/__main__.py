@@ -37,6 +37,12 @@ parser.add_argument(
     help="Pipeline configuration to be used"
 )
 parser.add_argument(
+    "-pc",
+    "--postprocessconfig",
+    default=None,
+    help="Pipeline configuration to be used"
+)
+parser.add_argument(
     "--logfile",
     default=None,
     help="If a path is passed, all logs will be written to this file."

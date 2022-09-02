@@ -20,6 +20,7 @@ from astropy.io import fits
 from warnings import catch_warnings
 import warnings
 from astropy.utils.exceptions import AstropyUserWarning
+from winterdrp.processors.utils.image_loader import ImageLoader
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ class Monitor:
             pipeline: str,
             cal_requirements: list[CalRequirement] = None,
             realtime_configurations: str | list[str] = "default",
+            postprocess_configurations: str | list[str] = None,
             email_sender: str = None,
             email_recipients: str | list = None,
             email_wait_hours: float = 24.,
@@ -59,9 +61,12 @@ class Monitor:
             realtime_configurations = [realtime_configurations]
         self.realtime_configurations = realtime_configurations
 
+        self.postprocess_configurations = postprocess_configurations
+
         self.pipeline = get_pipeline(pipeline, night=night, selected_configurations=realtime_configurations)
 
         self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir, img_sub_dir=raw_dir))
+        self.sub_dir = raw_dir
 
         if not self.raw_image_directory.exists():
             for x in self.raw_image_directory.parents[::-1]:
@@ -222,10 +227,32 @@ class Monitor:
             logger.info(f"No longer waiting for new images.")
             observer.stop()
             observer.join()
-            self.update_error_log()
+            self.postprocess()
 
     def update_error_log(self):
         self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
+
+    def postprocess(self):
+        self.update_error_log()
+
+        if self.postprocess_configurations is not None:
+
+            postprocess_config = [ImageLoader(
+                load_image=self.pipeline.load_raw_image,
+                input_sub_dir=self.sub_dir,
+                input_img_dir=str(Path(self.raw_image_directory).parent)
+            )]
+
+            print(str(Path(self.raw_image_directory).parent))
+            raise
+            # self.pipeline.
+
+            postprocess_config = self.pipeline.postprocess_configuration(
+                errorstack=self.errorstack,
+                selected_configurations=self.postprocess_configurations
+            )
+
+
 
     def process_load_queue(self, q):
         '''This is the worker thread function. It is run as a daemon
@@ -242,6 +269,7 @@ class Monitor:
                     logger.info(f"More than {self.email_wait_hours} hours have elapsed. Sending summary email.")
                     self.summarise_errors(errorstack=self.errorstack)
                     self.email_to_send = False
+                    self.postprocess()
 
             if not q.empty():
                 event = q.get()
