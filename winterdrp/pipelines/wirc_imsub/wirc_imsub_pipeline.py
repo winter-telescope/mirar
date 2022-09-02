@@ -113,7 +113,7 @@ class WircImsubPipeline(Pipeline):
     candidates_db_columns = get_colnames_from_schema('winterdrp/pipelines/wirc_imsub/wirc_imsub_files/schema'
                                                      '/candidates.sql')
     all_pipeline_configurations = {
-        None: [
+        "default": [
             ImageLoader(
                 input_sub_dir="raw",
                 load_image=load_raw_wirc_image

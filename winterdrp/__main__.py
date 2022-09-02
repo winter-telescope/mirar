@@ -33,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     "-c",
     "--config",
-    default=None,
+    default="default",
     help="Pipeline configuration to be used"
 )
 parser.add_argument(
@@ -151,6 +151,8 @@ else:
         night=night,
     )
 
-    pipe.reduce_images([[[], []]], catch_all_errors=True)
+    batches, errorstack = pipe.reduce_images([[[], []]], catch_all_errors=True)
+
+    print(errorstack.summarise_error_stack(verbose=False))
 
     logger.info('End of winterdrp execution')
