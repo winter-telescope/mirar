@@ -91,6 +91,9 @@ class ErrorStack:
             self.add_report(report)
         return self
 
+    def get_all_reports(self) -> list[ErrorReport]:
+        return self.reports + self.noncritical_reports
+
     def summarise_error_stack(
             self,
             output_path=None,
@@ -106,7 +109,7 @@ class ErrorStack:
                   f"raised by winterdrp. \n" \
                   f"An additional {len(self.noncritical_reports)} non-critical errors were raised. \n" \
 
-        all_reports = self.reports + self.noncritical_reports
+        all_reports = self.get_all_reports()
 
         if len(all_reports) > 0:
 
@@ -127,12 +130,14 @@ class ErrorStack:
                 matching_errors = [x for x in all_reports if x.get_error_message() == error_type]
 
                 img_paths = []
+                error_name = None
                 for x in matching_errors:
                     img_paths += x.contents
+                    if error_name is None:
+                        error_name = x.get_error_name()
                 img_paths = list(set(img_paths))
 
                 line = error_type.split('\n')[0]
-                error_name = error_type.split('\n')[1].split("raise ")[1].split("(")[0]
                 summary += f"Found {error_lines.count(error_type)} counts of error {error_name}, " \
                            f"affecting {len(img_paths)} images: \n{line}.\n \n"
 

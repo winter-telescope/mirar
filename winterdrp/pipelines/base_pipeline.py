@@ -7,6 +7,7 @@ import copy
 from winterdrp.paths import saturate_key
 from winterdrp.errors import ErrorStack
 from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.utils.error_annotator import ErrorStackAnnotator
 
 logger = logging.getLogger(__name__)
 
@@ -152,3 +153,26 @@ class Pipeline:
             saturation_level -= header['SKMEDSUB']
         header.append((saturate_key, saturation_level, 'Saturation level'), end=True)
         return header
+
+    def postprocess_configuration(
+            self,
+            errorstack: ErrorStack,
+            selected_configurations: str | list[str],
+            processed_images: list[str] = None
+    ) -> list[BaseProcessor]:
+
+        cleanup_config = [
+            ErrorStackAnnotator(
+                errorstack=errorstack,
+                processed_images=processed_images),
+        ]
+
+        if isinstance(selected_configurations, str):
+            cleanup_config += self.all_pipeline_configurations[selected_configurations]
+        else:
+            for config in selected_configurations:
+                cleanup_config += self.all_pipeline_configurations[config]
+
+        return cleanup_config
+
+

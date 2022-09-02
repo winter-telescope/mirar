@@ -5,7 +5,7 @@ from queue import Queue
 import time
 import sys
 from watchdog.observers import Observer
-from winterdrp.pipelines import get_pipeline
+from winterdrp.pipelines import get_pipeline, PipelineConfigError
 from winterdrp.errors import ErrorStack
 from winterdrp.utils.send_email import send_gmail
 from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir
@@ -20,6 +20,9 @@ from astropy.io import fits
 from warnings import catch_warnings
 import warnings
 from astropy.utils.exceptions import AstropyUserWarning
+from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.processors.csvlog import CSVLog
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +46,11 @@ class Monitor:
             pipeline: str,
             cal_requirements: list[CalRequirement] = None,
             realtime_configurations: str | list[str] = "default",
+            postprocess_configurations: str | list[str] = None,
             email_sender: str = None,
             email_recipients: str | list = None,
-            email_wait_hours: float = 24.,
-            max_wait_hours: float = 48.,
+            midway_postprocess_hours: float = 16.,
+            final_postprocess_hours: float = 48.,
             log_level: str = "INFO",
             raw_dir: str = raw_img_sub_dir
     ):
@@ -59,9 +63,12 @@ class Monitor:
             realtime_configurations = [realtime_configurations]
         self.realtime_configurations = realtime_configurations
 
+        self.postprocess_configurations = postprocess_configurations
+
         self.pipeline = get_pipeline(pipeline, night=night, selected_configurations=realtime_configurations)
 
         self.raw_image_directory = Path(raw_img_dir(sub_dir=self.pipeline.night_sub_dir, img_sub_dir=raw_dir))
+        self.sub_dir = raw_dir
 
         if not self.raw_image_directory.exists():
             for x in self.raw_image_directory.parents[::-1]:
@@ -79,21 +86,20 @@ class Monitor:
             logger.error(err)
             raise ValueError(err)
 
-        self.max_wait_hours = float(max_wait_hours) * u.hour
-        logger.info(f"Will terminate after {max_wait_hours} hours.")
+        self.final_postprocess_hours = float(final_postprocess_hours) * u.hour
+        logger.info(f"Will terminate after {final_postprocess_hours} hours.")
         self.t_start = Time.now()
 
-        self.email_wait_hours = float(email_wait_hours) * u.hour
+        self.midway_postprocess_hours = float(midway_postprocess_hours) * u.hour
+
+        if self.midway_postprocess_hours > self.final_postprocess_hours:
+            logger.warning(f"Midway postprocessing was set to {self.midway_postprocess_hours}, "
+                           f"but the monitor has a shorter termination period of {self.final_postprocess_hours}. "
+                           f"Setting to to 95% of max wait.")
+            self.midway_postprocess_hours = 0.95 * self.final_postprocess_hours
 
         if np.sum(check_email) == 2:
-
-            if self.email_wait_hours > self.max_wait_hours:
-                logger.warning(f"Email was set to {self.email_wait_hours}, "
-                               f"but the monitor has a shorter termination period of {self.max_wait_hours}. "
-                               f"Setting email to 95% of max wait.")
-                self.email_wait_hours = 0.95 * self.max_wait_hours
-
-            logger.info(f"Will send an email summary after {self.email_wait_hours} hours.")
+            logger.info(f"Will send an email summary after {self.midway_postprocess_hours} hours.")
             self.email_info = (email_sender, email_recipients)
             self.email_to_send = True
 
@@ -102,7 +108,10 @@ class Monitor:
             self.email_info = None
             self.email_to_send = False
 
-        self.processed_science = []
+        self.midway_postprocess_complete = False
+        self.latest_csv_log = None
+
+        self.processed_science_images = []
 
         # default to "pipeline default cal requirements"
 
@@ -125,7 +134,7 @@ class Monitor:
     ):
 
         error_summary = errorstack.summarise_error_stack(verbose=False)
-        summary = f"Processed a total of {len(self.processed_science)} science images. \n\n" + error_summary + " \n"
+        summary = f"Processed a total of {len(self.processed_science_images)} science images. \n\n" + error_summary + " \n"
 
         logger.info(f"Writing error log to {self.error_path}")
         errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
@@ -136,12 +145,18 @@ class Monitor:
 
             subject = f"{self.pipeline_name}: Summary for night {self.night}"
 
+            attachments = [self.log_path, self.error_path]
+
+            # Send the latest CSV log if there is one
+            if self.latest_csv_log is not None:
+                attachments.append(self.latest_csv_log)
+
             send_gmail(
                 email_sender=sender,
                 email_recipients=recipients,
                 email_subject=subject,
                 email_text=summary,
-                attachments=[self.log_path, self.error_path]
+                attachments=attachments
             )
         else:
             print(summary)
@@ -216,16 +231,54 @@ class Monitor:
         observer.start()
 
         try:
-            while (Time.now() - self.t_start) < self.max_wait_hours:
+            while (Time.now() - self.t_start) < self.final_postprocess_hours:
                 time.sleep(2)
         finally:
             logger.info(f"No longer waiting for new images.")
             observer.stop()
             observer.join()
-            self.update_error_log()
+            self.postprocess()
 
     def update_error_log(self):
         self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
+
+    def postprocess(self):
+        self.update_error_log()
+
+        logger.info("Running postprocess steps")
+
+        if self.postprocess_configurations is not None:
+
+            postprocess_config = [ImageLoader(
+                load_image=self.pipeline.load_raw_image,
+                input_sub_dir=self.sub_dir,
+                input_img_dir=str(Path(self.raw_image_directory)).split(self.pipeline_name)[0]
+            )]
+
+            postprocess_config += self.pipeline.postprocess_configuration(
+                errorstack=self.errorstack,
+                processed_images=[os.path.basename(x) for x in self.processed_science_images],
+                selected_configurations=self.postprocess_configurations
+            )
+
+            protected_key = "_monitor"
+            while protected_key in self.pipeline.all_pipeline_configurations.keys():
+                protected_key += "_2"
+
+            self.pipeline.add_configuration(protected_key, postprocess_config)
+            self.pipeline.set_configuration(protected_key)
+
+            for processor in self.pipeline.all_pipeline_configurations[protected_key]:
+                if isinstance(processor, CSVLog):
+                    self.latest_csv_log = processor.get_output_path()
+
+            _, errorstack = self.pipeline.reduce_images(
+                batches=[[[], []]],
+                selected_configurations=protected_key,
+                catch_all_errors=True
+            )
+            self.errorstack += errorstack
+            self.update_error_log()
 
     def process_load_queue(self, q):
         '''This is the worker thread function. It is run as a daemon
@@ -237,11 +290,14 @@ class Monitor:
         '''
         while True:
 
-            if self.email_to_send:
-                if Time.now() - self.t_start > self.email_wait_hours:
-                    logger.info(f"More than {self.email_wait_hours} hours have elapsed. Sending summary email.")
-                    self.summarise_errors(errorstack=self.errorstack)
-                    self.email_to_send = False
+            if Time.now() - self.t_start > self.midway_postprocess_hours:
+                if not self.midway_postprocess_complete:
+                    logger.info("Postprocess time")
+                    self.postprocess()
+                    if self.email_to_send:
+                        logger.info(f"More than {self.midway_postprocess_hours} hours have elapsed. Sending summary email.")
+                        self.summarise_errors(errorstack=self.errorstack)
+                    self.midway_postprocess_complete = True
 
             if not q.empty():
                 event = q.get()
@@ -287,7 +343,7 @@ class Monitor:
                             selected_configurations=self.realtime_configurations,
                             catch_all_errors=True
                         )
-                        self.processed_science.append(event.src_path)
+                        self.processed_science_images.append(event.src_path)
                         self.errorstack += errorstack
                         self.update_error_log()
 
