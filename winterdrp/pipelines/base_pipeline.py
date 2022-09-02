@@ -157,11 +157,14 @@ class Pipeline:
     def postprocess_configuration(
             self,
             errorstack: ErrorStack,
-            selected_configurations: str | list[str]
+            selected_configurations: str | list[str],
+            processed_images: list[str] = None
     ) -> list[BaseProcessor]:
 
         cleanup_config = [
-            ErrorStackAnnotator(errorstack=errorstack),
+            ErrorStackAnnotator(
+                errorstack=errorstack,
+                processed_images=processed_images),
         ]
 
         if isinstance(selected_configurations, str):

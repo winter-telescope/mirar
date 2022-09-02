@@ -5,7 +5,7 @@ from queue import Queue
 import time
 import sys
 from watchdog.observers import Observer
-from winterdrp.pipelines import get_pipeline
+from winterdrp.pipelines import get_pipeline, PipelineConfigError
 from winterdrp.errors import ErrorStack
 from winterdrp.utils.send_email import send_gmail
 from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir
@@ -21,6 +21,8 @@ from warnings import catch_warnings
 import warnings
 from astropy.utils.exceptions import AstropyUserWarning
 from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.processors.csvlog import CSVLog
+
 
 logger = logging.getLogger(__name__)
 
@@ -90,14 +92,13 @@ class Monitor:
 
         self.email_wait_hours = float(email_wait_hours) * u.hour
 
+        if self.email_wait_hours > self.max_wait_hours:
+            logger.warning(f"Email was set to {self.email_wait_hours}, "
+                           f"but the monitor has a shorter termination period of {self.max_wait_hours}. "
+                           f"Setting email to 95% of max wait.")
+            self.email_wait_hours = 0.95 * self.max_wait_hours
+
         if np.sum(check_email) == 2:
-
-            if self.email_wait_hours > self.max_wait_hours:
-                logger.warning(f"Email was set to {self.email_wait_hours}, "
-                               f"but the monitor has a shorter termination period of {self.max_wait_hours}. "
-                               f"Setting email to 95% of max wait.")
-                self.email_wait_hours = 0.95 * self.max_wait_hours
-
             logger.info(f"Will send an email summary after {self.email_wait_hours} hours.")
             self.email_info = (email_sender, email_recipients)
             self.email_to_send = True
@@ -106,6 +107,9 @@ class Monitor:
             logger.info("No email notification configured.")
             self.email_info = None
             self.email_to_send = False
+
+        self.postprocess_complete = False
+        self.latest_csv_log = None
 
         self.processed_science = []
 
@@ -141,12 +145,18 @@ class Monitor:
 
             subject = f"{self.pipeline_name}: Summary for night {self.night}"
 
+            attachments = [self.log_path, self.error_path]
+
+            # Send the latest CSV log if there is one
+            if self.latest_csv_log is not None:
+                attachments.append(self.latest_csv_log)
+
             send_gmail(
                 email_sender=sender,
                 email_recipients=recipients,
                 email_subject=subject,
                 email_text=summary,
-                attachments=[self.log_path, self.error_path]
+                attachments=attachments
             )
         else:
             print(summary)
@@ -247,12 +257,20 @@ class Monitor:
 
             postprocess_config += self.pipeline.postprocess_configuration(
                 errorstack=self.errorstack,
+                processed_images=[os.path.basename(x) for x in self.processed_science],
                 selected_configurations=self.postprocess_configurations
             )
 
             protected_key = "_monitor"
+            while protected_key in self.pipeline.all_pipeline_configurations.keys():
+                protected_key += "_2"
 
             self.pipeline.add_configuration(protected_key, postprocess_config)
+            self.pipeline.set_configuration(protected_key)
+
+            for processor in self.pipeline.all_pipeline_configurations[protected_key]:
+                if isinstance(processor, CSVLog):
+                    self.latest_csv_log = processor.get_output_path()
 
             _, errorstack = self.pipeline.reduce_images(
                 batches=[[[], []]],
@@ -272,12 +290,14 @@ class Monitor:
         '''
         while True:
 
-            if self.email_to_send:
-                if Time.now() - self.t_start > self.email_wait_hours:
-                    logger.info(f"More than {self.email_wait_hours} hours have elapsed. Sending summary email.")
-                    self.summarise_errors(errorstack=self.errorstack)
-                    self.email_to_send = False
+            if Time.now() - self.t_start > self.email_wait_hours:
+                if not self.postprocess_complete:
+                    logger.info("Postprocess time")
                     self.postprocess()
+                    if self.email_to_send:
+                        logger.info(f"More than {self.email_wait_hours} hours have elapsed. Sending summary email.")
+                        self.summarise_errors(errorstack=self.errorstack)
+                    self.postprocess_complete = True
 
             if not q.empty():
                 event = q.get()

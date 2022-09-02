@@ -17,12 +17,14 @@ class ErrorStackAnnotator(BaseImageProcessor):
     def __init__(
             self,
             errorstack: ErrorStack,
+            processed_images: list[str],
             *args,
             **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.errorstack = errorstack
         self.image_dict = self.unpack_errorstack()
+        self.processed_images = processed_images
 
     def unpack_errorstack(self) -> dict:
         image_dict = dict()
@@ -53,6 +55,9 @@ class ErrorStackAnnotator(BaseImageProcessor):
 
             if base_name in self.image_dict.keys():
                 header[proc_fail_key] += ",".join(self.image_dict[base_name])
+            elif self.processed_images is not None:
+                if base_name not in self.processed_images:
+                    header[proc_fail_key] += "Not Processed"
 
             headers[i] = header
 
