@@ -5,6 +5,7 @@ from glob import glob
 import numpy as np
 import logging
 from winterdrp.errors import ProcessorError
+from psycopg import errors
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ def validate_credentials(
 
 
 def create_db(
-        db_name: str,
+        db_name: str
 ):
     admin_user = os.environ.get(pg_admin_user_key)
     admin_password = os.environ.get(pg_admin_pwd_key)
@@ -60,6 +61,14 @@ def create_db(
         conn.execute(sql)
         logger.info(f'Created db {db_name}')
 
+
+def run_sql_command_from_file(file_path, db_name, db_user, password, admin=False):
+    validate_credentials(db_name, db_user, admin)
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        with open(file_path,"r") as f:
+            conn.execute(f.read())
+
+        logger.info(f"Executed sql commands from file {file_path}")
 
 def create_table(
         schema_path: str,
@@ -231,15 +240,14 @@ def create_tables_from_schema(
     for schema_file in ordered_schema_files:
         create_table(schema_path=schema_file, db_name=db_name, db_user=db_user, password=password)
 
-
 def export_to_db(
         value_dict: dict | astropy.io.fits.Header,
         db_name: str,
         db_table: str,
         db_user: str = os.environ.get(pg_admin_user_key),
         password: str = os.environ.get(pg_admin_pwd_key),
-        skip_duplicates: bool = True
-) -> tuple[str, list]:
+        duplicate_protocol: str = 'fail'
+) -> tuple[list, list]:
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
 
@@ -253,14 +261,12 @@ def export_to_db(
             AND Constraint_Type = 'PRIMARY KEY'
             AND Col.Table_Name = '{db_table}'
         """
-
+        serial_keys, serial_key_values = [],[]
         with conn.execute(sql_query) as cursor:
 
             primary_key = [x[0] for x in cursor.fetchall()]
-            sequences = [x[0] for x in conn.execute(f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';").fetchall()]
-            seq_tables = np.array([x.split('_')[0] for x in sequences])
-            seq_columns = np.array([x.split('_')[1] for x in sequences])
-            serial_keys = seq_columns[(seq_tables == db_table)]
+            serial_keys = [x for x in get_sequence_keys_from_table(db_table, db_name, db_user, password)]
+            logger.debug(serial_keys)
             colnames = [
                 desc[0] for desc in conn.execute(f"SELECT * FROM {db_table} LIMIT 1").description
                 if desc[0] not in serial_keys
@@ -280,24 +286,50 @@ def export_to_db(
 
             txt = txt + ') '
             txt = txt.replace(', )', ')')
-            txt += f"RETURNING "
-            for key in primary_key:
-                txt += f"{key},"
-            txt += ";"
-            txt = txt.replace(',;', ';')
+
+            if len(serial_keys) > 0:
+                txt += f"RETURNING "
+                for key in serial_keys:
+                    txt += f"{key},"
+                txt += ";"
+                txt = txt.replace(',;', ';')
 
             logger.debug(txt)
             command = txt
+
             try:
                 cursor.execute(command)
-                primary_key_values = cursor.fetchall()[0]
-            except psycopg.errors.UniqueViolation as e:
-                if skip_duplicates:
-                    primary_key_values = tuple([value_dict[primary_key[0]], ])
+                if len(serial_keys) > 0:
+                    serial_key_values = cursor.fetchall()[0]
                 else:
-                    raise DataBaseError(e)
+                    serial_key_values = []
 
-    return primary_key, primary_key_values
+            except errors.UniqueViolation:
+                primary_key_values = [value_dict[x] for x in primary_key]
+                if duplicate_protocol == 'fail':
+                    err = f"Duplicate error, entry with {primary_key}={primary_key_values} already exists in {db_name}."
+                    logger.error(err)
+                    raise errors.UniqueViolation
+                elif duplicate_protocol == 'ignore':
+                    logger.info(f"Found duplicate entry with {primary_key}={primary_key_values} in {db_name}. Ignoring.")
+                    pass
+                elif duplicate_protocol == 'replace':
+                    logger.info(f"Updating duplicate entry with {primary_key}={primary_key_values} in {db_name}.")
+                    update_colnames = []
+                    for x in colnames:
+                        if not x in primary_key:
+                            update_colnames.append(x)
+                    serial_key_values = modify_db_entry(db_query_columns=primary_key,
+                                                        db_query_values=primary_key_values,
+                                                        value_dict=value_dict,
+                                                        db_alter_columns=update_colnames,
+                                                        db_table=db_table,
+                                                        db_name=db_name,
+                                                        db_user=db_user,
+                                                        password=password,
+                                                        return_columns=serial_keys)
+
+    return serial_keys, serial_key_values
 
 
 def parse_constraints(db_query_columns,
@@ -470,7 +502,7 @@ def xmatch_import_db(db_name: str,
                                            db_comparison_types,
                                            db_accepted_values)
     if len(parsed_constraints) > 0:
-        constraints += f"""AND {constraints}"""
+        constraints += f"""AND {parsed_constraints}"""
 
     select = f""" {'"' + '","'.join(db_output_columns) + '"'}"""
     if query_dist:
@@ -503,6 +535,78 @@ def xmatch_import_db(db_name: str,
                 query_res['dist'] = entry['xdist']
         all_query_res.append(query_res)
     return all_query_res
+
+
+def get_sequence_keys_from_table(db_table: str,
+                                 db_name: str,
+                                 db_user: str,
+                                 password: str):
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        conn.autocommit = True
+        sequences = [x[0] for x in conn.execute(f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';").fetchall()]
+        seq_tables = np.array([x.split('_')[0] for x in sequences])
+        seq_columns = np.array([x.split('_')[1] for x in sequences])
+        table_sequence_keys = seq_columns[(seq_tables == db_table)]
+    return table_sequence_keys
+
+
+def modify_db_entry(
+        db_name: str,
+        db_table: str,
+        db_query_columns: str | list[str],
+        db_query_values: str | int | float | list[str | float | int | list],
+        value_dict: dict | astropy.io.fits.Header,
+        db_alter_columns: str | list[str],
+        return_columns: str | list[str] = None,
+        db_query_comparison_types: list[str] = None,
+        db_user: str = os.environ.get(pg_admin_user_key),
+        password: str = os.environ.get(pg_admin_pwd_key)
+):
+    logger.info(db_query_columns)
+    if not isinstance(db_query_columns, list):
+        db_query_columns = [db_query_columns]
+    logger.info(db_query_columns)
+    if not isinstance(db_query_values, list):
+        db_query_values = [db_query_values]
+
+    if not isinstance(db_alter_columns, list):
+        db_alter_columns = [db_alter_columns]
+
+    if return_columns is None:
+        return_columns = db_alter_columns
+    if not isinstance(return_columns, list):
+        return_columns = [return_columns]
+
+    assert len(db_query_columns) == len(db_query_values)
+
+    if db_query_comparison_types is None:
+        db_query_comparison_types = ['='] * len(db_query_values)
+    assert len(db_query_comparison_types) == len(db_query_values)
+    assert np.all(np.isin(np.unique(db_query_comparison_types), ['=', '<', '>', 'between']))
+
+    parsed_constraints = parse_constraints(db_query_columns,
+                                           db_query_comparison_types,
+                                           db_query_values)
+
+    constraints = f"""{parsed_constraints}"""
+    logger.info(db_query_columns)
+    with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
+        conn.autocommit = True
+
+        db_alter_values = [str(value_dict[c]) for c in db_alter_columns]
+
+        alter_values_txt = [f"{db_alter_columns[ind]}='{db_alter_values[ind]}'" for ind in range(len(db_alter_columns))]
+
+        sql_query = f"""
+                UPDATE {db_table} SET {', '.join(alter_values_txt)} WHERE {constraints}  
+                """
+        if len(return_columns)>0:
+            logger.info(return_columns)
+            sql_query += f""" RETURNING {', '.join(return_columns)}"""
+        sql_query += ";"
+        query_output = execute_query(sql_query, db_name, db_user, password)
+
+    return query_output
 
 
 def get_colnames_from_schema(schema_file):

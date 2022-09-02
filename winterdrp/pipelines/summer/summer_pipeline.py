@@ -5,6 +5,7 @@ import numpy as np
 
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.downloader.caltech import download_via_ssh
+
 from winterdrp.pipelines.summer.config import PIPELINE_NAME, summer_cal_requirements
 from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image
 from winterdrp.pipelines.summer.blocks import load_raw, load_processed, standard_summer_reduction, imsub
@@ -15,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class SummerPipeline(Pipeline):
-
     name = PIPELINE_NAME
     default_cal_requirements = summer_cal_requirements
 
@@ -23,8 +23,9 @@ class SummerPipeline(Pipeline):
         None: load_raw + standard_summer_reduction,
         'imsub': load_processed + imsub,
         "full": load_raw + standard_summer_reduction + imsub,
-        "realtime": standard_summer_reduction,
+        "realtime": standard_summer_reduction
     }
+
 
     @staticmethod
     def download_raw_images_for_night(

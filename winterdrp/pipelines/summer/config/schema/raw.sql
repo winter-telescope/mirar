@@ -35,3 +35,5 @@ CREATE TABLE IF NOT EXISTS raw (
     procflag INT,
     rawcount SERIAL
 );
+
+CREATE INDEX raw_obsdate_idx ON raw (obsdate DESC);

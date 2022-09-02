@@ -3,7 +3,7 @@ from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp, PSFex
 from winterdrp.pipelines.summer.config import get_summer_schema_path, summer_weight_path, \
     sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_config_path, psfex_config_path, \
-    sextractor_candidates_config, PIPELINE_NAME, SUMMER_PIXEL_SCALE, summer_cal_requirements, summer_mask_path
+    sextractor_candidates_config, PIPELINE_NAME, DB_NAME, SUMMER_PIXEL_SCALE, summer_cal_requirements, summer_mask_path
 from winterdrp.pipelines.summer.config.schema import summer_schema_dir
 from winterdrp.processors.utils import ImageSaver, ImageLoader, ImageSelector, ImageBatcher
 from winterdrp.processors.utils.cal_hunter import CalHunter
@@ -22,7 +22,8 @@ from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image, 
 from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_generator, \
     summer_photometric_catalog_generator, summer_reference_image_generator, summer_reference_psfex, \
     summer_reference_image_resampler, summer_reference_sextractor
-
+from winterdrp.processors.database.database_modifier import ModifyImageDatabaseSeq
+from winterdrp.processors.utils.header_annotate import HeaderEditor
 
 load_raw = [
     ImageLoader(load_image=load_raw_summer_image),
@@ -38,17 +39,20 @@ load_processed = [ImageLoader(input_sub_dir='processed', load_image=load_proc_su
 
 standard_summer_reduction = [
     DatabaseImageExporter(
-        db_name=PIPELINE_NAME,
+        db_name=DB_NAME,
         db_table="exposures",
         schema_path=get_summer_schema_path("exposures"),
         full_setup=True,
-        schema_dir=summer_schema_dir
+        schema_dir=summer_schema_dir,
+        duplicate_protocol='ignore',
+        q3c=False
     ),
     MaskPixels(mask_path=summer_mask_path),
     DatabaseImageExporter(
-        db_name=PIPELINE_NAME,
+        db_name=DB_NAME,
         db_table="raw",
         schema_path=get_summer_schema_path("raw"),
+        duplicate_protocol='replace'
     ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
     CalHunter(
@@ -79,11 +83,20 @@ standard_summer_reduction = [
                **sextractor_photometry_config),
     PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
     ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG'], write_mask=True),
+    HeaderEditor(edit_keys='procflag',
+                 values=1),
     DatabaseImageExporter(
-        db_name=PIPELINE_NAME,
+        db_name=DB_NAME,
         db_table="proc",
-        schema_path=get_summer_schema_path("proc")
-    )
+        schema_path=get_summer_schema_path("proc"),
+        duplicate_protocol='replace'
+    ),
+    ModifyImageDatabaseSeq(
+                db_name=DB_NAME,
+                db_table="raw",
+                schema_path=get_summer_schema_path("raw"),
+                db_alter_columns="procflag"
+            )
 ]
 
 subtract = [

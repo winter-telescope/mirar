@@ -25,7 +25,6 @@ class CalRequirement:
         self.data = dict()
 
     def check_images(self, images, headers):
-
         new_images, new_headers = select_from_images(
             images, headers,
             header_key="TARGET",
@@ -55,6 +54,7 @@ def update_requirements(
     for requirement in requirements:
         if not requirement.success:
             requirement.check_images(images, headers)
+        logger.debug(f"{requirement}, {requirement.success}")
 
     return requirements
 
@@ -80,7 +80,7 @@ def find_required_cals(
             headers = []
 
     path = Path(latest_dir)
-
+    logger.debug(path)
     split = latest_dir.split(night)
 
     root = split[0]
