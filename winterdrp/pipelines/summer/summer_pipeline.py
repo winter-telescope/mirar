@@ -21,11 +21,11 @@ class SummerPipeline(Pipeline):
     default_cal_requirements = summer_cal_requirements
 
     all_pipeline_configurations = {
-        "default": load_raw + build_log + standard_summer_reduction,
+        "default": load_raw + standard_summer_reduction,
         "postprocess": build_log,
         'imsub': load_processed + imsub,
         "full": load_raw + standard_summer_reduction + imsub,
-        "realtime": standard_summer_reduction
+        "realtime": standard_summer_reduction,
     }
 
     @staticmethod

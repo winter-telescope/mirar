@@ -10,6 +10,7 @@ from astropy import units as u
 from winterdrp.monitor.base_monitor import Monitor
 from winterdrp.paths import base_raw_dir
 from datetime import datetime
+from winterdrp.processors.utils import ImageLoader
 
 logger = logging.getLogger(__name__)
 
@@ -128,8 +129,8 @@ if args.monitor:
         realtime_configurations=config,
         postprocess_configurations=args.postprocessconfig.split(",") if args.postprocessconfig is not None else None,
         log_level=args.level,
-        max_wait_hours=args.maxwaithours,
-        email_wait_hours=args.emailwaithours,
+        final_postprocess_hours=args.maxwaithours,
+        midway_postprocess_hours=args.emailwaithours,
         email_sender=args.emailsender,
         email_recipients=email_recipients,
         raw_dir=args.rawdir
@@ -162,11 +163,29 @@ else:
 
     pipe = get_pipeline(
         args.pipeline,
-        selected_configurations=args.config,
+        selected_configurations=config,
         night=night,
     )
 
     batches, errorstack = pipe.reduce_images([[[], []]], catch_all_errors=True)
+    if args.postprocessconfig is not None:
+        post_config = [x for x in pipe.set_configuration(config) if isinstance(x, ImageLoader)][:1]
+        post_config += pipe.postprocess_configuration(
+            errorstack=errorstack,
+            selected_configurations=args.postprocessconfig.split(",")
+        )
+
+        protected_key = "_new_postprocess"
+
+        pipe.add_configuration(protected_key, post_config)
+        pipe.set_configuration(protected_key)
+
+        _, new_errorstack = pipe.reduce_images(
+            batches=[[[], []]],
+            selected_configurations=protected_key,
+            catch_all_errors=True
+        )
+        errorstack += new_errorstack
 
     print(errorstack.summarise_error_stack(verbose=False))
 

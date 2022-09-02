@@ -49,8 +49,8 @@ class Monitor:
             postprocess_configurations: str | list[str] = None,
             email_sender: str = None,
             email_recipients: str | list = None,
-            email_wait_hours: float = 24.,
-            max_wait_hours: float = 48.,
+            midway_postprocess_hours: float = 16.,
+            final_postprocess_hours: float = 48.,
             log_level: str = "INFO",
             raw_dir: str = raw_img_sub_dir
     ):
@@ -86,20 +86,20 @@ class Monitor:
             logger.error(err)
             raise ValueError(err)
 
-        self.max_wait_hours = float(max_wait_hours) * u.hour
-        logger.info(f"Will terminate after {max_wait_hours} hours.")
+        self.final_postprocess_hours = float(final_postprocess_hours) * u.hour
+        logger.info(f"Will terminate after {final_postprocess_hours} hours.")
         self.t_start = Time.now()
 
-        self.email_wait_hours = float(email_wait_hours) * u.hour
+        self.midway_postprocess_hours = float(midway_postprocess_hours) * u.hour
 
-        if self.email_wait_hours > self.max_wait_hours:
-            logger.warning(f"Email was set to {self.email_wait_hours}, "
-                           f"but the monitor has a shorter termination period of {self.max_wait_hours}. "
-                           f"Setting email to 95% of max wait.")
-            self.email_wait_hours = 0.95 * self.max_wait_hours
+        if self.midway_postprocess_hours > self.final_postprocess_hours:
+            logger.warning(f"Midway postprocessing was set to {self.midway_postprocess_hours}, "
+                           f"but the monitor has a shorter termination period of {self.final_postprocess_hours}. "
+                           f"Setting to to 95% of max wait.")
+            self.midway_postprocess_hours = 0.95 * self.final_postprocess_hours
 
         if np.sum(check_email) == 2:
-            logger.info(f"Will send an email summary after {self.email_wait_hours} hours.")
+            logger.info(f"Will send an email summary after {self.midway_postprocess_hours} hours.")
             self.email_info = (email_sender, email_recipients)
             self.email_to_send = True
 
@@ -108,10 +108,10 @@ class Monitor:
             self.email_info = None
             self.email_to_send = False
 
-        self.postprocess_complete = False
+        self.midway_postprocess_complete = False
         self.latest_csv_log = None
 
-        self.processed_science = []
+        self.processed_science_images = []
 
         # default to "pipeline default cal requirements"
 
@@ -134,7 +134,7 @@ class Monitor:
     ):
 
         error_summary = errorstack.summarise_error_stack(verbose=False)
-        summary = f"Processed a total of {len(self.processed_science)} science images. \n\n" + error_summary + " \n"
+        summary = f"Processed a total of {len(self.processed_science_images)} science images. \n\n" + error_summary + " \n"
 
         logger.info(f"Writing error log to {self.error_path}")
         errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
@@ -231,7 +231,7 @@ class Monitor:
         observer.start()
 
         try:
-            while (Time.now() - self.t_start) < self.max_wait_hours:
+            while (Time.now() - self.t_start) < self.final_postprocess_hours:
                 time.sleep(2)
         finally:
             logger.info(f"No longer waiting for new images.")
@@ -257,7 +257,7 @@ class Monitor:
 
             postprocess_config += self.pipeline.postprocess_configuration(
                 errorstack=self.errorstack,
-                processed_images=[os.path.basename(x) for x in self.processed_science],
+                processed_images=[os.path.basename(x) for x in self.processed_science_images],
                 selected_configurations=self.postprocess_configurations
             )
 
@@ -290,14 +290,14 @@ class Monitor:
         '''
         while True:
 
-            if Time.now() - self.t_start > self.email_wait_hours:
-                if not self.postprocess_complete:
+            if Time.now() - self.t_start > self.midway_postprocess_hours:
+                if not self.midway_postprocess_complete:
                     logger.info("Postprocess time")
                     self.postprocess()
                     if self.email_to_send:
-                        logger.info(f"More than {self.email_wait_hours} hours have elapsed. Sending summary email.")
+                        logger.info(f"More than {self.midway_postprocess_hours} hours have elapsed. Sending summary email.")
                         self.summarise_errors(errorstack=self.errorstack)
-                    self.postprocess_complete = True
+                    self.midway_postprocess_complete = True
 
             if not q.empty():
                 event = q.get()
@@ -343,7 +343,7 @@ class Monitor:
                             selected_configurations=self.realtime_configurations,
                             catch_all_errors=True
                         )
-                        self.processed_science.append(event.src_path)
+                        self.processed_science_images.append(event.src_path)
                         self.errorstack += errorstack
                         self.update_error_log()
 
