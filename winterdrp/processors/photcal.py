@@ -209,7 +209,6 @@ class PhotCalibrator(BaseImageProcessor):
             for ind, diam in enumerate(aperture_diameters):
                 header[f'MAGLIM_{int(diam)}'] = limmags[ind]
             header['MAGLIM'] = limmags[-1]
-            header['PROCFLAG'] = 1
         return images, headers
 
     @staticmethod

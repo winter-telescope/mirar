@@ -23,6 +23,7 @@ from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_gene
     summer_photometric_catalog_generator, summer_reference_image_generator, summer_reference_psfex, \
     summer_reference_image_resampler, summer_reference_sextractor
 from winterdrp.processors.database.database_modifier import ModifyImageDatabaseSeq
+from winterdrp.processors.utils.header_annotate import HeaderEditor
 
 load_raw = [
     ImageLoader(load_image=load_raw_summer_image),
@@ -54,6 +55,7 @@ standard_summer_reduction = [
         duplicate_protocol='replace'
     ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
+    ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.fits")),
     CalHunter(
         load_image=load_raw_summer_image,
         requirements=summer_cal_requirements
@@ -82,6 +84,8 @@ standard_summer_reduction = [
                **sextractor_photometry_config),
     PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
     ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG'], write_mask=True),
+    HeaderEditor(edit_keys='procflag',
+                 values=1),
     DatabaseImageExporter(
         db_name=DB_NAME,
         db_table="proc",
