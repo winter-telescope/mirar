@@ -91,6 +91,9 @@ class ErrorStack:
             self.add_report(report)
         return self
 
+    def get_all_reports(self) -> list[ErrorReport]:
+        return self.reports + self.noncritical_reports
+
     def summarise_error_stack(
             self,
             output_path=None,
@@ -106,7 +109,7 @@ class ErrorStack:
                   f"raised by winterdrp. \n" \
                   f"An additional {len(self.noncritical_reports)} non-critical errors were raised. \n" \
 
-        all_reports = self.reports + self.noncritical_reports
+        all_reports = self.get_all_reports()
 
         if len(all_reports) > 0:
 
