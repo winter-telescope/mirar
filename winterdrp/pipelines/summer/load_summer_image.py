@@ -8,7 +8,7 @@ from astropy.io import fits
 from astropy.time import Time
 from astropy import units as u
 
-from winterdrp.paths import latest_save_key, raw_img_key, base_name_key
+from winterdrp.paths import latest_save_key, raw_img_key, base_name_key, proc_history_key, proc_fail_key
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def load_raw_summer_image(
         if 'other' in header['FILTERID']:
             header['FILTERID'] = 'r'
 
-        header["CALSTEPS"] = ""
+        header[proc_history_key] = ""
 
         base_name = os.path.basename(path)
         header[base_name_key] = base_name
@@ -89,6 +89,9 @@ def load_raw_summer_image(
             logger.warning(f"Error parsing 'SHUTCLSD' of {path}: ({header['SHUTCLSD']})")
 
         header['PROCFLAG'] = 0
+
+        header[proc_fail_key] = ""
+
         sunmoon_keywords = [
             'MOONRA', 'MOONDEC', 'MOONILLF', 'MOONPHAS', 'MOONALT', 'SUNAZ', 'SUNALT',
         ]
