@@ -55,7 +55,6 @@ standard_summer_reduction = [
         duplicate_protocol='replace'
     ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
-    ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.fits")),
     CalHunter(
         load_image=load_raw_summer_image,
         requirements=summer_cal_requirements
