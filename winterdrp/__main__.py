@@ -88,7 +88,7 @@ parser.add_argument(
     help='Time, in hours, to wait before sending a summary email',
 )
 parser.add_argument(
-    "----finalpostprocesshour",
+    "--finalpostprocesshour",
     default=48.,
     help='Time, in hours, to wait before ceasing monitoring for new images',
 )
