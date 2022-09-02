@@ -130,12 +130,14 @@ class ErrorStack:
                 matching_errors = [x for x in all_reports if x.get_error_message() == error_type]
 
                 img_paths = []
+                error_name = None
                 for x in matching_errors:
                     img_paths += x.contents
+                    if error_name is None:
+                        error_name = x.get_error_name()
                 img_paths = list(set(img_paths))
 
                 line = error_type.split('\n')[0]
-                error_name = error_type.split('\n')[1].split("raise ")[1].split("(")[0]
                 summary += f"Found {error_lines.count(error_type)} counts of error {error_name}, " \
                            f"affecting {len(img_paths)} images: \n{line}.\n \n"
 
