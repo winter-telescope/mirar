@@ -42,16 +42,21 @@ def send_gmail(
 
     for file_path in attachments:
 
-        base_name = os.path.basename(file_path)
+        if os.path.exists(file_path):
 
-        with open(file_path, "rb") as f:
-            part = MIMEApplication(
-                f.read(),
-                Name=base_name
-            )
-        # After the file is closed
-        part['Content-Disposition'] = f"attachment; filename={base_name}"
-        msg.attach(part)
+            base_name = os.path.basename(file_path)
+
+            with open(file_path, "rb") as f:
+                part = MIMEApplication(
+                    f.read(),
+                    Name=base_name
+                )
+            # After the file is closed
+            part['Content-Disposition'] = f"attachment; filename={base_name}"
+            msg.attach(part)
+
+        else:
+            logger.warning(f"Attachment {file_path} not found, skipping.")
 
     logger.info(f"Sending email to {email_recipients}")
 
