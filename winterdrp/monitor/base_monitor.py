@@ -6,7 +6,7 @@ import time
 import sys
 from watchdog.observers import Observer
 from winterdrp.pipelines import get_pipeline, PipelineConfigError
-from winterdrp.errors import ErrorStack
+from winterdrp.errors import ErrorStack, ErrorReport
 from winterdrp.utils.send_email import send_gmail
 from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir
 import numpy as np
@@ -112,6 +112,7 @@ class Monitor:
         self.latest_csv_log = None
 
         self.processed_science_images = []
+        self.corrupted_images = []
 
         # default to "pipeline default cal requirements"
 
@@ -327,24 +328,31 @@ class Monitor:
                                       "Waiting a couple of seconds before trying again.")
                                 time.sleep(3)
 
-                    img, header = self.pipeline.load_raw_image(event.src_path)
+                    try:
 
-                    is_science = header["OBSCLASS"] == "science"
+                        img, header = self.pipeline.load_raw_image(event.src_path)
 
-                    all_img = [img] + copy.deepcopy(self.cal_images)
-                    all_headers = [header] + copy.deepcopy(self.cal_headers)
+                        is_science = header["OBSCLASS"] == "science"
 
-                    if not is_science:
-                        print(f"Skipping {event.src_path} (calibration image)")
-                    else:
-                        print(f"Reducing {event.src_path} (science image)")
-                        _, errorstack = self.pipeline.reduce_images(
-                            batches=[[all_img, all_headers]],
-                            selected_configurations=self.realtime_configurations,
-                            catch_all_errors=True
-                        )
-                        self.processed_science_images.append(event.src_path)
-                        self.errorstack += errorstack
+                        all_img = [img] + copy.deepcopy(self.cal_images)
+                        all_headers = [header] + copy.deepcopy(self.cal_headers)
+
+                        if not is_science:
+                            print(f"Skipping {event.src_path} (calibration image)")
+                        else:
+                            print(f"Reducing {event.src_path} (science image)")
+                            _, errorstack = self.pipeline.reduce_images(
+                                batches=[[all_img, all_headers]],
+                                selected_configurations=self.realtime_configurations,
+                                catch_all_errors=True
+                            )
+                            self.processed_science_images.append(event.src_path)
+                            self.errorstack += errorstack
+                            self.update_error_log()
+
+                    except Exception as e:
+                        err_report = ErrorReport(e, "monitor", contents=[event.src_path])
+                        self.errorstack.add_report(err_report)
                         self.update_error_log()
 
             else:
