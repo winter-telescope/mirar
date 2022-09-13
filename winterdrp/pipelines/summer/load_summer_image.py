@@ -22,7 +22,7 @@ def load_raw_summer_image(
         header['UTCTIME'] = header['UTCSHUT']
         try:
             header['TARGET'] = header['OBSTYPE'].lower()
-        except ValueError:
+        except (ValueError, AttributeError) as e:
             header['TARGET'] = header['OBSTYPE']
 
         crd = SkyCoord(ra=data[0].header['RA'], dec=data[0].header['DEC'], unit=(u.deg, u.deg))
