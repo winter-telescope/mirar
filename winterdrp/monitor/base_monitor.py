@@ -353,6 +353,7 @@ class Monitor:
                     except Exception as e:
                         err_report = ErrorReport(e, "monitor", contents=[event.src_path])
                         self.errorstack.add_report(err_report)
+                        self.update_error_log()
 
             else:
                 time.sleep(1)
