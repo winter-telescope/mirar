@@ -20,7 +20,10 @@ def load_raw_summer_image(
         header = data[0].header
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
         header['UTCTIME'] = header['UTCSHUT']
-        header['TARGET'] = header['OBSTYPE'].lower()
+        try:
+            header['TARGET'] = header['OBSTYPE'].lower()
+        except ValueError:
+            header['TARGET'] = header['OBSTYPE']
 
         crd = SkyCoord(ra=data[0].header['RA'], dec=data[0].header['DEC'], unit=(u.deg, u.deg))
         header['RA'] = crd.ra.deg
