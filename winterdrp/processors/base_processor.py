@@ -21,49 +21,6 @@ class PrerequisiteError(ProcessorError):
     pass
 
 
-class ImageHandler:
-    @staticmethod
-    def open_fits(
-            path: str
-    ) -> tuple[np.ndarray, astropy.io.fits]:
-        return open_fits(path)
-
-    @staticmethod
-    def save_fits(
-            data,
-            header,
-            path: str,
-    ):
-        if header is not None:
-            header[latest_save_key] = path
-        logger.info(f"Saving to {path}")
-        save_to_path(data, header, path)
-
-    def save_mask(
-            self,
-            data: np.ndarray,
-            header: astropy.io.fits.Header,
-            img_path: str
-    ) -> str:
-        mask = (~np.isnan(data)).astype(float)
-        mask_path = get_mask_path(img_path)
-        mask_header = header.__deepcopy__()
-        mask_header[latest_mask_save_key] = mask_path
-        header[latest_mask_save_key] = mask_path
-        mask_header['OBSTYPE'] = 'MASK'
-        self.save_fits(mask, mask_header, mask_path)
-        return mask_path
-
-    @staticmethod
-    def get_hash(headers: list[astropy.io.fits.Header]):
-        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in headers]))
-        return hashlib.sha1(key.encode()).hexdigest()
-
-    def image_batch_error_report(self, exception: Exception, batch):
-        contents = [x[base_name_key] for x in batch[1]]
-        return ErrorReport(exception, self.__module__, contents)
-
-
 class BaseProcessor:
 
     @property
