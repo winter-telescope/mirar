@@ -15,7 +15,8 @@ class ExecutionError(Exception):
 
 def run_local(
         cmd: str,
-        output_dir: str = "."
+        output_dir: str = ".",
+        timeout: float = 300.
 ):
     """
     Function to run on local machine using subprocess, with error handling.
@@ -28,6 +29,7 @@ def run_local(
     cmd: A string containing the command you want to use to run sextractor. An example would be:
         cmd = '/usr/bin/source-extractor image0001.fits -c sex.config'
     output_dir: A local directory to save the output files to.
+    timeout: Time to timeout in seconds
 
     Returns
     -------
@@ -42,7 +44,7 @@ def run_local(
 
         # Run sextractor
 
-        rval = subprocess.run(cmd, check=True, capture_output=True, shell=True)
+        rval = subprocess.run(cmd, check=True, capture_output=True, shell=True, timeout=timeout)
 
         msg = f'Successfully executed command. '
 
