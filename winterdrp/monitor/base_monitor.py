@@ -1,5 +1,6 @@
 import os
 from watchdog.events import FileSystemEventHandler
+import threading
 from threading import Thread
 from queue import Queue
 import time
@@ -22,7 +23,6 @@ import warnings
 from astropy.utils.exceptions import AstropyUserWarning
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.csvlog import CSVLog
-
 
 logger = logging.getLogger(__name__)
 
@@ -218,10 +218,17 @@ class Monitor:
         # create queue
         watchdog_queue = Queue()
 
-        # Set up a worker thread to process database load
-        worker = Thread(target=self.process_load_queue, args=(watchdog_queue,))
-        worker.daemon = True
-        worker.start()
+        workers = []
+
+        n_cpu = max(1, int(os.cpu_count() / 2))
+
+        for i in range(n_cpu):
+            # Set up a worker thread to process database load
+            worker = Thread(target=self.process_load_queue, args=(watchdog_queue,))
+            worker.daemon = True
+            worker.start()
+
+            workers.append(worker)
 
         # setup watchdog to monitor directory for trigger files
         logger.info(f"Watching {self.raw_image_directory}")
@@ -340,7 +347,7 @@ class Monitor:
                         if not is_science:
                             print(f"Skipping {event.src_path} (calibration image)")
                         else:
-                            print(f"Reducing {event.src_path} (science image)")
+                            print(f"Reducing {event.src_path} (science image) on thread {threading.get_ident()}")
                             _, errorstack = self.pipeline.reduce_images(
                                 batches=[[all_img, all_headers]],
                                 selected_configurations=self.realtime_configurations,
