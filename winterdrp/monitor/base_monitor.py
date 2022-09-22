@@ -9,7 +9,7 @@ from watchdog.observers import Observer
 from winterdrp.pipelines import get_pipeline, PipelineConfigError
 from winterdrp.errors import ErrorStack, ErrorReport
 from winterdrp.utils.send_email import send_gmail
-from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir
+from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir, __version__, package_name
 import numpy as np
 import logging
 from astropy.time import Time
@@ -54,6 +54,8 @@ class Monitor:
             log_level: str = "INFO",
             raw_dir: str = raw_img_sub_dir
     ):
+
+        logger.info(f"Software version: {package_name}=={__version__}")
 
         self.errorstack = ErrorStack()
         self.night = night

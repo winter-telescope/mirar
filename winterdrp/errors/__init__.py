@@ -3,6 +3,7 @@ import traceback
 from datetime import datetime
 import logging
 import numpy as np
+from winterdrp.paths import package_name, __version__
 
 logger = logging.getLogger(__name__)
 
@@ -102,11 +103,12 @@ class ErrorStack:
 
         is_known_error = [x.known_error_bool for x in self.reports]
 
-        summary = f"Error report summarising {len(self.reports)} errors. \n \n" \
+        summary = f"Error report summarising {len(self.reports)} errors. \n" \
+                  f"Code version: {package_name}=={__version__} \n \n" \
                   f"{int(len(is_known_error) - np.sum(is_known_error))}/{len(is_known_error)} " \
-                  f"errors were errors not raised by winterdrp. \n" \
+                  f"errors were errors not raised by {package_name}. \n" \
                   f"The remaining {int(np.sum(is_known_error))}/{len(is_known_error)} errors were known errors " \
-                  f"raised by winterdrp. \n" \
+                  f"raised by {package_name}. \n" \
                   f"An additional {len(self.noncritical_reports)} non-critical errors were raised. \n" \
 
         all_reports = self.get_all_reports()
