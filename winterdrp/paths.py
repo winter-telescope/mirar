@@ -6,10 +6,13 @@ from glob import glob
 import logging
 from collections.abc import Callable
 import pathlib
+import importlib
 
 logger = logging.getLogger(__name__)
 
 winter_code_dir = pathlib.Path(__file__).parent.parent.resolve()
+package_name = "winterdrp"
+__version__ = importlib.metadata.version(package_name)
 
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 
