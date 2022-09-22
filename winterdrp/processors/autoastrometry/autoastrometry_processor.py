@@ -50,7 +50,6 @@ class AutoAstrometry(BaseImageProcessor):
             header = headers[i]
 
             temp_path = os.path.join(sextractor_out_dir, header["BASENAME"])
-            logger.info(sextractor_out_dir)
             self.save_fits(data, header, temp_path)
 
             run_autoastrometry_single(

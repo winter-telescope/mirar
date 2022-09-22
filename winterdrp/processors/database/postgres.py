@@ -131,7 +131,7 @@ def check_if_user_exists(
     logger.debug(f"Found the following users: {existing_user_names}")
 
     user_exist_bool = user_name in existing_user_names
-    logger.info(f"User '{user_name}' {['does not exist', 'already exists'][user_exist_bool]}")
+    logger.debug(f"User '{user_name}' {['does not exist', 'already exists'][user_exist_bool]}")
     return user_exist_bool
 
 
@@ -151,7 +151,7 @@ def check_if_db_exists(
     logger.debug(f"Found the following databases: {existing_db_names}")
 
     db_exist_bool = db_name in existing_db_names
-    logger.info(f"Database '{db_name}' {['does not exist', 'already exists'][db_exist_bool]}")
+    logger.debug(f"Database '{db_name}' {['does not exist', 'already exists'][db_exist_bool]}")
 
     return db_exist_bool
 
@@ -173,7 +173,7 @@ def check_if_table_exists(
     logger.debug(f"Found the following tables: {existing_table_names}")
 
     table_exist_bool = db_table in existing_table_names
-    logger.info(f"Database table '{db_table}' {['does not exist', 'already exists'][table_exist_bool]}")
+    logger.debug(f"Database table '{db_table}' {['does not exist', 'already exists'][table_exist_bool]}")
 
     return table_exist_bool
 
@@ -311,10 +311,10 @@ def export_to_db(
                     logger.error(err)
                     raise errors.UniqueViolation
                 elif duplicate_protocol == 'ignore':
-                    logger.info(f"Found duplicate entry with {primary_key}={primary_key_values} in {db_name}. Ignoring.")
+                    logger.debug(f"Found duplicate entry with {primary_key}={primary_key_values} in {db_name}. Ignoring.")
                     pass
                 elif duplicate_protocol == 'replace':
-                    logger.info(f"Updating duplicate entry with {primary_key}={primary_key_values} in {db_name}.")
+                    logger.debug(f"Updating duplicate entry with {primary_key}={primary_key_values} in {db_name}.")
                     update_colnames = []
                     for x in colnames:
                         if not x in primary_key:
@@ -562,13 +562,10 @@ def modify_db_entry(
         db_user: str = os.environ.get(pg_admin_user_key),
         password: str = os.environ.get(pg_admin_pwd_key)
 ):
-    logger.info(db_query_columns)
     if not isinstance(db_query_columns, list):
         db_query_columns = [db_query_columns]
-    logger.info(db_query_columns)
     if not isinstance(db_query_values, list):
         db_query_values = [db_query_values]
-
     if not isinstance(db_alter_columns, list):
         db_alter_columns = [db_alter_columns]
 
@@ -589,7 +586,7 @@ def modify_db_entry(
                                            db_query_values)
 
     constraints = f"""{parsed_constraints}"""
-    logger.info(db_query_columns)
+    logger.debug(db_query_columns)
     with psycopg.connect(f"dbname={db_name} user={db_user} password={password}") as conn:
         conn.autocommit = True
 
@@ -601,7 +598,7 @@ def modify_db_entry(
                 UPDATE {db_table} SET {', '.join(alter_values_txt)} WHERE {constraints}  
                 """
         if len(return_columns)>0:
-            logger.info(return_columns)
+            logger.debug(return_columns)
             sql_query += f""" RETURNING {', '.join(return_columns)}"""
         sql_query += ";"
         query_output = execute_query(sql_query, db_name, db_user, password)

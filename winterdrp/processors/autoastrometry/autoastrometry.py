@@ -1291,7 +1291,7 @@ def parse_header(
                 distortion_keys.append(hkey)
 
         if header['CTYPE1'] != 'RA---TAN':
-            logger.info(f"Changing CTYPE1 from '{header['CTYPE1']}' to 'RA---TAN'")
+            logger.debug(f"Changing CTYPE1 from '{header['CTYPE1']}' to 'RA---TAN'")
             header["CTYPE1"] = "RA---TAN"
             ctype_change = 1
 
@@ -1442,8 +1442,7 @@ def get_ref_sources_from_catalog(
         logger.error(err)
         raise AstrometryReferenceError(err)
     # Load in reference star catalog
-    logger.info(f"n_cat is {n_cat}")
-    logger.debug(f"n_cat is {n_cat}")
+    logger.info(f"Number of catalog objects found is {n_cat}")
     return ref_src_list, n_cat, cat_density
 
 
@@ -1909,7 +1908,7 @@ def autoastrometry(
     header["CRVAL1"] = cra + ra_offset
     header["CRVAL2"] = cdec + dec_offset
 
-    logger.info(f'Updated header {header["CRVAL1"], header["CRVAL2"]}')
+    logger.debug(f'Updated header {header["CRVAL1"], header["CRVAL2"]}')
     try:
         oldcat = header['ASTR_CAT']
         header["OLD_CAT"] = (oldcat, "Earlier reference catalog")
@@ -1944,7 +1943,7 @@ def autoastrometry(
                     f"{ref_src_list[ci].ra_deg} {ref_src_list[ci].dec_deg}\n"
                 )
 
-    logger.info(f"Finished deriving astrometry for {filename}")
+    logger.debug(f"Finished deriving astrometry for {filename}")
 
     # Could repeat with scale adjustment
     # Could then go back to full good catalog and match all sources
@@ -1963,8 +1962,7 @@ def autoastrometry(
 
             hdu.writeto(outfile, output_verify='silentfix', overwrite=True)
             logger.info(f'Written updated file to {outfile}')
-
-        logger.info(f"Derived center coordinates of {header['CRVAL1']}, {header['CRVAL2']}.")
+        logger.debug(f"Derived center coordinates of {header['CRVAL1']}, {header['CRVAL2']}.")
 
     return n_match, sky_offset_pa, stdev_pa, ra_offset_arcsec, dec_offset_arcsec, std_offset_arcsec
 
@@ -1999,7 +1997,7 @@ def run_autoastrometry_single(
 
         write_param_file()
     write_config_file(saturation=saturation)
-    logger.info(f'Outfile is {outfile}')
+    logger.debug(f'Outfile is {outfile}')
     fit_info = autoastrometry(
         filename=img_path,
         pixel_scale=pixel_scale,
@@ -2160,7 +2158,7 @@ def run_autoastrometry_batch(
     if n_image > 1:
 
         if len(failures) == 0 and len(questionable) == 0:
-            logger.info('Successfully processed all images!')
+            logger.debug('Successfully processed all images!')
         else:
             logger.warning(f'Finished processing all images, not all were successful.')
 

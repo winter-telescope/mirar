@@ -28,7 +28,7 @@ class Gaia2Mass(BaseCatalog):
         self.trim = trim
         self.image_catalog_path = image_catalog_path
 
-        logger.info(f'Sextractor catalog path is {self.image_catalog_path}')
+        logger.debug(f'Sextractor catalog path is {self.image_catalog_path}')
 
     def get_catalog(
             self,
@@ -81,7 +81,11 @@ class Gaia2Mass(BaseCatalog):
 
         return t
 
-    def trim_catalog(self, ref_catalog, image_catalog):
+    @staticmethod
+    def trim_catalog(
+            ref_catalog,
+            image_catalog
+    ):
         ref_coords = SkyCoord(ra=ref_catalog['ra'], dec=ref_catalog['dec'], unit=(u.deg, u.deg))
         image_coords = SkyCoord(ra=image_catalog['ALPHAWIN_J2000'], dec=image_catalog['DELTAWIN_J2000'],
                                 unit=(u.deg, u.deg))
@@ -89,37 +93,3 @@ class Gaia2Mass(BaseCatalog):
         match_mask = (d2d < 2 * u.arcsec)
         matched_catalog = ref_catalog[idx[match_mask]]
         return matched_catalog
-#        if len(matched_catalog) == 0:
-#            return -1
-
-# def make_gaia_catalog(
-#         ra_deg: float,
-#         dec_deg: float,
-#         tm_cat_name: str,
-#         write_ldac: bool = False
-# ):
-#
-#     t = get_catalog(
-#         ra_deg=ra_deg,
-#         dec_deg=dec_deg,
-#         search_radius_arcmin=mk.catalog_search_radius_arcmin,
-#         min_mag=mk.catalog_min_mag,
-#         max_mag=mk.catalog_max_mag,
-#         ph_qual_cut=False
-#     )
-#
-#     t['ph_qual'] = t['ph_qual'].astype(str)
-#     t['ra_errdeg'] = t['ra_error'] / 3.6e6
-#     t['dec_errdeg'] = t['dec_error'] / 3.6e6
-#     t['FLAGS'] = 0
-#
-#     if write_ldac:
-#
-#         output_path = tm_cat_name + '.ldac'
-#
-#         if os.path.exists(output_path):
-#             os.remove(output_path)
-#
-#         logger.info(f"Saving catalog to {output_path}")
-#
-#         aw.save_table_as_ldac(t, output_path)
