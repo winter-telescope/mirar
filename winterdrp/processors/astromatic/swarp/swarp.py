@@ -11,19 +11,6 @@ from astropy.wcs import WCS
 logger = logging.getLogger(__name__)
 
 
-# def run_swarp(
-#         scamp_list_path: str,
-#         scamp_config_path: str,
-#         ast_ref_cat_path: str,
-#         output_dir: str
-# ):
-#     swarp_cmd = f"scamp @{scamp_list_path} " \
-#                 f"-c {scamp_config_path} " \
-#                 f"-ASTREFCAT_NAME {ast_ref_cat_path} " \
-#                 # f"-VERBOSE_TYPE QUIET "
-#
-#     execute(swarp_cmd, output_dir=output_dir)
-
 def run_swarp(
         stack_list_path: str,
         swarp_config_path: str,
@@ -99,14 +86,7 @@ def run_swarp(
 
     if gain is not None:
         swarp_command += f' -GAIN {gain}'
-    print(swarp_command)
     execute(swarp_command)
-
-
-# def get_scamp_output_head_path(
-#         cat_path: str
-# ) -> str:
-#     return os.path.splitext(cat_path)[0] + ".head"
 
 
 class Swarp(BaseImageProcessor):
@@ -144,7 +124,6 @@ class Swarp(BaseImageProcessor):
         self.cache = cache
         self.gain = gain
         self.subtract_bkg = subtract_bkg
-        logger.info(f'Night is {self.night}')
 
     def get_swarp_output_dir(self):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
@@ -171,8 +150,7 @@ class Swarp(BaseImageProcessor):
             swarp_output_dir,
             os.path.splitext(headers[0]["BASENAME"])[0] + "_swarp_weight_list.txt"
         )
-        logger.info(headers[0]["BASENAME"])
-        logger.info(f"Writing file list to {swarp_image_list_path}")
+        logger.debug(f"Writing file list to {swarp_image_list_path}")
 
         temp_files = [swarp_image_list_path, swarp_weight_list_path]
 
@@ -187,7 +165,7 @@ class Swarp(BaseImageProcessor):
                 swarp_output_dir,
                 os.path.splitext(headers[0]["BASENAME"])[0] + ".resamp.fits"
             )
-        logger.info(output_image_path)
+        logger.debug(f"Saving to {output_image_path}")
 
         out_files = []
 
@@ -230,15 +208,12 @@ class Swarp(BaseImageProcessor):
                 logger.info(f"{all_ras}, {all_decs}")
 
                 if self.include_scamp:
-                    print(str(header[scamp_header_key]).replace('\n', ''))
-
                     temp_head_path = copy_temp_file(
                         output_dir=swarp_output_dir,
                         file_path=str(header[scamp_header_key]).replace('\n', '')
                     )
 
                 temp_img_path = get_temp_path(swarp_output_dir, header["BASENAME"])
-                logger.info(header['CRVAL2'])
                 self.save_fits(data, header, temp_img_path)
                 temp_mask_path = self.save_mask(data, header, temp_img_path)
 
@@ -263,7 +238,7 @@ class Swarp(BaseImageProcessor):
         if center_dec_to_use is None:
             center_dec_to_use = np.median(all_decs)
 
-        logger.info(f"{self.center_ra}, {center_ra_to_use}")
+        logger.debug(f"{self.center_ra}, {center_ra_to_use}")
 
         output_image_weight_path = output_image_path.replace(".fits", ".weight.fits")
 
@@ -307,23 +282,12 @@ class Swarp(BaseImageProcessor):
                 if key not in new_header:
                     new_header[key] = headers[0][key]
 
-        # image[image == 0] = np.nan
         new_header["COADDS"] = np.sum([x["COADDS"] for x in headers])
-        # print(new_header["COADDS"], len(headers))
-        # print(header["SATURATION"])
-        # # Saturation
-        #
-        # raise
 
-        # fix
-        # headers
-        # here.....load
-        # up
-        # comps
         if not self.cache:
             for temp_file in temp_files:
                 os.remove(temp_file)
-                logger.info(f"Deleted temporary file {temp_file}")
+                logger.debug(f"Deleted temporary file {temp_file}")
 
         new_header[base_name_key] = os.path.basename(output_image_path)
         new_header[latest_mask_save_key] = os.path.basename(output_image_weight_path)
@@ -338,18 +302,3 @@ class Swarp(BaseImageProcessor):
                   f"However, the following steps were found: {self.preceding_steps}."
             logger.error(err)
             raise ValueError
-
-    # @classmethod
-    # def single_catalog(
-    #         cls,
-    #         catalog: BaseCatalog,
-    #         *args,
-    #         **kwargs
-    # ):
-    #
-    #     def get_catalog(
-    #             header: astropy.io.fits.Header
-    #     ) -> BaseCatalog:
-    #         return catalog
-    #
-    #     return cls(get_catalog=get_catalog, *args, **kwargs)
