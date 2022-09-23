@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS exposures (
     expid BIGINT PRIMARY KEY,
     obsdate INT,
+    timeutc TIMESTAMPTZ,
     obsID INT,
     itid INT,
     night INT,

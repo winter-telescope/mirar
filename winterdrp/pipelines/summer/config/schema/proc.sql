@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS proc (
     rawpath VARCHAR(255),
     savepath VARCHAR(255),
     OBSDATE INT,
+    timeutc TIMESTAMPTZ,
     FILTER VARCHAR(10),
     EXPTIME REAL,
     fieldID VARCHAR(30),
