@@ -302,12 +302,13 @@ class Monitor:
 
             if Time.now() - self.t_start > self.midway_postprocess_hours:
                 if not self.midway_postprocess_complete:
-                    logger.info("Postprocess time")
+                    self.midway_postprocess_complete = True
+                    logger.info("Postprocess time!")
                     self.postprocess()
                     if self.email_to_send:
-                        logger.info(f"More than {self.midway_postprocess_hours} hours have elapsed. Sending summary email.")
+                        logger.info(f"More than {self.midway_postprocess_hours} hours have elapsed. "
+                                    f"Sending summary email.")
                         self.summarise_errors(errorstack=self.errorstack)
-                    self.midway_postprocess_complete = True
 
             if not q.empty():
                 event = q.get()
