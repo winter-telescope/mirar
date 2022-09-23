@@ -39,7 +39,7 @@ build_log = [
 
 load_processed = [ImageLoader(input_sub_dir='processed', load_image=load_proc_summer_image)]
 
-standard_summer_reduction = [
+export_raw = [
     DatabaseImageExporter(
         db_name=DB_NAME,
         db_table="exposures",
@@ -57,10 +57,16 @@ standard_summer_reduction = [
         duplicate_protocol='replace'
     ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
+]
+
+cal_hunter = [
     CalHunter(
         load_image=load_raw_summer_image,
         requirements=summer_cal_requirements
     ),
+]
+
+process_raw = [
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
@@ -100,6 +106,9 @@ standard_summer_reduction = [
                 db_alter_columns="procflag"
             )
 ]
+
+standard_summer_reduction = export_raw + cal_hunter + process_raw
+
 
 subtract = [
     ImageBatcher(split_key=base_name_key),
