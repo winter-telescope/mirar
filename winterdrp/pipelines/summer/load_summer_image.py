@@ -60,6 +60,9 @@ def load_raw_summer_image(
         header['OBSDATE'] = int(header['UTC'].split('_')[0])
 
         obstime = Time(header['UTCISO'], format='iso')
+
+        header["TIMEUTC"] = header['UTCISO']
+
         t0 = Time('2018-01-01', format='iso')
         header['NIGHT'] = int(obstime.jd) - int(t0.jd)
         header['EXPMJD'] = header['OBSMJD']
