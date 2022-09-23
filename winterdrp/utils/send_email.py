@@ -6,11 +6,14 @@ from email.mime.text import MIMEText
 import ssl
 import getpass
 import logging
+from pathlib import Path
+import gzip
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 port = 465  # For SSL
-
 
 def send_gmail(
         email_recipients: str | list[str],
@@ -18,7 +21,8 @@ def send_gmail(
         email_text: str,
         email_sender: str = os.getenv("WATCHDOG_EMAIL"),
         email_password: str = os.getenv("WATCHDOG_EMAIL_PASSWORD"),
-        attachments: str | list[str] = None
+        attachments: str | list[str] = None,
+        autocompress: bool = True
 ):
 
     # Create a text/plain message
@@ -46,9 +50,19 @@ def send_gmail(
 
             base_name = os.path.basename(file_path)
 
+            if not isinstance(file_path, Path):
+                file_path = Path(file_path)
+
             with open(file_path, "rb") as f:
+
+                if np.logical_and(autocompress, file_path.stat().st_size > (1024 * 1024)):
+                    data = gzip.compress(f.read())
+                    base_name += ".gzip"
+                else:
+                    data = f.read()
+
                 part = MIMEApplication(
-                    f.read(),
+                    data,
                     Name=base_name
                 )
             # After the file is closed
