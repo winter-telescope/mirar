@@ -8,12 +8,12 @@ import getpass
 import logging
 from pathlib import Path
 import gzip
-
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 port = 465  # For SSL
+
 
 def send_gmail(
         email_recipients: str | list[str],
@@ -83,14 +83,3 @@ def send_gmail(
     with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
         server.login(email_sender, email_password)
         server.send_message(msg)
-
-
-if __name__ == "__main__":
-    from astropy.time import Time
-
-    send_gmail(
-        email_sender="winter.data.reduction.pipeline@gmail.com",
-        email_recipients="rdstein@caltech.edu",
-        email_subject="Tester",
-        email_text=f"Test at time: {Time.now()}"
-    )
