@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS raw (
     expid BIGINT PRIMARY KEY,
     savepath VARCHAR(255),
     obsdate INT,
+    timeutc TIMESTAMPTZ,
     obsID INT,
     itid INT,
     night INT,
