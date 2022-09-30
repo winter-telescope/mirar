@@ -7,6 +7,7 @@
 	"fields": [
 		{"name": "jd", "type": "double", "doc": "Observation Julian date at start of exposure [days]"},
 		{"name": "diffmaglim", "type": ["float", "null"], "default": null, "doc": "Expected 5-sigma mag limit in difference image based on global noise estimate [mag]"},
+		{"name": "fid", "type": "int", "default": null, "doc": "Filter ID (0=Y; 1=J; 2=H; 3=K)"},
 		{"name": "programpi", "type": ["string", "null"], "default": null, "doc": "Principal investigator attached to program ID"},
 		{"name": "programid", "type": "int", "default": null, "doc": "Program ID: encodes either public, collab, or caltech mode"},
 		{"name": "candid", "type": "long", "doc": "Candidate ID from operations DB"},
