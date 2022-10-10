@@ -138,7 +138,7 @@ class ImageHandler:
         return hashlib.sha1(key.encode()).hexdigest()
 
     def image_batch_error_report(self, exception: Exception, batch):
-        contents = [x[base_name_key] for x in batch[1]]
+        contents = ",".join([x[base_name_key] for x in batch[1]]).split(",")
         return ErrorReport(exception, self.__module__, contents)
 
 
