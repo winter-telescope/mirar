@@ -3,7 +3,8 @@ import os
 import numpy as np
 import astropy.io.fits
 from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_name_key, latest_mask_save_key
+from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_name_key, latest_mask_save_key, \
+    raw_img_key
 from winterdrp.utils import execute
 from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
 from astropy.wcs import WCS
@@ -305,7 +306,8 @@ class Swarp(BaseImageProcessor):
                 os.remove(temp_file)
                 logger.debug(f"Deleted temporary file {temp_file}")
 
-        new_header[base_name_key] = ",".join([x[base_name_key] for x in headers])
+        new_header[raw_img_key] = ",".join([x[raw_img_key] for x in headers])
+        new_header[base_name_key] = os.path.basename(output_image_path)
         new_header[latest_mask_save_key] = os.path.basename(output_image_weight_path)
         return [image], [new_header]
 

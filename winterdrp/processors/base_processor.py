@@ -11,7 +11,7 @@ import pandas as pd
 
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
-    base_name_key, proc_history_key
+    base_name_key, proc_history_key, raw_img_key
 from winterdrp.errors import ErrorReport, ErrorStack, ProcessorError, NoncriticalProcessingError
 
 logger = logging.getLogger(__name__)
@@ -138,7 +138,7 @@ class ImageHandler:
         return hashlib.sha1(key.encode()).hexdigest()
 
     def image_batch_error_report(self, exception: Exception, batch):
-        contents = (",".join([x[base_name_key] for x in batch[1]])).split(",")
+        contents = (",".join([x[raw_img_key] for x in batch[1]])).split(",")
         return ErrorReport(exception, self.__module__, contents)
 
 
