@@ -67,7 +67,7 @@ class Reference(BaseImageProcessor):
             ref_image = self.ref_image_generator(header)
             ref_image_path = ref_image.write_reference(header=header, output_dir=self.get_sub_output_dir())
 
-            ref_data, ref_header = open_fits(ref_image_path)
+            ref_data, ref_header = self.open_fits(ref_image_path)
 
             if not (base_name_key in ref_header.keys()):
                 logger.debug(os.path.basename(ref_image_path))
