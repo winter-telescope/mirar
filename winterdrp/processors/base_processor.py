@@ -8,6 +8,7 @@ import getpass
 import datetime
 import hashlib
 import pandas as pd
+from pathlib import Path
 
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
@@ -138,7 +139,7 @@ class ImageHandler:
         return hashlib.sha1(key.encode()).hexdigest()
 
     def image_batch_error_report(self, exception: Exception, batch):
-        contents = [os.path.basename(x) for x in ",".join([x[raw_img_key] for x in batch[1]]).split(",")]
+        contents = [Path(x).name for x in ",".join([x[raw_img_key] for x in batch[1]]).split(",")]
         return ErrorReport(exception, self.__module__, contents)
 
 
