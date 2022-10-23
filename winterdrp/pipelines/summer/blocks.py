@@ -72,8 +72,10 @@ process_raw = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
+    ImageSaver(output_dir_name='detrend', write_mask=True),
     ImageBatcher(base_name_key),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
+    ImageSaver(output_dir_name='detrend', write_mask=True),
     Sextractor(
         output_sub_dir="sextractor",
         weight_image=summer_weight_path,
@@ -86,6 +88,7 @@ process_raw = [
         scamp_config_path=scamp_path,
     ),
     Swarp(swarp_config_path=swarp_config_path, imgpixsize=2400),
+    ImageSaver(output_dir_name="processed", write_mask=True),
     Sextractor(output_sub_dir="photprocess",
                checkimage_type='BACKGROUND_RMS',
                **sextractor_photometry_config),
