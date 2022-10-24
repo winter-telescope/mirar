@@ -5,7 +5,7 @@ from astropy.io import fits
 from winterdrp.paths import sextractor_header_key
 from winterdrp.references.ps1 import PS1Ref
 from winterdrp.references.sdss import SDSSRef
-from winterdrp.catalog import Gaia2Mass, PS1, SDSS
+from winterdrp.catalog import Gaia2Mass, PS1, SDSS, SkyMapper
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from winterdrp.processors.astromatic import Sextractor, Swarp, PSFex
 from winterdrp.pipelines.summer.config import swarp_config_path, sextractor_photometry_config, psfex_config_path
@@ -32,8 +32,12 @@ def summer_photometric_catalog_generator(
         header: astropy.io.fits.Header
 ):
     filter_name = header['FILTERID']
+    dec = header['DEC']
     if filter_name == 'u':
-        return SDSS(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
+        if dec > 0:
+            return SDSS(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
+        else:
+            return SkyMapper(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
     else:
         return PS1(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
 
