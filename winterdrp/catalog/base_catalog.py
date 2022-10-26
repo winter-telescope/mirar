@@ -1,13 +1,19 @@
+from abc import ABC
+
 import astropy.table
 import os
 import logging
 import astropy.io.fits
-import pandas as pd
 
 from winterdrp.utils.ldac_tools import save_table_as_ldac
 from winterdrp.paths import base_name_key
 from penquins import Kowalski
-import numpy as np
+
+import astropy.table
+from astroquery.vizier import Vizier
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+from astropy.table import Table
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +90,80 @@ class BaseCatalog:
         )
 
         return cat
+
+
+class VizierCatalog(BaseCatalog, ABC):
+
+    @property
+    def catalog_vizier_code(self):
+        raise NotImplementedError()
+
+    @property
+    def ra_key(self):
+        raise NotImplementedError()
+
+    @property
+    def dec_key(self):
+        raise NotImplementedError()
+
+    def __init__(
+            self,
+            search_radius_arcmin: float,
+            min_mag: float,
+            max_mag: float,
+            filter_name: str,
+            snr_threshold: float = 3.0
+    ):
+        super().__init__(search_radius_arcmin, min_mag, max_mag, filter_name)
+        self.snr_threshold = snr_threshold
+
+    def get_mag_key(self):
+        return f"{self.filter_name}mag"
+
+    def get_mag_error_key(self):
+        return f"e_{self.get_mag_key()}"
+
+    def get_catalog(
+            self,
+            ra_deg: float,
+            dec_deg: float
+    ) -> astropy.table.Table:
+
+        logger.info(
+            f'Querying {self.abbreviation} catalog around RA {ra_deg:.4f}, '
+            f'Dec {dec_deg:.4f} with a radius of {self.search_radius_arcmin:.4f} arcmin'
+        )
+
+        v = Vizier(columns=['*'],
+                   column_filters={f"{self.get_mag_key()}": f"< {self.max_mag}",
+                                   f"{self.get_mag_error_key()}": "<%.3f" % (1.086 / self.snr_threshold)},
+                   row_limit=-1)
+
+        query = v.query_region(
+            SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
+            radius=str(self.search_radius_arcmin) + 'm',
+            catalog=self.catalog_vizier_code,
+            cache=False
+        )
+
+        if len(query) == 0:
+            logger.info(f'No matches found in the given radius in {self.abbreviation}')
+            t = Table()
+            self.check_coverage(ra_deg, dec_deg)
+
+        else:
+            t = query[0]
+            t['ra'] = t[self.ra_key]
+            t['dec'] = t[self.dec_key]
+            t['magnitude'] = t[self.get_mag_key()]
+            logger.info(f'{len(t)} matches found in the given radius in {self.abbreviation}')
+            t.write('phot_table.csv', overwrite=True)
+            t = Table.read('phot_table.csv')
+        return t
+
+    @staticmethod
+    def check_coverage(ra_deg: float, dec_deg: float):
+        pass
 
 
 class BaseXMatchCatalog:
