@@ -5,7 +5,8 @@ from astropy.io import fits
 from winterdrp.paths import sextractor_header_key
 from winterdrp.references.ps1 import PS1Ref
 from winterdrp.references.sdss import SDSSRef
-from winterdrp.catalog import Gaia2Mass, PS1, SDSS, SkyMapper
+from winterdrp.catalog import Gaia2Mass, PS1, SkyMapper
+from winterdrp.catalog.sdss import SDSS, in_sdss, NotInSDSSError
 from winterdrp.processors.astromatic.sextractor.sextractor import sextractor_header_key
 from winterdrp.processors.astromatic import Sextractor, Swarp, PSFex
 from winterdrp.pipelines.summer.config import swarp_config_path, sextractor_photometry_config, psfex_config_path
@@ -33,11 +34,15 @@ def summer_photometric_catalog_generator(
 ):
     filter_name = header['FILTERID']
     dec = header['DEC']
-    if filter_name == 'u':
-        if dec > 0:
+    if filter_name in ['u', "U"]:
+        if in_sdss(header["RA"], header["DEC"]):
             return SDSS(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
-        else:
+        elif dec < 0.:
             return SkyMapper(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
+        else:
+            err = "U band image is in a field with no reference image."
+            logger.error(err)
+            raise NotInSDSSError(err)
     else:
         return PS1(min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name)
 
