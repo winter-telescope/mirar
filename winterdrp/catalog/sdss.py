@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class SDSS(BaseCatalog):
 
-    catalog_vizier_code = "V/147"
+    catalog_vizier_code = "V/154"
     abbreviation = "sdss"
 
     def __init__(
@@ -20,7 +20,7 @@ class SDSS(BaseCatalog):
             min_mag: float,
             max_mag: float,
             filter_name: str,
-            snr_threshold : float=3.0
+            snr_threshold: float = 3.0
     ):
         super().__init__(search_radius_arcmin, min_mag, max_mag, filter_name)
         self.snr_threshold = snr_threshold
@@ -40,15 +40,19 @@ class SDSS(BaseCatalog):
                    column_filters={f"{self.filter_name}mag" : f"< {self.max_mag}",
                                    f"e_{self.filter_name}mag" : "<%.3f" % (1.086 / self.snr_threshold)},
                    row_limit=-1)
-        Q = v.query_region(SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
-                           radius=str(self.search_radius_arcmin) + 'm',
-                           catalog="V/147", cache=False)
 
-        if len(Q) == 0:
+        query = v.query_region(
+            SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
+            radius=str(self.search_radius_arcmin) + 'm',
+            catalog=self.catalog_vizier_code,
+            cache=False
+        )
+
+        if len(query) == 0:
             logger.info('No matches found in the given radius in SDSS')
             t = Table()
         else:
-            t = Q[0]
+            t = query[0]
             t['ra'] = t['RA_ICRS']
             t['dec'] = t['DE_ICRS']
             t['magnitude'] = t[f'{self.filter_name}mag']
