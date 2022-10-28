@@ -31,5 +31,5 @@ wget = "^3.2"
 randomsdss = "^0.5.0"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core", "numpy"]
 build-backend = "poetry.core.masonry.api"
