@@ -1294,13 +1294,13 @@ python-versions = "^3.6"
 develop = false
 
 [package.dependencies]
-numpy = "^1.20.0"
+numpy = ">=1.20.0"
 
 [package.source]
 type = "git"
 url = "https://github.com/robertdstein/pymangle.git"
 reference = "poetry"
-resolved_reference = "1c03d24e2bba98f8bd73e95d0178695e28eef774"
+resolved_reference = "3977af1f197bcc3e4f2c2b0f79d5b101b8b1ad05"
 
 [[package]]
 name = "pymongo"
