@@ -1285,6 +1285,14 @@ python-versions = ">=3.6"
 plugins = ["importlib-metadata"]
 
 [[package]]
+name = "pymangle"
+version = "0.9.2"
+description = "A python code to read and work with mangle masks"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pymongo"
 version = "4.3.2"
 description = "Python driver for MongoDB <http://www.mongodb.org>"
@@ -1457,6 +1465,20 @@ packaging = "*"
 
 [package.extras]
 test = ["pytest (>=6,!=7.0.0,!=7.0.1)", "pytest-cov (>=3.0.0)", "pytest-qt"]
+
+[[package]]
+name = "randomsdss"
+version = "0.5.0"
+description = "Generate random points within SDSS DR8 to DR16 footprint."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+attrs = "*"
+numpy = "*"
+pymangle = "*"
+scipy = "*"
 
 [[package]]
 name = "requests"
@@ -1753,7 +1775,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "748fe5934ca66b1cff55a4b6638d56aad71343779c8a5bbb80e200de5c401bfb"
+content-hash = "a82fd5529f81f859b19d1b3154add9cc2d333493236cdb554e04b96b2850100e"
 
 [metadata.files]
 anyio = [
@@ -2871,6 +2893,9 @@ pygments = [
     {file = "Pygments-2.13.0-py3-none-any.whl", hash = "sha256:f643f331ab57ba3c9d89212ee4a2dabc6e94f117cf4eefde99a0574720d14c42"},
     {file = "Pygments-2.13.0.tar.gz", hash = "sha256:56a8508ae95f98e2b9bdf93a6be5ae3f7d8af858b43e02c5a2ff083726be40c1"},
 ]
+pymangle = [
+    {file = "pymangle-0.9.2.tar.gz", hash = "sha256:f46677e54393f1b55d3e0691454b3b78e369931498fefdb12da5fc71ec32e28a"},
+]
 pymongo = [
     {file = "pymongo-4.3.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:68320e5326e2b1e49dcd901e6dcbe3009b8a0fd0da0c618579a2be7cf5f2d7be"},
     {file = "pymongo-4.3.2-cp310-cp310-manylinux1_i686.whl", hash = "sha256:3f41781c8310fe1ae3ed0b809e2d7be6ebba9f0954c08e1d18ac443916b82b29"},
@@ -3143,6 +3168,10 @@ qtconsole = [
 qtpy = [
     {file = "QtPy-2.2.1-py3-none-any.whl", hash = "sha256:268cf5328f41353be1b127e04a81bc74ec9a9b54c9ac75dd8fe0ff48d8ad6ead"},
     {file = "QtPy-2.2.1.tar.gz", hash = "sha256:7d5231133b772e40b4ee514b6673aca558331e4b88ca038b26c9e16c5c95524f"},
+]
+randomsdss = [
+    {file = "randomsdss-0.5.0-py3-none-any.whl", hash = "sha256:5cf7a7075ecff98674cb22d2ba3d405f4fe7e3de57a2d4da2acc0bcd0431def4"},
+    {file = "randomsdss-0.5.0.tar.gz", hash = "sha256:78aa530487b7a83eee466a15725af7814fcd21b1adcf680c6e5a88d6d12f1377"},
 ]
 requests = [
     {file = "requests-2.28.1-py3-none-any.whl", hash = "sha256:8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349"},
