@@ -21,6 +21,7 @@ winterdrp uses poetry for dependency management. You can install the code in the
 
 ```
 git clone git@github.com:winter-telescope/winterdrp.git
+pip install poetry
 cd winterdrp
 poetry install
 ```

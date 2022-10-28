@@ -24,11 +24,12 @@ pandas = "^1.5.1"
 penquins = "^2.2.0"
 photutils = "^1.5.0"
 psycopg = {extras = ["binary"], version = "^3.1.4"}
+pydl = {version = "^1.0.0rc1", allow-prereleases = true}
 pyFFTW = "^0.13.0"
 setuptools = "^65.5.0"
 watchdog = "^2.1.9"
 wget = "^3.2"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["setuptools", "wheel", "poetry-core",]
 build-backend = "poetry.core.masonry.api"
