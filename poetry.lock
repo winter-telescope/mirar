@@ -1245,16 +1245,21 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pydl"
-version = "0.7.0"
+version = "1.0.0rc1"
 description = "Astropy affiliated package"
 category = "main"
 optional = false
-python-versions = ">=2.7"
+python-versions = ">=3.6"
 
 [package.dependencies]
 astropy = "*"
-matplotlib = "*"
 scipy = "*"
+
+[package.extras]
+all = ["matplotlib"]
+astropy20 = ["pytest-mock (<2)"]
+docs = ["sphinx-astropy"]
+test = ["pytest-astropy", "pytest-mock"]
 
 [[package]]
 name = "pyerfa"
@@ -1766,7 +1771,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "96a932e601372e30905e229c609c7515de838e781fd8b915bbf06e128915d808"
+content-hash = "165a647b3ed539c8939f861e0ffcf2b4eb342fac481dca1d1b936f4d43876088"
 
 [metadata.files]
 anyio = [
@@ -2834,7 +2839,7 @@ pycparser = [
     {file = "pycparser-2.21.tar.gz", hash = "sha256:e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"},
 ]
 pydl = [
-    {file = "pydl-0.7.0.tar.gz", hash = "sha256:8f35c97815b73e1da0cd67b56a051aa9768a88e46a1aad080d23c2a4cdc45b84"},
+    {file = "pydl-1.0.0rc1.tar.gz", hash = "sha256:aa1df39fd93ef98a126862cb9bc0b283df18dd847e31d9ca49610f2724c73637"},
 ]
 pyerfa = [
     {file = "pyerfa-2.0.0.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:278832de7803f2fb0ef4b14263200f98dfdb3eaa78dc63835d93796fd8fc42c6"},
