@@ -57,14 +57,15 @@ jobs:
           echo `swarp --version`
           echo `psfex --version`
           pip install --upgrade pip
-          pip install -e .
+          python -m pip install --upgrade poetry coveralls
+          poetry install
 
       # Runs a set of commands using the runners shell
       - name: Test the code
         env:
           OUTPUT_DATA_DIR : /home/runner/
         run: |
-          coverage run -m unittest discover tests/
+          poetry run coverage run -m unittest discover tests/
 
       - name: Run Coveralls
         if: ${{ success() }}
