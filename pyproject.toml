@@ -25,11 +25,12 @@ penquins = "^2.2.0"
 photutils = "^1.5.0"
 psycopg = {extras = ["binary"], version = "^3.1.4"}
 pyFFTW = "^0.13.0"
+pymangle = {git = "https://github.com/robertdstein/pymangle.git", branch = "poetry" }
+randomsdss = "^0.5.0"
 setuptools = "^65.5.0"
 watchdog = "^2.1.9"
 wget = "^3.2"
-randomsdss = "^0.5.0"
 
 [build-system]
-requires = ["poetry-core", "numpy"]
+requires = ["setuptools", "wheel", "poetry-core",]
 build-backend = "poetry.core.masonry.api"
