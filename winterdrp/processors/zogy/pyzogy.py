@@ -33,8 +33,8 @@ def pyzogy(
         ref_psf_path: str,
         new_sigma_path: str,
         ref_sigma_path: str,
-        new_avg_unc,
-        ref_avg_unc,
+        new_avg_unc: float,
+        ref_avg_unc: float,
         dx: float = 0.25,
         dy: float = 0.25
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
