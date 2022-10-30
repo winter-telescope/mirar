@@ -1,26 +1,18 @@
 import unittest
-from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
-from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.catalog import Gaia2Mass
-from winterdrp.downloader.caltech import download_via_ssh
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
-from winterdrp.paths import coadd_key, proc_history_key
-from winterdrp.processors.csvlog import CSVLog
 import logging
 import os
-from winterdrp.pipelines.wirc_imsub import WircImsubPipeline
-from winterdrp.processors.csvlog import CSVLog
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import base_name_key
-from winterdrp.processors.reference import Reference
-from winterdrp.processors.astromatic import PSFex
-from winterdrp.processors.zogy.zogy import ZOGY, ZOGYPrepare
-from winterdrp.processors.candidates.candidate_detector import DetectCandidates
-from winterdrp.pipelines.wirc_imsub.wirc_imsub_pipeline import wirc_reference_psfex, wirc_reference_image_generator, wirc_reference_image_resampler, wirc_reference_sextractor
-from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image
+from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from astropy.io import fits
 from winterdrp.references import WIRCRef
+from winterdrp.processors.reference import Reference
+from winterdrp.pipelines.wirc.blocks import subtract
+from winterdrp.pipelines.wirc.generator import wirc_reference_image_resampler, wirc_reference_sextractor, \
+    wirc_reference_psfex
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +21,8 @@ test_data_dir = get_test_data_dir()
 ref_img_directory = os.path.join(test_data_dir, 'wirc/ref')
 print(ref_img_directory)
 
-def reference_image_generator(
+
+def test_reference_image_generator(
         header: fits.header,
         images_directory: str = ref_img_directory,
 ):
@@ -51,36 +44,22 @@ expected_values = {
 test_imsub_configuration = [
     ImageLoader(
         input_img_dir=test_data_dir,
-        input_sub_dir="raw",
+        input_sub_dir="stack",
         load_image=load_raw_wirc_image
     ),
-    # ImageBatcher(split_key='UTSHUT'),
-    ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210330.fits")),
     Reference(
-        ref_image_generator=reference_image_generator,
+        ref_image_generator=test_reference_image_generator,
         ref_swarp_resampler=wirc_reference_image_resampler,
         ref_sextractor=wirc_reference_sextractor,
         ref_psfex=wirc_reference_psfex
     ),
-    # Swarp(),
-    Sextractor(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photomCat.sex',
-               parameter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.param',
-               filter_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.conv',
-               starnnw_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/default.nnw',
-               output_sub_dir='subtract',
-               cache=False),
-    PSFex(config_path='winterdrp/pipelines/wirc_imsub/wirc_imsub_files/config/photom.psfex',
-          output_sub_dir="subtract",
-          norm_fits=True),
-    ZOGYPrepare(output_sub_dir="subtract"),
-    ZOGY(output_sub_dir="subtract")
-]
+] + subtract
 
-pipeline = WircImsubPipeline(night="20210330", selected_configurations="test_imsub")
+pipeline = WircPipeline(night="20210330", selected_configurations="test_imsub")
 pipeline.add_configuration(configuration_name="test_imsub", configuration=test_imsub_configuration)
 
 
-class TestWircImsubcPipeline(unittest.TestCase):
+class TestWircImsubPipeline(unittest.TestCase):
 
     def setUp(self):
         self.logger = logging.getLogger(__name__)

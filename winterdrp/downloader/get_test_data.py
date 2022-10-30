@@ -1,11 +1,6 @@
-import wget
 import os
 from winterdrp.paths import winter_code_dir
 import logging
-from glob import glob
-import zipfile
-import numpy as np
-from winterdrp.utils import execute, ExecutionError
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +11,7 @@ test_data_dir = os.path.join(
     os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
 
-TEST_DATA_TAG = "v0.1.1"
+TEST_DATA_TAG = "v0.1.3"
 
 
 def get_test_data_dir() -> str:

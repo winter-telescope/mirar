@@ -9,16 +9,13 @@ from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, sextractor_astro
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
 from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.catalog import Gaia2Mass
-from winterdrp.downloader.caltech import download_via_ssh
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
-from winterdrp.paths import coadd_key, proc_history_key
-from winterdrp.processors.csvlog import CSVLog
 import logging
 import os
-from winterdrp.pipelines.wirc.wirc_pipeline import load_raw_wirc_image, WircPipeline, \
-    wirc_astrometric_catalog_generator, wirc_photometric_catalog_generator
+from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
+from winterdrp.pipelines.wirc.generator import wirc_astrometric_catalog_generator, wirc_photometric_catalog_generator
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.downloader.get_test_data import get_test_data_dir
 
@@ -48,7 +45,7 @@ expected_zp = {
 }
 
 
-def get_cal_path(name: str):
+def get_cal_path(name: str) -> str:
     return os.path.join(test_data_dir, f"wirc/cals/test_{name}.fits")
 
 

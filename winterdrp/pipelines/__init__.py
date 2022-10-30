@@ -3,7 +3,6 @@ from winterdrp.errors import ProcessorError
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.pipelines.summer.summer_pipeline import SummerPipeline
-from winterdrp.pipelines.wirc_imsub.wirc_imsub_pipeline import WircImsubPipeline
 
 logger = logging.getLogger(__name__)
 
