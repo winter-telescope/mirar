@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clipped_stats
 import astropy.units as u
 from winterdrp.io import open_fits
-from winterdrp.processors.zogy.py_zogy import py_zogy
+from winterdrp.processors.zogy.pyzogy import pyzogy
 from winterdrp.paths import norm_psfex_header_key
 import os
 from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
@@ -59,7 +59,7 @@ class ZOGY(BaseImageProcessor):
 
             temp_files = [sci_image_path, ref_image_path, sci_rms_image, ref_rms_image]
 
-            D, P_D, S_corr = py_zogy(sci_image_path, ref_image_path, sci_psf, ref_psf, sci_rms_image,
+            D, P_D, S_corr = pyzogy(sci_image_path, ref_image_path, sci_psf, ref_psf, sci_rms_image,
                                      ref_rms_image, sci_rms, ref_rms, dx=ast_unc_x, dy=ast_unc_y)
 
             diff_image_path = sci_image_path.replace('.fits', '') + '.diff.fits'
