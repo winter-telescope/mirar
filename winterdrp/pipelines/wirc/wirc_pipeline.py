@@ -2,7 +2,7 @@ import astropy.io.fits
 import numpy as np
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.downloader.caltech import download_via_ssh
-from winterdrp.pipelines.wirc.blocks import test_pipeline
+from winterdrp.pipelines.wirc.blocks import load_raw, test_pipeline, imsub
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 import logging
 
@@ -30,7 +30,8 @@ class WircPipeline(Pipeline):
     ]
 
     all_pipeline_configurations = {
-        "default": test_pipeline
+        "default": load_raw + test_pipeline,
+        "imsub": load_raw + imsub
     }
 
     @staticmethod

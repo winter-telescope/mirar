@@ -1,1 +1,0 @@
-from winterdrp.pipelines.wirc_imsub.wirc_imsub_pipeline import WircImsubPipeline
