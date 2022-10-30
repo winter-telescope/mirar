@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import pkg_resources
 import astropy
 import logging
 from astropy.coordinates import SkyCoord
@@ -8,7 +7,7 @@ from astropy.io import fits
 from astropy.time import Time
 from astropy import units as u
 
-from winterdrp.paths import latest_save_key, raw_img_key, base_name_key, proc_history_key, proc_fail_key
+from winterdrp.paths import latest_save_key, raw_img_key, base_name_key, proc_history_key, proc_fail_key, __version__
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +163,7 @@ def load_proc_summer_image(
         header['ZP_std'] = header['ZP_AUTO_std']
     header['CENTRA'] = header['CRVAL1']
     header['CENTDEC'] = header['CRVAL2']
-    pipeline_version = pkg_resources.require("winterdrp")[0].version
+    pipeline_version = __version__
     pipeline_version_padded_str = "".join([x.rjust(2, "0") for x in pipeline_version.split(".")])
     header['DIFFID'] = int(str(header["EXPID"])+str(pipeline_version_padded_str))
     data[data == 0] = np.nan
