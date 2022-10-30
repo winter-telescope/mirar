@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clipped_stats
 import astropy.units as u
 from winterdrp.io import open_fits
-from winterdrp.processors.zogy.py_zogy import py_zogy
+from winterdrp.processors.zogy.pyzogy import pyzogy
 from winterdrp.paths import norm_psfex_header_key
 import os
 from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
@@ -50,26 +50,36 @@ class ZOGY(BaseImageProcessor):
             ref_image_path = os.path.join(self.get_sub_output_dir(), header["REFSCL"])
             sci_rms = header["SCIRMS"]
             ref_rms = header["REFRMS"]
-            sci_psf = os.path.join(self.get_sub_output_dir(), header[norm_psfex_header_key])
-            ref_psf = os.path.join(self.get_sub_output_dir(), header["REFPSF"])
-            sci_rms_image = os.path.join(self.get_sub_output_dir(), header["SCUNCPTH"])
-            ref_rms_image = os.path.join(self.get_sub_output_dir(), header["RFUNCPTH"])
+            sci_psf_path = os.path.join(self.get_sub_output_dir(), header[norm_psfex_header_key])
+            ref_psf_path = os.path.join(self.get_sub_output_dir(), header["REFPSF"])
+            sci_rms_path = os.path.join(self.get_sub_output_dir(), header["SCUNCPTH"])
+            ref_rms_path = os.path.join(self.get_sub_output_dir(), header["RFUNCPTH"])
             ast_unc_x = header["ASTUNCX"]
             ast_unc_y = header["ASTUNCY"]
 
-            temp_files = [sci_image_path, ref_image_path, sci_rms_image, ref_rms_image]
+            temp_files = [sci_image_path, ref_image_path, sci_rms_path, ref_rms_path]
 
-            D, P_D, S_corr = py_zogy(sci_image_path, ref_image_path, sci_psf, ref_psf, sci_rms_image,
-                                     ref_rms_image, sci_rms, ref_rms, dx=ast_unc_x, dy=ast_unc_y)
+            diff, diff_psf, s_corr = pyzogy(
+                new_image_path=sci_image_path,
+                ref_image_path=ref_image_path,
+                new_psf_path=sci_psf_path,
+                ref_psf_path=ref_psf_path,
+                new_sigma_path=sci_rms_path,
+                ref_sigma_path=ref_rms_path,
+                new_avg_unc=sci_rms,
+                ref_avg_unc=ref_rms,
+                dx=ast_unc_x,
+                dy=ast_unc_y
+            )
 
             diff_image_path = sci_image_path.replace('.fits', '') + '.diff.fits'
             diff_psf_path = diff_image_path + '.psf'
             scorr_image_path = sci_image_path.replace('.fits', '') + '.scorr.fits'
 
-            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(S_corr)
+            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(s_corr)
             logger.info(f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}")
-            sci_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), sci_rms_image))
-            ref_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_rms_image))
+            sci_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), sci_rms_path))
+            ref_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_rms_path))
             diff_rms_image = np.sqrt(sci_rms_data ** 2 + ref_rms_data ** 2)
             diff_rms_mean, diff_rms_median, diff_rms_std = sigma_clipped_stats(diff_rms_image)
             diff_rms_path = diff_image_path + '.unc'
@@ -78,23 +88,23 @@ class ZOGY(BaseImageProcessor):
             header["DIFFPSF"] = diff_psf_path
             header["DIFFSCR"] = scorr_image_path
             header["DIFFUNC"] = diff_rms_path
-            noise = np.sqrt(np.nansum(np.square(P_D)*np.square(diff_rms_median)))/np.nansum(np.square(P_D))
+            noise = np.sqrt(np.nansum(np.square(diff_psf)*np.square(diff_rms_median)))/np.nansum(np.square(diff_psf))
             header["DIFFMLIM"] = -2.5*np.log10(noise*5) + float(header[self.sci_zp_header_key])
             header["SCORMEAN"] = scorr_mean
             header["SCORMED"] = scorr_median
             header["SCORSTD"] = scorr_std
 
-            self.save_fits(data=D,
+            self.save_fits(data=diff,
                            header=header,
                            path=os.path.join(self.get_sub_output_dir(), diff_image_path))
 
-            self.save_fits(data=P_D,
+            self.save_fits(data=diff_psf,
                            header=None,
                            path=os.path.join(self.get_sub_output_dir(), diff_psf_path))
 
             scorr_header = header.copy()
             scorr_header[latest_mask_save_key] = header['SCORMASK']
-            self.save_fits(data=S_corr,
+            self.save_fits(data=s_corr,
                            header=scorr_header,
                            path=os.path.join(self.get_sub_output_dir(), scorr_image_path))
 
@@ -108,7 +118,7 @@ class ZOGY(BaseImageProcessor):
 
             #     os.remove(temp_file)
             #     logger.info(f"Deleted temporary file {temp_file}")
-            diff_images.append(D)
+            diff_images.append(diff)
             diff_headers.append(header)
         return diff_images, diff_headers
 
@@ -154,9 +164,11 @@ class ZOGYPrepare(BaseImageProcessor):
     def get_sub_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
-
-    def get_ast_fluxscale(self, ref_catalog_name: str,
-                          sci_catalog_name: str) -> tuple[float, float, float]:
+    def get_ast_fluxscale(
+            self,
+            ref_catalog_name: str,
+            sci_catalog_name: str
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         # Cross match science and reference image catalogs to get flux scaling factor and astometric uncertainties
         logger.info(f'Reference catalog is at {ref_catalog_name}')
         ref_catalog = get_table_from_ldac(ref_catalog_name)
