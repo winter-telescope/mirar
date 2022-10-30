@@ -29,6 +29,7 @@ pyFFTW = "^0.13.0"
 setuptools = "^65.5.0"
 watchdog = "^2.1.9"
 wget = "^3.2"
+toml = "^0.10.2"
 
 [build-system]
 requires = ["setuptools", "wheel", "poetry-core",]

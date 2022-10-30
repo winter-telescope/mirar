@@ -6,13 +6,19 @@ from glob import glob
 import logging
 from collections.abc import Callable
 import pathlib
-import importlib
+import toml
 
 logger = logging.getLogger(__name__)
 
 winter_code_dir = pathlib.Path(__file__).parent.parent.resolve()
-package_name = "winterdrp"
-__version__ = importlib.metadata.version(package_name)
+
+toml_path = winter_code_dir.joinpath("pyproject.toml")
+
+with open(toml_path.as_posix(), "r") as f:
+    toml_info = toml.loads(f.read())
+
+package_name = toml_info["tool"]["poetry"]["name"]
+__version__ = toml_info["tool"]["poetry"]["version"]
 
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 
