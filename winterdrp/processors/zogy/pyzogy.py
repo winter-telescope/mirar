@@ -80,12 +80,14 @@ def pyzogy(
     # Place PSF at center of image with same size as new / reference
     new_psf_big = np.zeros(new.shape)
     ref_psf_big = np.zeros(ref.shape)
-    idx = [slice(new.shape[0] // 2 - new_psf.shape[0] // 2,
-                 new.shape[0] // 2 + new_psf.shape[0] // 2 + 1),
-           slice(new.shape[1] // 2 - new_psf.shape[1] // 2,
-                 new.shape[1] // 2 + new_psf.shape[1] // 2 + 1)]
-    new_psf_big[idx] = new_psf
-    ref_psf_big[idx] = ref_psf
+
+    y_min = new.shape[0] // 2 - new_psf.shape[0] // 2
+    y_max = new.shape[0] // 2 + new_psf.shape[0] // 2 + 1
+    x_min = new.shape[1] // 2 - new_psf.shape[1] // 2
+    x_max = new.shape[1] // 2 + new_psf.shape[1] // 2 + 1
+
+    new_psf_big[y_min:y_max, x_min:x_max] = new_psf
+    ref_psf_big[y_min:y_max, x_min:x_max] = ref_psf
 
     logger.info('Max of big PSF is %d %d' % np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape))
 
@@ -123,12 +125,12 @@ def pyzogy(
     # PSF of Subtraction Image
     diff_psf = np.real(fft.ifft2(diff_hat_psf))
     diff_psf = fft.ifftshift(diff_psf)
-    diff_psf = diff_psf[idx]
+    diff_psf = diff_psf[y_min:y_max, x_min:x_max]
 
     # PSF of Image Nocorr
     diff_nocorr_psf = np.real(fft.ifft2(ref_psf_hat * new_psf_hat))
     diff_nocorr_psf = fft.ifftshift(diff_nocorr_psf)
-    diff_nocorr_psf = diff_nocorr_psf[idx]
+    diff_nocorr_psf = diff_nocorr_psf[y_min:y_max, x_min:x_max]
 
     logger.info('Max of diff PSF is %d %d' % np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape))
 
