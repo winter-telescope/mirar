@@ -43,7 +43,7 @@ load_raw = [ImageLoader(
         load_image=load_raw_wirc_image
 )]
 
-test_pipeline = [
+reduce = [
     CSVLog(
         export_keys=["OBJECT", "FILTER", "UTSHUT", "EXPTIME", "COADDS", "OBSTYPE", "OBSCLASS"]
     ),
@@ -73,20 +73,23 @@ test_pipeline = [
     PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator)
 ]
 
-
-imsub = [
-    ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210528.fits")),
+reference = [
     Reference(
         ref_image_generator=wirc_reference_image_generator,
         ref_swarp_resampler=wirc_reference_image_resampler,
         ref_sextractor=wirc_reference_sextractor,
         ref_psfex=wirc_reference_psfex
-    ),
-    # Swarp(),
+    )
+]
+
+subtract = [
     Sextractor(**sextractor_reference_config, output_sub_dir='subtract', cache=False),
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     ZOGYPrepare(output_sub_dir="subtract"),
     ZOGY(output_sub_dir="subtract"),
+]
+
+candidates = [
     DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
     RegionsWriter(output_dir_name='candidates'),
     PSFPhotometry(),
@@ -140,3 +143,5 @@ imsub = [
     ),
     # SendToFritz(update_thumbnails = True)
 ]
+
+imsub = reference + subtract + candidates
