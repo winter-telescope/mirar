@@ -4,7 +4,7 @@ import logging
 import astropy.io.fits
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.paths import get_output_dir, base_name_key, psfex_header_key, norm_psfex_header_key, \
+from winterdrp.paths import get_output_dir, psfex_header_key, norm_psfex_header_key, \
     sextractor_header_key
 from winterdrp.utils import execute
 from astropy.io import fits
@@ -18,13 +18,13 @@ def run_psfex(sextractor_cat_path: str,
               norm_psf_output_name: str = None
               ):
     psfex_command = f"psfex -c {config_path} {sextractor_cat_path} -PSF_DIR {psf_output_dir} -CHECKIMAGE_TYPE NONE"
-    print(psfex_command)
 
     execute(psfex_command)
 
     if norm_psf_output_name is not None:
         psf_path = sextractor_cat_path.replace('.cat', '.psf')
-        psf_model_data = fits.open(psf_path)[1].data[0][0][0]
+        with fits.open(psf_path) as f:
+            psf_model_data = f[1].data[0][0][0]
         psf_model_data = psf_model_data / np.sum(psf_model_data)
         psf_model_hdu = fits.PrimaryHDU(psf_model_data)
         psf_model_hdu.writeto(norm_psf_output_name, overwrite=True)
