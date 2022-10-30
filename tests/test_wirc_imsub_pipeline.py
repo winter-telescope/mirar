@@ -44,10 +44,9 @@ expected_values = {
 test_imsub_configuration = [
     ImageLoader(
         input_img_dir=test_data_dir,
-        input_sub_dir="raw",
+        input_sub_dir="stack",
         load_image=load_raw_wirc_image
     ),
-    ImageSelector((base_name_key, "ZTF21aagppzg_J_stack_1_20210330.fits")),
     Reference(
         ref_image_generator=test_reference_image_generator,
         ref_swarp_resampler=wirc_reference_image_resampler,
