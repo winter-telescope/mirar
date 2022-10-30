@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "winterdrp"
-version = "0.5.0"
+version = "0.4.2"
 description = "Modular open-source astronomy image reduction framework"
 authors = ["Robert Stein <rdstein@caltech.edu>", "Viraj Karambelkar <viraj@astro.caltech.edu>"]
 license = "MIT"
