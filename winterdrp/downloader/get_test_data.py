@@ -1,11 +1,6 @@
-import wget
 import os
 from winterdrp.paths import winter_code_dir
 import logging
-from glob import glob
-import zipfile
-import numpy as np
-from winterdrp.utils import execute, ExecutionError
 
 logger = logging.getLogger(__name__)
 
