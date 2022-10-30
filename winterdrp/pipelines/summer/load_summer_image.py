@@ -51,7 +51,7 @@ def load_raw_summer_image(
         header["EXPID"] = int("".join(base_name.split("_")[1:3])[2:])
         # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
 
-        pipeline_version = pkg_resources.require("winterdrp")[0].version
+        pipeline_version = __version__
         pipeline_version_padded_str = "".join([x.rjust(2, "0") for x in pipeline_version.split(".")])
         header["PROCID"] = int(str(header["EXPID"]) + str(pipeline_version_padded_str))
         # header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
