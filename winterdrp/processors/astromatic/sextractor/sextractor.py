@@ -59,7 +59,8 @@ class Sextractor(BaseImageProcessor):
         self.write_regions = write_regions_file
 
     def __str__(self) -> str:
-        return f"Applies sextractor to images, and saves detected sources to '{self.output_sub_dir}' directory."
+        return f"Processor to apply sextractor to images, " \
+               f"and save detected sources to the '{self.output_sub_dir}' directory."
 
     def get_sextractor_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)

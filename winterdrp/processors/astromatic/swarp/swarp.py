@@ -126,6 +126,9 @@ class Swarp(BaseImageProcessor):
         self.gain = gain
         self.subtract_bkg = subtract_bkg
 
+    def __str__(self) -> str:
+        return f"Processor to apply swarp to images, stacking them together."
+
     def get_swarp_output_dir(self):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
