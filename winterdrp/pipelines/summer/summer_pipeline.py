@@ -27,7 +27,7 @@ class SummerPipeline(Pipeline):
         "postprocess": build_log,
         'imsub': load_processed + imsub,
         "test_imsub": load_test_proc + subtract,
-        "full": load_raw + export_raw + cal_hunter + process_raw + imsub,
+        "full": load_raw + build_log + export_raw + cal_hunter + process_raw + imsub,
         "realtime": export_raw + process_raw,
         "log": load_raw + build_log,
         "simrealtime": sim_realtime,
