@@ -23,7 +23,7 @@ class SummerPipeline(Pipeline):
 
     all_pipeline_configurations = {
         "default": load_raw + export_raw + cal_hunter + process_raw,
-        "test": load_test + export_raw + cal_hunter + process_raw,
+        "test": load_test + export_raw + process_raw,
         "postprocess": build_log,
         'imsub': load_processed + imsub,
         "full": load_raw + export_raw + cal_hunter + process_raw + imsub,
