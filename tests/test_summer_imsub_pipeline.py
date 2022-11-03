@@ -10,17 +10,6 @@ from winterdrp.pipelines.summer.load_summer_image import load_proc_summer_image
 
 logger = logging.getLogger(__name__)
 
-test_data_dir = get_test_data_dir()
-
-test_configuration = [
-    ImageLoader(
-        input_img_dir=test_data_dir,
-        input_sub_dir='processed',
-        load_image=load_proc_summer_image
-    ),
-    ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.resamp.fits")),
-] + subtract
-
 
 expected_values = {
     'SCORSTD': 1.120988782614284,
@@ -28,10 +17,7 @@ expected_values = {
     'SCORMEAN': -0.0027870992375066423
 }
 
-test_config_name = "test_imsub"
-
-pipeline = SummerPipeline(night="20220815", selected_configurations=[test_config_name])
-pipeline.add_configuration(configuration_name=test_config_name, configuration=test_configuration)
+pipeline = SummerPipeline(night="20220815", selected_configurations=["test_imsub"])
 
 
 class TestSummerPipeline(unittest.TestCase):

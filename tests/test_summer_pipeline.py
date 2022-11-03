@@ -1,62 +1,11 @@
 import unittest
 import logging
-from winterdrp.processors.autoastrometry import AutoAstrometry
-from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
-from winterdrp.pipelines.summer.config import summer_mask_path, summer_weight_path, \
-    sextractor_astrometry_config, sextractor_photometry_config, scamp_path, swarp_config_path
-from winterdrp.processors.utils import ImageSaver
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher
-from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.processors import MaskPixels, BiasCalibrator, FlatCalibrator
-from winterdrp.processors.csvlog import CSVLog
-from winterdrp.paths import core_fields, base_name_key
-from winterdrp.pipelines.summer.summer_pipeline import load_raw_summer_image, SummerPipeline
-from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_generator, \
-    summer_photometric_catalog_generator
-from winterdrp.pipelines.summer.config import SUMMER_PIXEL_SCALE
+from winterdrp.pipelines.summer.summer_pipeline import SummerPipeline
 from winterdrp.downloader.get_test_data import get_test_data_dir
 
 logger = logging.getLogger(__name__)
 
 test_data_dir = get_test_data_dir()
-
-test_configuration = [
-    ImageLoader(
-        input_img_dir=test_data_dir,
-        input_sub_dir="raw",
-        load_image=load_raw_summer_image
-    ),
-    CSVLog(
-        export_keys=[
-                        "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE",
-                        base_name_key
-                    ] + core_fields
-    ),
-    MaskPixels(mask_path=summer_mask_path),
-    BiasCalibrator(),
-    ImageBatcher(split_key="filter"),
-    FlatCalibrator(),
-    ImageSelector(("OBSTYPE", "SCIENCE")),
-    AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
-    Sextractor(
-        output_sub_dir="test",
-        weight_image=summer_weight_path,
-        checkimage_name=None,
-        checkimage_type=None,
-        **sextractor_astrometry_config
-    ),
-    Scamp(
-        ref_catalog_generator=summer_astrometric_catalog_generator,
-        scamp_config_path=scamp_path,
-    ),
-    Swarp(swarp_config_path=swarp_config_path, imgpixsize=2400),
-    Sextractor(output_sub_dir="test",
-               checkimage_type='BACKGROUND_RMS',
-               **sextractor_photometry_config),
-    PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
-    ImageSaver(output_dir_name="test")
-]
 
 expected_zp = {
     "ZP_2.0": 24.381802801640834,
@@ -84,9 +33,7 @@ expected_zp = {
 
 test_config_name = "test"
 
-pipeline = SummerPipeline(night="20220402", selected_configurations=[test_config_name])
-pipeline.add_configuration(configuration_name=test_config_name, configuration=test_configuration)
-
+pipeline = SummerPipeline(night="20220402", selected_configurations=["test"])
 
 class TestSummerPipeline(unittest.TestCase):
     def setUp(self):
