@@ -46,27 +46,32 @@ jobs:
           ssh-private-key: |
             ${{ secrets.WIRC_STARTERPACK_TOKEN }}
 
-      - name: install packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sextractor scamp swarp psfex
-          sudo ln -s /usr/bin/source-extractor /usr/bin/sex
-          sudo ln -s /usr/bin/SWarp /usr/bin/swarp
-          echo `sex --version`
-          echo `scamp --version`
-          echo `swarp --version`
-          echo `psfex --version`
-          pip install --upgrade pip
-          python -m pip install --upgrade poetry coveralls
-          poetry install
+#      - name: install packages
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y sextractor scamp swarp psfex
+#          sudo ln -s /usr/bin/source-extractor /usr/bin/sex
+#          sudo ln -s /usr/bin/SWarp /usr/bin/swarp
+#          echo `sex --version`
+#          echo `scamp --version`
+#          echo `swarp --version`
+#          echo `psfex --version`
+#          pip install --upgrade pip
+#          python -m pip install --upgrade poetry coveralls
+#          poetry install
 
       # Set up database
       - name: postgres
         run: |
-          conda install -c anaconda postgresql
-          systemctl status postgresql
-          postgres -D /usr/local/pgsql/data >logfile 2>&1 &
+          sudo apt-get update
+          sudo apt install postgresql
+          sudo service postgresql restart
+          createuser -s postgres
           createdb postgres
+#          conda install -c anaconda postgresql
+#          systemctl status postgresql
+#          postgres -D /usr/local/pgsql/data >logfile 2>&1 &
+#
 
       # Runs a set of commands using the runners shell
       - name: Test the code
