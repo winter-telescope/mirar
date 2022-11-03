@@ -65,7 +65,6 @@ jobs:
         run: |
           sudo apt install postgresql
           sudo service postgresql restart
-          sudo -u postgres psql -c "create user postgres;"
 #          conda install -c anaconda postgresql
 #          systemctl status postgresql
 #          postgres -D /usr/local/pgsql/data >logfile 2>&1 &
