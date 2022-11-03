@@ -34,6 +34,9 @@ class DarkCalibrator(ProcessorWithCache):
         super().__init__(*args, **kwargs)
         self.select_cache_images = select_cache_images
 
+    def __str__(self) -> str:
+        return f"Processor to create a dark image, and subtracts this from the other images."
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],

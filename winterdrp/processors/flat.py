@@ -41,6 +41,9 @@ class FlatCalibrator(ProcessorWithCache):
         self.flat_nan_threshold = flat_nan_threshold
         self.select_cache_images = select_flat_images
 
+    def __str__(self) -> str:
+        return f"Creates a flat image, divides other images by this image."
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],
@@ -108,8 +111,13 @@ class SkyFlatCalibrator(FlatCalibrator):
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
         return select_from_images(images, headers, header_key="obsclass", target_values="science")
 
+    def __str__(self) -> str:
+        return f"Processor to create a sky flat image, divides other images by this image."
+
 class MasterFlatCalibrator(ProcessorPremadeCache, FlatCalibrator):
     pass
+
+
 # class OldSkyFlatCalibrator(SkyFlatCalibrator):
 #
 #     def select_cache_images(

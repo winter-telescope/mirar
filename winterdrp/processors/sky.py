@@ -42,6 +42,9 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
 
         return images, headers
 
+    def __str__(self) -> str:
+        return f"Processor to create a median sky background map, and subtract this from images."
+
 class MasterSkyCalibrator(ProcessorPremadeCache, NightSkyMedianCalibrator):
     pass
 # class OldNightSkyMedianCalibrator(

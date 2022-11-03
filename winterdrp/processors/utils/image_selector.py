@@ -50,6 +50,16 @@ class ImageSelector(BaseImageProcessor):
         super().__init__(*args, **kwargs)
         self.targets = args
 
+    def __str__(self):
+        reqs = []
+        for x in self.targets:
+            if isinstance(x[1], list):
+                reqs.append(f"{x[0]} = {' or '.join(x[1])}")
+            else:
+                reqs.append(f"{x[0]} = {x[1]}")
+
+        return f"Processor to select images where {', and '.join(reqs)}"
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],
@@ -115,6 +125,15 @@ class ImageBatcher(BaseImageProcessor):
     ):
         super().__init__(*args, **kwargs)
         self.split_key = split_key
+
+    def __str__(self) -> str:
+
+        if isinstance(self.split_key, list):
+            split = self.split_key
+        else:
+            split = [self.split_key]
+
+        return f"Groups images into batches, with each batch having the same value of {' and '.join(split)}"
 
     def _apply_to_images(
             self,

@@ -15,6 +15,10 @@ logger = logging.getLogger(__name__)
 class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
     base_key = "dbexporter"
 
+    def __str__(self):
+        return f"Processor to save {['candidates', 'images'][isinstance(self, BaseImageProcessor)]} " \
+               f"to the '{self.db_table}' table of the '{self.db_name}' Postgres database."
+
 
 class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
 

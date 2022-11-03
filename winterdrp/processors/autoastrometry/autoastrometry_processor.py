@@ -33,6 +33,9 @@ class AutoAstrometry(BaseImageProcessor):
         self.inv = inv
         self.pa = pa
 
+    def __str__(self) -> str:
+        return f"Processor to perform astrometric calibration."
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],

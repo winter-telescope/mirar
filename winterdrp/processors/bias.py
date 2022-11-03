@@ -30,6 +30,9 @@ class BiasCalibrator(ProcessorWithCache):
         super(BiasCalibrator, self).__init__(*args, **kwargs)
         self.select_cache_images = select_bias_images
 
+    def __str__(self) -> str:
+        return f"Creates a bias image, and subtracts this from the other images."
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],
@@ -72,4 +75,6 @@ class BiasCalibrator(ProcessorWithCache):
 
 
 class MasterBiasCalibrator(ProcessorPremadeCache, BiasCalibrator):
-    pass
+
+    def __str__(self) -> str:
+        return f"Loads a master bias image, and subtracts this from the other images."

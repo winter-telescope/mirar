@@ -30,6 +30,9 @@ class CSVLog(BaseImageProcessor):
         self.output_sub_dir = output_sub_dir
         self.output_base_dir = output_base_dir
 
+    def __str__(self) -> str:
+        return f"Processor to create a CSV log summarising the image metadata."
+
     def get_log_name(self):
         return f"{self.night}_log.csv"
 

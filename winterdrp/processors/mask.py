@@ -23,6 +23,9 @@ class MaskPixels(BaseImageProcessor):
         self.mask = None
         self.mask_path = mask_path
 
+    def __str__(self) -> str:
+        return f"Processor to mask bad pixels using a pre-defined map."
+
     def get_mask(self):
         if self.mask is None:
             self.mask, _ = self.open_fits(self.mask_path)
