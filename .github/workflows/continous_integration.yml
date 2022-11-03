@@ -65,6 +65,7 @@ jobs:
         run: |
           conda install -c anaconda postgresql
           postgres -D /usr/local/pgsql/data >logfile 2>&1 &
+          /usr/local/pgsql/bin/createdb postgres
 
       # Runs a set of commands using the runners shell
       - name: Test the code
@@ -75,7 +76,8 @@ jobs:
           DB_USER: winterdrp
           DB_PWD: "not_a_secure_password"
         run: |
-          poetry run coverage run -m unittest discover tests/
+          poetry run coverage run -m unittest tests/test_summer_pipeline.py
+#          poetry run coverage run -m unittest discover tests/
 
       - name: Run Coveralls
         if: ${{ success() }}
