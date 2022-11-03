@@ -64,7 +64,7 @@ jobs:
       - name: postgres
         run: |
           conda install -c anaconda postgresql
-          postgres -D /usr/local/pgsql/data
+          postgres -D /usr/local/pgsql/data >logfile 2>&1 &
 
       # Runs a set of commands using the runners shell
       - name: Test the code
