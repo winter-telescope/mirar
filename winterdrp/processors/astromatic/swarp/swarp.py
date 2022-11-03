@@ -3,7 +3,8 @@ import os
 import numpy as np
 import astropy.io.fits
 from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_name_key, latest_mask_save_key
+from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_name_key, latest_mask_save_key, \
+    raw_img_key
 from winterdrp.utils import execute
 from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
 from astropy.wcs import WCS
@@ -104,8 +105,8 @@ class Swarp(BaseImageProcessor):
             center_dec: float = None,
             gain: float = None,
             include_scamp: bool = True,
-            combine: bool =False,
-            cache: bool =False,
+            combine: bool = False,
+            cache: bool = False,
             subtract_bkg: bool = False,
             *args,
             **kwargs
@@ -167,8 +168,6 @@ class Swarp(BaseImageProcessor):
             )
         logger.debug(f"Saving to {output_image_path}")
 
-        out_files = []
-
         all_pixscales = []
         all_imgpixsizes = []
         all_ras = []
@@ -177,9 +176,19 @@ class Swarp(BaseImageProcessor):
             for i, data in enumerate(images):
                 header = headers[i]
 
-                pixscale_to_use, x_imgpixsize_to_use, y_imgpixsize_to_use, center_ra_to_use, center_dec_to_use = None, None, None, None, None
+                pixscale_to_use = None
+                x_imgpixsize_to_use = None
+                y_imgpixsize_to_use = None
+                center_ra_to_use = None
+                center_dec_to_use = None
 
-                if not ((self.pixscale is None) | (self.x_imgpixsize is None) | (self.y_imgpixsize is None) | (self.center_ra is None) | (self.center_dec is None)):
+                if not (
+                        (self.pixscale is None) |
+                        (self.x_imgpixsize is None) |
+                        (self.y_imgpixsize is None) |
+                        (self.center_ra is None) |
+                        (self.center_dec is None)
+                ):
                     pixscale_to_use = self.pixscale
                     x_imgpixsize_to_use = self.x_imgpixsize
                     y_imgpixsize_to_use = self.y_imgpixsize
@@ -187,25 +196,32 @@ class Swarp(BaseImageProcessor):
                     center_dec_to_use = self.center_dec
                 else:
                     w = WCS(header)
+
                     cd11 = header['CD1_1']
                     cd21 = header['CD2_1']
                     cd12 = header['CD1_2']
                     cd22 = header['CD2_2']
+
                     nxpix = header['NAXIS1']
                     nypix = header['NAXIS2']
+
                     image_x_cen = nxpix / 2
                     image_y_cen = nypix / 2
+
                     [ra, dec] = w.all_pix2world(image_x_cen, image_y_cen, 1)
+
                     xscale = np.sqrt(cd11 ** 2 + cd21 ** 2)
                     yscale = np.sqrt(cd12 ** 2 + cd22 ** 2)
 
                     pixscale = xscale * 3600
                     imgpixsize = max(nxpix, nypix)
+
                     all_pixscales.append(pixscale)
                     all_imgpixsizes.append(imgpixsize)
                     all_ras.append(ra)
                     all_decs.append(dec)
-                logger.info(f"{all_ras}, {all_decs}")
+
+                logger.debug(f"{all_ras}, {all_decs}")
 
                 if self.include_scamp:
                     temp_head_path = copy_temp_file(
@@ -213,8 +229,10 @@ class Swarp(BaseImageProcessor):
                         file_path=str(header[scamp_header_key]).replace('\n', '')
                     )
 
-                temp_img_path = get_temp_path(swarp_output_dir, header["BASENAME"])
+                temp_img_path = get_temp_path(swarp_output_dir, header[base_name_key])
+
                 self.save_fits(data, header, temp_img_path)
+
                 temp_mask_path = self.save_mask(data, header, temp_img_path)
 
                 f.write(f"{temp_img_path}\n")
@@ -224,8 +242,6 @@ class Swarp(BaseImageProcessor):
                     temp_files += [temp_head_path, temp_img_path, temp_mask_path]
                 else:
                     temp_files += [temp_img_path, temp_mask_path]
-
-                # out_files.append(out_path)
 
         if pixscale_to_use is None:
             pixscale_to_use = np.max(all_pixscales)
@@ -264,9 +280,10 @@ class Swarp(BaseImageProcessor):
 
             temp_output_image_path = get_temp_path(
                 swarp_output_dir,
-                os.path.splitext(headers[0]["BASENAME"])[0] + ".resamp.fits"
+                os.path.splitext(headers[0][base_name_key])[0] + ".resamp.fits"
             )
             temp_output_image_weight_path = temp_output_image_path.replace(".fits", ".weight.fits")
+
             if os.path.exists(temp_output_image_path):
                 os.rename(temp_output_image_path, output_image_path)
                 os.rename(temp_output_image_weight_path, output_image_weight_path)
@@ -289,6 +306,7 @@ class Swarp(BaseImageProcessor):
                 os.remove(temp_file)
                 logger.debug(f"Deleted temporary file {temp_file}")
 
+        new_header[raw_img_key] = ",".join([x[raw_img_key] for x in headers])
         new_header[base_name_key] = os.path.basename(output_image_path)
         new_header[latest_mask_save_key] = os.path.basename(output_image_weight_path)
         return [image], [new_header]
