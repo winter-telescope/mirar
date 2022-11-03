@@ -69,10 +69,10 @@ jobs:
       - name: Test the code
         env:
           OUTPUT_DATA_DIR : /home/runner/
-          export PG_ADMIN_USER=runner
-          export PG_ADMIN_PWD=""
-          export DB_USER=winterdrp
-          export DB_PWD="not_a_secure_password"
+          PG_ADMIN_USER: runner
+          PG_ADMIN_PWD: ""
+          DB_USER: winterdrp
+          DB_PWD: "not_a_secure_password"
         run: |
           poetry run coverage run -m unittest discover tests/
 
