@@ -38,6 +38,15 @@ load_test = [
     ),
 ]
 
+load_test_proc = [
+    ImageLoader(
+        input_img_dir=get_test_data_dir(),
+        input_sub_dir='processed',
+        load_image=load_proc_summer_image
+    ),
+    ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.resamp.fits")),
+]
+
 build_log = [
     CSVLog(
         export_keys=[
