@@ -17,7 +17,10 @@ class DataframeWriter(BaseDataframeProcessor):
         super(DataframeWriter, self).__init__(*args, **kwargs)
         self.output_dir_name = output_dir_name
         self.output_dir = output_dir
-        logger.info(self.output_dir_name)
+        logger.debug(f"Saving candidates to {self.output_dir_name}")
+
+    def __str__(self) -> str:
+        return f"Processor to save candidates as a pickle file. "
 
     def _apply_to_candidates(
             self,
