@@ -1,6 +1,8 @@
 # .coveragerc to control coverage.py
 [run]
 source = winterdrp
+omit =
+    winterdrp/__main__.py
 
 [report]
 # Regexes for lines to exclude from consideration
@@ -23,4 +25,5 @@ exclude_lines =
 
     # Don't complain if non-runnable code isn't run:
     if 0:
+    if False:
     if __name__ == .__main__.:
