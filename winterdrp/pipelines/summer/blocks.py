@@ -24,9 +24,18 @@ from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_gene
     summer_reference_image_resampler, summer_reference_sextractor
 from winterdrp.processors.database.database_modifier import ModifyImageDatabaseSeq
 from winterdrp.processors.utils.header_annotate import HeaderEditor
+from winterdrp.downloader.get_test_data import get_test_data_dir
 
 load_raw = [
     ImageLoader(load_image=load_raw_summer_image),
+]
+
+load_test = [
+    ImageLoader(
+        input_img_dir=get_test_data_dir(),
+        input_sub_dir="raw",
+        load_image=load_raw_summer_image
+    ),
 ]
 
 build_log = [
