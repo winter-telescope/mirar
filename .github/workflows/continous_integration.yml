@@ -78,8 +78,8 @@ jobs:
           OUTPUT_DATA_DIR : /home/runner/
           PG_ADMIN_USER: runner
           PG_ADMIN_PWD: ""
-          DB_USER: winterdrp
-          DB_PWD: "not_a_secure_password"
+          DB_USER: runner
+          DB_PWD: ""
         run: |
           poetry run coverage run -m unittest tests/test_summer_pipeline.py
 #          poetry run coverage run -m unittest discover tests/
