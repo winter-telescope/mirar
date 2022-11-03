@@ -5,7 +5,7 @@ import numpy as np
 from winterdrp.processors.base_processor import BaseImageProcessor
 from astropy.io import fits
 from winterdrp.paths import get_output_dir, copy_temp_file, base_name_key, sextractor_header_key, latest_mask_save_key, \
-    raw_img_dir, psfex_header_key, norm_psfex_header_key
+    raw_img_dir, psfex_header_key, norm_psfex_header_key, raw_img_key
 from winterdrp.references.base_reference_generator import BaseReferenceGenerator
 from collections.abc import Callable
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
@@ -67,11 +67,14 @@ class Reference(BaseImageProcessor):
             ref_image = self.ref_image_generator(header)
             ref_image_path = ref_image.write_reference(header=header, output_dir=self.get_sub_output_dir())
 
-            ref_data, ref_header = self.open_fits(ref_image_path)
+            ref_data, ref_header = open_fits(ref_image_path)
 
             if not (base_name_key in ref_header.keys()):
                 logger.debug(os.path.basename(ref_image_path))
                 ref_header[base_name_key] = os.path.basename(ref_image_path)
+
+            if not (raw_img_key in ref_header.keys()):
+                ref_header[raw_img_key] = ref_image_path
 
             # ref_header[base_name_key] = ref_header[base_name_key] + '_ref'
             ref_gain = ref_header['GAIN']
