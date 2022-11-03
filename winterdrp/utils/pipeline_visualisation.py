@@ -75,7 +75,7 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
             xy=xy_description,
             xytext=xytext_description,
             **annotate_args,
-            # **class_kwargs
+            **class_kwargs
         )
 
     print(f"Saving to {output_path}")
