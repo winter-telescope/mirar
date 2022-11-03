@@ -5,12 +5,12 @@ from astropy.io import fits
 from glob import glob
 import logging
 from collections.abc import Callable
-import pathlib
+from pathlib import Path
 import toml
 
 logger = logging.getLogger(__name__)
 
-winter_code_dir = pathlib.Path(__file__).parent.parent.resolve()
+winter_code_dir = Path(__file__).parent.parent.resolve()
 
 toml_path = winter_code_dir.joinpath("pyproject.toml")
 
@@ -20,6 +20,8 @@ with open(toml_path.as_posix(), "r") as f:
 package_name = toml_info["tool"]["poetry"]["name"]
 __version__ = toml_info["tool"]["poetry"]["version"]
 
+doc_dir = winter_code_dir.joinpath("docs/")
+
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 
 if base_raw_dir is None:
@@ -27,7 +29,7 @@ if base_raw_dir is None:
           "The raw data directory will need to be specified manually for path function."
     logger.warning(err)
 
-base_output_dir = os.getenv("OUTPUT_DATA_DIR")
+base_output_dir = Path(os.getenv("OUTPUT_DATA_DIR"))
 
 if base_output_dir is None:
     err = "No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. " \
