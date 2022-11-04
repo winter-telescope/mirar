@@ -11,7 +11,7 @@ test_data_dir = os.path.join(
     os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
 
-TEST_DATA_TAG = "v0.1.3"
+TEST_DATA_TAG = "v0.1.4"
 
 
 def get_test_data_dir() -> str:
