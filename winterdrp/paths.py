@@ -183,3 +183,7 @@ sextractor_checkimg_keys = {'BACKGROUND': 'BKGPT', 'BACKGROUND_RMS': 'BKGRMS',
                             'MINIBACKGROUND': 'MINIBKG', 'MINIBACK_RMS': 'MINIBGRM'}
 
 core_fields = ["OBSCLASS", "TARGET", "UTCTIME", coadd_key, proc_history_key, proc_fail_key, raw_img_key, base_name_key]
+
+watchdog_email_key = "WATCHDOG_EMAIL"
+watchdog_password_key = "WATCHDOG_EMAIL_PASSWORD"
+watchdog_recipient_key = "WATCHDOG_EMAIL_RECIPIENTS"

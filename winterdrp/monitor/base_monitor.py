@@ -9,7 +9,8 @@ from watchdog.observers import Observer
 from winterdrp.pipelines import get_pipeline, PipelineConfigError
 from winterdrp.errors import ErrorStack, ErrorReport
 from winterdrp.utils.send_email import send_gmail
-from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir, __version__, package_name, base_raw_dir
+from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir, __version__, package_name, base_raw_dir, \
+    watchdog_email_key, watchdog_recipient_key
 import numpy as np
 import logging
 from astropy.time import Time
@@ -47,8 +48,8 @@ class Monitor:
             cal_requirements: list[CalRequirement] = None,
             realtime_configurations: str | list[str] = "default",
             postprocess_configurations: str | list[str] = None,
-            email_sender: str = None,
-            email_recipients: str | list = None,
+            email_sender: str = os.getenv(watchdog_email_key),
+            email_recipients: str | list = os.getenv(watchdog_recipient_key),
             midway_postprocess_hours: float = 16.,
             final_postprocess_hours: float = 48.,
             log_level: str = "INFO",

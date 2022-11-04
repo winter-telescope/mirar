@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import unittest
 import logging
 from winterdrp.downloader.get_test_data import get_test_data_dir
