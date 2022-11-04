@@ -20,35 +20,36 @@ def test_data_check():
     return bool(os.environ.get(TEST_DATA_ENV, default=False))
 
 
-def get_test_data_dir() -> str:
+def update_test_data():
+    if not os.path.isdir(test_data_dir):
 
-    if not test_data_check():
+        cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
 
-        if not os.path.isdir(test_data_dir):
+        logger.info(f"No test data found. Downloading. Executing: {cmd}")
 
-            cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
+        os.system(cmd)
 
-            logger.info(f"No test data found. Downloading. Executing: {cmd}")
+    else:
+        cmds = [
+            f"git -C {test_data_dir} checkout main",
+            f"git -C {test_data_dir} pull"
+        ]
 
+        for cmd in cmds:
+            logger.info(f"Trying to update test data. Executing: {cmd}")
             os.system(cmd)
 
-        else:
-            cmds = [
-                f"git -C {test_data_dir} checkout main",
-                f"git -C {test_data_dir} pull"
-            ]
+    fix_version_cmd = f"git -C {test_data_dir} checkout -d tags/{TEST_DATA_TAG}"
 
-            for cmd in cmds:
-                logger.info(f"Trying to update test data. Executing: {cmd}")
-                os.system(cmd)
+    logger.info(f"Checkout out correct test data commit. Executing: {fix_version_cmd}")
 
-        fix_version_cmd = f"git -C {test_data_dir} checkout -d tags/{TEST_DATA_TAG}"
+    os.system(fix_version_cmd)
+    os.environ[TEST_DATA_ENV] = "True"
 
-        logger.info(f"Checkout out correct test data commit. Executing: {fix_version_cmd}")
 
-        os.system(fix_version_cmd)
-        os.environ[TEST_DATA_ENV] = "True"
-
+def get_test_data_dir() -> str:
+    if not test_data_check():
+        update_test_data()
     return test_data_dir
 
 
