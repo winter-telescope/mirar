@@ -3,7 +3,6 @@
 source = winterdrp
 omit =
     winterdrp/__main__.py
-    winterdrp/utils/send_email.py
     winterdrp/processors/send_to_fritz.py
 
 [report]
