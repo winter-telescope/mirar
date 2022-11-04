@@ -27,14 +27,14 @@ class TestErrors(unittest.TestCase):
             pipeline="summer",
             cal_requirements=summer_cal_requirements,
             night="20220403",
-            realtime_configurations="log",
-            postprocess_configurations="log",
-            final_postprocess_hours=0.005,
+            realtime_configurations="testlog",
+            postprocess_configurations=["simrealtime"],
+            final_postprocess_hours=0.01,
             midway_postprocess_hours=0.003,
             raw_dir="raw",
             base_raw_img_dir=get_test_data_dir()
         )
         monitor.process_realtime()
-        self.assertEqual(len(monitor.processed_science_images), 0)
+        self.assertEqual(len(monitor.processed_science_images), 1)
 
 
