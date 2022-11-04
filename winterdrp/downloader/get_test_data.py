@@ -1,5 +1,5 @@
 import os
-from winterdrp.paths import winter_code_dir
+from winterdrp.paths import winter_code_dir, package_name
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,32 +13,41 @@ test_data_dir = os.path.join(
 
 TEST_DATA_TAG = "v0.1.4"
 
+TEST_DATA_ENV = f"{package_name}_testdata_check"
+
+
+def test_data_check():
+    return bool(os.environ.get(TEST_DATA_ENV, default=False))
+
 
 def get_test_data_dir() -> str:
 
-    if not os.path.isdir(test_data_dir):
+    if not test_data_check():
 
-        cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
+        if not os.path.isdir(test_data_dir):
 
-        logger.info(f"No test data found. Downloading. Executing: {cmd}")
+            cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
 
-        os.system(cmd)
+            logger.info(f"No test data found. Downloading. Executing: {cmd}")
 
-    else:
-        cmds = [
-            f"git -C {test_data_dir} checkout main",
-            f"git -C {test_data_dir} pull"
-        ]
-
-        for cmd in cmds:
-            logger.info(f"Trying to update test data. Executing: {cmd}")
             os.system(cmd)
 
-    fix_version_cmd = f"git -C {test_data_dir} checkout -d tags/{TEST_DATA_TAG}"
+        else:
+            cmds = [
+                f"git -C {test_data_dir} checkout main",
+                f"git -C {test_data_dir} pull"
+            ]
 
-    logger.info(f"Checkout out correct test data commit. Executing: {fix_version_cmd}")
+            for cmd in cmds:
+                logger.info(f"Trying to update test data. Executing: {cmd}")
+                os.system(cmd)
 
-    os.system(fix_version_cmd)
+        fix_version_cmd = f"git -C {test_data_dir} checkout -d tags/{TEST_DATA_TAG}"
+
+        logger.info(f"Checkout out correct test data commit. Executing: {fix_version_cmd}")
+
+        os.system(fix_version_cmd)
+        os.environ[TEST_DATA_ENV] = "True"
 
     return test_data_dir
 
