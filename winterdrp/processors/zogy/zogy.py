@@ -213,10 +213,10 @@ class ZOGYPrepare(BaseImageProcessor):
         ast_unc_y = np.std(ypos_sci[idx_sci] - ypos_ref[idx_ref])
 
         # print(np.median(xpos_sci[idx_sci] - xpos_ref[idx_ref]))
-        with open('goodmatches.reg', 'w') as f:
-            f.write('wcs\n')
-            for i in range(len(xpos_ref[idx_ref])):
-                f.write('point (%s,%s) #point=cross\n' % (xpos_sci[idx_sci][i], ypos_sci[idx_sci][i]))
+        # with open('goodmatches.reg', 'w') as f:
+        #     f.write('wcs\n')
+        #     for i in range(len(xpos_ref[idx_ref])):
+        #         f.write('point (%s,%s) #point=cross\n' % (xpos_sci[idx_sci][i], ypos_sci[idx_sci][i]))
 
         logger.info(f'Astrometric uncertainties are X: {ast_unc_x} Y: {ast_unc_y}')
         # print('Mean of astrometric uncertainties is X:%.2f Y:%.2f' % (
