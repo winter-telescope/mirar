@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 pipeline = get_pipeline(
     instrument="summer",
-    selected_configurations=["full"],
-    night="20220402"
+    selected_configurations=["test"],
+    night="20220401"
 )
 
 expected_error = {
