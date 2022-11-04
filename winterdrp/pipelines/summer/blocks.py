@@ -24,6 +24,7 @@ from winterdrp.pipelines.summer.generator import summer_astrometric_catalog_gene
     summer_reference_image_resampler, summer_reference_sextractor
 from winterdrp.processors.database.database_modifier import ModifyImageDatabaseSeq
 from winterdrp.processors.utils.header_annotate import HeaderEditor
+from winterdrp.processors.utils.simulate_realtime import RealtimeImageSimulator
 from winterdrp.downloader.get_test_data import get_test_data_dir
 
 load_raw = [
@@ -45,6 +46,15 @@ load_test_proc = [
         load_image=load_proc_summer_image
     ),
     ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.resamp.fits")),
+]
+
+sim_realtime = [
+    RealtimeImageSimulator(
+        input_img_dir=get_test_data_dir(),
+        input_img_names="summer/20220402/raw/SUMMER_20220402_214324_Camera0.fits",
+        output_dir=get_test_data_dir(),
+        output_dir_name="raw"
+    )
 ]
 
 build_log = [

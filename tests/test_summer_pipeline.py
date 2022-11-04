@@ -1,11 +1,8 @@
 import unittest
 import logging
-from winterdrp.pipelines.summer.summer_pipeline import SummerPipeline
-from winterdrp.downloader.get_test_data import get_test_data_dir
+from winterdrp.pipelines import get_pipeline
 
 logger = logging.getLogger(__name__)
-
-test_data_dir = get_test_data_dir()
 
 expected_zp = {
     "ZP_2.0": 24.381802801640834,
@@ -33,7 +30,12 @@ expected_zp = {
 
 test_config_name = "test"
 
-pipeline = SummerPipeline(night="20220402", selected_configurations=["test"])
+pipeline = get_pipeline(
+    instrument="summer",
+    selected_configurations=["test"],
+    night="20220402"
+)
+
 
 class TestSummerPipeline(unittest.TestCase):
     def setUp(self):

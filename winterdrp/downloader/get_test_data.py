@@ -1,5 +1,5 @@
 import os
-from winterdrp.paths import winter_code_dir
+from winterdrp.paths import winter_code_dir, package_name
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,11 +11,16 @@ test_data_dir = os.path.join(
     os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
 
-TEST_DATA_TAG = "v0.1.3"
+TEST_DATA_TAG = "v0.1.4"
+
+TEST_DATA_ENV = f"{package_name}_testdata_check"
 
 
-def get_test_data_dir() -> str:
+def test_data_check():
+    return bool(os.environ.get(TEST_DATA_ENV, default=False))
 
+
+def update_test_data():
     if not os.path.isdir(test_data_dir):
 
         cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
@@ -39,7 +44,12 @@ def get_test_data_dir() -> str:
     logger.info(f"Checkout out correct test data commit. Executing: {fix_version_cmd}")
 
     os.system(fix_version_cmd)
+    os.environ[TEST_DATA_ENV] = "True"
 
+
+def get_test_data_dir() -> str:
+    if not test_data_check():
+        update_test_data()
     return test_data_dir
 
 

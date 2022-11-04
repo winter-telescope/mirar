@@ -9,7 +9,7 @@ from winterdrp.downloader.caltech import download_via_ssh
 from winterdrp.pipelines.summer.config import PIPELINE_NAME, summer_cal_requirements
 from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image
 from winterdrp.pipelines.summer.blocks import load_raw, build_log, load_processed, imsub, export_raw, \
-    cal_hunter, process_raw, load_test, load_test_proc, subtract
+    cal_hunter, process_raw, load_test, load_test_proc, subtract, sim_realtime
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
@@ -30,6 +30,8 @@ class SummerPipeline(Pipeline):
         "full": load_raw + export_raw + cal_hunter + process_raw + imsub,
         "realtime": export_raw + process_raw,
         "log": load_raw + build_log,
+        "simrealtime": sim_realtime,
+        "testlog": load_test + build_log
     }
 
     @staticmethod

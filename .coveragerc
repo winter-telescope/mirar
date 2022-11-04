@@ -3,6 +3,7 @@
 source = winterdrp
 omit =
     winterdrp/__main__.py
+    winterdrp/processors/send_to_fritz.py
 
 [report]
 # Regexes for lines to exclude from consideration
@@ -26,4 +27,4 @@ exclude_lines =
     # Don't complain if non-runnable code isn't run:
     if 0:
     if False:
-    if __name__ == .__main__.:
+    if __name__ == "__main__":
