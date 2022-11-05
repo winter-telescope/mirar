@@ -44,6 +44,10 @@ class PSFex(BaseImageProcessor):
         self.output_sub_dir = output_sub_dir
         self.norm_fits = norm_fits
 
+    def __str__(self) -> str:
+        return f"Processor to apply PSFEx to images, measuring the PSF of detected sources " \
+               f"and saving these to the '{self.output_sub_dir}' directory."
+
     def get_psfex_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 

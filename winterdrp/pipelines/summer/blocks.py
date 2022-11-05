@@ -186,4 +186,4 @@ extract_candidates = [
     DataframeWriter(output_dir_name='candidates'),
 ]
 
-imsub = subtract + export_diff_to_db + export_diff_to_db
+imsub = subtract + export_diff_to_db + extract_candidates

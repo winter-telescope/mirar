@@ -23,6 +23,9 @@ class ImageSaver(BaseImageProcessor):
         self.write_mask = write_mask
         self.output_dir = output_dir
 
+    def __str__(self):
+        return f"Processor to save images to the '{self.output_dir_name}' subdirectory"
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],

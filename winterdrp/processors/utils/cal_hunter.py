@@ -159,6 +159,10 @@ class CalHunter(ImageLoader):
 
         self.requirements = requirements
 
+    def __str__(self):
+        reqs = [f"{x.target_name.upper()} images" for x in self.requirements]
+        return f"Processor to search through archival data to find any missing {' and '.join(reqs)}"
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],

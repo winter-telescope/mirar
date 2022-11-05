@@ -28,6 +28,9 @@ class SplitImage(BaseImageProcessor):
         self.n_x = n_x
         self.n_y = n_y
 
+    def __str__(self) -> str:
+        return f"Processor to split images into {self.n_x*self.n_y} smaller images."
+
     def get_range(
             self,
             n: int,

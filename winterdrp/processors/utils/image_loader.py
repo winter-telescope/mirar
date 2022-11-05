@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class ImageLoader(BaseImageProcessor):
+    """Processor to load raw images.
+    """
 
     base_key = "load"
 
@@ -30,6 +32,10 @@ class ImageLoader(BaseImageProcessor):
         self.input_sub_dir = input_sub_dir
         self.load_image = load_image
         self.input_img_dir = input_img_dir
+
+    def __str__(self):
+        return f"Processor to load images from the {self.input_sub_dir} subdirectory " \
+               f"using the '{self.load_image.__name__}' function"
 
     def open_raw_image(
             self,

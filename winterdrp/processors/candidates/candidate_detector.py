@@ -36,6 +36,9 @@ class DetectCandidates(BaseCandidateGenerator):
         self.cand_det_sextractor_nnw = cand_det_sextractor_nnw
         self.cand_det_sextractor_params = cand_det_sextractor_params
 
+    def __str__(self) -> str:
+        return f"Extracts detected sources from images, and converts them to a pandas dataframe"
+
     def get_sub_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 

@@ -23,6 +23,9 @@ class HeaderAnnotator(BaseImageProcessor):
         self.input_keys = input_keys
         self.output_key = output_key
 
+    def __str__(self) -> str:
+        return f"Updates image headers by adding values for {' and '.join(self.output_key)}."
+
     def _apply_to_images(
             self,
             images: list[np.ndarray],
@@ -60,6 +63,9 @@ class HeaderEditor(BaseImageProcessor):
         assert len(edit_keys) == len(values)
         self.edit_keys = edit_keys
         self.values = values
+
+    def __str__(self) -> str:
+        return f"Modifies image headers by updating values for {' and '.join(self.edit_keys)}."
 
     def _apply_to_images(
             self,

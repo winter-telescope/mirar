@@ -76,6 +76,9 @@ class PhotCalibrator(BaseImageProcessor):
         self.fwhm_threshold_arcsec = fwhm_threshold_arcsec # Why is this here not in catalog?
         self.num_matches_threshold = num_matches_threshold
 
+    def __str__(self) -> str:
+        return f"Processor to perform photometric calibration."
+
     def get_phot_output_dir(self):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 

@@ -52,6 +52,9 @@ class Scamp(BaseImageProcessor):
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
 
+    def __str__(self) -> str:
+        return f"Processor to apply Scamp to images, calculating more precise astrometry."
+
     def get_scamp_output_dir(self):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
