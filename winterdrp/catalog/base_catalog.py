@@ -157,8 +157,7 @@ class VizierCatalog(BaseCatalog, ABC):
             t['dec'] = t[self.dec_key]
             t['magnitude'] = t[self.get_mag_key()]
             logger.info(f'{len(t)} matches found in the given radius in {self.abbreviation}')
-            t.write('phot_table.csv', overwrite=True)
-            t = Table.read('phot_table.csv')
+            t.meta['description'] = ''
         return t
 
     @staticmethod
