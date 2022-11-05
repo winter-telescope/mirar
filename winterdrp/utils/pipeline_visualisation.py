@@ -78,7 +78,7 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
             **class_kwargs
         )
 
-    print(f"Saving to {output_path}")
+    logger.info(f"Saving to {output_path}")
 
     if not output_path.parent.exists():
         output_path.parent.mkdir(parents=True)
@@ -87,6 +87,37 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
     plt.axis('off')
 
     plt.savefig(output_path)
+
+
+def iterate_flowify(
+        config: str | list[str] = None,
+        pipelines: str | list[str] = None
+):
+    if pipelines is None:
+        pipelines = Pipeline.pipelines.keys()
+    elif not isinstance(pipelines, list):
+        pipelines = [args.pipeline]
+
+    if config is None:
+        gc = "default"
+    else:
+        gc = config
+
+    for pipeline in pipelines:
+
+        pipe = get_pipeline(
+            pipeline,
+            selected_configurations=gc,
+            night=str(datetime.now()).split(" ")[0].replace("-", ""),
+        )
+
+        if config is None:
+            config_list = pipe.all_pipeline_configurations.keys()
+        else:
+            config_list = pipe.selected_configurations
+
+        for c in config_list:
+            flowify(pipe.set_configuration(c), get_save_path(pipeline, c))
 
 
 if __name__ == "__main__":
@@ -112,28 +143,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.pipeline is None:
-        pipelines = Pipeline.pipelines.keys()
-    else:
-        pipelines = [args.pipeline]
+    iterate_flowify(config=args.config, pipelines=args.pipeline)
 
-    config = args.config
-    if config is None:
-        config = "default"
 
-    for pipeline in pipelines:
-
-        pipe = get_pipeline(
-            pipeline,
-            selected_configurations=args.config,
-            night=str(datetime.now()).split(" ")[0].replace("-", ""),
-        )
-
-        if args.config is None:
-            config_list = pipe.all_pipeline_configurations.keys()
-        else:
-            config_list = pipe.selected_configurations
-
-        for c in config_list:
-            processors = []
-            flowify(pipe.set_configuration(c), get_save_path(pipeline, c))
