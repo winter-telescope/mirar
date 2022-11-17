@@ -15,12 +15,6 @@ class DataBatch:
     def get_batch(self) -> list[Data]:
         raise NotImplementedError
 
-    def __add__(self, other):
-        return DataBatch(self._batch + other.get_batch())
-
-    def __iadd__(self, other):
-        self._batch += other.batch
-
     def append(self, item):
         self._batch.append(item)
 
@@ -30,8 +24,17 @@ class DataBatch:
     def __setitem__(self, key, value):
         return self._batch.__setitem__(key, value)
 
+    def __add__(self, other):
+        return DataBatch(self._batch + other.get_batch())
+
+    def __iadd__(self, other):
+        self._batch += other.batch
+
     def __len__(self):
         return self._batch.__len__()
+
+    def __iter__(self):
+        return self._batch.__iter__()
 
 
 class DataSet:
@@ -43,15 +46,15 @@ class DataSet:
 
         self._batches = batches
 
+    def get_batches(self):
+        return self._batches
+
     def append(self, batch: DataBatch):
 
         if len(self._batches) > 0:
             assert type(self._batches[0]) == type(batch)
 
         self._batches.append(batch)
-
-    def get_batches(self):
-        return self._batches
 
     def __getitem__(self, item):
         return self._batches.__getitem__(item)
@@ -67,4 +70,7 @@ class DataSet:
 
     def __iadd__(self, other):
         self._batches += other.get_batches()
+
+    def __iter__(self):
+        return self._batches.__iter__()
 
