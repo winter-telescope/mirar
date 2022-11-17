@@ -6,18 +6,25 @@ import matplotlib.pyplot as plt
 from astropy.stats import sigma_clipped_stats
 from matplotlib.patches import Circle
 from photutils import CircularAperture, CircularAnnulus, aperture_photometry
+from winterdrp.data import SourceBatch
 
 
 class AperturePhotometry(BaseDataframeProcessor):
 
     def __init__(self,
-                 aper_diameters: list[float] = [10],
+                 aper_diameters: list[float] = None,
                  cutout_size_aper_phot: float = 30,
-                 bkg_in_diameters: list[float] = [25],
-                 bkg_out_diameters: list[float] = [40],
+                 bkg_in_diameters: list[float] = None,
+                 bkg_out_diameters: list[float] = None,
                  col_suffix_list: list[str] = None,
                  *args,
                  **kwargs):
+        if aper_diameters is None:
+            aper_diameters = [40.]
+        if bkg_in_diameters is None:
+            bkg_in_diameters = [25.]
+        if bkg_out_diameters is None:
+            bkg_out_diameters = [40.]
         super(BaseDataframeProcessor, self).__init__(*args, **kwargs)
         self.cutout_size_aper_phot = cutout_size_aper_phot
         self.aper_diameters = aper_diameters
@@ -64,7 +71,6 @@ class AperturePhotometry(BaseDataframeProcessor):
         mask = annulus_masks.data
         annulus_data_1d = annulus_data[mask > 0]
         bkg_mean, bkg_median, bkg_std = sigma_clipped_stats(annulus_data_1d, sigma=2)
-        print(bkg_mean, bkg_median)
         bkg = np.zeros(diff_cutout.shape) + bkg_median
         bkg_error = np.zeros(diff_cutout.shape) + bkg_std
 
@@ -82,33 +88,40 @@ class AperturePhotometry(BaseDataframeProcessor):
 
     def _apply_to_candidates(
             self,
-            candidate_table: pd.DataFrame,
-    ) -> pd.DataFrame:
-        for ind, aper_diam in enumerate(self.aper_diameters):
-            bkg_in_diameter = self.bkg_in_diameters[ind]
-            bkg_out_diameter = self.bkg_out_diameters[ind]
-            suffix = self.col_suffix_list[ind]
+            batch: SourceBatch,
+    ) -> SourceBatch:
 
-            fluxes, fluxuncs = [], []
+        for source_table in batch:
+            candidate_table = source_table.get_data()
 
-            for cand_ind in range(len(candidate_table)):
-                row = candidate_table.iloc[cand_ind]
-                ximage, yimage = int(row['X_IMAGE']) - 1, int(row['Y_IMAGE']) - 1
-                diff_filename = row['diffimname']
-                diff_psf_filename = row['diffpsfname']
-                diff_unc_filename = row['diffuncname']
-                diff_cutout = make_cutouts(diff_filename, (ximage, yimage), self.cutout_size_aper_phot)
-                diff_unc_cutout = make_cutouts(diff_unc_filename, (ximage, yimage), self.cutout_size_aper_phot)
+            for ind, aper_diam in enumerate(self.aper_diameters):
+                bkg_in_diameter = self.bkg_in_diameters[ind]
+                bkg_out_diameter = self.bkg_out_diameters[ind]
+                suffix = self.col_suffix_list[ind]
 
-                flux, fluxunc = self.aper_photometry(diff_cutout, diff_unc_cutout, aper_diam, bkg_in_diameter,
-                                                     bkg_out_diameter)
-                fluxes.append(flux)
-                fluxuncs.append(fluxunc)
-            candidate_table[f'fluxap{suffix}'] = fluxes
-            candidate_table[f'fluxuncap{suffix}'] = fluxuncs
+                fluxes, fluxuncs = [], []
 
-            candidate_table[f'magap{suffix}'] = candidate_table['magzpsci'] - \
-                                                2.5 * np.log10(candidate_table[f'fluxap{suffix}'])
-            candidate_table[f'sigmagap{suffix}'] = 1.086 * candidate_table[f'fluxuncap{suffix}'] \
-                                                   / candidate_table[f'fluxap{suffix}']
-        return candidate_table
+                for cand_ind in range(len(candidate_table)):
+                    row = candidate_table.iloc[cand_ind]
+                    ximage, yimage = int(row['X_IMAGE']) - 1, int(row['Y_IMAGE']) - 1
+                    diff_filename = row['diffimname']
+                    diff_unc_filename = row['diffuncname']
+                    diff_cutout = make_cutouts(diff_filename, (ximage, yimage), self.cutout_size_aper_phot)
+                    diff_unc_cutout = make_cutouts(diff_unc_filename, (ximage, yimage), self.cutout_size_aper_phot)
+
+                    flux, fluxunc = self.aper_photometry(diff_cutout, diff_unc_cutout, aper_diam, bkg_in_diameter,
+                                                         bkg_out_diameter)
+                    fluxes.append(flux)
+                    fluxuncs.append(fluxunc)
+                candidate_table[f'fluxap{suffix}'] = fluxes
+                candidate_table[f'fluxuncap{suffix}'] = fluxuncs
+
+                candidate_table[f'magap{suffix}'] = (
+                        candidate_table['magzpsci']
+                        - 2.5 * np.log10(candidate_table[f'fluxap{suffix}'])
+                )
+                candidate_table[f'sigmagap{suffix}'] = (
+                        1.086 * (candidate_table[f'fluxuncap{suffix}'] / candidate_table[f'fluxap{suffix}']))
+
+            source_table.set_data(candidate_table)
+        return batch
