@@ -11,6 +11,7 @@ from winterdrp.paths import get_output_dir
 import io
 import gzip
 import os
+from winterdrp.data import SourceBatch, ImageBatch, SourceTable
 
 # TODO : Move photometry to its own thing like catalogs, user can choose whichever way they want to do photometry
 logger = logging.getLogger(__name__)
@@ -172,20 +173,18 @@ class DetectCandidates(BaseCandidateGenerator):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[fits.Header],
-    ) -> pd.DataFrame:
+            batch: ImageBatch,
+    ) -> SourceBatch:
 
         all_cands_list = []
-        for ind, header in enumerate(headers):
-            image = images[ind]
+        for image in batch:
 
-            scorr_image_path = os.path.join(self.get_sub_output_dir(), header["DIFFSCR"])
-            diff_image_path = os.path.join(self.get_sub_output_dir(), header["DIFFIMG"])
-            diff_psf_path = os.path.join(self.get_sub_output_dir(), header["DIFFPSF"])
-            diff_unc_path = os.path.join(self.get_sub_output_dir(), header["DIFFUNC"])
+            scorr_image_path = os.path.join(self.get_sub_output_dir(), image["DIFFSCR"])
+            diff_image_path = os.path.join(self.get_sub_output_dir(), image["DIFFIMG"])
+            diff_psf_path = os.path.join(self.get_sub_output_dir(), image["DIFFPSF"])
+            diff_unc_path = os.path.join(self.get_sub_output_dir(), image["DIFFUNC"])
 
-            scorr_mask_path = os.path.join(self.get_sub_output_dir(),header["SCORMASK"])
+            scorr_mask_path = os.path.join(self.get_sub_output_dir(),image["SCORMASK"])
             cands_catalog_name = diff_image_path.replace('.fits', '.dets')
             cands_catalog_name, _ = run_sextractor_dual(
                 det_image=scorr_image_path,
@@ -200,8 +199,8 @@ class DetectCandidates(BaseCandidateGenerator):
                 gain=1.0
             )
 
-            sci_image_path = os.path.join(self.get_sub_output_dir(), header['BASENAME'])
-            ref_image_path = os.path.join(self.get_sub_output_dir(), header['REFIMG'])
+            sci_image_path = os.path.join(self.get_sub_output_dir(), image['BASENAME'])
+            ref_image_path = os.path.join(self.get_sub_output_dir(), image['REFIMG'])
             cands_table = self.generate_candidates_table(
                 scorr_catalog_name=cands_catalog_name,
                 sci_resamp_imagename=sci_image_path,
@@ -212,11 +211,11 @@ class DetectCandidates(BaseCandidateGenerator):
                 diff_unc_filename=diff_unc_path
             )
 
-            if len(cands_table)>0:
+            if len(cands_table) > 0:
                 x_shape, y_shape = image.shape
                 cands_table['X_SHAPE'] = x_shape
                 cands_table['Y_SHAPE'] = y_shape
             all_cands_list.append(cands_table)
 
-        return pd.concat(all_cands_list)
+        return SourceBatch([SourceTable(pd.concat(all_cands_list))])
 
