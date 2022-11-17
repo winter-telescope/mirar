@@ -11,11 +11,12 @@ import logging
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor, DataBaseError
 from winterdrp.processors.database.postgres import modify_db_entry, get_sequence_keys_from_table
 from winterdrp.processors.database.database_importer import BaseDatabaseImporter, BaseImageDatabaseImporter
+from winterdrp.data import ImageBatch, SourceBatch
 
 logger = logging.getLogger(__name__)
 
 
-class BaseDatabaseModifier(BaseDatabaseImporter):
+class BaseDatabaseModifier(BaseDatabaseImporter, ABC):
     base_key = "dbmodifier"
 
     def __init__(self,
@@ -35,25 +36,25 @@ class ImageDatabaseModifier(BaseDatabaseModifier, BaseImageDatabaseImporter):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        for header in headers:
-            query_columns, accepted_values, accepted_types = self.get_constraints(header)
+            batch: ImageBatch,
+    ) -> ImageBatch:
+        for image in batch:
+            query_columns, accepted_values, accepted_types = self.get_constraints(image)
             logger.info(f"{query_columns}, {accepted_values}, {accepted_types}")
 
-            query_results = modify_db_entry(value_dict=header,
-                                            db_query_columns=query_columns,
-                                            db_query_values=accepted_values,
-                                            db_query_comparison_types=accepted_types,
-                                            db_alter_columns=self.db_alter_columns,
-                                            db_table=self.db_table,
-                                            db_name=self.db_name,
-                                            db_user=self.db_user,
-                                            password=self.db_password
-                                            )
+            modify_db_entry(
+                value_dict=image,
+                db_query_columns=query_columns,
+                db_query_values=accepted_values,
+                db_query_comparison_types=accepted_types,
+                db_alter_columns=self.db_alter_columns,
+                db_table=self.db_table,
+                db_name=self.db_name,
+                db_user=self.db_user,
+                password=self.db_password
+            )
 
-        return images, headers
+        return batch
 
 
 class ModifyImageDatabaseSeq(ImageDatabaseModifier):
@@ -64,14 +65,18 @@ class ModifyImageDatabaseSeq(ImageDatabaseModifier):
         super(ModifyImageDatabaseSeq, self).__init__(*args, **kwargs)
         self.sequence_key = sequence_key
 
-    def get_constraints(self, header):
+    def get_constraints(self, image):
         if self.sequence_key is None:
-            self.sequence_key = [x for x in get_sequence_keys_from_table(self.db_table,
-                                                                         self.db_name,
-                                                                         self.db_user,
-                                                                         self.db_password)]
+            self.sequence_key = [
+                x for x in get_sequence_keys_from_table(
+                    self.db_table,
+                    self.db_name,
+                    self.db_user,
+                    self.db_password
+                )
+            ]
 
-        accepted_values = [header[x.upper()] for x in self.sequence_key]
+        accepted_values = [image[x.upper()] for x in self.sequence_key]
         accepted_types = ['='] * len(accepted_values)
         return self.sequence_key, accepted_values, accepted_types
 
@@ -85,6 +90,6 @@ class DataframeDatabaseModifier(BaseDatabaseModifier, BaseDataframeProcessor):
 
     def _apply_to_candidates(
             self,
-            candidate_table: pd.DataFrame,
-    ) -> pd.DataFrame:
-        return candidate_table
+            batch: SourceBatch,
+    ) -> SourceBatch:
+        return SourceBatch
