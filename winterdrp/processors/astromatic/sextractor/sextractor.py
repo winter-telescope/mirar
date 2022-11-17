@@ -7,9 +7,10 @@ import astropy.io.fits
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation, \
     run_sextractor_dual, parse_checkimage
 from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.paths import get_output_dir, get_temp_path, latest_mask_save_key
+from winterdrp.paths import get_output_dir, get_temp_path, latest_mask_save_key, base_name_key
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class Sextractor(BaseImageProcessor):
             dual: bool = False,
             cache: bool = False,
             mag_zp: float = None,
-            write_regions_file: bool = False,
+            write_regions_bool: bool = False,
             *args,
             **kwargs
     ):
@@ -56,7 +57,7 @@ class Sextractor(BaseImageProcessor):
         self.dual = dual
         self.cache = cache
         self.mag_zp = mag_zp
-        self.write_regions = write_regions_file
+        self.write_regions = write_regions_bool
 
     def __str__(self) -> str:
         return f"Processor to apply sextractor to images, " \
@@ -67,9 +68,8 @@ class Sextractor(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header]
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch
+    ) -> ImageBatch:
 
         sextractor_out_dir = self.get_sextractor_output_dir()
 
@@ -78,33 +78,32 @@ class Sextractor(BaseImageProcessor):
         except OSError:
             pass
 
-        for i in range(len(images)):
-
-            header = headers[i]
-            data = images[i]
+        for image in batch:
 
             det_image, measure_image, det_header, measure_header = None, None, None, None
             if self.gain is None:
-                if 'GAIN' in header.keys():
-                    self.gain = header['GAIN']
-            if self.dual:
-                det_header = headers[i][0]
-                measure_header = headers[i][1]
-                det_image = images[i][0]
-                measure_image = images[i][1]
-                header = det_header
-                data = det_image
-                self.gain = measure_header["GAIN"]
+                if 'GAIN' in image.keys():
+                    self.gain = image['GAIN']
 
-            temp_path = get_temp_path(sextractor_out_dir, header["BASENAME"])
+            # I think this is broken????
+            # if self.dual:
+            #     det_header = image[0]
+            #     measure_header = image[1]
+            #     det_image = image[0]
+            #     measure_image = image[1]
+            #     header = det_header
+            #     data = det_image
+            #     self.gain = measure_header["GAIN"]
+
+            temp_path = get_temp_path(sextractor_out_dir, image[base_name_key])
             if not os.path.exists(temp_path):
-                self.save_fits(data, header, temp_path)
+                self.save_fits(image, temp_path)
             temp_files = [temp_path]
 
             mask_path = None
-            if latest_mask_save_key in header.keys():
-                image_mask_path = os.path.join(sextractor_out_dir, header[latest_mask_save_key])
-                temp_mask_path = get_temp_path(sextractor_out_dir, header[latest_mask_save_key])
+            if latest_mask_save_key in image.keys():
+                image_mask_path = os.path.join(sextractor_out_dir, image[latest_mask_save_key])
+                temp_mask_path = get_temp_path(sextractor_out_dir, image[latest_mask_save_key])
                 if os.path.exists(image_mask_path):
                     shutil.copyfile(image_mask_path, temp_mask_path)
                     mask_path = temp_mask_path
@@ -113,13 +112,13 @@ class Sextractor(BaseImageProcessor):
                     mask_path = None
 
             if mask_path is None:
-                mask_path = self.save_mask(data, header, temp_path)
+                mask_path = self.save_mask(image, temp_path)
                 temp_files.append(mask_path)
-            output_cat = os.path.join(sextractor_out_dir, header["BASENAME"].replace(".fits", ".cat"))
+            output_cat = os.path.join(sextractor_out_dir, image[base_name_key].replace(".fits", ".cat"))
 
             _, self.checkimage_name = parse_checkimage(checkimage_name=self.checkimage_name,
                                                        checkimage_type=self.checkimage_type,
-                                                       image=os.path.join(sextractor_out_dir, header["BASENAME"]))
+                                                       image=os.path.join(sextractor_out_dir, image[base_name_key]))
 
             if not self.dual:
                 output_cat, checkimage_name = run_sextractor_single(
@@ -173,13 +172,13 @@ class Sextractor(BaseImageProcessor):
                                    system='image',
                                    region_radius=5)
 
-            header[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
+            image[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
 
             if len(checkimage_name) > 0:
                 if isinstance(self.checkimage_type, str):
                     self.checkimage_type = [self.checkimage_type]
                 for ind in range(len(self.checkimage_type)):
                     checkimg_type = self.checkimage_type[ind]
-                    header[sextractor_checkimg_keys[checkimg_type]] = checkimage_name[ind]
+                    image[sextractor_checkimg_keys[checkimg_type]] = checkimage_name[ind]
 
-        return images, headers
+        return batch

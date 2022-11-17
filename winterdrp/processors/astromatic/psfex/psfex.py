@@ -8,16 +8,19 @@ from winterdrp.paths import get_output_dir, psfex_header_key, norm_psfex_header_
     sextractor_header_key
 from winterdrp.utils import execute
 from astropy.io import fits
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
 
-def run_psfex(sextractor_cat_path: str,
-              config_path: str,
-              psf_output_dir: str,
-              norm_psf_output_name: str = None
-              ):
-    psfex_command = f"psfex -c {config_path} {sextractor_cat_path} -PSF_DIR {psf_output_dir} -CHECKIMAGE_TYPE NONE"
+def run_psfex(
+        sextractor_cat_path: str,
+        config_path: str,
+        psf_output_dir: str,
+        norm_psf_output_name: str = None
+    ):
+    psfex_command = f"psfex -c {config_path} {sextractor_cat_path} " \
+                    f"-PSF_DIR {psf_output_dir} -CHECKIMAGE_TYPE NONE"
 
     execute(psfex_command)
 
@@ -53,9 +56,8 @@ class PSFex(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch
+    ) -> ImageBatch:
         psfex_out_dir = self.get_psfex_output_dir()
 
         try:
@@ -63,8 +65,8 @@ class PSFex(BaseImageProcessor):
         except OSError:
             pass
 
-        for ind, header in enumerate(headers):
-            sextractor_cat_path = header[sextractor_header_key]
+        for image in batch:
+            sextractor_cat_path = image[sextractor_header_key]
 
             psf_path = sextractor_cat_path.replace('.cat', '.psf')
             norm_psf_path = sextractor_cat_path.replace('.cat', '.psfmodel')
@@ -74,10 +76,10 @@ class PSFex(BaseImageProcessor):
                       norm_psf_output_name=norm_psf_path
                       )
 
-            header[psfex_header_key] = psf_path
-            header[norm_psfex_header_key] = norm_psf_path
+            image[psfex_header_key] = psf_path
+            image[norm_psfex_header_key] = norm_psf_path
             # assert False
-        return images, headers
+        return batch
 
     def check_prerequisites(
             self,
