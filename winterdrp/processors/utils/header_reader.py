@@ -3,6 +3,7 @@ import astropy.io.fits
 import numpy as np
 from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import base_name_key
+from winterdrp.data import ImageBatch
 
 
 logger = logging.getLogger(__name__)
@@ -21,15 +22,14 @@ class HeaderReader(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        for header in headers:
+        for image in batch:
 
-            msg = f"{header[base_name_key]} \n"
+            msg = f"{image[base_name_key]} \n"
             for key in self.keys:
-                msg += f"{key}: {header[key]} \n"
+                msg += f"{key}: {image[key]} \n"
             logger.info(msg)
 
-        return images, headers
+        return batch

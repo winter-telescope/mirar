@@ -1,8 +1,8 @@
 import astropy.io.fits
 import numpy as np
 import logging
-from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.data import Image, ImageBatch, DataBatch
+from winterdrp.processors.base_processor import BaseImageProcessor, CleanupProcessor
+from winterdrp.data import Image, ImageBatch, DataBatch, DataSet
 from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def select_from_images(
     return batch[passing_index]
 
 
-class ImageSelector(BaseImageProcessor):
+class ImageSelector(BaseImageProcessor, CleanupProcessor):
 
     base_key = "select"
 
@@ -66,48 +66,41 @@ class ImageSelector(BaseImageProcessor):
 
         for (header_key, target_values) in self.targets:
 
-            images = select_from_images(
-                images,
+            batch = select_from_images(
+                batch,
                 key=header_key,
                 target_values=target_values
             )
 
-        return images, headers
-
-    def update_batches(
-        self,
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
-        # Remove empty batches
-        return [x for x in batches if len(x[0]) > 0]
+        return batch
 
 
 def split_images_into_batches(
-        images: list[np.ndarray],
-        headers: list[astropy.io.fits.Header],
+        images: ImageBatch,
         split_key: str | list[str]
-) -> list[list[list[np.ndarray], list[astropy.io.fits.Header]]]:
+) -> DataSet:
 
     if isinstance(split_key, str):
         split_key = [split_key]
 
+    new_dataset = DataSet()
+
     groups = dict()
 
-    for i, header in enumerate(headers):
+    for i, image in enumerate(images):
         uid = []
 
         for key in split_key:
-            uid.append(str(header[key]))
+            uid.append(str(image[key]))
 
         uid = "_".join(uid)
 
         if uid not in groups.keys():
-            groups[uid] = [[images[i]], [header]]
+            groups[uid] = [image]
         else:
-            groups[uid][0] += [images[i]]
-            groups[uid][1] += [header]
+            groups[uid] += [image]
 
-    return [x for x in groups.values()]
+    return DataSet([x for x in groups.values()])
 
 
 class ImageBatcher(BaseImageProcessor):
@@ -134,20 +127,19 @@ class ImageBatcher(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        return images, headers
+            batch: ImageBatch,
+    ) -> ImageBatch:
+        return batch
 
-    def update_batches(
+    def update_dataset(
         self,
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
+        batches: DataSet
+    ) -> DataSet:
 
-        new_batches = []
+        new_batches = DataSet()
 
-        for [images, headers] in batches:
-            new_batches += split_images_into_batches(images, headers, split_key=self.split_key)
+        for batch in batches:
+            new_batches += split_images_into_batches(batch, split_key=self.split_key)
 
         return new_batches
 
@@ -158,23 +150,21 @@ class ImageDebatcher(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        return images, headers
+            batch: ImageBatch,
+    ) -> ImageBatch:
+        return batch
 
-    def update_batches(
+    def update_dataset(
         self,
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
+        batches: DataSet
+    ) -> DataSet:
 
-        new_batches = [[[], []]]
+        combo_batch = []
 
         for batch in batches:
-            for i in range(2):
-                new_batches[0][i] += batch[i]
+            combo_batch += batch
 
-        return new_batches
+        return DataSet(combo_batch)
 
 
 

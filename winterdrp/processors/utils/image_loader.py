@@ -94,21 +94,6 @@ def load_from_dir(input_dir: str, open_f: Callable[[str], Image]) -> ImageBatch:
     return images
 
 
-# class RecentCalLoader(ImageLoader):
-#
-#     def _apply_to_images(
-#             self,
-#             images: list[np.ndarray],
-#             headers: list[astropy.io.fits.Header],
-#     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-#
-#         input_dir = os.path.join(
-#             self.input_img_dir,
-#             os.path.join(self.night_sub_dir, self.input_sub_dir)
-#         )
-#
-#         return self.load_from_dir(input_dir)
-
 
 
 

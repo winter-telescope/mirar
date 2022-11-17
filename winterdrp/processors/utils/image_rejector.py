@@ -1,17 +1,17 @@
 import astropy.io.fits
 import numpy as np
 import logging
-from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor, CleanupProcessor
+from winterdrp.data import ImageBatch, DataSet
 
 logger = logging.getLogger(__name__)
 
 
 def filter_images(
-        images: list[np.ndarray],
-        headers: list[astropy.io.fits.Header],
+        images: ImageBatch,
         header_key: str = "target",
         reject_values: str | list[str] = "science",
-) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+) -> ImageBatch:
 
     # Enforce string in list for later matching
     if not isinstance(reject_values, list):
@@ -19,18 +19,16 @@ def filter_images(
     else:
         reject_values = [str(x) for x in reject_values]
 
-    passing_images = []
-    passing_headers = []
+    passing_images = ImageBatch()
 
-    for i, header in enumerate(headers):
-        if str(header[header_key]) not in reject_values:
-            passing_images.append(images[i])
-            passing_headers.append(header)
+    for i, image in enumerate(images):
+        if str(image[header_key]) not in reject_values:
+            passing_images.append(image)
 
-    return passing_images, passing_headers
+    return passing_images
 
 
-class ImageRejector(BaseImageProcessor):
+class ImageRejector(BaseImageProcessor, CleanupProcessor):
 
     base_key = "reject"
 
@@ -44,27 +42,18 @@ class ImageRejector(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
         for (header_key, reject_values) in self.rejects:
 
-            images, headers = filter_images(
-                images,
-                headers,
+            batch = filter_images(
+                batch,
                 header_key=header_key,
                 reject_values=reject_values
             )
 
-        return images, headers
-
-    def update_batches(
-        self,
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
-        # Remove empty batches
-        return [x for x in batches if len(x[0]) > 0]
+        return batch
 
 
 
