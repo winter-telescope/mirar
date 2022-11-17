@@ -6,15 +6,15 @@ import astropy.io.fits
 from winterdrp.processors.utils.image_selector import select_from_images
 from winterdrp.paths import latest_save_key, bias_frame_key
 from winterdrp.errors import ImageNotFoundError
+from winterdrp.data import Image, ImageBatch
 
 logger = logging.getLogger(__name__)
 
 
 def default_select_bias(
-        images: list[np.ndarray],
-        headers: list[astropy.io.fits.Header],
-) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-    return select_from_images(images, headers, target_values="bias")
+        images: list[Image],
+) -> Image:
+    return select_from_images(images, target_values="bias")
 
 
 class BiasCalibrator(ProcessorWithCache):

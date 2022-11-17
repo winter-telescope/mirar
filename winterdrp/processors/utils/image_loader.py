@@ -10,6 +10,7 @@ from collections.abc import Callable
 from winterdrp.io import open_fits
 from glob import glob
 from winterdrp.errors import ProcessorError, ImageNotFoundError
+from winterdrp.data import Image, ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class ImageLoader(BaseImageProcessor):
     def open_raw_image(
             self,
             path: str
-    ) -> tuple[np.array, astropy.io.fits.Header]:
+    ) -> Image:
 
         data, header = self.load_image(path)
 
@@ -51,27 +52,19 @@ class ImageLoader(BaseImageProcessor):
                 logger.error(err)
                 raise KeyError(err)
 
-        return data.astype(np.float64), header
+        return Image(data.astype(np.float64), header)
 
     def open_raw_image_batch(
             self,
             paths: list
-    ) -> tuple[list, list]:
-
-        images = []
-        headers = []
+    ) -> ImageBatch:
+        image_batch = ImageBatch()
         for path in paths:
-            data, header = self.open_raw_image(path)
-            images.append(data)
-            headers.append(header)
+            image = self.open_raw_image(path)
+            image_batch.append(image)
+        return image_batch
 
-        return images, headers
-
-    def _apply_to_images(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
 
         input_dir = os.path.join(
             self.input_img_dir,
@@ -81,7 +74,7 @@ class ImageLoader(BaseImageProcessor):
         return load_from_dir(input_dir, open_f=self.open_raw_image)
 
 
-def load_from_dir(input_dir: str, open_f: Callable):
+def load_from_dir(input_dir: str, open_f: Callable) -> ImageBatch:
 
     img_list = sorted(glob(f'{input_dir}/*.fits'))
 
@@ -92,15 +85,13 @@ def load_from_dir(input_dir: str, open_f: Callable):
         logger.error(err)
         raise ImageNotFoundError(err)
 
-    new_images = []
-    new_headers = []
+    images = ImageBatch()
 
     for path in img_list:
         img, header = open_f(path)
-        new_images.append(img)
-        new_headers.append(header)
+        images.append(Image(img, header))
 
-    return new_images, new_headers
+    return images
 
 
 # class RecentCalLoader(ImageLoader):

@@ -27,7 +27,7 @@ class CalRequirement:
     def check_images(self, images, headers):
         new_images, new_headers = select_from_images(
             images, headers,
-            header_key="TARGET",
+            key="TARGET",
             target_values=self.target_name
         )
 
@@ -36,7 +36,7 @@ class CalRequirement:
                 if value not in self.data.keys():
                     sub_images, sub_headers = select_from_images(
                         new_images, new_headers,
-                        header_key=self.required_field,
+                        key=self.required_field,
                         target_values=value
                     )
                     if len(sub_images) > 0:

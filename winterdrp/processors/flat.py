@@ -109,7 +109,7 @@ class SkyFlatCalibrator(FlatCalibrator):
             images: list[np.ndarray],
             headers: list[astropy.io.fits.Header],
     ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        return select_from_images(images, headers, header_key="obsclass", target_values="science")
+        return select_from_images(images, headers, key="obsclass", target_values="science")
 
     def __str__(self) -> str:
         return f"Processor to create a sky flat image, divides other images by this image."

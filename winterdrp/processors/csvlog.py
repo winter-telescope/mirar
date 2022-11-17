@@ -5,6 +5,7 @@ from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import core_fields, base_name_key, get_output_path
 import logging
 import pandas as pd
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -56,18 +57,17 @@ class CSVLog(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
         output_path = self.get_output_path()
 
         all_rows = []
 
-        for header in headers:
+        for image in batch:
             row = []
             for key in self.export_keys:
-                row.append(header[key])
+                row.append(image[key])
 
             all_rows.append(row)
 
@@ -76,4 +76,4 @@ class CSVLog(BaseImageProcessor):
         logger.info(f"Saving log to: {output_path}")
         log.to_csv(output_path)
 
-        return images, headers
+        return batch

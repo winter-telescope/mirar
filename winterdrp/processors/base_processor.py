@@ -7,15 +7,13 @@ import socket
 import getpass
 import datetime
 import hashlib
-import pandas as pd
 from pathlib import Path
-from typing import Type
 
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
     base_name_key, proc_history_key, raw_img_key
 from winterdrp.errors import ErrorReport, ErrorStack, ProcessorError, NoncriticalProcessingError
-from winterdrp.data import Data, DataBatch, DataSet, Image, ImageBatch, SourceTable, SourceBatch
+from winterdrp.data import DataBatch, DataSet, Image, ImageBatch, SourceBatch
 
 logger = logging.getLogger(__name__)
 

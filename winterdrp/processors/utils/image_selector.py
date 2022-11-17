@@ -2,20 +2,21 @@ import astropy.io.fits
 import numpy as np
 import logging
 from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.data import Image, ImageBatch, DataBatch
 from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
+
 
 class ParsingError(KeyError, ProcessorError):
     pass
 
 
 def select_from_images(
-        images: list[np.ndarray],
-        headers: list[astropy.io.fits.Header],
-        header_key: str = "target",
+        batch: DataBatch,
+        key: str = "target",
         target_values: str | list[str] = "science",
-) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+) -> DataBatch:
 
     # Enforce string in list for later matching
     if not isinstance(target_values, list):
@@ -23,19 +24,17 @@ def select_from_images(
     else:
         target_values = [str(x) for x in target_values]
 
-    passing_images = []
-    passing_headers = []
+    passing_index = []
 
-    for i, header in enumerate(headers):
+    for i, data in enumerate(DataBatch):
         try:
-            if str(header[header_key]) in target_values:
-                passing_images.append(images[i])
-                passing_headers.append(header)
+            if str(data[key]) in target_values:
+                passing_index.append(i)
         except KeyError as e:
             logger.error(e)
             raise ParsingError(e)
 
-    return passing_images, passing_headers
+    return batch[passing_index]
 
 
 class ImageSelector(BaseImageProcessor):
@@ -62,16 +61,14 @@ class ImageSelector(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
         for (header_key, target_values) in self.targets:
 
-            images, headers = select_from_images(
+            images = select_from_images(
                 images,
-                headers,
-                header_key=header_key,
+                key=header_key,
                 target_values=target_values
             )
 

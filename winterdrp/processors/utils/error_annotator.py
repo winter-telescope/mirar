@@ -6,6 +6,7 @@ import logging
 from winterdrp.errors import ErrorStack
 from winterdrp.paths import proc_fail_key
 from pathlib import Path
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -32,33 +33,30 @@ class ErrorStackAnnotator(BaseImageProcessor):
         all_reports = self.errorstack.get_all_reports()
 
         for error_report in all_reports:
-            images = error_report.contents
-            name = error_report.get_error_name()
+            image_names = error_report.contents
+            error_name = error_report.get_error_name()
 
-            for image in images:
-                if image not in image_dict.keys():
-                    image_dict[image] = [name]
+            for image_name in image_names:
+                if image_name not in image_dict.keys():
+                    image_dict[image_name] = [error_name]
                 else:
-                    image_dict[image].append(name)
+                    image_dict[image_name].append(error_name)
 
         return image_dict
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch
+    ) -> ImageBatch:
 
-        for i, header in enumerate(headers):
+        for i, image in enumerate(batch):
 
-            base_name = str(Path(header[raw_img_key]).name)
+            base_name = str(Path(image[raw_img_key]).name)
 
             if base_name in self.image_dict.keys():
-                header[proc_fail_key] += ",".join(self.image_dict[base_name])
+                image[proc_fail_key] += ",".join(self.image_dict[base_name])
             elif self.processed_images is not None:
                 if base_name not in self.processed_images:
-                    header[proc_fail_key] += "Not Processed"
+                    image[proc_fail_key] += "Not Processed"
 
-            headers[i] = header
-
-        return images, headers
+        return batch
