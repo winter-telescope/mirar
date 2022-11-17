@@ -63,7 +63,7 @@ class BaseProcessor:
         self.night = night_sub_dir.split("/")[-1]
 
     @staticmethod
-    def update_batches(
+    def update_dataset(
         batches: list[DataBatch]
     ) -> list[DataBatch]:
         return batches
@@ -96,7 +96,7 @@ class BaseProcessor:
                 logger.error(err.generate_log_message())
                 err_stack.add_report(err)
 
-        batches = self.update_batches(passed_batches)
+        batches = self.update_dataset(passed_batches)
 
         return batches, err_stack
 
@@ -105,6 +105,17 @@ class BaseProcessor:
 
     def generate_error_report(self, exception: Exception, batch: DataBatch) -> ErrorReport:
         raise NotImplementedError
+
+
+class CleanupProcessor(BaseProcessor, ABC):
+
+    def update_dataset(
+        self,
+        batches: DataSet
+    ) -> DataSet:
+        # Remove empty batches
+        new_dataset = DataSet([x for x in batches.get_batches() if len(x[0]) > 0])
+        return new_dataset
 
 
 class ImageHandler:
