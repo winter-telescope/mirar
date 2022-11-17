@@ -1,0 +1,45 @@
+import numpy as np
+import astropy.io
+from winterdrp.data.base_data import Data, DataBatch
+from winterdrp.paths import raw_img_key, base_name_key
+
+
+class Image(Data):
+
+    def __init__(
+            self,
+            image: np.ndarray,
+            header: astropy.io.fits.header
+    ):
+
+        self._data = image
+        self._header = header
+        self.raw_img_path = self[raw_img_key]
+        self.base_name = self[base_name_key]
+
+    def get_data(self) -> np.ndarray:
+        return self._data
+
+    def set_data(self, data: np.ndarray):
+        self._data = data
+
+    def get_header(self) -> astropy.io.fits.header:
+        return self._header
+
+    def set_header(self, data: np.ndarray):
+        self._data = data
+
+    def __getitem__(self, item):
+        return self._header.__getitem__(item)
+
+    def __setitem__(self, key, value):
+        self._header.__setitem__(key, value)
+
+
+class ImageBatch(DataBatch):
+
+    def __add__(self, data: Image):
+        self.batch.append(data)
+
+    def get_batch(self) -> list[Image]:
+        return self.batch
