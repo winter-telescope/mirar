@@ -74,7 +74,7 @@ class ImageLoader(BaseImageProcessor):
         return load_from_dir(input_dir, open_f=self.open_raw_image)
 
 
-def load_from_dir(input_dir: str, open_f: Callable) -> ImageBatch:
+def load_from_dir(input_dir: str, open_f: Callable[[str], Image]) -> ImageBatch:
 
     img_list = sorted(glob(f'{input_dir}/*.fits'))
 
@@ -88,8 +88,8 @@ def load_from_dir(input_dir: str, open_f: Callable) -> ImageBatch:
     images = ImageBatch()
 
     for path in img_list:
-        img, header = open_f(path)
-        images.append(Image(img, header))
+        image = open_f(path)
+        images.append(image)
 
     return images
 
