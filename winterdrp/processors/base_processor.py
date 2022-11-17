@@ -76,7 +76,7 @@ class BaseProcessor:
     def base_apply(
             self,
             dataset: DataSet
-    ) -> tuple[dataset, ErrorStack]:
+    ) -> tuple[DataSet, ErrorStack]:
 
         passed_batches = []
         err_stack = ErrorStack()
