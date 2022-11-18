@@ -1,6 +1,7 @@
 import unittest
 import logging
 from winterdrp.pipelines import get_pipeline
+from winterdrp.data import DataSet, ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,11 @@ class TestSummerPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+        res, errorstack = pipeline.reduce_images(DataSet([ImageBatch()]), catch_all_errors=False)
 
-        self.assertEqual(len(res[0][0]), 1)
+        self.assertEqual(len(res[0]), 1)
 
-        header = res[0][1][0]
+        header = res[0][0].get_header()
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
