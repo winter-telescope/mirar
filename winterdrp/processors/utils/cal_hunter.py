@@ -25,7 +25,10 @@ class CalRequirement:
         self.success = False
         self.data = dict()
 
-    def check_images(self, images):
+    def check_images(
+            self,
+            images: ImageBatch
+    ):
         new_images = select_from_images(
             images,
             key="TARGET",
@@ -63,7 +66,7 @@ def find_required_cals(
         latest_dir: str,
         night: str,
         requirements: list[CalRequirement],
-        open_f: Callable = open_fits,
+        open_f: Callable[[str], Image] = open_fits,
         images: ImageBatch = None,
         skip_latest_night: bool = False
 ) -> ImageBatch:
