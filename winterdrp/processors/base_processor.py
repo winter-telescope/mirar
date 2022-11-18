@@ -64,9 +64,9 @@ class BaseProcessor:
 
     @staticmethod
     def update_dataset(
-        batches: list[DataBatch]
-    ) -> list[DataBatch]:
-        return batches
+        dataset: DataSet
+    ) -> DataSet:
+        return dataset
 
     def check_prerequisites(
             self,
@@ -78,7 +78,7 @@ class BaseProcessor:
             dataset: DataSet
     ) -> tuple[DataSet, ErrorStack]:
 
-        passed_batches = []
+        passed_batches = DataSet()
         err_stack = ErrorStack()
 
         for i, batch in enumerate(dataset):
@@ -96,9 +96,9 @@ class BaseProcessor:
                 logger.error(err.generate_log_message())
                 err_stack.add_report(err)
 
-        batches = self.update_dataset(passed_batches)
+        dataset = self.update_dataset(passed_batches)
 
-        return batches, err_stack
+        return dataset, err_stack
 
     def apply(self, batch: DataBatch):
         raise NotImplementedError
@@ -111,10 +111,10 @@ class CleanupProcessor(BaseProcessor, ABC):
 
     def update_dataset(
         self,
-        batches: DataSet
+        dataset: DataSet
     ) -> DataSet:
-        # Remove empty batches
-        new_dataset = DataSet([x for x in batches.get_batches() if len(x[0]) > 0])
+        # Remove empty dataset
+        new_dataset = DataSet([x for x in dataset.get_batches() if len(x[0]) > 0])
         return new_dataset
 
 
@@ -124,8 +124,8 @@ class ImageHandler:
     def open_fits(
             path: str
     ) -> Image:
-        image, header = open_fits(path)
-        return Image(image=image, header=header)
+        data, header = open_fits(path)
+        return Image(data=data, header=header)
 
     @staticmethod
     def save_fits(
@@ -213,10 +213,10 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         self.overwrite = overwrite
         self.cache_sub_dir = cache_sub_dir
 
-    def select_cache_images(self, images: list[Image]) -> list[Image]:
+    def select_cache_images(self, images: ImageBatch) -> ImageBatch:
         raise NotImplementedError
 
-    def get_cache_path(self, images: list[Image]) -> str:
+    def get_cache_path(self, images: ImageBatch) -> str:
 
         file_name = self.get_cache_file_name(images)
 
@@ -233,11 +233,11 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
 
         return output_path
 
-    def get_cache_file_name(self, images: list[Image]) -> str:
+    def get_cache_file_name(self, images: ImageBatch) -> str:
         cache_images = self.select_cache_images(images)
         return f"{self.base_key}_{self.get_hash(cache_images)}.fits"
 
-    def get_cache_file(self, images: list[Image]) -> Image:
+    def get_cache_file(self, images: ImageBatch) -> Image:
 
         path = self.get_cache_path(images)
 
@@ -257,7 +257,7 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
 
         return image
 
-    def make_image(self, images: list[Image]) -> Image:
+    def make_image(self, images: ImageBatch) -> Image:
         raise NotImplementedError
 
 
@@ -272,7 +272,7 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
         super().__init__(*args, **kwargs)
         self.master_image_path = master_image_path
 
-    def get_cache_path(self, images: list[Image]) -> str:
+    def get_cache_path(self, images: ImageBatch) -> str:
         return self.master_image_path
 
 
