@@ -33,7 +33,8 @@ class DataBatch:
         return DataBatch(self._batch + other.get_batch())
 
     def __iadd__(self, other):
-        self._batch += other.batch
+        self._batch += other.get_batch()
+        return self
 
     def __len__(self):
         return self._batch.__len__()
@@ -75,6 +76,7 @@ class DataSet:
 
     def __iadd__(self, other):
         self._batches += other.get_batches()
+        return self
 
     def __iter__(self):
         return self._batches.__iter__()
