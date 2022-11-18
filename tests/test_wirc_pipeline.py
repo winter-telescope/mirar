@@ -102,7 +102,7 @@ class TestWircPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(DataSet([ImageBatch]), catch_all_errors=False)
+        res, errorstack = pipeline.reduce_images(DataSet([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
 
