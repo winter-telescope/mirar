@@ -175,6 +175,7 @@ class Swarp(BaseImageProcessor):
         all_imgpixsizes = []
         all_ras = []
         all_decs = []
+
         with open(swarp_image_list_path, "w") as f, open(swarp_weight_list_path, "w") as g:
             for image in batch:
 
@@ -282,7 +283,7 @@ class Swarp(BaseImageProcessor):
 
             temp_output_image_path = get_temp_path(
                 swarp_output_dir,
-                os.path.splitext(image[0][base_name_key])[0] + ".resamp.fits"
+                os.path.splitext(batch[0][base_name_key])[0] + ".resamp.fits"
             )
             temp_output_image_weight_path = temp_output_image_path.replace(".fits", ".weight.fits")
 
@@ -292,11 +293,11 @@ class Swarp(BaseImageProcessor):
             else:
                 err = f'Swarp seems to have misbehaved, and not made the correct output file {output_image_path}'
                 logger.error(err)
-                raise ValueError
+                raise ValueError(err)
 
         new_image = self.open_fits(output_image_path)
 
-        for key in batch[0]:
+        for key in batch[0].keys():
             if np.sum([x[key] == batch[0][key] for x in batch]) == len(batch):
                 if key not in new_image:
                     new_image[key] = batch[0][key]
