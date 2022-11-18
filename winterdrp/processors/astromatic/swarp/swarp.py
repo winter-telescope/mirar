@@ -299,7 +299,7 @@ class Swarp(BaseImageProcessor):
 
         for key in batch[0].keys():
             if np.sum([x[key] == batch[0][key] for x in batch]) == len(batch):
-                if key not in new_image:
+                if key not in new_image.keys():
                     new_image[key] = batch[0][key]
 
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
