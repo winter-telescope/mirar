@@ -154,7 +154,7 @@ subtract = [
     Sextractor(
         output_sub_dir='subtract',
         cache=False,
-        write_regions_file=True,
+        write_regions_bool=True,
         **sextractor_photometry_config
     ),
     PSFex(config_path=psfex_config_path,
