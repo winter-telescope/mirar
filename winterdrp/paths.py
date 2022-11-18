@@ -173,6 +173,7 @@ def parse_image_list(
 
 raw_img_key = "RAWPATH"
 base_name_key = "BASENAME"
+ref_img_key = "REFPATH"
 proc_history_key = "CALSTEPS"
 proc_fail_key = "PROCFAIL"
 latest_save_key = "SAVEPATH"
