@@ -27,6 +27,9 @@ class SourceTable(Data):
     def __setitem__(self, key, value):
         self._metadata.__setitem__(key, value)
 
+    def keys(self):
+        return self._metadata.keys()
+
 
 class SourceBatch(DataBatch):
 
