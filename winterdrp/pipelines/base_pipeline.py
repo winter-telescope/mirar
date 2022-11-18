@@ -67,7 +67,7 @@ class Pipeline:
     def _load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
         raise NotImplementedError
 
-    def load_raw_data(self, path: str) -> Image:
+    def load_raw_image(self, path: str) -> Image:
         data, header = self._load_raw_image(path)
         return Image(data=data, header=header)
 
