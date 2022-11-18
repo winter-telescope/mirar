@@ -61,21 +61,3 @@ class TestSummerPipeline(unittest.TestCase):
                 raise TypeError(f"Type for value ({type(value)} is neither float not int.")
 
 
-if __name__ == "__main__":
-
-    print("Calculating latest ZP dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
-
-    new_header = new_res[0][1][0]
-
-    new_exp = "expected_zp = { \n"
-    for header_key in new_header.keys():
-        if "ZP_" in header_key:
-            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp += "}"
-    print(new_exp)
-
-
