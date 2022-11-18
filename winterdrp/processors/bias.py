@@ -42,7 +42,7 @@ class BiasCalibrator(ProcessorWithCache):
 
         for i, image in enumerate(batch):
             data = image.get_data()
-            data = data - master_bias
+            data = data - master_bias.get_data()
             image.set_data(data)
             image[bias_frame_key] = master_bias[latest_save_key]
 

@@ -8,6 +8,7 @@ from winterdrp.paths import saturate_key
 from winterdrp.errors import ErrorStack
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.utils.error_annotator import ErrorStackAnnotator
+from winterdrp.data import DataBatch, DataSet
 
 logger = logging.getLogger(__name__)
 
@@ -106,11 +107,15 @@ class Pipeline:
 
     def reduce_images(
             self,
-            batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]],
+            dataset: DataSet,
             output_error_path: str = None,
             catch_all_errors: bool = True,
             selected_configurations: str | list[str] = None
-    ):
+    ) -> tuple[DataSet, ErrorStack]:
+
+        print(dataset)
+        print(len(dataset))
+
         err_stack = ErrorStack()
 
         if selected_configurations is None:
@@ -127,11 +132,12 @@ class Pipeline:
             processors = self.set_configuration(configuration)
 
             for i, processor in enumerate(processors):
-                logger.debug(f"Applying '{processor.__class__}' processor to {len(batches)} batches. "
+
+                logger.debug(f"Applying '{processor.__class__}' processor to {len(dataset)} batches. "
                              f"(Step {i+1}/{len(processors)})")
 
-                batches, new_err_stack = processor.base_apply(
-                    batches
+                dataset, new_err_stack = processor.base_apply(
+                    dataset
                 )
                 err_stack += new_err_stack
 
@@ -139,7 +145,7 @@ class Pipeline:
                     raise err_stack.reports[0].error
 
         err_stack.summarise_error_stack(output_path=output_error_path)
-        return batches, err_stack
+        return dataset, err_stack
 
     def set_saturation(
             self,

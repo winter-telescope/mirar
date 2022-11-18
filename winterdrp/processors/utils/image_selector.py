@@ -24,17 +24,17 @@ def select_from_images(
     else:
         target_values = [str(x) for x in target_values]
 
-    passing_index = []
+    new_batch = ImageBatch()
 
-    for i, data in enumerate(batch):
+    for i, image in enumerate(batch):
         try:
-            if str(data[key]) in target_values:
-                passing_index.append(i)
+            if str(image[key]) in target_values:
+                new_batch.append(image)
         except KeyError as e:
             logger.error(e)
             raise ParsingError(e)
 
-    return batch[passing_index]
+    return new_batch
 
 
 class ImageSelector(BaseImageProcessor, CleanupProcessor):
@@ -83,8 +83,6 @@ def split_images_into_batches(
     if isinstance(split_key, str):
         split_key = [split_key]
 
-    new_dataset = DataSet()
-
     groups = dict()
 
     for i, image in enumerate(images):
@@ -100,7 +98,9 @@ def split_images_into_batches(
         else:
             groups[uid] += [image]
 
-    return DataSet([x for x in groups.values()])
+    res = DataSet([ImageBatch(x) for x in groups.values()])
+
+    return res
 
 
 class ImageBatcher(BaseImageProcessor):
@@ -136,12 +136,13 @@ class ImageBatcher(BaseImageProcessor):
         dataset: DataSet
     ) -> DataSet:
 
-        new_batches = DataSet()
+        new_dataset = DataSet()
 
         for batch in dataset:
-            new_batches += split_images_into_batches(batch, split_key=self.split_key)
+            new = split_images_into_batches(batch, split_key=self.split_key)
+            new_dataset += new
 
-        return new_batches
+        return new_dataset
 
 
 class ImageDebatcher(BaseImageProcessor):

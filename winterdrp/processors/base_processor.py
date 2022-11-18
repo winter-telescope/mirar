@@ -11,7 +11,7 @@ from pathlib import Path
 
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
-    base_name_key, proc_history_key, raw_img_key
+    base_name_key, proc_history_key, raw_img_key, package_name
 from winterdrp.errors import ErrorReport, ErrorStack, ProcessorError, NoncriticalProcessingError
 from winterdrp.data import DataBatch, DataSet, Image, ImageBatch, SourceBatch
 
@@ -114,7 +114,7 @@ class CleanupProcessor(BaseProcessor, ABC):
         dataset: DataSet
     ) -> DataSet:
         # Remove empty dataset
-        new_dataset = DataSet([x for x in dataset.get_batches() if len(x[0]) > 0])
+        new_dataset = DataSet([x for x in dataset.get_batches() if len(x) > 0])
         return new_dataset
 
 
@@ -125,6 +125,8 @@ class ImageHandler:
             path: str
     ) -> Image:
         data, header = open_fits(path)
+        header[raw_img_key] = path
+        header[base_name_key] = Path(path).name
         return Image(data=data, header=header)
 
     @staticmethod
@@ -158,7 +160,9 @@ class ImageHandler:
         return hashlib.sha1(key.encode()).hexdigest()
 
     def image_batch_error_report(self, exception: Exception, batch: ImageBatch):
-        contents = [Path(x).name for x in ",".join([x[raw_img_key] for x in batch[1]]).split(",")]
+        contents = []
+        for image in batch:
+            contents += [Path(x).name for x in image.get_raw_img_list()]
         return ErrorReport(exception, self.__module__, contents)
 
 
@@ -188,7 +192,7 @@ class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
             image['REDUCER'] = getpass.getuser()
             image['REDMACH'] = socket.gethostname()
             image['REDTIME'] = str(datetime.datetime.now())
-            image["REDSOFT"] = "winterdrp"
+            image["REDSOFT"] = package_name
             batch[i] = image
         return batch
 

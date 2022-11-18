@@ -131,7 +131,7 @@ class Scamp(BaseImageProcessor):
             logger.info(f"Saved to {new_out_path}")
             batch[i] = image
 
-        return image
+        return batch
 
     def check_prerequisites(
             self,
