@@ -10,10 +10,12 @@ class Data:
 
 class DataBatch:
 
-    def __init__(self, batch=None):
+    def __init__(self, batch: list[Data] | Data = None):
 
         if batch is None:
             batch = []
+        elif isinstance(batch, Data):
+            batch = [batch]
 
         self._batch = batch
 
@@ -45,10 +47,15 @@ class DataBatch:
 
 class DataSet:
 
-    def __init__(self, batches=None):
+    def __init__(
+            self,
+            batches: list[DataBatch] | DataBatch = None
+    ):
 
         if batches is None:
             batches = []
+        elif isinstance(batches, DataBatch):
+            batches = [batches]
 
         self._batches = batches
 
