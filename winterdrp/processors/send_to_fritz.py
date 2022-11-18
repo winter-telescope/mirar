@@ -3,15 +3,14 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import pandas as pd
-import os, gzip, io
+import os
+import gzip
+import io
 
 import base64
-from contextlib import contextmanager
-import astropy
-import json, time
+import time
 from datetime import datetime
 from astropy.time import Time
-from astropy.io import ascii
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from astropy.visualization import (
@@ -24,15 +23,17 @@ from astropy.visualization import (
 from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Mapping, Optional, Sequence
+from typing import Mapping, Optional
 
 
 from winterdrp.processors.base_processor import BaseDataframeProcessor
-from winterdrp.paths import get_output_dir
+from winterdrp.data import SourceBatch
+
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 5  # seconds
+
 
 class TimeoutHTTPAdapter(HTTPAdapter):
     def __init__(self, *args, **kwargs):
@@ -51,16 +52,19 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         except AttributeError:
             kwargs["timeout"] = DEFAULT_TIMEOUT
 
+
 class SendToFritz(BaseDataframeProcessor):
-    def __init__(self, 
-                update_thumbnails = True,
-                group_ids = [1431],
-                base_name = 'WIRC',
-                filter_id = 1152,
-                instrument_id = 5,
-                stream_id = 1005,
-                protocol = 'http',
-                **kwargs):
+    def __init__(
+            self,
+            base_name: str,
+            group_ids: list[int],
+            filter_id: int,
+            instrument_id: int,
+            stream_id: int,
+            update_thumbnails: bool = True,
+            protocol: str = 'http',
+            **kwargs
+    ):
         super(SendToFritz, self).__init__(**kwargs)
         self.token = None
         self.group_ids = group_ids
@@ -71,22 +75,11 @@ class SendToFritz(BaseDataframeProcessor):
         self.stream_id = stream_id
         self.protocol = protocol
         self.update_thumbnails = update_thumbnails
-
-        def _get_fritz_token():
-            token_fritz = os.getenv("FRITZ_TOKEN")
-
-            if token_fritz is None:
-                err = "No Fritz token specified. Run 'export FRITZ_TOKEN=<token>' to set. " \
-                    "The Fritz token will need to be specified manually for Fritz API queries."
-                logger.warning(err)
-                raise ValueError
-            
-            return token_fritz
         
         # session to talk to SkyPortal/Fritz
         self.session = requests.Session()
         self.session_headers = {
-            "Authorization": f"token {_get_fritz_token()}",
+            "Authorization": f"token {self._get_fritz_token()}",
             "User-Agent": f"winterdrp",
         }
 
@@ -100,15 +93,29 @@ class SendToFritz(BaseDataframeProcessor):
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
 
+    @staticmethod
+    def _get_fritz_token():
+        token_fritz = os.getenv("FRITZ_TOKEN")
+
+        if token_fritz is None:
+            err = "No Fritz token specified. Run 'export FRITZ_TOKEN=<token>' to set. " \
+                  "The Fritz token will need to be specified manually for Fritz API queries."
+            logger.warning(err)
+            raise ValueError(err)
+
+        return token_fritz
+
     def _apply_to_candidates(
             self,
-            candidate_table: pd.DataFrame,
-    ) -> pd.DataFrame:
-        logger.info("In SendToFritz")
-        self.make_alert(candidate_table) 
-        return candidate_table
+            batch: SourceBatch,
+    ) -> SourceBatch:
+        for source_table in batch:
+            candidate_table = source_table.get_data()
+            self.make_alert(candidate_table)
+        return batch
 
-    def _get_author_id(self):
+    @staticmethod
+    def _get_author_id():
         """Fritz author id is used in update calls.
         Can be found """
         authid_fritz = os.getenv("FRITZ_AUTHID")
@@ -121,11 +128,11 @@ class SendToFritz(BaseDataframeProcessor):
 
         return authid_fritz
 
-    def read_input_df(self, df):
+    @staticmethod
+    def read_input_df(df: pd.DataFrame):
         """Takes a DataFrame, which has multiple candidate 
         and creates list of dictionaries, each dictionary 
         representing a single candidate.
-
 
         Args:
             df (pandas.core.frame.DataFrame): dataframe of all candidates.
@@ -155,7 +162,7 @@ class SendToFritz(BaseDataframeProcessor):
         """Make an API call to a SkyPortal instance
 
         headers = {'Authorization': f'token {self.token}'}
-        response = requests.request(method, endpoint, json=data, headers=headers)
+        response = requests.request(method, endpoint, json_dict=data, headers=headers)
 
         :param method:
         :param endpoint:
@@ -192,7 +199,7 @@ class SendToFritz(BaseDataframeProcessor):
 
         return response
 
-    def alert_post_source(self, alert, group_ids = None):
+    def alert_post_source(self, alert: dict, group_ids: list[int] = None):
         """Add a new source to SkyPortal
 
         :param alert: dict of source info
@@ -201,30 +208,31 @@ class SendToFritz(BaseDataframeProcessor):
         if group_ids is None: 
             group_ids = self.group_ids
 
-
-        data = {'ra': alert['ra'],
-                        'dec': alert['dec'],
-                        'id': alert['objectId'],
-                        'group_ids': group_ids,
-                        'origin': self.origin
+        data = {
+            'ra': alert['ra'],
+            'dec': alert['dec'],
+            'id': alert['objectId'],
+            'group_ids': group_ids,
+            'origin': self.origin
         }   
         
-        logger.info(f"Saving {alert['objectId']} {alert['candid']} as a Source on SkyPortal")
+        logger.debug(f"Saving {alert['objectId']} {alert['candid']} as a Source on SkyPortal")
         response = self.api('POST', 'https://fritz.science/api/sources', data)
         
         if response.json()["status"] == "success":
-            logger.info(f"Saved {alert['objectId']} {alert['candid']} as a Source on SkyPortal")
+            logger.debug(f"Saved {alert['objectId']} {alert['candid']} as a Source on SkyPortal")
         else:
-            logger.info(
+            logger.error(
                 f"Failed to save {alert['objectId']} {alert['candid']} as a Source on SkyPortal"
             )
-            logger.info(response.json())
+            logger.error(response.json())
     
     def alert_post_candidate(self, alert):
         """
         Post a candidate on SkyPortal. Creates new candidate(s) (one per filter)
         """
-        data = { "id": alert["objectId"],
+
+        data = {"id": alert["objectId"],
                 "ra": alert["ra"],
                 "dec": alert["dec"],
                 "filter_ids": [self.filter_id],
@@ -233,17 +241,17 @@ class SendToFritz(BaseDataframeProcessor):
                 "origin": "WINTERdrp",
                 }
         
-        logger.info(f"Posting metadata of {alert['objectId']} {alert['candid']} to SkyPortal")
+        logger.debug(f"Posting metadata of {alert['objectId']} {alert['candid']} to SkyPortal")
         response = self.api("POST", "https://fritz.science/api/candidates", data)
 
         if response.json()["status"] == "success":
-            logger.info(f"Posted {alert['objectId']} {alert['candid']} metadata to SkyPortal")
+            logger.debug(f"Posted {alert['objectId']} {alert['candid']} metadata to SkyPortal")
         else:
-            logger.info(f"Failed to post {alert['objectId']} {alert['candid']} metadata to SkyPortal")
-            logger.info(response.json()) 
+            logger.error(f"Failed to post {alert['objectId']} {alert['candid']} metadata to SkyPortal")
+            logger.error(response.json())
 
     def make_thumbnail(
-    self, alert, skyportal_type: str, alert_packet_type: str
+        self, alert, skyportal_type: str, alert_packet_type: str
     ):
         """
         Convert lossless FITS cutouts from ZTF-like alerts into PNGs.
@@ -310,7 +318,6 @@ class SendToFritz(BaseDataframeProcessor):
 
         return thumbnail_dict
 
-
     def alert_post_thumbnails(self, alert):
         """Post alert Science, Reference, and Subtraction thumbnails to SkyPortal
 
@@ -322,26 +329,26 @@ class SendToFritz(BaseDataframeProcessor):
             ("ref", "Template"),
             ("sub", "Difference"),
         ]:
-            logger.info(
+            logger.debug(
                 f"Making {instrument_type} thumbnail for {alert['objectId']} {alert['candid']}",
                 
             )
             thumb = self.make_thumbnail(alert, ttype, instrument_type)
 
-            logger.info(
+            logger.debug(
                 f"Posting {instrument_type} thumbnail for {alert['objectId']} {alert['candid']} to SkyPortal", 
             )
             response = self.api("POST", "https://fritz.science/api/thumbnail", thumb)
 
             if response.json()["status"] == "success":
-                logger.info(
+                logger.debug(
                     f"Posted {alert['objectId']} {alert['candid']} {instrument_type} cutout to SkyPortal"
                 )
             else:
-                logger.info(
+                logger.error(
                     f"Failed to post {alert['objectId']} {alert['candid']} {instrument_type} cutout to SkyPortal"
                 )
-                logger.info(response.json())
+                logger.error(response.json())
 
     def upload_thumbnail(self, alert):
         """Post new thumbnail to Fritz.
@@ -359,33 +366,34 @@ class SendToFritz(BaseDataframeProcessor):
             cutout = alert[cand_key]
 
             buffer = io.BytesIO()
-            plt.figure(figsize=(3,3))
+            plt.figure(figsize=(3, 3))
             mean, median, std = sigma_clipped_stats(cutout)
             plt.imshow(cutout, origin='lower', cmap='gray',vmin=mean-1*std,vmax=median+3*std)
             plt.xticks([])
             plt.yticks([])
 
-            plt.savefig(buffer,format='png')
+            plt.savefig(buffer, format='png')
 
             cutoutb64 = base64.b64encode(buffer.getvalue())
             cutoutb64_string = cutoutb64.decode('utf8')
 
-            data_payload = {'obj_id':alert['objectId'],
-                            'data':cutoutb64_string,
-                            'ttype':fritz_key
-                        }
+            data_payload = {
+                'obj_id': alert['objectId'],
+                'data': cutoutb64_string,
+                'ttype': fritz_key
+            }
 
             response = self.api('POST', 'https://fritz.science/api/thumbnail', data=data_payload)
 
             if response.json()["status"] == "success":
-                logger.info(
+                logger.debug(
                     f"Posted {alert['objectId']} {alert['candid']} {cand_key} cutout to SkyPortal"
                 )
             else:
-                logger.info(
+                logger.error(
                     f"Failed to post {alert['objectId']} {alert['candid']} {cand_key} cutout to SkyPortal"
                 )
-                logger.info(response.json())
+                logger.error(response.json())
 
     def make_photometry(self, alert, jd_start: float = None):
         """
@@ -398,9 +406,9 @@ class SendToFritz(BaseDataframeProcessor):
         # print(alert.keys())
         alert = deepcopy(alert)
         # df_candidate = pd.DataFrame(alert["candidate"], index=[0])
-        top_level = ["schemavsn","publisher","objectId",
-                    "candid","candidate","prv_candidates",
-                    "cutoutScience","cutoutTemplate","cutoutDifference"]
+        top_level = ["schemavsn", "publisher", "objectId",
+                     "candid", "candidate", "prv_candidates",
+                     "cutoutScience", "cutoutTemplate", "cutoutDifference"]
         alert["candidate"] = {}
 
         # (keys having value in 3.)
@@ -413,7 +421,6 @@ class SendToFritz(BaseDataframeProcessor):
         
         alert["candidate"] = [alert["candidate"]]
         df_candidate = pd.DataFrame(alert["candidate"], index=[0])
-
 
         df_prv_candidates = pd.DataFrame(alert["prv_candidates"])
 
@@ -454,7 +461,6 @@ class SendToFritz(BaseDataframeProcessor):
             lambda x: 1.0 if x in [True, 1, "y", "Y", "t", "1"] else -1.0
         )
 
-
         # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
         # 23.9 (results in flux in uJy)
         df_light_curve["flux"] = coeff * 10 ** (
@@ -494,7 +500,7 @@ class SendToFritz(BaseDataframeProcessor):
 
     def alert_put_photometry(self, alert):
         """Send photometry to Fritz."""
-        logger.info(f"Making alert photometry of {alert['objectId']} {alert['candid']}")
+        logger.debug(f"Making alert photometry of {alert['objectId']} {alert['candid']}")
         df_photometry = self.make_photometry(alert)
 
         # post photometry
@@ -515,48 +521,51 @@ class SendToFritz(BaseDataframeProcessor):
         if (len(photometry.get("flux", ())) > 0) or (
             len(photometry.get("fluxerr", ())) > 0
         ):
-            logger.info(f"Posting photometry of {alert['objectId']} {alert['candid']}, "
-                    f"stream_id={self.stream_id} to SkyPortal")
+            logger.debug(f"Posting photometry of {alert['objectId']} {alert['candid']}, "
+                         f"stream_id={self.stream_id} to SkyPortal")
             response = self.api("PUT", "https://fritz.science/api/photometry", photometry)
             if response.json()["status"] == "success":
-                logger.info(
+                logger.debug(
                     f"Posted {alert['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
                 )
             else:
-                logger.info(
+                logger.error(
                     f"Failed to post {alert['objectId']} photometry stream_id={self.stream_id} to SkyPortal"
                 )
-                logger.info(response.json())
+                logger.error(response.json())
     
     def alert_post_annotation(self, alert):
         """Post an annotation. Works for both candidates and sources.
         """
-        data = {"chipsf": alert["chipsf"],
-                "fwhm": alert["fwhm"],
-                "scorr": alert["scorr"]}
-        payload = {"origin": self.origin,
+        data = {
+            "chipsf": alert["chipsf"],
+            "fwhm": alert["fwhm"],
+            "scorr": alert["scorr"]
+        }
+        payload = {
+            "origin": self.origin,
             "data": data,
             "group_ids": self.group_ids
-            }
+        }
 
         path = f'https://fritz.science/api/sources/{str(alert["objectId"])}/annotations'
         response = self.api('POST', path, payload)
 
         if response.json()["status"] == "success":
-                logger.info(f"Posted {alert['objectId']} annotation to SkyPortal")
+            logger.debug(f"Posted {alert['objectId']} annotation to SkyPortal")
         else:
-            logger.info(f"Failed to post {alert['objectId']} annotation to SkyPortal")
-            logger.info(response.json())
+            logger.error(f"Failed to post {alert['objectId']} annotation to SkyPortal")
+            logger.error(response.json())
 
     def alert_put_annotation(self, alert):
         """Retrieve an annotation to check if it exists already."""
         response = self.api('GET', f'https://fritz.science/api/sources/{str(alert["objectId"])}/annotations')
 
         if response.json()["status"] == "success":
-            logger.info(f"Got {alert['objectId']} annotations from SkyPortal")
+            logger.debug(f"Got {alert['objectId']} annotations from SkyPortal")
         else:
-            logger.info(f"Failed to get {alert['objectId']} annotations from SkyPortal")
-            logger.info(response.json())
+            logger.debug(f"Failed to get {alert['objectId']} annotations from SkyPortal")
+            logger.debug(response.json())
             return False
 
         existing_annotations = {
@@ -585,7 +594,7 @@ class SendToFritz(BaseDataframeProcessor):
                 "group_ids": self.group_ids,
             }
             
-            logger.info(
+            logger.debug(
                 f"Putting annotation for {alert['objectId']} {alert['candid']} to SkyPortal", 
             )
             response = self.api(
@@ -595,10 +604,10 @@ class SendToFritz(BaseDataframeProcessor):
                     new_annotation,
                 )
             if response.json()["status"] == "success":
-                logger.info(f"Posted updated {alert['objectId']} annotation to SkyPortal")
+                logger.debug(f"Posted updated {alert['objectId']} annotation to SkyPortal")
             else:
-                logger.info(f"Failed to post updated {alert['objectId']} annotation to SkyPortal")
-                logger.info(response.json())
+                logger.error(f"Failed to post updated {alert['objectId']} annotation to SkyPortal")
+                logger.error(response.json())
 
     def alert_skyportal_manager(self, alert):
         """Posts alerts to SkyPortal if criteria is met
@@ -607,16 +616,16 @@ class SendToFritz(BaseDataframeProcessor):
         :type alert: _type_
         """
         # check if candidate exists in SkyPortal
-        logger.info(f"Checking if {alert['objectId']} is candidate in SkyPortal")
+        logger.debug(f"Checking if {alert['objectId']} is candidate in SkyPortal")
         response = self.api("HEAD", f"https://fritz.science/api/candidates/{alert['objectId']}")
         is_candidate = response.status_code == 200
-        logger.info(f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal")
+        logger.debug(f"{alert['objectId']} {'is' if is_candidate else 'is not'} candidate in SkyPortal")
         
         # check if source exists in SkyPortal
-        logger.info(f"Checking if {alert['objectId']} is source in SkyPortal")
+        logger.debug(f"Checking if {alert['objectId']} is source in SkyPortal")
         response = self.api("HEAD", f"https://fritz.science/api/sources/{alert['objectId']}")
         is_source = response.status_code == 200
-        logger.info(f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal")
+        logger.debug(f"{alert['objectId']} {'is' if is_source else 'is not'} source in SkyPortal")
 
         # object does not exist in SkyPortal: neither cand nor source 
         if (not is_candidate) and (not is_source):
@@ -647,7 +656,7 @@ class SendToFritz(BaseDataframeProcessor):
             # exists in SkyPortal & already saved as a source
             if is_source:
                 # get info on the corresponding groups:
-                logger.info(
+                logger.debug(
                     f"Getting source groups info on {alert['objectId']} from SkyPortal",
                 )
                 response = self.api(
@@ -661,8 +670,8 @@ class SendToFritz(BaseDataframeProcessor):
                         if existing_gid in self.group_ids:
                             self.alert_post_source(alert, str(existing_gid))    
                 else:
-                    logger.info(f"Failed to get source groups info on {alert['objectId']}")
-            else: # exists in SkyPortal but NOT saved as a source
+                    logger.error(f"Failed to get source groups info on {alert['objectId']}")
+            else:  # exists in SkyPortal but NOT saved as a source
                 self.alert_post_source(alert)
 
             # post alert photometry in single call to /api/photometry
@@ -671,7 +680,7 @@ class SendToFritz(BaseDataframeProcessor):
             if self.update_thumbnails:
                 self.alert_post_thumbnails(alert)
 
-        logger.info(f'======== SendToFritz Manager complete for {alert["objectId"]} =======')
+        logger.debug(f'SendToFritz Manager complete for {alert["objectId"]}')
 
     def make_alert(self, cand_table):
         t0 = time.time()
@@ -682,6 +691,4 @@ class SendToFritz(BaseDataframeProcessor):
             self.alert_skyportal_manager(cand)
 
         t1 = time.time()
-        logger.info('###########################################')
         logger.info(f"Took {(t1 - t0):.2f} seconds to Fritz process {num_cands} candidates.")
-        logger.info('###########################################')    
