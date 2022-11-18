@@ -10,7 +10,7 @@ from winterdrp.processors.base_processor import BaseImageProcessor, BaseDatafram
 import logging
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor, DataBaseError
 from winterdrp.processors.database.postgres import import_from_db, xmatch_import_db
-from winterdrp.data import Image, Data, ImageBatch, SourceBatch, SourceTable
+from winterdrp.data import Image, DataBlock, ImageBatch, SourceBatch, SourceTable
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,9 @@ class BaseDatabaseImporter(BaseDatabaseProcessor, ABC):
 
 
 def update_header_with_single_match(
-        data: Data,
+        data: DataBlock,
         res: list[dict]
-) -> Data:
+) -> DataBlock:
     assert len(res) == 1
 
     for key, value in res[0]:

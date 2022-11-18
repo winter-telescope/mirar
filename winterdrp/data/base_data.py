@@ -1,5 +1,5 @@
 
-class Data:
+class DataBlock:
 
     def __getitem__(self, item):
         raise NotImplementedError
@@ -10,16 +10,16 @@ class Data:
 
 class DataBatch:
 
-    def __init__(self, batch: list[Data] | Data = None):
+    def __init__(self, batch: list[DataBlock] | DataBlock = None):
 
         if batch is None:
             batch = []
-        elif isinstance(batch, Data):
+        elif isinstance(batch, DataBlock):
             batch = [batch]
 
         self._batch = batch
 
-    def get_batch(self) -> list[Data]:
+    def get_batch(self) -> list[DataBlock]:
         raise NotImplementedError
 
     def append(self, item):

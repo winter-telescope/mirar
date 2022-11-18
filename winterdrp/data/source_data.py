@@ -1,8 +1,8 @@
 import pandas as pd
-from winterdrp.data.base_data import Data, DataBatch
+from winterdrp.data.base_data import DataBlock, DataBatch
 
 
-class SourceTable(Data):
+class SourceTable(DataBlock):
 
     def __init__(
             self,
