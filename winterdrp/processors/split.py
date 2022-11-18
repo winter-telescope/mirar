@@ -5,7 +5,7 @@ import numpy as np
 import logging
 from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import base_name_key
-from winterdrp.data import ImageBatch, Image, DataSet
+from winterdrp.data import ImageBatch, Image, Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +95,8 @@ class SplitImage(BaseImageProcessor):
 
     def update_dataset(
         self,
-        dataset: DataSet
-    ) -> DataSet:
+        dataset: Dataset
+    ) -> Dataset:
 
         all_new_batches = []
 
@@ -109,4 +109,4 @@ class SplitImage(BaseImageProcessor):
 
             all_new_batches += new_batches
 
-        return DataSet(all_new_batches)
+        return Dataset(all_new_batches)

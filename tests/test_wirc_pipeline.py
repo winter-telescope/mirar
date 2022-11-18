@@ -18,7 +18,7 @@ from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.pipelines.wirc.generator import wirc_astrometric_catalog_generator, wirc_photometric_catalog_generator
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.data import DataSet, ImageBatch
+from winterdrp.data import Dataset, ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class TestWircPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(DataSet([ImageBatch()]), catch_all_errors=False)
+        res, errorstack = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
 

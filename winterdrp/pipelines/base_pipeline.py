@@ -8,7 +8,7 @@ from winterdrp.paths import saturate_key
 from winterdrp.errors import ErrorStack
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.utils.error_annotator import ErrorStackAnnotator
-from winterdrp.data import DataBatch, DataSet, Image
+from winterdrp.data import DataBatch, Dataset, Image
 
 logger = logging.getLogger(__name__)
 
@@ -111,11 +111,11 @@ class Pipeline:
 
     def reduce_images(
             self,
-            dataset: DataSet,
+            dataset: Dataset,
             output_error_path: str = None,
             catch_all_errors: bool = True,
             selected_configurations: str | list[str] = None
-    ) -> tuple[DataSet, ErrorStack]:
+    ) -> tuple[Dataset, ErrorStack]:
 
         err_stack = ErrorStack()
 

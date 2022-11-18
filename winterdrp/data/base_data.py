@@ -45,7 +45,7 @@ class DataBatch:
         return self._batch.__iter__()
 
 
-class DataSet:
+class Dataset:
 
     def __init__(
             self,

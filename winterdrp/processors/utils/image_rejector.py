@@ -2,7 +2,7 @@ import astropy.io.fits
 import numpy as np
 import logging
 from winterdrp.processors.base_processor import BaseImageProcessor, CleanupProcessor
-from winterdrp.data import ImageBatch, DataSet
+from winterdrp.data import ImageBatch, Dataset
 
 logger = logging.getLogger(__name__)
 

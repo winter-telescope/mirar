@@ -2,7 +2,7 @@ import astropy.io.fits
 import numpy as np
 import logging
 from winterdrp.processors.base_processor import BaseImageProcessor, CleanupProcessor
-from winterdrp.data import Image, ImageBatch, DataBatch, DataSet
+from winterdrp.data import Image, ImageBatch, DataBatch, Dataset
 from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ def select_from_images(
     new_batch = ImageBatch()
 
     for i, image in enumerate(batch):
+        print(i, image, key)
         try:
             if str(image[key]) in target_values:
                 new_batch.append(image)
@@ -78,7 +79,7 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
 def split_images_into_batches(
         images: ImageBatch,
         split_key: str | list[str]
-) -> DataSet:
+) -> Dataset:
 
     if isinstance(split_key, str):
         split_key = [split_key]
@@ -98,7 +99,7 @@ def split_images_into_batches(
         else:
             groups[uid] += [image]
 
-    res = DataSet([ImageBatch(x) for x in groups.values()])
+    res = Dataset([ImageBatch(x) for x in groups.values()])
 
     return res
 
@@ -133,10 +134,10 @@ class ImageBatcher(BaseImageProcessor):
 
     def update_dataset(
         self,
-        dataset: DataSet
-    ) -> DataSet:
+        dataset: Dataset
+    ) -> Dataset:
 
-        new_dataset = DataSet()
+        new_dataset = Dataset()
 
         for batch in dataset:
             new = split_images_into_batches(batch, split_key=self.split_key)
@@ -157,15 +158,15 @@ class ImageDebatcher(BaseImageProcessor):
 
     def update_dataset(
         self,
-        dataset: DataSet
-    ) -> DataSet:
+        dataset: Dataset
+    ) -> Dataset:
 
         combo_batch = ImageBatch()
 
         for batch in dataset:
             combo_batch += batch
 
-        return DataSet([combo_batch])
+        return Dataset([combo_batch])
 
 
 

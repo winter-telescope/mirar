@@ -13,7 +13,7 @@ from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
     base_name_key, proc_history_key, raw_img_key, package_name
 from winterdrp.errors import ErrorReport, ErrorStack, ProcessorError, NoncriticalProcessingError
-from winterdrp.data import DataBatch, DataSet, Image, ImageBatch, SourceBatch
+from winterdrp.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +64,8 @@ class BaseProcessor:
 
     @staticmethod
     def update_dataset(
-        dataset: DataSet
-    ) -> DataSet:
+        dataset: Dataset
+    ) -> Dataset:
         return dataset
 
     def check_prerequisites(
@@ -75,10 +75,10 @@ class BaseProcessor:
 
     def base_apply(
             self,
-            dataset: DataSet
-    ) -> tuple[DataSet, ErrorStack]:
+            dataset: Dataset
+    ) -> tuple[Dataset, ErrorStack]:
 
-        passed_batches = DataSet()
+        passed_batches = Dataset()
         err_stack = ErrorStack()
 
         for i, batch in enumerate(dataset):
@@ -111,10 +111,10 @@ class CleanupProcessor(BaseProcessor, ABC):
 
     def update_dataset(
         self,
-        dataset: DataSet
-    ) -> DataSet:
+        dataset: Dataset
+    ) -> Dataset:
         # Remove empty dataset
-        new_dataset = DataSet([x for x in dataset.get_batches() if len(x) > 0])
+        new_dataset = Dataset([x for x in dataset.get_batches() if len(x) > 0])
         return new_dataset
 
 
