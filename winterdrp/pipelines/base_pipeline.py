@@ -8,7 +8,7 @@ from winterdrp.paths import saturate_key
 from winterdrp.errors import ErrorStack
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.utils.error_annotator import ErrorStackAnnotator
-from winterdrp.data import DataBatch, DataSet
+from winterdrp.data import DataBatch, DataSet, Image
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +64,12 @@ class Pipeline:
         return copy.copy(self.all_pipeline_configurations[configuration])
 
     @staticmethod
-    def load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
+    def _load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
         raise NotImplementedError
+
+    def load_raw_data(self, path: str) -> Image:
+        data, header = self._load_raw_image(path)
+        return Image(data=data, header=header)
 
     @staticmethod
     def configure_processors(
