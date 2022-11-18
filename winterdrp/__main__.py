@@ -181,7 +181,6 @@ else:
         pipe.set_configuration(protected_key)
 
         _, new_errorstack = pipe.reduce_images(
-            batches=[[[], []]],
             selected_configurations=protected_key,
             catch_all_errors=True
         )
