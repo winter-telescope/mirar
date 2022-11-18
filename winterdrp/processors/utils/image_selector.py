@@ -13,10 +13,10 @@ class ParsingError(KeyError, ProcessorError):
 
 
 def select_from_images(
-        batch: DataBatch,
+        batch: ImageBatch,
         key: str = "target",
         target_values: str | list[str] = "science",
-) -> DataBatch:
+) -> ImageBatch:
 
     # Enforce string in list for later matching
     if not isinstance(target_values, list):
@@ -26,7 +26,7 @@ def select_from_images(
 
     passing_index = []
 
-    for i, data in enumerate(DataBatch):
+    for i, data in enumerate(batch):
         try:
             if str(data[key]) in target_values:
                 passing_index.append(i)
@@ -133,12 +133,12 @@ class ImageBatcher(BaseImageProcessor):
 
     def update_dataset(
         self,
-        batches: DataSet
+        dataset: DataSet
     ) -> DataSet:
 
         new_batches = DataSet()
 
-        for batch in batches:
+        for batch in dataset:
             new_batches += split_images_into_batches(batch, split_key=self.split_key)
 
         return new_batches
@@ -156,12 +156,12 @@ class ImageDebatcher(BaseImageProcessor):
 
     def update_dataset(
         self,
-        batches: DataSet
+        dataset: DataSet
     ) -> DataSet:
 
         combo_batch = []
 
-        for batch in batches:
+        for batch in dataset:
             combo_batch += batch
 
         return DataSet(combo_batch)

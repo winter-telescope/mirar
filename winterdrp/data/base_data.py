@@ -1,6 +1,11 @@
 
 class Data:
-    pass
+
+    def __getitem__(self, item):
+        raise NotImplementedError
+
+    def __setitem__(self, key, value):
+        raise NotImplementedError
 
 
 class DataBatch:

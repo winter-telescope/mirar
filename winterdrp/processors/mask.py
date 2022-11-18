@@ -2,6 +2,7 @@ import astropy.io.fits
 import numpy as np
 import logging
 from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class MaskPixels(BaseImageProcessor):
         self.mask_path = mask_path
 
     def __str__(self) -> str:
-        return f"Processor to mask bad pixels using a pre-defined map."
+        return f"Processor to mask bad pixels using a pre-defined map ({self.mask_path}."
 
     def get_mask(self):
         if self.mask is None:
@@ -33,18 +34,14 @@ class MaskPixels(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        for i, data in enumerate(images):
-            header = headers[i]
+        for i, image in enumerate(batch):
+            data = image.get_data()
             mask = self.get_mask()
-
             mask = mask != 0
-
             data[mask] = mask_value
-            images[i] = data
-            headers[i] = header
+            image.set_data(data)
 
-        return images, headers
+        return batch
