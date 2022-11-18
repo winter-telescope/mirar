@@ -113,9 +113,6 @@ class Pipeline:
             selected_configurations: str | list[str] = None
     ) -> tuple[DataSet, ErrorStack]:
 
-        print(dataset)
-        print(len(dataset))
-
         err_stack = ErrorStack()
 
         if selected_configurations is None:
