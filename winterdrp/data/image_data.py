@@ -3,7 +3,7 @@ from astropy.io.fits import Header
 from pathlib import Path
 import logging
 
-from winterdrp.data.base_data import Data, DataBatch
+from winterdrp.data.base_data import DataBlock, DataBatch
 from winterdrp.errors import ProcessorError
 from winterdrp.paths import raw_img_key, base_name_key, ref_img_key
 
@@ -14,7 +14,7 @@ class MissingReferenceError(ProcessorError, KeyError):
     pass
 
 
-class Image(Data):
+class Image(DataBlock):
 
     def __init__(
             self,
