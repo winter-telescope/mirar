@@ -16,6 +16,7 @@ from winterdrp.paths import norm_psfex_header_key
 import os
 from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
 from winterdrp.errors import ProcessorError
+from winterdrp.data import ImageBatch, Image
 
 logger = logging.getLogger(__name__)
 
@@ -41,25 +42,24 @@ class ZOGY(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[fits.Header],
-    ) -> tuple[list[np.ndarray], list[fits.Header]]:
-        diff_images, diff_headers = [], []
-        for ind, header in enumerate(headers):
-            sci_image_path = os.path.join(self.get_sub_output_dir(), header["SCISCL"])
-            ref_image_path = os.path.join(self.get_sub_output_dir(), header["REFSCL"])
-            sci_rms = header["SCIRMS"]
-            ref_rms = header["REFRMS"]
-            sci_psf_path = os.path.join(self.get_sub_output_dir(), header[norm_psfex_header_key])
-            ref_psf_path = os.path.join(self.get_sub_output_dir(), header["REFPSF"])
-            sci_rms_path = os.path.join(self.get_sub_output_dir(), header["SCUNCPTH"])
-            ref_rms_path = os.path.join(self.get_sub_output_dir(), header["RFUNCPTH"])
-            ast_unc_x = header["ASTUNCX"]
-            ast_unc_y = header["ASTUNCY"]
+            batch: ImageBatch,
+    ) -> ImageBatch:
+        diff_batch = ImageBatch()
+        for ind, image in enumerate(batch):
+            sci_image_path = os.path.join(self.get_sub_output_dir(), image["SCISCL"])
+            ref_image_path = os.path.join(self.get_sub_output_dir(), image["REFSCL"])
+            sci_rms = image["SCIRMS"]
+            ref_rms = image["REFRMS"]
+            sci_psf_path = os.path.join(self.get_sub_output_dir(), image[norm_psfex_header_key])
+            ref_psf_path = os.path.join(self.get_sub_output_dir(), image["REFPSF"])
+            sci_rms_path = os.path.join(self.get_sub_output_dir(), image["SCUNCPTH"])
+            ref_rms_path = os.path.join(self.get_sub_output_dir(), image["RFUNCPTH"])
+            ast_unc_x = image["ASTUNCX"]
+            ast_unc_y = image["ASTUNCY"]
 
             temp_files = [sci_image_path, ref_image_path, sci_rms_path, ref_rms_path]
 
-            diff, diff_psf, s_corr = pyzogy(
+            diff_data, diff_psf_data, s_corr_data = pyzogy(
                 new_image_path=sci_image_path,
                 ref_image_path=ref_image_path,
                 new_psf_path=sci_psf_path,
@@ -70,6 +70,11 @@ class ZOGY(BaseImageProcessor):
                 ref_avg_unc=ref_rms,
                 dx=ast_unc_x,
                 dy=ast_unc_y
+            )
+
+            diff = Image(
+                data=diff_data,
+                header=image.get_header()
             )
 
             diff_image_path = sci_image_path.replace('.fits', '') + '.diff.fits'
@@ -84,32 +89,27 @@ class ZOGY(BaseImageProcessor):
             diff_rms_mean, diff_rms_median, diff_rms_std = sigma_clipped_stats(diff_rms_image)
             diff_rms_path = diff_image_path + '.unc'
 
-            header["DIFFIMG"] = diff_image_path
-            header["DIFFPSF"] = diff_psf_path
-            header["DIFFSCR"] = scorr_image_path
-            header["DIFFUNC"] = diff_rms_path
+            image["DIFFIMG"] = diff_image_path
+            image["DIFFPSF"] = diff_psf_path
+            image["DIFFSCR"] = scorr_image_path
+            image["DIFFUNC"] = diff_rms_path
             noise = np.sqrt(np.nansum(np.square(diff_psf)*np.square(diff_rms_median)))/np.nansum(np.square(diff_psf))
-            header["DIFFMLIM"] = -2.5*np.log10(noise*5) + float(header[self.sci_zp_header_key])
-            header["SCORMEAN"] = scorr_mean
-            header["SCORMED"] = scorr_median
-            header["SCORSTD"] = scorr_std
+            image["DIFFMLIM"] = -2.5*np.log10(noise*5) + float(image[self.sci_zp_header_key])
+            image["SCORMEAN"] = scorr_mean
+            image["SCORMED"] = scorr_median
+            image["SCORSTD"] = scorr_std
 
-            self.save_fits(data=diff,
-                           header=header,
+            self.save_fits(image=diff,
                            path=os.path.join(self.get_sub_output_dir(), diff_image_path))
 
-            self.save_fits(data=diff_psf,
-                           header=None,
+            self.save_fits(image=diff_psf,
                            path=os.path.join(self.get_sub_output_dir(), diff_psf_path))
 
-            scorr_header = header.copy()
-            scorr_header[latest_mask_save_key] = header['SCORMASK']
-            self.save_fits(data=s_corr,
-                           header=scorr_header,
+            s_corr[latest_mask_save_key] = image['SCORMASK']
+            self.save_fits(image=s_corr,
                            path=os.path.join(self.get_sub_output_dir(), scorr_image_path))
 
-            self.save_fits(data=diff_rms_image,
-                           header=header,
+            self.save_fits(image=diff_rms_image,
                            path=os.path.join(self.get_sub_output_dir(), diff_rms_path))
             # logger.info(f"{diff_rms_std}, {diff_rms_median}, {diff_std} DIFFMAGLIM {header['DIFFMLIM']}")
             # # for temp_file in temp_files:
@@ -118,9 +118,8 @@ class ZOGY(BaseImageProcessor):
 
             #     os.remove(temp_file)
             #     logger.info(f"Deleted temporary file {temp_file}")
-            diff_images.append(diff)
-            diff_headers.append(header)
-        return diff_images, diff_headers
+            diff_batch.append(diff)
+        return diff_batch
 
 
 def default_wirc_catalog_purifier(sci_catalog, ref_catalog):
@@ -135,7 +134,7 @@ def default_wirc_catalog_purifier(sci_catalog, ref_catalog):
 
 
 def default_summer_catalog_purifier(sci_catalog, ref_catalog):
-    # Need to do this because the summer image is typically much shallower than the PS1 image, and only the brightest
+    # Need to do this because the summer data is typically much shallower than the PS1 data, and only the brightest
     # sources in PS1 xmatch to it.
     good_sci_sources = (sci_catalog['FLAGS'] == 0) & (sci_catalog['SNR_WIN'] > 5) & (
             sci_catalog['FWHM_WORLD'] < 4. / 3600) & (sci_catalog['FWHM_WORLD'] > 0.5 / 3600) & (
@@ -169,7 +168,7 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_catalog_name: str,
             sci_catalog_name: str
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        # Cross match science and reference image catalogs to get flux scaling factor and astometric uncertainties
+        # Cross match science and reference data catalogs to get flux scaling factor and astometric uncertainties
         logger.info(f'Reference catalog is at {ref_catalog_name}')
         ref_catalog = get_table_from_ldac(ref_catalog_name)
         sci_catalog = get_table_from_ldac(sci_catalog_name)
@@ -196,7 +195,7 @@ class ZOGYPrepare(BaseImageProcessor):
         idx_ref, idx_sci, d2d, d3d = sci_coords.search_around_sky(ref_coords, 1.0 * u.arcsec)
 
         if len(d2d) == 0:
-            err = 'No stars matched between science and reference image catalogs. Likely there is a huge mismatch in ' \
+            err = 'No stars matched between science and reference data catalogs. Likely there is a huge mismatch in ' \
                   'the sensitivites of the two'
             logger.error(err)
             raise ZOGYError(err)
