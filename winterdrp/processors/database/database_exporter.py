@@ -1,12 +1,10 @@
-import astropy.io.fits
-import numpy as np
 from abc import ABC
 
 import pandas as pd
 
 from winterdrp.processors.base_processor import BaseImageProcessor, BaseDataframeProcessor
 import logging
-from winterdrp.processors.database.postgres import DataBaseError, export_to_db
+from winterdrp.processors.database.postgres import export_to_db
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
 from winterdrp.data import ImageBatch
 
