@@ -50,15 +50,16 @@ class FlatCalibrator(ProcessorWithCache):
     ) -> ImageBatch:
 
         master_flat = self.get_cache_file(batch)
+        master_flat_data = master_flat.get_data()
 
-        mask = master_flat.get_data() <= self.flat_nan_threshold
+        mask = master_flat_data <= self.flat_nan_threshold
 
         if np.sum(mask) > 0:
-            master_flat[mask] = np.nan
+            master_flat_data[mask] = np.nan
 
         for i, image in enumerate(batch):
             data = image.get_data()
-            data = data / master_flat.get_data()
+            data = data / master_flat_data
             image.set_data(data)
             image[flat_frame_key] = master_flat[latest_save_key]
 
@@ -107,6 +108,7 @@ class SkyFlatCalibrator(FlatCalibrator):
 
     def __str__(self) -> str:
         return f"Processor to create a sky flat image, divides other images by this image."
+
 
 class MasterFlatCalibrator(ProcessorPremadeCache, FlatCalibrator):
     pass

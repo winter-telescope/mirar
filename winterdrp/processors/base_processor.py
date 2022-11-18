@@ -122,8 +122,9 @@ class ImageHandler:
 
     @staticmethod
     def open_fits(
-            path: str
+            path: str | Path
     ) -> Image:
+        path = str(path)
         data, header = open_fits(path)
         header[raw_img_key] = path
         header[base_name_key] = Path(path).name
@@ -132,8 +133,9 @@ class ImageHandler:
     @staticmethod
     def save_fits(
             image,
-            path: str,
+            path: str | Path,
     ):
+        path = str(path)
         data = image.get_data()
         header = image.get_header()
         if header is not None:
@@ -155,8 +157,8 @@ class ImageHandler:
         return mask_path
 
     @staticmethod
-    def get_hash(headers: list[astropy.io.fits.Header]):
-        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in headers]))
+    def get_hash(image: Image):
+        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in image]))
         return hashlib.sha1(key.encode()).hexdigest()
 
     def image_batch_error_report(self, exception: Exception, batch: ImageBatch):

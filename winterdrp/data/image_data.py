@@ -40,6 +40,9 @@ class Image(Data):
     def get_header(self) -> Header:
         return self._header
 
+    def set_header(self, header: Header):
+        self._header = header
+
     def get_name(self) -> str:
         return self.base_name
 
@@ -54,18 +57,6 @@ class Image(Data):
 
     def keys(self):
         return self._header.keys()
-
-    def __add__(self, other):
-        return self._data.__add__(other)
-
-    def __sub__(self, other):
-        return self._data.__sub__(other)
-
-    def __divmod__(self, other):
-        return self._data.__divmod__(other)
-
-    def __mul__(self, other):
-        return self._data.__mul__(other)
 
 
 class DifferenceImage(Image):

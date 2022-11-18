@@ -160,12 +160,12 @@ class ImageDebatcher(BaseImageProcessor):
         dataset: DataSet
     ) -> DataSet:
 
-        combo_batch = []
+        combo_batch = ImageBatch()
 
         for batch in dataset:
             combo_batch += batch
 
-        return DataSet(combo_batch)
+        return DataSet([combo_batch])
 
 
 
