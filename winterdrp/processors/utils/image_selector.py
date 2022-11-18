@@ -27,7 +27,6 @@ def select_from_images(
     new_batch = ImageBatch()
 
     for i, image in enumerate(batch):
-        print(i, image, key)
         try:
             if str(image[key]) in target_values:
                 new_batch.append(image)

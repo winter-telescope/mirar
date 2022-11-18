@@ -29,6 +29,7 @@ class CalRequirement:
             self,
             images: ImageBatch
     ):
+
         new_images = select_from_images(
             images,
             key="TARGET",
@@ -67,7 +68,7 @@ def find_required_cals(
         night: str,
         requirements: list[CalRequirement],
         open_f: Callable[[str], Image] = open_fits,
-        images: ImageBatch = None,
+        images: ImageBatch = ImageBatch(),
         skip_latest_night: bool = False
 ) -> ImageBatch:
 
@@ -120,10 +121,10 @@ def find_required_cals(
     n_cal = 0
 
     for requirement in requirements:
-        for key, (cal_imgs, cal_headers) in requirement.data.items():
-            for i, cal_header in enumerate(cal_headers):
-                if cal_header not in images:
-                    images.append(cal_imgs[i])
+        for key, (cal_imgs) in requirement.data.items():
+            for cal_img in cal_imgs:
+                if cal_img not in images.get_batch():
+                    images.append(cal_img)
                     n_cal += 1
 
     if n_cal > 0:
@@ -175,6 +176,7 @@ class CalHunter(ImageLoader):
             images=batch,
             skip_latest_night=True
         )
+
         batch += images
 
         return batch
