@@ -182,6 +182,7 @@ saturate_key = "SATURATE"
 sextractor_header_key = 'SRCCAT'
 psfex_header_key = 'PSFCAT'
 norm_psfex_header_key = 'NPSFCAT'
+ref_psf_key = "REFPSF"
 flat_frame_key = 'FLATNAME'
 bias_frame_key = 'BIASNAME'
 dark_frame_key = 'DARKNAME'
