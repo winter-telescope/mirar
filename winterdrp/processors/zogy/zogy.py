@@ -12,114 +12,18 @@ from astropy.stats import sigma_clipped_stats
 import astropy.units as u
 from winterdrp.io import open_fits
 from winterdrp.processors.zogy.pyzogy import pyzogy
-from winterdrp.paths import norm_psfex_header_key
+from winterdrp.paths import norm_psfex_header_key, base_name_key, ref_img_key, ref_psf_key
 import os
 from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
 from winterdrp.errors import ProcessorError
 from winterdrp.data import ImageBatch, Image
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
 class ZOGYError(ProcessorError):
     pass
-
-
-class ZOGY(BaseImageProcessor):
-    base_key = "ZOGY"
-
-    def __init__(self,
-                 output_sub_dir: str = "sub",
-                 sci_zp_header_key: str = "ZP",
-                 *args,
-                 **kwargs):
-        super(ZOGY, self).__init__(*args, **kwargs)
-        self.output_sub_dir = output_sub_dir
-        self.sci_zp_header_key = sci_zp_header_key
-
-    def get_sub_output_dir(self):
-        return get_output_dir(self.output_sub_dir, self.night_sub_dir)
-
-    def _apply_to_images(
-            self,
-            batch: ImageBatch,
-    ) -> ImageBatch:
-        diff_batch = ImageBatch()
-        for ind, image in enumerate(batch):
-            sci_image_path = os.path.join(self.get_sub_output_dir(), image["SCISCL"])
-            ref_image_path = os.path.join(self.get_sub_output_dir(), image["REFSCL"])
-            sci_rms = image["SCIRMS"]
-            ref_rms = image["REFRMS"]
-            sci_psf_path = os.path.join(self.get_sub_output_dir(), image[norm_psfex_header_key])
-            ref_psf_path = os.path.join(self.get_sub_output_dir(), image["REFPSF"])
-            sci_rms_path = os.path.join(self.get_sub_output_dir(), image["SCUNCPTH"])
-            ref_rms_path = os.path.join(self.get_sub_output_dir(), image["RFUNCPTH"])
-            ast_unc_x = image["ASTUNCX"]
-            ast_unc_y = image["ASTUNCY"]
-
-            temp_files = [sci_image_path, ref_image_path, sci_rms_path, ref_rms_path]
-
-            diff_data, diff_psf_data, s_corr_data = pyzogy(
-                new_image_path=sci_image_path,
-                ref_image_path=ref_image_path,
-                new_psf_path=sci_psf_path,
-                ref_psf_path=ref_psf_path,
-                new_sigma_path=sci_rms_path,
-                ref_sigma_path=ref_rms_path,
-                new_avg_unc=sci_rms,
-                ref_avg_unc=ref_rms,
-                dx=ast_unc_x,
-                dy=ast_unc_y
-            )
-
-            diff = Image(
-                data=diff_data,
-                header=image.get_header()
-            )
-
-            diff_image_path = sci_image_path.replace('.fits', '') + '.diff.fits'
-            diff_psf_path = diff_image_path + '.psf'
-            scorr_image_path = sci_image_path.replace('.fits', '') + '.scorr.fits'
-
-            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(s_corr)
-            logger.info(f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}")
-            sci_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), sci_rms_path))
-            ref_rms_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_rms_path))
-            diff_rms_image = np.sqrt(sci_rms_data ** 2 + ref_rms_data ** 2)
-            diff_rms_mean, diff_rms_median, diff_rms_std = sigma_clipped_stats(diff_rms_image)
-            diff_rms_path = diff_image_path + '.unc'
-
-            image["DIFFIMG"] = diff_image_path
-            image["DIFFPSF"] = diff_psf_path
-            image["DIFFSCR"] = scorr_image_path
-            image["DIFFUNC"] = diff_rms_path
-            noise = np.sqrt(np.nansum(np.square(diff_psf)*np.square(diff_rms_median)))/np.nansum(np.square(diff_psf))
-            image["DIFFMLIM"] = -2.5*np.log10(noise*5) + float(image[self.sci_zp_header_key])
-            image["SCORMEAN"] = scorr_mean
-            image["SCORMED"] = scorr_median
-            image["SCORSTD"] = scorr_std
-
-            self.save_fits(image=diff,
-                           path=os.path.join(self.get_sub_output_dir(), diff_image_path))
-
-            self.save_fits(image=diff_psf,
-                           path=os.path.join(self.get_sub_output_dir(), diff_psf_path))
-
-            s_corr[latest_mask_save_key] = image['SCORMASK']
-            self.save_fits(image=s_corr,
-                           path=os.path.join(self.get_sub_output_dir(), scorr_image_path))
-
-            self.save_fits(image=diff_rms_image,
-                           path=os.path.join(self.get_sub_output_dir(), diff_rms_path))
-            # logger.info(f"{diff_rms_std}, {diff_rms_median}, {diff_std} DIFFMAGLIM {header['DIFFMLIM']}")
-            # # for temp_file in temp_files:
-
-            # for temp_file in temp_files:
-
-            #     os.remove(temp_file)
-            #     logger.info(f"Deleted temporary file {temp_file}")
-            diff_batch.append(diff)
-        return diff_batch
 
 
 def default_wirc_catalog_purifier(sci_catalog, ref_catalog):
@@ -160,8 +64,11 @@ class ZOGYPrepare(BaseImageProcessor):
         self.sci_zp_header_key = sci_zp_header_key
         self.catalog_purifier = catalog_purifier
 
-    def get_sub_output_dir(self):
-        return get_output_dir(self.output_sub_dir, self.night_sub_dir)
+    def get_sub_output_dir(self) -> Path:
+        return Path(get_output_dir(self.output_sub_dir, self.night_sub_dir))
+
+    def get_path(self, name: str) -> Path:
+        return self.get_sub_output_dir().joinpath(name)
 
     def get_ast_fluxscale(
             self,
@@ -199,6 +106,7 @@ class ZOGYPrepare(BaseImageProcessor):
                   'the sensitivites of the two'
             logger.error(err)
             raise ZOGYError(err)
+
         xpos_sci = sci_catalog['XWIN_IMAGE']
         ypos_sci = sci_catalog['YWIN_IMAGE']
         xpos_ref = ref_catalog['XWIN_IMAGE']
@@ -211,15 +119,8 @@ class ZOGYPrepare(BaseImageProcessor):
         ast_unc_x = np.std(xpos_sci[idx_sci] - xpos_ref[idx_ref])
         ast_unc_y = np.std(ypos_sci[idx_sci] - ypos_ref[idx_ref])
 
-        # print(np.median(xpos_sci[idx_sci] - xpos_ref[idx_ref]))
-        # with open('goodmatches.reg', 'w') as f:
-        #     f.write('wcs\n')
-        #     for i in range(len(xpos_ref[idx_ref])):
-        #         f.write('point (%s,%s) #point=cross\n' % (xpos_sci[idx_sci][i], ypos_sci[idx_sci][i]))
-
         logger.info(f'Astrometric uncertainties are X: {ast_unc_x} Y: {ast_unc_y}')
-        # print('Mean of astrometric uncertainties is X:%.2f Y:%.2f' % (
-        #    np.mean(xpos_sci[idx_sci] - xpos_ref[idx_ref]), np.mean(xpos_sci[idx_sci] - xpos_ref[idx_ref])))
+
         flux_scale_mean, flux_scale_median, flux_scale_std = sigma_clipped_stats(
             sci_flux_auto[idx_sci] / ref_flux_auto[idx_ref])
         flux_scale = flux_scale_median
@@ -227,107 +128,207 @@ class ZOGYPrepare(BaseImageProcessor):
         return ast_unc_x, ast_unc_y, flux_scale
 
     @staticmethod
-    def get_rms_image(image: np.ndarray, header: fits.Header, rms: float) -> np.ndarray:
-        gain = header["GAIN"]
-        poisson_noise = np.copy(image) / gain
+    def get_rms_image(image: Image, rms: float) -> Image:
+        gain = image["GAIN"]
+        poisson_noise = np.copy(image.get_data()) / gain
         poisson_noise[poisson_noise < 0] = 0
-        rms_image = np.sqrt(poisson_noise + rms ** 2)
+        rms_image = Image(data=np.sqrt(poisson_noise + rms ** 2), header=image.get_header())
         return rms_image
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[fits.Header],
-    ) -> tuple[list[np.ndarray], list[fits.Header]]:
-        for ind, header in enumerate(headers):
-            ref_img_path = header["REFIMG"]
-            sci_img_path = header["BASENAME"]
-            sci_data = images[ind]
+            batch: ImageBatch
+    ) -> ImageBatch:
+        for ind, image in enumerate(batch):
+            ref_img_path = image[ref_img_key]
+            sci_img_path = image[base_name_key]
 
-            ref_data, ref_header = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_img_path))
-            ref_catalog_path = ref_header["SRCCAT"]
-            ref_mask_path = ref_header["MASKPATH"]
+            ref_img = self.open_fits(self.get_path(ref_img_path))
 
-            sci_catalog_path = header["SRCCAT"]
-            sci_mask_path = header["MASKPATH"]
+            ref_catalog_path = ref_img["SRCCAT"]
+            ref_mask_path = ref_img["MASKPATH"]
 
-            ref_weight_data, _ = self.open_fits(os.path.join(self.get_sub_output_dir(), ref_mask_path))
-            sci_weight_data, sci_weight_header = self.open_fits(os.path.join(self.get_sub_output_dir(), sci_mask_path))
+            sci_catalog_path = image["SRCCAT"]
+            sci_mask_path = image["MASKPATH"]
 
-            image_mask = (sci_weight_data == 0) | (ref_weight_data == 0)
-            sci_data[image_mask] = 0
-            ref_data[image_mask] = 0
+            ref_weight_img = self.open_fits(self.get_path(ref_mask_path))
+            sci_weight_img = self.open_fits(self.get_path(sci_mask_path))
 
-            scorr_mask_data = sci_weight_data * ref_weight_data
-            scorr_header = sci_weight_header
+            image_mask = (sci_weight_img == 0) | (ref_weight_img == 0)
+            image[image_mask] = 0
+            ref_img[image_mask] = 0
+
+            scorr_mask_data = sci_weight_img.data * ref_weight_img.data
+            scorr_header = sci_weight_img.get_header()
+
+            scorr_weight_img = Image(data=scorr_mask_data, header=scorr_header)
+
             scorr_mask_path = sci_img_path.replace('.fits', '.scorr.weight.fits')
-            self.save_fits(data=scorr_mask_data,
-                           header=scorr_header,
-                           path=os.path.join(self.get_sub_output_dir(), scorr_mask_path)
-                           )
+            self.save_fits(scorr_weight_img,
+                           path=self.get_path(scorr_mask_path))
 
             ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(ref_catalog_path, sci_catalog_path)
 
-            ref_data = ref_data * flux_scale
-            ref_unscaled_zp = ref_header['ZP']
-            ref_header['ZP'] = float(ref_header['ZP']) + 2.5 * np.log10(flux_scale)
+            ref_img.data *= flux_scale
+            ref_unscaled_zp = ref_img['ZP']
+            ref_img['ZP'] = float(ref_img['ZP']) + 2.5 * np.log10(flux_scale)
 
             ref_scaled_path = ref_img_path + '.scaled'
-            self.save_fits(data=ref_data,
-                           header=ref_header,
-                           path=os.path.join(self.get_sub_output_dir(), ref_scaled_path)
-                           )
+            self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
 
-            logger.info(f"Zeropoints are reference : {ref_unscaled_zp}, scaled reference : {ref_header['ZP']} and "
-                        f"science : {header[self.sci_zp_header_key]}")
+            logger.info(f"Zeropoints are reference : {ref_unscaled_zp}, "
+                        f"scaled reference : {ref_img['ZP']} and "
+                        f"science : {image[self.sci_zp_header_key]}")
             # assert(False)
-            sci_scaled_path = sci_img_path + '.scaled'
-            self.save_fits(data=sci_data,
-                           header=header,
-                           path=os.path.join(os.path.join(self.get_sub_output_dir(), sci_scaled_path))
-                           )
+            sci_scaled_path = self.get_path(sci_img_path + '.scaled')
+
+            self.save_fits(
+                image,
+                path=sci_scaled_path
+            )
+
+            self.open_fits(sci_scaled_path)
 
             sci_rms = 0.5 * (
-                    np.percentile(sci_data[sci_data != 0], 84.13) - np.percentile(sci_data[sci_data != 0], 15.86))
+                    np.percentile(image.data[image.data != 0], 84.13)
+                    - np.percentile(image.data[image.data != 0], 15.86)
+            )
             ref_rms = 0.5 * (
-                    np.percentile(ref_data[ref_data != 0], 84.13) - np.percentile(ref_data[ref_data != 0], 15.86))
-            logger.info('Science RMS is %.2f. Reference RMS is %.2f' % (sci_rms, ref_rms))
+                    np.percentile(ref_img.data[ref_img.data != 0], 84.13)
+                    - np.percentile(ref_img.data[ref_img.data != 0], 15.86)
+            )
+            logger.info(f'Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}')
 
-            sci_weight_path = os.path.join(self.get_sub_output_dir(), header[latest_mask_save_key])
-            ref_weight_path = os.path.join(self.get_sub_output_dir(), header[latest_mask_save_key])
-            sci_weight_data, _ = open_fits(sci_weight_path)
-            ref_weight_data, _ = open_fits(ref_weight_path)
+            sci_weight_path = self.get_path(image[latest_mask_save_key])
+            ref_weight_path = self.get_path(image[latest_mask_save_key])
+            sci_weight_img, _ = open_fits(sci_weight_path)
+            ref_weight_img, _ = open_fits(ref_weight_path)
 
-            image_mask = (sci_weight_data == 0) | (ref_weight_data == 0)
-            sci_data[image_mask] = 0
-            ref_data[image_mask] = 0
+            image_mask = (sci_weight_img == 0) | (ref_weight_img == 0)
+            image.data[image_mask] = 0
+            ref_img.data[image_mask] = 0
 
             # Calculate uncertainty images
-            sci_rms_image = self.get_rms_image(sci_data, header, sci_rms)
-            ref_rms_image = self.get_rms_image(ref_data, ref_header, ref_rms)
+            sci_rms_image = self.get_rms_image(image, sci_rms)
+            ref_rms_image = self.get_rms_image(ref_img, ref_rms)
 
             sci_rms_path = sci_img_path + '.unc'
             ref_rms_path = ref_img_path + '.unc'
 
-            self.save_fits(data=sci_rms_image,
-                           header=header,
-                           path=os.path.join(os.path.join(self.get_sub_output_dir(), sci_rms_path))
+            self.save_fits(sci_rms_image,
+                           path=os.path.join(self.get_path(sci_rms_path))
                            )
 
-            self.save_fits(data=ref_rms_image,
-                           header=ref_header,
-                           path=os.path.join(os.path.join(self.get_sub_output_dir(), ref_rms_path))
+            self.save_fits(ref_rms_image,
+                           path=os.path.join(self.get_path(ref_rms_path))
                            )
 
-            header['SCIRMS'] = sci_rms
-            header['REFRMS'] = ref_rms
-            header['ASTUNCX'] = ast_unc_x
-            header['ASTUNCY'] = ast_unc_y
-            header['REFFS'] = flux_scale
-            header['SCUNCPTH'] = sci_rms_path
-            header["RFUNCPTH"] = ref_rms_path
-            header["SCISCL"] = sci_scaled_path
-            header["REFSCL"] = ref_scaled_path
-            header['SCORMASK'] = scorr_mask_path
+            image['SCIRMS'] = sci_rms
+            image['REFRMS'] = ref_rms
+            image['ASTUNCX'] = ast_unc_x
+            image['ASTUNCY'] = ast_unc_y
+            image['REFFS'] = flux_scale
+            image['SCUNCPTH'] = sci_rms_path
+            image["RFUNCPTH"] = ref_rms_path
+            image["SCISCL"] = sci_scaled_path
+            image["REFSCL"] = ref_scaled_path
+            image['SCORMASK'] = scorr_mask_path
 
-        return images, headers
+        return batch
+
+
+class ZOGY(ZOGYPrepare):
+    base_key = "ZOGY"
+
+    def __init__(self,
+                 output_sub_dir: str = "sub",
+                 sci_zp_header_key: str = "ZP",
+                 *args,
+                 **kwargs):
+        super(ZOGY, self).__init__(*args, **kwargs)
+        self.output_sub_dir = output_sub_dir
+        self.sci_zp_header_key = sci_zp_header_key
+
+    def _apply_to_images(
+            self,
+            batch: ImageBatch,
+    ) -> ImageBatch:
+        diff_batch = ImageBatch()
+        for ind, image in enumerate(batch):
+            sci_image_path = self.get_path(image["SCISCL"])
+            ref_image_path = self.get_path(image["REFSCL"])
+            sci_rms = image["SCIRMS"]
+            ref_rms = image["REFRMS"]
+            sci_psf_path = self.get_path(image[norm_psfex_header_key])
+            ref_psf_path = self.get_path(image[ref_psf_key])
+            sci_rms_path = self.get_path(image["SCUNCPTH"])
+            ref_rms_path = self.get_path(image["RFUNCPTH"])
+            ast_unc_x = image["ASTUNCX"]
+            ast_unc_y = image["ASTUNCY"]
+
+            temp_files = [sci_image_path, ref_image_path, sci_rms_path, ref_rms_path]
+
+            print(image["SCISCL"])
+
+            diff_data, diff_psf_data, s_corr_data = pyzogy(
+                new_image_path=sci_image_path,
+                ref_image_path=ref_image_path,
+                new_psf_path=sci_psf_path,
+                ref_psf_path=ref_psf_path,
+                new_sigma_path=sci_rms_path,
+                ref_sigma_path=ref_rms_path,
+                new_avg_unc=sci_rms,
+                ref_avg_unc=ref_rms,
+                dx=ast_unc_x,
+                dy=ast_unc_y
+            )
+
+            diff = Image(
+                data=diff_data,
+                header=image.get_header()
+            )
+
+            diff_image_path = sci_image_path.replace('.fits', '') + '.diff.fits'
+            diff_psf_path = diff_image_path + '.psf'
+            scorr_image_path = sci_image_path.replace('.fits', '') + '.scorr.fits'
+
+            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(s_corr)
+            logger.info(f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}")
+            sci_rms_data, _ = self.open_fits(self.get_path(sci_rms_path))
+            ref_rms_data, _ = self.open_fits(self.get_path(ref_rms_path))
+            diff_rms_image = np.sqrt(sci_rms_data ** 2 + ref_rms_data ** 2)
+            diff_rms_mean, diff_rms_median, diff_rms_std = sigma_clipped_stats(diff_rms_image)
+            diff_rms_path = diff_image_path + '.unc'
+
+            image["DIFFIMG"] = diff_image_path
+            image["DIFFPSF"] = diff_psf_path
+            image["DIFFSCR"] = scorr_image_path
+            image["DIFFUNC"] = diff_rms_path
+            noise = np.sqrt(np.nansum(np.square(diff_psf) * np.square(diff_rms_median))) / np.nansum(
+                np.square(diff_psf))
+            image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(image[self.sci_zp_header_key])
+            image["SCORMEAN"] = scorr_mean
+            image["SCORMED"] = scorr_median
+            image["SCORSTD"] = scorr_std
+
+            self.save_fits(image=diff,
+                           path=self.get_path(diff_image_path))
+
+            self.save_fits(image=diff_psf,
+                           path=self.get_path(diff_psf_path))
+
+            s_corr[latest_mask_save_key] = image['SCORMASK']
+            self.save_fits(image=s_corr,
+                           path=self.get_path(scorr_image_path))
+
+            self.save_fits(image=diff_rms_image,
+                           path=self.get_path(diff_rms_path))
+            # logger.info(f"{diff_rms_std}, {diff_rms_median}, {diff_std} DIFFMAGLIM {header['DIFFMLIM']}")
+            # # for temp_file in temp_files:
+
+            # for temp_file in temp_files:
+
+            #     os.remove(temp_file)
+            #     logger.info(f"Deleted temporary file {temp_file}")
+            diff_batch.append(diff)
+        return diff_batch
