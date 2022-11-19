@@ -5,6 +5,7 @@ Python script containing all IO functions.
 from astropy.io import fits
 import numpy as np
 import astropy.io.fits
+from pathlib import Path
 
 
 def create_fits(
@@ -27,7 +28,7 @@ def create_fits(
 def save_to_path(
         data: np.ndarray,
         header: astropy.io.fits.Header | None,
-        path: str,
+        path: str | Path,
         overwrite: bool = True
 ):
     """
@@ -44,7 +45,7 @@ def save_to_path(
 
 
 def open_fits(
-        path: str
+        path: str | Path
 ) -> tuple[np.ndarray, astropy.io.fits.Header]:
     """
     Function to open a fits file saved to <path>
