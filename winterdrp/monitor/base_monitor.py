@@ -269,7 +269,7 @@ class Monitor:
         if self.postprocess_configurations is not None:
 
             postprocess_config = [ImageLoader(
-                load_image=self.pipeline.load_raw_image,
+                load_image=self.pipeline.unpack_raw_image,
                 input_sub_dir=self.sub_dir,
                 input_img_dir=str(Path(self.raw_image_directory)).split(self.pipeline_name)[0]
             )]
@@ -292,6 +292,7 @@ class Monitor:
                     self.latest_csv_log = processor.get_output_path()
 
             _, errorstack = self.pipeline.reduce_images(
+                dataset=Dataset(ImageBatch()),
                 selected_configurations=protected_key,
                 catch_all_errors=True
             )
@@ -352,13 +353,14 @@ class Monitor:
 
                         is_science = img["OBSCLASS"] == "science"
 
-                        all_img = ImageBatch([img] + copy.deepcopy(self.cal_images))
+                        all_img = ImageBatch(img) + copy.deepcopy(self.cal_images)
 
                         if not is_science:
                             print(f"Skipping {event.src_path} (calibration image)")
                         else:
                             print(f"Reducing {event.src_path} (science image) on thread {threading.get_ident()}")
                             _, errorstack = self.pipeline.reduce_images(
+                                dataset=Dataset(all_img),
                                 selected_configurations=self.realtime_configurations,
                                 catch_all_errors=True
                             )

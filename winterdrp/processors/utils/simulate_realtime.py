@@ -43,14 +43,12 @@ class RealtimeImageSimulator(BaseImageProcessor):
 
             img_path = self.input_img_dir.joinpath(image_name)
 
-            logger.info(img_path)
-
             output_path = Path(get_output_dir(
                 dir_root=self.output_dir_name,
                 sub_dir=self.night_sub_dir,
                 output_dir=self.output_dir
             ))
-            logger.info(output_path)
+            logger.debug(f"Copying {img_path} to {output_path}")
 
             if not output_path.exists():
                 output_path.mkdir(parents=True)

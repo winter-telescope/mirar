@@ -71,6 +71,9 @@ class Pipeline:
         data, header = self._load_raw_image(path)
         return Image(data=data, header=header)
 
+    def unpack_raw_image(self, path: str) -> tuple[np.ndarray, astropy.io.fits.Header]:
+        return self._load_raw_image(path)
+
     @staticmethod
     def configure_processors(
             processors: list[BaseProcessor],

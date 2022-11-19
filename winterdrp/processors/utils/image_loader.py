@@ -25,7 +25,7 @@ class ImageLoader(BaseImageProcessor):
             self,
             input_sub_dir: str = raw_img_sub_dir,
             input_img_dir: str = base_raw_dir,
-            load_image: Callable = open_fits,
+            load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
             *args,
             **kwargs
     ):
