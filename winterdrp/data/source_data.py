@@ -9,26 +9,26 @@ class SourceTable(DataBlock):
             source_list: pd.DataFrame,
     ):
 
-        self._source_list = source_list
-        self._metadata = dict()
+        self.source_list = source_list
+        self.metadata = dict()
 
     def get_data(self) -> pd.DataFrame:
-        return self._source_list
+        return self.source_list
 
     def set_data(self, source_list: pd.DataFrame):
-        self._source_list = source_list
+        self.source_list = source_list
 
     def get_metadata(self) -> dict:
-        return self._metadata
+        return self.metadata
 
     def __getitem__(self, item):
-        return self._metadata.__getitem__(item)
+        return self.metadata.__getitem__(item)
 
     def __setitem__(self, key, value):
-        self._metadata.__setitem__(key, value)
+        self.metadata.__setitem__(key, value)
 
     def keys(self):
-        return self._metadata.keys()
+        return self.metadata.keys()
 
 
 class SourceBatch(DataBatch):

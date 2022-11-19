@@ -22,8 +22,8 @@ class Image(DataBlock):
             header: Header,
     ):
 
-        self._data = data
-        self._header = header
+        self.data = data
+        self.header = header
         self.raw_img_list = self[raw_img_key].split(",")
         self.base_name = self[base_name_key]
 
@@ -32,16 +32,16 @@ class Image(DataBlock):
                f"built from {self.get_name()}>"
 
     def get_data(self) -> np.ndarray:
-        return self._data
+        return self.data
 
     def set_data(self, data: np.ndarray):
-        self._data = data
+        self.data = data
 
     def get_header(self) -> Header:
-        return self._header
+        return self.header
 
     def set_header(self, header: Header):
-        self._header = header
+        self.header = header
 
     def get_name(self) -> str:
         return self.base_name
@@ -50,13 +50,13 @@ class Image(DataBlock):
         return self.raw_img_list
 
     def __getitem__(self, item):
-        return self._header.__getitem__(item)
+        return self.header.__getitem__(item)
 
     def __setitem__(self, key, value):
-        self._header.__setitem__(key, value)
+        self.header.__setitem__(key, value)
 
     def keys(self):
-        return self._header.keys()
+        return self.header.keys()
 
 
 class DifferenceImage(Image):
