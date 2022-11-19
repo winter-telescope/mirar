@@ -126,13 +126,15 @@ class ImageHandler:
     ) -> Image:
         path = str(path)
         data, header = open_fits(path)
-        header[raw_img_key] = path
-        header[base_name_key] = Path(path).name
+        if raw_img_key not in header:
+            header[raw_img_key] = path
+        if base_name_key not in header:
+            header[base_name_key] = Path(path).name
         return Image(data=data, header=header)
 
     @staticmethod
     def save_fits(
-            image,
+            image: Image,
             path: str | Path,
     ):
         path = str(path)
