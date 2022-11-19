@@ -114,7 +114,7 @@ class Pipeline:
 
     def reduce_images(
             self,
-            dataset: Dataset = Dataset(),
+            dataset: Dataset,
             output_error_path: str = None,
             catch_all_errors: bool = True,
             selected_configurations: str | list[str] = None
