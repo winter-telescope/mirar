@@ -6,12 +6,17 @@ build:
     python: "3.10"
   jobs:
     post_create_environment:
-      - echo "Command run at 'pre_create_environment' step"
-      - python -m pip install --upgrade --no-cache-dir pip setuptools
-      # https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions
-      - curl -sSL https://install.python-poetry.org | python3 -
-      # Install project's dependencies
-      - $HOME/.local/bin/poetry install --with docs
-    post_build:
-      - echo "Command run at 'post_build' step"
-      - echo `date`
+      - echo "Command run at 'post_create_environment' step"
+#      - python -m pip install --upgrade --no-cache-dir pip setuptools
+#      # https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions
+#      - curl -sSL https://install.python-poetry.org | python3 -
+#      # Tell poetry to not use a virtual environment
+#      - $HOME/.local/bin/poetry config virtualenvs.create false
+#      # Install project's dependencies
+#      - $HOME/.local/bin/poetry install --with docs
+
+python:
+  install:
+    - requirements: docs/requirements.txt
+    - method: pip
+      path: .
