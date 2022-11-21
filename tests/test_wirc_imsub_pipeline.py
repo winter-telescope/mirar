@@ -13,13 +13,19 @@ from winterdrp.processors.reference import Reference
 from winterdrp.pipelines.wirc.blocks import subtract
 from winterdrp.pipelines.wirc.generator import wirc_reference_image_resampler, wirc_reference_sextractor, \
     wirc_reference_psfex
+try:
+    from winterdrp.data import Dataset, ImageBatch
+except ImportError:
+    pass
+
 
 logger = logging.getLogger(__name__)
+
+logging.basicConfig(level=logging.INFO)
 
 test_data_dir = get_test_data_dir()
 
 ref_img_directory = os.path.join(test_data_dir, 'wirc/ref')
-print(ref_img_directory)
 
 
 def test_reference_image_generator(
@@ -68,11 +74,14 @@ class TestWircImsubPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc imsub pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+        try:
+            res, errorstack = pipeline.reduce_images(dataset=Dataset(ImageBatch()), catch_all_errors=False)
+        except NameError:
+            pipeline.reduce_images([[[], []]], catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
 
-        header = res[0][1][0]
+        header = res[0][0].get_header()
 
         for key, value in expected_values.items():
             if isinstance(value, float):
@@ -89,7 +98,7 @@ if __name__ == "__main__":
 
     # Code to generate updated ZP dict of the results change
 
-    new_res, new_errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+    new_res, new_errorstack = pipeline.reduce_images(catch_all_errors=False)
 
     new_header = new_res[0][1][0]
 
