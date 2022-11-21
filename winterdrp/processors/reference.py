@@ -70,22 +70,20 @@ class Reference(BaseImageProcessor):
 
         for ind, image in enumerate(batch):
 
-            ref_image = self.ref_image_generator(image)
-            ref_image_path = ref_image.write_reference(header=image, output_dir=self.get_sub_output_dir())
+            ref_image_writer = self.ref_image_generator(image)
 
-            ref_data, ref_header = open_fits(ref_image_path)
+            ref_image_path = ref_image_writer.write_reference(image, output_dir=self.get_sub_output_dir())
 
-            if not (base_name_key in ref_header.keys()):
+            ref_image = self.open_fits(ref_image_path)
+
+            if base_name_key not in ref_image.keys():
                 logger.debug(os.path.basename(ref_image_path))
-                ref_header[base_name_key] = os.path.basename(ref_image_path)
+                ref_image[base_name_key] = os.path.basename(ref_image_path)
 
-            if not (raw_img_key in ref_header.keys()):
-                ref_header[raw_img_key] = ref_image_path
+            if raw_img_key not in ref_image.keys():
+                ref_image[raw_img_key] = ref_image_path
 
-            ref_image = Image(ref_data, ref_header)
-
-            # ref_header[base_name_key] = ref_header[base_name_key] + '_ref'
-            ref_gain = ref_header['GAIN']
+            ref_gain = ref_image['GAIN']
 
             sci_x_cent, sci_y_cent = image['NAXIS1'] / 2, image['NAXIS2'] / 2
 
@@ -94,10 +92,14 @@ class Reference(BaseImageProcessor):
 
             [sci_ra_cent, sci_dec_cent] = wcs.all_pix2world(sci_x_cent, sci_y_cent, 1)
             sci_pixscale = np.abs(image['CD1_1']) * 3600
-            sci_x_imgsize, sci_y_imgsize = image['NAXIS1'], image['NAXIS2']
+
+            sci_x_imgsize = image['NAXIS1']
+            sci_y_imgsize = image['NAXIS2']
+
             sci_gain = image['GAIN']
 
             propogate_headerlist = ['TMC_ZP', 'TMC_ZPSD']
+
             ref_resampler = self.ref_swarp_resampler(
                 pixscale=sci_pixscale,
                 x_imgpixsize=sci_x_imgsize,
@@ -114,7 +116,7 @@ class Reference(BaseImageProcessor):
             )
 
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
-            resampled_ref_img = ref_resampler.apply(ImageBatch([ref_image]))[0]
+            resampled_ref_img = ref_resampler.apply(ImageBatch(ref_image))[0]
 
             self.save_fits(resampled_ref_img,
                            path=os.path.join(self.get_sub_output_dir(), resampled_ref_img.get_name()))
@@ -122,8 +124,6 @@ class Reference(BaseImageProcessor):
             ref_resamp_x_cent, ref_resamp_y_cent, ref_resamp_ra_cent, ref_resamp_dec_cent, \
                 ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
                 ref_resamp_gain = self.get_image_header_params(resampled_ref_img)
-
-            sci_gain = image['GAIN']
 
             sci_resampler = self.ref_swarp_resampler(
                 pixscale=ref_resamp_pixscale,
@@ -167,6 +167,8 @@ class Reference(BaseImageProcessor):
                 gain=sci_resamp_gain
             )
 
+            # I (RS) changed this, since I think there was a bug?
+            # resampled_sci_sextractor_img = ref_sextractor.apply(ImageBatch(resampled_sci_img))[0]
             resampled_sci_sextractor_img = ref_sextractor.apply(ImageBatch(resampled_sci_img))[0]
             self.save_fits(resampled_sci_sextractor_img,
                            path=os.path.join(self.get_sub_output_dir(), resampled_sci_sextractor_img.get_name()))

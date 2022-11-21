@@ -6,6 +6,7 @@ import numpy as np
 from astropy.time import Time
 from astropy.table import Table
 from astropy.wcs import WCS
+from winterdrp.data import Image
 
 logger = logging.getLogger(__name__)
 
@@ -120,8 +121,10 @@ class PS1Ref(BaseReferenceGenerator):
 
     def get_reference(
             self,
-            header: fits.Header
+            image: Image
     ) -> fits.PrimaryHDU:
+        header = image.get_header()
+
         nx, ny = header['NAXIS1'], header['NAXIS2']
         dx, dy = header['CD1_1'], header['CD2_2']
         img_size_deg = np.max([dx * nx, dy * ny])
@@ -133,7 +136,8 @@ class PS1Ref(BaseReferenceGenerator):
         ps1_img_size_pix = img_size_arcsec / 0.25
         fitsurl = self.geturl(ra_cent, dec_cent, size=ps1_img_size_pix, filters=self.filter_name, format="fits")
         logger.info(fitsurl)
-        refHDU = fits.open(fitsurl[0])[0]
+        with fits.open(fitsurl[0]) as hdul:
+            refHDU = hdul.copy()[0]
         refHDU.header['GAIN'] = refHDU.header['CELL.GAIN']
         refHDU.header['ZP'] = refHDU.header['FPA.ZP']
         del refHDU.header['HISTORY']
