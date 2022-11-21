@@ -16,18 +16,15 @@ Creating recipes
 ----------------
 
 To retrieve a list of random ingredients,
-you can use the ``lumache.get_random_ingredients()`` function:
+you can use the ``winterdrp.pipelines.get_pipeline()`` function:
 
-.. autofunction:: lumache.get_random_ingredients
+.. autofunction:: winterdrp.pipelines.get_pipeline
 
 The ``kind`` parameter should be either ``"meat"``, ``"fish"``,
-or ``"veggies"``. Otherwise, :py:func:`lumache.get_random_ingredients`
+or ``"veggies"``. Otherwise, :py:func:`winterdrp.pipelines.get_pipeline`
 will raise an exception.
-
-.. autoexception:: lumache.InvalidKindError
 
 For example:
 
->>> import lumache
->>> lumache.get_random_ingredients()
-['shells', 'gorgonzola', 'parsley']
+>>> from winterdrp.pipelines import Pipeline
+>>> print(Pipeline.pipelines.keys())
