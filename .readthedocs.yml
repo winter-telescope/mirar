@@ -14,9 +14,8 @@ build:
       - $HOME/.local/bin/poetry config virtualenvs.create false
       # Install project's dependencies
       - $HOME/.local/bin/poetry install --with docs
+      - pip install -e .
 
 python:
   install:
     - requirements: docs/requirements.txt
-    - method: pip
-      path: .
