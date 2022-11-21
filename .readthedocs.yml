@@ -10,6 +10,7 @@ build:
       - python -m pip install --upgrade --no-cache-dir pip setuptools
       # https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions
       - curl -sSL https://install.python-poetry.org | python3 -
+    post_checkout:
       # Install project's dependencies
       - $HOME/.local/bin/poetry install --with docs
     post_build:
