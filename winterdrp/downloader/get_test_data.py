@@ -13,11 +13,20 @@ test_data_dir = os.path.join(
 
 TEST_DATA_TAG = "v0.1.4"
 
-TEST_DATA_ENV = f"{package_name}_testdata_check"
+COMPLETED_CHECK_BOOL = f"{package_name}_testdata_check"
+NEED_TEST_DATA = f"TESTDATA_CHECK"
 
 
-def test_data_check():
-    return bool(os.environ.get(TEST_DATA_ENV, default=False))
+def do_testdata_check():
+    return bool(os.environ.get(NEED_TEST_DATA, default=False))
+
+
+def completed_testdata_check():
+    return bool(os.environ.get(COMPLETED_CHECK_BOOL, default=False))
+
+
+def require_test_data():
+    os.environ[NEED_TEST_DATA] = "True"
 
 
 def update_test_data():
@@ -44,11 +53,11 @@ def update_test_data():
     logger.info(f"Checkout out correct test data commit. Executing: {fix_version_cmd}")
 
     os.system(fix_version_cmd)
-    os.environ[TEST_DATA_ENV] = "True"
+    os.environ[COMPLETED_CHECK_BOOL] = "True"
 
 
 def get_test_data_dir() -> str:
-    if not test_data_check():
+    if do_testdata_check() and not completed_testdata_check():
         update_test_data()
     return test_data_dir
 
