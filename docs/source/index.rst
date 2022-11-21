@@ -1,5 +1,5 @@
 Welcome to the winterdrp documentation!
-===================================
+=======================================
 
 Winterdrp is a modular, flexible, open-source code to reduce analyse astronomy images, built using python 3.11.
 
@@ -14,5 +14,11 @@ Contents
 --------
 
 .. toctree::
+    :maxdepth: 2
 
-   usage
+    usage
+
+.. toctree::
+    :maxdepth: 4
+
+    modules.sub
