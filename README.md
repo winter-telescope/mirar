@@ -15,7 +15,7 @@ Instructions for .env
 1. Copy the `.env.example` file to the root of the project and update the environment variables.
 2. Name this file `.env`
 
-Install Instructions
+# Install Instructions
 
 winterdrp uses poetry for dependency management. You can install the code in the following way:
 
@@ -29,3 +29,11 @@ poetry install
 This will install the combination of python dependencies which we have tested. You can then use winterdrp from the command line:
 
 ```python -m winterdrp ......```
+
+# Testing
+
+You can run the tests with:
+
+```TESTDATA_CHECK="True" python -m unittest tests/test_wirc_imsub_pipeline.py```
+
+This will check that the correct test data version is available, and then run all the tests.
