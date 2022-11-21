@@ -7,9 +7,9 @@ build:
   jobs:
     pre_create_environment:
       - echo "Command run at 'pre_create_environment' step"
-      - $HOME/.local/bin/python -m pip install --upgrade --no-cache-dir pip setuptools
-      - $HOME/.local/bin/python -m pip install poetry
-      - $HOME/.local/bin/poetry install --with docs
+      - python -m pip install --upgrade --no-cache-dir pip setuptools
+      - python -m pip install poetry
+      - poetry install --with docs
     post_build:
       - echo "Command run at 'post_build' step"
       - echo `date`
