@@ -1,13 +1,14 @@
+from winterdrp.paths import package_name, __version__
 # Configuration file for the Sphinx documentation builder.
 
 # -- Project information
 
-project = 'winterdrp'
+project = package_name
 copyright = '2022, Stein'
 author = 'Stein'
 
-release = '0.1'
-version = '0.1.0'
+release = __version__
+version = __version__
 
 # -- General configuration
 
