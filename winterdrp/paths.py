@@ -35,9 +35,9 @@ if base_output_dir is None:
     err = "No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. " \
           "The output directory will need to be specified manually for path functions."
     logger.warning(err)
-    base_output_dir = os.environ.get("HOME", "/")
-
-base_output_dir = Path(base_output_dir)
+    base_output_dir = Path.home()
+else:
+    base_output_dir = Path(base_output_dir)
 
 raw_img_sub_dir = "raw"
 
