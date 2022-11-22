@@ -67,6 +67,11 @@ jobs:
           sudo service postgresql restart
           sudo -u postgres psql -c "create user runner; grant all privileges on database postgres to runner; ALTER USER runner WITH SUPERUSER;"
 
+      # First make sure the doc tests are up to date
+      - name: Run doc tests
+        run: |
+          - make -C docs doctest
+
       # Runs a set of commands using the runners shell
       - name: Test the code
         env:
@@ -79,7 +84,6 @@ jobs:
           WATCHDOG_EMAIL_PASSWORD: ${{ secrets.WATCHDOG_EMAIL_PASSWORD }}
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}
         run: |
-          make -C docs doctest
           TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
 
       - name: Run Coveralls
