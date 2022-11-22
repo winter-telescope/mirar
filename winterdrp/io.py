@@ -9,7 +9,7 @@ import astropy.io.fits
 
 def create_fits(
         data: np.ndarray,
-        header: astropy.io.fits.Header
+        header: astropy.io.fits.Header | None
 ) -> astropy.io.fits.PrimaryHDU:
     """
     Return an astropy PrimaryHDU object created with <data> and <header>
@@ -19,13 +19,14 @@ def create_fits(
     :return: astropy PrimaryHDU object containing the image data and header
     """
     proc_hdu = fits.PrimaryHDU(data)
-    proc_hdu.header = header
+    if header is not None:
+        proc_hdu.header = header
     return proc_hdu
 
 
 def save_to_path(
         data: np.ndarray,
-        header: astropy.io.fits.Header,
+        header: astropy.io.fits.Header | None,
         path: str,
         overwrite: bool = True
 ):
