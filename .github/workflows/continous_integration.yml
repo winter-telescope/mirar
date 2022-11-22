@@ -70,7 +70,9 @@ jobs:
       # First make sure the doc tests are up to date
       - name: Run doc tests
         run: |
-          - make -C docs doctest
+          - cd docs
+          - make doctest
+          - cd ..
 
       # Runs a set of commands using the runners shell
       - name: Test the code
