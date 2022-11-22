@@ -55,8 +55,8 @@ test_imsub_configuration = [
     ),
     Reference(
         ref_image_generator=test_reference_image_generator,
-        ref_swarp_resampler=wirc_reference_image_resampler,
-        ref_sextractor=wirc_reference_sextractor,
+        swarp_resampler=wirc_reference_image_resampler,
+        sextractor=wirc_reference_sextractor,
         ref_psfex=wirc_reference_psfex
     ),
 ] + subtract

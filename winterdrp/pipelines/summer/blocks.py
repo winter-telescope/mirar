@@ -148,8 +148,8 @@ subtract = [
     Reference(
         ref_image_generator=summer_reference_image_generator,
         ref_psfex=summer_reference_psfex,
-        ref_sextractor=summer_reference_sextractor,
-        ref_swarp_resampler=summer_reference_image_resampler
+        sextractor=summer_reference_sextractor,
+        swarp_resampler=summer_reference_image_resampler
     ),
     Sextractor(
         output_sub_dir='subtract',

@@ -7,6 +7,7 @@ from winterdrp.pipelines.summer.summer_pipeline import SummerPipeline
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.pipelines.summer.blocks import subtract
 from winterdrp.pipelines.summer.load_summer_image import load_proc_summer_image
+from winterdrp.data import Dataset, ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +29,11 @@ class TestSummerPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+        res, errorstack = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res[0][0]), 1)
 
-        header = res[0][1][0]
+        header = res[0][0].get_header()
 
         for key, value in expected_values.items():
             if isinstance(value, float):
