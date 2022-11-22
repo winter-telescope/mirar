@@ -31,6 +31,9 @@ watchdog = "^2.1.9"
 wget = "^3.2"
 toml = "^0.10.2"
 
+[tool.poetry.group.docs.dependencies]
+sphinx = "^5.3.0"
+
 [build-system]
 requires = ["setuptools", "wheel", "poetry-core",]
 build-backend = "poetry.core.masonry.api"
