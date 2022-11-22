@@ -2,7 +2,9 @@ Since _winterdrp_ is an open-source software project, *anyone* can contribute it
 
 We have a few general guidelines that are helpful for keeping things organised:
 
-* *Use Github Issues* to coordinate your development. Whether you found a bug, you want to request an enhancement, or you're actively developing a new feature, Github Issues is a great place to keep everyone informed about what you're working on. Click on the label button to provide more info about your topic. Every time you make a relevant commit, remember to tag the issue (e.g `git commit -m 'progress on #12'`), and when you finish and issue you can close it with a commit too! (e.g `git commit -m 'Close #12`')
+* *Use Github Pull Requests* We like to make sure that the code stays working. So if you are developing something, create a fork of the repo and open a branch. Develop away, and when you are ready, open a pull request. We can then review the code and approve the PR to merge your changes into the main codebase. 
+
+* *Use Github Issues* to coordinate your development. Whether you found a bug, you want to request an enhancement, or you're actively developing a new feature, Github Issues is a great place to keep everyone informed about what you're working on. Click on the label button to provide more info about your topic. Every time you make a relevant PR, remember to tag the issue (e.g `git commit -m 'progress on #12'`), and when you finish and issue you can close it with a commit too! (e.g `git commit -m 'Close #12`').
 
 * *Keep Github Actions Happy!* Github Actions runs all of our unit tests, to make sure you didn't break anything with your commit. You can see if the CI is happy by checking on the github page (look for the badge [![CI](https://github.com/winter-telescope/winterdrp/actions/workflows/continous_integration.yml/badge.svg)](https://github.com/winter-telescope/winterdrp/actions/workflows/continous_integration.yml), or a tick/cross next to your commit). If your commit failed, be sure to check the Github Actions website logs, to see exactly what went wrong.
 
