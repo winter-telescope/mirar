@@ -1,5 +1,7 @@
 """
 Python script containing all IO functions.
+
+All opening/writing of fits files should run via this script.
 """
 
 from astropy.io import fits
