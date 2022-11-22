@@ -9,9 +9,11 @@ build:
       - echo "Command run at 'post_create_environment' step"
       - python -m pip install --upgrade --no-cache-dir pip setuptools
       - pip install -e .
-      - export RAW_DATA_DIR=/
-      - export OUTPUT_DATA_DIR=/
 
 sphinx:
   builder: html
   fail_on_warning: false
+
+formats:
+  - pdf
+  - epub
