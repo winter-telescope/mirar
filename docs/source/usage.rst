@@ -25,9 +25,17 @@ will raise an exception.
 
 For example:
 
+.. testsetup::
+   :skipif: pd is None
+
+   data = pd.Series([42])
+
+.. doctest::
+   :skipif: pd is None
+
+   >>> data.iloc[0]
+
 .. doctest::
 
     >>>from winterdrp.pipelines import Pipeline
     >>>print(Pipeline.pipelines.keys())
-
-This parrot wouldn't voom if you put 3000 volts through it!
