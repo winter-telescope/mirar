@@ -40,7 +40,7 @@ Now you should have installed winterdrp. You can check it worked by opening up p
 
     >>> from winterdrp.paths import package_name, __version__
     >>> print(f"This is the {package_name} package, version {__version__}")
-    This is the winterdrp package, version 0.4.4
+    This is the winterdrp package, version 0.4.3
 
 Non-python dependencies
 -----------------------
@@ -56,7 +56,7 @@ Dependencies include:
 * `psfex <https://www.astromatic.net/software/psfex/>`_
 * `postgreSQL <https://www.postgresql.org/download/>`_
 
-PostgreSQL is relatively straightfoward to install viua the `official website <https://www.postgresql.org/download/>`_.
+PostgreSQL is relatively straightfoward to install via the `official website <https://www.postgresql.org/download/>`_.
 The other packages might be more complicated, and will depend on your platform.
 
 astromatic software with apt-get (Linux only)
