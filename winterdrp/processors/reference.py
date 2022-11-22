@@ -22,8 +22,8 @@ class Reference(BaseImageProcessor):
 
     def __init__(self,
                  ref_image_generator: Callable[..., BaseReferenceGenerator],
-                 ref_swarp_resampler: Callable[..., Swarp],
-                 ref_sextractor: Callable[..., Sextractor],
+                 swarp_resampler: Callable[..., Swarp],
+                 sextractor: Callable[..., Sextractor],
                  ref_psfex: Callable[..., PSFex],
                  temp_output_subtract_dir: str = "subtract",
                  *args,
@@ -31,9 +31,9 @@ class Reference(BaseImageProcessor):
                  ):
         super(Reference, self).__init__(*args, **kwargs)
         self.ref_image_generator = ref_image_generator
-        self.ref_swarp_resampler = ref_swarp_resampler
-        self.ref_sextractor = ref_sextractor
-        self.ref_psfex = ref_psfex
+        self.swarp_resampler = swarp_resampler
+        self.sextractor = sextractor
+        self.psfex = ref_psfex
         self.temp_output_subtract_dir = temp_output_subtract_dir
 
     def get_sub_output_dir(self):
@@ -83,7 +83,7 @@ class Reference(BaseImageProcessor):
                 ref_image[base_name_key] = base_name
 
             if raw_img_key not in ref_image.keys():
-                ref_image[raw_img_key] = ref_image_path
+                ref_image[raw_img_key] = str(ref_image_path)
 
             ref_gain = ref_image['GAIN']
 
@@ -102,7 +102,8 @@ class Reference(BaseImageProcessor):
 
             propogate_headerlist = ['TMC_ZP', 'TMC_ZPSD']
 
-            ref_resampler = self.ref_swarp_resampler(
+            # Resample ref image onto science image
+            ref_resampler = self.swarp_resampler(
                 pixscale=sci_pixscale,
                 x_imgpixsize=sci_x_imgsize,
                 y_imgpixsize=sci_y_imgsize,
@@ -127,7 +128,8 @@ class Reference(BaseImageProcessor):
                 ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
                 ref_resamp_gain = self.get_image_header_params(resampled_ref_img)
 
-            sci_resampler = self.ref_swarp_resampler(
+            # This is a fall back if the ref image resampling by Swarp fails
+            sci_resampler = self.swarp_resampler(
                 pixscale=ref_resamp_pixscale,
                 x_imgpixsize=ref_resamp_x_imgsize,
                 y_imgpixsize=ref_resamp_y_imgsize,
@@ -145,7 +147,9 @@ class Reference(BaseImageProcessor):
 
             resampled_sci_image_batch = sci_resampler.apply(ImageBatch([image]))
 
-            ref_sextractor = self.ref_sextractor(
+            # Detect source in reference image, and save as catalog
+
+            ref_sextractor = self.sextractor(
                 output_sub_dir=self.temp_output_subtract_dir,
                 gain=ref_resamp_gain
             )
@@ -159,25 +163,26 @@ class Reference(BaseImageProcessor):
                            path=rrsi_path)
             logger.info(f"Saved reference image to {rrsi_path}")
 
+            # Detect source in the science image
+
             sci_resamp_x_cent, sci_resamp_y_cent, sci_resamp_ra_cent, sci_resamp_dec_cent, \
                 sci_resamp_pixscale, sci_resamp_x_imgsize, sci_resamp_y_imgsize, \
                 sci_resamp_gain = self.get_image_header_params(resampled_ref_img)
 
-            sci_sextractor = self.ref_sextractor(
+            sci_sextractor = self.sextractor(
                 output_sub_dir=self.temp_output_subtract_dir,
                 gain=sci_resamp_gain
             )
 
-            # I (RS) changed this, since I think there was a bug?
-            # resampled_sci_sextractor_img = ref_sextractor.apply(ImageBatch(resampled_sci_img))[0]
             resampled_sci_sextractor_img = sci_sextractor.apply(resampled_sci_image_batch)[0]
             self.save_fits(resampled_sci_sextractor_img,
                            path=os.path.join(self.get_sub_output_dir(), resampled_sci_sextractor_img.get_name()))
 
-            ref_psfex = self.ref_psfex(output_sub_dir=self.temp_output_subtract_dir, norm_fits=True)
+            ref_psfex = self.psfex(output_sub_dir=self.temp_output_subtract_dir, norm_fits=True)
 
             resampled_ref_sextractor_img = ref_psfex.apply(ImageBatch(resampled_ref_sextractor_img))[0]
 
+            # Copy over header keys from ref to sci
             resampled_sci_sextractor_img[ref_psf_key] = resampled_ref_sextractor_img[norm_psfex_header_key]
             resampled_sci_sextractor_img[ref_img_key] = resampled_ref_sextractor_img[base_name_key]
 
