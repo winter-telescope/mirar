@@ -19,3 +19,17 @@ The documentation (generated primarily from docstrings) can be modified with the
 ```bash
 sphinx-apidoc -o source/ ../winterdrp --module-first --force
 ```
+
+## Checking the tests locally
+
+You can run the tests with:
+
+```TESTDATA_CHECK="True" python -m unittest discover tests/```
+
+This will check that the correct test data version is available, and then run all the tests.
+
+You can also check the code contained within the docstrings/documentation:
+
+```bash
+poetry run make -C docs/ doctest
+```
