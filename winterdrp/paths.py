@@ -29,12 +29,16 @@ if base_raw_dir is None:
           "The raw data directory will need to be specified manually for path function."
     logger.warning(err)
 
-base_output_dir = Path(os.getenv("OUTPUT_DATA_DIR"))
+_base_output_dir = os.getenv("OUTPUT_DATA_DIR")
 
-if base_output_dir is None:
-    err = "No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. " \
-          "The output directory will need to be specified manually for path functions."
+if _base_output_dir is None:
+    default = Path.home()
+    err = f"No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. " \
+          f"The output directory is being set to {default}."
     logger.warning(err)
+    base_output_dir = default
+else:
+    base_output_dir = Path(_base_output_dir)
 
 raw_img_sub_dir = "raw"
 
