@@ -6,7 +6,7 @@
 
 Open-source modular python package for astronomy image reduction.
 
-Check out our [documentation](https://readthedocs.org/projects/winterdrp/badge/?version=latest) to learn more.
+Check out our [documentation](https://winterdrp.readthedocs.io/en/latest/?badge=latest) to learn more.
 
 # Testing
 
