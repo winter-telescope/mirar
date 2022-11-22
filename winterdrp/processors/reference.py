@@ -12,6 +12,7 @@ from winterdrp.processors.astromatic.psfex.psfex import PSFex
 from winterdrp.io import open_fits
 from astropy.wcs import WCS
 from winterdrp.data import ImageBatch, Image
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -70,15 +71,16 @@ class Reference(BaseImageProcessor):
 
         for ind, image in enumerate(batch):
 
-            ref_image_writer = self.ref_image_generator(image)
+            ref_writer = self.ref_image_generator(image)
 
-            ref_image_path = ref_image_writer.write_reference(image, output_dir=self.get_sub_output_dir())
+            ref_image_path = ref_writer.write_reference(image, output_dir=self.get_sub_output_dir())
 
             ref_image = self.open_fits(ref_image_path)
 
             if base_name_key not in ref_image.keys():
-                logger.debug(os.path.basename(ref_image_path))
-                ref_image[base_name_key] = os.path.basename(ref_image_path)
+                base_name = Path(ref_image_path).name
+                logger.debug(f"Setting basename to {base_name})")
+                ref_image[base_name_key] = base_name
 
             if raw_img_key not in ref_image.keys():
                 ref_image[raw_img_key] = ref_image_path
@@ -118,8 +120,8 @@ class Reference(BaseImageProcessor):
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
             resampled_ref_img = ref_resampler.apply(ImageBatch(ref_image))[0]
 
-            self.save_fits(resampled_ref_img,
-                           path=os.path.join(self.get_sub_output_dir(), resampled_ref_img.get_name()))
+            resampled_ref_path = os.path.join(self.get_sub_output_dir(), resampled_ref_img.get_name())
+            self.save_fits(resampled_ref_img, resampled_ref_path)
 
             ref_resamp_x_cent, ref_resamp_y_cent, ref_resamp_ra_cent, ref_resamp_dec_cent, \
                 ref_resamp_pixscale, ref_resamp_x_imgsize, ref_resamp_y_imgsize, \
@@ -142,7 +144,6 @@ class Reference(BaseImageProcessor):
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
 
             resampled_sci_image_batch = sci_resampler.apply(ImageBatch([image]))
-            resampled_sci_img = resampled_sci_image_batch[0]
 
             ref_sextractor = self.ref_sextractor(
                 output_sub_dir=self.temp_output_subtract_dir,
@@ -150,7 +151,7 @@ class Reference(BaseImageProcessor):
             )
             ref_sextractor.set_night(night_sub_dir=self.night_sub_dir)
 
-            resampled_ref_sextractor_img = ref_sextractor.apply(resampled_sci_image_batch)[0]
+            resampled_ref_sextractor_img = ref_sextractor.apply(ImageBatch(resampled_ref_img))[0]
 
             rrsi_path = os.path.join(self.get_sub_output_dir(), resampled_ref_sextractor_img.get_name())
 
@@ -169,7 +170,7 @@ class Reference(BaseImageProcessor):
 
             # I (RS) changed this, since I think there was a bug?
             # resampled_sci_sextractor_img = ref_sextractor.apply(ImageBatch(resampled_sci_img))[0]
-            resampled_sci_sextractor_img = ref_sextractor.apply(ImageBatch(resampled_sci_img))[0]
+            resampled_sci_sextractor_img = sci_sextractor.apply(resampled_sci_image_batch)[0]
             self.save_fits(resampled_sci_sextractor_img,
                            path=os.path.join(self.get_sub_output_dir(), resampled_sci_sextractor_img.get_name()))
 
