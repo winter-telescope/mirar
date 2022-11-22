@@ -51,12 +51,12 @@ We again recommend using conda. Whether you need these dependencies depends on y
 Dependencies include:
 
 * `source-extractor <https://www.astromatic.net/software/sextractor/>`_ (a.k.a sextractor)
-* `scamp <https://www.astromatic.net/software/scamp//>`_
+* `scamp <https://www.astromatic.net/software/scamp/>`_
 * `swarp <https://www.astromatic.net/software/swarp/>`_
 * `psfex <https://www.astromatic.net/software/psfex/>`_
 * `postgreSQL <https://www.postgresql.org/download/>`_
 
-PostgreSQL is relatively straightfoward to install via the `official website <https://www.postgresql.org/download/>`_.
+PostgreSQL is relatively straightforward to install via the `official website <https://www.postgresql.org/download/>`_.
 The other packages might be more complicated, and will depend on your platform.
 
 astromatic software with apt-get (Linux only)
@@ -81,22 +81,5 @@ You can try installing things via conda:
 .. code-block:: bash
 
     conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex
-
-
-Configuring variables
----------------------
-
-winterdrp has several options for execution.
-You can pass some of these as arguments, but some e.g tokens or passwords are best included as environment variables.
-
-You can find a full list of variables in `env.example`:
-
-.. literalinclude:: ../../env.example
-
-You can set these variables in the command line:
-
-.. code-block:: bash
-
-    export RAW_DATA_DIR=/home/astronomer/rawdata
 
 

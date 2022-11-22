@@ -1,6 +1,11 @@
 winterdrp.processors.astromatic.sextractor package
 ==================================================
 
+.. automodule:: winterdrp.processors.astromatic.sextractor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -24,14 +29,6 @@ winterdrp.processors.astromatic.sextractor.sourceextractor module
 -----------------------------------------------------------------
 
 .. automodule:: winterdrp.processors.astromatic.sextractor.sourceextractor
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.processors.astromatic.sextractor
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,6 +1,11 @@
 winterdrp.errors package
 ========================
 
+.. automodule:: winterdrp.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -24,14 +29,6 @@ winterdrp.errors.exceptions module
 ----------------------------------
 
 .. automodule:: winterdrp.errors.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.errors
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,6 +1,11 @@
 winterdrp package
 =================
 
+.. automodule:: winterdrp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -31,14 +36,6 @@ winterdrp.paths module
 ----------------------
 
 .. automodule:: winterdrp.paths
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp
    :members:
    :undoc-members:
    :show-inheritance:

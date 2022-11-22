@@ -7,11 +7,3 @@
 Open-source modular python package for astronomy image reduction.
 
 Check out our [documentation](https://winterdrp.readthedocs.io/en/latest/?badge=latest) to learn more.
-
-# Testing
-
-You can run the tests with:
-
-```TESTDATA_CHECK="True" python -m unittest tests/test_wirc_imsub_pipeline.py```
-
-This will check that the correct test data version is available, and then run all the tests.

@@ -1,6 +1,11 @@
 winterdrp.downloader package
 ============================
 
+.. automodule:: winterdrp.downloader
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -16,14 +21,6 @@ winterdrp.downloader.get\_test\_data module
 -------------------------------------------
 
 .. automodule:: winterdrp.downloader.get_test_data
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.downloader
    :members:
    :undoc-members:
    :show-inheritance:

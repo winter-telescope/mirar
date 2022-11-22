@@ -1,6 +1,11 @@
 winterdrp.processors.astromatic.swarp package
 =============================================
 
+.. automodule:: winterdrp.processors.astromatic.swarp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -16,14 +21,6 @@ winterdrp.processors.astromatic.swarp.swarp module
 --------------------------------------------------
 
 .. automodule:: winterdrp.processors.astromatic.swarp.swarp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.processors.astromatic.swarp
    :members:
    :undoc-members:
    :show-inheritance:

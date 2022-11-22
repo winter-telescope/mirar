@@ -1,6 +1,11 @@
 winterdrp.pipelines.wirc package
 ================================
 
+.. automodule:: winterdrp.pipelines.wirc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -40,14 +45,6 @@ winterdrp.pipelines.wirc.wirc\_pipeline module
 ----------------------------------------------
 
 .. automodule:: winterdrp.pipelines.wirc.wirc_pipeline
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.pipelines.wirc
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,6 +1,11 @@
 winterdrp.processors.database package
 =====================================
 
+.. automodule:: winterdrp.processors.database
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -40,14 +45,6 @@ winterdrp.processors.database.postgres module
 ---------------------------------------------
 
 .. automodule:: winterdrp.processors.database.postgres
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.processors.database
    :members:
    :undoc-members:
    :show-inheritance:

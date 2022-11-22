@@ -1,6 +1,11 @@
 winterdrp.references package
 ============================
 
+.. automodule:: winterdrp.references
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -32,14 +37,6 @@ winterdrp.references.wirc module
 --------------------------------
 
 .. automodule:: winterdrp.references.wirc
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.references
    :members:
    :undoc-members:
    :show-inheritance:

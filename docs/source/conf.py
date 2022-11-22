@@ -4,8 +4,8 @@ from winterdrp.paths import package_name, __version__
 # -- Project information
 
 project = package_name
-copyright = '2022, Stein'
-author = 'Stein'
+copyright = '2022, Robert Stein'
+author = 'Robert Stein'
 
 release = __version__
 version = __version__
@@ -18,7 +18,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    "sphinx.ext.viewcode"
+    "sphinx.ext.viewcode",
+    "sphinx_mdinclude"
 ]
 
 intersphinx_mapping = {

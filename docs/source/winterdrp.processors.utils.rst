@@ -1,6 +1,11 @@
 winterdrp.processors.utils package
 ==================================
 
+.. automodule:: winterdrp.processors.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -72,14 +77,6 @@ winterdrp.processors.utils.simulate\_realtime module
 ----------------------------------------------------
 
 .. automodule:: winterdrp.processors.utils.simulate_realtime
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.processors.utils
    :members:
    :undoc-members:
    :show-inheritance:

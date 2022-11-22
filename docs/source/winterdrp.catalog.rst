@@ -1,6 +1,11 @@
 winterdrp.catalog package
 =========================
 
+.. automodule:: winterdrp.catalog
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -48,14 +53,6 @@ winterdrp.catalog.skymapper module
 ----------------------------------
 
 .. automodule:: winterdrp.catalog.skymapper
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.catalog
    :members:
    :undoc-members:
    :show-inheritance:

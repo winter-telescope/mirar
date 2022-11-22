@@ -1,6 +1,11 @@
 winterdrp.pipelines package
 ===========================
 
+.. automodule:: winterdrp.pipelines
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -17,14 +22,6 @@ winterdrp.pipelines.base\_pipeline module
 -----------------------------------------
 
 .. automodule:: winterdrp.pipelines.base_pipeline
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.pipelines
    :members:
    :undoc-members:
    :show-inheritance:
