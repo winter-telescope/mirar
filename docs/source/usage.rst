@@ -3,12 +3,14 @@ Usage
 
 You can execute winterdrp via the command line:
 
-.. code-block::
+.. code-block:: bash
+
     python -m winterdrp -p name-of-pipeline -n night-to-reduce
 
 One example is the following:
 
-.. code-block::
+.. code-block:: bash
+
     python -m winterdrp -p summer
 
 How can you know which pipelines are available? You can check the documentation here: :doc:`winterdrp.pipelines`.
