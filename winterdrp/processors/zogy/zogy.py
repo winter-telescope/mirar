@@ -155,8 +155,8 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_weight_img = self.open_fits(self.get_path(sci_mask_path))
 
             image_mask = (sci_weight_img == 0) | (ref_weight_img == 0)
-            image[image_mask] = 0
-            ref_img[image_mask] = 0
+            image.data[image_mask] = 0
+            ref_img.data[image_mask] = 0
 
             scorr_mask_data = sci_weight_img.data * ref_weight_img.data
             scorr_header = sci_weight_img.get_header()
@@ -186,8 +186,6 @@ class ZOGYPrepare(BaseImageProcessor):
                 image,
                 path=sci_scaled_path
             )
-
-            self.open_fits(sci_scaled_path)
 
             sci_rms = 0.5 * (
                     np.percentile(image.data[image.data != 0], 84.13)
@@ -228,11 +226,11 @@ class ZOGYPrepare(BaseImageProcessor):
             image['ASTUNCX'] = ast_unc_x
             image['ASTUNCY'] = ast_unc_y
             image['REFFS'] = flux_scale
-            image['SCUNCPTH'] = sci_rms_path
-            image["RFUNCPTH"] = ref_rms_path
-            image["SCISCL"] = sci_scaled_path
-            image["REFSCL"] = ref_scaled_path
-            image['SCORMASK'] = scorr_mask_path
+            image['SCUNCPTH'] = str(sci_rms_path)
+            image["RFUNCPTH"] = str(ref_rms_path)
+            image["SCISCL"] = str(sci_scaled_path)
+            image["REFSCL"] = str(ref_scaled_path)
+            image['SCORMASK'] = str(scorr_mask_path)
 
         return batch
 
