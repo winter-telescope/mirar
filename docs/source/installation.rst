@@ -42,6 +42,9 @@ Now you should have installed winterdrp. You can check it worked by opening up p
     >>> print(f"This is the {package_name} package, version {__version__}")
     This is the winterdrp package, version 0.4.3
 
+Non-python dependencies
+-----------------------
+
 Finally you meed to install any optional dependencies that you might want to use. We again recommend using conda. Whether you need these dependencies depends on your intended usage of winterdrp.
 
 Dependencies include:
@@ -51,4 +54,14 @@ Dependencies include:
 * `swarp <https://www.astromatic.net/software/swarp/>`_
 * `psfex <https://www.astromatic.net/software/psfex/>`_
 * `postgreSQL <https://www.postgresql.org/download/>`_
+
+Linux
+
+You can run:
+
+.. code-block: bash
+    sudo apt-get update
+    sudo apt-get install -y sextractor scamp swarp psfex
+
+
 
