@@ -1,41 +1,21 @@
 Usage
 =====
 
-.. _installation:
+You can execute winterdrp via the command line:
 
-Installation
-------------
+.. code-block::
+    python -m winterdrp -p name-of-pipeline -n night-to-reduce
 
-To use winterdrp, first install it using pip:
+One example is the following:
 
-.. code-block:: console
+.. code-block::
+    python -m winterdrp -p summer
 
-   (.venv) $ pip install lumache
-
-Creating recipes
-----------------
-
-To retrieve a list of random ingredients,
-you can use the ``winterdrp.pipelines.get_pipeline()`` function:
-
-.. autofunction:: winterdrp.pipelines.get_pipeline
-
-Otherwise, :py:func:`winterdrp.pipelines.get_pipeline`
-will raise an exception.
-
-For example:
-
-.. testsetup::
-   :skipif: pd is None
-
-   data = pd.Series([42])
-
-.. doctest::
-   :skipif: pd is None
-
-   >>> data.iloc[0]
+How can you know which pipelines are available? You can check the documentation here: :doc:`winterdrp.pipelines`.
+Alternatively, you can check via the code:
 
 .. doctest::
 
-    >>>from winterdrp.pipelines import Pipeline
-    >>>print(Pipeline.pipelines.keys())
+    >>> from winterdrp.pipelines import Pipeline
+    >>> print([x for x in Pipeline.pipelines.keys()])
+    ['wirc', 'summer']
