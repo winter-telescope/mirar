@@ -3,9 +3,6 @@ from winterdrp.paths import package_name, __version__
 
 # -- Project information
 
-# package_name = "xyx"
-# __version__ = "123"
-
 project = package_name
 copyright = '2022, Stein'
 author = 'Stein'
