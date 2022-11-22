@@ -1,6 +1,11 @@
 winterdrp.pipelines.summer package
 ==================================
 
+.. automodule:: winterdrp.pipelines.summer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -40,14 +45,6 @@ winterdrp.pipelines.summer.summer\_pipeline module
 --------------------------------------------------
 
 .. automodule:: winterdrp.pipelines.summer.summer_pipeline
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.pipelines.summer
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,6 +1,11 @@
 winterdrp.processors package
 ============================
 
+.. automodule:: winterdrp.processors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -124,14 +129,6 @@ winterdrp.processors.xmatch module
 ----------------------------------
 
 .. automodule:: winterdrp.processors.xmatch
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.processors
    :members:
    :undoc-members:
    :show-inheritance:

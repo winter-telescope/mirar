@@ -1,6 +1,11 @@
 winterdrp.processors.candidates package
 =======================================
 
+.. automodule:: winterdrp.processors.candidates
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -48,14 +53,6 @@ winterdrp.processors.candidates.namer module
 --------------------------------------------
 
 .. automodule:: winterdrp.processors.candidates.namer
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.processors.candidates
    :members:
    :undoc-members:
    :show-inheritance:

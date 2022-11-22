@@ -1,6 +1,11 @@
 winterdrp.utils package
 =======================
 
+.. automodule:: winterdrp.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -48,14 +53,6 @@ winterdrp.utils.send\_email module
 ----------------------------------
 
 .. automodule:: winterdrp.utils.send_email
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.utils
    :members:
    :undoc-members:
    :show-inheritance:

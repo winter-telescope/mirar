@@ -1,6 +1,11 @@
 winterdrp.processors.astromatic.scamp package
 =============================================
 
+.. automodule:: winterdrp.processors.astromatic.scamp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -16,14 +21,6 @@ winterdrp.processors.astromatic.scamp.scamp module
 --------------------------------------------------
 
 .. automodule:: winterdrp.processors.astromatic.scamp.scamp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.processors.astromatic.scamp
    :members:
    :undoc-members:
    :show-inheritance:

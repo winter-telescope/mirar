@@ -1,6 +1,11 @@
 winterdrp.catalog.kowalski package
 ==================================
 
+.. automodule:: winterdrp.catalog.kowalski
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -16,14 +21,6 @@ winterdrp.catalog.kowalski.tmass module
 ---------------------------------------
 
 .. automodule:: winterdrp.catalog.kowalski.tmass
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: winterdrp.catalog.kowalski
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,7 +1,7 @@
 Welcome to the winterdrp documentation!
 =======================================
 
-Winterdrp is a modular, flexible, open-source code to reduce analyse astronomy images, built using python 3.11.
+Winterdrp is a modular, flexible, open-source code to reduce analyse astronomy images, built using python 3.10.
 It was created by `Robert Stein <https://robertdstein.github.io/>`_ and
 `Viraj Karambelkar <https://github.com/virajkaram>`_ (see everyone who contributed at :doc:`contributors`).
 
@@ -27,3 +27,10 @@ Contents
     :maxdepth: 3
 
     modules
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
