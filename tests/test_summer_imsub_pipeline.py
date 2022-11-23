@@ -5,8 +5,6 @@ from winterdrp.data import Dataset, ImageBatch
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO)
-
 expected_values = {
     'SCORSTD': 1.120988782614284,
     'SCORMED': 0.0010565268947477073,
