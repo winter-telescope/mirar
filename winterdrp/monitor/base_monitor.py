@@ -137,7 +137,7 @@ class Monitor:
                 requirements=cal_requirements
             )
         else:
-            self.cal_images = []
+            self.cal_images = ImageBatch()
 
     def summarise_errors(
             self,
