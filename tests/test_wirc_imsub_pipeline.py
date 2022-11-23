@@ -5,7 +5,9 @@ import logging
 
 from astropy.io import fits
 
-from winterdrp.data import Dataset, ImageBatch
+from pathlib import Path
+
+from winterdrp.testing import BaseTestCase
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.io import open_fits
 from winterdrp.paths import get_output_path
@@ -31,6 +33,10 @@ test_data_dir = get_test_data_dir()
 ref_img_directory = test_data_dir.joinpath("wirc/ref")
 
 NIGHT_NAME = "20210330"
+expected_candidate_path = Path(test_data_dir).joinpath("wirc/wirc_sources.csv")
+
+expected_res = pd.read_csv(expected_candidate_path)
+
 
 
 def test_reference_image_generator(
@@ -53,7 +59,6 @@ def test_reference_image_generator(
         filter_name=filter_name,
         images_directory_path=images_directory,
     )
-
 
 EXPECTED_HEADER_VALUES = {
     "SCORSTD": 1.081806800432295,
@@ -118,56 +123,55 @@ class TestWircImsubPipeline(BaseTestCase):
 
         self.assertEqual(len(res), 1)
 
-        candidates_table = res[0][0].get_data()
-        diff_imgpath = get_output_path(
-            base_name=candidates_table.iloc[0]["diffimname"],
-            dir_root="subtract",
-            sub_dir=NIGHT_NAME,
-        )
+        # candidates_table = res[0][0].get_data()
+        # diff_imgpath = get_output_path(
+        #     base_name=candidates_table.iloc[0]["diffimname"],
+        #     dir_root="subtract",
+        #     sub_dir=NIGHT_NAME,
+        # )
+        # 
+        # _, header = open_fits(diff_imgpath)
+        # for key, value in EXPECTED_HEADER_VALUES.items():
+        #     if isinstance(value, float):
+        #         self.assertAlmostEqual(value, header[key], places=2)
+        #     elif isinstance(value, int):
+        #         self.assertEqual(value, header[key])
+        #     else:
+        #         raise TypeError(
+        #             f"Type for value ({type(value)} is neither float not int."
+        #         )
+        #
+        # self.assertEqual(len(candidates_table), 4)
+        # for key, value in EXPECTED_DATAFRAME_VALUES.items():
+        #     if isinstance(value, list):
+        #         for ind, val in enumerate(value):
+        #             self.assertAlmostEqual(
+        #                 candidates_table.iloc[ind][key], val, delta=0.05
+        #             )
 
-        _, header = open_fits(diff_imgpath)
-        for key, value in EXPECTED_HEADER_VALUES.items():
-            if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=2)
-            elif isinstance(value, int):
-                self.assertEqual(value, header[key])
-            else:
-                raise TypeError(
-                    f"Type for value ({type(value)} is neither float not int."
+        table = res[0][0].get_data()
+
+        # To update test data, uncomment:
+        # table.to_csv(expected_candidate_path, index=False)
+
+        self.assertEqual(len(table), len(expected_res))
+
+        for i, (colname, column) in enumerate(expected_res.items()):
+
+            if isinstance(column.iloc[0], (int, np.integer)):
+                pd.testing.assert_series_equal(column, table.loc[:, colname], check_dtype=False)
+            elif isinstance(column.iloc[0], float):
+                ratio = float(np.mean(column/table.loc[:, colname]))
+                self.assertAlmostEqual(ratio, 1.0, places=2)
+            elif colname in ["programpi"]:
+                pd.testing.assert_series_equal(column, table.loc[:, colname], check_dtype=False)
+            elif "name" in colname:
+                # Though path will vary, check base name of images
+                self.assertEqual(
+                    Path(column.iloc[0]).name,
+                    Path(table.loc[0, colname]).name
                 )
 
-        self.assertEqual(len(candidates_table), 4)
-        for key, value in EXPECTED_DATAFRAME_VALUES.items():
-            if isinstance(value, list):
-                for ind, val in enumerate(value):
-                    self.assertAlmostEqual(
-                        candidates_table.iloc[ind][key], val, delta=0.05
-                    )
-
-
-if __name__ == "__main__":
-    print("Calculating latest scorr metrics dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images(catch_all_errors=False)
-    new_candidates_table = new_res[0][0].get_data()
-    new_diff_imgpath = get_output_path(
-        base_name=new_candidates_table.iloc[0]["diffimname"],
-        dir_root="subtract",
-        sub_dir="20210330",
-    )
-    _, new_header = open_fits(new_diff_imgpath)
-
-    new_exp_header = "expected_header_values = { \n"
-    for header_key in new_header.keys():
-        if "SCOR" in header_key:
-            new_exp_header += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp_header += "}"
-    print(new_exp_header)
-
-    new_exp_dataframe = "expected_dataframe_values = { \n"
-    for key in EXPECTED_DATAFRAME_VALUES:
-        new_exp_dataframe += f'    "{key}": {list(new_candidates_table[key])}, \n'
-    new_exp_dataframe += "}"
-    print(new_exp_dataframe)
+            else:
+                # Check the only thing left is a cutout
+                self.assertTrue(colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
