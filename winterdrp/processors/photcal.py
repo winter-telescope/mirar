@@ -106,13 +106,13 @@ class PhotCalibrator(BaseImageProcessor):
                      (img_cat['Y_IMAGE'] < self.y_upper_limit)
 
         clean_img_cat = img_cat[clean_mask]
-        logger.debug(f'Found {len(clean_img_cat)} clean sources in data.')
+        logger.debug(f'Found {len(clean_img_cat)} clean sources in image.')
 
         clean_img_coords = SkyCoord(ra=clean_img_cat['ALPHAWIN_J2000'], dec=clean_img_cat['DELTAWIN_J2000'],
                                     unit=(u.deg, u.deg))
 
-        if 0 == len(clean_img_coords):
-            err = 'No clean sources found in data'
+        if len(clean_img_coords) == 0:
+            err = 'No clean sources found in image'
             logger.error(err)
             raise PhotometrySourceError(err)
 
@@ -120,7 +120,7 @@ class PhotCalibrator(BaseImageProcessor):
         match_mask = d2d < 1.0 * u.arcsec
         matched_ref_cat = ref_cat[match_mask]
         matched_img_cat = clean_img_cat[idx[match_mask]]
-        logger.info(f'Cross-matched {len(matched_img_cat)} sources from catalog to the data.')
+        logger.info(f'Cross-matched {len(matched_img_cat)} sources from catalog to the image.')
 
         if len(matched_img_cat) < self.num_matches_threshold:
             err = f'Not enough cross-matched sources found to calculate a reliable zeropoint.'
@@ -205,7 +205,11 @@ class PhotCalibrator(BaseImageProcessor):
             zp_values.append(image['ZP_AUTO'])
 
             if sextractor_checkimg_keys['BACKGROUND_RMS'] in image.keys():
-                limmags = self.get_maglim(image[sextractor_checkimg_keys['BACKGROUND_RMS']], zp_values, np.array(aperture_diameters)/2)
+                limmags = self.get_maglim(
+                    image[sextractor_checkimg_keys['BACKGROUND_RMS']],
+                    zp_values,
+                    np.array(aperture_diameters)/2.
+                )
             else:
                 limmags = [-99]*len(aperture_diameters)
 
