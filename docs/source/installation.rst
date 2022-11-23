@@ -40,7 +40,7 @@ Now you should have installed winterdrp. You can check it worked by opening up p
 
     >>> from winterdrp.paths import package_name, __version__
     >>> print(f"This is the {package_name} package, version {__version__}")
-    This is the winterdrp package, version 0.4.3
+    This is the winterdrp package, version 0.5.0
 
 Non-python dependencies
 -----------------------
