@@ -174,4 +174,4 @@ class TestWircImsubPipeline(BaseTestCase):
 
             else:
                 # Check the only thing left is a cutout
-                self.assertTrue(colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
+                self.assertTrue(colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"])
