@@ -20,7 +20,7 @@ class AperturePhotometry(BaseDataframeProcessor):
                  *args,
                  **kwargs):
         if aper_diameters is None:
-            aper_diameters = [40.]
+            aper_diameters = [10.]
         if bkg_in_diameters is None:
             bkg_in_diameters = [25.]
         if bkg_out_diameters is None:
