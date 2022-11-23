@@ -15,7 +15,7 @@ We have a few general guidelines that are helpful for keeping things organised:
      .. image:: https://coveralls.io/repos/github/winter-telescope/winterdrp/badge.svg?branch=main
         :target: https://coveralls.io/github/winter-telescope/winterdrp?branch=main
         :align: center
-* **Keep the code well-documented** When you write code, it is easier to understamd 'what' than 'why'. People are not mind-readers, and this includes your future self. This is where documentation helps. If you add doctstrings following the [standard python style](https://peps.python.org/pep-0287/), the code can be automatically converted to documentation.
+* **Keep the code well-documented** When you write code, it is easier to understamd 'what' than 'why'. People are not mind-readers, and this includes your future self. This is where documentation helps. If you add doctstrings following the `standard python style <https://peps.python.org/pep-0287/>`_, the code can be automatically converted to documentation.
 
 
 Updating the documentation
