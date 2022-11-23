@@ -83,7 +83,11 @@ class Image(DataBlock):
 
     cache_files = []
 
-    def __init__(self, data: np.ndarray, header: Header):
+    def __init__(
+            self,
+            data: np.ndarray,
+            header: Header | None
+    ):
         self._data = None
         self.header = header
         super().__init__()
