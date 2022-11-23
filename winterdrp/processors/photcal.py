@@ -14,6 +14,7 @@ import astropy.units as u
 from winterdrp.errors import ProcessorError
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.io import fits
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ class PhotCalibrator(BaseImageProcessor):
         clean_img_coords = SkyCoord(ra=clean_img_cat['ALPHAWIN_J2000'], dec=clean_img_cat['DELTAWIN_J2000'],
                                     unit=(u.deg, u.deg))
 
-        if 0 == len(clean_img_coords):
+        if len(clean_img_coords) == 0:
             err = 'No clean sources found in image'
             logger.error(err)
             raise PhotometrySourceError(err)
@@ -164,9 +165,8 @@ class PhotCalibrator(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
         phot_output_dir = self.get_phot_output_dir()
 
@@ -175,26 +175,26 @@ class PhotCalibrator(BaseImageProcessor):
         except OSError:
             pass
 
-        for header in headers:
-            ref_catalog = self.ref_catalog_generator(header)
-            ref_cat_path = ref_catalog.write_catalog(header, output_dir=phot_output_dir)
+        for image in batch:
+            ref_catalog = self.ref_catalog_generator(image)
+            ref_cat_path = ref_catalog.write_catalog(image, output_dir=phot_output_dir)
             temp_cat_path = copy_temp_file(
                 output_dir=phot_output_dir,
-                file_path=header[sextractor_header_key]
+                file_path=image[sextractor_header_key]
             )
 
             fwhm_med, fwhm_mean, fwhm_std, med_fwhm_pix, mean_fwhm_pix, std_fwhm_pix = self.get_fwhm(temp_cat_path)
-            header['FWHM_MED'] = fwhm_med
-            header['FWHM_STD'] = fwhm_std
+            image['FWHM_MED'] = fwhm_med
+            image['FWHM_STD'] = fwhm_std
 
             zp_dicts = self.calculate_zeropoint(ref_cat_path, temp_cat_path)
 
             aperture_diameters = []
             zp_values = []
             for zpvals in zp_dicts:
-                header['ZP_%s' % (zpvals['diameter'])] = zpvals['zp_mean']
-                header['ZP_%s_std' % (zpvals['diameter'])] = zpvals['zp_std']
-                header['ZP_%s_nstars' % (zpvals['diameter'])] = zpvals['nstars']
+                image['ZP_%s' % (zpvals['diameter'])] = zpvals['zp_mean']
+                image['ZP_%s_std' % (zpvals['diameter'])] = zpvals['zp_std']
+                image['ZP_%s_nstars' % (zpvals['diameter'])] = zpvals['nstars']
                 try:
                     aperture_diameters.append(float(zpvals['diameter']))
                     zp_values.append(zpvals['zp_mean'])
@@ -202,17 +202,21 @@ class PhotCalibrator(BaseImageProcessor):
                     continue
 
             aperture_diameters.append(med_fwhm_pix)
-            zp_values.append(header['ZP_AUTO'])
+            zp_values.append(image['ZP_AUTO'])
 
-            if sextractor_checkimg_keys['BACKGROUND_RMS'] in header.keys():
-                limmags = self.get_maglim(header[sextractor_checkimg_keys['BACKGROUND_RMS']], zp_values, np.array(aperture_diameters)/2)
+            if sextractor_checkimg_keys['BACKGROUND_RMS'] in image.keys():
+                limmags = self.get_maglim(
+                    image[sextractor_checkimg_keys['BACKGROUND_RMS']],
+                    zp_values,
+                    np.array(aperture_diameters)/2.
+                )
             else:
                 limmags = [-99]*len(aperture_diameters)
 
             for ind, diam in enumerate(aperture_diameters):
-                header[f'MAGLIM_{int(diam)}'] = limmags[ind]
-            header['MAGLIM'] = limmags[-1]
-        return images, headers
+                image[f'MAGLIM_{int(diam)}'] = limmags[ind]
+            image['MAGLIM'] = limmags[-1]
+        return batch
 
     @staticmethod
     def get_fwhm(img_cat_path):
@@ -231,7 +235,7 @@ class PhotCalibrator(BaseImageProcessor):
 
     @staticmethod
     def get_maglim(bkg_rms_image_path, zp, aperture_radius_pixels):
-        if isinstance(zp,float):
+        if isinstance(zp, float):
             zp = [zp]
         if isinstance(aperture_radius_pixels, float):
             aperture_radius_pixels = [aperture_radius_pixels]

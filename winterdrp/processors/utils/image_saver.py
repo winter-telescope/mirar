@@ -2,8 +2,10 @@ import os
 
 import astropy.io.fits
 import numpy as np
-from winterdrp.paths import get_output_path, get_output_dir, latest_save_key, latest_mask_save_key, base_output_dir
+from winterdrp.paths import get_output_path, get_output_dir, latest_save_key, latest_mask_save_key, base_output_dir, \
+    base_name_key
 from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.data import ImageBatch
 
 
 class ImageSaver(BaseImageProcessor):
@@ -28,9 +30,8 @@ class ImageSaver(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
         try:
             os.makedirs(get_output_dir(
@@ -41,23 +42,19 @@ class ImageSaver(BaseImageProcessor):
         except OSError:
             pass
 
-        for i, img in enumerate(images):
-
-            header = headers[i]
+        for i, image in enumerate(batch):
 
             path = get_output_path(
-                header["BASENAME"],
+                image[base_name_key],
                 dir_root=self.output_dir_name,
                 sub_dir=self.night_sub_dir,
                 output_dir=self.output_dir
             )
 
-            header[latest_save_key] = path
-
+            image[latest_save_key] = path
             if self.write_mask:
-                mask_path = self.save_mask(img, header, img_path=path)
-                header[latest_mask_save_key] = mask_path
+                mask_path = self.save_mask(image,img_path=path)
+                image[latest_mask_save_key] = mask_path
+            self.save_fits(image, path)
 
-            self.save_fits(img, header, path)
-
-        return images, headers
+        return batch

@@ -1,10 +1,9 @@
 import logging
 import os
-import numpy as np
-import astropy.io.fits
 from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.processors.autoastrometry.autoastrometry import run_autoastrometry_single
-from winterdrp.paths import get_output_dir
+from winterdrp.paths import get_output_dir, base_name_key
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +37,8 @@ class AutoAstrometry(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch
+    ) -> ImageBatch:
 
         sextractor_out_dir = get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
@@ -49,11 +47,10 @@ class AutoAstrometry(BaseImageProcessor):
         except OSError:
             pass
 
-        for i, data in enumerate(images):
-            header = headers[i]
+        for i, image in enumerate(batch):
 
-            temp_path = os.path.join(sextractor_out_dir, header["BASENAME"])
-            self.save_fits(data, header, temp_path)
+            temp_path = os.path.join(sextractor_out_dir, image[base_name_key])
+            self.save_fits(image, temp_path)
 
             run_autoastrometry_single(
                 img_path=temp_path,
@@ -67,12 +64,11 @@ class AutoAstrometry(BaseImageProcessor):
             )
 
             # Load up temp path image.header, then delete
-            img, header = self.open_fits(temp_path)
+            image = self.open_fits(temp_path)
 
-            images[i] = img
-            headers[i] = header
+            batch[i] = image
 
             os.remove(temp_path)
             logger.info(f"Loaded updated header, and deleted temporary file {temp_path}")
 
-        return images, headers
+        return batch

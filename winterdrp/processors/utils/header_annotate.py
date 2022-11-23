@@ -2,6 +2,7 @@ import logging
 import astropy.io.fits
 import numpy as np
 from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.data import ImageBatch
 
 
 logger = logging.getLogger(__name__)
@@ -28,20 +29,19 @@ class HeaderAnnotator(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        for i, header in enumerate(headers):
+        for i, image in enumerate(batch):
 
             new_val = ""
             for key in self.input_keys:
-                new_val += str(header[key])
+                new_val += str(image[key])
 
-            header[self.output_key] = new_val
-            headers[i] = header
+            image[self.output_key] = new_val
+            batch[i] = image
 
-        return images, headers
+        return batch
 
 
 class HeaderEditor(BaseImageProcessor):
@@ -69,15 +69,14 @@ class HeaderEditor(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        for i, header in enumerate(headers):
+        for i, image in enumerate(batch):
 
             for ind, key in enumerate(self.edit_keys):
-                header[key] = self.values[ind]
+                image[key] = self.values[ind]
 
-            headers[i] = header
+            batch[i] = image
 
-        return images, headers
+        return batch

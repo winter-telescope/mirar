@@ -10,6 +10,7 @@ from winterdrp.processors.base_processor import BaseImageProcessor, BaseDatafram
 import logging
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor, DataBaseError
 from winterdrp.processors.database.postgres import import_from_db, xmatch_import_db
+from winterdrp.data import Image, DataBlock, ImageBatch, SourceBatch, SourceTable
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +29,15 @@ class BaseDatabaseImporter(BaseDatabaseProcessor, ABC):
 
 
 def update_header_with_single_match(
-        header: Header,
+        data: DataBlock,
         res: list[dict]
-) -> Header:
+) -> DataBlock:
     assert len(res) == 1
 
     for key, value in res[0]:
-        header[key] = value
+        data[key] = value
 
-    return header
+    return data
 
 
 class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
@@ -56,13 +57,12 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        for i, header in enumerate(headers):
+        for i, image in enumerate(batch):
 
-            query_columns, accepted_values = self.get_constraints(header)
+            query_columns, accepted_values = self.get_constraints(image)
 
             res = import_from_db(
                 db_name=self.db_name,
@@ -75,16 +75,16 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
                 password=self.db_password
             )
 
-            new_header = self.update_header(header, res)
+            image = self.update_header(image, res)
 
             if self.boolean_match_key is not None:
-                new_header[self.boolean_match_key] = len(res) > 0
+                image[self.boolean_match_key] = len(res) > 0
 
-            headers[i] = new_header
+            batch[i] = image
 
-        return images, headers
+        return batch
 
-    def get_constraints(self, header):
+    def get_constraints(self, image):
         raise NotImplementedError
 
 
@@ -99,8 +99,8 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
         super().__init__(*args, **kwargs)
         self.db_query_columns = db_query_columns
 
-    def get_constraints(self, header) -> list[str]:
-        accepted_values = [header[x.upper()] for x in self.db_query_columns]
+    def get_constraints(self, image: Image) -> list[str]:
+        accepted_values = [image[x.upper()] for x in self.db_query_columns]
         return accepted_values
 
 
@@ -134,29 +134,32 @@ class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor):
 
     def _apply_to_candidates(
             self,
-            candidate_table: pd.DataFrame,
-    ) -> pd.DataFrame:
-        results = []
-        for ind in range(len(candidate_table)):
-            cand = candidate_table.loc[ind]
-            query_columns, comparison_values, comparison_types = self.get_constraints(cand)
-            res = import_from_db(
-                db_name=self.db_name,
-                db_table=self.db_table,
-                db_query_columns=query_columns,
-                db_accepted_values=comparison_values,
-                db_output_columns=self.db_output_columns,
-                output_alias_map=self.output_alias_map,
-                db_user=self.db_user,
-                password=self.db_password,
-                max_num_results=self.max_num_results
-            )
+            batch: SourceBatch,
+    ) -> SourceBatch:
 
-            results.append(res)
-        new_df = self.update_dataframe(candidate_table, results)
-        return new_df
+        for source_table in batch:
+            candidate_table = source_table.get_data()
+            results = []
+            for ind in range(len(candidate_table)):
+                cand = candidate_table.loc[ind]
+                query_columns, comparison_values, comparison_types = self.get_constraints(cand)
+                res = import_from_db(
+                    db_name=self.db_name,
+                    db_table=self.db_table,
+                    db_query_columns=query_columns,
+                    db_accepted_values=comparison_values,
+                    db_output_columns=self.db_output_columns,
+                    output_alias_map=self.output_alias_map,
+                    db_user=self.db_user,
+                    password=self.db_password,
+                    max_num_results=self.max_num_results
+                )
+                results.append(res)
+            new_df = self.update_dataframe(candidate_table, results)
+            source_table.set_data(new_df)
+        return batch
 
-    def get_constraints(self, cand):
+    def get_constraints(self, batch: SourceBatch):
         raise NotImplementedError
 
 
@@ -205,34 +208,37 @@ class DatabaseXMatchImporter(DatabaseDataframeImporter, BaseDataframeProcessor):
 
     def _apply_to_candidates(
             self,
-            candidate_table: pd.DataFrame,
-    ) -> pd.DataFrame:
-        results = []
-        for ind in range(len(candidate_table)):
-            cand = candidate_table.loc[ind]
-            query_columns, comparison_types, accepted_values = self.get_constraints(cand)
-            res = xmatch_import_db(db_name=self.db_name,
-                                   db_table=self.db_table,
-                                   db_user=self.db_user,
-                                   db_password=self.db_password,
-                                   db_output_columns=self.db_output_columns,
-                                   output_alias_map=self.output_alias_map,
-                                   db_query_columns=query_columns,
-                                   db_comparison_types=comparison_types,
-                                   db_accepted_values=accepted_values,
-                                   ra=cand[self.ra_field_name],
-                                   dec=cand[self.dec_field_name],
-                                   xmatch_radius_arcsec=self.xmatch_radius_arcsec,
-                                   query_dist=self.query_dist,
-                                   q3c=self.q3c,
-                                   order_field_name=self.order_field_name,
-                                   order_ascending=self.order_ascending,
-                                   num_limit=self.max_num_results,
-                                   )
-            results.append(res)
+            batch: SourceBatch,
+    ) -> SourceBatch:
 
-        new_table = self.update_dataframe(candidate_table, results)
-        return new_table
+        for source_table in batch:
+            candidate_table = source_table.get_data()
+            results = []
+            for ind in range(len(candidate_table)):
+                cand = candidate_table.loc[ind]
+                query_columns, comparison_types, accepted_values = self.get_constraints(cand)
+                res = xmatch_import_db(db_name=self.db_name,
+                                       db_table=self.db_table,
+                                       db_user=self.db_user,
+                                       db_password=self.db_password,
+                                       db_output_columns=self.db_output_columns,
+                                       output_alias_map=self.output_alias_map,
+                                       db_query_columns=query_columns,
+                                       db_comparison_types=comparison_types,
+                                       db_accepted_values=accepted_values,
+                                       ra=cand[self.ra_field_name],
+                                       dec=cand[self.dec_field_name],
+                                       xmatch_radius_arcsec=self.xmatch_radius_arcsec,
+                                       query_dist=self.query_dist,
+                                       q3c=self.q3c,
+                                       order_field_name=self.order_field_name,
+                                       order_ascending=self.order_ascending,
+                                       num_limit=self.max_num_results,
+                                       )
+                results.append(res)
+            new_table = self.update_dataframe(candidate_table, results)
+            source_table.set_data(new_table)
+        return batch
 
 
 def update_history_dataframe(

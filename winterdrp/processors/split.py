@@ -5,6 +5,7 @@ import numpy as np
 import logging
 from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.paths import base_name_key
+from winterdrp.data import ImageBatch, Image, Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -43,20 +44,16 @@ class SplitImage(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        new_images = []
-        new_headers = []
+        new_images = ImageBatch()
 
-        logger.info(f"Splitting each image into {self.n_x*self.n_y} sub-images")
+        logger.info(f"Splitting each data into {self.n_x*self.n_y} sub-images")
 
-        for i, data in enumerate(images):
+        for i, image in enumerate(batch):
 
-            base_header = headers[i]
-
-            pix_width_x, pix_width_y = data.shape
+            pix_width_x, pix_width_y = image.get_data().shape
 
             k = 0
 
@@ -67,9 +64,9 @@ class SplitImage(BaseImageProcessor):
                 for iy in range(self.n_y):
                     y_0, y_1 = self.get_range(self.n_y, pix_width_y, iy)
 
-                    new_data = np.array(data[x_0:x_1, y_0:y_1])
+                    new_data = np.array(image.get_data()[x_0:x_1, y_0:y_1])
 
-                    new_header = copy.copy(base_header)
+                    new_header = copy.copy(image.get_header())
 
                     for key in ["DETSIZE", "INFOSEC", "TRIMSEC", "DATASEC"]:
                         if key in new_header.keys():
@@ -77,41 +74,39 @@ class SplitImage(BaseImageProcessor):
 
                     sub_img_id = f"{ix}_{iy}"
 
-                    new_header["SUBCOORD"] = (sub_img_id, "Sub-image coordinate, in form x_y")
+                    new_header["SUBCOORD"] = (sub_img_id, "Sub-data coordinate, in form x_y")
 
                     new_header[sub_id_key] = k
                     k += 1
 
                     new_header["SRCIMAGE"] = (
-                        base_header[base_name_key],
-                        "Source image name, from which sub-image was made"
+                        image[base_name_key],
+                        "Source data name, from which sub-data was made"
                     )
 
                     new_header["NAXIS1"], new_header["NAXIS2"] = new_data.shape
 
-                    new_header[base_name_key] = base_header[base_name_key].replace(
+                    new_header[base_name_key] = image[base_name_key].replace(
                         ".fits", f"_{sub_img_id}.fits"
                     )
-                    new_images.append(new_data)
-                    new_headers.append(new_header)
+                    new_images.append(Image(data=new_data, header=new_header))
 
-        return new_images, new_headers
+        return new_images
 
-    def update_batches(
+    def update_dataset(
         self,
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
+        dataset: Dataset
+    ) -> Dataset:
 
         all_new_batches = []
 
-        for [images, headers] in batches:
-            new_batches = [[[], []] for _ in range(self.n_x * self.n_y)]
+        for batch in dataset:
+            new_batches = [[] for _ in range(self.n_x * self.n_y)]
 
-            for i, header in enumerate(headers):
-                idx = header[sub_id_key]
-                new_batches[idx][0] += [images[i]]
-                new_batches[idx][1] += [header]
+            for i, image in enumerate(batch):
+                idx = image[sub_id_key]
+                new_batches[idx] += [image]
 
             all_new_batches += new_batches
 
-        return all_new_batches
+        return Dataset(all_new_batches)

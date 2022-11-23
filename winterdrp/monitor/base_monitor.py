@@ -24,6 +24,7 @@ import warnings
 from astropy.utils.exceptions import AstropyUserWarning
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.csvlog import CSVLog
+from winterdrp.data import ImageBatch, Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -129,14 +130,14 @@ class Monitor:
             cal_requirements = self.pipeline.default_cal_requirements
 
         if cal_requirements is not None:
-            self.cal_images, self.cal_headers = find_required_cals(
+            self.cal_images = find_required_cals(
                 latest_dir=str(self.raw_image_directory),
                 night=night,
                 open_f=self.pipeline.load_raw_image,
                 requirements=cal_requirements
             )
         else:
-            self.cal_images = self.cal_headers = []
+            self.cal_images = ImageBatch()
 
     def summarise_errors(
             self,
@@ -144,7 +145,8 @@ class Monitor:
     ):
 
         error_summary = errorstack.summarise_error_stack(verbose=False)
-        summary = f"Processed a total of {len(self.processed_science_images)} science images. \n\n" + error_summary + " \n"
+        summary = f"Processed a total of {len(self.processed_science_images)} science images. " \
+                  f"\n\n" + error_summary + " \n"
 
         logger.info(f"Writing error log to {self.error_path}")
         errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
@@ -174,7 +176,7 @@ class Monitor:
     def process_full_night(
             self,
     ):
-        batches, errorstack = self.pipeline.reduce_images([[[], []]], catch_all_errors=True)
+        batches, errorstack = self.pipeline.reduce_images(Dataset(ImageBatch()), catch_all_errors=True)
         self.summarise_errors(errorstack=errorstack)
 
     def get_error_output_path(self) -> str:
@@ -267,7 +269,7 @@ class Monitor:
         if self.postprocess_configurations is not None:
 
             postprocess_config = [ImageLoader(
-                load_image=self.pipeline.load_raw_image,
+                load_image=self.pipeline.unpack_raw_image,
                 input_sub_dir=self.sub_dir,
                 input_img_dir=str(Path(self.raw_image_directory)).split(self.pipeline_name)[0]
             )]
@@ -290,7 +292,7 @@ class Monitor:
                     self.latest_csv_log = processor.get_output_path()
 
             _, errorstack = self.pipeline.reduce_images(
-                batches=[[[], []]],
+                dataset=Dataset(ImageBatch()),
                 selected_configurations=protected_key,
                 catch_all_errors=True
             )
@@ -347,19 +349,18 @@ class Monitor:
 
                     try:
 
-                        img, header = self.pipeline.load_raw_image(event.src_path)
+                        img = self.pipeline.load_raw_image(event.src_path)
 
-                        is_science = header["OBSCLASS"] == "science"
+                        is_science = img["OBSCLASS"] == "science"
 
-                        all_img = [img] + copy.deepcopy(self.cal_images)
-                        all_headers = [header] + copy.deepcopy(self.cal_headers)
+                        all_img = ImageBatch(img) + copy.deepcopy(self.cal_images)
 
                         if not is_science:
                             print(f"Skipping {event.src_path} (calibration image)")
                         else:
                             print(f"Reducing {event.src_path} (science image) on thread {threading.get_ident()}")
                             _, errorstack = self.pipeline.reduce_images(
-                                batches=[[all_img, all_headers]],
+                                dataset=Dataset(all_img),
                                 selected_configurations=self.realtime_configurations,
                                 catch_all_errors=True
                             )

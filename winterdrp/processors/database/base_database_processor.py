@@ -6,6 +6,7 @@ from abc import ABC
 from winterdrp.processors.database.postgres import check_if_db_exists, check_if_user_exists, check_if_table_exists,\
     create_db, create_table, create_new_user, grant_privileges, create_tables_from_schema, DataBaseError, run_sql_command_from_file,\
     pg_admin_user_key, pg_admin_pwd_key
+from winterdrp.data import DataBatch
 
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             password=self.db_password
         )
 
-    def apply(self, batch):
+    def apply(self, batch: DataBatch):
 
         if not self.db_check:
             self.set_up_databases()

@@ -70,6 +70,7 @@ def run_sql_command_from_file(file_path, db_name, db_user, password, admin=False
 
         logger.info(f"Executed sql commands from file {file_path}")
 
+
 def create_table(
         schema_path: str,
         db_name: str,

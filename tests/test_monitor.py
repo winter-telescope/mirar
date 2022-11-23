@@ -8,8 +8,6 @@ from winterdrp.processors.utils.cal_hunter import CalRequirement
 
 logger = logging.getLogger(__name__)
 
-logging.getLogger("winterdrp").setLevel("DEBUG")
-
 summer_cal_requirements = [
     CalRequirement(target_name="bias", required_field="EXPTIME", required_values=["0.0"]),
     CalRequirement(target_name="flat", required_field="FILTERID", required_values=["r"]),

@@ -1,21 +1,22 @@
 import astropy.io.fits
 import numpy as np
 import logging
-from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor, CleanupProcessor
+from winterdrp.data import Image, ImageBatch, DataBatch, Dataset
 from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
+
 
 class ParsingError(KeyError, ProcessorError):
     pass
 
 
 def select_from_images(
-        images: list[np.ndarray],
-        headers: list[astropy.io.fits.Header],
-        header_key: str = "target",
+        batch: ImageBatch,
+        key: str = "target",
         target_values: str | list[str] = "science",
-) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+) -> ImageBatch:
 
     # Enforce string in list for later matching
     if not isinstance(target_values, list):
@@ -23,22 +24,20 @@ def select_from_images(
     else:
         target_values = [str(x) for x in target_values]
 
-    passing_images = []
-    passing_headers = []
+    new_batch = ImageBatch()
 
-    for i, header in enumerate(headers):
+    for i, image in enumerate(batch):
         try:
-            if str(header[header_key]) in target_values:
-                passing_images.append(images[i])
-                passing_headers.append(header)
+            if str(image[key]) in target_values:
+                new_batch.append(image)
         except KeyError as e:
             logger.error(e)
             raise ParsingError(e)
 
-    return passing_images, passing_headers
+    return new_batch
 
 
-class ImageSelector(BaseImageProcessor):
+class ImageSelector(BaseImageProcessor, CleanupProcessor):
 
     base_key = "select"
 
@@ -62,55 +61,46 @@ class ImageSelector(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
         for (header_key, target_values) in self.targets:
 
-            images, headers = select_from_images(
-                images,
-                headers,
-                header_key=header_key,
+            batch = select_from_images(
+                batch,
+                key=header_key,
                 target_values=target_values
             )
 
-        return images, headers
-
-    def update_batches(
-        self,
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
-        # Remove empty batches
-        return [x for x in batches if len(x[0]) > 0]
+        return batch
 
 
 def split_images_into_batches(
-        images: list[np.ndarray],
-        headers: list[astropy.io.fits.Header],
+        images: ImageBatch,
         split_key: str | list[str]
-) -> list[list[list[np.ndarray], list[astropy.io.fits.Header]]]:
+) -> Dataset:
 
     if isinstance(split_key, str):
         split_key = [split_key]
 
     groups = dict()
 
-    for i, header in enumerate(headers):
+    for i, image in enumerate(images):
         uid = []
 
         for key in split_key:
-            uid.append(str(header[key]))
+            uid.append(str(image[key]))
 
         uid = "_".join(uid)
 
         if uid not in groups.keys():
-            groups[uid] = [[images[i]], [header]]
+            groups[uid] = [image]
         else:
-            groups[uid][0] += [images[i]]
-            groups[uid][1] += [header]
+            groups[uid] += [image]
 
-    return [x for x in groups.values()]
+    res = Dataset([ImageBatch(x) for x in groups.values()])
+
+    return res
 
 
 class ImageBatcher(BaseImageProcessor):
@@ -137,22 +127,22 @@ class ImageBatcher(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        return images, headers
+            batch: ImageBatch,
+    ) -> ImageBatch:
+        return batch
 
-    def update_batches(
+    def update_dataset(
         self,
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
+        dataset: Dataset
+    ) -> Dataset:
 
-        new_batches = []
+        new_dataset = Dataset()
 
-        for [images, headers] in batches:
-            new_batches += split_images_into_batches(images, headers, split_key=self.split_key)
+        for batch in dataset:
+            new = split_images_into_batches(batch, split_key=self.split_key)
+            new_dataset += new
 
-        return new_batches
+        return new_dataset
 
 
 class ImageDebatcher(BaseImageProcessor):
@@ -161,23 +151,21 @@ class ImageDebatcher(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        return images, headers
+            batch: ImageBatch,
+    ) -> ImageBatch:
+        return batch
 
-    def update_batches(
+    def update_dataset(
         self,
-        batches: list[list[list[np.ndarray], list[astropy.io.fits.header]]]
-    ) -> list[list[list[np.ndarray], list[astropy.io.fits.header]]]:
+        dataset: Dataset
+    ) -> Dataset:
 
-        new_batches = [[[], []]]
+        combo_batch = ImageBatch()
 
-        for batch in batches:
-            for i in range(2):
-                new_batches[0][i] += batch[i]
+        for batch in dataset:
+            combo_batch += batch
 
-        return new_batches
+        return Dataset([combo_batch])
 
 
 

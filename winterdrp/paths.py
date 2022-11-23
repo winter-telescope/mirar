@@ -173,6 +173,7 @@ def parse_image_list(
 
 raw_img_key = "RAWPATH"
 base_name_key = "BASENAME"
+ref_img_key = "REFPATH"
 proc_history_key = "CALSTEPS"
 proc_fail_key = "PROCFAIL"
 latest_save_key = "SAVEPATH"
@@ -181,6 +182,7 @@ saturate_key = "SATURATE"
 sextractor_header_key = 'SRCCAT'
 psfex_header_key = 'PSFCAT'
 norm_psfex_header_key = 'NPSFCAT'
+ref_psf_key = "REFPSF"
 flat_frame_key = 'FLATNAME'
 bias_frame_key = 'BIASNAME'
 dark_frame_key = 'DARKNAME'

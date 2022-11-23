@@ -1,28 +1,21 @@
 import logging
-from multiprocessing import get_context
 
-import astropy.table
-from astropy.time import Time
-from astropy.io import ascii
-import pandas as pd
-import numpy as np
 import datetime
 
-import io, gzip, os, sys
-import avro, fastavro
-from avro import schema
+import io
+import os
+import avro
+import fastavro
 import avro.schema
 import avro.io
 import avro.tool
-from avro.datafile import DataFileWriter, DataFileReader
-from avro.io import DatumWriter, DatumReader
 import confluent_kafka
-import copy
 import json
 import time
 
 from winterdrp.processors.base_processor import BaseDataframeProcessor
 from winterdrp.paths import get_output_dir
+from winterdrp.data import SourceBatch
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +30,13 @@ class AvroPacketMaker(BaseDataframeProcessor):
         broadcast (bool): send to brokers at IPAC.
     """
 
-    def __init__(self, 
-                output_sub_dir: str, 
-                base_name: str,
-                save_local=False,
-                broadcast=True,
-                *args,
-                **kwargs):
+    def __init__(self,
+                 output_sub_dir: str,
+                 base_name: str,
+                 save_local=False,
+                 broadcast=True,
+                 *args,
+                 **kwargs):
         super(AvroPacketMaker, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
         self.base_name = base_name
@@ -52,12 +45,13 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
     def _apply_to_candidates(
             self,
-            candidate_table: pd.DataFrame,
-    ) -> pd.DataFrame:
-        self.make_alert(candidate_table) 
-        return candidate_table
+            batch: SourceBatch,
+    ) -> SourceBatch:
+        self.make_alert(batch)
+        return batch
 
-    def read_input_df(self, df):
+    @staticmethod
+    def read_input_df(df):
         """Takes a DataFrame, which has multiple candidate 
         and creates list of dictionaries, each dictionary 
         representing a single candidate.
@@ -79,7 +73,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
                     else:
                         # change to native python type
                         candidate[key] = df.iloc[i].get(key).item()
-                except AttributeError: # for IOBytes objs
+                except AttributeError:  # for IOBytes objs
                     candidate[key] = df.iloc[i].get(key).getvalue()
             all_candidates.append(candidate)
 
@@ -95,7 +89,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Returns:
             (dict): built avro schema.
         """
-        known_schemas = avro.schema.Names() # avro.schema.Names object
+        known_schemas = avro.schema.Names()  # avro.schema.Names object
         
         for s in schema_files:
             schema = self.load_single_avsc(s, known_schemas) 
@@ -108,7 +102,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         return props
 
-    def load_single_avsc(self, file_path, names):
+    @staticmethod
+    def load_single_avsc(file_path, names):
         """Load a single avsc file.
         Modified from https://github.com/dekishalay/pgirdps
 
@@ -130,13 +125,14 @@ class AvroPacketMaker(BaseDataframeProcessor):
         schema = avro.schema.SchemaFromJSONData(json_data, names) 
 
         return schema
-    
-    def write_avro_data(self, json, avro_schema):
+
+    @staticmethod
+    def write_avro_data(json_dict, avro_schema):
         """Encode json into avro format given a schema.
         For testing packet integrity.
 
         Args:
-            json (dict): data to put into schema, can be dict.
+            json_dict (dict): data to put into schema, can be dict.
             avro_schema (avro.schema.RecordSchema): output schema.
 
         Returns:
@@ -145,10 +141,11 @@ class AvroPacketMaker(BaseDataframeProcessor):
         writer = avro.io.DatumWriter(avro_schema)
         bytes_io = io.BytesIO()
         encoder = avro.io.BinaryEncoder(bytes_io)
-        writer.write(json, encoder)
+        writer.write(json_dict, encoder)
         return bytes_io
 
-    def read_avro_data(self, bytes_io, avro_schema):
+    @staticmethod
+    def read_avro_data(bytes_io, avro_schema):
         """Read avro data and decode with a given schema.
         For testing packet integrity.
         
@@ -166,31 +163,30 @@ class AvroPacketMaker(BaseDataframeProcessor):
         message = reader.read(decoder)
         return message
 
-    def create_alert_packet(self, cand, scicut, refcut, diffcut, cm_radius=8.0, search_history=90.0):
+    @staticmethod
+    def create_alert_packet(cand, scicut, refcut, diffcut):
         """Create top level avro packet from input candidate.
         Args:
             cand (dict): all data of a single candidate.
             scicut (bytes): science image cutout.
             refcut (bytes): reference image cutout.
             diffcut (bytes): difference image cutout.
-            cm_radius (float): cross-match radius in arcsec.
-            search_history (float): in days.
 
         Returns:
             (dict): schema in dictionary format.
         """
         prev_cands = cand["prv_candidates"]
-
-        alert = {"schemavsn": "0.1", "publisher": "winter_test", 
-		"cutoutScience": scicut,
-		"cutoutTemplate": refcut,
-		"cutoutDifference": diffcut,
-		"objectId": cand['objectId'],
-		"candid": cand['candid'], 
-		"candidate": cand,
-		"prv_candidates": prev_cands
-		}
-
+        alert = {
+            "schemavsn": "0.1",
+            "publisher": "winter_test",
+            "cutoutScience": scicut,
+            "cutoutTemplate": refcut,
+            "cutoutDifference": diffcut,
+            "objectId": cand['objectId'],
+            "candid": cand['candid'],
+            "candidate": cand,
+            "prv_candidates": prev_cands
+        }
         return alert
     
     def get_sub_output_dir(self):
@@ -200,11 +196,10 @@ class AvroPacketMaker(BaseDataframeProcessor):
     def _make_avro_output_dir(self):
         """ Make 'avro' subdirectory for avro packet output. """
         avro_output_dir = self.get_sub_output_dir()
-        try: # subdir doesn't exist
+        try:  # subdir doesn't exist
             os.makedirs(avro_output_dir, exist_ok=True)
         except OSError:
             pass
-
 
     def _save_local(self, candid, records, schema):
         """Save avro file in given schema to output subdirectory.
@@ -240,8 +235,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             logger.info(f'{e}')
             logger.info(f"Could not save candid {cand['candid']}")
             return -1
-    
-    def _send_alert(self, topicname, records, schema):
+
+    @staticmethod
+    def _send_alert(topicname, records, schema):
         """Send an avro "packet" to a particular topic at IPAC.
         Modified from: https://github.com/dekishalay/pgirdps
 
@@ -345,10 +341,12 @@ class AvroPacketMaker(BaseDataframeProcessor):
         num_cands = len(all_cands) # total candidates to process
         successes = 0 # successful kafka producing of a candidate
 
-        # Make top level alert schema (in json/avro packing format)
-        schema = self.combine_schemas(["alert_schema/candidate.avsc", 
-                                    "alert_schema/prv_candidate.avsc", 
-                                    "alert_schema/alert.avsc"])
+        # Make top level alert schema (in json_dict/avro packing format)
+        schema = self.combine_schemas([
+            "alert_schema/candidate.avsc",
+            "alert_schema/prv_candidate.avsc",
+            "alert_schema/alert.avsc"
+        ])
 
         # TODO topic_name should match night of images
         # # Calculate the alert_date from list of jds for this night
@@ -384,7 +382,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         # with open(last_packet_path, 'rb') as f:
         #     reader = DataFileReader(f, DatumReader())
         #     metadata = copy.deepcopy(reader.meta)
-        #     schema_from_file = json.loads(metadata['avro.schema'])
+        #     schema_from_file = json_dict.loads(metadata['avro.schema'])
         #     cand_data = [field_data for field_data in reader]
         #     reader.close()
         

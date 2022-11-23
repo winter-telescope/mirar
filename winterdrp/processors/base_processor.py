@@ -7,18 +7,22 @@ import socket
 import getpass
 import datetime
 import hashlib
-import pandas as pd
 from pathlib import Path
 
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
-    base_name_key, proc_history_key, raw_img_key
+    base_name_key, proc_history_key, raw_img_key, package_name
 from winterdrp.errors import ErrorReport, ErrorStack, ProcessorError, NoncriticalProcessingError
+from winterdrp.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
 
 logger = logging.getLogger(__name__)
 
 
 class PrerequisiteError(ProcessorError):
+    pass
+
+
+class NoCandidatesError(ProcessorError):
     pass
 
 
@@ -59,10 +63,10 @@ class BaseProcessor:
         self.night = night_sub_dir.split("/")[-1]
 
     @staticmethod
-    def update_batches(
-        batches: list
-    ) -> list:
-        return batches
+    def update_dataset(
+        dataset: Dataset
+    ) -> Dataset:
+        return dataset
 
     def check_prerequisites(
             self,
@@ -71,13 +75,13 @@ class BaseProcessor:
 
     def base_apply(
             self,
-            batches: list
-    ) -> tuple[list, ErrorStack]:
+            dataset: Dataset
+    ) -> tuple[Dataset, ErrorStack]:
 
-        passed_batches = []
+        passed_batches = Dataset()
         err_stack = ErrorStack()
 
-        for i, batch in enumerate(batches):
+        for i, batch in enumerate(dataset):
 
             try:
                 batch = self.apply(batch)
@@ -92,30 +96,50 @@ class BaseProcessor:
                 logger.error(err.generate_log_message())
                 err_stack.add_report(err)
 
-        batches = self.update_batches(passed_batches)
+        dataset = self.update_dataset(passed_batches)
 
-        return batches, err_stack
+        return dataset, err_stack
 
-    def apply(self, batch):
+    def apply(self, batch: DataBatch):
         raise NotImplementedError
 
-    def generate_error_report(self, exception: Exception, batch) -> ErrorReport:
+    def generate_error_report(self, exception: Exception, batch: DataBatch) -> ErrorReport:
         raise NotImplementedError
+
+
+class CleanupProcessor(BaseProcessor, ABC):
+
+    def update_dataset(
+        self,
+        dataset: Dataset
+    ) -> Dataset:
+        # Remove empty dataset
+        new_dataset = Dataset([x for x in dataset.get_batches() if len(x) > 0])
+        return new_dataset
 
 
 class ImageHandler:
+
     @staticmethod
     def open_fits(
-            path: str
-    ) -> tuple[np.ndarray, astropy.io.fits]:
-        return open_fits(path)
+            path: str | Path
+    ) -> Image:
+        path = str(path)
+        data, header = open_fits(path)
+        if raw_img_key not in header:
+            header[raw_img_key] = path
+        if base_name_key not in header:
+            header[base_name_key] = Path(path).name
+        return Image(data=data, header=header)
 
     @staticmethod
     def save_fits(
-            data,
-            header,
-            path: str,
+            image: Image,
+            path: str | Path,
     ):
+        path = str(path)
+        data = image.get_data()
+        header = image.get_header()
         if header is not None:
             header[latest_save_key] = path
         logger.info(f"Saving to {path}")
@@ -123,23 +147,26 @@ class ImageHandler:
 
     def save_mask(
             self,
-            data: np.ndarray,
-            header: astropy.io.fits.Header,
+            image: Image,
             img_path: str
     ) -> str:
+        data = image.get_data()
         mask = (~np.isnan(data)).astype(float)
         mask_path = get_mask_path(img_path)
+        header = image.get_header()
         header[latest_mask_save_key] = mask_path
-        self.save_fits(mask, header, mask_path)
+        self.save_fits(Image(mask, header), mask_path)
         return mask_path
 
     @staticmethod
-    def get_hash(headers: list[astropy.io.fits.Header]):
-        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in headers]))
+    def get_hash(image: Image):
+        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in image]))
         return hashlib.sha1(key.encode()).hexdigest()
 
-    def image_batch_error_report(self, exception: Exception, batch):
-        contents = [Path(x).name for x in ",".join([x[raw_img_key] for x in batch[1]]).split(",")]
+    def image_batch_error_report(self, exception: Exception, batch: ImageBatch):
+        contents = []
+        for image in batch:
+            contents += [Path(x).name for x in image.get_raw_img_list()]
         return ErrorReport(exception, self.__module__, contents)
 
 
@@ -147,36 +174,33 @@ class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
 
     def apply(
             self,
-            batch: list[list[np.ndarray], list[astropy.io.fits.header]]
-    ) -> list[list[np.ndarray], list[astropy.io.fits.header]]:
+            batch: ImageBatch
+    ) -> ImageBatch:
+        batch = self._apply_to_images(batch)
+        batch = self._update_processing_history(batch)
 
-        [images, headers] = batch
-
-        images, headers = self._apply_to_images(images, headers)
-        headers = self._update_processing_history(headers)
-
-        return [images, headers]
+        return batch
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
         raise NotImplementedError
 
     def _update_processing_history(
             self,
-            headers: list,
-    ) -> list:
-        for header in headers:
-            header[proc_history_key] += self.base_key + ","
-            header['REDUCER'] = getpass.getuser()
-            header['REDMACH'] = socket.gethostname()
-            header['REDTIME'] = str(datetime.datetime.now())
-            header["REDSOFT"] = "winterdrp"
-        return headers
+            batch: ImageBatch,
+    ) -> ImageBatch:
+        for i, image in enumerate(batch):
+            image[proc_history_key] += self.base_key + ","
+            image['REDUCER'] = getpass.getuser()
+            image['REDMACH'] = socket.gethostname()
+            image['REDTIME'] = str(datetime.datetime.now())
+            image["REDSOFT"] = package_name
+            batch[i] = image
+        return batch
 
-    def generate_error_report(self, exception: Exception, batch) -> ErrorReport:
+    def generate_error_report(self, exception: Exception, batch: ImageBatch) -> ErrorReport:
         return self.image_batch_error_report(exception, batch)
 
 
@@ -197,16 +221,12 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         self.overwrite = overwrite
         self.cache_sub_dir = cache_sub_dir
 
-    def select_cache_images(self, images, headers):
+    def select_cache_images(self, images: ImageBatch) -> ImageBatch:
         raise NotImplementedError
 
-    def get_cache_path(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> str:
+    def get_cache_path(self, images: ImageBatch) -> str:
 
-        file_name = self.get_cache_file_name(images, headers)
+        file_name = self.get_cache_file_name(images)
 
         output_path = get_output_path(
             base_name=file_name,
@@ -221,21 +241,13 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
 
         return output_path
 
-    def get_cache_file_name(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> str:
-        cache_image, cache_headers = self.select_cache_images(images, headers)
-        return f"{self.base_key}_{self.get_hash(cache_headers)}.fits"
+    def get_cache_file_name(self, images: ImageBatch) -> str:
+        cache_images = self.select_cache_images(images)
+        return f"{self.base_key}_{self.get_hash(cache_images)}.fits"
 
-    def get_cache_file(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[np.ndarray, astropy.io.fits.Header]:
+    def get_cache_file(self, images: ImageBatch) -> Image:
 
-        path = self.get_cache_path(images, headers)
+        path = self.get_cache_path(images)
 
         exists = os.path.exists(path)
 
@@ -245,19 +257,15 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
 
         else:
 
-            image, header = self.make_image(images, headers)
+            image = self.make_image(images)
 
             if self.write_to_cache:
                 if np.sum([not exists, self.overwrite]) > 0:
-                    self.save_fits(image, header, path)
+                    self.save_fits(image, path)
 
-        return image, header
+        return image
 
-    def make_image(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[np.ndarray, astropy.io.fits.Header]:
+    def make_image(self, images: ImageBatch) -> Image:
         raise NotImplementedError
 
 
@@ -272,11 +280,7 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
         super().__init__(*args, **kwargs)
         self.master_image_path = master_image_path
 
-    def get_cache_path(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> str:
+    def get_cache_path(self, images: ImageBatch) -> str:
         return self.master_image_path
 
 
@@ -287,19 +291,17 @@ class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
         super().__init_subclass__(**kwargs)
         cls.subclasses[cls.base_key] = cls
 
-    def apply(
-            self,
-            batch: tuple[list[np.ndarray], list[astropy.io.fits.Header]]
-    ) -> pd.DataFrame:
-        [images, headers] = batch
-        candidate_table = self._apply_to_images(images, headers)
-        return candidate_table
+    def apply(self, batch: ImageBatch) -> SourceBatch:
+        source_batch = self._apply_to_images(batch)
 
-    def _apply_to_images(
-            self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> pd.DataFrame:
+        if len(source_batch) == 0:
+            err = "No sources found in image batch"
+            logger.error(err)
+            raise NoCandidatesError(err)
+
+        return source_batch
+
+    def _apply_to_images(self, batch: ImageBatch) -> SourceBatch:
         raise NotImplementedError
 
 
@@ -312,18 +314,16 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
 
     def apply(
             self,
-            batch: pd.DataFrame
-    ) -> pd.DataFrame:
-        if len(batch) > 0:
-            batch = self._apply_to_candidates(batch)
+            batch: SourceBatch
+    ) -> SourceBatch:
         return batch
 
     def _apply_to_candidates(
             self,
-            candidate_table: pd.DataFrame,
-    ) -> pd.DataFrame:
+            source_list: SourceBatch,
+    ) -> SourceBatch:
         raise NotImplementedError
 
-    def generate_error_report(self, exception: Exception, batch: pd.DataFrame):
+    def generate_error_report(self, exception: Exception, batch: SourceBatch):
         contents = batch[base_name_key]
         return ErrorReport(exception, self.__module__, contents)

@@ -18,6 +18,7 @@ import astropy.io.fits as fits
 # Could also use numpy.fft, but this is apparently faster
 import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
+from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,12 +28,12 @@ pyfftw.interfaces.cache.set_keepalive_time(1.)
 
 
 def pyzogy(
-        new_image_path: str,
-        ref_image_path: str,
-        new_psf_path: str,
-        ref_psf_path: str,
-        new_sigma_path: str,
-        ref_sigma_path: str,
+        new_image_path: str | Path,
+        ref_image_path: str | Path,
+        new_psf_path: str | Path,
+        ref_psf_path: str | Path,
+        new_sigma_path: str | Path,
+        ref_sigma_path: str | Path,
         new_avg_unc: float,
         ref_avg_unc: float,
         dx: float = 0.25,
@@ -60,6 +61,8 @@ def pyzogy(
     diff_psf: PSF of subtracted image
     s_corr: Corrected subtracted image
     """
+
+    print(new_image_path)
 
     # Load the new and ref images into memory
     with fits.open(new_image_path) as f:

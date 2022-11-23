@@ -6,15 +6,15 @@ import astropy.io.fits
 from winterdrp.processors.utils.image_selector import select_from_images
 from winterdrp.paths import latest_save_key, bias_frame_key
 from winterdrp.errors import ImageNotFoundError
+from winterdrp.data import Image, ImageBatch
 
 logger = logging.getLogger(__name__)
 
 
 def default_select_bias(
-        images: list[np.ndarray],
-        headers: list[astropy.io.fits.Header],
-) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-    return select_from_images(images, headers, target_values="bias")
+        images: ImageBatch,
+) -> ImageBatch:
+    return select_from_images(images, target_values="bias")
 
 
 class BiasCalibrator(ProcessorWithCache):
@@ -23,7 +23,7 @@ class BiasCalibrator(ProcessorWithCache):
 
     def __init__(
             self,
-            select_bias_images: Callable[[list, list], [list, list]] = default_select_bias,
+            select_bias_images: Callable[[ImageBatch], ImageBatch] = default_select_bias,
             *args,
             **kwargs
     ):
@@ -35,43 +35,44 @@ class BiasCalibrator(ProcessorWithCache):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        master_bias, master_bias_header = self.get_cache_file(images, headers)
+        master_bias = self.get_cache_file(batch)
 
-        for i, data in enumerate(images):
-            data = data - master_bias
-            images[i] = data
-            headers[i][bias_frame_key] = master_bias_header[latest_save_key]
+        for i, image in enumerate(batch):
+            data = image.get_data()
+            data = data - master_bias.get_data()
+            image.set_data(data)
+            image[bias_frame_key] = master_bias[latest_save_key]
 
-        return images, headers
+        return batch
 
     def make_image(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ):
-        images, headers = self.select_cache_images(images, headers)
+            image_batch: ImageBatch,
+    ) -> Image:
+
+        images = self.select_cache_images(image_batch)
 
         n_frames = len(images)
+
         if n_frames == 0:
             err = f"Found {n_frames} suitable biases in batch"
             logger.error(err)
             raise ImageNotFoundError(err)
 
-        nx, ny = images[0].shape
+        nx, ny = images[0].get_data().shape
 
         biases = np.zeros((nx, ny, n_frames))
 
         for i, img in enumerate(images):
-            biases[:, :, i] = img
+            biases[:, :, i] = img.get_data()
 
         logger.info(f'Median combining {n_frames} biases')
-        master_bias = np.nanmedian(biases, axis=2)
+        master_bias = Image(np.nanmedian(biases, axis=2), header=images[0].get_header())
 
-        return master_bias, headers[0]
+        return master_bias
 
 
 class MasterBiasCalibrator(ProcessorPremadeCache, BiasCalibrator):

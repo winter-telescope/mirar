@@ -7,6 +7,8 @@ import pandas as pd
 from winterdrp.processors.database.postgres import execute_query, xmatch_import_db
 from astropy.time import Time
 
+from winterdrp.data import SourceBatch
+
 logger = logging.getLogger(__name__)
 
 
@@ -115,24 +117,31 @@ class CandidateNamer(BaseDataframeProcessor):
 
     def _apply_to_candidates(
             self,
-            candidate_table: pd.DataFrame,
-    ) -> pd.DataFrame:
-        logger.info(candidate_table)
-        names = []
-        lastname = None
-        for ind in range(len(candidate_table)):
-            cand = candidate_table.loc[ind]
-            if len(cand['prv_candidates']) > 0:
-                cand_name = cand['prv_candidates'][0][self.db_name_field]
+            batch: SourceBatch,
+    ) -> SourceBatch:
 
-            else:
-                prv_det, prv_name = self.is_detected_previously(cand['ra'], cand['dec'])
-                if prv_det:
-                    cand_name = prv_name[0]
+        for source_table in batch:
+
+            candidate_table = source_table.get_data()
+
+            names = []
+            lastname = None
+            for ind in range(len(candidate_table)):
+                cand = candidate_table.loc[ind]
+                if len(cand['prv_candidates']) > 0:
+                    cand_name = cand['prv_candidates'][0][self.db_name_field]
+
                 else:
-                    cand_name = self.get_next_name(cand[self.date_field], lastname=lastname)
-                lastname = cand_name
-            names.append(cand_name)
-        candidate_table[self.db_name_field] = names
-        logger.info(candidate_table)
-        return candidate_table
+                    prv_det, prv_name = self.is_detected_previously(cand['ra'], cand['dec'])
+
+                    if prv_det:
+                        cand_name = prv_name[0]
+                    else:
+                        cand_name = self.get_next_name(cand[self.date_field], lastname=lastname)
+                    lastname = cand_name
+                names.append(cand_name)
+
+            candidate_table[self.db_name_field] = names
+            source_table.set_data(candidate_table)
+
+        return batch

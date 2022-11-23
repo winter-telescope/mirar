@@ -1,13 +1,9 @@
 import astropy.io.fits
 import numpy as np
-import os
 import logging
-import pandas as pd
-from collections.abc import Callable
-from astropy.time import Time
-from winterdrp.processors.base_processor import ProcessorWithCache, ProcessorPremadeCache
+from winterdrp.processors.base_processor import ProcessorPremadeCache
 from winterdrp.processors.flat import SkyFlatCalibrator
-from winterdrp.paths import cal_output_dir, saturate_key
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -18,58 +14,33 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        master_sky, _ = self.get_cache_file(images, headers)
+        master_sky = self.get_cache_file(batch)
 
-        mask = master_sky <= self.flat_nan_threshold
+        mask = master_sky.get_data() <= self.flat_nan_threshold
 
         if np.sum(mask) > 0:
             master_sky[mask] = np.nan
 
-        for i, data in enumerate(images):
-            header = headers[i]
+        for i, image in enumerate(batch):
+            data = image.get_data()
+            header = image.get_header()
 
             subtract_median = np.nanmedian(data)
-            data = data - subtract_median * master_sky
+            data = data - subtract_median * master_sky.get_data()
 
             header.append(('SKMEDSUB', subtract_median, 'Median sky level subtracted'), end=True)
 
-            images[i] = data
-            headers[i] = header
+            image.set_data(data)
+            image.set_header(header)
 
-        return images, headers
+        return batch
 
     def __str__(self) -> str:
         return f"Processor to create a median sky background map, and subtract this from images."
 
+
 class MasterSkyCalibrator(ProcessorPremadeCache, NightSkyMedianCalibrator):
     pass
-# class OldNightSkyMedianCalibrator(
-#     NightSkyMedianCalibrator,
-#     OldSkyFlatCalibrator
-# ):
-#     pass
-
-    # def select_sky(
-    #         self,
-    #         data: np.ndarray,
-    #         header: astropy.io.fits.header,
-    #         images: list[np.ndarray],
-    #         headers: list[astropy.io.fits.header]
-    # ) -> tuple[np.ndarray, astropy.io.fits.header]:
-    #
-    #     ref = Time(header["UTCTIME"], format='isot', scale='utc').jd
-    #
-    #     deltas = np.array([
-    #         abs(Time(x["UTCTIME"], format='isot', scale='utc').jd - ref)
-    #         for x in headers
-    #     ])
-    #
-    #     closest_delta_t = min(deltas[deltas > 0.])
-    #
-    #     match_index = list(deltas).index(closest_delta_t)
-    #
-    #     return images[match_index], headers[match_index]

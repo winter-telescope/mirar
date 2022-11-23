@@ -7,15 +7,15 @@ from winterdrp.processors.utils.image_selector import select_from_images
 from collections.abc import Callable
 from winterdrp.paths import latest_save_key, flat_frame_key
 from winterdrp.errors import ImageNotFoundError
+from winterdrp.data import ImageBatch, Image
 
 logger = logging.getLogger(__name__)
 
 
 def default_select_flat(
-        images: list[np.ndarray],
-        headers: list[astropy.io.fits.Header],
-) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-    return select_from_images(images, headers, target_values="flat")
+        images: ImageBatch,
+) -> ImageBatch:
+    return select_from_images(images, target_values="flat")
 
 
 class FlatCalibrator(ProcessorWithCache):
@@ -29,7 +29,7 @@ class FlatCalibrator(ProcessorWithCache):
             y_min: int = 0,
             y_max: int = sys.maxsize,
             flat_nan_threshold: float = 0.,
-            select_flat_images: Callable[[list, list], [list, list]] = default_select_flat,
+            select_flat_images: Callable[[ImageBatch], ImageBatch] = default_select_flat,
             *args,
             **kwargs
     ):
@@ -46,34 +46,30 @@ class FlatCalibrator(ProcessorWithCache):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
-        master_flat, master_flat_header = self.get_cache_file(images, headers)
+        master_flat = self.get_cache_file(batch)
+        master_flat_data = master_flat.get_data()
 
-        mask = master_flat <= self.flat_nan_threshold
+        mask = master_flat_data <= self.flat_nan_threshold
 
         if np.sum(mask) > 0:
-            master_flat[mask] = np.nan
+            master_flat_data[mask] = np.nan
 
-        for i, data in enumerate(images):
-            header = headers[i]
+        for i, image in enumerate(batch):
+            data = image.get_data()
+            data = data / master_flat_data
+            image.set_data(data)
+            image[flat_frame_key] = master_flat[latest_save_key]
 
-            data = data / master_flat
-
-            header[flat_frame_key] = master_flat_header[latest_save_key]
-            images[i] = data
-            headers[i] = header
-
-        return images, headers
+        return batch
 
     def make_image(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ):
-        images, headers = self.select_cache_images(images, headers)
+            batch: ImageBatch,
+    ) -> Image:
+        images = self.select_cache_images(batch)
 
         n_frames = len(images)
         if n_frames == 0:
@@ -81,18 +77,18 @@ class FlatCalibrator(ProcessorWithCache):
             logger.error(err)
             raise ImageNotFoundError(err)
 
-        nx, ny = images[0].shape
+        nx, ny = images[0].get_data().shape
 
         flats = np.zeros((nx, ny, n_frames))
 
         for i, img in enumerate(images):
-            median = np.nanmedian(img[self.x_min:self.x_max, self.y_min:self.y_max])
-            flats[:, :, i] = img / median
+            median = np.nanmedian(img.get_data()[self.x_min:self.x_max, self.y_min:self.y_max])
+            flats[:, :, i] = img.get_data() / median
 
         logger.info(f'Median combining {n_frames} flats')
         master_flat = np.nanmedian(flats, axis=2)
 
-        return master_flat, headers[0]
+        return Image(master_flat, header=batch[0].get_header())
 
 
 class SkyFlatCalibrator(FlatCalibrator):
@@ -106,46 +102,13 @@ class SkyFlatCalibrator(FlatCalibrator):
 
     @staticmethod
     def select_sky_flat(
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
-        return select_from_images(images, headers, header_key="obsclass", target_values="science")
+            images: ImageBatch,
+    ) -> ImageBatch:
+        return select_from_images(images, key="obsclass", target_values="science")
 
     def __str__(self) -> str:
         return f"Processor to create a sky flat image, divides other images by this image."
 
+
 class MasterFlatCalibrator(ProcessorPremadeCache, FlatCalibrator):
     pass
-
-
-# class OldSkyFlatCalibrator(SkyFlatCalibrator):
-#
-#     def select_cache_images(
-#             self,
-#             observing_log: pd.DataFrame
-#     ) -> list[str]:
-#
-#         mask = observing_log["OBSCLASS"] == "science"
-#         obs = observing_log[mask]
-#         nights = list(sorted(set(obs["NIGHT"])))
-#
-#         if len(nights) == 1:
-#             err = "Only found one night in observing log. " \
-#                   "Cannot use a previous night for creating flats. " \
-#                   "Try adjusting the 'log_history_nights' parameter of the pipeline, " \
-#                   "to read in more history."
-#
-#             logger.error(err)
-#             raise Exception(err)
-#
-#         previous_night = nights[nights.index(self.night) - 1]
-#
-#         previous = obs[obs["NIGHT"] == previous_night]
-#
-#         return list(previous["RAWIMAGEPATH"])
-
-
-
-
-
-

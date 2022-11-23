@@ -8,8 +8,8 @@ from winterdrp.paths import raw_img_sub_dir
 from astropy.time import Time
 from astropy import units as u
 from winterdrp.monitor.base_monitor import Monitor
-from winterdrp.paths import base_raw_dir
 from datetime import datetime
+from winterdrp.data import Dataset, ImageBatch
 from winterdrp.processors.utils import ImageLoader
 
 logger = logging.getLogger(__name__)
@@ -167,7 +167,7 @@ else:
         night=night,
     )
 
-    batches, errorstack = pipe.reduce_images([[[], []]], catch_all_errors=True)
+    batches, errorstack = pipe.reduce_images(Dataset([ImageBatch()]), catch_all_errors=True)
     if args.postprocessconfig is not None:
         post_config = [x for x in pipe.set_configuration(config) if isinstance(x, ImageLoader)][:1]
         post_config += pipe.postprocess_configuration(
@@ -181,7 +181,7 @@ else:
         pipe.set_configuration(protected_key)
 
         _, new_errorstack = pipe.reduce_images(
-            batches=[[[], []]],
+            Dataset([ImageBatch()]),
             selected_configurations=protected_key,
             catch_all_errors=True
         )

@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from winterdrp.paths import get_output_path, get_output_dir, latest_save_key, latest_mask_save_key, base_output_dir
 from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.data import ImageBatch
 from shutil import copy
 
 logger = logging.getLogger(__name__)
@@ -35,22 +36,19 @@ class RealtimeImageSimulator(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch
+    ) -> ImageBatch:
 
         for image_name in self.input_img_names:
 
             img_path = self.input_img_dir.joinpath(image_name)
-
-            logger.info(img_path)
 
             output_path = Path(get_output_dir(
                 dir_root=self.output_dir_name,
                 sub_dir=self.night_sub_dir,
                 output_dir=self.output_dir
             ))
-            logger.info(output_path)
+            logger.debug(f"Copying {img_path} to {output_path}")
 
             if not output_path.exists():
                 output_path.mkdir(parents=True)
@@ -62,13 +60,4 @@ class RealtimeImageSimulator(BaseImageProcessor):
 
             copy(img_path, output_path)
 
-        # try:
-        #     os.makedirs(get_output_dir(
-        #         dir_root=self.output_dir_name,
-        #         sub_dir=self.night_sub_dir,
-        #         output_dir=self.output_dir
-        #     ))
-        # except OSError:
-        #     pass
-
-        return images, headers
+        return batch

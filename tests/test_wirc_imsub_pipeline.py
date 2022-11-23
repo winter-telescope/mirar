@@ -1,10 +1,8 @@
 import unittest
 from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
 import logging
 import os
 from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.paths import base_name_key
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from astropy.io import fits
@@ -13,13 +11,14 @@ from winterdrp.processors.reference import Reference
 from winterdrp.pipelines.wirc.blocks import subtract
 from winterdrp.pipelines.wirc.generator import wirc_reference_image_resampler, wirc_reference_sextractor, \
     wirc_reference_psfex
+from winterdrp.data import Dataset, ImageBatch
+
 
 logger = logging.getLogger(__name__)
 
 test_data_dir = get_test_data_dir()
 
 ref_img_directory = os.path.join(test_data_dir, 'wirc/ref')
-print(ref_img_directory)
 
 
 def test_reference_image_generator(
@@ -49,8 +48,8 @@ test_imsub_configuration = [
     ),
     Reference(
         ref_image_generator=test_reference_image_generator,
-        ref_swarp_resampler=wirc_reference_image_resampler,
-        ref_sextractor=wirc_reference_sextractor,
+        swarp_resampler=wirc_reference_image_resampler,
+        sextractor=wirc_reference_sextractor,
         ref_psfex=wirc_reference_psfex
     ),
 ] + subtract
@@ -68,11 +67,11 @@ class TestWircImsubPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc imsub pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+        res, errorstack = pipeline.reduce_images(dataset=Dataset(ImageBatch()), catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
 
-        header = res[0][1][0]
+        header = res[0][0].get_header()
 
         for key, value in expected_values.items():
             if isinstance(value, float):
@@ -89,7 +88,7 @@ if __name__ == "__main__":
 
     # Code to generate updated ZP dict of the results change
 
-    new_res, new_errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+    new_res, new_errorstack = pipeline.reduce_images(catch_all_errors=False)
 
     new_header = new_res[0][1][0]
 

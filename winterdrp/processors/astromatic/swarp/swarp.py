@@ -8,6 +8,7 @@ from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, base_
 from winterdrp.utils import execute
 from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
 from astropy.wcs import WCS
+from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -134,9 +135,8 @@ class Swarp(BaseImageProcessor):
 
     def _apply_to_images(
             self,
-            images: list[np.ndarray],
-            headers: list[astropy.io.fits.Header],
-    ) -> tuple[list[np.ndarray], list[astropy.io.fits.Header]]:
+            batch: ImageBatch,
+    ) -> ImageBatch:
 
         swarp_output_dir = self.get_swarp_output_dir()
 
@@ -147,12 +147,12 @@ class Swarp(BaseImageProcessor):
 
         swarp_image_list_path = os.path.join(
             swarp_output_dir,
-            os.path.splitext(headers[0]["BASENAME"])[0] + "_swarp_img_list.txt"
+            os.path.splitext(batch[0][base_name_key])[0] + "_swarp_img_list.txt"
         )
 
         swarp_weight_list_path = os.path.join(
             swarp_output_dir,
-            os.path.splitext(headers[0]["BASENAME"])[0] + "_swarp_weight_list.txt"
+            os.path.splitext(batch[0][base_name_key])[0] + "_swarp_weight_list.txt"
         )
         logger.debug(f"Writing file list to {swarp_image_list_path}")
 
@@ -162,12 +162,12 @@ class Swarp(BaseImageProcessor):
         if self.combine:
             output_image_path = os.path.join(
                 swarp_output_dir,
-                os.path.splitext(headers[0]["BASENAME"])[0] + "_stack.fits"
+                os.path.splitext(batch[0][base_name_key])[0] + "_stack.fits"
             )
         else:
             output_image_path = os.path.join(
                 swarp_output_dir,
-                os.path.splitext(headers[0]["BASENAME"])[0] + ".resamp.fits"
+                os.path.splitext(batch[0][base_name_key])[0] + ".resamp.fits"
             )
         logger.debug(f"Saving to {output_image_path}")
 
@@ -175,9 +175,9 @@ class Swarp(BaseImageProcessor):
         all_imgpixsizes = []
         all_ras = []
         all_decs = []
+
         with open(swarp_image_list_path, "w") as f, open(swarp_weight_list_path, "w") as g:
-            for i, data in enumerate(images):
-                header = headers[i]
+            for image in batch:
 
                 pixscale_to_use = None
                 x_imgpixsize_to_use = None
@@ -198,15 +198,15 @@ class Swarp(BaseImageProcessor):
                     center_ra_to_use = self.center_ra
                     center_dec_to_use = self.center_dec
                 else:
-                    w = WCS(header)
+                    w = WCS(image.get_header())
 
-                    cd11 = header['CD1_1']
-                    cd21 = header['CD2_1']
-                    cd12 = header['CD1_2']
-                    cd22 = header['CD2_2']
+                    cd11 = image['CD1_1']
+                    cd21 = image['CD2_1']
+                    cd12 = image['CD1_2']
+                    cd22 = image['CD2_2']
 
-                    nxpix = header['NAXIS1']
-                    nypix = header['NAXIS2']
+                    nxpix = image['NAXIS1']
+                    nypix = image['NAXIS2']
 
                     image_x_cen = nxpix / 2
                     image_y_cen = nypix / 2
@@ -229,14 +229,14 @@ class Swarp(BaseImageProcessor):
                 if self.include_scamp:
                     temp_head_path = copy_temp_file(
                         output_dir=swarp_output_dir,
-                        file_path=str(header[scamp_header_key]).replace('\n', '')
+                        file_path=str(image[scamp_header_key]).replace('\n', '')
                     )
 
-                temp_img_path = get_temp_path(swarp_output_dir, header[base_name_key])
+                temp_img_path = get_temp_path(swarp_output_dir, image[base_name_key])
 
-                self.save_fits(data, header, temp_img_path)
+                self.save_fits(image, temp_img_path)
 
-                temp_mask_path = self.save_mask(data, header, temp_img_path)
+                temp_mask_path = self.save_mask(image, temp_img_path)
 
                 f.write(f"{temp_img_path}\n")
                 g.write(f"{temp_mask_path}\n")
@@ -283,7 +283,7 @@ class Swarp(BaseImageProcessor):
 
             temp_output_image_path = get_temp_path(
                 swarp_output_dir,
-                os.path.splitext(headers[0][base_name_key])[0] + ".resamp.fits"
+                os.path.splitext(batch[0][base_name_key])[0] + ".resamp.fits"
             )
             temp_output_image_weight_path = temp_output_image_path.replace(".fits", ".weight.fits")
 
@@ -293,26 +293,26 @@ class Swarp(BaseImageProcessor):
             else:
                 err = f'Swarp seems to have misbehaved, and not made the correct output file {output_image_path}'
                 logger.error(err)
-                raise ValueError
+                raise ValueError(err)
 
-        image, new_header = self.open_fits(output_image_path)
+        new_image = self.open_fits(output_image_path)
 
-        for key in headers[0]:
-            if np.sum([x[key] == headers[0][key] for x in headers]) == len(headers):
-                if key not in new_header:
-                    new_header[key] = headers[0][key]
+        for key in batch[0].keys():
+            if np.sum([x[key] == batch[0][key] for x in batch]) == len(batch):
+                if key not in new_image.keys():
+                    new_image[key] = batch[0][key]
 
-        new_header["COADDS"] = np.sum([x["COADDS"] for x in headers])
+        new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
 
         if not self.cache:
             for temp_file in temp_files:
                 os.remove(temp_file)
                 logger.debug(f"Deleted temporary file {temp_file}")
 
-        new_header[raw_img_key] = ",".join([x[raw_img_key] for x in headers])
-        new_header[base_name_key] = os.path.basename(output_image_path)
-        new_header[latest_mask_save_key] = os.path.basename(output_image_weight_path)
-        return [image], [new_header]
+        new_image[raw_img_key] = ",".join([x[raw_img_key] for x in batch])
+        new_image[base_name_key] = os.path.basename(output_image_path)
+        new_image[latest_mask_save_key] = os.path.basename(output_image_weight_path)
+        return ImageBatch([new_image])
 
     def check_prerequisites(
             self,

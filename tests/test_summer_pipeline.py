@@ -1,6 +1,7 @@
 import unittest
 import logging
 from winterdrp.pipelines import get_pipeline
+from winterdrp.data import Dataset, ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,11 @@ class TestSummerPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
+        res, errorstack = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
-        self.assertEqual(len(res[0][0]), 1)
+        self.assertEqual(len(res[0]), 1)
 
-        header = res[0][1][0]
+        header = res[0][0].get_header()
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
@@ -58,23 +59,3 @@ class TestSummerPipeline(unittest.TestCase):
                 self.assertEqual(value, header[key])
             else:
                 raise TypeError(f"Type for value ({type(value)} is neither float not int.")
-
-
-if __name__ == "__main__":
-
-    print("Calculating latest ZP dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images([[[], []]], catch_all_errors=False)
-
-    new_header = new_res[0][1][0]
-
-    new_exp = "expected_zp = { \n"
-    for header_key in new_header.keys():
-        if "ZP_" in header_key:
-            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp += "}"
-    print(new_exp)
-
-
