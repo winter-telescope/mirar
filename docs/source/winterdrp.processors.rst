@@ -37,14 +37,6 @@ winterdrp.processors.bias module
    :undoc-members:
    :show-inheritance:
 
-winterdrp.processors.candidate\_filters module
-----------------------------------------------
-
-.. automodule:: winterdrp.processors.candidate_filters
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 winterdrp.processors.csvlog module
 ----------------------------------
 
@@ -57,14 +49,6 @@ winterdrp.processors.dark module
 --------------------------------
 
 .. automodule:: winterdrp.processors.dark
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-winterdrp.processors.error module
----------------------------------
-
-.. automodule:: winterdrp.processors.error
    :members:
    :undoc-members:
    :show-inheritance:
