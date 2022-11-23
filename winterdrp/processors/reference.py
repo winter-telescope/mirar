@@ -174,6 +174,8 @@ class Reference(BaseImageProcessor):
                 gain=sci_resamp_gain
             )
 
+            sci_sextractor.set_night(night_sub_dir=self.night_sub_dir)
+
             resampled_sci_sextractor_img = sci_sextractor.apply(resampled_sci_image_batch)[0]
             self.save_fits(resampled_sci_sextractor_img,
                            path=os.path.join(self.get_sub_output_dir(), resampled_sci_sextractor_img.get_name()))
