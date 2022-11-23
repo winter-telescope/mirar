@@ -16,8 +16,6 @@ from winterdrp.data import Dataset, ImageBatch
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO)
-
 test_data_dir = get_test_data_dir()
 
 ref_img_directory = os.path.join(test_data_dir, 'wirc/ref')
