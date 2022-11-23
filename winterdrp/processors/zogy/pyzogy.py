@@ -44,17 +44,17 @@ def pyzogy(
     As per Frank's instructions, will assume images have been aligned,
     background subtracted, and gain-matched.
 
-    Arguments:
-    new_image_path: New image (filename)
-    ref_image_path: Reference image (filename)
-    new_psf_path: PSF of New image (filename)
-    ref_psf_path: PSF or Reference image (filename)
-    new_sigma_path: 2D Uncertainty (sigma) of New image (filename)
-    ref_sigma_path: 2D Uncertainty (sigma) of Reference image (filename)
-    new_avg_unc: Average uncertainty (sigma) of New image
-    ref_avg_unc: Average uncertainty (sigma) of Reference image
-    dx: Astrometric uncertainty (sigma) in x coordinate
-    dy: Astrometric uncertainty (sigma) in y coordinate
+
+    :param new_image_path: New image (filename)
+    :param ref_image_path: Reference image (filename)
+    :param new_psf_path: PSF of New image (filename)
+    :param ref_psf_path: PSF or Reference image (filename)
+    :param new_sigma_path: 2D Uncertainty (sigma) of New image (filename)
+    :param ref_sigma_path: 2D Uncertainty (sigma) of Reference image (filename)
+    :param new_avg_unc: Average uncertainty (sigma) of New image
+    :param ref_avg_unc: Average uncertainty (sigma) of Reference image
+    :param dx: Astrometric uncertainty (sigma) in x coordinate
+    :param dy: Astrometric uncertainty (sigma) in y coordinate
 
     Returns:
     diff: Subtracted image
@@ -215,64 +215,3 @@ def pyzogy(
     s_corr = score / np.sqrt(new_noise + ref_noise + V_ast_S_N + V_ast_S_R)
 
     return diff, diff_psf, s_corr
-
-
-if __name__ == "__main__":
-    if len(sys.argv) == 12:
-        D, P_D, S_corr = pyzogy(
-            sys.argv[1],
-            sys.argv[2],
-            sys.argv[3],
-            sys.argv[4],
-            sys.argv[5],
-            sys.argv[6],
-            float(sys.argv[7]),
-            float(sys.argv[8]),
-        )
-
-        # Difference Image
-        tmp = fits.open(sys.argv[1])
-        tmp[0].data = D.astype(np.float32)
-        tmp.writeto(sys.argv[9], output_verify="warn", overwrite=True)
-
-        # S_corr image
-        tmp[0].data = S_corr.astype(np.float32)
-        tmp.writeto(sys.argv[11], output_verify="warn", overwrite=True)
-
-        # PSF Image
-        tmp = fits.open(sys.argv[3])
-        tmp[0].data = P_D.astype(np.float32)
-        tmp.writeto(sys.argv[10], output_verify="warn", overwrite=True)
-
-    elif len(sys.argv) == 14:
-        D, P_D, S_corr = pyzogy(
-            sys.argv[1],
-            sys.argv[2],
-            sys.argv[3],
-            sys.argv[4],
-            sys.argv[5],
-            sys.argv[6],
-            float(sys.argv[7]),
-            float(sys.argv[8]),
-            dx=float(sys.argv[9]),
-            dy=float(sys.argv[10]),
-        )
-
-        # Difference Image
-        tmp = fits.open(sys.argv[1])
-        tmp[0].data = D.astype(np.float32)
-        tmp.writeto(sys.argv[11], output_verify="warn", overwrite=True)
-
-        # S_corr image
-        tmp[0].data = S_corr.astype(np.float32)
-        tmp.writeto(sys.argv[13], output_verify="warn", overwrite=True)
-
-        # PSF Image
-        tmp = fits.open(sys.argv[3])
-        tmp[0].data = P_D.astype(np.float32)
-        tmp.writeto(sys.argv[12], output_verify="warn", overwrite=True)
-
-    else:
-        print(
-            "Usage: python py_zogy.py <NewImage> <RefImage> <NewPSF> <RefPSF> <NewSigmaImage> <RefSigmaImage> <NewSigmaMode> <RefSigmaMode> <AstUncertX> <AstUncertY> <DiffImage> <DiffPSF> <ScorrImage>"
-        )
