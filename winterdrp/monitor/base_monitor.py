@@ -176,7 +176,7 @@ class Monitor:
     def process_full_night(
             self,
     ):
-        batches, errorstack = self.pipeline.reduce_images(Dataset(), catch_all_errors=True)
+        batches, errorstack = self.pipeline.reduce_images(Dataset(ImageBatch()), catch_all_errors=True)
         self.summarise_errors(errorstack=errorstack)
 
     def get_error_output_path(self) -> str:
