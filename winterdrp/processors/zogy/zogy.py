@@ -90,6 +90,7 @@ class ZOGYPrepare(BaseImageProcessor):
         ref_catalog = get_table_from_ldac(ref_catalog_name)
         sci_catalog = get_table_from_ldac(sci_catalog_name)
 
+        logging.info(f"Number of total sources SCI: {len(ref_catalog)}, REF: {len(sci_catalog)}")
         good_sci_sources, good_ref_sources = self.catalog_purifier(sci_catalog, ref_catalog)
         logger.info(f'Number of good sources SCI: {np.sum(good_sci_sources)} REF: {np.sum(good_ref_sources)}')
 
