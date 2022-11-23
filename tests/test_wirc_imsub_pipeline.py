@@ -156,13 +156,14 @@ class TestWircImsubPipeline(BaseTestCase):
 
         self.assertEqual(len(table), len(expected_res))
 
-        for i, (colname, column) in enumerate(expected_res.items()):
+        for colname, column in expected_res.items():
 
             if isinstance(column.iloc[0], (int, np.integer)):
                 pd.testing.assert_series_equal(column, table.loc[:, colname], check_dtype=False)
             elif isinstance(column.iloc[0], float):
-                ratio = float(np.mean(column/table.loc[:, colname]))
-                self.assertAlmostEqual(ratio, 1.0, places=2)
+                e = column.to_numpy()
+                r = table.loc[:, colname].to_numpy()
+                np.testing.assert_array_almost_equal(e, r, decimal=4)
             elif colname in ["programpi"]:
                 pd.testing.assert_series_equal(column, table.loc[:, colname], check_dtype=False)
             elif "name" in colname:
