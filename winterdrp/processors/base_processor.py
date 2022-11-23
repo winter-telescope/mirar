@@ -14,6 +14,7 @@ from threading import Thread
 
 import numpy as np
 
+
 from winterdrp.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
 from winterdrp.errors import (
     ErrorReport,
@@ -33,6 +34,7 @@ from winterdrp.paths import (
     get_weight_path,
     max_n_cpu,
     package_name,
+    __version__
 )
 
 logger = logging.getLogger(__name__)
@@ -247,7 +249,7 @@ class BaseProcessor:
             data_block["REDUCER"] = getpass.getuser()
             data_block["REDMACH"] = socket.gethostname()
             data_block["REDTIME"] = str(datetime.datetime.now())
-            data_block["REDSOFT"] = package_name
+            data_block["REDSOFT"] = f"{package_name}:{__version__}"
             batch[i] = data_block
         return batch
 
@@ -348,6 +350,8 @@ class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
     ) -> ImageBatch:
         raise NotImplementedError
 
+    def generate_error_report(self, exception: Exception, batch: ImageBatch) -> ErrorReport:
+        return self.image_batch_error_report(exception, batch)
 
 class ProcessorWithCache(BaseImageProcessor, ABC):
     """
