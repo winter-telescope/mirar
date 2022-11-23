@@ -59,5 +59,3 @@ class TestSummerPipeline(unittest.TestCase):
                 self.assertEqual(value, header[key])
             else:
                 raise TypeError(f"Type for value ({type(value)} is neither float not int.")
-
-

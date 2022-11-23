@@ -136,9 +136,9 @@ class PS1Ref(BaseReferenceGenerator):
         ps1_img_size_pix = img_size_arcsec / 0.25
         fitsurl = self.geturl(ra_cent, dec_cent, size=ps1_img_size_pix, filters=self.filter_name, format="fits")
         logger.info(fitsurl)
-        
+
         with fits.open(fitsurl[0]) as hdul:
-            refHDU = hdul.copy()[0]
+            refHDU = hdul[0].copy()
 
         refHDU.header['GAIN'] = refHDU.header['CELL.GAIN']
         refHDU.header['ZP'] = refHDU.header['FPA.ZP']
