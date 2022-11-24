@@ -163,23 +163,6 @@ class Reference(BaseImageProcessor):
                            path=rrsi_path)
             logger.info(f"Saved reference image to {rrsi_path}")
 
-            # Detect source in the science image
-
-            # sci_resamp_x_cent, sci_resamp_y_cent, sci_resamp_ra_cent, sci_resamp_dec_cent, \
-            #     sci_resamp_pixscale, sci_resamp_x_imgsize, sci_resamp_y_imgsize, \
-            #     sci_resamp_gain = self.get_image_header_params(resampled_ref_img)
-
-            # sci_sextractor = self.sextractor(
-            #     output_sub_dir=self.temp_output_subtract_dir,
-            #     gain=sci_resamp_gain
-            # )
-            #
-            # sci_sextractor.set_night(night_sub_dir=self.night_sub_dir)
-
-            # resampled_sci_sextractor_img = sci_sextractor.apply(resampled_sci_image_batch)[0]
-            # self.save_fits(resampled_sci_sextractor_img,
-            #                path=os.path.join(self.get_sub_output_dir(), resampled_sci_sextractor_img.get_name()))
-
             ref_psfex = self.psfex(output_sub_dir=self.temp_output_subtract_dir, norm_fits=True)
 
             resampled_ref_sextractor_img = ref_psfex.apply(ImageBatch(resampled_ref_sextractor_img))[0]
