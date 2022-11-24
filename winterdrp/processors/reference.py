@@ -145,7 +145,7 @@ class Reference(BaseImageProcessor):
             )
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
 
-            resampled_sci_image_batch = sci_resampler.apply(ImageBatch([image]))
+            resampled_sci_image = sci_resampler.apply(ImageBatch([image]))[0]
 
             # Detect source in reference image, and save as catalog
 
@@ -163,30 +163,13 @@ class Reference(BaseImageProcessor):
                            path=rrsi_path)
             logger.info(f"Saved reference image to {rrsi_path}")
 
-            # Detect source in the science image
-
-            sci_resamp_x_cent, sci_resamp_y_cent, sci_resamp_ra_cent, sci_resamp_dec_cent, \
-                sci_resamp_pixscale, sci_resamp_x_imgsize, sci_resamp_y_imgsize, \
-                sci_resamp_gain = self.get_image_header_params(resampled_ref_img)
-
-            sci_sextractor = self.sextractor(
-                output_sub_dir=self.temp_output_subtract_dir,
-                gain=sci_resamp_gain
-            )
-
-            sci_sextractor.set_night(night_sub_dir=self.night_sub_dir)
-
-            resampled_sci_sextractor_img = sci_sextractor.apply(resampled_sci_image_batch)[0]
-            self.save_fits(resampled_sci_sextractor_img,
-                           path=os.path.join(self.get_sub_output_dir(), resampled_sci_sextractor_img.get_name()))
-
             ref_psfex = self.psfex(output_sub_dir=self.temp_output_subtract_dir, norm_fits=True)
 
             resampled_ref_sextractor_img = ref_psfex.apply(ImageBatch(resampled_ref_sextractor_img))[0]
 
             # Copy over header keys from ref to sci
-            resampled_sci_sextractor_img[ref_psf_key] = resampled_ref_sextractor_img[norm_psfex_header_key]
-            resampled_sci_sextractor_img[ref_img_key] = resampled_ref_sextractor_img[base_name_key]
+            resampled_sci_image[ref_psf_key] = resampled_ref_sextractor_img[norm_psfex_header_key]
+            resampled_sci_image[ref_img_key] = resampled_ref_sextractor_img[base_name_key]
 
-            new_batch.append(resampled_sci_sextractor_img)
+            new_batch.append(resampled_sci_image)
         return new_batch
