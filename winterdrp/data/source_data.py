@@ -33,8 +33,13 @@ class SourceTable(DataBlock):
 
 class SourceBatch(DataBatch):
 
-    def __add__(self, data: SourceTable):
-        self._batch.append(data)
+    data_type = SourceTable
+
+    def __init__(self, batch: list[SourceTable] | SourceTable = None):
+        super().__init__(batch=batch)
+
+    def append(self, data: SourceTable):
+        self._append(data)
 
     def get_batch(self) -> list[SourceTable]:
-        return self._batch
+        return self.get_data_list()

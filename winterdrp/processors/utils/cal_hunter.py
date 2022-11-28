@@ -45,7 +45,7 @@ class CalRequirement:
                         target_values=value
                     )
                     if len(sub_images) > 0:
-                        self.data[value] = [sub_images]
+                        self.data[value] = sub_images
 
         self.success = len(self.data) == len(self.required_values)
 
@@ -106,10 +106,11 @@ def find_required_cals(
 
         dir_to_load = ordered_nights[0].joinpath(subdir)
 
+        logger.info(f"Checking night {dir_to_load}")
+
         ordered_nights = ordered_nights[1:]
 
         try:
-            logger.info(f"Checking night {dir_to_load}")
             new_images = load_from_dir(
                 str(dir_to_load), open_f=open_f
             )
@@ -168,7 +169,7 @@ class CalHunter(ImageLoader):
             os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
 
-        images = find_required_cals(
+        updated_batch = find_required_cals(
             latest_dir=latest_dir,
             night=self.night,
             requirements=requirements,
@@ -177,8 +178,6 @@ class CalHunter(ImageLoader):
             skip_latest_night=True
         )
 
-        batch += images
-
-        return batch
+        return updated_batch
 
 
