@@ -39,10 +39,11 @@ class SummerPipeline(Pipeline):
             night: str | int
     ):
         download_via_ssh(
-            server="jagati.caltech.edu",
-            base_dir="/data/viraj/winter_data/commissioning/raw/",
+            server="winter.caltech.edu",
+            base_dir="/data/loki/raw_data/summer",
             night=night,
-            pipeline=PIPELINE_NAME
+            pipeline=PIPELINE_NAME,
+            server_sub_dir="raw"
         )
 
     @staticmethod
