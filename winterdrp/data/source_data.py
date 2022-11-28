@@ -42,4 +42,4 @@ class SourceBatch(DataBatch):
         self._append(data)
 
     def get_batch(self) -> list[SourceTable]:
-        return self._get_data()
+        return self.get_data_list()

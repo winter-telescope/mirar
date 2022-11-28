@@ -46,7 +46,7 @@ class PseudoList:
         for item in data_list:
             self.append(item)
 
-    def _get_data(self):
+    def get_data_list(self):
         return self._datalist
 
     def append(self, item):
@@ -75,14 +75,14 @@ class PseudoList:
 
     def __add__(self, other):
         new = self.__class__()
-        for item in self._datalist:
+        for item in self.get_data_list():
             new.append(item)
-        for item in other.get_batch():
+        for item in other.get_data_list():
             new.append(item)
         return new
 
     def __iadd__(self, other):
-        for item in other.get_batch():
+        for item in other.get_data_list():
             self._datalist.append(item)
         return self
 
@@ -103,7 +103,7 @@ class DataBatch (PseudoList):
         super(DataBatch, self).__init__(data_list=batch)
 
     def get_batch(self) -> list[DataBlock]:
-        return self._get_data()
+        return self.get_data_list()
 
 
 class Dataset (PseudoList):
@@ -111,7 +111,7 @@ class Dataset (PseudoList):
     data_type = DataBatch
 
     def get_batches(self):
-        return self._get_data()
+        return self.get_data_list()
 
     def __init__(self, batches: list[DataBatch] | DataBatch = None):
         super(Dataset, self).__init__(data_list=batches)

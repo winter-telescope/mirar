@@ -96,4 +96,4 @@ class ImageBatch(DataBatch):
         return f"<An {self.__class__.__name__} object, containing {[x.get_name() for x in self.get_batch()]}>"
 
     def get_batch(self) -> list[Image]:
-        return self._get_data()
+        return self.get_data_list()
