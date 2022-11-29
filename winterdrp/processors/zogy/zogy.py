@@ -10,7 +10,6 @@ from winterdrp.utils.ldac_tools import get_table_from_ldac
 from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clipped_stats
 import astropy.units as u
-from winterdrp.io import open_fits
 from winterdrp.processors.zogy.pyzogy import pyzogy
 from winterdrp.paths import norm_psfex_header_key, base_name_key, ref_img_key, ref_psf_key, raw_img_key
 import os
@@ -306,8 +305,6 @@ class ZOGY(ZOGYPrepare):
             diff_image_path = Path(str(sci_image_path).replace('.fits', '.diff.fits'))
             diff_psf_path = diff_image_path.with_suffix('.psf')
 
-            print(diff_psf_path, type(diff_psf_path))
-
             scorr_image_path = Path(str(sci_image_path).replace('.fits', '') + '.scorr.fits')
             scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(scorr_data)
 
@@ -334,11 +331,11 @@ class ZOGY(ZOGYPrepare):
             self.save_fits(image=diff,
                            path=self.get_path(diff_image_path))
 
-            psf_header = fits.Header()
+            psf_header = fits.Header({'SIMPLE': True})
             psf_header[base_name_key] = diff_psf_path.name
             psf_header[raw_img_key] = diff_psf_path.as_posix()
 
-            self.save_fits(image=Image(diff_psf_data, None),
+            self.save_fits(image=Image(diff_psf_data, psf_header),
                            path=self.get_path(diff_psf_path))
 
             scorr = Image(scorr_data, header=image.header.copy())

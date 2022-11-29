@@ -62,8 +62,6 @@ def pyzogy(
     s_corr: Corrected subtracted image
     """
 
-    print(new_image_path)
-
     # Load the new and ref images into memory
     with fits.open(new_image_path) as f:
         new = f[0].data

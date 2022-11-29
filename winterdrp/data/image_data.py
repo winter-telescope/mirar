@@ -24,9 +24,8 @@ class Image(DataBlock):
 
         self.data = data
         self.header = header
-        if header is not None:
-            self.raw_img_list = self[raw_img_key].split(",")
-            self.base_name = self[base_name_key]
+        self.raw_img_list = self[raw_img_key].split(",")
+        self.base_name = self[base_name_key]
 
     def __str__(self):
         return f"<An {self.__class__.__name__} object, " \
