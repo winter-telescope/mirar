@@ -38,7 +38,7 @@ class BaseChain(BaseDPU):
         return len(self.get_child_processors())
 
     def __iter__(self):
-        raise self.get_child_processors().__iter__()
+        return self.get_child_processors().__iter__()
 
 
 class NestedChain(BaseChain):
