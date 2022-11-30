@@ -24,7 +24,7 @@ class BaseChain(BaseDPU):
         raise NotImplementedError
 
     def __str__(self):
-        return f"<Processor Chain containing: {self.get_child_processors()}>"
+        return f"<Processor Chain containing {len(self.get_child_processors())} processors>"
 
     def __getitem__(self, item):
         return self.get_child_processors().__getitem__(item)
@@ -86,16 +86,24 @@ class NestedChain(BaseChain):
     def __add__(self, other: BaseChain):
         new = self.__class__(chains=copy.deepcopy(self.chains))
         if isinstance(other, self.__class__):
-            new.chains += other.chains
+            new.chains += copy.deepcopy(other.chains)
+        elif isinstance(other, BaseChain):
+            new.chains += [copy.deepcopy(other)]
         else:
-            new.chains += [other]
+            err = f"Unrecognised type: {type} ({other})"
+            logger.error(err)
+            raise ValueError(err)
         return new
 
     def __iadd__(self, other):
         if isinstance(other, NestedChain):
-            self.chains += other.chains
+            self.chains += copy.deepcopy(other.chains)
+        elif isinstance(other, BaseChain):
+            self.chains += [copy.deepcopy(other)]
         else:
-            self.chains += [other]
+            err = f"Unrecognised type: {type} ({other})"
+            logger.error(err)
+            raise ValueError(err)
         return self
 
 
@@ -124,7 +132,7 @@ class SingleChain(BaseChain):
     def __add__(self, other: BaseChain):
         if type(other) == self.__class__:
             new = self.__class__(processors=copy.deepcopy(self.processors))
-            new.processors += other.get_child_processors()
+            new.processors += copy.deepcopy(other.get_child_processors())
         else:
             new = NestedChain([copy.deepcopy(self), copy.deepcopy(other)])
         return new
