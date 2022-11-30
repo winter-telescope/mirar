@@ -25,6 +25,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.data import ImageBatch, Dataset
+from winterdrp.processors.base_chain import SingleChain
 
 logger = logging.getLogger(__name__)
 
@@ -268,11 +269,11 @@ class Monitor:
 
         if self.postprocess_configurations is not None:
 
-            postprocess_config = [ImageLoader(
+            postprocess_config = SingleChain([ImageLoader(
                 load_image=self.pipeline.unpack_raw_image,
                 input_sub_dir=self.sub_dir,
                 input_img_dir=str(Path(self.raw_image_directory)).split(self.pipeline_name)[0]
-            )]
+            )])
 
             postprocess_config += self.pipeline.postprocess_configuration(
                 errorstack=self.errorstack,
