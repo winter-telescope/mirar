@@ -40,10 +40,6 @@ class BaseChain(BaseDPU):
     def __iter__(self):
         raise self.get_child_processors().__iter__()
 
-    def generate_error_report(self, exception: Exception, batch: DataBatch) -> ErrorReport:
-
-
-
 
 class NestedChain(BaseChain):
 
@@ -62,9 +58,12 @@ class NestedChain(BaseChain):
         return all_processors
 
     def apply(self, batch: DataBatch) -> DataBatch:
+        i = 0
         for chain in self.get_component_chains():
             for processor in chain.get_child_processors():
+                logger.debug(f"Applying '{processor.__class__} (Step {i + 1}/{len(self.get_child_processors())})")
                 batch = processor.apply(batch)
+                i += 1
         return batch
 
     def base_apply(
@@ -116,7 +115,8 @@ class SingleChain(BaseChain):
         return self.processors
 
     def apply(self, batch: DataBatch) -> DataBatch:
-        for processor in self.get_child_processors():
+        for i, processor in enumerate(self.get_child_processors()):
+            logger.debug(f"Applying '{processor.__class__} (Step {i + 1}/{len(self.get_child_processors())})")
             batch = processor.apply(batch)
         return batch
 
