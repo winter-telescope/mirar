@@ -169,7 +169,6 @@ def copy_temp_file(output_dir: Path, file_path: Path) -> Path:
     shutil.copyfile(file_path, output_path)
     return output_path
 
-
 RAW_IMG_KEY = "RAWPATH"
 BASE_NAME_KEY = "BASENAME"
 REF_IMG_KEY = "REFPATH"
@@ -206,3 +205,4 @@ core_fields = [
 MONITOR_EMAIL_KEY = "WATCHDOG_EMAIL"
 MONITOR_PASSWORD_KEY = "WATCHDOG_EMAIL_PASSWORD"
 MONITOR_RECIPIENT_KEY = "WATCHDOG_EMAIL_RECIPIENTS"
+
