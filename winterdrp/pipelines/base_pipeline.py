@@ -9,7 +9,7 @@ from winterdrp.errors import ErrorStack
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.utils.error_annotator import ErrorStackAnnotator
 from winterdrp.data import DataBatch, Dataset, Image
-from winterdrp.processors.base_chain import BaseChain
+from winterdrp.processors.base_chain import BaseChain, SingleChain
 
 logger = logging.getLogger(__name__)
 
@@ -150,13 +150,13 @@ class Pipeline:
             errorstack: ErrorStack,
             selected_configurations: str | list[str],
             processed_images: list[str] = None
-    ) -> list[BaseProcessor]:
+    ) -> BaseChain:
 
-        cleanup_config = [
+        cleanup_config = SingleChain([
             ErrorStackAnnotator(
                 errorstack=errorstack,
                 processed_images=processed_images),
-        ]
+        ])
 
         if isinstance(selected_configurations, str):
             cleanup_config += self.all_pipeline_configurations[selected_configurations]
