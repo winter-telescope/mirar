@@ -115,7 +115,7 @@ class BaseProcessor(BaseDPU):
     def apply(self, batch: DataBatch):
         batch = self._apply(batch)
         batch = self._update_processing_history(batch)
-        raise batch
+        return batch
 
     def _apply(self, batch: DataBatch):
         raise NotImplementedError
