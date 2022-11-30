@@ -1,16 +1,28 @@
 import logging
 from typing import Type
+from winterdrp.paths import raw_img_key, base_name_key
 
 logger = logging.getLogger(__name__)
 
 
 class DataBlock:
 
+    def __init__(self):
+        self.raw_img_list = self[raw_img_key].split(",")
+        self.base_name = self[base_name_key]
+
     def __getitem__(self, item):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def __setitem__(self, key, value):
-        raise NotImplementedError()
+        raise NotImplementedError
+
+    def get_name(self) -> str:
+        return self.base_name
+
+    def get_raw_img_list(self) -> list[str]:
+        return self.raw_img_list
+
 
 
 class PseudoList:

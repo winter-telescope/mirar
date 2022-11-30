@@ -7,7 +7,7 @@ import numpy as np
 from astropy.io import fits
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
 from winterdrp.utils.ldac_tools import get_table_from_ldac
-from winterdrp.paths import get_output_dir
+from winterdrp.paths import get_output_dir, raw_img_key, base_name_key
 import io
 import gzip
 import os
@@ -176,7 +176,7 @@ class DetectCandidates(BaseCandidateGenerator):
             batch: ImageBatch,
     ) -> SourceBatch:
 
-        all_cands_list = []
+        all_cands = SourceBatch()
         for image in batch:
 
             scorr_image_path = os.path.join(self.get_sub_output_dir(), image["DIFFSCR"])
@@ -215,7 +215,13 @@ class DetectCandidates(BaseCandidateGenerator):
                 x_shape, y_shape = image.shape
                 cands_table['X_SHAPE'] = x_shape
                 cands_table['Y_SHAPE'] = y_shape
-            all_cands_list.append(cands_table)
 
-        return SourceBatch([SourceTable(pd.concat(all_cands_list))])
+            metadata = dict()
+
+            for key in [raw_img_key, base_name_key]:
+                metadata[key] = image[key]
+
+            all_cands.append(SourceTable(cands_table, metadata=metadata))
+
+        return all_cands
 

@@ -1,11 +1,9 @@
 import numpy as np
 from astropy.io.fits import Header
-from pathlib import Path
 import logging
 
 from winterdrp.data.base_data import DataBlock, DataBatch
 from winterdrp.errors import ProcessorError
-from winterdrp.paths import raw_img_key, base_name_key, ref_img_key
 
 logger = logging.getLogger(__name__)
 
@@ -16,16 +14,10 @@ class MissingReferenceError(ProcessorError, KeyError):
 
 class Image(DataBlock):
 
-    def __init__(
-            self,
-            data: np.ndarray,
-            header: Header,
-    ):
-
+    def __init__(self, data: np.ndarray, header: Header):
         self.data = data
         self.header = header
-        self.raw_img_list = self[raw_img_key].split(",")
-        self.base_name = self[base_name_key]
+        super().__init__()
 
     def __str__(self):
         return f"<An {self.__class__.__name__} object, " \
@@ -42,12 +34,6 @@ class Image(DataBlock):
 
     def set_header(self, header: Header):
         self.header = header
-
-    def get_name(self) -> str:
-        return self.base_name
-
-    def get_raw_img_list(self) -> str:
-        return self.raw_img_list
 
     def __getitem__(self, item):
         return self.header.__getitem__(item)

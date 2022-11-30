@@ -7,10 +7,11 @@ class SourceTable(DataBlock):
     def __init__(
             self,
             source_list: pd.DataFrame,
+            metadata: dict
     ):
-
         self.source_list = source_list
-        self.metadata = dict()
+        self.metadata = metadata
+        super().__init__()
 
     def get_data(self) -> pd.DataFrame:
         return self.source_list
