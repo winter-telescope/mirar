@@ -3,6 +3,7 @@ import os
 from abc import ABC
 from threading import Thread
 from queue import Queue
+import copy
 
 from winterdrp.errors import ErrorStack, ErrorReport, NoncriticalProcessingError
 from winterdrp.data.base_data import PseudoList, DataBatch, Dataset
@@ -83,7 +84,7 @@ class NestedChain(BaseChain):
         return dataset, err_stack
 
     def __add__(self, other: BaseChain):
-        new = self.__class__(chains=self.chains)
+        new = self.__class__(chains=copy.deepcopy(self.chains))
         if isinstance(other, self.__class__):
             new.chains += other.chains
         else:
@@ -122,10 +123,10 @@ class SingleChain(BaseChain):
 
     def __add__(self, other: BaseChain):
         if type(other) == self.__class__:
-            new = self.__class__(processors=self.processors)
+            new = self.__class__(processors=copy.deepcopy(self.processors))
             new.processors += other.get_child_processors()
         else:
-            new = NestedChain([self, other])
+            new = NestedChain([copy.deepcopy(self), copy.deepcopy(other)])
         return new
 
     def base_apply(self, dataset: Dataset) -> tuple[Dataset, ErrorStack]:
