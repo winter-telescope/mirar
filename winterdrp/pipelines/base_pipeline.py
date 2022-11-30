@@ -8,6 +8,7 @@ from winterdrp.paths import saturate_key
 from winterdrp.errors import ErrorStack
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.utils.error_annotator import ErrorStackAnnotator
+from winterdrp.processors.utils.paralleliser import ParallelProcessor
 from winterdrp.data import DataBatch, Dataset, Image
 
 logger = logging.getLogger(__name__)
@@ -150,19 +151,6 @@ class Pipeline:
 
         err_stack.summarise_error_stack(output_path=output_error_path)
         return dataset, err_stack
-
-    def set_saturation(
-            self,
-            header: astropy.io.fits.Header
-    ) -> astropy.io.fits.Header:
-        # update the SATURATE keyword in the header for subsequent sextractor runs
-        co_add_head = header['COADDS']
-        num_co_adds = int(co_add_head)
-        saturation_level = self.non_linear_level * num_co_adds
-        if "SKMEDSUB" in header.keys():
-            saturation_level -= header['SKMEDSUB']
-        header.append((saturate_key, saturation_level, 'Saturation level'), end=True)
-        return header
 
     def postprocess_configuration(
             self,
