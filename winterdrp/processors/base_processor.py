@@ -26,7 +26,19 @@ class NoCandidatesError(ProcessorError):
     pass
 
 
-class BaseProcessor:
+class BaseDPU:
+
+    def base_apply(
+            self,
+            dataset: Dataset
+    ) -> tuple[Dataset, ErrorStack]:
+        raise NotImplementedError()
+
+    def generate_error_report(self, exception: Exception, batch: DataBatch) -> ErrorReport:
+        return ErrorReport(exception, self.__module__, batch.get_raw_image_names())
+
+
+class BaseProcessor(BaseDPU):
 
     @property
     def base_key(self):
@@ -101,10 +113,25 @@ class BaseProcessor:
         return dataset, err_stack
 
     def apply(self, batch: DataBatch):
+        batch = self._apply(batch)
+        batch = self._update_processing_history(batch)
+        raise batch
+
+    def _apply(self, batch: DataBatch):
         raise NotImplementedError
 
-    def generate_error_report(self, exception: Exception, batch: DataBatch) -> ErrorReport:
-        raise NotImplementedError
+    def _update_processing_history(
+            self,
+            batch: DataBatch,
+    ) -> DataBatch:
+        for i, data_block in enumerate(batch):
+            data_block[proc_history_key] += self.base_key + ","
+            data_block['REDUCER'] = getpass.getuser()
+            data_block['REDMACH'] = socket.gethostname()
+            data_block['REDTIME'] = str(datetime.datetime.now())
+            data_block["REDSOFT"] = package_name
+            batch[i] = data_block
+        return batch
 
 
 class CleanupProcessor(BaseProcessor, ABC):
@@ -159,49 +186,24 @@ class ImageHandler:
         return mask_path
 
     @staticmethod
-    def get_hash(image: Image):
+    def get_hash(image: ImageBatch):
         key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in image]))
         return hashlib.sha1(key.encode()).hexdigest()
-
-    def image_batch_error_report(self, exception: Exception, batch: ImageBatch):
-        contents = []
-        for image in batch:
-            contents += [Path(x).name for x in image.get_raw_img_list()]
-        return ErrorReport(exception, self.__module__, contents)
 
 
 class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
 
-    def apply(
+    def _apply(
             self,
             batch: ImageBatch
     ) -> ImageBatch:
-        batch = self._apply_to_images(batch)
-        batch = self._update_processing_history(batch)
-
-        return batch
+        return self._apply_to_images(batch)
 
     def _apply_to_images(
             self,
             batch: ImageBatch,
     ) -> ImageBatch:
         raise NotImplementedError
-
-    def _update_processing_history(
-            self,
-            batch: ImageBatch,
-    ) -> ImageBatch:
-        for i, image in enumerate(batch):
-            image[proc_history_key] += self.base_key + ","
-            image['REDUCER'] = getpass.getuser()
-            image['REDMACH'] = socket.gethostname()
-            image['REDTIME'] = str(datetime.datetime.now())
-            image["REDSOFT"] = package_name
-            batch[i] = image
-        return batch
-
-    def generate_error_report(self, exception: Exception, batch: ImageBatch) -> ErrorReport:
-        return self.image_batch_error_report(exception, batch)
 
 
 class ProcessorWithCache(BaseImageProcessor, ABC):
@@ -291,7 +293,7 @@ class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
         super().__init_subclass__(**kwargs)
         cls.subclasses[cls.base_key] = cls
 
-    def apply(self, batch: ImageBatch) -> SourceBatch:
+    def _apply(self, batch: ImageBatch) -> SourceBatch:
         source_batch = self._apply_to_images(batch)
 
         if len(source_batch) == 0:
@@ -312,18 +314,14 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
         super().__init_subclass__(**kwargs)
         cls.subclasses[cls.base_key] = cls
 
-    def apply(
+    def _apply(
             self,
             batch: SourceBatch
     ) -> SourceBatch:
-        return batch
+        return self._apply_to_candidates(batch)
 
     def _apply_to_candidates(
             self,
             source_list: SourceBatch,
     ) -> SourceBatch:
         raise NotImplementedError
-
-    def generate_error_report(self, exception: Exception, batch: SourceBatch):
-        contents = batch[base_name_key]
-        return ErrorReport(exception, self.__module__, contents)

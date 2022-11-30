@@ -7,7 +7,7 @@ import numpy as np
 from astropy.io import fits
 from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
 from winterdrp.utils.ldac_tools import get_table_from_ldac
-from winterdrp.paths import get_output_dir, raw_img_key, base_name_key
+from winterdrp.paths import get_output_dir, core_fields, base_name_key
 import io
 import gzip
 import os
@@ -184,7 +184,7 @@ class DetectCandidates(BaseCandidateGenerator):
             diff_psf_path = os.path.join(self.get_sub_output_dir(), image["DIFFPSF"])
             diff_unc_path = os.path.join(self.get_sub_output_dir(), image["DIFFUNC"])
 
-            scorr_mask_path = os.path.join(self.get_sub_output_dir(),image["SCORMASK"])
+            scorr_mask_path = os.path.join(self.get_sub_output_dir(), image["SCORMASK"])
             cands_catalog_name = diff_image_path.replace('.fits', '.dets')
             cands_catalog_name, _ = run_sextractor_dual(
                 det_image=scorr_image_path,
@@ -199,7 +199,7 @@ class DetectCandidates(BaseCandidateGenerator):
                 gain=1.0
             )
 
-            sci_image_path = os.path.join(self.get_sub_output_dir(), image['BASENAME'])
+            sci_image_path = os.path.join(self.get_sub_output_dir(), image[base_name_key])
             ref_image_path = os.path.join(self.get_sub_output_dir(), image['REFIMG'])
             cands_table = self.generate_candidates_table(
                 scorr_catalog_name=cands_catalog_name,
@@ -218,7 +218,7 @@ class DetectCandidates(BaseCandidateGenerator):
 
             metadata = dict()
 
-            for key in [raw_img_key, base_name_key]:
+            for key in core_fields:
                 metadata[key] = image[key]
 
             all_cands.append(SourceTable(cands_table, metadata=metadata))

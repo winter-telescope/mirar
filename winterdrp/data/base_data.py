@@ -1,5 +1,6 @@
 import logging
 from typing import Type
+from pathlib import Path
 from winterdrp.paths import raw_img_key, base_name_key
 
 logger = logging.getLogger(__name__)
@@ -105,7 +106,7 @@ class PseudoList:
         return self._datalist.__iter__()
 
 
-class DataBatch (PseudoList):
+class DataBatch(PseudoList):
 
     @property
     def data_type(self) -> Type[DataBlock]:
@@ -116,6 +117,12 @@ class DataBatch (PseudoList):
 
     def get_batch(self) -> list[DataBlock]:
         return self.get_data_list()
+
+    def get_raw_image_names(self) -> list[str]:
+        img_list = []
+        for data_block in self.get_batch():
+            img_list += [Path(x).name for x in data_block.get_raw_img_list()]
+        return img_list
 
 
 class Dataset (PseudoList):
