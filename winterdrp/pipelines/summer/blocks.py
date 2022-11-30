@@ -26,6 +26,7 @@ from winterdrp.processors.database.database_modifier import ModifyImageDatabaseS
 from winterdrp.processors.utils.header_annotate import HeaderEditor
 from winterdrp.processors.utils.simulate_realtime import RealtimeImageSimulator
 from winterdrp.downloader.get_test_data import get_test_data_dir
+from winterdrp.processors.utils.paralleliser import ParallelProcessor
 
 load_raw = [
     ImageLoader(load_image=load_raw_summer_image),
@@ -102,40 +103,43 @@ process_raw = [
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name='detrend', write_mask=True),
     ImageBatcher(base_name_key),
-    AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
-    ImageSaver(output_dir_name='detrend', write_mask=True),
-    Sextractor(
-        output_sub_dir="sextractor",
-        weight_image=summer_weight_path,
-        checkimage_name=None,
-        checkimage_type=None,
-        **sextractor_astrometry_config
-    ),
-    Scamp(
-        ref_catalog_generator=summer_astrometric_catalog_generator,
-        scamp_config_path=scamp_path,
-    ),
-    Swarp(swarp_config_path=swarp_config_path, imgpixsize=2400),
-    ImageSaver(output_dir_name="processed", write_mask=True),
-    Sextractor(output_sub_dir="photprocess",
-               checkimage_type='BACKGROUND_RMS',
-               **sextractor_photometry_config),
-    PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
-    ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG'], write_mask=True),
-    HeaderEditor(edit_keys='procflag',
-                 values=1),
-    DatabaseImageExporter(
-        db_name=DB_NAME,
-        db_table="proc",
-        schema_path=get_summer_schema_path("proc"),
-        duplicate_protocol='replace'
-    ),
-    ModifyImageDatabaseSeq(
-                db_name=DB_NAME,
-                db_table="raw",
-                schema_path=get_summer_schema_path("raw"),
-                db_alter_columns="procflag"
-            )
+
+    ParallelProcessor([
+        AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
+        ImageSaver(output_dir_name='detrend', write_mask=True),
+        Sextractor(
+            output_sub_dir="sextractor",
+            weight_image=summer_weight_path,
+            checkimage_name=None,
+            checkimage_type=None,
+            **sextractor_astrometry_config
+        ),
+        Scamp(
+            ref_catalog_generator=summer_astrometric_catalog_generator,
+            scamp_config_path=scamp_path,
+        ),
+        Swarp(swarp_config_path=swarp_config_path, imgpixsize=2400),
+        ImageSaver(output_dir_name="processed", write_mask=True),
+        Sextractor(output_sub_dir="photprocess",
+                   checkimage_type='BACKGROUND_RMS',
+                   **sextractor_photometry_config),
+        PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
+        ImageSaver(output_dir_name="processed", additional_headers=['PROCIMG'], write_mask=True),
+        HeaderEditor(edit_keys='procflag',
+                     values=1),
+        DatabaseImageExporter(
+            db_name=DB_NAME,
+            db_table="proc",
+            schema_path=get_summer_schema_path("proc"),
+            duplicate_protocol='replace'
+        ),
+        ModifyImageDatabaseSeq(
+                    db_name=DB_NAME,
+                    db_table="raw",
+                    schema_path=get_summer_schema_path("raw"),
+                    db_alter_columns="procflag"
+                )
+    ]),
 ]
 
 standard_summer_reduction = export_raw + cal_hunter + process_raw
@@ -144,26 +148,28 @@ standard_summer_reduction = export_raw + cal_hunter + process_raw
 subtract = [
     ImageBatcher(split_key=base_name_key),
     ImageSelector(('OBSTYPE', 'SCIENCE')),
-    # ImageSelector((base_name_key, ["SUMMER_20220816_042926_Camera0.resamp.fits","SUMMER_20220816_042743_Camera0.resamp.fits"])),
-    Reference(
-        ref_image_generator=summer_reference_image_generator,
-        ref_psfex=summer_reference_psfex,
-        sextractor=summer_reference_sextractor,
-        swarp_resampler=summer_reference_image_resampler
-    ),
-    Sextractor(
-        output_sub_dir='subtract',
-        cache=False,
-        write_regions_bool=True,
-        **sextractor_photometry_config
-    ),
-    PSFex(config_path=psfex_config_path,
-          output_sub_dir="subtract",
-          norm_fits=True),
-    ImageSaver(output_dir_name='ref'),
-    ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO',
-                catalog_purifier=default_summer_catalog_purifier),
-    ZOGY(output_sub_dir="subtract"),
+
+    ParallelProcessor([
+        Reference(
+            ref_image_generator=summer_reference_image_generator,
+            ref_psfex=summer_reference_psfex,
+            sextractor=summer_reference_sextractor,
+            swarp_resampler=summer_reference_image_resampler
+        ),
+        Sextractor(
+            output_sub_dir='subtract',
+            cache=False,
+            write_regions_bool=True,
+            **sextractor_photometry_config
+        ),
+        PSFex(config_path=psfex_config_path,
+              output_sub_dir="subtract",
+              norm_fits=True),
+        ImageSaver(output_dir_name='ref'),
+        ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO',
+                    catalog_purifier=default_summer_catalog_purifier),
+        ZOGY(output_sub_dir="subtract"),
+    ])
 ]
 
 export_diff_to_db = [
