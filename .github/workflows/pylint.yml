@@ -20,4 +20,4 @@ jobs:
         poetry install
     - name: Analysing the code with pylint
       run: |
-        find . -name '*.py' -exec pylint {} \;
+        find . -name '*.py' -exec poetry run pylint {} \;
