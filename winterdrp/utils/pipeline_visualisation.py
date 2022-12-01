@@ -5,7 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from winterdrp.paths import doc_dir
 from winterdrp.pipelines import get_pipeline, Pipeline
-from winterdrp.processors.base_processor import BaseImageProcessor, BaseCandidateGenerator, BaseDataframeProcessor, BaseProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor, BaseCandidateGenerator, BaseDataframeProcessor, \
+    BaseProcessor
 
 logger = logging.getLogger(__name__)
 

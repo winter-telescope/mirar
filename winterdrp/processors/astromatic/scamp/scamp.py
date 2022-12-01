@@ -27,7 +27,7 @@ def run_scamp(
                 f"-ASTREFCAT_NAME {ast_ref_cat_path} " \
                 f"-VERBOSE_TYPE QUIET "
 
-    execute(scamp_cmd, output_dir=output_dir)
+    execute(scamp_cmd, output_dir=output_dir, timeout=30.)
 
 
 def get_scamp_output_head_path(

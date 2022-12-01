@@ -13,10 +13,13 @@ class ExecutionError(Exception):
     pass
 
 
+default_timeout = 300.
+
+
 def run_local(
         cmd: str,
         output_dir: str = ".",
-        timeout: float = 300.
+        timeout: float = default_timeout
 ):
     """
     Function to run on local machine using subprocess, with error handling.
@@ -252,11 +255,12 @@ def run_docker(
 def execute(
         cmd,
         output_dir=".",
-        local=True
+        local=True,
+        timeout: float = default_timeout
 ):
     logger.debug(f"Using '{['docker', 'local'][local]}' "
                  f" installation to run `{cmd}`")
     if local:
-        run_local(cmd, output_dir=output_dir)
+        run_local(cmd, output_dir=output_dir, timeout=timeout)
     else:
         run_docker(cmd, output_dir=output_dir)
