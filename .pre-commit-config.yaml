@@ -39,19 +39,6 @@ repos:
             "--exit-zero"
           ]
         verbose: true
-#-   repo: local
-#    hooks:
-#      - id: pylint
-#        name: pylint
-#        entry: pylint
-#        language: system
-#        types: [python]
-#        args:
-#          [
-##            "--exit-zero",
-#            "--fail-on=F,E"
-#          ]
-#        verbose: true
 -   repo: https://github.com/python-poetry/poetry
     rev: 1.2.2
     hooks:
