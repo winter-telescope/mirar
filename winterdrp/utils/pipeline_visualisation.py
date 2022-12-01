@@ -5,8 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from winterdrp.paths import doc_dir
 from winterdrp.pipelines import get_pipeline, Pipeline
-from winterdrp.processors.base_chain import BaseChain
-from winterdrp.processors.base_processor import BaseImageProcessor, BaseCandidateGenerator, BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor, BaseCandidateGenerator, BaseDataframeProcessor, BaseProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +14,8 @@ def get_save_path(pipeline: str, configs: str) -> Path:
     return doc_dir.joinpath(f"flowcharts/{pipeline}/{configs}.png")
 
 
-def flowify(chain: BaseChain, output_path: Path):
-    processor_list = chain.get_child_processors()
+def flowify(processor_list: list[BaseProcessor], output_path: Path):
+
     plt.figure(figsize=(12., 2. + 0.3*len(processor_list)), dpi=300.)
     ax = plt.subplot(111)
 

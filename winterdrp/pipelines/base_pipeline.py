@@ -9,7 +9,6 @@ from winterdrp.errors import ErrorStack
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.utils.error_annotator import ErrorStackAnnotator
 from winterdrp.data import DataBatch, Dataset, Image
-from winterdrp.processors.base_chain import BaseChain, SingleChain
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ class Pipeline:
     def load_pipeline_configuration(
             self,
             configuration: str = "default",
-    ) -> BaseChain:
+    ) -> list[BaseProcessor]:
         return copy.copy(self.all_pipeline_configurations[configuration])
 
     @staticmethod
@@ -75,30 +74,30 @@ class Pipeline:
 
     @staticmethod
     def configure_processors(
-            chain: BaseChain,
+            processors: list[BaseProcessor],
             sub_dir: str = ""
-    ) -> BaseChain:
-        for processor in chain.get_child_processors():
+    ) -> list[BaseProcessor]:
+        for processor in processors:
             processor.set_night(night_sub_dir=sub_dir)
-        return chain
+        return processors
 
     def add_configuration(
             self,
             configuration_name: str,
-            configuration: BaseChain
+            configuration: list[BaseProcessor]
     ):
         self.all_pipeline_configurations[configuration_name] = configuration
 
     def set_configuration(
             self,
             new_configuration: str = "default"
-    ) -> BaseChain:
+    ) -> list[BaseProcessor]:
         logger.debug(f"Setting pipeline configuration to {new_configuration}.")
 
         chain = self.load_pipeline_configuration(new_configuration)
         chain = self.configure_processors(chain, sub_dir=self.night_sub_dir)
-        processors = chain.get_child_processors()
-        for i, (processor) in enumerate(chain.get_child_processors()):
+        processors = chain
+        for i, (processor) in enumerate(chain):
             logger.debug(f"Initialising processor {processor.__class__}")
             processor.set_preceding_steps(previous_steps=processors[:i])
             processor.check_prerequisites()
@@ -134,10 +133,14 @@ class Pipeline:
 
             chain = self.set_configuration(configuration)
 
-            dataset, new_err_stack = chain.base_apply(
-                dataset
-            )
-            err_stack += new_err_stack
+            for i, processor in enumerate(chain):
+                logger.debug(f"Applying '{processor.__class__} to {len(dataset)} batches"
+                             f"(Step {i + 1}/{len(chain)})")
+
+                dataset, new_err_stack = processor.base_apply(
+                    dataset
+                )
+                err_stack += new_err_stack
 
             if np.logical_and(not catch_all_errors, len(err_stack.reports) > 0):
                 raise err_stack.reports[0].error
@@ -150,13 +153,13 @@ class Pipeline:
             errorstack: ErrorStack,
             selected_configurations: str | list[str],
             processed_images: list[str] = None
-    ) -> BaseChain:
+    ) -> list[BaseProcessor]:
 
-        cleanup_config = SingleChain([
+        cleanup_config = [
             ErrorStackAnnotator(
                 errorstack=errorstack,
                 processed_images=processed_images),
-        ])
+        ]
 
         if isinstance(selected_configurations, str):
             cleanup_config += self.all_pipeline_configurations[selected_configurations]

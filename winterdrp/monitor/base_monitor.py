@@ -10,7 +10,7 @@ from winterdrp.pipelines import get_pipeline, PipelineConfigError
 from winterdrp.errors import ErrorStack, ErrorReport
 from winterdrp.utils.send_email import send_gmail
 from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir, __version__, package_name, base_raw_dir, \
-    watchdog_email_key, watchdog_recipient_key
+    watchdog_email_key, watchdog_recipient_key, max_n_cpu
 import numpy as np
 import logging
 from astropy.time import Time
@@ -25,7 +25,6 @@ from astropy.utils.exceptions import AstropyUserWarning
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.data import ImageBatch, Dataset
-from winterdrp.processors.base_chain import SingleChain
 
 logger = logging.getLogger(__name__)
 
@@ -232,7 +231,7 @@ class Monitor:
 
         workers = []
 
-        n_cpu = max(1, int(os.cpu_count() / 2))
+        n_cpu = max_n_cpu
 
         for i in range(n_cpu):
             # Set up a worker thread to process database load
@@ -269,11 +268,11 @@ class Monitor:
 
         if self.postprocess_configurations is not None:
 
-            postprocess_config = SingleChain([ImageLoader(
+            postprocess_config = [ImageLoader(
                 load_image=self.pipeline.unpack_raw_image,
                 input_sub_dir=self.sub_dir,
                 input_img_dir=str(Path(self.raw_image_directory)).split(self.pipeline_name)[0]
-            )])
+            )]
 
             postprocess_config += self.pipeline.postprocess_configuration(
                 errorstack=self.errorstack,

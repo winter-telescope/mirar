@@ -12,7 +12,6 @@ from winterdrp.pipelines.wirc.blocks import subtract
 from winterdrp.pipelines.wirc.generator import wirc_reference_image_resampler, wirc_reference_sextractor, \
     wirc_reference_psfex
 from winterdrp.data import Dataset, ImageBatch
-from winterdrp.processors.base_chain import SingleChain
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ expected_values = {
     'SCORMEAN': -0.031172912552408068
 }
 
-test_imsub_configuration = SingleChain([
+test_imsub_configuration = [
     ImageLoader(
         input_img_dir=test_data_dir,
         input_sub_dir="stack",
@@ -53,7 +52,7 @@ test_imsub_configuration = SingleChain([
         sextractor=wirc_reference_sextractor,
         ref_psfex=wirc_reference_psfex
     ),
-]) + subtract
+] + subtract
 
 pipeline = WircPipeline(night="20210330", selected_configurations="test_imsub")
 pipeline.add_configuration(configuration_name="test_imsub", configuration=test_imsub_configuration)

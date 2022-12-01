@@ -37,14 +37,13 @@ from winterdrp.pipelines.wirc.wirc_files import candidate_colnames, wirc_candida
     sextractor_reference_config, sextractor_candidate_config, psfex_path
 from winterdrp.pipelines.wirc.generator import wirc_reference_image_generator, wirc_reference_sextractor, \
     wirc_reference_image_resampler, wirc_reference_psfex
-from winterdrp.processors.base_chain import SingleChain, ParallelChain
 
-load_raw = SingleChain([ImageLoader(
+load_raw = [ImageLoader(
         input_sub_dir="raw",
         load_image=load_raw_wirc_image
-)])
+)]
 
-reduce = SingleChain([
+reduce = [
     CSVLog(
         export_keys=["OBJECT", "FILTER", "UTSHUT", "EXPTIME", "COADDS", "OBSTYPE", "OBSCLASS"]
     ),
@@ -56,7 +55,6 @@ reduce = SingleChain([
     ImageBatcher(split_key="filter"),
     SkyFlatCalibrator(),
     NightSkyMedianCalibrator(),
-]) + ParallelChain([
     AutoAstrometry(catalog="tmc"),
     Sextractor(
         output_sub_dir="postprocess",
@@ -73,25 +71,25 @@ reduce = SingleChain([
     ),
     PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
     ImageSaver(output_dir_name="final"),
-])
+]
 
-reference = ParallelChain([
+reference = [
     Reference(
         ref_image_generator=wirc_reference_image_generator,
         swarp_resampler=wirc_reference_image_resampler,
         sextractor=wirc_reference_sextractor,
         ref_psfex=wirc_reference_psfex
     )
-])
+]
 
-subtract = ParallelChain([
+subtract = [
     Sextractor(**sextractor_reference_config, output_sub_dir='subtract', cache=False),
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     ZOGYPrepare(output_sub_dir="subtract"),
     ZOGY(output_sub_dir="subtract"),
-])
+]
 
-candidates = ParallelChain([
+candidates = [
     DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
     RegionsWriter(output_dir_name='candidates'),
     PSFPhotometry(),
@@ -143,6 +141,6 @@ candidates = ParallelChain([
         save_local=True
     ),
     # SendToFritz(update_thumbnails = True)
-])
+]
 
 imsub = reference + subtract + candidates

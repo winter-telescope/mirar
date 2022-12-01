@@ -22,6 +22,8 @@ __version__ = toml_info["tool"]["poetry"]["version"]
 
 doc_dir = winter_code_dir.joinpath("docs/")
 
+max_n_cpu = os.getenv("MAX_N_CPU", max(int(os.cpu_count() / 2), 1))
+
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 
 if base_raw_dir is None:

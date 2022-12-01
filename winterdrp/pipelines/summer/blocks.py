@@ -26,49 +26,48 @@ from winterdrp.processors.database.database_modifier import ModifyImageDatabaseS
 from winterdrp.processors.utils.header_annotate import HeaderEditor
 from winterdrp.processors.utils.simulate_realtime import RealtimeImageSimulator
 from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.processors.base_chain import SingleChain, ParallelChain
 
-load_raw = SingleChain([
+load_raw = [
     ImageLoader(load_image=load_raw_summer_image),
-])
+]
 
-load_test = SingleChain([
+load_test = [
     ImageLoader(
         input_img_dir=get_test_data_dir(),
         input_sub_dir="raw",
         load_image=load_raw_summer_image
     ),
-])
+]
 
-load_test_proc = SingleChain([
+load_test_proc = [
     ImageLoader(
         input_img_dir=get_test_data_dir(),
         input_sub_dir='processed',
         load_image=load_proc_summer_image
     ),
     ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.resamp.fits")),
-])
+]
 
-sim_realtime = SingleChain([
+sim_realtime = [
     RealtimeImageSimulator(
         input_img_dir=get_test_data_dir(),
         input_img_names="summer/20220402/raw/SUMMER_20220402_214324_Camera0.fits",
         output_dir=get_test_data_dir(),
         output_dir_name="raw"
     )
-])
+]
 
-build_log = SingleChain([
+build_log = [
     CSVLog(
         export_keys=[
             "UTC", 'FIELDID', "FILTERID", "EXPTIME", "OBSTYPE", "RA", "DEC", "TARGTYPE", "PROGID", "PROGPI",
             base_name_key] + core_fields
     ),
-])
+]
 
-load_processed = SingleChain([ImageLoader(input_sub_dir='processed', load_image=load_proc_summer_image)])
+load_processed = [ImageLoader(input_sub_dir='processed', load_image=load_proc_summer_image)]
 
-export_raw = ParallelChain([
+export_raw = [
     DatabaseImageExporter(
         db_name=DB_NAME,
         db_table="exposures",
@@ -86,24 +85,23 @@ export_raw = ParallelChain([
         duplicate_protocol='replace'
     ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
-])
+]
 
-cal_hunter = SingleChain([
+cal_hunter = [
     CalHunter(
         load_image=load_raw_summer_image,
         requirements=summer_cal_requirements
     ),
-])
+]
 
-process_raw = SingleChain([
+process_raw = [
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name='detrend', write_mask=True),
-    ImageBatcher(base_name_key)
-]) + ParallelChain([
+    ImageBatcher(base_name_key),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
     ImageSaver(output_dir_name='detrend', write_mask=True),
     Sextractor(
@@ -138,12 +136,13 @@ process_raw = SingleChain([
                 schema_path=get_summer_schema_path("raw"),
                 db_alter_columns="procflag"
             )
-])
+]
 
 standard_summer_reduction = export_raw + cal_hunter + process_raw
 
 
-subtract = SingleChain([ImageBatcher(split_key=base_name_key)]) + ParallelChain([
+subtract = [
+    ImageBatcher(split_key=base_name_key),
     ImageSelector(('OBSTYPE', 'SCIENCE')),
     Reference(
         ref_image_generator=summer_reference_image_generator,
@@ -164,17 +163,17 @@ subtract = SingleChain([ImageBatcher(split_key=base_name_key)]) + ParallelChain(
     ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key='ZP_AUTO',
                 catalog_purifier=default_summer_catalog_purifier),
     ZOGY(output_sub_dir="subtract"),
-])
+]
 
-export_diff_to_db = ParallelChain([
+export_diff_to_db = [
     DatabaseImageExporter(
         db_name=PIPELINE_NAME,
         db_table="diff",
         schema_path=get_summer_schema_path("diff"),
     ),
-])
+]
 
-extract_candidates = ParallelChain([
+extract_candidates = [
     DetectCandidates(
         output_sub_dir="subtract",
         **sextractor_candidates_config
@@ -184,6 +183,6 @@ extract_candidates = ParallelChain([
     AperturePhotometry(aper_diameters=[8, 40], cutout_size_aper_phot=100, bkg_in_diameters=[25, 90],
                        bkg_out_diameters=[40, 100], col_suffix_list=['', 'big']),
     DataframeWriter(output_dir_name='candidates'),
-])
+]
 
 imsub = subtract + export_diff_to_db + extract_candidates
