@@ -37,7 +37,7 @@ def run_scamp(
         f"-VERBOSE_TYPE QUIET "
     )
 
-    execute(scamp_cmd, output_dir=output_dir, timeout=30.0)
+    execute(scamp_cmd, output_dir=output_dir, timeout=60.0)
 
 
 def get_scamp_output_head_path(cat_path: str) -> str:
