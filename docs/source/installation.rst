@@ -30,6 +30,12 @@ Next you need to actually install winterdrp. We use `poetry <https://python-poet
     pip install poetry
     poetry install winterdrp
 
+Lastly, you need to install the `pre-commit hooks <https://pre-commit.com/>`_ (see :doc:`contributing-guide` for more info about what these do):
+
+.. code-block:: bash
+
+    pre-commit install
+
 Now you should have installed winterdrp. You can check it worked by opening up python and trying to import it:
 
 .. code-block:: bash

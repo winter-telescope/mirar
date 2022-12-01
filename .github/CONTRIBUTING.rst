@@ -16,7 +16,7 @@ We have a few general guidelines that are helpful for keeping things organised:
         :target: https://coveralls.io/github/winter-telescope/winterdrp?branch=main
         :align: center
 * **Keep the code well-documented** When you write code, it is easier to understamd 'what' than 'why'. People are not mind-readers, and this includes your future self. This is where documentation helps. If you add doctstrings following the `standard python style <https://peps.python.org/pep-0287/>`_, the code can be automatically converted to documentation.
-
+* **Keep the code style clean** Everyone has their own coding style. But for colloborative projects, we need to ensure consistency. We use various automated toold to check and reformat code, and all new code commited should inform to these standards. See :ref:`here`.
 
 Updating the documentation
 --------------------------
@@ -45,3 +45,8 @@ You can also check the code contained within the docstrings/documentation:
 .. code-block:: bash
 
     poetry run make -C docs/ doctest
+
+Pre-commit Hooks
+----------------
+
+We use `pre-commit hooks <https://pre-commit.com/>`_ to ensure our coding style is consistent.
