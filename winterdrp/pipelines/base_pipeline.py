@@ -130,11 +130,11 @@ class Pipeline:
             logger.info(f"Using pipeline configuration {configuration} "
                         f"({j+1}/{len(selected_configurations)})")
 
-            chain = self.set_configuration(configuration)
+            processors = self.set_configuration(configuration)
 
-            for i, processor in enumerate(chain):
+            for i, processor in enumerate(processors):
                 logger.debug(f"Applying '{processor.__class__} to {len(dataset)} batches"
-                             f"(Step {i + 1}/{len(chain)})")
+                             f"(Step {i + 1}/{len(processors)})")
 
                 dataset, new_err_stack = processor.base_apply(
                     dataset
