@@ -5,8 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from winterdrp.paths import doc_dir
 from winterdrp.pipelines import get_pipeline, Pipeline
-from winterdrp.processors.base_processor import BaseProcessor, BaseDataframeProcessor, BaseImageProcessor, \
-    BaseCandidateGenerator
+from winterdrp.processors.base_processor import BaseImageProcessor, BaseCandidateGenerator, BaseDataframeProcessor, \
+    BaseProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ def get_save_path(pipeline: str, configs: str) -> Path:
 
 
 def flowify(processor_list: list[BaseProcessor], output_path: Path):
+
     plt.figure(figsize=(12., 2. + 0.3*len(processor_list)), dpi=300.)
     ax = plt.subplot(111)
 

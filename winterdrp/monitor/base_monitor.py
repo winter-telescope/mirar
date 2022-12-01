@@ -10,7 +10,7 @@ from winterdrp.pipelines import get_pipeline, PipelineConfigError
 from winterdrp.errors import ErrorStack, ErrorReport
 from winterdrp.utils.send_email import send_gmail
 from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir, __version__, package_name, base_raw_dir, \
-    watchdog_email_key, watchdog_recipient_key
+    watchdog_email_key, watchdog_recipient_key, max_n_cpu
 import numpy as np
 import logging
 from astropy.time import Time
@@ -231,7 +231,7 @@ class Monitor:
 
         workers = []
 
-        n_cpu = max(1, int(os.cpu_count() / 2))
+        n_cpu = max_n_cpu
 
         for i in range(n_cpu):
             # Set up a worker thread to process database load

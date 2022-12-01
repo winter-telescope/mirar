@@ -22,7 +22,7 @@ class SummerPipeline(Pipeline):
     default_cal_requirements = summer_cal_requirements
 
     all_pipeline_configurations = {
-        "default": load_raw + export_raw + cal_hunter + process_raw,
+        "default": load_raw + build_log + export_raw + cal_hunter + process_raw,
         "test": load_test + export_raw + process_raw,
         "postprocess": build_log,
         'imsub': load_processed + imsub,

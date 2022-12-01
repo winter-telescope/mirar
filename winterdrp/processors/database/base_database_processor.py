@@ -77,16 +77,14 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             password=self.db_password
         )
 
-    def apply(self, batch: DataBatch):
-
+    def check_prerequisites(
+            self,
+    ):
         if not self.db_check:
-            self.set_up_databases()
+            self.check_database_setup()
             self.db_check = True
 
-        batch = super(BaseDatabaseProcessor, self).apply(batch)
-        return batch
-
-    def set_up_databases(self):
+    def check_database_setup(self):
 
         if np.logical_and(self.db_exists(), np.invert(self.user_exists())):
             err = 'Database exists but user does not exist'

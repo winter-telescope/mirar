@@ -89,7 +89,7 @@ jobs:
       - name: Run Coveralls
         if: ${{ success() }}
         run: |
-          coveralls --service=github
+          poetry run coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #

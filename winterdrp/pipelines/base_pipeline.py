@@ -12,8 +12,6 @@ from winterdrp.data import DataBatch, Dataset, Image
 
 logger = logging.getLogger(__name__)
 
-core_fields = ["OBSCLASS", "TARGET", "UTCTIME"]
-
 
 class Pipeline:
     pipelines = {}
@@ -60,7 +58,7 @@ class Pipeline:
     def load_pipeline_configuration(
             self,
             configuration: str = "default",
-    ):
+    ) -> list[BaseProcessor]:
         return copy.copy(self.all_pipeline_configurations[configuration])
 
     @staticmethod
@@ -79,7 +77,6 @@ class Pipeline:
             processors: list[BaseProcessor],
             sub_dir: str = ""
     ) -> list[BaseProcessor]:
-
         for processor in processors:
             processor.set_night(night_sub_dir=sub_dir)
         return processors
@@ -87,7 +84,7 @@ class Pipeline:
     def add_configuration(
             self,
             configuration_name: str,
-            configuration: str | list[BaseProcessor]
+            configuration: list[BaseProcessor]
     ):
         self.all_pipeline_configurations[configuration_name] = configuration
 
@@ -99,7 +96,7 @@ class Pipeline:
 
         processors = self.load_pipeline_configuration(new_configuration)
         processors = self.configure_processors(processors, sub_dir=self.night_sub_dir)
-        for i, (processor) in enumerate(processors):
+        for i, processor in enumerate(processors):
             logger.debug(f"Initialising processor {processor.__class__}")
             processor.set_preceding_steps(previous_steps=processors[:i])
             processor.check_prerequisites()
@@ -136,9 +133,8 @@ class Pipeline:
             processors = self.set_configuration(configuration)
 
             for i, processor in enumerate(processors):
-
-                logger.debug(f"Applying '{processor.__class__}' processor to {len(dataset)} batches. "
-                             f"(Step {i+1}/{len(processors)})")
+                logger.debug(f"Applying '{processor.__class__} to {len(dataset)} batches"
+                             f"(Step {i + 1}/{len(processors)})")
 
                 dataset, new_err_stack = processor.base_apply(
                     dataset
@@ -150,19 +146,6 @@ class Pipeline:
 
         err_stack.summarise_error_stack(output_path=output_error_path)
         return dataset, err_stack
-
-    def set_saturation(
-            self,
-            header: astropy.io.fits.Header
-    ) -> astropy.io.fits.Header:
-        # update the SATURATE keyword in the header for subsequent sextractor runs
-        co_add_head = header['COADDS']
-        num_co_adds = int(co_add_head)
-        saturation_level = self.non_linear_level * num_co_adds
-        if "SKMEDSUB" in header.keys():
-            saturation_level -= header['SKMEDSUB']
-        header.append((saturate_key, saturation_level, 'Saturation level'), end=True)
-        return header
 
     def postprocess_configuration(
             self,

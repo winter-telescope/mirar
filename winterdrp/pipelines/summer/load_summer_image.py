@@ -131,6 +131,9 @@ def load_raw_summer_image(
         if 'COADDS' not in header.keys():
             header['COADDS'] = 1
 
+        if "PROGPI" not in header.keys():
+            header["PROGPI"] = "?"
+
         if header['PROGID'] in ['', 'WINTER']:
             header['PROGID'] = 2
 
@@ -155,17 +158,26 @@ def load_raw_summer_image(
 def load_proc_summer_image(
         path: str
 ) -> tuple[np.array, astropy.io.fits.Header]:
-    img = fits.open(path)
-    data = img[0].data
-    header = img[0].header
+
+    with fits.open(path) as img:
+        data = img[0].data
+        header = img[0].header
+
     if 'ZP' not in header.keys():
         header['ZP'] = header['ZP_AUTO']
         header['ZP_std'] = header['ZP_AUTO_std']
+
     header['CENTRA'] = header['CRVAL1']
     header['CENTDEC'] = header['CRVAL2']
+
     pipeline_version = __version__
     pipeline_version_padded_str = "".join([x.rjust(2, "0") for x in pipeline_version.split(".")])
     header['DIFFID'] = int(str(header["EXPID"])+str(pipeline_version_padded_str))
+
+    if "PROCID" not in header.keys():
+        header["PROCID"] = header["DIFFID"]
+
+    header["TIMEUTC"] = header['UTCISO']
     data[data == 0] = np.nan
     # logger.info(header['CRVAL2'])
     return data, header

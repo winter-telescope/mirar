@@ -8,12 +8,16 @@ import getpass
 import datetime
 import hashlib
 from pathlib import Path
+from threading import Thread
+from queue import Queue
+import copy
 
 from winterdrp.io import save_to_path, open_fits
 from winterdrp.paths import cal_output_sub_dir, get_mask_path, latest_save_key, latest_mask_save_key, get_output_path,\
-    base_name_key, proc_history_key, raw_img_key, package_name
+    base_name_key, proc_history_key, raw_img_key, package_name, max_n_cpu
 from winterdrp.errors import ErrorReport, ErrorStack, ProcessorError, NoncriticalProcessingError
 from winterdrp.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +46,9 @@ class BaseProcessor(BaseDPU):
 
     @property
     def base_key(self):
-        raise NotImplementedError()
+        raise NotImplementedError
+
+    max_n_cpu: int = max_n_cpu
 
     subclasses = {}
 
@@ -55,6 +61,7 @@ class BaseProcessor(BaseDPU):
         self.night = None
         self.night_sub_dir = None
         self.preceding_steps = None
+        self.passed_dataset = self.err_stack = None
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -85,32 +92,64 @@ class BaseProcessor(BaseDPU):
     ):
         pass
 
+    def clean_cache(self):
+        self.passed_dataset = self.err_stack = None
+
     def base_apply(
             self,
             dataset: Dataset
     ) -> tuple[Dataset, ErrorStack]:
 
-        passed_batches = Dataset()
-        err_stack = ErrorStack()
+        self.passed_dataset = Dataset()
+        self.err_stack = ErrorStack()
 
-        for i, batch in enumerate(dataset):
+        if len(dataset) > 0:
 
+            n_cpu = min([self.max_n_cpu, len(dataset)])
+
+            watchdog_queue = Queue()
+
+            workers = []
+
+            for i in range(n_cpu):
+                # Set up a worker thread to process database load
+                worker = Thread(target=self.apply_to_batch, args=(watchdog_queue,))
+                worker.daemon = True
+                worker.start()
+
+                workers.append(worker)
+
+            for i, batch in enumerate(dataset):
+                watchdog_queue.put(item=batch)
+
+            watchdog_queue.join()
+
+        dataset = self.update_dataset(self.passed_dataset)
+        err_stack = self.err_stack
+
+        self.clean_cache()
+
+        return dataset, err_stack
+
+    def apply_to_batch(
+            self,
+            q
+    ):
+        while True:
+            batch = q.get()
             try:
                 batch = self.apply(batch)
-                passed_batches.append(batch)
+                self.passed_dataset.append(batch)
             except NoncriticalProcessingError as e:
                 err = self.generate_error_report(e, batch)
                 logger.error(err.generate_log_message())
-                err_stack.add_report(err)
-                passed_batches.append(batch)
+                self.err_stack.add_report(err)
+                self.passed_dataset.append(batch)
             except Exception as e:
                 err = self.generate_error_report(e, batch)
                 logger.error(err.generate_log_message())
-                err_stack.add_report(err)
-
-        dataset = self.update_dataset(passed_batches)
-
-        return dataset, err_stack
+                self.err_stack.add_report(err)
+            q.task_done()
 
     def apply(self, batch: DataBatch):
         batch = self._apply(batch)

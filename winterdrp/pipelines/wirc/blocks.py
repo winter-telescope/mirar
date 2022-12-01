@@ -69,8 +69,8 @@ reduce = [
         output_sub_dir="final_sextractor",
         **sextractor_astrometry_config
     ),
+    PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
     ImageSaver(output_dir_name="final"),
-    PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator)
 ]
 
 reference = [
@@ -106,7 +106,6 @@ candidates = [
         num_stars=3,
         search_radius_arcsec=30
     ),
-    # History(),
     DataframeWriter(output_dir_name='kowalski'),
     DatabaseHistoryImporter(
         xmatch_radius_arcsec=2,
