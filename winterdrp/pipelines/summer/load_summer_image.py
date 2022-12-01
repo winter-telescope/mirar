@@ -70,7 +70,7 @@ def load_raw_summer_image(
 
         for key in ["PROGID", "OBSID"]:
             if key not in header.keys():
-                logger.warning(f"No {key} found in header of {path}")
+                # logger.warning(f"No {key} found in header of {path}")
                 header[key] = default_id
             else:
                 try:
