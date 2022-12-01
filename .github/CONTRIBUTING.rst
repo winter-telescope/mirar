@@ -65,6 +65,6 @@ Because it is so strict, we have the following policy:
 
 **All new code should conform to the pylint standards for check categories of `FATAL` (F), `ERROR` (E), `WARNING` (W) and `REFACTOR` (R), when commited.**
 
-**All new code should confirm to the full pylint standards (including the additional `CONVENTION` (C) which covers documentation) at the time a PR is merged**
+**All new code should conform to the full pylint standards (including the additional `CONVENTION` (C) which covers documentation) at the time a PR is merged**
 
 In the meantime, we are trying to upgrade older code to meet these standards.
