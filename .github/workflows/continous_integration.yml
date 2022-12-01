@@ -84,7 +84,9 @@ jobs:
           WATCHDOG_EMAIL_PASSWORD: ${{ secrets.WATCHDOG_EMAIL_PASSWORD }}
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}
         run: |
-          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
+          TESTDATA_CHECK="True" poetry run coverage run --concurrency=multiprocessing -m unittest discover tests/
+          poetry run coverage combine
+
 
       - name: Run Coveralls
         if: ${{ success() }}
