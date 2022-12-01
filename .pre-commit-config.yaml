@@ -24,7 +24,8 @@ repos:
           [
             "-rn", # Only display messages
             "-sn", # Don't display the score
-            "--exit-zero"
+            "--exit-zero",
+            "--fail-on=F,E,W"
           ]
         verbose: true
 -   repo: https://github.com/python-poetry/poetry
