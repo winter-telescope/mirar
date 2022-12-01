@@ -1,6 +1,5 @@
-#!/usr/bin/env python
+"""Test suite for ..module::winterdrp.monitor module"""
 import logging
-import os
 import unittest
 
 from winterdrp.downloader.get_test_data import get_test_data_dir
@@ -19,12 +18,15 @@ summer_cal_requirements = [
 ]
 
 
-class TestErrors(unittest.TestCase):
+class TestMonitor(unittest.TestCase):
+    """Class for testing ..module::winterdrp.monitor"""
+
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-    def test_pipeline(self):
+    def test_monitor(self):
+        """Function to test ..class::Monitor realtime processing"""
         self.logger.info("Testing monitor")
 
         monitor = Monitor(
