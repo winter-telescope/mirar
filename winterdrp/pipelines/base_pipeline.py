@@ -141,8 +141,8 @@ class Pipeline:
                 )
                 err_stack += new_err_stack
 
-            if np.logical_and(not catch_all_errors, len(err_stack.reports) > 0):
-                raise err_stack.reports[0].error
+                if np.logical_and(not catch_all_errors, len(err_stack.reports) > 0):
+                    raise err_stack.reports[0].error
 
         err_stack.summarise_error_stack(output_path=output_error_path)
         return dataset, err_stack
