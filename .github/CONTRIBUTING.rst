@@ -50,3 +50,21 @@ Pre-commit Hooks
 ----------------
 
 We use `pre-commit hooks <https://pre-commit.com/>`_ to ensure our coding style is consistent.
+
+You can see the checks we follow in `.pre-commit-config.yaml`:
+
+.. literalinclude:: ../../.pre-commit-config.yaml
+
+Most of these checks will run automatically, and fix themselves automatically.
+So you if run `git commit -m ...` and see something failed, you can just do `git add x` and add the now-corrected file, then commit again.
+
+The only exception to this rule is the use of `pylint <https://pylint.pycqa.org/>`_.
+Pylint ensures adherence to the PEP8 and other coding standards.
+It outputs a list of all mistakes it identified, with lines and clear messages describing the problem.
+Because it is so strict, we have the following policy:
+
+**All new code should conform to the pylint standards for check categories of `FATAL` (F), `ERROR` (E), `WARNING` (W) and `REFACTOR` (R), when commited.**
+
+**All new code should confirm to the full pylint standards (including the additional `CONVENTION` (C) which covers documentation) at the time a PR is merged**
+
+In the meantime, we are trying to upgrade older code to meet these standards.
