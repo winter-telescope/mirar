@@ -1,12 +1,14 @@
 import logging
 from glob import glob
-from astropy.io import fits
-from winterdrp.references.base_reference_generator import BaseReferenceGenerator
+
 import numpy as np
-from astropy.time import Time
+from astropy.io import fits
 from astropy.table import Table
+from astropy.time import Time
 from astropy.wcs import WCS
+
 from winterdrp.data import Image
+from winterdrp.references.base_reference_generator import BaseReferenceGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +17,8 @@ class PS1Ref(BaseReferenceGenerator):
     abbreviation = "ps1_ref_lookup"
 
     def __init__(
-            self,
-            filter_name: str,
+        self,
+        filter_name: str,
     ):
         super(PS1Ref, self).__init__(filter_name)
 
@@ -32,7 +34,7 @@ class PS1Ref(BaseReferenceGenerator):
 
         service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"
         url = f"{service}?ra={ra}&dec={dec}&filters={filters}"
-        table = Table.read(url, format='ascii')
+        table = Table.read(url, format="ascii")
         return table
 
     '''
@@ -80,7 +82,16 @@ class PS1Ref(BaseReferenceGenerator):
         return url
     '''
 
-    def geturl(self, ra, dec, size=240, output_size=None, filters="grizy", format="fits", color=False):
+    def geturl(
+        self,
+        ra,
+        dec,
+        size=240,
+        output_size=None,
+        filters="grizy",
+        format="fits",
+        color=False,
+    ):
 
         """Get URL for images in the table
 
@@ -110,37 +121,40 @@ class PS1Ref(BaseReferenceGenerator):
         urlbase = f"https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?&red="
         # f"ra={ra}&dec={dec}&size={size}&format={format}")
         url = []
-        for filename in table['filename']:
+        for filename in table["filename"]:
             full_url = urlbase + filename
-            full_url += f'&format={format}&x={ra}&y={dec}&size={int(size)}&wcs=1'
+            full_url += f"&format={format}&x={ra}&y={dec}&size={int(size)}&wcs=1"
             if output_size:
                 full_url = full_url + "&output_size={}".format(output_size)
 
             url.append(full_url)
         return url
 
-    def get_reference(
-            self,
-            image: Image
-    ) -> fits.PrimaryHDU:
+    def get_reference(self, image: Image) -> fits.PrimaryHDU:
         header = image.get_header()
 
-        nx, ny = header['NAXIS1'], header['NAXIS2']
-        dx, dy = header['CD1_1'], header['CD2_2']
+        nx, ny = header["NAXIS1"], header["NAXIS2"]
+        dx, dy = header["CD1_1"], header["CD2_2"]
         img_size_deg = np.max([dx * nx, dy * ny])
         img_size_arcsec = img_size_deg * 3600
 
         w = WCS(header)
-        ra_cent, dec_cent = w.all_pix2world(nx/2, ny/2, 0)
+        ra_cent, dec_cent = w.all_pix2world(nx / 2, ny / 2, 0)
 
         ps1_img_size_pix = img_size_arcsec / 0.25
-        fitsurl = self.geturl(ra_cent, dec_cent, size=ps1_img_size_pix, filters=self.filter_name, format="fits")
+        fitsurl = self.geturl(
+            ra_cent,
+            dec_cent,
+            size=ps1_img_size_pix,
+            filters=self.filter_name,
+            format="fits",
+        )
         logger.info(fitsurl)
 
         with fits.open(fitsurl[0]) as hdul:
             refHDU = hdul[0].copy()
 
-        refHDU.header['GAIN'] = refHDU.header['CELL.GAIN']
-        refHDU.header['ZP'] = refHDU.header['FPA.ZP']
-        del refHDU.header['HISTORY']
+        refHDU.header["GAIN"] = refHDU.header["CELL.GAIN"]
+        refHDU.header["ZP"] = refHDU.header["FPA.ZP"]
+        del refHDU.header["HISTORY"]
         return refHDU

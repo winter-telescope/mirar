@@ -1,36 +1,46 @@
-import os
-from watchdog.events import FileSystemEventHandler
-import threading
-from threading import Thread
-from queue import Queue
-import time
-import sys
-from watchdog.observers import Observer
-from winterdrp.pipelines import get_pipeline, PipelineConfigError
-from winterdrp.errors import ErrorStack, ErrorReport
-from winterdrp.utils.send_email import send_gmail
-from winterdrp.paths import get_output_path, raw_img_dir, raw_img_sub_dir, __version__, package_name, base_raw_dir, \
-    watchdog_email_key, watchdog_recipient_key, max_n_cpu
-import numpy as np
-import logging
-from astropy.time import Time
-from astropy import units as u
-from winterdrp.processors.utils.cal_hunter import CalRequirement, find_required_cals
-from pathlib import Path
 import copy
-from astropy.io import fits
-from warnings import catch_warnings
+import logging
+import os
+import sys
+import threading
+import time
 import warnings
+from pathlib import Path
+from queue import Queue
+from threading import Thread
+from warnings import catch_warnings
+
+import numpy as np
+from astropy import units as u
+from astropy.io import fits
+from astropy.time import Time
 from astropy.utils.exceptions import AstropyUserWarning
-from winterdrp.processors.utils.image_loader import ImageLoader
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
+from winterdrp.data import Dataset, ImageBatch
+from winterdrp.errors import ErrorReport, ErrorStack
+from winterdrp.paths import (
+    __version__,
+    base_raw_dir,
+    get_output_path,
+    max_n_cpu,
+    package_name,
+    raw_img_dir,
+    raw_img_sub_dir,
+    watchdog_email_key,
+    watchdog_recipient_key,
+)
+from winterdrp.pipelines import PipelineConfigError, get_pipeline
 from winterdrp.processors.csvlog import CSVLog
-from winterdrp.data import ImageBatch, Dataset
+from winterdrp.processors.utils.cal_hunter import CalRequirement, find_required_cals
+from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.utils.send_email import send_gmail
 
 logger = logging.getLogger(__name__)
 
 
 class NewImageHandler(FileSystemEventHandler):
-
     def __init__(self, queue):
         FileSystemEventHandler.__init__(self)
         self.queue = queue
@@ -41,21 +51,20 @@ class NewImageHandler(FileSystemEventHandler):
 
 
 class Monitor:
-
     def __init__(
-            self,
-            night: str,
-            pipeline: str,
-            cal_requirements: list[CalRequirement] = None,
-            realtime_configurations: str | list[str] = "default",
-            postprocess_configurations: str | list[str] = None,
-            email_sender: str = os.getenv(watchdog_email_key),
-            email_recipients: str | list = os.getenv(watchdog_recipient_key),
-            midway_postprocess_hours: float = 16.,
-            final_postprocess_hours: float = 48.,
-            log_level: str = "INFO",
-            raw_dir: str = raw_img_sub_dir,
-            base_raw_img_dir: str = base_raw_dir
+        self,
+        night: str,
+        pipeline: str,
+        cal_requirements: list[CalRequirement] = None,
+        realtime_configurations: str | list[str] = "default",
+        postprocess_configurations: str | list[str] = None,
+        email_sender: str = os.getenv(watchdog_email_key),
+        email_recipients: str | list = os.getenv(watchdog_recipient_key),
+        midway_postprocess_hours: float = 16.0,
+        final_postprocess_hours: float = 48.0,
+        log_level: str = "INFO",
+        raw_dir: str = raw_img_sub_dir,
+        base_raw_img_dir: str = base_raw_dir,
     ):
 
         logger.info(f"Software version: {package_name}=={__version__}")
@@ -70,13 +79,17 @@ class Monitor:
 
         self.postprocess_configurations = postprocess_configurations
 
-        self.pipeline = get_pipeline(pipeline, night=night, selected_configurations=realtime_configurations)
+        self.pipeline = get_pipeline(
+            pipeline, night=night, selected_configurations=realtime_configurations
+        )
 
-        self.raw_image_directory = Path(raw_img_dir(
-            sub_dir=self.pipeline.night_sub_dir,
-            img_sub_dir=raw_dir,
-            raw_dir=base_raw_img_dir
-        ))
+        self.raw_image_directory = Path(
+            raw_img_dir(
+                sub_dir=self.pipeline.night_sub_dir,
+                img_sub_dir=raw_dir,
+                raw_dir=base_raw_img_dir,
+            )
+        )
 
         self.sub_dir = raw_dir
 
@@ -91,8 +104,10 @@ class Monitor:
 
         check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
         if np.sum(check_email) == 1:
-            err = "In order to send emails, you must specify both a a sender and a recipient. \n" \
-                  f"In this case, sender is {email_sender} and recipient is {email_recipients}."
+            err = (
+                "In order to send emails, you must specify both a a sender and a recipient. \n"
+                f"In this case, sender is {email_sender} and recipient is {email_recipients}."
+            )
             logger.error(err)
             raise ValueError(err)
 
@@ -103,13 +118,17 @@ class Monitor:
         self.midway_postprocess_hours = float(midway_postprocess_hours) * u.hour
 
         if self.midway_postprocess_hours > self.final_postprocess_hours:
-            logger.warning(f"Midway postprocessing was set to {self.midway_postprocess_hours}, "
-                           f"but the monitor has a shorter termination period of {self.final_postprocess_hours}. "
-                           f"Setting to to 95% of max wait.")
+            logger.warning(
+                f"Midway postprocessing was set to {self.midway_postprocess_hours}, "
+                f"but the monitor has a shorter termination period of {self.final_postprocess_hours}. "
+                f"Setting to to 95% of max wait."
+            )
             self.midway_postprocess_hours = 0.95 * self.final_postprocess_hours
 
         if np.sum(check_email) == 2:
-            logger.info(f"Will send an email summary after {self.midway_postprocess_hours} hours.")
+            logger.info(
+                f"Will send an email summary after {self.midway_postprocess_hours} hours."
+            )
             self.email_info = (email_sender, email_recipients)
             self.email_to_send = True
 
@@ -134,19 +153,21 @@ class Monitor:
                 latest_dir=str(self.raw_image_directory),
                 night=night,
                 open_f=self.pipeline.load_raw_image,
-                requirements=cal_requirements
+                requirements=cal_requirements,
             )
         else:
             self.cal_images = ImageBatch()
 
     def summarise_errors(
-            self,
-            errorstack: ErrorStack,
+        self,
+        errorstack: ErrorStack,
     ):
 
         error_summary = errorstack.summarise_error_stack(verbose=False)
-        summary = f"Processed a total of {len(self.processed_science_images)} science images. " \
-                  f"\n\n" + error_summary + " \n"
+        summary = (
+            f"Processed a total of {len(self.processed_science_images)} science images. "
+            f"\n\n" + error_summary + " \n"
+        )
 
         logger.info(f"Writing error log to {self.error_path}")
         errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
@@ -168,15 +189,17 @@ class Monitor:
                 email_recipients=recipients,
                 email_subject=subject,
                 email_text=summary,
-                attachments=attachments
+                attachments=attachments,
             )
         else:
             print(summary)
 
     def process_full_night(
-            self,
+        self,
     ):
-        batches, errorstack = self.pipeline.reduce_images(Dataset(ImageBatch()), catch_all_errors=True)
+        batches, errorstack = self.pipeline.reduce_images(
+            Dataset(ImageBatch()), catch_all_errors=True
+        )
         self.summarise_errors(errorstack=errorstack)
 
     def get_error_output_path(self) -> str:
@@ -208,7 +231,9 @@ class Monitor:
 
         handler = logging.FileHandler(log_output_path)
         # handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter('%(asctime)s: %(name)s [l %(lineno)d] - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s: %(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
+        )
         handler.setFormatter(formatter)
         log.addHandler(handler)
         log.setLevel(log_level)
@@ -218,7 +243,9 @@ class Monitor:
 
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(log_level)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         handler.setFormatter(formatter)
         root.addHandler(handler)
 
@@ -268,16 +295,22 @@ class Monitor:
 
         if self.postprocess_configurations is not None:
 
-            postprocess_config = [ImageLoader(
-                load_image=self.pipeline.unpack_raw_image,
-                input_sub_dir=self.sub_dir,
-                input_img_dir=str(Path(self.raw_image_directory)).split(self.pipeline_name)[0]
-            )]
+            postprocess_config = [
+                ImageLoader(
+                    load_image=self.pipeline.unpack_raw_image,
+                    input_sub_dir=self.sub_dir,
+                    input_img_dir=str(Path(self.raw_image_directory)).split(
+                        self.pipeline_name
+                    )[0],
+                )
+            ]
 
             postprocess_config += self.pipeline.postprocess_configuration(
                 errorstack=self.errorstack,
-                processed_images=[os.path.basename(x) for x in self.processed_science_images],
-                selected_configurations=self.postprocess_configurations
+                processed_images=[
+                    os.path.basename(x) for x in self.processed_science_images
+                ],
+                selected_configurations=self.postprocess_configurations,
             )
 
             protected_key = "_monitor"
@@ -294,19 +327,19 @@ class Monitor:
             _, errorstack = self.pipeline.reduce_images(
                 dataset=Dataset(ImageBatch()),
                 selected_configurations=protected_key,
-                catch_all_errors=True
+                catch_all_errors=True,
             )
             self.errorstack += errorstack
             self.update_error_log()
 
     def process_load_queue(self, q):
-        '''This is the worker thread function. It is run as a daemon
-           threads that only exit when the main thread ends.
+        """This is the worker thread function. It is run as a daemon
+        threads that only exit when the main thread ends.
 
-           Args
-           ==========
-             q:  Queue() object
-        '''
+        Args
+        ==========
+          q:  Queue() object
+        """
         while True:
 
             if Time.now() - self.t_start > self.midway_postprocess_hours:
@@ -315,8 +348,10 @@ class Monitor:
                     logger.info("Postprocess time!")
                     self.postprocess()
                     if self.email_to_send:
-                        logger.info(f"More than {self.midway_postprocess_hours} hours have elapsed. "
-                                    f"Sending summary email.")
+                        logger.info(
+                            f"More than {self.midway_postprocess_hours} hours have elapsed. "
+                            f"Sending summary email."
+                        )
                         self.summarise_errors(errorstack=self.errorstack)
 
             if not q.empty():
@@ -335,7 +370,9 @@ class Monitor:
 
                     while not check:
                         with catch_warnings():
-                            warnings.filterwarnings('ignore', category=AstropyUserWarning)
+                            warnings.filterwarnings(
+                                "ignore", category=AstropyUserWarning
+                            )
                             try:
                                 with fits.open(event.src_path) as hdul:
                                     check = hdul._file.tell() == hdul._file.size
@@ -343,8 +380,10 @@ class Monitor:
                                 pass
 
                             if not check:
-                                print("Seems like the file is not fully transferred. "
-                                      "Waiting a couple of seconds before trying again.")
+                                print(
+                                    "Seems like the file is not fully transferred. "
+                                    "Waiting a couple of seconds before trying again."
+                                )
                                 time.sleep(3)
 
                     try:
@@ -358,18 +397,22 @@ class Monitor:
                         if not is_science:
                             print(f"Skipping {event.src_path} (calibration image)")
                         else:
-                            print(f"Reducing {event.src_path} (science image) on thread {threading.get_ident()}")
+                            print(
+                                f"Reducing {event.src_path} (science image) on thread {threading.get_ident()}"
+                            )
                             _, errorstack = self.pipeline.reduce_images(
                                 dataset=Dataset(all_img),
                                 selected_configurations=self.realtime_configurations,
-                                catch_all_errors=True
+                                catch_all_errors=True,
                             )
                             self.processed_science_images.append(event.src_path)
                             self.errorstack += errorstack
                             self.update_error_log()
 
                     except Exception as e:
-                        err_report = ErrorReport(e, "monitor", contents=[event.src_path])
+                        err_report = ErrorReport(
+                            e, "monitor", contents=[event.src_path]
+                        )
                         self.errorstack.add_report(err_report)
                         self.update_error_log()
 

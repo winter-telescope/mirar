@@ -1,13 +1,15 @@
 import logging
+
 from winterdrp.errors import ProcessorError
 from winterdrp.pipelines.base_pipeline import Pipeline
-from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.pipelines.summer.summer_pipeline import SummerPipeline
+from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 
 logger = logging.getLogger(__name__)
 
 
 # Convention: lowercase names
+
 
 class PipelineConfigError(ProcessorError, KeyError):
     pass

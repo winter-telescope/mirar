@@ -4,24 +4,23 @@
 Functions to convert FITS files or astropy Tables to FITS_LDAC files and
 vice versa.
 """
-from astropy.io import fits
+import tempfile
+
 import astropy.io
 import numpy as np
-import tempfile
+from astropy.io import fits
 from astropy.table import Table
 
 
-def convert_hdu_to_ldac(
-        hdu: astropy.io.fits.BinTableHDU | astropy.io.fits.TableHDU
-):
+def convert_hdu_to_ldac(hdu: astropy.io.fits.BinTableHDU | astropy.io.fits.TableHDU):
     """
     Convert an hdu table to a fits_ldac table (format used by astromatic suite)
-    
+
     Parameters
     ----------
     hdu: `astropy.io.fits.BinTableHDU` or `astropy.io.fits.TableHDU`
         HDUList to convert to fits_ldac HDUList
-    
+
     Returns
     -------
     tbl1: `astropy.io.fits.BinTableHDU`
@@ -29,23 +28,21 @@ def convert_hdu_to_ldac(
     tbl2: `astropy.io.fits.BinTableHDU`
         Data table (LDAC_OBJECTS)
     """
-    tblhdr = np.array([hdu.header.tostring(',')])
-    col1 = fits.Column(name='Field Header Card', array=tblhdr, format='13200A')
+    tblhdr = np.array([hdu.header.tostring(",")])
+    col1 = fits.Column(name="Field Header Card", array=tblhdr, format="13200A")
     cols = fits.ColDefs([col1])
     tbl1 = fits.BinTableHDU.from_columns(cols)
-    tbl1.header['TDIM1'] = '(80, {0})'.format(len(hdu.header))
-    tbl1.header['EXTNAME'] = 'LDAC_IMHEAD'
+    tbl1.header["TDIM1"] = "(80, {0})".format(len(hdu.header))
+    tbl1.header["EXTNAME"] = "LDAC_IMHEAD"
     tbl2 = fits.BinTableHDU(hdu.data)
-    tbl2.header['EXTNAME'] = 'LDAC_OBJECTS'
+    tbl2.header["EXTNAME"] = "LDAC_OBJECTS"
     return (tbl1, tbl2)
 
 
-def convert_table_to_ldac(
-        tbl: astropy.table.Table
-) -> astropy.io.fits.HDUList:
+def convert_table_to_ldac(tbl: astropy.table.Table) -> astropy.io.fits.HDUList:
     """
     Convert an astropy table to a fits_ldac
-    
+
     Parameters
     ----------
     tbl: `astropy.table.Table`
@@ -59,24 +56,20 @@ def convert_table_to_ldac(
     # Cannot save "object"-type fields via fits
     del_list = [x for x in t.dtype.names if t.dtype[x].kind == "O"]
     t.remove_columns(del_list)
-    f = tempfile.NamedTemporaryFile(suffix='.fits', mode='rb+')
-    t.write(f, format='fits')
+    f = tempfile.NamedTemporaryFile(suffix=".fits", mode="rb+")
+    t.write(f, format="fits")
     f.seek(0)
-    hdulist = fits.open(f, mode='update')
+    hdulist = fits.open(f, mode="update")
     tbl1, tbl2 = convert_hdu_to_ldac(hdulist[1])
     new_hdulist = [hdulist[0], tbl1, tbl2]
     new_hdulist = fits.HDUList(new_hdulist)
     return new_hdulist
 
 
-def save_table_as_ldac(
-        tbl: astropy.table.Table,
-        file_path: str,
-        **kwargs
-):
+def save_table_as_ldac(tbl: astropy.table.Table, file_path: str, **kwargs):
     """
     Save a table as a fits LDAC file
-    
+
     Parameters
     ----------
     tbl: `astropy.table.Table`
@@ -90,15 +83,12 @@ def save_table_as_ldac(
     hdulist.writeto(file_path, **kwargs)
 
 
-def get_table_from_ldac(
-        file_path: str,
-        frame: int = 1
-):
+def get_table_from_ldac(file_path: str, frame: int = 1):
     """
-    Load an astropy table from a fits_ldac by frame (Since the ldac format has column 
+    Load an astropy table from a fits_ldac by frame (Since the ldac format has column
     info for odd tables, giving it twce as many tables as a regular fits BinTableHDU,
     match the frame of a table to its corresponding frame in the ldac file).
-    
+
     Parameters
     ----------
     file_path: str
@@ -107,7 +97,6 @@ def get_table_from_ldac(
         Number of the frame in a regular fits file
     """
     if frame > 0:
-        frame = frame*2
+        frame = frame * 2
     tbl = Table.read(file_path, hdu=frame)
     return tbl
-

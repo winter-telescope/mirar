@@ -1,22 +1,21 @@
-import unittest
 import logging
-from winterdrp.pipelines import get_pipeline
+import unittest
+
+from winterdrp.data import Dataset, ImageBatch
 from winterdrp.errors import ImageNotFoundError
-from winterdrp.data import ImageBatch, Dataset
+from winterdrp.pipelines import get_pipeline
 
 logger = logging.getLogger(__name__)
 
 pipeline = get_pipeline(
-    instrument="summer",
-    selected_configurations=["test"],
-    night="20220401"
+    instrument="summer", selected_configurations=["test"], night="20220401"
 )
 
 expected_error = {
-    'processor_name': 'winterdrp.processors.utils.image_loader',
-    'contents': [],
-    'known_error_bool': True,
-    'non_critical_bool': False
+    "processor_name": "winterdrp.processors.utils.image_loader",
+    "contents": [],
+    "known_error_bool": True,
+    "non_critical_bool": False,
 }
 
 
@@ -28,7 +27,9 @@ class TestErrors(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(Dataset(ImageBatch()), catch_all_errors=True)
+        res, errorstack = pipeline.reduce_images(
+            Dataset(ImageBatch()), catch_all_errors=True
+        )
 
         errorstack.summarise_error_stack(verbose=True)
 
@@ -42,5 +43,3 @@ class TestErrors(unittest.TestCase):
 
         for key, exp in expected_error.items():
             self.assertEqual(exp, getattr(err, key))
-
-

@@ -1,4 +1,5 @@
 import logging
+
 from winterdrp.catalog.base_catalog import VizierCatalog
 from winterdrp.errors import ProcessorError
 
@@ -9,11 +10,8 @@ class NotInSkymapperError(ProcessorError):
     pass
 
 
-def in_skymapper(
-        ra_deg: float,
-        dec_deg: float
-) -> bool:
-    return dec_deg < 0.
+def in_skymapper(ra_deg: float, dec_deg: float) -> bool:
+    return dec_deg < 0.0
 
 
 class SkyMapper(VizierCatalog):

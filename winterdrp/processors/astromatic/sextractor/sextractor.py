@@ -1,46 +1,60 @@
+import logging
 import os
 import shutil
 
-import numpy as np
-import logging
 import astropy.io.fits
-from winterdrp.processors.astromatic.sextractor.sourceextractor import run_sextractor_single, default_saturation, \
-    run_sextractor_dual, parse_checkimage
-from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.paths import get_output_dir, get_temp_path, latest_mask_save_key, base_name_key
-from winterdrp.utils.ldac_tools import get_table_from_ldac
-from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
+import numpy as np
+
 from winterdrp.data import ImageBatch
+from winterdrp.paths import (
+    base_name_key,
+    get_output_dir,
+    get_temp_path,
+    latest_mask_save_key,
+)
+from winterdrp.processors.astromatic.sextractor.sourceextractor import (
+    default_saturation,
+    parse_checkimage,
+    run_sextractor_dual,
+    run_sextractor_single,
+)
+from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
+from winterdrp.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
-sextractor_header_key = 'SRCCAT'
+sextractor_header_key = "SRCCAT"
 
-sextractor_checkimg_keys = {'BACKGROUND': 'BKGPT', 'BACKGROUND_RMS': 'BKGRMS',
-                            'MINIBACKGROUND': 'MINIBKG', 'MINIBACK_RMS': 'MINIBGRM'}
+sextractor_checkimg_keys = {
+    "BACKGROUND": "BKGPT",
+    "BACKGROUND_RMS": "BKGRMS",
+    "MINIBACKGROUND": "MINIBKG",
+    "MINIBACK_RMS": "MINIBGRM",
+}
 
 
 class Sextractor(BaseImageProcessor):
     base_key = "sextractor"
 
     def __init__(
-            self,
-            output_sub_dir: str,
-            config_path: str,
-            parameter_path: str,
-            filter_path: str,
-            starnnw_path: str,
-            saturation: float = default_saturation,
-            verbose_type: str = "QUIET",
-            checkimage_name: str | list = None,
-            checkimage_type: str | list = None,
-            gain: float = None,
-            dual: bool = False,
-            cache: bool = False,
-            mag_zp: float = None,
-            write_regions_bool: bool = False,
-            *args,
-            **kwargs
+        self,
+        output_sub_dir: str,
+        config_path: str,
+        parameter_path: str,
+        filter_path: str,
+        starnnw_path: str,
+        saturation: float = default_saturation,
+        verbose_type: str = "QUIET",
+        checkimage_name: str | list = None,
+        checkimage_type: str | list = None,
+        gain: float = None,
+        dual: bool = False,
+        cache: bool = False,
+        mag_zp: float = None,
+        write_regions_bool: bool = False,
+        *args,
+        **kwargs,
     ):
         super(Sextractor, self).__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
@@ -60,16 +74,15 @@ class Sextractor(BaseImageProcessor):
         self.write_regions = write_regions_bool
 
     def __str__(self) -> str:
-        return f"Processor to apply sextractor to images, " \
-               f"and save detected sources to the '{self.output_sub_dir}' directory."
+        return (
+            f"Processor to apply sextractor to images, "
+            f"and save detected sources to the '{self.output_sub_dir}' directory."
+        )
 
     def get_sextractor_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
-    def _apply_to_images(
-            self,
-            batch: ImageBatch
-    ) -> ImageBatch:
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
 
         sextractor_out_dir = self.get_sextractor_output_dir()
 
@@ -80,10 +93,15 @@ class Sextractor(BaseImageProcessor):
 
         for image in batch:
 
-            det_image, measure_image, det_header, measure_header = None, None, None, None
+            det_image, measure_image, det_header, measure_header = (
+                None,
+                None,
+                None,
+                None,
+            )
             if self.gain is None:
-                if 'GAIN' in image.keys():
-                    self.gain = image['GAIN']
+                if "GAIN" in image.keys():
+                    self.gain = image["GAIN"]
 
             # I think this is broken????
             # if self.dual:
@@ -102,8 +120,12 @@ class Sextractor(BaseImageProcessor):
 
             mask_path = None
             if latest_mask_save_key in image.keys():
-                image_mask_path = os.path.join(sextractor_out_dir, image[latest_mask_save_key])
-                temp_mask_path = get_temp_path(sextractor_out_dir, image[latest_mask_save_key])
+                image_mask_path = os.path.join(
+                    sextractor_out_dir, image[latest_mask_save_key]
+                )
+                temp_mask_path = get_temp_path(
+                    sextractor_out_dir, image[latest_mask_save_key]
+                )
                 if os.path.exists(image_mask_path):
                     shutil.copyfile(image_mask_path, temp_mask_path)
                     mask_path = temp_mask_path
@@ -114,11 +136,15 @@ class Sextractor(BaseImageProcessor):
             if mask_path is None:
                 mask_path = self.save_mask(image, temp_path)
                 temp_files.append(mask_path)
-            output_cat = os.path.join(sextractor_out_dir, image[base_name_key].replace(".fits", ".cat"))
+            output_cat = os.path.join(
+                sextractor_out_dir, image[base_name_key].replace(".fits", ".cat")
+            )
 
-            _, self.checkimage_name = parse_checkimage(checkimage_name=self.checkimage_name,
-                                                       checkimage_type=self.checkimage_type,
-                                                       image=os.path.join(sextractor_out_dir, image[base_name_key]))
+            _, self.checkimage_name = parse_checkimage(
+                checkimage_name=self.checkimage_name,
+                checkimage_type=self.checkimage_type,
+                image=os.path.join(sextractor_out_dir, image[base_name_key]),
+            )
 
             if not self.dual:
                 output_cat, checkimage_name = run_sextractor_single(
@@ -134,7 +160,7 @@ class Sextractor(BaseImageProcessor):
                     checkimage_name=self.checkimage_name,
                     checkimage_type=self.checkimage_type,
                     gain=self.gain,
-                    catalog_name=output_cat
+                    catalog_name=output_cat,
                 )
 
             if self.dual:
@@ -153,10 +179,10 @@ class Sextractor(BaseImageProcessor):
                     checkimage_type=self.checkimage_type,
                     gain=self.gain,
                     catalog_name=output_cat,
-                    mag_zp=self.mag_zp
+                    mag_zp=self.mag_zp,
                 )
 
-            logger.info(f'Cache save is {self.cache}')
+            logger.info(f"Cache save is {self.cache}")
             if not self.cache:
                 for temp_file in temp_files:
                     os.remove(temp_file)
@@ -164,13 +190,15 @@ class Sextractor(BaseImageProcessor):
 
             if self.write_regions:
                 output_catalog = get_table_from_ldac(output_cat)
-                x, y = output_catalog['X_IMAGE'], output_catalog['Y_IMAGE']
-                regions_path = output_cat + '.reg'
-                write_regions_file(regions_path=regions_path,
-                                   x_coords=x,
-                                   y_coords=y,
-                                   system='image',
-                                   region_radius=5)
+                x, y = output_catalog["X_IMAGE"], output_catalog["Y_IMAGE"]
+                regions_path = output_cat + ".reg"
+                write_regions_file(
+                    regions_path=regions_path,
+                    x_coords=x,
+                    y_coords=y,
+                    system="image",
+                    region_radius=5,
+                )
 
             image[sextractor_header_key] = os.path.join(sextractor_out_dir, output_cat)
 
@@ -179,6 +207,8 @@ class Sextractor(BaseImageProcessor):
                     self.checkimage_type = [self.checkimage_type]
                 for ind in range(len(self.checkimage_type)):
                     checkimg_type = self.checkimage_type[ind]
-                    image[sextractor_checkimg_keys[checkimg_type]] = checkimage_name[ind]
+                    image[sextractor_checkimg_keys[checkimg_type]] = checkimage_name[
+                        ind
+                    ]
 
         return batch

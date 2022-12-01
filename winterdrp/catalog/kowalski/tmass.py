@@ -1,13 +1,14 @@
-from winterdrp.catalog.base_catalog import BaseXMatchCatalog, BaseKowalskiXMatch
 import pandas as pd
 import penquins
+
+from winterdrp.catalog.base_catalog import BaseKowalskiXMatch, BaseXMatchCatalog
 
 
 class TMASS(BaseKowalskiXMatch):
     catalog_name = "2MASS_PSC"
     abbreviation = "tm"
     projection = {
-        "_id":0,
+        "_id": 0,
         "designation": 1,
         "ra": 1,
         "decl": 1,
@@ -17,7 +18,7 @@ class TMASS(BaseKowalskiXMatch):
         "h_cmsigcom": 1,
         "k_m": 1,
         "k_cmsigcom": 1,
-        "ph_qual": 1
+        "ph_qual": 1,
     }
 
     column_names = {
@@ -30,11 +31,11 @@ class TMASS(BaseKowalskiXMatch):
         "h_cmsigcom": "tmhmagerr",
         "k_cmsigcom": "tmkmagerr",
         "designation": "tmobjectid",
-        "ph_qual":"tmph_qual",
+        "ph_qual": "tmph_qual",
     }
 
     column_dtypes = {
-        "tmra":float,
+        "tmra": float,
         "tmdec": float,
         "tmjmag": float,
         "tmhmag": float,
@@ -43,10 +44,8 @@ class TMASS(BaseKowalskiXMatch):
         "tmhmagerr": float,
         "tmkmagerr": float,
         "tmobjectid": str,
-        "tmph_qual": str
+        "tmph_qual": str,
     }
 
-    def __init__(self,
-                 *args,
-                 **kwargs):
+    def __init__(self, *args, **kwargs):
         super(TMASS, self).__init__(*args, **kwargs)

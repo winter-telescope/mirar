@@ -1,14 +1,10 @@
 import pandas as pd
-from winterdrp.data.base_data import DataBlock, DataBatch
+
+from winterdrp.data.base_data import DataBatch, DataBlock
 
 
 class SourceTable(DataBlock):
-
-    def __init__(
-            self,
-            source_list: pd.DataFrame,
-            metadata: dict
-    ):
+    def __init__(self, source_list: pd.DataFrame, metadata: dict):
         self.source_list = source_list
         self.metadata = metadata
         super().__init__()

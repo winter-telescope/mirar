@@ -1,32 +1,43 @@
-import numpy as np
-import os
-from winterdrp.processors.base_processor import BaseProcessor
 import logging
+import os
 from abc import ABC
-from winterdrp.processors.database.postgres import check_if_db_exists, check_if_user_exists, check_if_table_exists,\
-    create_db, create_table, create_new_user, grant_privileges, create_tables_from_schema, DataBaseError, run_sql_command_from_file,\
-    pg_admin_user_key, pg_admin_pwd_key
-from winterdrp.data import DataBatch
 
+import numpy as np
+
+from winterdrp.data import DataBatch
+from winterdrp.processors.base_processor import BaseProcessor
+from winterdrp.processors.database.postgres import (
+    DataBaseError,
+    check_if_db_exists,
+    check_if_table_exists,
+    check_if_user_exists,
+    create_db,
+    create_new_user,
+    create_table,
+    create_tables_from_schema,
+    grant_privileges,
+    pg_admin_pwd_key,
+    pg_admin_user_key,
+    run_sql_command_from_file,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class BaseDatabaseProcessor(BaseProcessor, ABC):
-
     def __init__(
-            self,
-            db_name: str,
-            db_table: str,
-            schema_path: str,
-            db_user: str = os.environ.get('DB_USER'),
-            db_password: str = os.environ.get('DB_PWD'),
-            full_setup: bool = False,
-            schema_dir: str = None,
-            duplicate_protocol: str = 'fail',
-            q3c: bool = False,
-            *args,
-            **kwargs
+        self,
+        db_name: str,
+        db_table: str,
+        schema_path: str,
+        db_user: str = os.environ.get("DB_USER"),
+        db_password: str = os.environ.get("DB_PWD"),
+        full_setup: bool = False,
+        schema_dir: str = None,
+        duplicate_protocol: str = "fail",
+        q3c: bool = False,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.db_name = db_name
@@ -39,46 +50,41 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         self.db_check = False
         self.duplicate_protocol = duplicate_protocol
         self.q3c = q3c
-        assert self.duplicate_protocol in ['fail', 'ignore', 'replace']
+        assert self.duplicate_protocol in ["fail", "ignore", "replace"]
 
     def db_exists(self):
-        return check_if_db_exists(
-            db_name=self.db_name
-        )
+        return check_if_db_exists(db_name=self.db_name)
 
     def make_db(self):
-        create_db(
-            db_name=self.db_name
-        )
+        create_db(db_name=self.db_name)
 
     def user_exists(self):
         return check_if_user_exists(self.db_user)
 
     def make_user(self):
-        return create_new_user(
-                               new_db_user=self.db_user,
-                               new_password=self.db_password
-        )
+        return create_new_user(new_db_user=self.db_user, new_password=self.db_password)
 
     def grant_privileges(self):
         return grant_privileges(self.db_name, self.db_user)
 
     def table_exists(self):
-        return check_if_table_exists(db_name=self.db_name,
-                                     db_table=self.db_table,
-                                     db_user=self.db_user,
-                                     password=self.db_password)
+        return check_if_table_exists(
+            db_name=self.db_name,
+            db_table=self.db_table,
+            db_user=self.db_user,
+            password=self.db_password,
+        )
 
     def make_table(self, schema_path: str):
         create_table(
             schema_path,
             db_name=self.db_name,
             db_user=self.db_user,
-            password=self.db_password
+            password=self.db_password,
         )
 
     def check_prerequisites(
-            self,
+        self,
     ):
         if not self.db_check:
             self.check_database_setup()
@@ -87,7 +93,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
     def check_database_setup(self):
 
         if np.logical_and(self.db_exists(), np.invert(self.user_exists())):
-            err = 'Database exists but user does not exist'
+            err = "Database exists but user does not exist"
             logger.error(err)
             raise DataBaseError(err)
 
@@ -102,28 +108,36 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             if self.full_setup:
                 if self.schema_dir is None:
                     self.schema_dir = os.path.dirname(self.schema_path)
-                    logger.warning(f'Warning, full db setup requested, but no schema directory specified. \
-                    Will search for schema files in {self.schema_dir} directory.')
-                logger.info(f'Looking in {self.schema_dir} directory to search for schema files')
+                    logger.warning(
+                        f"Warning, full db setup requested, but no schema directory specified. \
+                    Will search for schema files in {self.schema_dir} directory."
+                    )
+                logger.info(
+                    f"Looking in {self.schema_dir} directory to search for schema files"
+                )
 
-                create_tables_from_schema(self.schema_dir, self.db_name, self.db_user, self.db_password)
+                create_tables_from_schema(
+                    self.schema_dir, self.db_name, self.db_user, self.db_password
+                )
 
                 if self.q3c:
                     admin_user = os.environ.get(pg_admin_user_key)
                     admin_password = os.environ.get(pg_admin_pwd_key)
-                    q3c_dir = os.path.join(self.schema_dir, 'q3c')
-                    q3c_indexes_file = os.path.join(q3c_dir, 'q3c_indexes.sql')
-                    run_sql_command_from_file(file_path=q3c_indexes_file,
-                                              db_name=self.db_name,
-                                              db_user=admin_user,
-                                              password=admin_password)
+                    q3c_dir = os.path.join(self.schema_dir, "q3c")
+                    q3c_indexes_file = os.path.join(q3c_dir, "q3c_indexes.sql")
+                    run_sql_command_from_file(
+                        file_path=q3c_indexes_file,
+                        db_name=self.db_name,
+                        db_user=admin_user,
+                        password=admin_password,
+                    )
                     logger.info(f"Created q3c indexes")
 
         if not self.table_exists():
             self.make_table(self.schema_path)
             if self.q3c:
-                q3c_dir = os.path.join(self.schema_dir, 'q3c')
-                table_q3c_path = os.path.join(q3c_dir, f'q3c_{self.db_table}.sql')
+                q3c_dir = os.path.join(self.schema_dir, "q3c")
+                table_q3c_path = os.path.join(q3c_dir, f"q3c_{self.db_table}.sql")
                 admin_user = os.environ.get(pg_admin_user_key)
                 admin_password = os.environ.get(pg_admin_pwd_key)
                 if not os.path.exists(table_q3c_path):
@@ -131,9 +145,9 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
                     logger.error(err)
                     raise DataBaseError(err)
                 else:
-                    run_sql_command_from_file(file_path=table_q3c_path,
-                                              db_name=self.db_name,
-                                              db_user=admin_user,
-                                              password=admin_password)
-
-
+                    run_sql_command_from_file(
+                        file_path=table_q3c_path,
+                        db_name=self.db_name,
+                        db_user=admin_user,
+                        password=admin_password,
+                    )

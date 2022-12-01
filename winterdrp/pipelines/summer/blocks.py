@@ -185,7 +185,7 @@ standard_summer_reduction = export_raw + cal_hunter + process_raw
 
 subtract = [
     ImageBatcher(split_key=base_name_key),
-    ImageSelector(('OBSTYPE', 'SCIENCE')),
+    ImageSelector(("OBSTYPE", "SCIENCE")),
     Reference(
         ref_image_generator=summer_reference_image_generator,
         ref_psfex=summer_reference_psfex,

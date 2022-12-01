@@ -1,13 +1,13 @@
 import logging
-from typing import Type
 from pathlib import Path
-from winterdrp.paths import raw_img_key, base_name_key
+from typing import Type
+
+from winterdrp.paths import base_name_key, raw_img_key
 
 logger = logging.getLogger(__name__)
 
 
 class DataBlock:
-
     def __init__(self):
         self.raw_img_list = self[raw_img_key].split(",")
         self.base_name = self[base_name_key]
@@ -23,7 +23,6 @@ class DataBlock:
 
     def get_raw_img_list(self) -> list[str]:
         return self.raw_img_list
-
 
 
 class PseudoList:
@@ -73,9 +72,11 @@ class PseudoList:
 
         if len(self._datalist) > 0:
             if not type(self._datalist[0]) == type(item):
-                err = f"Error appending item {item} of type {type(item)}. This {self.__class__.__name__} " \
-                      f"object already contains data of type {type(self._datalist[0])}. " \
-                      f"Please ensure all data is of the same type."
+                err = (
+                    f"Error appending item {item} of type {type(item)}. This {self.__class__.__name__} "
+                    f"object already contains data of type {type(self._datalist[0])}. "
+                    f"Please ensure all data is of the same type."
+                )
                 logger.error(err)
                 raise ValueError(err)
         self._datalist.append(item)
@@ -107,7 +108,6 @@ class PseudoList:
 
 
 class DataBatch(PseudoList):
-
     @property
     def data_type(self) -> Type[DataBlock]:
         raise NotImplementedError()
@@ -125,7 +125,7 @@ class DataBatch(PseudoList):
         return img_list
 
 
-class Dataset (PseudoList):
+class Dataset(PseudoList):
 
     data_type = DataBatch
 
@@ -134,4 +134,3 @@ class Dataset (PseudoList):
 
     def __init__(self, batches: list[DataBatch] | DataBatch = None):
         super(Dataset, self).__init__(data_list=batches)
-

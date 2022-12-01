@@ -1,12 +1,18 @@
 import argparse
 import logging
-import matplotlib.pyplot as plt
 from datetime import datetime
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+
 from winterdrp.paths import doc_dir
-from winterdrp.pipelines import get_pipeline, Pipeline
-from winterdrp.processors.base_processor import BaseImageProcessor, BaseCandidateGenerator, BaseDataframeProcessor, \
-    BaseProcessor
+from winterdrp.pipelines import Pipeline, get_pipeline
+from winterdrp.processors.base_processor import (
+    BaseCandidateGenerator,
+    BaseDataframeProcessor,
+    BaseImageProcessor,
+    BaseProcessor,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +23,10 @@ def get_save_path(pipeline: str, configs: str) -> Path:
 
 def flowify(processor_list: list[BaseProcessor], output_path: Path):
 
-    plt.figure(figsize=(12., 2. + 0.3*len(processor_list)), dpi=300.)
+    plt.figure(figsize=(12.0, 2.0 + 0.3 * len(processor_list)), dpi=300.0)
     ax = plt.subplot(111)
 
-    y_scale = 1./float(len(processor_list))
+    y_scale = 1.0 / float(len(processor_list))
 
     base_offset = 0.8
     x_offset_name = 0.1
@@ -28,8 +34,8 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
 
     for i, processor in enumerate(processor_list):
 
-        y_0 = 1. - y_scale*(i+base_offset + 0.7)
-        y_1 = 1. - y_scale * (i + base_offset)
+        y_0 = 1.0 - y_scale * (i + base_offset + 0.7)
+        y_1 = 1.0 - y_scale * (i + base_offset)
 
         xy_name = (x_offset_name, y_0)
         xytext = (x_offset_name, y_1)
@@ -54,13 +60,13 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
 
         annotate_args = {
             "xycoords": "axes fraction",
-            "ha": 'center',
+            "ha": "center",
             "arrowprops": arrowprops,
             "bbox": {
-                "boxstyle": 'round',
-                "facecolor": 'wheat',
+                "boxstyle": "round",
+                "facecolor": "wheat",
                 "alpha": 0.5,
-            }
+            },
         }
 
         plt.annotate(
@@ -68,7 +74,7 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
             xy=xy_name,
             xytext=xytext,
             **annotate_args,
-            **class_kwargs
+            **class_kwargs,
         )
 
         plt.annotate(
@@ -76,7 +82,7 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
             xy=xy_description,
             xytext=xytext_description,
             **annotate_args,
-            **class_kwargs
+            **class_kwargs,
         )
 
     logger.info(f"Saving to {output_path}")
@@ -85,15 +91,12 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
         output_path.parent.mkdir(parents=True)
 
     plt.tight_layout()
-    plt.axis('off')
+    plt.axis("off")
 
     plt.savefig(output_path)
 
 
-def iterate_flowify(
-        config: str | list[str] = None,
-        pipelines: str | list[str] = None
-):
+def iterate_flowify(config: str | list[str] = None, pipelines: str | list[str] = None):
     if pipelines is None:
         pipelines = Pipeline.pipelines.keys()
     elif not isinstance(pipelines, list):
@@ -129,21 +132,11 @@ if __name__ == "__main__":
         description="winterdrp: An automated image reduction pipeline, developed for WINTER"
     )
 
+    parser.add_argument("-p", "--pipeline", default=None, help="Pipeline to be used")
     parser.add_argument(
-        "-p",
-        "--pipeline",
-        default=None,
-        help="Pipeline to be used"
-    )
-    parser.add_argument(
-        "-c",
-        "--config",
-        default=None,
-        help="Pipeline configuration to be used"
+        "-c", "--config", default=None, help="Pipeline configuration to be used"
     )
 
     args = parser.parse_args()
 
     iterate_flowify(config=args.config, pipelines=args.pipeline)
-
-

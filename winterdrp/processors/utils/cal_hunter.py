@@ -1,48 +1,47 @@
 import copy
+import logging
 import os
+from collections.abc import Callable
+from pathlib import Path
 
 import astropy.io
 import numpy as np
-import logging
-from winterdrp.processors.utils.image_selector import select_from_images
-from winterdrp.processors.utils.image_loader import ImageLoader, load_from_dir, BaseImageProcessor
+
+from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ImageNotFoundError, ProcessorError
 from winterdrp.io import open_fits
-from collections.abc import Callable
 from winterdrp.paths import raw_img_sub_dir
-from pathlib import Path
-from winterdrp.data import ImageBatch, Image
+from winterdrp.processors.utils.image_loader import (
+    BaseImageProcessor,
+    ImageLoader,
+    load_from_dir,
+)
+from winterdrp.processors.utils.image_selector import select_from_images
 
 logger = logging.getLogger(__name__)
 
 
 class CalRequirement:
-
-    def __init__(self, target_name, required_field: str, required_values: str | list[str]):
+    def __init__(
+        self, target_name, required_field: str, required_values: str | list[str]
+    ):
         self.target_name = target_name
         self.required_field = required_field
         self.required_values = required_values
         self.success = False
         self.data = dict()
 
-    def check_images(
-            self,
-            images: ImageBatch
-    ):
+    def check_images(self, images: ImageBatch):
 
         new_images = select_from_images(
-            images,
-            key="TARGET",
-            target_values=self.target_name
+            images, key="TARGET", target_values=self.target_name
         )
 
         if len(new_images) > 0:
             for value in self.required_values:
                 if value not in self.data.keys():
                     sub_images = select_from_images(
-                        new_images,
-                        key=self.required_field,
-                        target_values=value
+                        new_images, key=self.required_field, target_values=value
                     )
                     if len(sub_images) > 0:
                         self.data[value] = sub_images
@@ -51,8 +50,8 @@ class CalRequirement:
 
 
 def update_requirements(
-        requirements: list[CalRequirement],
-        images: ImageBatch,
+    requirements: list[CalRequirement],
+    images: ImageBatch,
 ) -> list[CalRequirement]:
 
     for requirement in requirements:
@@ -64,12 +63,12 @@ def update_requirements(
 
 
 def find_required_cals(
-        latest_dir: str,
-        night: str,
-        requirements: list[CalRequirement],
-        open_f: Callable[[str], Image] = open_fits,
-        images: ImageBatch = ImageBatch(),
-        skip_latest_night: bool = False
+    latest_dir: str,
+    night: str,
+    requirements: list[CalRequirement],
+    open_f: Callable[[str], Image] = open_fits,
+    images: ImageBatch = ImageBatch(),
+    skip_latest_night: bool = False,
 ) -> ImageBatch:
 
     path = Path(latest_dir)
@@ -111,9 +110,7 @@ def find_required_cals(
         ordered_nights = ordered_nights[1:]
 
         try:
-            new_images = load_from_dir(
-                str(dir_to_load), open_f=open_f
-            )
+            new_images = load_from_dir(str(dir_to_load), open_f=open_f)
             requirements = update_requirements(requirements, new_images)
 
         except ImageNotFoundError:
@@ -129,8 +126,10 @@ def find_required_cals(
                     n_cal += 1
 
     if n_cal > 0:
-        logger.warning(f"Some required calibration images were missing from image set. "
-                       f"Found {n_cal} additional calibration images from older nights")
+        logger.warning(
+            f"Some required calibration images were missing from image set. "
+            f"Found {n_cal} additional calibration images from older nights"
+        )
 
     return images
 
@@ -140,10 +139,7 @@ class CalHunter(ImageLoader):
     base_key = "calhunt"
 
     def __init__(
-            self,
-            requirements: CalRequirement | list[CalRequirement],
-            *args,
-            **kwargs
+        self, requirements: CalRequirement | list[CalRequirement], *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
 
@@ -157,16 +153,15 @@ class CalHunter(ImageLoader):
         return f"Processor to search through archival data to find any missing {' and '.join(reqs)}"
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         requirements = copy.deepcopy(self.requirements)
         requirements = update_requirements(requirements, batch)
 
         latest_dir = os.path.join(
-            self.input_img_dir,
-            os.path.join(self.night_sub_dir, self.input_sub_dir)
+            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
 
         updated_batch = find_required_cals(
@@ -175,9 +170,7 @@ class CalHunter(ImageLoader):
             requirements=requirements,
             open_f=self.load_image,
             images=batch,
-            skip_latest_night=True
+            skip_latest_night=True,
         )
 
         return updated_batch
-
-

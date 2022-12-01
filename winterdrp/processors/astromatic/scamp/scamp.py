@@ -1,15 +1,26 @@
 import logging
 import os
-import numpy as np
-import astropy.io.fits
-from winterdrp.processors.base_processor import ProcessorWithCache, BaseImageProcessor
-from winterdrp.paths import get_output_dir, copy_temp_file, get_temp_path, get_untemp_path, base_name_key
-from winterdrp.utils import execute
-from winterdrp.catalog.base_catalog import BaseCatalog
-from collections.abc import Callable
-from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor, sextractor_header_key
 import shutil
+from collections.abc import Callable
+
+import astropy.io.fits
+import numpy as np
+
+from winterdrp.catalog.base_catalog import BaseCatalog
 from winterdrp.data import ImageBatch
+from winterdrp.paths import (
+    base_name_key,
+    copy_temp_file,
+    get_output_dir,
+    get_temp_path,
+    get_untemp_path,
+)
+from winterdrp.processors.astromatic.sextractor.sextractor import (
+    Sextractor,
+    sextractor_header_key,
+)
+from winterdrp.processors.base_processor import BaseImageProcessor, ProcessorWithCache
+from winterdrp.utils import execute
 
 logger = logging.getLogger(__name__)
 
@@ -17,22 +28,19 @@ scamp_header_key = "SCMPHEAD"
 
 
 def run_scamp(
-        scamp_list_path: str,
-        scamp_config_path: str,
-        ast_ref_cat_path: str,
-        output_dir: str
+    scamp_list_path: str, scamp_config_path: str, ast_ref_cat_path: str, output_dir: str
 ):
-    scamp_cmd = f"scamp @{scamp_list_path} " \
-                f"-c {scamp_config_path} " \
-                f"-ASTREFCAT_NAME {ast_ref_cat_path} " \
-                f"-VERBOSE_TYPE QUIET "
+    scamp_cmd = (
+        f"scamp @{scamp_list_path} "
+        f"-c {scamp_config_path} "
+        f"-ASTREFCAT_NAME {ast_ref_cat_path} "
+        f"-VERBOSE_TYPE QUIET "
+    )
 
-    execute(scamp_cmd, output_dir=output_dir, timeout=30.)
+    execute(scamp_cmd, output_dir=output_dir, timeout=30.0)
 
 
-def get_scamp_output_head_path(
-        cat_path: str
-) -> str:
+def get_scamp_output_head_path(cat_path: str) -> str:
     return os.path.splitext(cat_path)[0] + ".head"
 
 
@@ -41,12 +49,12 @@ class Scamp(BaseImageProcessor):
     base_key = "scamp"
 
     def __init__(
-            self,
-            ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],
-            scamp_config_path: str,
-            temp_output_sub_dir: str = "scamp",
-            *args,
-            **kwargs
+        self,
+        ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],
+        scamp_config_path: str,
+        temp_output_sub_dir: str = "scamp",
+        *args,
+        **kwargs,
     ):
         super(Scamp, self).__init__(*args, **kwargs)
         self.scamp_config = scamp_config_path
@@ -54,15 +62,14 @@ class Scamp(BaseImageProcessor):
         self.temp_output_sub_dir = temp_output_sub_dir
 
     def __str__(self) -> str:
-        return f"Processor to apply Scamp to images, calculating more precise astrometry."
+        return (
+            f"Processor to apply Scamp to images, calculating more precise astrometry."
+        )
 
     def get_scamp_output_dir(self):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
-    def _apply_to_images(
-            self,
-            batch: ImageBatch
-    ) -> ImageBatch:
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
 
         scamp_output_dir = self.get_scamp_output_dir()
 
@@ -75,15 +82,12 @@ class Scamp(BaseImageProcessor):
 
         cat_path = copy_temp_file(
             output_dir=scamp_output_dir,
-            file_path=ref_catalog.write_catalog(
-                batch[0],
-                output_dir=scamp_output_dir
-            )
+            file_path=ref_catalog.write_catalog(batch[0], output_dir=scamp_output_dir),
         )
 
         scamp_image_list_path = os.path.join(
             scamp_output_dir,
-            os.path.splitext(batch[0][base_name_key])[0] + "_scamp_list.txt"
+            os.path.splitext(batch[0][base_name_key])[0] + "_scamp_list.txt",
         )
 
         logger.info(f"Writing file list to {scamp_image_list_path}")
@@ -96,8 +100,7 @@ class Scamp(BaseImageProcessor):
             for i, image in enumerate(batch):
 
                 temp_cat_path = copy_temp_file(
-                    output_dir=scamp_output_dir,
-                    file_path=image[sextractor_header_key]
+                    output_dir=scamp_output_dir, file_path=image[sextractor_header_key]
                 )
 
                 temp_img_path = get_temp_path(scamp_output_dir, image[base_name_key])
@@ -134,13 +137,13 @@ class Scamp(BaseImageProcessor):
         return batch
 
     def check_prerequisites(
-            self,
+        self,
     ):
         check = np.sum([isinstance(x, Sextractor) for x in self.preceding_steps])
         if check < 1:
-            err = f"{self.__module__} requires {Sextractor} as a prerequisite. " \
-                  f"However, the following steps were found: {self.preceding_steps}."
+            err = (
+                f"{self.__module__} requires {Sextractor} as a prerequisite. "
+                f"However, the following steps were found: {self.preceding_steps}."
+            )
             logger.error(err)
             raise ValueError
-
-

@@ -1,8 +1,9 @@
-import os
 import io
-import tarfile
-import docker
 import logging
+import os
+import tarfile
+
+import docker
 from docker.errors import DockerException
 from docker.models.containers import Container
 
@@ -13,12 +14,12 @@ docker_dir = "/usr/src/astrodocker"
 
 
 def new_container():
-    f"""Generate a new docker.models.containers.Container object, using the default 
-    docker daemon and the "{docker_image_name}" image. If the image is not found locally, 
+    f"""Generate a new docker.models.containers.Container object, using the default
+    docker daemon and the "{docker_image_name}" image. If the image is not found locally,
     the image will first be pulled from DockerHub.
-    
+
     This function requires a Docker daemon to first be running.
-    
+
     Returns
     -------
     A docker container built with the {docker_image_name} image
@@ -26,8 +27,10 @@ def new_container():
     try:
         client = docker.from_env()
     except DockerException:
-        err = "Unable to connect to Docker daemon. Have you installed Docker, and started a daemon? " \
-              "Find out more at https://www.docker.com "
+        err = (
+            "Unable to connect to Docker daemon. Have you installed Docker, and started a daemon? "
+            "Find out more at https://www.docker.com "
+        )
         logger.error(err)
         raise ConnectionError(err)
 
@@ -42,10 +45,7 @@ def docker_path(file):
     return os.path.join(docker_dir, os.path.basename(file))
 
 
-def docker_get(
-        container: Container,
-        local_path: str
-):
+def docker_get(container: Container, local_path: str):
     """Function to cope one file from the Docker container 'container' to 'local_path'.
     The file in the container should have the same name as the base file in 'local_path'.
 
@@ -60,7 +60,7 @@ def docker_get(
 
     container_path = docker_path(local_path)
 
-    with open(local_path, 'wb') as f:
+    with open(local_path, "wb") as f:
         bits, stat = container.get_archive(container_path)
         for chunk in bits:
             f.write(chunk)
@@ -79,7 +79,7 @@ def docker_put(container, local_path):
     """
     stream = io.BytesIO()
 
-    with tarfile.open(fileobj=stream, mode='w|') as tar, open(local_path, 'rb') as f:
+    with tarfile.open(fileobj=stream, mode="w|") as tar, open(local_path, "rb") as f:
         info = tar.gettarinfo(fileobj=f)
         info.name = os.path.basename(local_path)
         tar.addfile(info, f)
@@ -87,10 +87,7 @@ def docker_put(container, local_path):
     return container.put_archive(docker_dir, stream.getvalue())
 
 
-def docker_batch_put(
-        container: Container,
-        local_paths: str | list
-):
+def docker_batch_put(container: Container, local_paths: str | list):
     """Function to copy multiple files into a Docker container
 
     Parameters
@@ -109,14 +106,12 @@ def docker_batch_put(
     for local_path in local_paths:
         docker_put(container, local_path)
 
-    return container.exec_run("ls", stderr=True, stdout=True).output.decode().split("\n")
+    return (
+        container.exec_run("ls", stderr=True, stdout=True).output.decode().split("\n")
+    )
 
 
-def docker_get_new_files(
-        container: Container,
-        output_dir: str,
-        ignore_files: list
-):
+def docker_get_new_files(container: Container, output_dir: str, ignore_files: list):
     """
     Function to copy new files out of a container. All files in the work directory of 'container'
     will be copied out to 'output_dir', unless they appear in the 'ignore_files' list.
@@ -148,7 +143,10 @@ def docker_get_new_files(
     """
 
     new_files = [
-        x for x in container.exec_run("ls", stderr=True, stdout=True).output.decode().split("\n")
+        x
+        for x in container.exec_run("ls", stderr=True, stdout=True)
+        .output.decode()
+        .split("\n")
         if x not in ignore_files
     ]
 

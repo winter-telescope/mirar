@@ -1,10 +1,17 @@
 import logging
-import subprocess
 import os
-import docker
 import shutil
+import subprocess
+
+import docker
 from docker.errors import DockerException
-from winterdrp.utils.dockerutil import new_container, docker_path, docker_batch_put, docker_get_new_files
+
+from winterdrp.utils.dockerutil import (
+    docker_batch_put,
+    docker_get_new_files,
+    docker_path,
+    new_container,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -13,14 +20,10 @@ class ExecutionError(Exception):
     pass
 
 
-default_timeout = 300.
+default_timeout = 300.0
 
 
-def run_local(
-        cmd: str,
-        output_dir: str = ".",
-        timeout: float = default_timeout
-):
+def run_local(cmd: str, output_dir: str = ".", timeout: float = default_timeout):
     """
     Function to run on local machine using subprocess, with error handling.
 
@@ -43,13 +46,19 @@ def run_local(
 
         # See what files are in the directory beforehand
 
-        ignore_files = subprocess.run("ls", check=True, capture_output=True).stdout.decode().split("\n")
+        ignore_files = (
+            subprocess.run("ls", check=True, capture_output=True)
+            .stdout.decode()
+            .split("\n")
+        )
 
         # Run sextractor
 
-        rval = subprocess.run(cmd, check=True, capture_output=True, shell=True, timeout=timeout)
+        rval = subprocess.run(
+            cmd, check=True, capture_output=True, shell=True, timeout=timeout
+        )
 
-        msg = f'Successfully executed command. '
+        msg = f"Successfully executed command. "
 
         if rval.stdout.decode() != "":
             msg += f"Found the following output: {rval.stdout.decode()}"
@@ -63,15 +72,24 @@ def run_local(
         # Move new files to output dir
 
         new_files = [
-            x for x in subprocess.run("ls", check=True, capture_output=True).stdout.decode().split("\n")
+            x
+            for x in subprocess.run("ls", check=True, capture_output=True)
+            .stdout.decode()
+            .split("\n")
             if x not in ignore_files
         ]
 
-        current_dir = subprocess.run("pwd", check=True, capture_output=True).stdout.decode().strip()
+        current_dir = (
+            subprocess.run("pwd", check=True, capture_output=True)
+            .stdout.decode()
+            .strip()
+        )
 
         if len(new_files) > 0:
 
-            logger.debug(f"The following new files were created in the current directory: {new_files}")
+            logger.debug(
+                f"The following new files were created in the current directory: {new_files}"
+            )
 
         for file in new_files:
 
@@ -83,24 +101,20 @@ def run_local(
             shutil.move(current_path, output_path)
 
     except subprocess.CalledProcessError as err:
-        msg = f"Error found when running with command: \n \n '{err.cmd}' \n \n" \
-              f"This yielded a return code of {err.returncode}. The following traceback was found: \n {err.stderr.decode()}"
+        msg = (
+            f"Error found when running with command: \n \n '{err.cmd}' \n \n"
+            f"This yielded a return code of {err.returncode}. The following traceback was found: \n {err.stderr.decode()}"
+        )
         logger.error(msg)
         raise ExecutionError(msg)
 
 
-def temp_config(
-        config_path: str,
-        output_dir: str
-) -> str:
+def temp_config(config_path: str, output_dir: str) -> str:
     basename = f"temp_{os.path.basename(config_path)}"
     return os.path.join(output_dir, basename)
 
 
-def run_docker(
-        cmd: str,
-        output_dir: str = "."
-):
+def run_docker(cmd: str, output_dir: str = "."):
     """Function to run a command via Docker. A container will be generated automatically,
     but a Docker server must be running first. You can start one via the Desktop application,
     or on the command line with `docker start'.
@@ -175,7 +189,9 @@ def run_docker(
 
         # Be extra clever: go through files and check there too!
 
-        logger.debug(f"Found the following files which should contain paths: {files_of_files}")
+        logger.debug(
+            f"Found the following files which should contain paths: {files_of_files}"
+        )
 
         for path in files_of_files:
 
@@ -209,10 +225,7 @@ def run_docker(
 
         logger.debug(f"Copying {copy_list} into container")
 
-        ignore_files = docker_batch_put(
-            container=container,
-            local_paths=copy_list
-        )
+        ignore_files = docker_batch_put(container=container, local_paths=copy_list)
 
         # Run command
 
@@ -226,21 +239,19 @@ def run_docker(
             logger.info(f"Output: {log.output.decode()}")
 
         if not log.exit_code == 0:
-            err = f"Error running command: \n '{cmd}'\n which resulted in returncode '{log.exit_code}' and" \
-                  f"the following error message: \n '{log.output.decode()}'"
+            err = (
+                f"Error running command: \n '{cmd}'\n which resulted in returncode '{log.exit_code}' and"
+                f"the following error message: \n '{log.output.decode()}'"
+            )
             logger.error(err)
             raise subprocess.CalledProcessError(
-                returncode=log.exit_code,
-                cmd=cmd,
-                stderr=log.output.decode()
+                returncode=log.exit_code, cmd=cmd, stderr=log.output.decode()
             )
 
         # Copy out any files which did not exist before running sextractor
 
         docker_get_new_files(
-            container=container,
-            output_dir=output_dir,
-            ignore_files=ignore_files
+            container=container, output_dir=output_dir, ignore_files=ignore_files
         )
 
     except docker.errors.APIError as err:
@@ -252,14 +263,10 @@ def run_docker(
         container.remove()
 
 
-def execute(
-        cmd,
-        output_dir=".",
-        local=True,
-        timeout: float = default_timeout
-):
-    logger.debug(f"Using '{['docker', 'local'][local]}' "
-                 f" installation to run `{cmd}`")
+def execute(cmd, output_dir=".", local=True, timeout: float = default_timeout):
+    logger.debug(
+        f"Using '{['docker', 'local'][local]}' " f" installation to run `{cmd}`"
+    )
     if local:
         run_local(cmd, output_dir=output_dir, timeout=timeout)
     else:

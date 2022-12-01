@@ -1,16 +1,15 @@
 import os
+
 from winterdrp.processors.astromatic.config import astromatic_config_dir
 
-default_param_path = os.path.join(astromatic_config_dir, 'temp.param')
-default_conv_path = os.path.join(astromatic_config_dir, 'sex.conv')
-default_config_path = os.path.join(astromatic_config_dir, 'sex.config')
-default_starnnw_path = os.path.join(astromatic_config_dir, 'default.nnw')
+default_param_path = os.path.join(astromatic_config_dir, "temp.param")
+default_conv_path = os.path.join(astromatic_config_dir, "sex.conv")
+default_config_path = os.path.join(astromatic_config_dir, "sex.config")
+default_starnnw_path = os.path.join(astromatic_config_dir, "default.nnw")
 
 
-def write_param_file(
-        param_path: str = default_param_path
-):
-    params = '''X_IMAGE
+def write_param_file(param_path: str = default_param_path):
+    params = """X_IMAGE
 Y_IMAGE
 ALPHA_J2000
 DELTA_J2000
@@ -18,32 +17,30 @@ MAG_AUTO
 MAGERR_AUTO
 ELLIPTICITY
 FWHM_IMAGE
-FLAGS'''
-    with open(param_path, 'w') as pf:
+FLAGS"""
+    with open(param_path, "w") as pf:
         pf.write(params)
 
 
-def write_conv_file(
-        conv_path: str = default_conv_path
-):
+def write_conv_file(conv_path: str = default_conv_path):
 
-    convol = '''CONV NORM
+    convol = """CONV NORM
 # 3x3 ``all-ground'' convolution mask with FWHM = 2 pixels.
 1 2 1
 2 4 2
 1 2 1
-'''
-    with open(conv_path, 'w') as cf:
+"""
+    with open(conv_path, "w") as cf:
         cf.write(convol)
 
 
 def write_config_file(
-        param_path: str = default_param_path,
-        conv_path: str = default_conv_path,
-        config_path: str = default_config_path,
-        saturation: float = 55000.
+    param_path: str = default_param_path,
+    conv_path: str = default_conv_path,
+    config_path: str = default_config_path,
+    saturation: float = 55000.0,
 ):
-    configs = f'''
+    configs = f"""
 #-------------------------------- Catalog ------------------------------------
 
 CATALOG_NAME     temp.cat       # name of the output catalog
@@ -116,6 +113,6 @@ VERBOSE_TYPE     QUIET          # can be QUIET, NORMAL or FULL
 WRITE_XML        N              # Write XML file (Y/N)?
 XML_NAME         sex.xml        # Filename for XML output
 SATUR_LEVEL      {saturation}        # level (in ADUs) at which arises saturation
-'''
-    with open(config_path, 'w') as pf:
+"""
+    with open(config_path, "w") as pf:
         pf.write(configs)
