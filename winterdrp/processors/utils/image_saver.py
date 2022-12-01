@@ -2,10 +2,17 @@ import os
 
 import astropy.io.fits
 import numpy as np
-from winterdrp.paths import get_output_path, get_output_dir, latest_save_key, latest_mask_save_key, base_output_dir, \
-    base_name_key
-from winterdrp.processors.base_processor import BaseImageProcessor
+
 from winterdrp.data import ImageBatch
+from winterdrp.paths import (
+    base_name_key,
+    base_output_dir,
+    get_output_dir,
+    get_output_path,
+    latest_mask_save_key,
+    latest_save_key,
+)
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 
 class ImageSaver(BaseImageProcessor):
@@ -13,12 +20,12 @@ class ImageSaver(BaseImageProcessor):
     base_key = "save"
 
     def __init__(
-            self,
-            output_dir_name: str,
-            write_mask: bool = True,
-            output_dir: str = base_output_dir,
-            *args,
-            **kwargs
+        self,
+        output_dir_name: str,
+        write_mask: bool = True,
+        output_dir: str = base_output_dir,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.output_dir_name = output_dir_name
@@ -29,16 +36,18 @@ class ImageSaver(BaseImageProcessor):
         return f"Processor to save images to the '{self.output_dir_name}' subdirectory"
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         try:
-            os.makedirs(get_output_dir(
-                dir_root=self.output_dir_name,
-                sub_dir=self.night_sub_dir,
-                output_dir=self.output_dir
-            ))
+            os.makedirs(
+                get_output_dir(
+                    dir_root=self.output_dir_name,
+                    sub_dir=self.night_sub_dir,
+                    output_dir=self.output_dir,
+                )
+            )
         except OSError:
             pass
 
@@ -48,12 +57,12 @@ class ImageSaver(BaseImageProcessor):
                 image[base_name_key],
                 dir_root=self.output_dir_name,
                 sub_dir=self.night_sub_dir,
-                output_dir=self.output_dir
+                output_dir=self.output_dir,
             )
 
             image[latest_save_key] = path
             if self.write_mask:
-                mask_path = self.save_mask(image,img_path=path)
+                mask_path = self.save_mask(image, img_path=path)
                 image[latest_mask_save_key] = mask_path
             self.save_fits(image, path)
 

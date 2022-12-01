@@ -1,19 +1,24 @@
-import astropy.io.fits
-import numpy as np
 import logging
 import sys
-from winterdrp.processors.base_processor import ProcessorWithCache, ProcessorPremadeCache
-from winterdrp.processors.utils.image_selector import select_from_images
 from collections.abc import Callable
-from winterdrp.paths import latest_save_key, flat_frame_key
+
+import astropy.io.fits
+import numpy as np
+
+from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ImageNotFoundError
-from winterdrp.data import ImageBatch, Image
+from winterdrp.paths import flat_frame_key, latest_save_key
+from winterdrp.processors.base_processor import (
+    ProcessorPremadeCache,
+    ProcessorWithCache,
+)
+from winterdrp.processors.utils.image_selector import select_from_images
 
 logger = logging.getLogger(__name__)
 
 
 def default_select_flat(
-        images: ImageBatch,
+    images: ImageBatch,
 ) -> ImageBatch:
     return select_from_images(images, target_values="flat")
 
@@ -23,15 +28,15 @@ class FlatCalibrator(ProcessorWithCache):
     base_key = "flat"
 
     def __init__(
-            self,
-            x_min: int = 0,
-            x_max: int = sys.maxsize,
-            y_min: int = 0,
-            y_max: int = sys.maxsize,
-            flat_nan_threshold: float = 0.,
-            select_flat_images: Callable[[ImageBatch], ImageBatch] = default_select_flat,
-            *args,
-            **kwargs
+        self,
+        x_min: int = 0,
+        x_max: int = sys.maxsize,
+        y_min: int = 0,
+        y_max: int = sys.maxsize,
+        flat_nan_threshold: float = 0.0,
+        select_flat_images: Callable[[ImageBatch], ImageBatch] = default_select_flat,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.x_min = x_min
@@ -45,8 +50,8 @@ class FlatCalibrator(ProcessorWithCache):
         return f"Creates a flat image, divides other images by this image."
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         master_flat = self.get_cache_file(batch)
@@ -66,8 +71,8 @@ class FlatCalibrator(ProcessorWithCache):
         return batch
 
     def make_image(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> Image:
         images = self.select_cache_images(batch)
 
@@ -82,32 +87,31 @@ class FlatCalibrator(ProcessorWithCache):
         flats = np.zeros((nx, ny, n_frames))
 
         for i, img in enumerate(images):
-            median = np.nanmedian(img.get_data()[self.x_min:self.x_max, self.y_min:self.y_max])
+            median = np.nanmedian(
+                img.get_data()[self.x_min : self.x_max, self.y_min : self.y_max]
+            )
             flats[:, :, i] = img.get_data() / median
 
-        logger.info(f'Median combining {n_frames} flats')
+        logger.info(f"Median combining {n_frames} flats")
         master_flat = np.nanmedian(flats, axis=2)
 
         return Image(master_flat, header=batch[0].get_header())
 
 
 class SkyFlatCalibrator(FlatCalibrator):
-
-    def __init__(
-            self,
-            *args,
-            **kwargs
-    ):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, select_flat_images=self.select_sky_flat)
 
     @staticmethod
     def select_sky_flat(
-            images: ImageBatch,
+        images: ImageBatch,
     ) -> ImageBatch:
         return select_from_images(images, key="obsclass", target_values="science")
 
     def __str__(self) -> str:
-        return f"Processor to create a sky flat image, divides other images by this image."
+        return (
+            f"Processor to create a sky flat image, divides other images by this image."
+        )
 
 
 class MasterFlatCalibrator(ProcessorPremadeCache, FlatCalibrator):

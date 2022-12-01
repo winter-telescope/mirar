@@ -8,4 +8,3 @@ from winterdrp.catalog.gaia import Gaia2Mass
 from winterdrp.catalog.ps1 import PS1
 from winterdrp.catalog.sdss import SDSS
 from winterdrp.catalog.skymapper import SkyMapper
-

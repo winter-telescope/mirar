@@ -1,6 +1,7 @@
-import os
-from winterdrp.paths import winter_code_dir, package_name
 import logging
+import os
+
+from winterdrp.paths import package_name, winter_code_dir
 
 logger = logging.getLogger(__name__)
 
@@ -8,7 +9,7 @@ TEST_DATA_URL = "git@github.com:winter-telescope/wirc_starterpack.git"
 
 test_data_dir = os.path.join(
     os.path.dirname(winter_code_dir),
-    os.path.basename(TEST_DATA_URL.replace(".git", ""))
+    os.path.basename(TEST_DATA_URL.replace(".git", "")),
 )
 
 TEST_DATA_TAG = "v0.1.4"
@@ -39,10 +40,7 @@ def update_test_data():
         os.system(cmd)
 
     else:
-        cmds = [
-            f"git -C {test_data_dir} checkout main",
-            f"git -C {test_data_dir} pull"
-        ]
+        cmds = [f"git -C {test_data_dir} checkout main", f"git -C {test_data_dir} pull"]
 
         for cmd in cmds:
             logger.info(f"Trying to update test data. Executing: {cmd}")

@@ -1,65 +1,70 @@
-import unittest
-from winterdrp.processors.utils.image_loader import ImageLoader
 import logging
 import os
+import unittest
+
+from astropy.io import fits
+
+from winterdrp.data import Dataset, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
+from winterdrp.pipelines.wirc.blocks import subtract
+from winterdrp.pipelines.wirc.generator import (
+    wirc_reference_image_resampler,
+    wirc_reference_psfex,
+    wirc_reference_sextractor,
+)
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
-from astropy.io import fits
-from winterdrp.references import WIRCRef
 from winterdrp.processors.reference import Reference
-from winterdrp.pipelines.wirc.blocks import subtract
-from winterdrp.pipelines.wirc.generator import wirc_reference_image_resampler, wirc_reference_sextractor, \
-    wirc_reference_psfex
-from winterdrp.data import Dataset, ImageBatch
-
+from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.references import WIRCRef
 
 logger = logging.getLogger(__name__)
 
 test_data_dir = get_test_data_dir()
 
-ref_img_directory = os.path.join(test_data_dir, 'wirc/ref')
+ref_img_directory = os.path.join(test_data_dir, "wirc/ref")
 
 
 def test_reference_image_generator(
-        header: fits.header,
-        images_directory: str = ref_img_directory,
+    header: fits.header,
+    images_directory: str = ref_img_directory,
 ):
-    object_name = header['OBJECT']
-    filter_name = header['FILTER']
+    object_name = header["OBJECT"]
+    filter_name = header["FILTER"]
     return WIRCRef(
         object_name=object_name,
         filter_name=filter_name,
-        images_directory_path=images_directory
+        images_directory_path=images_directory,
     )
 
 
 expected_values = {
-    'SCORSTD': 1.081806800432295,
-    'SCORMED': -8.757084251543588e-05,
-    'SCORMEAN': -0.031172912552408068
+    "SCORSTD": 1.081806800432295,
+    "SCORMED": -8.757084251543588e-05,
+    "SCORMEAN": -0.031172912552408068,
 }
 
 test_imsub_configuration = [
     ImageLoader(
         input_img_dir=test_data_dir,
         input_sub_dir="stack",
-        load_image=load_raw_wirc_image
+        load_image=load_raw_wirc_image,
     ),
     Reference(
         ref_image_generator=test_reference_image_generator,
         swarp_resampler=wirc_reference_image_resampler,
         sextractor=wirc_reference_sextractor,
-        ref_psfex=wirc_reference_psfex
+        ref_psfex=wirc_reference_psfex,
     ),
 ] + subtract
 
 pipeline = WircPipeline(night="20210330", selected_configurations="test_imsub")
-pipeline.add_configuration(configuration_name="test_imsub", configuration=test_imsub_configuration)
+pipeline.add_configuration(
+    configuration_name="test_imsub", configuration=test_imsub_configuration
+)
 
 
 class TestWircImsubPipeline(unittest.TestCase):
-
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -67,7 +72,9 @@ class TestWircImsubPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc imsub pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(dataset=Dataset(ImageBatch()), catch_all_errors=False)
+        res, errorstack = pipeline.reduce_images(
+            dataset=Dataset(ImageBatch()), catch_all_errors=False
+        )
 
         self.assertEqual(len(res), 1)
 
@@ -79,7 +86,9 @@ class TestWircImsubPipeline(unittest.TestCase):
             elif isinstance(value, int):
                 self.assertEqual(value, header[key])
             else:
-                raise TypeError(f"Type for value ({type(value)} is neither float not int.")
+                raise TypeError(
+                    f"Type for value ({type(value)} is neither float not int."
+                )
 
 
 if __name__ == "__main__":
@@ -98,4 +107,3 @@ if __name__ == "__main__":
             new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
     new_exp += "}"
     print(new_exp)
-

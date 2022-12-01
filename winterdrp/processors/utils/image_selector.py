@@ -1,9 +1,11 @@
+import logging
+
 import astropy.io.fits
 import numpy as np
-import logging
-from winterdrp.processors.base_processor import BaseImageProcessor, CleanupProcessor
-from winterdrp.data import Image, ImageBatch, DataBatch, Dataset
+
+from winterdrp.data import DataBatch, Dataset, Image, ImageBatch
 from winterdrp.errors import ProcessorError
+from winterdrp.processors.base_processor import BaseImageProcessor, CleanupProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +15,9 @@ class ParsingError(KeyError, ProcessorError):
 
 
 def select_from_images(
-        batch: ImageBatch,
-        key: str = "target",
-        target_values: str | list[str] = "science",
+    batch: ImageBatch,
+    key: str = "target",
+    target_values: str | list[str] = "science",
 ) -> ImageBatch:
 
     # Enforce string in list for later matching
@@ -41,11 +43,7 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
 
     base_key = "select"
 
-    def __init__(
-            self,
-            *args: tuple[str, str | list[str]],
-            **kwargs
-    ):
+    def __init__(self, *args: tuple[str, str | list[str]], **kwargs):
         super().__init__(*args, **kwargs)
         self.targets = args
 
@@ -60,24 +58,21 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
         return f"Processor to select images where {', and '.join(reqs)}"
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         for (header_key, target_values) in self.targets:
 
             batch = select_from_images(
-                batch,
-                key=header_key,
-                target_values=target_values
+                batch, key=header_key, target_values=target_values
             )
 
         return batch
 
 
 def split_images_into_batches(
-        images: ImageBatch,
-        split_key: str | list[str]
+    images: ImageBatch, split_key: str | list[str]
 ) -> Dataset:
 
     if isinstance(split_key, str):
@@ -107,12 +102,7 @@ class ImageBatcher(BaseImageProcessor):
 
     base_key = "batch"
 
-    def __init__(
-            self,
-            split_key: str | list[str],
-            *args,
-            **kwargs
-    ):
+    def __init__(self, split_key: str | list[str], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.split_key = split_key
 
@@ -126,15 +116,12 @@ class ImageBatcher(BaseImageProcessor):
         return f"Groups images into batches, with each batch having the same value of {' and '.join(split)}"
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
         return batch
 
-    def update_dataset(
-        self,
-        dataset: Dataset
-    ) -> Dataset:
+    def update_dataset(self, dataset: Dataset) -> Dataset:
 
         new_dataset = Dataset()
 
@@ -150,15 +137,12 @@ class ImageDebatcher(BaseImageProcessor):
     base_key = "debatch"
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
         return batch
 
-    def update_dataset(
-        self,
-        dataset: Dataset
-    ) -> Dataset:
+    def update_dataset(self, dataset: Dataset) -> Dataset:
 
         combo_batch = ImageBatch()
 
@@ -166,6 +150,3 @@ class ImageDebatcher(BaseImageProcessor):
             combo_batch += batch
 
         return Dataset([combo_batch])
-
-
-

@@ -1,10 +1,11 @@
 import logging
+
 import astropy.io.fits
 import numpy as np
-from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.paths import base_name_key
-from winterdrp.data import ImageBatch
 
+from winterdrp.data import ImageBatch
+from winterdrp.paths import base_name_key
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -14,15 +15,15 @@ class HeaderReader(BaseImageProcessor):
     base_key = "header_reader"
 
     def __init__(
-            self,
-            *keys,
+        self,
+        *keys,
     ):
         super().__init__()
         self.keys = keys
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         for image in batch:

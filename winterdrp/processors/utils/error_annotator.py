@@ -1,12 +1,13 @@
+import logging
+from pathlib import Path
+
 import astropy.io.fits
 import numpy as np
-from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.paths import raw_img_key
-import logging
-from winterdrp.errors import ErrorStack
-from winterdrp.paths import proc_fail_key
-from pathlib import Path
+
 from winterdrp.data import ImageBatch
+from winterdrp.errors import ErrorStack
+from winterdrp.paths import proc_fail_key, raw_img_key
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +17,7 @@ class ErrorStackAnnotator(BaseImageProcessor):
     base_key = "errorannotate"
 
     def __init__(
-            self,
-            errorstack: ErrorStack,
-            processed_images: list[str],
-            *args,
-            **kwargs
+        self, errorstack: ErrorStack, processed_images: list[str], *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.errorstack = errorstack
@@ -44,10 +41,7 @@ class ErrorStackAnnotator(BaseImageProcessor):
 
         return image_dict
 
-    def _apply_to_images(
-            self,
-            batch: ImageBatch
-    ) -> ImageBatch:
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
 
         for i, image in enumerate(batch):
 

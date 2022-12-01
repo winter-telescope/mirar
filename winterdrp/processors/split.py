@@ -1,11 +1,12 @@
 import copy
+import logging
 
 import astropy.io.fits
 import numpy as np
-import logging
-from winterdrp.processors.base_processor import BaseImageProcessor
+
+from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.paths import base_name_key
-from winterdrp.data import ImageBatch, Image, Dataset
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +18,7 @@ class SplitImage(BaseImageProcessor):
     base_key = "split"
 
     def __init__(
-            self,
-            buffer_pixels: int = 0,
-            n_x: int = 1,
-            n_y: int = 1,
-            *args,
-            **kwargs
+        self, buffer_pixels: int = 0, n_x: int = 1, n_y: int = 1, *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.buffer_pixels = buffer_pixels
@@ -33,18 +29,18 @@ class SplitImage(BaseImageProcessor):
         return f"Processor to split images into {self.n_x*self.n_y} smaller images."
 
     def get_range(
-            self,
-            n: int,
-            pixel_width: int,
-            i: int,
+        self,
+        n: int,
+        pixel_width: int,
+        i: int,
     ) -> tuple[int, int]:
-        lower = max(0, i * int(pixel_width/n) - self.buffer_pixels)
-        upper = min(pixel_width, (1+i)*int(pixel_width/n) + self.buffer_pixels)
+        lower = max(0, i * int(pixel_width / n) - self.buffer_pixels)
+        upper = min(pixel_width, (1 + i) * int(pixel_width / n) + self.buffer_pixels)
         return lower, upper
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         new_images = ImageBatch()
@@ -74,14 +70,17 @@ class SplitImage(BaseImageProcessor):
 
                     sub_img_id = f"{ix}_{iy}"
 
-                    new_header["SUBCOORD"] = (sub_img_id, "Sub-data coordinate, in form x_y")
+                    new_header["SUBCOORD"] = (
+                        sub_img_id,
+                        "Sub-data coordinate, in form x_y",
+                    )
 
                     new_header[sub_id_key] = k
                     k += 1
 
                     new_header["SRCIMAGE"] = (
                         image[base_name_key],
-                        "Source data name, from which sub-data was made"
+                        "Source data name, from which sub-data was made",
                     )
 
                     new_header["NAXIS1"], new_header["NAXIS2"] = new_data.shape
@@ -93,10 +92,7 @@ class SplitImage(BaseImageProcessor):
 
         return new_images
 
-    def update_dataset(
-        self,
-        dataset: Dataset
-    ) -> Dataset:
+    def update_dataset(self, dataset: Dataset) -> Dataset:
 
         all_new_batches = []
 

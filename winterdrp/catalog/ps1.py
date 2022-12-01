@@ -1,10 +1,12 @@
 import logging
+
 import astropy.table
-from astroquery.vizier import Vizier
-from winterdrp.catalog.base_catalog import VizierCatalog
-from astropy.coordinates import SkyCoord
 import astropy.units as u
+from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from astroquery.vizier import Vizier
+
+from winterdrp.catalog.base_catalog import VizierCatalog
 
 logger = logging.getLogger(__name__)
 

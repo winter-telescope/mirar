@@ -1,24 +1,36 @@
-import unittest
-from winterdrp.processors.dark import MasterDarkCalibrator
-from winterdrp.processors.flat import MasterFlatCalibrator
-from winterdrp.processors.sky import MasterSkyCalibrator
-from winterdrp.processors.mask import MaskPixels
-from winterdrp.processors.utils import ImageSaver
-from winterdrp.pipelines.wirc.wirc_files import wirc_mask_path, sextractor_astrometry_config, scamp_fp_path, \
-    swarp_sp_path
-from winterdrp.processors.autoastrometry import AutoAstrometry
-from winterdrp.processors.astromatic import Sextractor, Scamp, Swarp
-from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_selector import ImageSelector, ImageBatcher, ImageDebatcher
 import logging
 import os
-from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
-from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
-from winterdrp.pipelines.wirc.generator import wirc_astrometric_catalog_generator, wirc_photometric_catalog_generator
-from winterdrp.processors.csvlog import CSVLog
-from winterdrp.downloader.get_test_data import get_test_data_dir
+import unittest
+
 from winterdrp.data import Dataset, ImageBatch
+from winterdrp.downloader.get_test_data import get_test_data_dir
+from winterdrp.pipelines.wirc.generator import (
+    wirc_astrometric_catalog_generator,
+    wirc_photometric_catalog_generator,
+)
+from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from winterdrp.pipelines.wirc.wirc_files import (
+    scamp_fp_path,
+    sextractor_astrometry_config,
+    swarp_sp_path,
+    wirc_mask_path,
+)
+from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
+from winterdrp.processors.astromatic import Scamp, Sextractor, Swarp
+from winterdrp.processors.autoastrometry import AutoAstrometry
+from winterdrp.processors.csvlog import CSVLog
+from winterdrp.processors.dark import MasterDarkCalibrator
+from winterdrp.processors.flat import MasterFlatCalibrator
+from winterdrp.processors.mask import MaskPixels
+from winterdrp.processors.photcal import PhotCalibrator
+from winterdrp.processors.sky import MasterSkyCalibrator
+from winterdrp.processors.utils import ImageSaver
+from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.processors.utils.image_selector import (
+    ImageBatcher,
+    ImageDebatcher,
+    ImageSelector,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +64,18 @@ def get_cal_path(name: str) -> str:
 
 test_configuration = [
     ImageLoader(
-        input_img_dir=test_data_dir,
-        input_sub_dir="raw",
-        load_image=load_raw_wirc_image
+        input_img_dir=test_data_dir, input_sub_dir="raw", load_image=load_raw_wirc_image
     ),
     CSVLog(
-        export_keys=["OBJECT", "FILTER", "UTSHUT", "EXPTIME", "COADDS", "OBSTYPE", "OBSCLASS"],
+        export_keys=[
+            "OBJECT",
+            "FILTER",
+            "UTSHUT",
+            "EXPTIME",
+            "COADDS",
+            "OBSTYPE",
+            "OBSCLASS",
+        ],
     ),
     MaskPixels(mask_path=wirc_mask_path),
     ImageSelector(("exptime", "45.0")),
@@ -67,26 +85,17 @@ test_configuration = [
     ImageBatcher(split_key="filter"),
     MasterFlatCalibrator(get_cal_path("flat")),
     MasterSkyCalibrator(get_cal_path("sky")),
-    ImageSelector(
-        ("object", "ZTF21aagppzg"),
-        ("filter", "J")
-    ),
+    ImageSelector(("object", "ZTF21aagppzg"), ("filter", "J")),
     AutoAstrometry(catalog="tmc"),
-    Sextractor(
-        output_sub_dir="postprocess",
-        **sextractor_astrometry_config
-    ),
+    Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Scamp(
         ref_catalog_generator=wirc_astrometric_catalog_generator,
         scamp_config_path=scamp_fp_path,
     ),
     Swarp(swarp_config_path=swarp_sp_path),
-    Sextractor(
-        output_sub_dir="final_sextractor",
-        **sextractor_astrometry_config
-    ),
+    Sextractor(output_sub_dir="final_sextractor", **sextractor_astrometry_config),
     ImageSaver(output_dir_name="final"),
-    PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator)
+    PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
 ]
 
 pipeline = WircPipeline(night="20210330", selected_configurations="test")
@@ -94,7 +103,6 @@ pipeline.add_configuration(configuration_name="test", configuration=test_configu
 
 
 class TestWircPipeline(unittest.TestCase):
-
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -102,7 +110,9 @@ class TestWircPipeline(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
+        res, errorstack = pipeline.reduce_images(
+            Dataset([ImageBatch()]), catch_all_errors=False
+        )
 
         self.assertEqual(len(res), 1)
 
@@ -114,5 +124,6 @@ class TestWircPipeline(unittest.TestCase):
             elif isinstance(value, int):
                 self.assertEqual(value, header[key])
             else:
-                raise TypeError(f"Type for value ({type(value)} is neither float not int.")
-
+                raise TypeError(
+                    f"Type for value ({type(value)} is neither float not int."
+                )

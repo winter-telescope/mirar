@@ -1,18 +1,19 @@
-import os
 import logging
+import os
 from pathlib import Path
+
 from winterdrp.processors.astromatic.config import astromatic_config_dir
-from winterdrp.utils import execute, ExecutionError
+from winterdrp.utils import ExecutionError, execute
 
 logger = logging.getLogger(__name__)
 
 # sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
-default_saturation = 1.e10
-default_config_path = os.path.join(astromatic_config_dir, 'astrom.sex')
-default_param_path = os.path.join(astromatic_config_dir, 'astrom.param')
-default_filter_name = os.path.join(astromatic_config_dir, 'default.conv')
-default_starnnw_path = os.path.join(astromatic_config_dir, 'default.nnw')
+default_saturation = 1.0e10
+default_config_path = os.path.join(astromatic_config_dir, "astrom.sex")
+default_param_path = os.path.join(astromatic_config_dir, "astrom.param")
+default_filter_name = os.path.join(astromatic_config_dir, "default.conv")
+default_starnnw_path = os.path.join(astromatic_config_dir, "default.nnw")
 
 
 class SextractorError(ExecutionError):
@@ -26,10 +27,11 @@ local_sextractor = True
 
 # Functions to parse commands and generate appropriate sextractor files
 
+
 def parse_checkimage(
-        checkimage_type: str | list = None,
-        checkimage_name: str | list = None,
-        image: str = None,
+    checkimage_type: str | list = None,
+    checkimage_name: str | list = None,
+    image: str = None,
 ):
     """Function to parse the "checkimage" component of Sextractor configuration.
 
@@ -60,10 +62,12 @@ def parse_checkimage(
 
         if checkimage_name is not None:
             if not len(checkimage_type) == len(checkimage_name):
-                err = f"Number of checkimage types {len(checkimage_type)} does not " \
-                      f"match number of checkimage names {len(checkimage_name)}. " \
-                      f"These values must be equal. The following types were given: {checkimage_type}, " \
-                      f"and the following names were given: {checkimage_name}"
+                err = (
+                    f"Number of checkimage types {len(checkimage_type)} does not "
+                    f"match number of checkimage names {len(checkimage_name)}. "
+                    f"These values must be equal. The following types were given: {checkimage_type}, "
+                    f"and the following names were given: {checkimage_name}"
+                )
                 logger.error(err)
                 raise ValueError(err)
             else:
@@ -75,7 +79,9 @@ def parse_checkimage(
             else:
                 base_name = ""
 
-            checkimage_name = [f"{base_name}check_{x.lower()}.fits" for x in checkimage_type]
+            checkimage_name = [
+                f"{base_name}check_{x.lower()}.fits" for x in checkimage_type
+            ]
             cmd += " -CHECKIMAGE_NAME " + ",".join(checkimage_name)
 
         cmd += " "
@@ -87,12 +93,7 @@ def parse_checkimage(
     return cmd, checkimage_name
 
 
-def run_sextractor(
-        images: str | list,
-        output_dir: str,
-        *args,
-        **kwargs
-):
+def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
     if not isinstance(images, list):
         images = [images]
 
@@ -108,29 +109,31 @@ def run_sextractor(
 
 
 def run_sextractor_single(
-        img: str,
-        output_dir: str,
-        catalog_name: str = None,
-        config: str = default_config_path,
-        parameters_name: str = default_param_path,
-        filter_name: str = default_filter_name,
-        starnnw_name: str = default_starnnw_path,
-        saturation: float = default_saturation,
-        weight_image: str = None,
-        verbose_type: str = "QUIET",
-        checkimage_name: str | list = None,
-        checkimage_type: str | list = None,
-        gain: float = None,
-        mag_zp: float = None
+    img: str,
+    output_dir: str,
+    catalog_name: str = None,
+    config: str = default_config_path,
+    parameters_name: str = default_param_path,
+    filter_name: str = default_filter_name,
+    starnnw_name: str = default_starnnw_path,
+    saturation: float = default_saturation,
+    weight_image: str = None,
+    verbose_type: str = "QUIET",
+    checkimage_name: str | list = None,
+    checkimage_type: str | list = None,
+    gain: float = None,
+    mag_zp: float = None,
 ):
     if catalog_name is None:
         image_name = Path(img).stem
-        catalog_name = f'{image_name}.cat'
+        catalog_name = f"{image_name}.cat"
 
-    cmd = f"sex {img} " \
-          f"-c {config} " \
-          f"-CATALOG_NAME {catalog_name} " \
-          f"-VERBOSE_TYPE {verbose_type} "
+    cmd = (
+        f"sex {img} "
+        f"-c {config} "
+        f"-CATALOG_NAME {catalog_name} "
+        f"-VERBOSE_TYPE {verbose_type} "
+    )
 
     if saturation is not None:
         cmd += f"-SATUR_LEVEL {saturation} "
@@ -148,9 +151,7 @@ def run_sextractor_single(
         cmd += f"-STARNNW_NAME {starnnw_name} "
 
     checkimage_cmd, checkimage_name = parse_checkimage(
-        checkimage_type=checkimage_type,
-        checkimage_name=checkimage_name,
-        image=img
+        checkimage_type=checkimage_type, checkimage_name=checkimage_name, image=img
     )
     cmd += checkimage_cmd
 
@@ -170,30 +171,32 @@ def run_sextractor_single(
 
 
 def run_sextractor_dual(
-        det_image: str,
-        measure_image: str,
-        output_dir: str,
-        catalog_name: str = None,
-        config: str = default_config_path,
-        parameters_name: str = default_param_path,
-        filter_name: str = default_filter_name,
-        starnnw_name: str = default_starnnw_path,
-        saturation: float = default_saturation,
-        weight_image: str = None,
-        verbose_type: str = "QUIET",
-        checkimage_name: str | list = None,
-        checkimage_type: str | list = None,
-        gain: float = None,
-        mag_zp: float = None
+    det_image: str,
+    measure_image: str,
+    output_dir: str,
+    catalog_name: str = None,
+    config: str = default_config_path,
+    parameters_name: str = default_param_path,
+    filter_name: str = default_filter_name,
+    starnnw_name: str = default_starnnw_path,
+    saturation: float = default_saturation,
+    weight_image: str = None,
+    verbose_type: str = "QUIET",
+    checkimage_name: str | list = None,
+    checkimage_type: str | list = None,
+    gain: float = None,
+    mag_zp: float = None,
 ):
     if catalog_name is None:
         image_name = Path(measure_image).stem
-        catalog_name = f'{image_name}.cat'
+        catalog_name = f"{image_name}.cat"
 
-    cmd = f"sex {det_image},{measure_image} " \
-          f"-c {config} " \
-          f"-CATALOG_NAME {catalog_name} " \
-          f"-VERBOSE_TYPE {verbose_type} "
+    cmd = (
+        f"sex {det_image},{measure_image} "
+        f"-c {config} "
+        f"-CATALOG_NAME {catalog_name} "
+        f"-VERBOSE_TYPE {verbose_type} "
+    )
 
     if saturation is not None:
         cmd += f"-SATUR_LEVEL {saturation} "
@@ -213,7 +216,7 @@ def run_sextractor_dual(
     checkimage_cmd, checkimage_name = parse_checkimage(
         checkimage_type=checkimage_type,
         checkimage_name=checkimage_name,
-        image=det_image
+        image=det_image,
     )
 
     cmd += checkimage_cmd

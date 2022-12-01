@@ -11,7 +11,7 @@ class PS1(BaseKowalskiXMatch):
         "gMeanPSFMag": 1,
         "rMeanPSFMag": 1,
         "iMeanPSFMag": 1,
-        "zMeanPSFMag": 1
+        "zMeanPSFMag": 1,
     }
 
     column_names = {
@@ -21,7 +21,7 @@ class PS1(BaseKowalskiXMatch):
         "gMeanPSFMag": "sgmag",
         "rMeanPSFMag": "srmag",
         "iMeanPSFMag": "simag",
-        "zMeanPSFMag": "szmag"
+        "zMeanPSFMag": "szmag",
     }
 
     column_dtypes = {
@@ -31,10 +31,8 @@ class PS1(BaseKowalskiXMatch):
         "sgmag": float,
         "srmag": float,
         "simag": float,
-        "szmag": float
+        "szmag": float,
     }
 
-    def __init__(self,
-                 *args,
-                 **kwargs):
+    def __init__(self, *args, **kwargs):
         super(PS1, self).__init__(*args, **kwargs)

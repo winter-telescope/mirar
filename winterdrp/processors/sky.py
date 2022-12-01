@@ -1,9 +1,11 @@
+import logging
+
 import astropy.io.fits
 import numpy as np
-import logging
+
+from winterdrp.data import ImageBatch
 from winterdrp.processors.base_processor import ProcessorPremadeCache
 from winterdrp.processors.flat import SkyFlatCalibrator
-from winterdrp.data import ImageBatch
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +15,8 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
     base_key = "sky"
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         master_sky = self.get_cache_file(batch)
@@ -31,7 +33,9 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
             subtract_median = np.nanmedian(data)
             data = data - subtract_median * master_sky.get_data()
 
-            header.append(('SKMEDSUB', subtract_median, 'Median sky level subtracted'), end=True)
+            header.append(
+                ("SKMEDSUB", subtract_median, "Median sky level subtracted"), end=True
+            )
 
             image.set_data(data)
             image.set_header(header)

@@ -1,13 +1,14 @@
+import getpass
+import gzip
+import logging
 import os
 import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
-from email.mime.text import MIMEText
 import ssl
-import getpass
-import logging
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
-import gzip
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -16,13 +17,13 @@ port = 465  # For SSL
 
 
 def send_gmail(
-        email_recipients: str | list[str],
-        email_subject: str,
-        email_text: str,
-        email_sender: str = os.getenv("WATCHDOG_EMAIL"),
-        email_password: str = os.getenv("WATCHDOG_EMAIL_PASSWORD"),
-        attachments: str | list[str] = None,
-        autocompress: bool = True
+    email_recipients: str | list[str],
+    email_subject: str,
+    email_text: str,
+    email_sender: str = os.getenv("WATCHDOG_EMAIL"),
+    email_password: str = os.getenv("WATCHDOG_EMAIL_PASSWORD"),
+    attachments: str | list[str] = None,
+    autocompress: bool = True,
 ):
 
     # Create a text/plain message
@@ -34,9 +35,9 @@ def send_gmail(
 
     # # me == the sender's email address
     # # you == the recipient's email address
-    msg['Subject'] = email_subject
-    msg['From'] = email_sender
-    msg['To'] = ', '.join(email_recipients)
+    msg["Subject"] = email_subject
+    msg["From"] = email_sender
+    msg["To"] = ", ".join(email_recipients)
 
     if attachments is None:
         attachments = []
@@ -55,18 +56,17 @@ def send_gmail(
 
             with open(file_path, "rb") as f:
 
-                if np.logical_and(autocompress, file_path.stat().st_size > (1024 * 1024)):
+                if np.logical_and(
+                    autocompress, file_path.stat().st_size > (1024 * 1024)
+                ):
                     data = gzip.compress(f.read())
                     base_name += ".gzip"
                 else:
                     data = f.read()
 
-                part = MIMEApplication(
-                    data,
-                    Name=base_name
-                )
+                part = MIMEApplication(data, Name=base_name)
             # After the file is closed
-            part['Content-Disposition'] = f"attachment; filename={base_name}"
+            part["Content-Disposition"] = f"attachment; filename={base_name}"
             msg.attach(part)
 
         else:

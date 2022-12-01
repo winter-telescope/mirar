@@ -1,8 +1,10 @@
+import logging
+
 import astropy.io.fits
 import numpy as np
-import logging
-from winterdrp.processors.base_processor import BaseImageProcessor
+
 from winterdrp.data import ImageBatch
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +16,7 @@ class MaskPixels(BaseImageProcessor):
 
     base_key = "mask"
 
-    def __init__(
-            self,
-            mask_path: str,
-            *args,
-            **kwargs
-    ):
+    def __init__(self, mask_path: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mask = None
         self.mask_path = mask_path
@@ -33,8 +30,8 @@ class MaskPixels(BaseImageProcessor):
         return self.mask
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         for i, image in enumerate(batch):

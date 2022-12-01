@@ -1,9 +1,10 @@
 import logging
+
 import astropy.io.fits
 import numpy as np
-from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.data import ImageBatch
 
+from winterdrp.data import ImageBatch
+from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +14,9 @@ class HeaderAnnotator(BaseImageProcessor):
     base_key = "header_annotator"
 
     def __init__(
-            self,
-            input_keys: str | list[str],
-            output_key: str,
+        self,
+        input_keys: str | list[str],
+        output_key: str,
     ):
         super().__init__()
         if not isinstance(input_keys, list):
@@ -28,8 +29,8 @@ class HeaderAnnotator(BaseImageProcessor):
         return f"Updates image headers by adding values for {' and '.join(self.output_key)}."
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         for i, image in enumerate(batch):
@@ -49,9 +50,9 @@ class HeaderEditor(BaseImageProcessor):
     base_key = "header_editor"
 
     def __init__(
-            self,
-            edit_keys: str | list[str],
-            values: str | float | int | list,
+        self,
+        edit_keys: str | list[str],
+        values: str | float | int | list,
     ):
         super().__init__()
         if not isinstance(edit_keys, list):
@@ -68,8 +69,8 @@ class HeaderEditor(BaseImageProcessor):
         return f"Modifies image headers by updating values for {' and '.join(self.edit_keys)}."
 
     def _apply_to_images(
-            self,
-            batch: ImageBatch,
+        self,
+        batch: ImageBatch,
     ) -> ImageBatch:
 
         for i, image in enumerate(batch):

@@ -1,21 +1,20 @@
-import os
 import logging
 import os
 from pathlib import Path
-from winterdrp.paths import raw_img_dir
 
+from winterdrp.paths import raw_img_dir
 
 logger = logging.getLogger(__name__)
 
 
 def download_via_ssh(
-        server: str,
-        base_dir: str | Path,
-        night: str | int,
-        pipeline: str,
-        prefix: str = "",
-        server_sub_dir: str = None,
-        username: str = os.getenv("SSH_USER")
+    server: str,
+    base_dir: str | Path,
+    night: str | int,
+    pipeline: str,
+    prefix: str = "",
+    server_sub_dir: str = None,
+    username: str = os.getenv("SSH_USER"),
 ):
     if username is None:
         username = input(f"Please enter your username for {server}: \n")
@@ -37,4 +36,3 @@ def download_via_ssh(
     logger.info(f"Executing '{cmd}'")
 
     os.system(cmd)
-

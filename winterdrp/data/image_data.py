@@ -1,8 +1,9 @@
-import numpy as np
-from astropy.io.fits import Header
 import logging
 
-from winterdrp.data.base_data import DataBlock, DataBatch
+import numpy as np
+from astropy.io.fits import Header
+
+from winterdrp.data.base_data import DataBatch, DataBlock
 from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
@@ -13,15 +14,15 @@ class MissingReferenceError(ProcessorError, KeyError):
 
 
 class Image(DataBlock):
-
     def __init__(self, data: np.ndarray, header: Header):
         self.data = data
         self.header = header
         super().__init__()
 
     def __str__(self):
-        return f"<An {self.__class__.__name__} object, " \
-               f"built from {self.get_name()}>"
+        return (
+            f"<An {self.__class__.__name__} object, " f"built from {self.get_name()}>"
+        )
 
     def get_data(self) -> np.ndarray:
         return self.data
