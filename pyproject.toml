@@ -61,9 +61,15 @@ exclude_lines = [
     # Don't complain if non-runnable code isn't run:
     "if 0:",
     "if False:",
-    'if __name__ == "__main__":'
+    'if __name__ == "__main__":',
+    "err =",
+    "logger.error",
+    "raise"
     ]
 ignore_errors = true
+
+[tool.isort]
+profile = "black"
 
 [build-system]
 requires = ["setuptools", "wheel", "poetry-core",]

@@ -4,15 +4,15 @@ Python script containing all IO functions.
 All opening/writing of fits files should run via this script.
 """
 
-from astropy.io import fits
-import numpy as np
-import astropy.io.fits
 from pathlib import Path
+
+import astropy.io.fits
+import numpy as np
+from astropy.io import fits
 
 
 def create_fits(
-        data: np.ndarray,
-        header: astropy.io.fits.Header | None
+    data: np.ndarray, header: astropy.io.fits.Header | None
 ) -> astropy.io.fits.PrimaryHDU:
     """
     Return an astropy PrimaryHDU object created with <data> and <header>
@@ -28,10 +28,10 @@ def create_fits(
 
 
 def save_to_path(
-        data: np.ndarray,
-        header: astropy.io.fits.Header | None,
-        path: str | Path,
-        overwrite: bool = True
+    data: np.ndarray,
+    header: astropy.io.fits.Header | None,
+    path: str | Path,
+    overwrite: bool = True,
 ):
     """
     Function to save an image with <data> and <header> to <path>.
@@ -46,9 +46,7 @@ def save_to_path(
     img.writeto(path, overwrite=overwrite)
 
 
-def open_fits(
-        path: str | Path
-) -> tuple[np.ndarray, astropy.io.fits.Header]:
+def open_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
     """
     Function to open a fits file saved to <path>
 
