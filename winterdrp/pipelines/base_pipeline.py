@@ -94,15 +94,14 @@ class Pipeline:
     ) -> list[BaseProcessor]:
         logger.debug(f"Setting pipeline configuration to {new_configuration}.")
 
-        chain = self.load_pipeline_configuration(new_configuration)
-        chain = self.configure_processors(chain, sub_dir=self.night_sub_dir)
-        processors = chain
-        for i, (processor) in enumerate(chain):
+        processors = self.load_pipeline_configuration(new_configuration)
+        processors = self.configure_processors(processors, sub_dir=self.night_sub_dir)
+        for i, processor in enumerate(processors):
             logger.debug(f"Initialising processor {processor.__class__}")
             processor.set_preceding_steps(previous_steps=processors[:i])
             processor.check_prerequisites()
         logger.debug("Pipeline initialisation complete.")
-        return chain
+        return processors
 
     @staticmethod
     def download_raw_images_for_night(
