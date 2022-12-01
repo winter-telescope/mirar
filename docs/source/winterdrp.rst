@@ -13,6 +13,7 @@ Subpackages
    :maxdepth: 4
 
    winterdrp.catalog
+   winterdrp.data
    winterdrp.downloader
    winterdrp.errors
    winterdrp.monitor

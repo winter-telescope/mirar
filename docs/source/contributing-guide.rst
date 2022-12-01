@@ -1,4 +1,4 @@
 Contributing Guide
 ==================
 
-.. mdinclude:: ../../.github/CONTRIBUTING.md
+.. include:: ../../.github/CONTRIBUTING.rst
