@@ -27,6 +27,7 @@ repos:
             "-sn", # Don't display the score
             "--exit-zero"
           ]
+        verbose: true
 -   repo: https://github.com/python-poetry/poetry
     rev: 1.2.2
     hooks:
