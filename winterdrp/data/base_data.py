@@ -1,3 +1,16 @@
+"""
+This contains the base data classes for the :module:`wintedrp.processors`.
+
+The smallest unit is a :class:`~winterdrp.data.image_data.DataBlock` object, corresponding to a single image.
+These :class:`~winterdrp.data.image_data.DataBlock` objects are grouped into
+:class:`~winterdrp.data.image_data.DataBatch` objects. Each :class:`~wintedrp.processors.BaseProcessor` will
+operate on a individual :class:`~winterdrp.data.image_data.DataBatch` object.
+
+The :class:`~winterdrp.data.image_data.DataBatch` objects are stored within a larger
+:class:`~winterdrp.data.image_data.DataSet` object.
+A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
+:class:`~winterdrp.data.image_data.DataBatch` in a :class:`~winterdrp.data.image_data.DataSet`.
+"""
 import logging
 from pathlib import Path
 from typing import Type
@@ -113,7 +126,7 @@ class DataBatch(PseudoList):
         raise NotImplementedError()
 
     def __init__(self, batch: list[DataBlock] | DataBlock = None):
-        super(DataBatch, self).__init__(data_list=batch)
+        super().__init__(data_list=batch)
 
     def get_batch(self) -> list[DataBlock]:
         return self.get_data_list()
@@ -133,4 +146,4 @@ class Dataset(PseudoList):
         return self.get_data_list()
 
     def __init__(self, batches: list[DataBatch] | DataBatch = None):
-        super(Dataset, self).__init__(data_list=batches)
+        super().__init__(data_list=batches)

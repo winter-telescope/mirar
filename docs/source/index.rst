@@ -15,7 +15,6 @@ Contents
 --------
 
 .. toctree::
-    :maxdepth: 2
 
     about
     installation
@@ -23,6 +22,8 @@ Contents
     contributors
     contributing-guide
     modules
+
+    winterdrp.data
 
 Indices and tables
 ==================
