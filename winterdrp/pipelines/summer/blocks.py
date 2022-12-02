@@ -1,3 +1,8 @@
+"""
+Script containing the various :class:`~winterdrp.processors.base_processor.BaseProcessor`
+lists which are used to build configurations for the
+:class:`~winterdrp.pipelines.summer.summer_pipeline.SummerPipeline`.
+"""
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import base_name_key, core_fields
 from winterdrp.pipelines.summer.config import (
