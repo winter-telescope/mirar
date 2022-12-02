@@ -1,3 +1,8 @@
+"""
+Script containing the various :class:`~winterdrp.processors.base_processor.BaseProcessor`
+lists which are used to build configurations for the
+:class:`~winterdrp.pipelines.summer.summer_pipeline.SummerPipeline`.
+"""
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import base_name_key, core_fields
 from winterdrp.pipelines.summer.config import (
@@ -138,9 +143,9 @@ process_raw = [
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
+    ImageBatcher(split_key=base_name_key),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name="detrend", write_mask=True),
-    ImageBatcher(split_key="FIELDID"),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
     ImageSaver(output_dir_name="detrend", write_mask=True),
     Sextractor(

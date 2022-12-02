@@ -1,7 +1,11 @@
-#!/usr/bin/env python
+"""
+Main executable for winterdrp. You can execute the code from the terminal like:
+
+.. codeblock:: bash
+    python -m winterdrp -args...
+"""
 import argparse
 import logging
-import os
 import sys
 from datetime import datetime
 
@@ -10,14 +14,15 @@ from astropy.time import Time
 
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.monitor.base_monitor import Monitor
-from winterdrp.paths import raw_img_sub_dir
+from winterdrp.paths import package_name, raw_img_sub_dir
 from winterdrp.pipelines import Pipeline, get_pipeline
 from winterdrp.processors.utils import ImageLoader
 
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(
-    description="winterdrp: An automated image reduction pipeline, developed for WINTER"
+    description=f"{package_name}: An automated image reduction pipeline, "
+    f"developed for WINTER"
 )
 
 ln = Time.now() - 1.0 * u.day
@@ -84,22 +89,22 @@ if args.download:
 if args.monitor:
 
     if args.emailrecipients is not None:
-        email_recipients = args.emailrecipients.split(",")
+        EMAIL_RECIPIENTS = args.emailrecipients.split(",")
     else:
-        email_recipients = None
+        EMAIL_RECIPIENTS = None
 
     night = args.night
     if night is None:
-        night = str(datetime.now()).split(" ")[0].replace("-", "")
+        night = str(datetime.now()).split(" ", maxsplit=1)[0]
 
-    config = args.config
-    if config is None:
-        config = "realtime"
+    CONFIG = args.config
+    if CONFIG is None:
+        CONFIG = "realtime"
 
     monitor = Monitor(
         pipeline=args.pipeline,
         night=night,
-        realtime_configurations=config,
+        realtime_configurations=CONFIG,
         postprocess_configurations=args.postprocessconfig.split(",")
         if args.postprocessconfig is not None
         else None,
@@ -107,7 +112,7 @@ if args.monitor:
         final_postprocess_hours=args.finalpostprocesshours,
         midway_postprocess_hours=args.midwaypostprocesshours,
         email_sender=args.emailsender,
-        email_recipients=email_recipients,
+        email_recipients=EMAIL_RECIPIENTS,
         raw_dir=args.rawdir,
     )
     monitor.process_realtime()
@@ -132,15 +137,15 @@ else:
 
     night = args.night
     if night is None:
-        night = str(ln).split(" ")[0].replace("-", "")
+        night = str(ln).split(" ", maxsplit=1)[0]
 
-    config = args.config
-    if config is None:
-        config = "default"
+    CONFIG = args.config
+    if CONFIG is None:
+        CONFIG = "default"
 
     pipe = get_pipeline(
         args.pipeline,
-        selected_configurations=config,
+        selected_configurations=CONFIG,
         night=night,
     )
 
@@ -149,25 +154,28 @@ else:
     )
     if args.postprocessconfig is not None:
         post_config = [
-            x for x in pipe.set_configuration(config) if isinstance(x, ImageLoader)
+            x for x in pipe.set_configuration(CONFIG) if isinstance(x, ImageLoader)
         ][:1]
         post_config += pipe.postprocess_configuration(
             errorstack=errorstack,
             selected_configurations=args.postprocessconfig.split(","),
         )
 
-        protected_key = "_new_postprocess"
+        PROTECTED_KEY = "_new_postprocess"
 
-        pipe.add_configuration(protected_key, post_config)
-        pipe.set_configuration(protected_key)
+        pipe.add_configuration(PROTECTED_KEY, post_config)
+        pipe.set_configuration(PROTECTED_KEY)
 
         _, new_errorstack = pipe.reduce_images(
             Dataset([ImageBatch()]),
-            selected_configurations=protected_key,
+            selected_configurations=PROTECTED_KEY,
             catch_all_errors=True,
         )
         errorstack += new_errorstack
 
     print(errorstack.summarise_error_stack(verbose=False))
+    errorstack.summarise_error_stack(
+        output_path=pipe.get_error_output_path(), verbose=True
+    )
 
     logger.info("End of winterdrp execution")
