@@ -1,3 +1,8 @@
+"""
+
+Module to specify the input data classes for :class:`winterdrp.processors.base_processor.ImageHandler`
+
+"""
 import logging
 
 import numpy as np
@@ -75,8 +80,8 @@ class ImageBatch(DataBatch):
     def __init__(self, batch: list[Image] | Image = None):
         super().__init__(batch=batch)
 
-    def append(self, data: Image):
-        self._append(data)
+    def append(self, item: Image):
+        self._append(item)
 
     def __str__(self):
         return f"<An {self.__class__.__name__} object, containing {[x.get_name() for x in self.get_batch()]}>"

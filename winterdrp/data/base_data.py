@@ -1,3 +1,19 @@
+"""
+This contains the base data classes for the :module:`wintedrp.processors`.
+
+The smallest unit is a :class:`~winterdrp.data.image_data.DataBlock` object,
+corresponding to a single image.
+These :class:`~winterdrp.data.image_data.DataBlock` objects are grouped into
+:class:`~winterdrp.data.image_data.DataBatch` objects.
+Each :class:`~wintedrp.processors.BaseProcessor` will operate on a individual
+:class:`~winterdrp.data.image_data.DataBatch` object.
+
+The :class:`~winterdrp.data.image_data.DataBatch` objects are stored within a larger
+:class:`~winterdrp.data.image_data.DataSet` object.
+A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
+:class:`~winterdrp.data.image_data.DataBatch` in a
+:class:`~winterdrp.data.image_data.DataSet`.
+"""
 import logging
 from pathlib import Path
 from typing import Type
@@ -8,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 class DataBlock:
+    """Base unit for processing, corresponding to a single image."""
+
     def __init__(self):
         self.raw_img_list = self[raw_img_key].split(",")
         self.base_name = self[base_name_key]
@@ -19,9 +37,20 @@ class DataBlock:
         raise NotImplementedError
 
     def get_name(self) -> str:
+        """Function to retrieve the :variable:`winterdrp.paths.base_name_key`
+        of the parent image
+
+        :return: Base name of parent image
+        """
         return self.base_name
 
     def get_raw_img_list(self) -> list[str]:
+        """Function to retrieve the paths of all raw images from
+        which this object is derived.
+        Because of stacking, this list may include multiple entries.
+
+        :return: List of path strings
+        """
         return self.raw_img_list
 
 
@@ -39,6 +68,10 @@ class PseudoList:
 
     @property
     def data_type(self):
+        """
+        Each list should take one specific data type.
+        This is where that type is defined.
+        """
         raise NotImplementedError()
 
     def __init__(self, data_list=None):
@@ -59,22 +92,45 @@ class PseudoList:
             self.append(item)
 
     def get_data_list(self):
+        """
+        Retrieve the data list
+
+        :return: The saved list of objects
+        """
         return self._datalist
 
     def append(self, item):
+        """
+        Function to append, list-style, new objects.
+
+        :param item: Object to be added
+        :return: None
+        """
         self._append(item)
 
     def _append(self, item):
+        """
+        Protected method to append, list-style, new objects.
+        This function also checks the data type to ensure they are correct.
+
+        :param item: Object to be added
+        :return: None
+        """
+
         if not isinstance(item, self.data_type):
-            err = f"Error appending item {item} of type {type(item)}. Expected a {self.data_type} item"
+            err = (
+                f"Error appending item {item} of type {type(item)}. "
+                f"Expected a {self.data_type} item"
+            )
             logger.error(err)
             raise ValueError(err)
 
         if len(self._datalist) > 0:
-            if not type(self._datalist[0]) == type(item):
+            if not isinstance(item, type(self._datalist[0])):
                 err = (
-                    f"Error appending item {item} of type {type(item)}. This {self.__class__.__name__} "
-                    f"object already contains data of type {type(self._datalist[0])}. "
+                    f"Error appending item {item} of type {type(item)}. "
+                    f"This {self.__class__.__name__} object already contains "
+                    f"data of type {type(self._datalist[0])}. "
                     f"Please ensure all data is of the same type."
                 )
                 logger.error(err)
@@ -108,17 +164,33 @@ class PseudoList:
 
 
 class DataBatch(PseudoList):
+    """
+    Base class for a collection of individual
+    :class:`~winterdrp.data.image_data.DataBlock` objects.
+    Each :class:`~winterdrp.data.image_data.DataBatch` will be operated on
+    by a :class:`~wintedrp.processors.BaseProcessor`
+    """
+
     @property
     def data_type(self) -> Type[DataBlock]:
         raise NotImplementedError()
 
     def __init__(self, batch: list[DataBlock] | DataBlock = None):
-        super(DataBatch, self).__init__(data_list=batch)
+        super().__init__(data_list=batch)
 
     def get_batch(self) -> list[DataBlock]:
+        """Returns the :class:`~winterdrp.data.image_data.DataBlock`
+        items within the batch
+
+        :return: list of :class:`~winterdrp.data.image_data.DataBlock` objects
+        """
         return self.get_data_list()
 
-    def get_raw_image_names(self) -> list[str]:
+    def get_raw_image_names(self) -> list[Path]:
+        """Returns the name of each parent raw image
+
+        :return: list of raw image names
+        """
         img_list = []
         for data_block in self.get_batch():
             img_list += [Path(x).name for x in data_block.get_raw_img_list()]
@@ -126,11 +198,21 @@ class DataBatch(PseudoList):
 
 
 class Dataset(PseudoList):
+    """
+    Base class for a collection of individual
+    :class:`~winterdrp.data.image_data.DataBatch` objects.
+    A :class:`~wintedrp.processors.BaseProcessor` will iterate over these.
+    """
 
     data_type = DataBatch
 
     def get_batches(self):
+        """Returns the :class:`~winterdrp.data.image_data.DataBatch`
+        items within the batch
+
+        :return: list of :class:`~winterdrp.data.image_data.DataBatch` objects
+        """
         return self.get_data_list()
 
     def __init__(self, batches: list[DataBatch] | DataBatch = None):
-        super(Dataset, self).__init__(data_list=batches)
+        super().__init__(data_list=batches)

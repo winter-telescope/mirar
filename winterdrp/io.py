@@ -6,14 +6,11 @@ All opening/writing of fits files should run via this script.
 
 from pathlib import Path
 
-import astropy.io.fits
 import numpy as np
 from astropy.io import fits
 
 
-def create_fits(
-    data: np.ndarray, header: astropy.io.fits.Header | None
-) -> astropy.io.fits.PrimaryHDU:
+def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU:
     """
     Return an astropy PrimaryHDU object created with <data> and <header>
 
@@ -29,7 +26,7 @@ def create_fits(
 
 def save_to_path(
     data: np.ndarray,
-    header: astropy.io.fits.Header | None,
+    header: fits.Header | None,
     path: str | Path,
     overwrite: bool = True,
 ):
@@ -39,14 +36,15 @@ def save_to_path(
     :param data: numpy ndarray containing image data
     :param header: astropy Header object
     :param path: output path to save to
-    :param overwrite: boolean variable opn whether to overwrite of an image exists at <path>. Defaults to True.
+    :param overwrite: boolean variable opn whether to overwrite of an
+        image exists at <path>.Defaults to True.
     :return: None
     """
     img = create_fits(data, header=header)
     img.writeto(path, overwrite=overwrite)
 
 
-def open_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
+def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     """
     Function to open a fits file saved to <path>
 
@@ -54,7 +52,8 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
     :return: tuple containing image data and image header
     """
     with fits.open(path) as img:
-        data = img[0].data
-        header = img[0].header
+        hdu = img.pop(0)
+        data = hdu.data
+        header = hdu.header
 
     return data, header

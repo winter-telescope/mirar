@@ -1,3 +1,5 @@
+"""Script for testing the error handling in ..module::winterdrp.errors
+"""
 import logging
 import unittest
 
@@ -20,6 +22,9 @@ expected_error = {
 
 
 class TestErrors(unittest.TestCase):
+
+    """Class for testing errors in ..module::winterdrp.errors"""
+
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -27,7 +32,7 @@ class TestErrors(unittest.TestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(
+        _, errorstack = pipeline.reduce_images(
             Dataset(ImageBatch()), catch_all_errors=True
         )
 
