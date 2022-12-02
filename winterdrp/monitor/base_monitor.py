@@ -395,9 +395,7 @@ class Monitor:
                             )
                             try:
                                 with fits.open(event.src_path) as hdul:
-                                    check = (
-                                        hdul._file.tell() == hdul._file.size
-                                    )  # pylint:  disable=protected-access
+                                    check = hdul._file.tell() == hdul._file.size
                             except OSError:
                                 pass
 

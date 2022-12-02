@@ -1,18 +1,18 @@
 """
 This contains the base data classes for the :module:`wintedrp.processors`.
 
-The smallest unit is a :class:`~winterdrp.data.image_data.DataBlock` object,
+The smallest unit is a :class:`~winterdrp.data.base_data.DataBlock` object,
 corresponding to a single image.
-These :class:`~winterdrp.data.image_data.DataBlock` objects are grouped into
-:class:`~winterdrp.data.image_data.DataBatch` objects.
+These :class:`~winterdrp.data.base_data.DataBlock` objects are grouped into
+:class:`~winterdrp.data.base_data.DataBatch` objects.
 Each :class:`~wintedrp.processors.BaseProcessor` will operate on a individual
-:class:`~winterdrp.data.image_data.DataBatch` object.
+:class:`~winterdrp.data.base_data.DataBatch` object.
 
-The :class:`~winterdrp.data.image_data.DataBatch` objects are stored within a larger
-:class:`~winterdrp.data.image_data.DataSet` object.
+The :class:`~winterdrp.data.base_data.DataBatch` objects are stored within a larger
+:class:`~winterdrp.data.base_data.DataSet` object.
 A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
-:class:`~winterdrp.data.image_data.DataBatch` in a
-:class:`~winterdrp.data.image_data.DataSet`.
+:class:`~winterdrp.data.base_data.DataBatch` in a
+:class:`~winterdrp.data.base_data.DataSet`.
 """
 import logging
 from pathlib import Path
