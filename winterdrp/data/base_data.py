@@ -11,7 +11,8 @@ Each :class:`~wintedrp.processors.BaseProcessor` will operate on a individual
 The :class:`~winterdrp.data.image_data.DataBatch` objects are stored within a larger
 :class:`~winterdrp.data.image_data.DataSet` object.
 A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
-:class:`~winterdrp.data.image_data.DataBatch` in a :class:`~winterdrp.data.image_data.DataSet`.
+:class:`~winterdrp.data.image_data.DataBatch` in a
+:class:`~winterdrp.data.image_data.DataSet`.
 """
 import logging
 from pathlib import Path
@@ -36,14 +37,16 @@ class DataBlock:
         raise NotImplementedError
 
     def get_name(self) -> str:
-        """Function to retrieve the :variable:`winterdrp.paths.base_name_key` of the parent image
+        """Function to retrieve the :variable:`winterdrp.paths.base_name_key`
+        of the parent image
 
         :return: Base name of parent image
         """
         return self.base_name
 
     def get_raw_img_list(self) -> list[str]:
-        """Function to retrieve the paths of all raw images from which this object is derived.
+        """Function to retrieve the paths of all raw images from
+        which this object is derived.
         Because of stacking, this list may include multiple entries.
 
         :return: List of path strings
