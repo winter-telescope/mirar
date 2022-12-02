@@ -138,9 +138,9 @@ process_raw = [
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
+    ImageBatcher(split_key=base_name_key),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name="detrend", write_mask=True),
-    ImageBatcher(split_key="FIELDID"),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
     ImageSaver(output_dir_name="detrend", write_mask=True),
     Sextractor(
