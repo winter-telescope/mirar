@@ -1,3 +1,7 @@
+"""
+Script containing the :class:`~winterdrp.monitor.base_monitor.Monitor` class,
+used for processing data in real time.
+"""
 import copy
 import logging
 import os
@@ -31,7 +35,7 @@ from winterdrp.paths import (
     watchdog_email_key,
     watchdog_recipient_key,
 )
-from winterdrp.pipelines import PipelineConfigError, get_pipeline
+from winterdrp.pipelines import get_pipeline
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.processors.utils.cal_hunter import CalRequirement, find_required_cals
 from winterdrp.processors.utils.image_loader import ImageLoader
@@ -41,6 +45,8 @@ logger = logging.getLogger(__name__)
 
 
 class NewImageHandler(FileSystemEventHandler):
+    """Class to watch a directory, and add newly-created files to a queue."""
+
     def __init__(self, queue):
         FileSystemEventHandler.__init__(self)
         self.queue = queue
@@ -51,6 +57,12 @@ class NewImageHandler(FileSystemEventHandler):
 
 
 class Monitor:
+    """Class to 'monitor' a directory, watching for newly created files.
+    It then reduces these files. It will watch for a fixed duration,
+    and run a postprocessing step at some configurable time after starting.
+    It can send automated email notifications.
+    """
+
     def __init__(
         self,
         night: str,
@@ -94,19 +106,18 @@ class Monitor:
         self.sub_dir = raw_dir
 
         if not self.raw_image_directory.exists():
-            for x in self.raw_image_directory.parents[::-1]:
-                x.mkdir(exist_ok=True)
-            self.raw_image_directory.mkdir()
+            self.raw_image_directory.parent.mkdir(parents=True)
 
         self.log_level = log_level
         self.log_path = self.configure_logs(log_level)
-        self.error_path = self.get_error_output_path()
+        self.error_path = self.pipeline.get_error_output_path()
 
         check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
         if np.sum(check_email) == 1:
             err = (
-                "In order to send emails, you must specify both a a sender and a recipient. \n"
-                f"In this case, sender is {email_sender} and recipient is {email_recipients}."
+                "In order to send emails, you must specify both a sender"
+                f" and a recipient. \n In this case, sender is {email_sender} "
+                f"and recipient is {email_recipients}."
             )
             logger.error(err)
             raise ValueError(err)
@@ -120,14 +131,15 @@ class Monitor:
         if self.midway_postprocess_hours > self.final_postprocess_hours:
             logger.warning(
                 f"Midway postprocessing was set to {self.midway_postprocess_hours}, "
-                f"but the monitor has a shorter termination period of {self.final_postprocess_hours}. "
-                f"Setting to to 95% of max wait."
+                "but the monitor has a shorter termination period of "
+                f"{self.final_postprocess_hours}. Setting to to 95% of max wait."
             )
             self.midway_postprocess_hours = 0.95 * self.final_postprocess_hours
 
         if np.sum(check_email) == 2:
             logger.info(
-                f"Will send an email summary after {self.midway_postprocess_hours} hours."
+                f"Will send an email summary after "
+                f"{self.midway_postprocess_hours} hours."
             )
             self.email_info = (email_sender, email_recipients)
             self.email_to_send = True
@@ -162,11 +174,18 @@ class Monitor:
         self,
         errorstack: ErrorStack,
     ):
+        """Create a text summary using an errorstack and the list
+        of processed images. Sends an email of this if configured
+        to do so, or prints otherwise.
+
+        :param errorstack: list of errors to summarise
+        :return: None
+        """
 
         error_summary = errorstack.summarise_error_stack(verbose=False)
         summary = (
-            f"Processed a total of {len(self.processed_science_images)} science images. "
-            f"\n\n" + error_summary + " \n"
+            f"Processed a total of {len(self.processed_science_images)}"
+            f" science images. \n\n {error_summary} \n"
         )
 
         logger.info(f"Writing error log to {self.error_path}")
@@ -194,28 +213,13 @@ class Monitor:
         else:
             print(summary)
 
-    def process_full_night(
-        self,
-    ):
-        batches, errorstack = self.pipeline.reduce_images(
-            Dataset(ImageBatch()), catch_all_errors=True
-        )
-        self.summarise_errors(errorstack=errorstack)
-
-    def get_error_output_path(self) -> str:
-        error_output_path = get_output_path(
-            base_name=f"{self.night}_error_stack.txt",
-            dir_root=self.pipeline.night_sub_dir,
-        )
-
-        try:
-            os.makedirs(os.path.dirname(error_output_path))
-        except OSError:
-            pass
-
-        return error_output_path
-
     def configure_logs(self, log_level="INFO"):
+        """Function to configure the log level for the python logger.
+        Posts the log to the terminal and also writes it to a file.
+
+        :param log_level: python log level
+        :return: lof file path
+        """
 
         log_output_path = get_output_path(
             base_name=f"{self.night}_processing_log.txt",
@@ -253,16 +257,20 @@ class Monitor:
         return log_output_path
 
     def process_realtime(self):
+        """Function to initiate the actual monitoring.
+
+        :return: None
+        """
         # create queue
-        watchdog_queue = Queue()
+        monitor_queue = Queue()
 
         workers = []
 
         n_cpu = max_n_cpu
 
-        for i in range(n_cpu):
+        for _ in range(n_cpu):
             # Set up a worker thread to process database load
-            worker = Thread(target=self.process_load_queue, args=(watchdog_queue,))
+            worker = Thread(target=self.process_load_queue, args=(monitor_queue,))
             worker.daemon = True
             worker.start()
 
@@ -271,7 +279,7 @@ class Monitor:
         # setup watchdog to monitor directory for trigger files
         logger.info(f"Watching {self.raw_image_directory}")
 
-        event_handler = NewImageHandler(watchdog_queue)
+        event_handler = NewImageHandler(monitor_queue)
         observer = Observer()
         observer.schedule(event_handler, path=str(self.raw_image_directory))
         observer.start()
@@ -280,15 +288,25 @@ class Monitor:
             while (Time.now() - self.t_start) < self.final_postprocess_hours:
                 time.sleep(2)
         finally:
-            logger.info(f"No longer waiting for new images.")
+            logger.info("No longer waiting for new images.")
             observer.stop()
             observer.join()
             self.postprocess()
 
     def update_error_log(self):
+        """Function to overwrite the error file with the latest version.
+        The error summary is cumulative, so this just updates the file.
+        """
         self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
 
     def postprocess(self):
+        """Function to be run after some realtime postprocessing has been run.
+        This function is called once after a configurable number of hours
+        (typically when the data is expected to be done), and then again
+        when the monitor stops watching the directory.
+
+        :return: None
+        """
         self.update_error_log()
 
         logger.info("Running postprocess steps")
@@ -300,7 +318,7 @@ class Monitor:
                     load_image=self.pipeline.unpack_raw_image,
                     input_sub_dir=self.sub_dir,
                     input_img_dir=str(Path(self.raw_image_directory)).split(
-                        self.pipeline_name
+                        self.pipeline_name, maxsplit=1
                     )[0],
                 )
             ]
@@ -332,13 +350,13 @@ class Monitor:
             self.errorstack += errorstack
             self.update_error_log()
 
-    def process_load_queue(self, q):
+    def process_load_queue(self, queue: Queue):
         """This is the worker thread function. It is run as a daemon
         threads that only exit when the main thread ends.
 
         Args
         ==========
-          q:  Queue() object
+          queue:  Queue() object
         """
         while True:
 
@@ -349,22 +367,24 @@ class Monitor:
                     self.postprocess()
                     if self.email_to_send:
                         logger.info(
-                            f"More than {self.midway_postprocess_hours} hours have elapsed. "
-                            f"Sending summary email."
+                            f"More than {self.midway_postprocess_hours} "
+                            f"hours have elapsed. Sending summary email."
                         )
                         self.summarise_errors(errorstack=self.errorstack)
 
-            if not q.empty():
-                event = q.get()
+            if not queue.empty():
+                event = queue.get()
 
                 if event.src_path[-5:] == ".fits":
 
                     # Verify that file transfer is complete, useful for rsync latency
 
-                    # Disclaimer: I (Robert) do not feel great about having written this code block
-                    # It seems to works though, let's hope no one finds out
-                    # I will cover my tracks by hiding the astropy warning which inspired this block,
-                    # informing the user that the file is not as long as expected
+                    # Disclaimer: I (Robert) do not feel great about having written
+                    # this code block.
+                    # It seems to works though, let's hope no one finds out!
+                    # I will cover my tracks by hiding the astropy warning which
+                    # inspired this block, informing the user that the file
+                    # is not as long as expected
 
                     check = False
 
@@ -375,7 +395,9 @@ class Monitor:
                             )
                             try:
                                 with fits.open(event.src_path) as hdul:
-                                    check = hdul._file.tell() == hdul._file.size
+                                    check = (
+                                        hdul._file.tell() == hdul._file.size
+                                    )  # pylint:  disable=protected-access
                             except OSError:
                                 pass
 
@@ -398,7 +420,8 @@ class Monitor:
                             print(f"Skipping {event.src_path} (calibration image)")
                         else:
                             print(
-                                f"Reducing {event.src_path} (science image) on thread {threading.get_ident()}"
+                                f"Reducing {event.src_path} (science image) "
+                                f"on thread {threading.get_ident()}"
                             )
                             _, errorstack = self.pipeline.reduce_images(
                                 dataset=Dataset(all_img),
@@ -409,9 +432,11 @@ class Monitor:
                             self.errorstack += errorstack
                             self.update_error_log()
 
-                    except Exception as e:
+                    # RS: Please forgive me for this coding sin
+                    # I just want the monitor to never crash
+                    except Exception as exc:  # pylint: disable=broad-except
                         err_report = ErrorReport(
-                            e, "monitor", contents=[event.src_path]
+                            exc, "monitor", contents=[event.src_path]
                         )
                         self.errorstack.add_report(err_report)
                         self.update_error_log()
