@@ -259,10 +259,13 @@ class ZOGYPrepare(BaseImageProcessor):
             image_mask = (sci_weight_data.get_data() == 0.0) | (
                 ref_weight_data.get_data() == 0.0
             )
-            for img in [image, ref_img]:
-                data = img.get_data()
-                data[image_mask] = 0.0
-                img.set_data(data)
+
+            image_data = image.get_data()
+            image_data[image_mask] = 0.0
+            image.set_data(image_data)
+            ref_data = ref_img.get_data()
+            ref_data[image_mask] = 0.0
+            ref_img.set_data(ref_data)
 
             # Create S correlation ('scorr') weight image
             scorr_weight_data = sci_weight_data.get_data() * ref_weight_data.get_data()
@@ -275,11 +278,9 @@ class ZOGYPrepare(BaseImageProcessor):
                 ref_catalog_path, sci_catalog_path
             )
 
-            ref_data = ref_img.get_data()
-
             # Scale reference image
             ref_data *= flux_scale
-            ref_img.set_data(data)
+            ref_img.set_data(ref_data)
 
             ref_unscaled_zp = ref_img["ZP"]
             ref_img["ZP"] = float(ref_img["ZP"]) + 2.5 * np.log10(flux_scale)
@@ -297,11 +298,9 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_scaled_path = self.get_path(sci_img_path + ".scaled")
             self.save_fits(image, path=sci_scaled_path)
 
-            img_data = image.get_data()
-
             sci_rms = 0.5 * (
-                np.percentile(img_data[img_data != 0.0], 84.13)
-                - np.percentile(img_data[img_data != 0.0], 15.86)
+                np.percentile(image_data[image_data != 0.0], 84.13)
+                - np.percentile(image_data[image_data != 0.0], 15.86)
             )
             ref_rms = 0.5 * (
                 np.percentile(ref_data[ref_data != 0.0], 84.13)

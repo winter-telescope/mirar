@@ -23,12 +23,14 @@ __version__ = toml_info["tool"]["poetry"]["version"]
 doc_dir = winter_code_dir.joinpath("docs/")
 
 max_n_cpu = int(os.getenv("MAX_N_CPU", max(int(os.cpu_count() / 2), 1)))
+USE_CACHE = bool(os.getenv("USECACHE", True))
 
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 
 if base_raw_dir is None:
     err = (
-        "No raw data directory specified. Run 'export RAW_DATA_DIR=/path/to/data' to set. "
+        "No raw data directory specified. "
+        "Run 'export RAW_DATA_DIR=/path/to/data' to set. "
         "The raw data directory will need to be specified manually for path function."
     )
     logger.warning(err)
@@ -38,7 +40,8 @@ _base_output_dir = os.getenv("OUTPUT_DATA_DIR")
 if _base_output_dir is None:
     default = Path.home()
     err = (
-        f"No output data directory specified. Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. "
+        f"No output data directory specified. "
+        f"Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. "
         f"The output directory is being set to {default}."
     )
     logger.warning(err)
@@ -74,6 +77,12 @@ def get_output_path(
     return os.path.join(
         get_output_dir(dir_root, sub_dir=str(sub_dir), output_dir=output_dir), base_name
     )
+
+
+CACHE_DIR = base_output_dir.joinpath(f"{package_name}_cache")
+
+if not CACHE_DIR.exists():
+    CACHE_DIR.mkdir(parents=True)
 
 
 def cal_output_dir(sub_dir: str | int = "", output_dir: str = base_output_dir) -> str:
@@ -113,7 +122,7 @@ def get_temp_path(output_dir: str, file_path: str) -> str:
 
 def get_untemp_path(temp_path: str) -> str:
     path = os.path.join(
-        os.path.dirname(temp_path), os.path.basename(temp_path).split("temp_")[1]
+        os.path.dirname(temp_path), os.path.basename(temp_path).replace("temp_", "")
     )
     return path
 

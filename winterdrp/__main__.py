@@ -11,7 +11,7 @@ import sys
 from astropy import units as u
 from astropy.time import Time
 
-from winterdrp.data import Dataset, ImageBatch
+from winterdrp.data import Dataset, ImageBatch, clean_cache
 from winterdrp.monitor.base_monitor import Monitor
 from winterdrp.paths import package_name, raw_img_sub_dir
 from winterdrp.pipelines import Pipeline, get_pipeline
@@ -85,93 +85,99 @@ if args.download:
 
     logger.info("Download complete")
 
-
 night = args.night
 if night is None:
     night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
 
-if args.monitor:
 
-    if args.emailrecipients is not None:
-        EMAIL_RECIPIENTS = args.emailrecipients.split(",")
+try:
+
+    if args.monitor:
+
+        if args.emailrecipients is not None:
+            EMAIL_RECIPIENTS = args.emailrecipients.split(",")
+        else:
+            EMAIL_RECIPIENTS = None
+
+        CONFIG = args.config
+        if CONFIG is None:
+            CONFIG = "realtime"
+
+        monitor = Monitor(
+            pipeline=args.pipeline,
+            night=night,
+            realtime_configurations=CONFIG,
+            postprocess_configurations=args.postprocessconfig.split(",")
+            if args.postprocessconfig is not None
+            else None,
+            log_level=args.level,
+            final_postprocess_hours=args.finalpostprocesshours,
+            midway_postprocess_hours=args.midwaypostprocesshours,
+            email_sender=args.emailsender,
+            email_recipients=EMAIL_RECIPIENTS,
+            raw_dir=args.rawdir,
+        )
+        monitor.process_realtime()
+
     else:
-        EMAIL_RECIPIENTS = None
 
-    CONFIG = args.config
-    if CONFIG is None:
-        CONFIG = "realtime"
+        # Set up logging
 
-    monitor = Monitor(
-        pipeline=args.pipeline,
-        night=night,
-        realtime_configurations=CONFIG,
-        postprocess_configurations=args.postprocessconfig.split(",")
-        if args.postprocessconfig is not None
-        else None,
-        log_level=args.level,
-        final_postprocess_hours=args.finalpostprocesshours,
-        midway_postprocess_hours=args.midwaypostprocesshours,
-        email_sender=args.emailsender,
-        email_recipients=EMAIL_RECIPIENTS,
-        raw_dir=args.rawdir,
-    )
-    monitor.process_realtime()
+        log = logging.getLogger("winterdrp")
 
-else:
+        if args.logfile is None:
+            handler = logging.StreamHandler(sys.stdout)
+        else:
+            handler = logging.FileHandler(args.logfile)
 
-    # Set up logging
+        formatter = logging.Formatter(
+            "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
+        )
+        handler.setFormatter(formatter)
+        log.addHandler(handler)
+        log.setLevel(args.level)
 
-    log = logging.getLogger("winterdrp")
+        CONFIG = args.config
+        if CONFIG is None:
+            CONFIG = "default"
 
-    if args.logfile is None:
-        handler = logging.StreamHandler(sys.stdout)
-    else:
-        handler = logging.FileHandler(args.logfile)
-
-    formatter = logging.Formatter(
-        "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
-    )
-    handler.setFormatter(formatter)
-    log.addHandler(handler)
-    log.setLevel(args.level)
-
-    CONFIG = args.config
-    if CONFIG is None:
-        CONFIG = "default"
-
-    pipe = get_pipeline(
-        args.pipeline,
-        selected_configurations=CONFIG,
-        night=night,
-    )
-
-    batches, errorstack = pipe.reduce_images(
-        Dataset([ImageBatch()]), catch_all_errors=True
-    )
-    if args.postprocessconfig is not None:
-        post_config = [
-            x for x in pipe.set_configuration(CONFIG) if isinstance(x, ImageLoader)
-        ][:1]
-        post_config += pipe.postprocess_configuration(
-            errorstack=errorstack,
-            selected_configurations=args.postprocessconfig.split(","),
+        pipe = get_pipeline(
+            args.pipeline,
+            selected_configurations=CONFIG,
+            night=night,
         )
 
-        PROTECTED_KEY = "_new_postprocess"
-
-        pipe.add_configuration(PROTECTED_KEY, post_config)
-        pipe.set_configuration(PROTECTED_KEY)
-
-        _, new_errorstack = pipe.reduce_images(
-            Dataset([ImageBatch()]),
-            selected_configurations=PROTECTED_KEY,
-            catch_all_errors=True,
+        batches, errorstack = pipe.reduce_images(
+            Dataset([ImageBatch()]), catch_all_errors=True
         )
-        errorstack += new_errorstack
+        if args.postprocessconfig is not None:
+            post_config = [
+                x for x in pipe.set_configuration(CONFIG) if isinstance(x, ImageLoader)
+            ][:1]
+            post_config += pipe.postprocess_configuration(
+                errorstack=errorstack,
+                selected_configurations=args.postprocessconfig.split(","),
+            )
 
-    print(errorstack.summarise_error_stack(verbose=False))
-    errorstack.summarise_error_stack(
-        output_path=pipe.get_error_output_path(), verbose=True
-    )
+            PROTECTED_KEY = "_new_postprocess"
 
-    logger.info("End of winterdrp execution")
+            pipe.add_configuration(PROTECTED_KEY, post_config)
+            pipe.set_configuration(PROTECTED_KEY)
+
+            _, new_errorstack = pipe.reduce_images(
+                Dataset([ImageBatch()]),
+                selected_configurations=PROTECTED_KEY,
+                catch_all_errors=True,
+            )
+            errorstack += new_errorstack
+
+        print(errorstack.summarise_error_stack(verbose=False))
+        errorstack.summarise_error_stack(
+            output_path=pipe.get_error_output_path(), verbose=True
+        )
+
+        logger.info("End of winterdrp execution")
+
+finally:
+    # Delete everything added to the cache
+    clean_cache()

@@ -3,6 +3,9 @@ import unittest
 
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.pipelines import get_pipeline
+from winterdrp.testing import BaseTestCase
+
+# from winterdrp.data.image_data import clean_cache
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +40,7 @@ pipeline = get_pipeline(
 )
 
 
-class TestSummerPipeline(unittest.TestCase):
+class TestSummerPipeline(BaseTestCase):
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)

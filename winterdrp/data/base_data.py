@@ -216,3 +216,12 @@ class Dataset(PseudoList):
 
     def __init__(self, batches: list[DataBatch] | DataBatch = None):
         super().__init__(data_list=batches)
+
+    def append(self, item: DataBatch):
+        """
+        Function to append, list-style, new objects.
+
+        :param item: Object to be added
+        :return: None
+        """
+        super()._append(item)
