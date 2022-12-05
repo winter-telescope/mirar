@@ -23,7 +23,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from winterdrp.data import Dataset, ImageBatch
-from winterdrp.errors import ErrorReport, ErrorStack
+from winterdrp.errors import ErrorReport, ErrorStack, ImageNotFoundError
 from winterdrp.paths import (
     __version__,
     base_raw_dir,
@@ -37,7 +37,11 @@ from winterdrp.paths import (
 )
 from winterdrp.pipelines import get_pipeline
 from winterdrp.processors.csvlog import CSVLog
-from winterdrp.processors.utils.cal_hunter import CalRequirement, find_required_cals
+from winterdrp.processors.utils.cal_hunter import (
+    CalHunter,
+    CalRequirement,
+    find_required_cals,
+)
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.utils.send_email import send_gmail
 
@@ -160,15 +164,22 @@ class Monitor:
         if cal_requirements is None:
             cal_requirements = self.pipeline.default_cal_requirements
 
+        self.cal_images = ImageBatch()
+
         if cal_requirements is not None:
-            self.cal_images = find_required_cals(
-                latest_dir=str(self.raw_image_directory),
-                night=night,
-                open_f=self.pipeline.load_raw_image,
-                requirements=cal_requirements,
-            )
-        else:
-            self.cal_images = ImageBatch()
+            try:
+                self.cal_images = find_required_cals(
+                    latest_dir=str(self.raw_image_directory),
+                    night=night,
+                    open_f=self.pipeline.load_raw_image,
+                    requirements=cal_requirements,
+                )
+            except ImageNotFoundError as exc:
+                err = "No CalHunter images found. Will need to rely on nightly data."
+                logger.error(err)
+                self.errorstack.add_report(
+                    ErrorReport(error=exc, processor_name=CalHunter, contents=[])
+                )
 
     def summarise_errors(
         self,
