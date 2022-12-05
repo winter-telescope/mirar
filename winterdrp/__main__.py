@@ -7,7 +7,6 @@ Main executable for winterdrp. You can execute the code from the terminal like:
 import argparse
 import logging
 import sys
-from datetime import datetime
 
 from astropy import units as u
 from astropy.time import Time
@@ -86,16 +85,17 @@ if args.download:
 
     logger.info("Download complete")
 
+
+night = args.night
+if night is None:
+    night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
+
 if args.monitor:
 
     if args.emailrecipients is not None:
         EMAIL_RECIPIENTS = args.emailrecipients.split(",")
     else:
         EMAIL_RECIPIENTS = None
-
-    night = args.night
-    if night is None:
-        night = str(datetime.now()).split(" ", maxsplit=1)[0]
 
     CONFIG = args.config
     if CONFIG is None:
@@ -134,10 +134,6 @@ else:
     handler.setFormatter(formatter)
     log.addHandler(handler)
     log.setLevel(args.level)
-
-    night = args.night
-    if night is None:
-        night = str(ln).split(" ", maxsplit=1)[0]
 
     CONFIG = args.config
     if CONFIG is None:
