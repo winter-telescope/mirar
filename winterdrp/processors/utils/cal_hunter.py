@@ -4,24 +4,26 @@ import os
 from collections.abc import Callable
 from pathlib import Path
 
-import astropy.io
 import numpy as np
 
 from winterdrp.data import Image, ImageBatch
-from winterdrp.errors import ImageNotFoundError, ProcessorError
+from winterdrp.errors import ImageNotFoundError
 from winterdrp.io import open_fits
-from winterdrp.paths import raw_img_sub_dir
-from winterdrp.processors.utils.image_loader import (
-    BaseImageProcessor,
-    ImageLoader,
-    load_from_dir,
-)
+from winterdrp.processors.utils.image_loader import ImageLoader, load_from_dir
 from winterdrp.processors.utils.image_selector import select_from_images
 
 logger = logging.getLogger(__name__)
 
 
 class CalRequirement:
+    """
+    Class to specify particular calibration files that must be present for processing
+    """
+
+    target_name: str
+    required_field: str
+    required_values: str | list[str]
+
     def __init__(
         self, target_name, required_field: str, required_values: str | list[str]
     ):
@@ -29,9 +31,17 @@ class CalRequirement:
         self.required_field = required_field
         self.required_values = required_values
         self.success = False
-        self.data = dict()
+        self.data = {}
 
     def check_images(self, images: ImageBatch):
+        """
+        Check a batch of images, to see whether the calibration requirement is met.
+        Adds any required images to the cache, then updates
+        the check of the self.success
+
+        :param images: ImageBatch
+        :return: None
+        """
 
         new_images = select_from_images(
             images, key="TARGET", target_values=self.target_name
@@ -39,7 +49,7 @@ class CalRequirement:
 
         if len(new_images) > 0:
             for value in self.required_values:
-                if value not in self.data.keys():
+                if value not in self.data:
                     sub_images = select_from_images(
                         new_images, key=self.required_field, target_values=value
                     )
@@ -48,11 +58,24 @@ class CalRequirement:
 
         self.success = len(self.data) == len(self.required_values)
 
+    def __str__(self):
+        return (
+            f"<Calibration requirement, checking for '{self.target_name}' images "
+            f"with '{self.required_field}'values {self.required_values} >"
+        )
+
 
 def update_requirements(
     requirements: list[CalRequirement],
     images: ImageBatch,
 ) -> list[CalRequirement]:
+    """
+    Iteratively check a list of Cal Requirements against an image batch
+
+    :param requirements: CalRequirements to check
+    :param images: Images to check
+    :return: Updated CalRequirements
+    """
 
     for requirement in requirements:
         if not requirement.success:
@@ -70,6 +93,17 @@ def find_required_cals(
     images: ImageBatch = ImageBatch(),
     skip_latest_night: bool = False,
 ) -> ImageBatch:
+    """
+    Broad function to search for missing calibration files in previous nights
+
+    :param latest_dir: The directory for the raw images
+    :param night: The night being processed
+    :param requirements: List of calibration requirements
+    :param open_f: Function to open raw images
+    :param images: Current image list (default: empty)
+    :param skip_latest_night: Boolean to skip the directory of night being processed
+    :return: Updated image batch
+    """
 
     path = Path(latest_dir)
     logger.debug(path)
@@ -84,12 +118,12 @@ def find_required_cals(
 
     preceding_dirs = []
 
-    for x in [x for x in Path(root).iterdir() if x.is_dir()]:
-        if x.name[0] not in ["."]:
-            if len(str(x.name)) == len(str(night)):
+    for dir_name in [x for x in Path(root).iterdir() if x.is_dir()]:
+        if dir_name.name[0] not in ["."]:
+            if len(str(dir_name.name)) == len(str(night)):
                 try:
-                    if float(x.name) < float(night):
-                        preceding_dirs.append(x)
+                    if float(dir_name.name) < float(night):
+                        preceding_dirs.append(dir_name)
                 except ValueError:
                     pass
 
@@ -98,10 +132,19 @@ def find_required_cals(
 
     ordered_nights = sorted(preceding_dirs)[::-1]
 
-    while np.sum([x.success for x in requirements]) != len(requirements):
+    while np.sum([req.success for req in requirements]) != len(requirements):
 
         if len(ordered_nights) == 0:
-            raise ImageNotFoundError("Ran out of nights!")
+            err = (
+                "Despite checking all past nights, there are still "
+                "missing cal requirements: "
+            )
+
+            for req in requirements:
+                if not req.success:
+                    err += str(req)
+            logger.error(err)
+            raise ImageNotFoundError(err)
 
         dir_to_load = ordered_nights[0].joinpath(subdir)
 
@@ -119,7 +162,7 @@ def find_required_cals(
     n_cal = 0
 
     for requirement in requirements:
-        for key, (cal_imgs) in requirement.data.items():
+        for cal_imgs in requirement.data.values():
             for cal_img in cal_imgs:
                 if cal_img not in images.get_batch():
                     images.append(cal_img)
@@ -135,6 +178,10 @@ def find_required_cals(
 
 
 class CalHunter(ImageLoader):
+    """
+    Processor to find any missing calibration images,
+    by searching previous nights of data
+    """
 
     base_key = "calhunt"
 
@@ -149,8 +196,11 @@ class CalHunter(ImageLoader):
         self.requirements = requirements
 
     def __str__(self):
-        reqs = [f"{x.target_name.upper()} images" for x in self.requirements]
-        return f"Processor to search through archival data to find any missing {' and '.join(reqs)}"
+        reqs = [f"{req.target_name.upper()} images" for req in self.requirements]
+        return (
+            f"Processor to search through archival data to find any missing "
+            f"{' and '.join(reqs)}"
+        )
 
     def _apply_to_images(
         self,
@@ -168,7 +218,7 @@ class CalHunter(ImageLoader):
             latest_dir=latest_dir,
             night=self.night,
             requirements=requirements,
-            open_f=self.load_image,
+            open_f=self.open_raw_image,
             images=batch,
             skip_latest_night=True,
         )
