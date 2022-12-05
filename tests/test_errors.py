@@ -2,7 +2,6 @@
 Script for testing the error handling in ..module::winterdrp.errors
 """
 import logging
-import unittest
 
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.errors import ImageNotFoundError
