@@ -7,7 +7,7 @@ import astropy.io.fits
 import numpy as np
 
 from winterdrp.data import Image, ImageBatch
-from winterdrp.errors import ImageNotFoundError, ProcessorError
+from winterdrp.errors import ImageNotFoundError
 from winterdrp.io import open_fits
 from winterdrp.paths import base_raw_dir, core_fields, raw_img_sub_dir
 from winterdrp.processors.base_processor import BaseImageProcessor
@@ -22,10 +22,10 @@ class ImageLoader(BaseImageProcessor):
 
     def __init__(
         self,
+        *args,
         input_sub_dir: str = raw_img_sub_dir,
         input_img_dir: str = base_raw_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
-        *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -47,7 +47,8 @@ class ImageLoader(BaseImageProcessor):
             if key not in header.keys():
                 err = (
                     f"Essential key {key} not found in header. "
-                    f"Please add this field first. Available fields are: {list(header.keys())}"
+                    f"Please add this field first. Available fields are: "
+                    f"{list(header.keys())}"
                 )
                 logger.error(err)
                 raise KeyError(err)
