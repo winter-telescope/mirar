@@ -57,6 +57,7 @@ and setting the output data directory.
 """
 import hashlib
 import logging
+from pathlib import Path
 
 import numpy as np
 from astropy.io.fits import Header
@@ -89,12 +90,16 @@ class Image(DataBlock):
             self.cache_files.append(self.cache_path)
         self.set_data(data=data)
 
-    def get_cache_path(self):
+    def get_cache_path(self) -> Path:
+        """
+        Get a unique cache path for the image (.npy file).
+        This is hash, using name and time, so should be unique even
+        when rerunning on the same image.
+
+        :return: unique cache file path
+        """
         base = "".join([str(Time.now()), self.get_name()])
         name = f"{hashlib.sha1(base.encode()).hexdigest()}.npy"
-        # cache_dir = get_cache_dir()
-        # if not cache_dir.exists():
-        #     cache_dir.mkdir(parents=True)
         return CACHE_DIR.joinpath(name)
 
     def __str__(self):
