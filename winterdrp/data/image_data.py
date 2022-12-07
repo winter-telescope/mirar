@@ -85,8 +85,9 @@ class Image(DataBlock):
         self.header = header
         super().__init__()
         self.cache_path = self.get_cache_path()
-        self.cache_files.append(self.cache_path)
-        self.set_data(data)
+        if USE_CACHE:
+            self.cache_files.append(self.cache_path)
+        self.set_data(data=data)
 
     def get_cache_path(self):
         base = "".join([str(Time.now()), self.get_name()])
@@ -99,24 +100,62 @@ class Image(DataBlock):
     def __str__(self):
         return f"<An {self.__class__.__name__} object, built from {self.get_name()}>"
 
-    def get_data(self) -> np.ndarray:
-        """
-        Get the image data
-
-        :return: image data (numpy array)
-        """
-        # return self._data
-        return np.load(self.cache_path.as_posix())
-
     def set_data(self, data: np.ndarray):
         """
-        Set the data
+        Set the data with cache
 
         :param data: Updated image data
         :return: None
         """
-        # self._data = data
+        if USE_CACHE:
+            self.set_cache_data(data)
+        else:
+            self.set_ram_data(data)
+
+    def set_cache_data(self, data: np.ndarray):
+        """
+        Set the data with cache
+
+        :param data: Updated image data
+        :return: None
+        """
         np.save(self.cache_path.as_posix(), data)
+
+    def set_ram_data(self, data: np.ndarray):
+        """
+        Set the data in RAM
+
+        :param data: Updated image data
+        :return: None
+        """
+        self._data = data
+
+    def get_data(self) -> np.ndarray:
+        """
+        Get the image data from cache
+
+        :return: image data (numpy array)
+        """
+        if USE_CACHE:
+            return self.get_cache_data()
+
+        return self.get_ram_data()
+
+    def get_cache_data(self) -> np.ndarray:
+        """
+        Get the image data from cache
+
+        :return: image data (numpy array)
+        """
+        return np.load(self.cache_path.as_posix())
+
+    def get_ram_data(self) -> np.ndarray:
+        """
+        Get the image data from RAM
+
+        :return: image data (numpy array)
+        """
+        return self._data
 
     def get_header(self) -> Header:
         """
@@ -164,11 +203,9 @@ class ImageBatch(DataBatch):
 
     def __init__(self, batch: list[Image] | Image = None):
         super().__init__(batch=batch)
-        # self.cache_list = []
 
     def append(self, item: Image):
         self._append(item)
-        # self.cache_list.append(item.cache_path)
 
     def __str__(self):
         return (
@@ -190,7 +227,6 @@ def clean_cache():
 
     :return: None
     """
-    # [x.unlink() for x in Image.cache_files]
-    for x in Image.cache_files:
-        x.unlink()
+    for path in Image.cache_files:
+        path.unlink(missing_ok=True)
     Image.cache_files = []
