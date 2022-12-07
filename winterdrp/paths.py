@@ -26,7 +26,7 @@ __version__ = toml_info["tool"]["poetry"]["version"]
 doc_dir = winter_code_dir.joinpath("docs/")
 
 max_n_cpu = int(os.getenv("MAX_N_CPU", max(int(os.cpu_count() / 2), 1)))
-USE_CACHE = bool(os.getenv("USECACHE", "true"))
+USE_CACHE = bool(os.getenv("USE_WINTER_CACHE", "true"))
 
 base_raw_dir = os.getenv("RAW_DATA_DIR")
 

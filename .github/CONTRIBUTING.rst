@@ -21,11 +21,18 @@ We have a few general guidelines that are helpful for keeping things organised:
 Updating the documentation
 --------------------------
 
-The documentation (generated primarily from docstrings) can be modified with the following command, executed from the docs directory:
+The documentation (generated primarily from docstrings) can be modified with the following command, **executed from the docs directory**:
 
 .. code-block:: bash
 
     sphinx-apidoc -o source/ ../winterdrp --module-first --force
+
+
+You can then build the documentation locally:
+
+.. code-block:: bash
+
+    sphinx-build source build
 
 
 Checking the tests locally

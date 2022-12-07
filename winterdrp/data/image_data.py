@@ -1,6 +1,59 @@
 """
 Module to specify the input data classes for
 :class:`winterdrp.processors.base_processor.ImageHandler`
+
+The basic idea of the code is to pass
+:class:`~winterdrp.data.base_data.DataBlock` objects
+through a series of :class:`~wintedrp.processors.BaseProcessor` objects.
+Since a given image can easily be ~10-100Mb, and there may be several hundred raw images
+from a typical survey in a given night, the total data volume for these processors
+could be several 10s of Gb or more. Storing these all in RAM would be very
+inefficient/slow for a typical laptop or many larger processing machines.
+
+To mitigate this, the code can be operated in **cache mode**. In that case,
+after raw images are loaded, only the header data is stored in memory.
+The actual image data itself is stored temporarily in as a npy file
+in a dedicated cache directory, and only loaded into memory when needed.
+When the data is updated, the npy file is changed.
+The path of the file is a unique hash, and includes the read time of the file,
+so multiple copies of an image can be read and modified independently.
+
+In cache mode, all of the image data is temporarily stored in a cache,
+and this cache can therefore reach the size of 10s of Gb.
+The location of the cache is in the configurable
+**output data directory**. This would increase linearly with successive code executions.
+To mitigate that, and to avoid cleaning the cache by hand,
+the code tries to automatically delete cache files as needed.
+
+Python provides a default `__del__()` method for handling clean up when an object
+is deleted. Images automatically delete their cache in this method. However, has a
+somewhat-complicated method of 'garbage collection' (see
+`the official description <https://devguide.python.org/internals/garbage-collector>`_
+for more info), and it is not guaranteed that Image objects will
+clean themselves.
+
+As a fallback, we provide the helper function to delete all cache files created
+during a session. When you run the code from the command line (and therefore call
+__main__), we automatically run the cleanup before exiting,
+even if the code crashes/raises errors. This is also true for the unit tests,
+as provided by the  base test class. **If you try to interact with the code in
+any other way, please be mindful of this behaviour, and ensure that you clean your
+cache in a responsible way!**
+
+If you don't like this feature, you don't need to use it. Cache mode is entirely
+optional, and can be disabled by setting the environment variable to false.
+
+.. literalinclude:: ../../winterdrp/paths.py
+    :lines: 29
+
+You can change this via an environment variable.
+
+.. code-block:: bash
+
+    export USE_WINTER_CACHE = false
+
+See :doc:`usage` for more information about selecting cache mode,
+and setting the output data directory.
 """
 import hashlib
 import logging

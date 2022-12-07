@@ -14,3 +14,10 @@ Data Structure
 .. include:: ../../winterdrp/data/base_data.py
     :start-line: 1
     :end-line: 15
+
+How does the code actually work?
+--------------------------------
+
+.. include:: ../../winterdrp/data/image_data.py
+    :start-line: 5
+    :end-line: 54
