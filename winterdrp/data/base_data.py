@@ -12,7 +12,7 @@ The :class:`~winterdrp.data.base_data.DataBatch` objects are stored within a lar
 :class:`~winterdrp.data.base_data.DataSet` object.
 A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
 :class:`~winterdrp.data.base_data.DataBatch` in a
-:class:`~winterdrp.data.base_data.DataSet`.
+:class:`~winterdrp.data.base_data.Dataset`.
 """
 import logging
 from pathlib import Path
