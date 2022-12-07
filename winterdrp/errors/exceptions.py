@@ -1,14 +1,39 @@
+"""
+Module containing common exceptions or base exceptions for the code.
+
+In general, all internal errors should inherit from the
+:class:`winterdrp.errors.exceptions.BaseProcessorError` class.
+
+If the error is critical (i.e the image should not be processed further), then an
+error should be raised which inherits from the
+:class:`winterdrp.errors.exceptions.ProcessorError` class.
+
+If the error is non-critical (so processing should continue), then an
+error should be raised which inherits from the
+:class:`winterdrp.errors.exceptions.NoncriticalProcessingError` class. In that case,
+processing will continue but the error will be logged.
+"""
+
+
 class BaseProcessorError(Exception):
-    pass
+    """
+    Base exception, from which all internal exceptions should derive
+    """
 
 
 class ProcessorError(BaseProcessorError):
-    pass
+    """
+    Base class for all critical internal exceptions
+    """
 
 
 class NoncriticalProcessingError(BaseProcessorError):
-    pass
+    """
+    Base class for all non-critical internal exceptions
+    """
 
 
 class ImageNotFoundError(ProcessorError, FileNotFoundError):
-    pass
+    """
+    Base class for all exceptions concerning missing images
+    """
