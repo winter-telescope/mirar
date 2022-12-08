@@ -1,10 +1,8 @@
 import logging
 import os
 
-import astropy
-from astropy.io import fits
-
 from winterdrp.catalog import Gaia2Mass
+from winterdrp.data import Image
 from winterdrp.pipelines.wirc.wirc_files import (
     psfex_path,
     sextractor_reference_config,
@@ -16,23 +14,23 @@ from winterdrp.references.wirc import WIRCRef
 logger = logging.getLogger(__name__)
 
 
-def wirc_astrometric_catalog_generator(header: astropy.io.fits.Header) -> Gaia2Mass:
+def wirc_astrometric_catalog_generator(*args) -> Gaia2Mass:
     return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30)
 
 
-def wirc_photometric_catalog_generator(header: astropy.io.fits.Header) -> Gaia2Mass:
-    filter_name = header["FILTER"]
+def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
+    filter_name = image["FILTER"]
     return Gaia2Mass(
         min_mag=10, max_mag=20, search_radius_arcmin=30, filter_name=filter_name
     )
 
 
 def wirc_reference_image_generator(
-    header: fits.header,
+    image: Image,
     images_directory: str = os.environ.get("REF_IMG_DIR"),
 ) -> WIRCRef:
-    object_name = header["OBJECT"]
-    filter_name = header["FILTER"]
+    object_name = image["OBJECT"]
+    filter_name = image["FILTER"]
     return WIRCRef(
         object_name=object_name,
         filter_name=filter_name,
@@ -60,5 +58,4 @@ def wirc_reference_psfex(output_sub_dir: str, norm_fits: bool) -> PSFex:
         config_path=psfex_path,
         output_sub_dir=output_sub_dir,
         norm_fits=norm_fits,
-        cache=True,
     )
