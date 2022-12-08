@@ -4,7 +4,6 @@ from abc import ABC
 
 import numpy as np
 
-from winterdrp.data import DataBatch
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.database.postgres import (
     DataBaseError,
@@ -36,10 +35,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         schema_dir: str = None,
         duplicate_protocol: str = "fail",
         q3c: bool = False,
-        *args,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.db_name = db_name
         self.db_table = db_table
         self.db_user = db_user

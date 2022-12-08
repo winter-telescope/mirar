@@ -7,7 +7,6 @@ import numpy as np
 from astropy.wcs import WCS
 
 from winterdrp.data import Image, ImageBatch
-from winterdrp.io import open_fits
 from winterdrp.paths import (
     base_name_key,
     get_output_dir,
@@ -35,10 +34,8 @@ class Reference(BaseImageProcessor):
         sextractor: Callable[..., Sextractor],
         ref_psfex: Callable[..., PSFex],
         temp_output_subtract_dir: str = "subtract",
-        *args,
-        **kwargs,
     ):
-        super(Reference, self).__init__(*args, **kwargs)
+        super().__init__()
         self.ref_image_generator = ref_image_generator
         self.swarp_resampler = swarp_resampler
         self.sextractor = sextractor
@@ -87,7 +84,7 @@ class Reference(BaseImageProcessor):
 
         new_batch = ImageBatch()
 
-        for ind, image in enumerate(batch):
+        for image in batch:
 
             ref_writer = self.ref_image_generator(image)
 
@@ -131,7 +128,6 @@ class Reference(BaseImageProcessor):
                 center_dec=sci_dec_cent,
                 propogate_headerlist=propogate_headerlist,
                 temp_output_sub_dir=self.temp_output_subtract_dir,
-                night_sub_dir=self.night_sub_dir,
                 include_scamp=False,
                 combine=False,
                 gain=ref_gain,
@@ -147,8 +143,8 @@ class Reference(BaseImageProcessor):
             self.save_fits(resampled_ref_img, resampled_ref_path)
 
             (
-                ref_resamp_x_cent,
-                ref_resamp_y_cent,
+                _,
+                _,
                 ref_resamp_ra_cent,
                 ref_resamp_dec_cent,
                 ref_resamp_pixscale,
@@ -166,7 +162,6 @@ class Reference(BaseImageProcessor):
                 center_dec=ref_resamp_dec_cent,
                 propogate_headerlist=propogate_headerlist,
                 temp_output_sub_dir=self.temp_output_subtract_dir,
-                night_sub_dir=self.night_sub_dir,
                 include_scamp=False,
                 combine=False,
                 gain=sci_gain,

@@ -22,7 +22,7 @@ repos:
         types: [python]
         args:
           [
-            "--disable=C",
+            "--disable=C,fixme",
             "-rn", # Only display messages
             "-sn", # Don't display the score
           ]

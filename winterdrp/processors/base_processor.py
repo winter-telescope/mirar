@@ -1,4 +1,6 @@
-import copy
+"""
+Module containing the :class:`~wintedrp.processors.BaseProcessor`
+"""
 import datetime
 import getpass
 import hashlib
@@ -10,7 +12,6 @@ from pathlib import Path
 from queue import Queue
 from threading import Thread
 
-import astropy.io.fits
 import numpy as np
 
 from winterdrp.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
@@ -38,34 +39,38 @@ logger = logging.getLogger(__name__)
 
 
 class PrerequisiteError(ProcessorError):
-    pass
+    """
+    An error raised if a processor requires another one as a prerequisite,
+    but that processor is not present
+    """
 
 
 class NoCandidatesError(ProcessorError):
-    pass
+    """
+    An error raised if a :class:`~wintedrp.processors.CandidateGenerator` produces
+    no candidates
+    """
 
 
-class BaseDPU:
-    def base_apply(self, dataset: Dataset) -> tuple[Dataset, ErrorStack]:
-        raise NotImplementedError()
+class BaseProcessor:
+    """
+    Base processor class, to be inherited from for all processors
+    """
 
-    def generate_error_report(
-        self, exception: Exception, batch: DataBatch
-    ) -> ErrorReport:
-        return ErrorReport(exception, self.__module__, batch.get_raw_image_names())
-
-
-class BaseProcessor(BaseDPU):
     @property
     def base_key(self):
+        """
+        Unique key for the processor, to be used e.g in processing history tracking
+
+        :return: None
+        """
         raise NotImplementedError
 
     max_n_cpu: int = max_n_cpu
 
     subclasses = {}
 
-    def __init__(self, *args, **kwargs):
-
+    def __init__(self):
         self.night = None
         self.night_sub_dir = None
         self.preceding_steps = None
@@ -77,14 +82,30 @@ class BaseProcessor(BaseDPU):
         cls.subclasses[cls.base_key] = cls
 
     def set_preceding_steps(self, previous_steps: list):
+        """
+        Provides processor with the list of preceding processors, and saves this
+
+        :param previous_steps: list of processors
+        :return: None
+        """
         self.preceding_steps = previous_steps
 
     def set_night(self, night_sub_dir: str | int = ""):
+        """
+        Sets the night subdirectory for the processor to read/write data
+
+        :param night_sub_dir: String/int subdirectory for night
+        :return: None
+        """
         self.night_sub_dir = night_sub_dir
         self.night = night_sub_dir.split("/")[-1]
 
-    @staticmethod
-    def update_dataset(dataset: Dataset) -> Dataset:
+    def generate_error_report(
+        self, exception: Exception, batch: DataBatch
+    ) -> ErrorReport:
+        return ErrorReport(exception, self.__module__, batch.get_raw_image_names())
+
+    def update_dataset(self, dataset: Dataset) -> Dataset:
         return dataset
 
     def check_prerequisites(
@@ -93,9 +114,20 @@ class BaseProcessor(BaseDPU):
         pass
 
     def clean_cache(self):
+        """
+        Function to clean the internal cache filled by base_apply
+
+        :return: None
+        """
         self.passed_dataset = self.err_stack = None
 
     def base_apply(self, dataset: Dataset) -> tuple[Dataset, ErrorStack]:
+        """
+        Core function to act on a dataset, and return an updated dataset
+
+        :param dataset: Input dataset
+        :return: Updated dataset, and any caught errors
+        """
 
         self.passed_dataset = Dataset()
         self.err_stack = ErrorStack()
@@ -108,7 +140,7 @@ class BaseProcessor(BaseDPU):
 
             workers = []
 
-            for i in range(n_cpu):
+            for _ in range(n_cpu):
                 # Set up a worker thread to process database load
                 worker = Thread(target=self.apply_to_batch, args=(watchdog_queue,))
                 worker.daemon = True
@@ -116,7 +148,7 @@ class BaseProcessor(BaseDPU):
 
                 workers.append(worker)
 
-            for i, batch in enumerate(dataset):
+            for batch in dataset:
                 watchdog_queue.put(item=batch)
 
             watchdog_queue.join()
@@ -128,35 +160,64 @@ class BaseProcessor(BaseDPU):
 
         return dataset, err_stack
 
-    def apply_to_batch(self, q):
+    def apply_to_batch(self, queue):
+        """
+        Function to run self.apply on a batch in the queue, catch any errors, and then
+        update the internal cache with the results.
+
+        :param queue: python threading queue
+        :return: None
+        """
         while True:
-            batch = q.get()
+            batch = queue.get()
             try:
                 batch = self.apply(batch)
                 self.passed_dataset.append(batch)
-            except NoncriticalProcessingError as e:
-                err = self.generate_error_report(e, batch)
+            except NoncriticalProcessingError as exc:
+                err = self.generate_error_report(exc, batch)
                 logger.error(err.generate_log_message())
                 self.err_stack.add_report(err)
                 self.passed_dataset.append(batch)
-            except Exception as e:
-                err = self.generate_error_report(e, batch)
+            except Exception as exc:  # pylint: disable=broad-except
+                err = self.generate_error_report(exc, batch)
                 logger.error(err.generate_log_message())
                 self.err_stack.add_report(err)
-            q.task_done()
+            queue.task_done()
 
     def apply(self, batch: DataBatch):
+        """
+        Function applying the processor to a
+        :class:`~winterdrp.data.base_data.DataBatch`.
+        Also updates the processing history.
+
+        :param batch: input data batch
+        :return: updated data batch
+        """
         batch = self._apply(batch)
         batch = self._update_processing_history(batch)
         return batch
 
-    def _apply(self, batch: DataBatch):
+    def _apply(self, batch: DataBatch) -> DataBatch:
+        """
+        Core function to update the :class:`~winterdrp.data.base_data.DataBatch`
+
+        :param batch: Input data batch
+        :return: updated data batch
+        """
         raise NotImplementedError
 
     def _update_processing_history(
         self,
         batch: DataBatch,
     ) -> DataBatch:
+        """
+        Function to update the processing history of each
+        :class:`~winterdrp.data.base_data.DataBlock` object in a
+        :class:`~winterdrp.data.base_data.DataBatch`.
+
+        :param batch: Input data batch
+        :return: Updated data batch
+        """
         for i, data_block in enumerate(batch):
             data_block[proc_history_key] += self.base_key + ","
             data_block["REDUCER"] = getpass.getuser()
@@ -227,11 +288,11 @@ class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
 class ProcessorWithCache(BaseImageProcessor, ABC):
     def __init__(
         self,
+        *args,
         try_load_cache: bool = True,
         write_to_cache: bool = True,
         overwrite: bool = True,
         cache_sub_dir: str = cal_output_sub_dir,
-        *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -272,13 +333,11 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
             logger.info(f"Loading cached file {path}")
             return self.open_fits(path)
 
-        else:
+        image = self.make_image(images)
 
-            image = self.make_image(images)
-
-            if self.write_to_cache:
-                if np.sum([not exists, self.overwrite]) > 0:
-                    self.save_fits(image, path)
+        if self.write_to_cache:
+            if np.sum([not exists, self.overwrite]) > 0:
+                self.save_fits(image, path)
 
         return image
 

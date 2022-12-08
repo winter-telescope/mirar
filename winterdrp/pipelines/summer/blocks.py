@@ -1,11 +1,12 @@
 """
-Script containing the various :class:`~winterdrp.processors.base_processor.BaseProcessor`
+Script containing the various
+:class:`~winterdrp.processors.base_processor.BaseProcessor`
 lists which are used to build configurations for the
 :class:`~winterdrp.pipelines.summer.summer_pipeline.SummerPipeline`.
 """
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import base_name_key, core_fields
-from winterdrp.pipelines.summer.config import (
+from winterdrp.pipelines.summer.config import (  # summer_weight_path,
     DB_NAME,
     PIPELINE_NAME,
     SUMMER_PIXEL_SCALE,
@@ -17,7 +18,6 @@ from winterdrp.pipelines.summer.config import (
     sextractor_photometry_config,
     summer_cal_requirements,
     summer_mask_path,
-    summer_weight_path,
     swarp_config_path,
 )
 from winterdrp.pipelines.summer.config.schema import summer_schema_dir
@@ -150,7 +150,8 @@ process_raw = [
     ImageSaver(output_dir_name="detrend", write_mask=True),
     Sextractor(
         output_sub_dir="sextractor",
-        weight_image=summer_weight_path,
+        # TODO: work out why this was ever here...
+        # weight_image=summer_weight_path,
         checkimage_name=None,
         checkimage_type=None,
         **sextractor_astrometry_config
@@ -159,7 +160,11 @@ process_raw = [
         ref_catalog_generator=summer_astrometric_catalog_generator,
         scamp_config_path=scamp_path,
     ),
-    Swarp(swarp_config_path=swarp_config_path, imgpixsize=2400),
+    Swarp(
+        swarp_config_path=swarp_config_path,
+        # TODO: work out why this was ever here...
+        # imgpixsize=2400
+    ),
     ImageSaver(output_dir_name="processed", write_mask=True),
     Sextractor(
         output_sub_dir="photprocess",
@@ -168,7 +173,10 @@ process_raw = [
     ),
     PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
     ImageSaver(
-        output_dir_name="processed", additional_headers=["PROCIMG"], write_mask=True
+        output_dir_name="processed",
+        # TODO: work out why this was ever here...
+        # additional_headers=["PROCIMG"],
+        write_mask=True,
     ),
     HeaderEditor(edit_keys="procflag", values=1),
     DatabaseImageExporter(

@@ -1,7 +1,6 @@
 import logging
 import os
 
-import astropy.io.fits
 import numpy as np
 from astropy.io import fits
 
@@ -34,8 +33,8 @@ def run_psfex(
 
     if norm_psf_output_name is not None:
         psf_path = sextractor_cat_path.replace(".cat", ".psf")
-        with fits.open(psf_path) as f:
-            psf_model_data = f[1].data[0][0][0]
+        with fits.open(psf_path) as data_file:
+            psf_model_data = data_file[1].data[0][0][0]
         psf_model_data = psf_model_data / np.sum(psf_model_data)
         psf_model_hdu = fits.PrimaryHDU(psf_model_data)
         psf_model_hdu.writeto(norm_psf_output_name, overwrite=True)
@@ -49,18 +48,16 @@ class PSFex(BaseImageProcessor):
         config_path: str = None,
         output_sub_dir: str = "psf",
         norm_fits: bool = True,
-        *args,
-        **kwargs,
     ):
-        super(PSFex, self).__init__(*args, **kwargs)
+        super().__init__()
         self.config_path = config_path
         self.output_sub_dir = output_sub_dir
         self.norm_fits = norm_fits
 
     def __str__(self) -> str:
         return (
-            f"Processor to apply PSFEx to images, measuring the PSF of detected sources "
-            f"and saving these to the '{self.output_sub_dir}' directory."
+            f"Processor to apply PSFEx to images, measuring the PSF of detected "
+            f"sources and saving these to the '{self.output_sub_dir}' directory."
         )
 
     def get_psfex_output_dir(self):
@@ -88,7 +85,6 @@ class PSFex(BaseImageProcessor):
 
             image[psfex_header_key] = psf_path
             image[norm_psfex_header_key] = norm_psf_path
-            # assert False
         return batch
 
     def check_prerequisites(

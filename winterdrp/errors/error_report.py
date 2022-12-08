@@ -7,6 +7,7 @@ raised by the code.
 import logging
 import traceback
 from datetime import datetime
+from pathlib import Path
 
 from winterdrp.errors.exceptions import BaseProcessorError, NoncriticalProcessingError
 
@@ -18,7 +19,9 @@ class ErrorReport:
     Class representing a single error raised during processing
     """
 
-    def __init__(self, error, processor_name, contents: list[str]):
+    def __init__(
+        self, error: Exception, processor_name: str, contents: list[str] | list[Path]
+    ):
         self.error = error
         self.processor_name = processor_name
         self.contents = contents

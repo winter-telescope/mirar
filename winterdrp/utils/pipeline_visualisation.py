@@ -1,4 +1,7 @@
-import argparse
+"""
+Module for generating visualisations of
+:class:`~winterdrp.pipeline.base_pipeline.Pipeline` objects.
+"""
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -18,13 +21,29 @@ logger = logging.getLogger(__name__)
 
 
 def get_save_path(pipeline: str, configs: str) -> Path:
+    """
+    Get output save path for a pipeline diagram
+
+    :param pipeline: Pipeline ised
+    :param configs: Configs used
+    :return: path to save
+    """
     return doc_dir.joinpath(f"flowcharts/{pipeline}/{configs}.png")
 
 
 def flowify(processor_list: list[BaseProcessor], output_path: Path):
+    """
+    Function to generate a diagram summarising all
+    :class:`~wintedrp.processors.BaseProcessor` objects
+    in a given pipeline configuration
+
+    :param processor_list: list of processors to visualise
+    :param output_path: Path to save diagram
+    :return: None
+    """
 
     plt.figure(figsize=(12.0, 2.0 + 0.3 * len(processor_list)), dpi=300.0)
-    ax = plt.subplot(111)
+    plt.subplot(111)
 
     y_scale = 1.0 / float(len(processor_list))
 
@@ -97,22 +116,29 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
 
 
 def iterate_flowify(config: str | list[str] = None, pipelines: str | list[str] = None):
+    """
+    Function to iterate the visualisation of all configurations and pipelines
+
+    :param config: config(s) to visualise (default of all)
+    :param pipelines: pipeline(s) to visualise
+    :return: None
+    """
     if pipelines is None:
         pipelines = Pipeline.pipelines.keys()
     elif not isinstance(pipelines, list):
-        pipelines = [args.pipeline]
+        pipelines = [pipelines]
 
     if config is None:
-        gc = "default"
+        selected_config = "default"
     else:
-        gc = config
+        selected_config = config
 
     for pipeline in pipelines:
 
         pipe = get_pipeline(
             pipeline,
-            selected_configurations=gc,
-            night=str(datetime.now()).split(" ")[0].replace("-", ""),
+            selected_configurations=selected_config,
+            night=str(datetime.now()).split(" ", maxsplit=1)[0].replace("-", ""),
         )
 
         if config is None:
@@ -120,23 +146,8 @@ def iterate_flowify(config: str | list[str] = None, pipelines: str | list[str] =
         else:
             config_list = pipe.selected_configurations
 
-        for c in config_list:
-            flowify(pipe.set_configuration(c), get_save_path(pipeline, c))
-
-
-if __name__ == "__main__":
-
-    logger.setLevel("INFO")
-
-    parser = argparse.ArgumentParser(
-        description="winterdrp: An automated image reduction pipeline, developed for WINTER"
-    )
-
-    parser.add_argument("-p", "--pipeline", default=None, help="Pipeline to be used")
-    parser.add_argument(
-        "-c", "--config", default=None, help="Pipeline configuration to be used"
-    )
-
-    args = parser.parse_args()
-
-    iterate_flowify(config=args.config, pipelines=args.pipeline)
+        for single_config in config_list:
+            flowify(
+                pipe.set_configuration(single_config),
+                get_save_path(pipeline, single_config),
+            )
