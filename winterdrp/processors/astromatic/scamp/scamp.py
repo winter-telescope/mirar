@@ -16,8 +16,8 @@ from winterdrp.paths import (
     get_untemp_path,
 )
 from winterdrp.processors.astromatic.sextractor.sextractor import (
+    SEXTRACTOR_HEADER_KEY,
     Sextractor,
-    sextractor_header_key,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor, ProcessorWithCache
 from winterdrp.utils import execute
@@ -53,10 +53,8 @@ class Scamp(BaseImageProcessor):
         ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],
         scamp_config_path: str,
         temp_output_sub_dir: str = "scamp",
-        *args,
-        **kwargs,
     ):
-        super(Scamp, self).__init__(*args, **kwargs)
+        super().__init__()
         self.scamp_config = scamp_config_path
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
@@ -100,7 +98,7 @@ class Scamp(BaseImageProcessor):
             for i, image in enumerate(batch):
 
                 temp_cat_path = copy_temp_file(
-                    output_dir=scamp_output_dir, file_path=image[sextractor_header_key]
+                    output_dir=scamp_output_dir, file_path=image[SEXTRACTOR_HEADER_KEY]
                 )
 
                 temp_img_path = get_temp_path(scamp_output_dir, image[base_name_key])

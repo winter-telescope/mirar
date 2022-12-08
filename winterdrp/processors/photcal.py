@@ -14,9 +14,9 @@ from winterdrp.data import ImageBatch
 from winterdrp.errors import ProcessorError
 from winterdrp.paths import copy_temp_file, get_output_dir
 from winterdrp.processors.astromatic.sextractor.sextractor import (
+    SEXTRACTOR_HEADER_KEY,
     Sextractor,
-    sextractor_checkimg_keys,
-    sextractor_header_key,
+    sextractor_checkimg_map,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor, PrerequisiteError
 from winterdrp.utils.ldac_tools import get_table_from_ldac
@@ -212,7 +212,7 @@ class PhotCalibrator(BaseImageProcessor):
             ref_catalog = self.ref_catalog_generator(image)
             ref_cat_path = ref_catalog.write_catalog(image, output_dir=phot_output_dir)
             temp_cat_path = copy_temp_file(
-                output_dir=phot_output_dir, file_path=image[sextractor_header_key]
+                output_dir=phot_output_dir, file_path=image[SEXTRACTOR_HEADER_KEY]
             )
 
             (
@@ -243,9 +243,9 @@ class PhotCalibrator(BaseImageProcessor):
             aperture_diameters.append(med_fwhm_pix)
             zp_values.append(image["ZP_AUTO"])
 
-            if sextractor_checkimg_keys["BACKGROUND_RMS"] in image.keys():
+            if sextractor_checkimg_map["BACKGROUND_RMS"] in image.keys():
                 limmags = self.get_maglim(
-                    image[sextractor_checkimg_keys["BACKGROUND_RMS"]],
+                    image[sextractor_checkimg_map["BACKGROUND_RMS"]],
                     zp_values,
                     np.array(aperture_diameters) / 2.0,
                 )

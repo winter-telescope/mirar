@@ -24,10 +24,8 @@ class ImageSaver(BaseImageProcessor):
         output_dir_name: str,
         write_mask: bool = True,
         output_dir: str = base_output_dir,
-        *args,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.output_dir_name = output_dir_name
         self.write_mask = write_mask
         self.output_dir = output_dir

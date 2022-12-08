@@ -119,10 +119,8 @@ class Swarp(BaseImageProcessor):
         combine: bool = False,
         cache: bool = False,
         subtract_bkg: bool = False,
-        *args,
-        **kwargs,
     ):
-        super(Swarp, self).__init__(*args, **kwargs)
+        super().__init__()
         self.swarp_config = swarp_config_path
         self.temp_output_sub_dir = temp_output_sub_dir
         self.pixscale = pixscale
