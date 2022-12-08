@@ -1,8 +1,9 @@
+"""
+Module to generate a CSV log of observations
+"""
 import logging
 import os
 
-import astropy.io.fits
-import numpy as np
 import pandas as pd
 
 from winterdrp.data import ImageBatch
@@ -11,33 +12,46 @@ from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
-default_keys = [base_name_key] + core_fields
+default_log_keys = [base_name_key] + core_fields
 
 
 class CSVLog(BaseImageProcessor):
+    """
+    Processor to generate a CSV log
+    """
 
     base_key = "csvlog"
 
     def __init__(
         self,
-        export_keys: list[str] = default_keys,
+        export_keys: list[str] = None,
         output_sub_dir: str = "",
         output_base_dir: str = None,
-        *args,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
+        if export_keys is None:
+            export_keys = default_log_keys
         self.export_keys = export_keys
         self.output_sub_dir = output_sub_dir
         self.output_base_dir = output_base_dir
 
     def __str__(self) -> str:
-        return f"Processor to create a CSV log summarising the image metadata."
+        return "Processor to create a CSV log summarising the image metadata."
 
-    def get_log_name(self):
+    def get_log_name(self) -> str:
+        """
+        Returns the custom log name
+
+        :return: Lof file name
+        """
         return f"{self.night}_log.csv"
 
-    def get_output_path(self):
+    def get_output_path(self) -> str:
+        """
+        Returns the full log output path
+
+        :return: log path
+        """
         output_base_dir = self.output_base_dir
         if output_base_dir is None:
             output_base_dir = self.night_sub_dir
