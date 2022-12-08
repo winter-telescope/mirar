@@ -1,8 +1,11 @@
+"""
+Module for running photometric calibration
+"""
 import logging
 import os
 from collections.abc import Callable
+from pathlib import Path
 
-import astropy.io.fits
 import astropy.units as u
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -10,7 +13,7 @@ from astropy.io import fits
 from astropy.stats import sigma_clip, sigma_clipped_stats
 
 from winterdrp.catalog.base_catalog import BaseCatalog
-from winterdrp.data import ImageBatch
+from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ProcessorError
 from winterdrp.paths import copy_temp_file, get_output_dir
 from winterdrp.processors.astromatic.sextractor.sextractor import (
@@ -37,31 +40,35 @@ REQUIRED_PARAMETERS = [
 
 
 class PhotometryError(ProcessorError):
-    pass
+    """Base error for photometric calibration"""
 
 
 class PhotometryReferenceError(PhotometryError):
-    pass
+    """Error related to the photometic reference catalogue"""
 
 
 class PhotometrySourceError(PhotometryError):
-    pass
+    """Error related to the photometic source catalogue"""
 
 
 class PhotometryCrossMatchError(PhotometryError):
-    pass
+    """Error related to cross-matching photometic reference and source catalogues"""
 
 
 class PhotometryCalculationError(PhotometryError):
-    pass
+    """Error related to the photometic calibration"""
 
 
 class PhotCalibrator(BaseImageProcessor):
+    """
+    Photometric calibrator processor
+    """
+
     base_key = "photcalibrator"
 
     def __init__(
         self,
-        ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],
+        ref_catalog_generator: Callable[[Image], BaseCatalog],
         temp_output_sub_dir: str = "phot",
         redo: bool = True,
         x_lower_limit: float = 100,
@@ -70,10 +77,8 @@ class PhotCalibrator(BaseImageProcessor):
         y_upper_limit: float = 2800,
         fwhm_threshold_arcsec: float = 4.0,
         num_matches_threshold: int = 5,
-        *args,
-        **kwargs,
     ):
-        super(PhotCalibrator, self).__init__(*args, **kwargs)
+        super().__init__()
         self.redo = redo  # What is this for?
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
@@ -81,15 +86,21 @@ class PhotCalibrator(BaseImageProcessor):
         self.x_upper_limit = x_upper_limit
         self.y_lower_limit = y_lower_limit
         self.y_upper_limit = y_upper_limit
-        self.fwhm_threshold_arcsec = (
-            fwhm_threshold_arcsec  # Why is this here not in catalog?
-        )
+
+        # Why is this here not in catalog?
+        self.fwhm_threshold_arcsec = fwhm_threshold_arcsec
+
         self.num_matches_threshold = num_matches_threshold
 
     def __str__(self) -> str:
-        return f"Processor to perform photometric calibration."
+        return "Processor to perform photometric calibration."
 
     def get_phot_output_dir(self):
+        """
+        Return the
+
+        :return:
+        """
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
     def calculate_zeropoint(self, ref_cat_path: str, img_cat_path: str) -> list[dict]:
@@ -126,7 +137,7 @@ class PhotCalibrator(BaseImageProcessor):
             logger.error(err)
             raise PhotometrySourceError(err)
 
-        idx, d2d, d3d = ref_coords.match_to_catalog_sky(clean_img_coords)
+        idx, d2d, _ = ref_coords.match_to_catalog_sky(clean_img_coords)
         match_mask = d2d < 1.0 * u.arcsec
         matched_ref_cat = ref_cat[match_mask]
         matched_img_cat = clean_img_cat[idx[match_mask]]
@@ -135,7 +146,10 @@ class PhotCalibrator(BaseImageProcessor):
         )
 
         if len(matched_img_cat) < self.num_matches_threshold:
-            err = f"Not enough cross-matched sources found to calculate a reliable zeropoint."
+            err = (
+                "Not enough cross-matched sources "
+                "found to calculate a reliable zeropoint."
+            )
             logger.error(err)
             raise PhotometryCrossMatchError(err)
 
@@ -215,14 +229,7 @@ class PhotCalibrator(BaseImageProcessor):
                 output_dir=phot_output_dir, file_path=image[SEXTRACTOR_HEADER_KEY]
             )
 
-            (
-                fwhm_med,
-                fwhm_mean,
-                fwhm_std,
-                med_fwhm_pix,
-                mean_fwhm_pix,
-                std_fwhm_pix,
-            ) = self.get_fwhm(temp_cat_path)
+            fwhm_med, _, fwhm_std, med_fwhm_pix, _, _ = self.get_fwhm(temp_cat_path)
             image["FWHM_MED"] = fwhm_med
             image["FWHM_STD"] = fwhm_std
 
@@ -231,9 +238,9 @@ class PhotCalibrator(BaseImageProcessor):
             aperture_diameters = []
             zp_values = []
             for zpvals in zp_dicts:
-                image["ZP_%s" % (zpvals["diameter"])] = zpvals["zp_mean"]
-                image["ZP_%s_std" % (zpvals["diameter"])] = zpvals["zp_std"]
-                image["ZP_%s_nstars" % (zpvals["diameter"])] = zpvals["nstars"]
+                image[f"ZP_{zpvals['diameter']}"] = zpvals["zp_mean"]
+                image[f"ZP_{zpvals['diameter']}_std"] = zpvals["zp_std"]
+                image[f"ZP_{zpvals['diameter']}_nstars"] = zpvals["nstars"]
                 try:
                     aperture_diameters.append(float(zpvals["diameter"]))
                     zp_values.append(zpvals["zp_mean"])
@@ -243,7 +250,7 @@ class PhotCalibrator(BaseImageProcessor):
             aperture_diameters.append(med_fwhm_pix)
             zp_values.append(image["ZP_AUTO"])
 
-            if sextractor_checkimg_map["BACKGROUND_RMS"] in image.keys():
+            if sextractor_checkimg_map["BACKGROUND_RMS"] in image:
                 limmags = self.get_maglim(
                     image[sextractor_checkimg_map["BACKGROUND_RMS"]],
                     zp_values,
@@ -277,18 +284,22 @@ class PhotCalibrator(BaseImageProcessor):
         return med_fwhm, mean_fwhm, std_fwhm, med_fwhm_pix, mean_fwhm_pix, std_fwhm_pix
 
     @staticmethod
-    def get_maglim(bkg_rms_image_path, zp, aperture_radius_pixels):
-        if isinstance(zp, float):
-            zp = [zp]
+    def get_maglim(
+        bkg_rms_image_path: str | Path,
+        zeropoint: float | list[float],
+        aperture_radius_pixels: float | list[float],
+    ) -> float:
+        if isinstance(zeropoint, float):
+            zeropoint = [zeropoint]
         if isinstance(aperture_radius_pixels, float):
             aperture_radius_pixels = [aperture_radius_pixels]
 
-        zp = np.array(zp, dtype=float)
+        zeropoint = np.array(zeropoint, dtype=float)
         aperture_radius_pixels = np.array(aperture_radius_pixels, dtype=float)
         bkg_rms_image = fits.getdata(bkg_rms_image_path)
         bkg_rms_med = np.nanmedian(bkg_rms_image)
         noise = bkg_rms_med * np.sqrt(np.pi * aperture_radius_pixels)
-        maglim = -2.5 * np.log10(5 * noise) + zp
+        maglim = -2.5 * np.log10(5 * noise) + zeropoint
         return maglim
 
     def get_sextractor_module(self) -> Sextractor:
@@ -312,9 +323,9 @@ class PhotCalibrator(BaseImageProcessor):
 
         logger.debug(f"Checking file {sextractor_param_path}")
 
-        with open(sextractor_param_path, "rb") as f:
+        with open(sextractor_param_path, "rb") as param_file:
             sextractor_params = [
-                x.strip().decode() for x in f.readlines() if len(x.strip()) > 0
+                x.strip().decode() for x in param_file.readlines() if len(x.strip()) > 0
             ]
             sextractor_params = [
                 x.split("(")[0] for x in sextractor_params if x[0] not in ["#"]
@@ -324,7 +335,8 @@ class PhotCalibrator(BaseImageProcessor):
             if param not in sextractor_params:
                 err = (
                     f"Missing parameter: {self.__module__} requires {param} to run, "
-                    f"but this parameter was not found in sextractor config file '{sextractor_param_path}' . "
+                    f"but this parameter was not found in sextractor config file "
+                    f"'{sextractor_param_path}' . "
                     f"Please add the parameter to this list!"
                 )
                 logger.error(err)
@@ -333,15 +345,18 @@ class PhotCalibrator(BaseImageProcessor):
     def get_sextractor_apetures(self) -> list[float]:
         sextractor_config_path = self.get_sextractor_module().config
 
-        with open(sextractor_config_path, "rb") as f:
+        with open(sextractor_config_path, "rb") as sextractor_config_file:
             apeture_lines = [
                 x.decode()
-                for x in f.readlines()
+                for x in sextractor_config_file.readlines()
                 if np.logical_and(b"PHOT_APERTURES" in x, x.decode()[0] != "#")
             ]
 
         if len(apeture_lines) > 1:
-            err = f"The config file {sextractor_config_path} has multiple entries for PHOT_APETURES."
+            err = (
+                f"The config file {sextractor_config_path} has "
+                f"multiple entries for PHOT_APETURES."
+            )
             logger.error(err)
             raise ProcessorError(err)
 

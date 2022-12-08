@@ -4,8 +4,6 @@ for SUMMER
 """
 import logging
 
-from astropy.io import fits
-
 from winterdrp.catalog import PS1, BaseCatalog, Gaia2Mass, SkyMapper
 from winterdrp.catalog.sdss import SDSS, NotInSDSSError, in_sdss
 from winterdrp.data.image_data import Image
@@ -38,7 +36,9 @@ def summer_astrometric_catalog_generator(image: Image) -> BaseCatalog:
 def summer_photometric_catalog_generator(image: Image) -> BaseCatalog:
     filter_name = image["FILTERID"]
     dec = image["DEC"]
+
     if filter_name in ["u", "U"]:
+
         if in_sdss(image["RA"], image["DEC"]):
             return SDSS(
                 min_mag=10,
@@ -46,21 +46,22 @@ def summer_photometric_catalog_generator(image: Image) -> BaseCatalog:
                 search_radius_arcmin=7.5,
                 filter_name=filter_name,
             )
-        elif dec < 0.0:
+
+        if dec < 0.0:
             return SkyMapper(
                 min_mag=10,
                 max_mag=20,
                 search_radius_arcmin=7.5,
                 filter_name=filter_name,
             )
-        else:
-            err = "U band image is in a field with no reference image."
-            logger.error(err)
-            raise NotInSDSSError(err)
-    else:
-        return PS1(
-            min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name
-        )
+
+        err = "U band image is in a field with no reference image."
+        logger.error(err)
+        raise NotInSDSSError(err)
+
+    return PS1(
+        min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name
+    )
 
 
 def summer_reference_image_generator(
@@ -68,12 +69,13 @@ def summer_reference_image_generator(
 ):
     filter_name = image["FILTER"]
     logger.info(f"Filter is {filter_name}")
+
     if filter_name in ["u", "U"]:
-        logger.info(f"Will query reference image from SDSS")
+        logger.info("Will query reference image from SDSS")
         return SDSSRef(filter_name=filter_name)
-    else:
-        logger.info(f"Will query reference image from PS1")
-        return PS1Ref(filter_name=filter_name)
+
+    logger.info("Will query reference image from PS1")
+    return PS1Ref(filter_name=filter_name)
 
 
 def summer_reference_image_resampler(**kwargs) -> Swarp:
@@ -94,5 +96,4 @@ def summer_reference_psfex(output_sub_dir, norm_fits):
         config_path=psfex_config_path,
         output_sub_dir=output_sub_dir,
         norm_fits=norm_fits,
-        cache=True,
     )
