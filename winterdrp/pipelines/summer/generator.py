@@ -38,6 +38,7 @@ def summer_photometric_catalog_generator(image: Image) -> BaseCatalog:
     dec = image["DEC"]
 
     if filter_name in ["u", "U"]:
+
         if in_sdss(image["RA"], image["DEC"]):
             return SDSS(
                 min_mag=10,
@@ -71,7 +72,6 @@ def summer_reference_image_generator(
 
     if filter_name in ["u", "U"]:
         logger.info("Will query reference image from SDSS")
-
         return SDSSRef(filter_name=filter_name)
 
     logger.info("Will query reference image from PS1")
