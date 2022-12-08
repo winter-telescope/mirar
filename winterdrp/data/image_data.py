@@ -1,6 +1,7 @@
 """
 
-Module to specify the input data classes for :class:`winterdrp.processors.base_processor.ImageHandler`
+Module to specify the input data classes for
+:class:`winterdrp.processors.base_processor.ImageHandler`
 
 """
 import logging
