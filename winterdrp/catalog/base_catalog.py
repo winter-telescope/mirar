@@ -115,6 +115,7 @@ class VizierCatalog(BaseCatalog, ABC):
             row_limit=-1,
         )
 
+        # pylint: disable=no-member
         query = v.query_region(
             SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
             radius=str(self.search_radius_arcmin) + "m",

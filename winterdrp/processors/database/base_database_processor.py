@@ -6,6 +6,8 @@ import numpy as np
 
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.database.postgres import (
+    PG_ADMIN_PWD_KEY,
+    PG_ADMIN_USER_KEY,
     DataBaseError,
     check_if_db_exists,
     check_if_table_exists,
@@ -15,8 +17,6 @@ from winterdrp.processors.database.postgres import (
     create_table,
     create_tables_from_schema,
     grant_privileges,
-    pg_admin_pwd_key,
-    pg_admin_user_key,
     run_sql_command_from_file,
 )
 
@@ -118,8 +118,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
                 )
 
                 if self.q3c:
-                    admin_user = os.environ.get(pg_admin_user_key)
-                    admin_password = os.environ.get(pg_admin_pwd_key)
+                    admin_user = os.environ.get(PG_ADMIN_USER_KEY)
+                    admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
                     q3c_dir = os.path.join(self.schema_dir, "q3c")
                     q3c_indexes_file = os.path.join(q3c_dir, "q3c_indexes.sql")
                     run_sql_command_from_file(
@@ -135,8 +135,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             if self.q3c:
                 q3c_dir = os.path.join(self.schema_dir, "q3c")
                 table_q3c_path = os.path.join(q3c_dir, f"q3c_{self.db_table}.sql")
-                admin_user = os.environ.get(pg_admin_user_key)
-                admin_password = os.environ.get(pg_admin_pwd_key)
+                admin_user = os.environ.get(PG_ADMIN_USER_KEY)
+                admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
                 if not os.path.exists(table_q3c_path):
                     err = f"q3c extension requested but no {table_q3c_path} file found. Please add it in."
                     logger.error(err)
