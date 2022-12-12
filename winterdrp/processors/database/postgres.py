@@ -1,3 +1,7 @@
+"""
+Module containing postgres util functions
+"""
+# pylint: disable=not-context-manager
 import logging
 import os
 from glob import glob
@@ -11,14 +15,12 @@ from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
 
-schema_dir = os.path.join(os.path.dirname(__file__), "schema")
-
-pg_admin_user_key = "PG_ADMIN_USER"
-pg_admin_pwd_key = "PG_ADMIN_PWD"
+PG_ADMIN_USER_KEY = "PG_ADMIN_USER"
+PG_ADMIN_PWD_KEY = "PG_ADMIN_PWD"
 
 
 class DataBaseError(ProcessorError):
-    pass
+    """Error relating to postgres interactions"""
 
 
 def validate_credentials(db_user: str, password: str, admin=False):
@@ -28,7 +30,7 @@ def validate_credentials(db_user: str, password: str, admin=False):
         env_user_var = "DB_USER"
         if admin:
             user = "admin_db_user"
-            env_user_var = pg_admin_user_key
+            env_user_var = PG_ADMIN_USER_KEY
         err = (
             f"'{user}' is set as None. Please pass a db_user as an argument, "
             f"or set the environment variable '{env_user_var}'. Using "
@@ -41,7 +43,7 @@ def validate_credentials(db_user: str, password: str, admin=False):
         env_pwd_var = "DB_PWD"
         if admin:
             pwd = "db_admin_password"
-            env_pwd_var = pg_admin_pwd_key
+            env_pwd_var = PG_ADMIN_PWD_KEY
         err = (
             f"'{pwd}' is set as None. Please pass a password as an argument, "
             f"or set the environment variable '{env_pwd_var}'."
@@ -51,8 +53,8 @@ def validate_credentials(db_user: str, password: str, admin=False):
 
 
 def create_db(db_name: str):
-    admin_user = os.environ.get(pg_admin_user_key)
-    admin_password = os.environ.get(pg_admin_pwd_key)
+    admin_user = os.environ.get(PG_ADMIN_USER_KEY)
+    admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
     validate_credentials(db_user=admin_user, password=admin_password)
 
     with psycopg.connect(
@@ -69,8 +71,8 @@ def run_sql_command_from_file(file_path, db_name, db_user, password, admin=False
     with psycopg.connect(
         f"dbname={db_name} user={db_user} password={password}"
     ) as conn:
-        with open(file_path, "r") as f:
-            conn.execute(f.read())
+        with open(file_path, "r", encoding="utf8") as sql_file:
+            conn.execute(sql_file.read())
 
         logger.info(f"Executed sql commands from file {file_path}")
 
@@ -82,15 +84,15 @@ def create_table(schema_path: str, db_name: str, db_user: str, password: str):
         f"dbname={db_name} user={db_user} password={password}"
     ) as conn:
         conn.autocommit = True
-        with open(schema_path, "r") as f:
-            conn.execute(f.read())
+        with open(schema_path, "r", encoding="utf8") as schema_file:
+            conn.execute(schema_file.read())
 
     logger.info(f"Created table from schema path {schema_path}")
 
 
 def create_new_user(new_db_user: str, new_password: str):
-    admin_user = os.environ.get(pg_admin_user_key)
-    admin_password = os.environ.get(pg_admin_pwd_key)
+    admin_user = os.environ.get(PG_ADMIN_USER_KEY)
+    admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
 
     validate_credentials(new_db_user, new_password)
     validate_credentials(db_user=admin_user, password=admin_password, admin=True)
@@ -104,8 +106,8 @@ def create_new_user(new_db_user: str, new_password: str):
 
 
 def grant_privileges(db_name: str, db_user: str):
-    admin_user = os.environ.get(pg_admin_user_key)
-    admin_password = os.environ.get(pg_admin_pwd_key)
+    admin_user = os.environ.get(PG_ADMIN_USER_KEY)
+    admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
     validate_credentials(admin_user, admin_password, admin=True)
 
     with psycopg.connect(
@@ -118,8 +120,8 @@ def grant_privileges(db_name: str, db_user: str):
 
 def check_if_user_exists(
     user_name: str,
-    db_user: str = os.environ.get(pg_admin_user_key),
-    password: str = os.environ.get(pg_admin_pwd_key),
+    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
+    password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ) -> bool:
     validate_credentials(db_user, password)
 
@@ -139,8 +141,8 @@ def check_if_user_exists(
 
 def check_if_db_exists(
     db_name: str,
-    db_user: str = os.environ.get(pg_admin_user_key),
-    password: str = os.environ.get(pg_admin_pwd_key),
+    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
+    password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ) -> bool:
     validate_credentials(db_user, password)
 
@@ -169,7 +171,10 @@ def check_if_table_exists(
         f"dbname={db_name} user={db_user} password={password}"
     ) as conn:
         conn.autocommit = True
-        command = """SELECT table_name FROM information_schema.tables WHERE table_schema='public';"""
+        command = (
+            "SELECT table_name FROM information_schema.tables "
+            "WHERE table_schema='public';"
+        )
         data = conn.execute(command).fetchall()
 
     existing_table_names = [x[0] for x in data]
@@ -177,7 +182,8 @@ def check_if_table_exists(
 
     table_exist_bool = db_table in existing_table_names
     logger.debug(
-        f"Database table '{db_table}' {['does not exist', 'already exists'][table_exist_bool]}"
+        f"Database table '{db_table}' "
+        f"{['does not exist', 'already exists'][table_exist_bool]}"
     )
 
     return table_exist_bool
@@ -185,10 +191,10 @@ def check_if_table_exists(
 
 def get_foreign_tables_list(schema_files: list[str]) -> np.ndarray:
     foreign_tables_list = []
-    for schema_file in schema_files:
+    for schema_file_path in schema_files:
         table_names = []
-        with open(schema_file, "r") as f:
-            schema = f.read()
+        with open(schema_file_path, "r", encoding="utf8") as schema_file:
+            schema = schema_file.read()
         if "FOREIGN KEY" not in schema:
             pass
         else:
@@ -232,8 +238,8 @@ def get_ordered_schema_list(schema_files: list[str]) -> list[str]:
 def create_tables_from_schema(
     schema_dir: str,
     db_name: str,
-    db_user: str = os.environ.get(pg_admin_user_key),
-    password: str = os.environ.get(pg_admin_pwd_key),
+    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
+    password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ):
     schema_files = glob(f"{schema_dir}/*.sql")
     ordered_schema_files = get_ordered_schema_list(schema_files)
@@ -248,8 +254,8 @@ def export_to_db(
     value_dict: dict | astropy.io.fits.Header,
     db_name: str,
     db_table: str,
-    db_user: str = os.environ.get(pg_admin_user_key),
-    password: str = os.environ.get(pg_admin_pwd_key),
+    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
+    password: str = os.environ.get(PG_ADMIN_PWD_KEY),
     duplicate_protocol: str = "fail",
 ) -> tuple[list, list]:
     with psycopg.connect(
@@ -271,12 +277,9 @@ def export_to_db(
         with conn.execute(sql_query) as cursor:
 
             primary_key = [x[0] for x in cursor.fetchall()]
-            serial_keys = [
-                x
-                for x in get_sequence_keys_from_table(
-                    db_table, db_name, db_user, password
-                )
-            ]
+            serial_keys = list(
+                get_sequence_keys_from_table(db_table, db_name, db_user, password)
+            )
             logger.debug(serial_keys)
             colnames = [
                 desc[0]
@@ -287,22 +290,22 @@ def export_to_db(
             ]
 
             colnames_str = ""
-            for x in colnames:
-                colnames_str += f'"{x}",'
+            for column in colnames:
+                colnames_str += f'"{column}",'
             colnames_str = colnames_str[:-1]
             txt = f"INSERT INTO {db_table} ({colnames_str}) VALUES ("
 
             for char in ["[", "]", "'"]:
                 txt = txt.replace(char, "")
 
-            for c in colnames:
-                txt += f"'{str(value_dict[c])}', "
+            for column in colnames:
+                txt += f"'{str(value_dict[column])}', "
 
             txt = txt + ") "
             txt = txt.replace(", )", ")")
 
             if len(serial_keys) > 0:
-                txt += f"RETURNING "
+                txt += "RETURNING "
                 for key in serial_keys:
                     txt += f"{key},"
                 txt += ";"
@@ -318,25 +321,32 @@ def export_to_db(
                 else:
                     serial_key_values = []
 
-            except errors.UniqueViolation:
+            except errors.UniqueViolation as exc:
                 primary_key_values = [value_dict[x] for x in primary_key]
+
                 if duplicate_protocol == "fail":
-                    err = f"Duplicate error, entry with {primary_key}={primary_key_values} already exists in {db_name}."
-                    logger.error(err)
-                    raise errors.UniqueViolation
-                elif duplicate_protocol == "ignore":
-                    logger.debug(
-                        f"Found duplicate entry with {primary_key}={primary_key_values} in {db_name}. Ignoring."
+                    err = (
+                        f"Duplicate error, entry with "
+                        f"{primary_key}={primary_key_values} "
+                        f"already exists in {db_name}."
                     )
-                    pass
+                    logger.error(err)
+                    raise errors.UniqueViolation from exc
+
+                if duplicate_protocol == "ignore":
+                    logger.debug(
+                        f"Found duplicate entry with "
+                        f"{primary_key}={primary_key_values} in {db_name}. Ignoring."
+                    )
                 elif duplicate_protocol == "replace":
                     logger.debug(
-                        f"Updating duplicate entry with {primary_key}={primary_key_values} in {db_name}."
+                        f"Updating duplicate entry with "
+                        f"{primary_key}={primary_key_values} in {db_name}."
                     )
                     update_colnames = []
-                    for x in colnames:
-                        if not x in primary_key:
-                            update_colnames.append(x)
+                    for column in colnames:
+                        if column not in primary_key:
+                            update_colnames.append(column)
                     serial_key_values = modify_db_entry(
                         db_query_columns=primary_key,
                         db_query_values=primary_key_values,
@@ -356,12 +366,17 @@ def parse_constraints(db_query_columns, db_comparison_types, db_accepted_values)
     assert len(db_comparison_types) == len(db_accepted_values)
     assert np.all(np.isin(np.unique(db_comparison_types), ["=", "<", ">", "between"]))
     constraints = ""
-    for i, x in enumerate(db_query_columns):
+    for i, column in enumerate(db_query_columns):
         if db_comparison_types[i] == "between":
             assert len(db_accepted_values[i]) == 2
-            constraints += f"{x} between {db_accepted_values[i][0]} and {db_accepted_values[i][1]} AND "
+            constraints += (
+                f"{column} between {db_accepted_values[i][0]} "
+                f"and {db_accepted_values[i][1]} AND "
+            )
         else:
-            constraints += f"{x} {db_comparison_types[i]} {db_accepted_values[i]} AND "
+            constraints += (
+                f"{column} {db_comparison_types[i]} " f"{db_accepted_values[i]} AND "
+            )
 
         constraints = constraints[:-4]  # strip the last AND
 
@@ -379,8 +394,8 @@ def import_from_db(
     db_accepted_values: str | int | float | list[str | float | int | list],
     db_output_columns: str | list[str],
     output_alias_map: str | list[str],
-    db_user: str = os.environ.get(pg_admin_user_key),
-    password: str = os.environ.get(pg_admin_pwd_key),
+    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
+    password: str = os.environ.get(PG_ADMIN_PWD_KEY),
     max_num_results: int = None,
     db_comparison_types: list[str] = None,
 ) -> list[dict]:
@@ -432,8 +447,6 @@ def import_from_db(
     constraints = parse_constraints(
         db_query_columns, db_comparison_types, db_accepted_values
     )
-    # constraints = " AND ".join([f"{x} {db_comparison_types[i]} {db_accepted_values[i]}" for i, x in enumerate(
-    # db_query_columns)])
 
     with psycopg.connect(
         f"dbname={db_name} user={db_user} password={password}"
@@ -447,7 +460,7 @@ def import_from_db(
         if max_num_results is not None:
             sql_query += f" LIMIT {max_num_results}"
 
-        sql_query += f";"
+        sql_query += ";"
 
         logger.debug(f"Query: {sql_query}")
 
@@ -458,7 +471,7 @@ def import_from_db(
 
             assert len(entry) == len(db_output_columns)
 
-            query_res = dict()
+            query_res = {}
 
             for i, key in enumerate(output_alias_map):
                 query_res[key] = entry[i]
@@ -497,10 +510,9 @@ def xmatch_import_db(
     q3c=False,
     db_comparison_types: list[str] = None,
     order_field_name: str = None,
-    order_ascending: bool = True,
     num_limit: int = None,
-    db_user: str = os.environ.get(pg_admin_user_key),
-    db_password: str = os.environ.get(pg_admin_pwd_key),
+    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
+    db_password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ) -> list[dict]:
 
     if output_alias_map is None:
@@ -511,13 +523,19 @@ def xmatch_import_db(
     xmatch_radius_deg = xmatch_radius_arcsec / 3600.0
 
     if q3c:
-        constraints = f"""q3c_radial_query({ra_field_name},{dec_field_name},{ra},{dec},{xmatch_radius_deg}) """
+        constraints = (
+            f"q3c_radial_query({ra_field_name},{dec_field_name},"
+            f"{ra},{dec},{xmatch_radius_deg}) "
+        )
     else:
         ra_min = ra - xmatch_radius_deg
         ra_max = ra + xmatch_radius_deg
         dec_min = dec - xmatch_radius_deg
         dec_max = dec + xmatch_radius_deg
-        constraints = f""" {ra_field_name} between {ra_min} and {ra_max} AND {dec_field_name} between {dec_min} and {dec_max} """
+        constraints = (
+            f" {ra_field_name} between {ra_min} and {ra_max} AND "
+            f"{dec_field_name} between {dec_min} and {dec_max} "
+        )
 
     parsed_constraints = parse_constraints(
         db_query_columns, db_comparison_types, db_accepted_values
@@ -536,7 +554,7 @@ def xmatch_import_db(
             select = f"""{ra_field_name} - ra AS xdist,""" + select
 
     query = f"""SELECT {select} FROM {db_table} WHERE {constraints}"""
-    order_seq = ["asc", "desc"][np.sum(order_ascending)]
+
     if order_field_name is not None:
         query += f""" ORDER BY {order_field_name}"""
     if num_limit is not None:
@@ -552,7 +570,7 @@ def xmatch_import_db(
             assert len(entry) == len(db_output_columns)
         else:
             assert len(entry) == len(db_output_columns) + 1
-        query_res = dict()
+        query_res = {}
         for i, key in enumerate(output_alias_map):
             query_res[key] = entry[i]
             if query_dist:
@@ -571,7 +589,7 @@ def get_sequence_keys_from_table(
         sequences = [
             x[0]
             for x in conn.execute(
-                f"SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';"
+                "SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';"
             ).fetchall()
         ]
         seq_tables = np.array([x.split("_")[0] for x in sequences])
@@ -589,8 +607,8 @@ def modify_db_entry(
     db_alter_columns: str | list[str],
     return_columns: str | list[str] = None,
     db_query_comparison_types: list[str] = None,
-    db_user: str = os.environ.get(pg_admin_user_key),
-    password: str = os.environ.get(pg_admin_pwd_key),
+    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
+    password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ):
     if not isinstance(db_query_columns, list):
         db_query_columns = [db_query_columns]
@@ -643,9 +661,9 @@ def modify_db_entry(
     return query_output
 
 
-def get_colnames_from_schema(schema_file):
-    with open(schema_file, "r") as f:
-        dat = f.read()
+def get_colnames_from_schema(schema_file_path):
+    with open(schema_file_path, "r", encoding="utf8") as schema_file:
+        dat = schema_file.read()
     dat = dat.split(");")[0]
     dat = dat.split("\n")[1:-1]
     pkstrip = [x.strip(",").split("PRIMARY KEY")[0].strip() for x in dat]

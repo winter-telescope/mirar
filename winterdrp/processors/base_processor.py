@@ -385,6 +385,6 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
 
     def _apply_to_candidates(
         self,
-        source_list: SourceBatch,
+        batch: SourceBatch,
     ) -> SourceBatch:
         raise NotImplementedError

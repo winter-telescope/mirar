@@ -648,6 +648,7 @@ def get_catalog_astroquery(
     logger.info(
         f"Querying {catalog} around {ra},{dec} and a radius {int(box_size_arcsec / 60)} arcminutes using - {v.columns}, {v.column_filters}"
     )
+    # pylint: disable=no-member
     result = v.query_region(
         crd, width=f"{int(box_size_arcsec / 60)}m", catalog=catalog_str
     )
