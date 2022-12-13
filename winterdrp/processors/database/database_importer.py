@@ -1,6 +1,7 @@
 import logging
 from abc import ABC
 from collections.abc import Callable
+from typing import Optional
 
 import astropy.io.fits
 import numpy as np
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 class BaseDatabaseImporter(BaseDatabaseProcessor, ABC):
     base_key = "dbimporter"
 
-    def __init__(self, boolean_match_key: str = None, *args, **kwargs):
+    def __init__(self, boolean_match_key: Optional[str] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.boolean_match_key = boolean_match_key
 
@@ -42,7 +43,7 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
     def __init__(
         self,
         db_output_columns: str | list[str],
-        output_alias_map: str | list[str] = None,
+        output_alias_map: Optional[str | list[str]] = None,
         update_header: Callable[
             [Header, list[dict]], Header
         ] = update_header_with_single_match,
@@ -114,11 +115,11 @@ class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor):
     def __init__(
         self,
         db_output_columns: str | list[str],
-        output_alias_map: str | list[str] = None,
+        output_alias_map: Optional[str | list[str]] = None,
         update_dataframe: Callable[
             [pd.DataFrame, list[list[dict]]], pd.DataFrame
         ] = update_dataframe_with_single_match,
-        max_num_results: int = None,
+        max_num_results: Optional[int] = None,
         *args,
         **kwargs,
     ):
@@ -190,7 +191,7 @@ class DatabaseXMatchImporter(DatabaseDataframeImporter, BaseDataframeProcessor):
         ] = update_xmatch_dataframe,
         ra_field_name: str = "ra",
         dec_field_name: str = "dec",
-        order_field_name: str = None,
+        order_field_name: Optional[str] = None,
         order_ascending: bool = False,
         q3c: bool = False,
         query_dist: bool = False,

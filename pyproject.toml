@@ -7,9 +7,9 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10,<3.12"
 astroplan = "^0.8"
-astropy = {extras = ["recommended"], version = "^5.1.1"}
+astropy = {extras = ["all"], version = "^5.1.1"}
 astroquery = "^0.4.6"
 avro-python3 = "~1.10.1"
 coveralls = {extras = ["toml"], version = "^3.3.1"}
@@ -35,6 +35,10 @@ black = "^22.10.0"
 pre-commit = "^2.20.0"
 isort = {extras = ["pyproject"], version = "^5.10.1"}
 pylint = "^2.15.7"
+mypy = "^0.991"
+types-requests = "^2.28.11.5"
+types-toml = "^0.10.8.1"
+pandas-stubs = "^1.5.2.221213"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.3.0"

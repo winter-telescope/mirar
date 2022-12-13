@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 from winterdrp.data import ImageBatch
 from winterdrp.paths import base_name_key, get_output_dir
@@ -17,10 +18,10 @@ class AutoAstrometry(BaseImageProcessor):
         self,
         temp_output_sub_dir: str = "autoastrometry",
         write_crosscheck_files: bool = False,
-        catalog: str = None,
-        pixel_scale: float = None,
+        catalog: Optional[str] = None,
+        pixel_scale: Optional[float] = None,
         inv: bool = False,
-        pa: float = None,
+        pa: Optional[float] = None,
         *args,
         **kwargs,
     ):

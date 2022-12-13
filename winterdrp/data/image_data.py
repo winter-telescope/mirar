@@ -58,6 +58,7 @@ and setting the output data directory.
 import hashlib
 import logging
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from astropy.io.fits import Header
@@ -206,7 +207,7 @@ class ImageBatch(DataBatch):
 
     data_type = Image
 
-    def __init__(self, batch: list[Image] | Image = None):
+    def __init__(self, batch: Optional[list[Image] | Image] = None):
         super().__init__(batch=batch)
 
     def append(self, item: Image):

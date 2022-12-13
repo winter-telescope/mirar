@@ -11,6 +11,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 
@@ -25,7 +26,7 @@ def send_gmail(
     email_text: str,
     email_sender: str = os.getenv("WATCHDOG_EMAIL"),
     email_password: str = os.getenv("WATCHDOG_EMAIL_PASSWORD"),
-    attachments: str | list[str] = None,
+    attachments: Optional[str | list[str]] = None,
     auto_compress: bool = True,
 ):
     """

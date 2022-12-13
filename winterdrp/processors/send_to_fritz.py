@@ -203,7 +203,7 @@ class SendToFritz(BaseDataframeProcessor):
 
         return response
 
-    def alert_post_source(self, alert: dict, group_ids: list[int] = None):
+    def alert_post_source(self, alert: dict, group_ids: Optional[list[int]] = None):
         """Add a new source to SkyPortal
 
         :param alert: dict of source info
@@ -419,7 +419,7 @@ class SendToFritz(BaseDataframeProcessor):
                 )
                 logger.error(response.json())
 
-    def make_photometry(self, alert, jd_start: float = None):
+    def make_photometry(self, alert, jd_start: Optional[float] = None):
         """
         Make a de-duplicated pandas.DataFrame with photometry of alert['objectId']
         Modified from Kowalksi (https://github.com/dmitryduev/kowalski)

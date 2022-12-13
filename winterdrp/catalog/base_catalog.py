@@ -1,6 +1,7 @@
 import logging
 import os
 from abc import ABC
+from typing import Optional
 
 import astropy.io.fits
 import astropy.table
@@ -178,7 +179,11 @@ class BaseXMatchCatalog:
 
 class BaseKowalskiXMatch(BaseXMatchCatalog):
     def __init__(
-        self, kowalski: Kowalski = None, max_time_ms: float = 10000, *args, **kwargs
+        self,
+        kowalski: Optional[Kowalski] = None,
+        max_time_ms: float = 10000,
+        *args,
+        **kwargs,
     ):
         super(BaseKowalskiXMatch, self).__init__(*args, **kwargs)
         self.max_time_ms = max_time_ms

@@ -3,6 +3,7 @@ Module to generate a CSV log of observations
 """
 import logging
 import os
+from typing import Optional
 
 import pandas as pd
 
@@ -24,9 +25,9 @@ class CSVLog(BaseImageProcessor):
 
     def __init__(
         self,
-        export_keys: list[str] = None,
+        export_keys: Optional[list[str]] = None,
         output_sub_dir: str = "",
-        output_base_dir: str = None,
+        output_base_dir: Optional[str] = None,
     ):
         super().__init__()
         if export_keys is None:

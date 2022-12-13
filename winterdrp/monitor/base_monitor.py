@@ -12,6 +12,7 @@ import warnings
 from pathlib import Path
 from queue import Queue
 from threading import Thread
+from typing import Optional
 from warnings import catch_warnings
 
 import numpy as np
@@ -71,9 +72,9 @@ class Monitor:
         self,
         night: str,
         pipeline: str,
-        cal_requirements: list[CalRequirement] = None,
+        cal_requirements: Optional[list[CalRequirement]] = None,
         realtime_configurations: str | list[str] = "default",
-        postprocess_configurations: str | list[str] = None,
+        postprocess_configurations: Optional[str | list[str]] = None,
         email_sender: str = os.getenv(watchdog_email_key),
         email_recipients: str | list = os.getenv(watchdog_recipient_key),
         midway_postprocess_hours: float = 16.0,

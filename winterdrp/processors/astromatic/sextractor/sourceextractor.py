@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 from winterdrp.processors.astromatic.config import astromatic_config_dir
 from winterdrp.utils import ExecutionError, execute
@@ -29,9 +30,9 @@ local_sextractor = True
 
 
 def parse_checkimage(
-    checkimage_type: str | list = None,
-    checkimage_name: str | list = None,
-    image: str = None,
+    checkimage_type: Optional[str | list] = None,
+    checkimage_name: Optional[str | list] = None,
+    image: Optional[str] = None,
 ):
     """Function to parse the "checkimage" component of Sextractor configuration.
 
@@ -111,18 +112,18 @@ def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
 def run_sextractor_single(
     img: str,
     output_dir: str,
-    catalog_name: str = None,
+    catalog_name: Optional[str] = None,
     config: str = default_config_path,
     parameters_name: str = default_param_path,
     filter_name: str = default_filter_name,
     starnnw_name: str = default_starnnw_path,
     saturation: float = default_saturation,
-    weight_image: str = None,
+    weight_image: Optional[str] = None,
     verbose_type: str = "QUIET",
-    checkimage_name: str | list = None,
-    checkimage_type: str | list = None,
-    gain: float = None,
-    mag_zp: float = None,
+    checkimage_name: Optional[str | list] = None,
+    checkimage_type: Optional[str | list] = None,
+    gain: Optional[float] = None,
+    mag_zp: Optional[float] = None,
 ):
     if catalog_name is None:
         image_name = Path(img).stem
@@ -174,18 +175,18 @@ def run_sextractor_dual(
     det_image: str,
     measure_image: str,
     output_dir: str,
-    catalog_name: str = None,
+    catalog_name: Optional[str] = None,
     config: str = default_config_path,
     parameters_name: str = default_param_path,
     filter_name: str = default_filter_name,
     starnnw_name: str = default_starnnw_path,
     saturation: float = default_saturation,
-    weight_image: str = None,
+    weight_image: Optional[str] = None,
     verbose_type: str = "QUIET",
-    checkimage_name: str | list = None,
-    checkimage_type: str | list = None,
-    gain: float = None,
-    mag_zp: float = None,
+    checkimage_name: Optional[str | list] = None,
+    checkimage_type: Optional[str | list] = None,
+    gain: Optional[float] = None,
+    mag_zp: Optional[float] = None,
 ):
     if catalog_name is None:
         image_name = Path(measure_image).stem

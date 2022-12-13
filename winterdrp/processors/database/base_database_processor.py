@@ -1,6 +1,7 @@
 import logging
 import os
 from abc import ABC
+from typing import Optional
 
 import numpy as np
 
@@ -32,7 +33,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         db_user: str = os.environ.get("DB_USER"),
         db_password: str = os.environ.get("DB_PWD"),
         full_setup: bool = False,
-        schema_dir: str = None,
+        schema_dir: Optional[str] = None,
         duplicate_protocol: str = "fail",
         q3c: bool = False,
     ):

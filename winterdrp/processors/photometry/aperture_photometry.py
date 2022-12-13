@@ -1,3 +1,5 @@
+from typing import Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -13,11 +15,11 @@ from winterdrp.processors.photometry.utils import make_cutouts
 class AperturePhotometry(BaseDataframeProcessor):
     def __init__(
         self,
-        aper_diameters: list[float] = None,
+        aper_diameters: Optional[list[float]] = None,
         cutout_size_aper_phot: float = 30,
-        bkg_in_diameters: list[float] = None,
-        bkg_out_diameters: list[float] = None,
-        col_suffix_list: list[str] = None,
+        bkg_in_diameters: Optional[list[float]] = None,
+        bkg_out_diameters: Optional[list[float]] = None,
+        col_suffix_list: Optional[list[str]] = None,
         *args,
         **kwargs,
     ):

@@ -30,6 +30,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from typing import Optional
 
 import astropy.units as u
 import ephem
@@ -280,7 +281,7 @@ def get_img_src_list(
     max_ellip: float = 0.5,
     saturation: float = default_saturation,
     config_path: str = default_config_path,
-    output_catalog: str = None,
+    output_catalog: Optional[str] = None,
     write_crosscheck_files: bool = False,
 ) -> list[SextractorSource]:
     if output_catalog is None:
@@ -479,7 +480,7 @@ def get_catalog(
     dec: float,
     box_size_arcsec: float,
     min_mag: float = 8.0,
-    max_mag: float = None,
+    max_mag: Optional[float] = None,
     max_pm: float = 60.0,
 ) -> list[BaseSource]:
     # Get catalog from USNO
@@ -599,7 +600,7 @@ def get_catalog_astroquery(
     dec: float,
     box_size_arcsec: float,
     min_mag: float = 8.0,
-    max_mag: float = None,
+    max_mag: Optional[float] = None,
     max_pm: float = 60.0,
 ):
     ra_col_key, dec_col_key, mag_col_key, catalog_str, pm_ra_key, pm_dec_key = (
@@ -686,7 +687,7 @@ def distance_match(
     tolerance: float = 0.010,
     req_match: int = 3,
     pa_tolerance: float = 1.2,
-    unc_pa: float = None,
+    unc_pa: Optional[float] = None,
     write_crosscheck_files: bool = False,
 ) -> tuple[list[int], list[int], list[float]]:
     if tolerance <= 0:
@@ -1106,7 +1107,10 @@ def write_text_file(file_path: str, src_list: list[BaseSource]):
 
 
 def write_region_file(
-    file_path: str, src_list: list[BaseSource], color: str = "green", system: str = None
+    file_path: str,
+    src_list: list[BaseSource],
+    color: str = "green",
+    system: Optional[str] = None,
 ):
     if system is None:
         system = "wcs"
@@ -1142,11 +1146,11 @@ def write_region_file(
 def parse_header(
     file_path: str,
     temp_path: str,
-    pixel_scale: float = None,
-    pa: float = None,
+    pixel_scale: Optional[float] = None,
+    pa: Optional[float] = None,
     inv: bool = False,
-    user_ra_deg: float = None,
-    user_dec_deg: float = None,
+    user_ra_deg: Optional[float] = None,
+    user_dec_deg: Optional[float] = None,
 ):
     sci_ext = 0
 
@@ -1611,21 +1615,21 @@ def export_src_lists(
 ############################################
 def autoastrometry(
     filename: str,
-    pixel_scale: float = None,
-    pa: float = None,
+    pixel_scale: Optional[float] = None,
+    pa: Optional[float] = None,
     inv: bool = False,
-    unc_pa: float = None,
-    user_ra_deg: float = None,
-    user_dec_deg: float = None,
+    unc_pa: Optional[float] = None,
+    user_ra_deg: Optional[float] = None,
+    user_dec_deg: Optional[float] = None,
     max_ellip: float = 0.5,
-    box_size_arcsec: float = None,
-    max_rad: float = None,
+    box_size_arcsec: Optional[float] = None,
+    max_rad: Optional[float] = None,
     tolerance: float = default_tolerance,
-    catalog: str = None,
+    catalog: Optional[str] = None,
     overwrite: bool = True,
     outfile: str = "",
     output_dir: str = base_output_dir,
-    temp_file: str = None,
+    temp_file: Optional[str] = None,
     saturation: float = default_saturation,
     no_rot: bool = False,
     min_fwhm: float = default_min_fwhm,
@@ -2068,20 +2072,20 @@ def autoastrometry(
 
 def run_autoastrometry_single(
     img_path: str,
-    seeing: float = None,
-    pixel_scale: float = None,
-    pa: float = None,
-    uncpa: float = None,
+    seeing: Optional[float] = None,
+    pixel_scale: Optional[float] = None,
+    pa: Optional[float] = None,
+    uncpa: Optional[float] = None,
     inv: bool = False,
-    user_ra: float = None,
-    user_dec: float = None,
+    user_ra: Optional[float] = None,
+    user_dec: Optional[float] = None,
     max_ellip: float = 0.5,
-    box_size: float = None,
-    max_rad: float = None,
+    box_size: Optional[float] = None,
+    max_rad: Optional[float] = None,
     tolerance: float = default_tolerance,
-    catalog: str = None,
+    catalog: Optional[str] = None,
     overwrite: bool = False,
-    outfile: str = None,
+    outfile: Optional[str] = None,
     output_dir: str = base_output_dir,
     saturation: float = default_saturation,
     no_rot: bool = False,
@@ -2128,20 +2132,20 @@ def run_autoastrometry_single(
 
 def run_autoastrometry_batch(
     files: str | list[str],
-    seeing: float = None,
-    pixel_scale: float = None,
-    pa: float = None,
-    uncpa: float = None,
+    seeing: Optional[float] = None,
+    pixel_scale: Optional[float] = None,
+    pa: Optional[float] = None,
+    uncpa: Optional[float] = None,
     inv: bool = False,
-    user_ra: float = None,
-    user_dec: float = None,
+    user_ra: Optional[float] = None,
+    user_dec: Optional[float] = None,
     max_ellip: float = 0.5,
-    box_size: float = None,
-    max_rad: float = None,
+    box_size: Optional[float] = None,
+    max_rad: Optional[float] = None,
     tolerance: float = default_tolerance,
-    catalog: str = None,
+    catalog: Optional[str] = None,
     overwrite: bool = False,
-    outfile: str = None,
+    outfile: Optional[str] = None,
     output_dir: str = base_output_dir,
     saturation: float = default_saturation,
     no_rot: bool = False,

@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 import astropy.io.fits
 import numpy as np
@@ -25,16 +26,16 @@ def run_swarp(
     stack_list_path: str,
     swarp_config_path: str,
     out_path: str,
-    weight_list_path: str = None,
-    weight_out_path: str = None,
-    pixscale: float = None,
-    x_imgpixsize: float = None,
-    y_imgpixsize: float = None,
-    propogate_headerlist: list = None,
-    center_ra: float = None,
-    center_dec: float = None,
+    weight_list_path: Optional[str] = None,
+    weight_out_path: Optional[str] = None,
+    pixscale: Optional[float] = None,
+    x_imgpixsize: Optional[float] = None,
+    y_imgpixsize: Optional[float] = None,
+    propogate_headerlist: Optional[list] = None,
+    center_ra: Optional[float] = None,
+    center_dec: Optional[float] = None,
     combine: bool = True,
-    gain: float = None,
+    gain: Optional[float] = None,
     subtract_bkg: bool = False,
 ):  # resample and stack images with swarp
     """
@@ -108,13 +109,13 @@ class Swarp(BaseImageProcessor):
         self,
         swarp_config_path: str,
         temp_output_sub_dir: str = "swarp",
-        pixscale: float = None,
-        x_imgpixsize: float = None,
-        y_imgpixsize: float = None,
-        propogate_headerlist: list = None,
-        center_ra: float = None,
-        center_dec: float = None,
-        gain: float = None,
+        pixscale: Optional[float] = None,
+        x_imgpixsize: Optional[float] = None,
+        y_imgpixsize: Optional[float] = None,
+        propogate_headerlist: Optional[list] = None,
+        center_ra: Optional[float] = None,
+        center_dec: Optional[float] = None,
+        gain: Optional[float] = None,
         include_scamp: bool = True,
         combine: bool = False,
         cache: bool = False,

@@ -5,6 +5,7 @@ Module containing postgres util functions
 import logging
 import os
 from glob import glob
+from typing import Optional
 
 import astropy.io.fits
 import numpy as np
@@ -396,8 +397,8 @@ def import_from_db(
     output_alias_map: str | list[str],
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
-    max_num_results: int = None,
-    db_comparison_types: list[str] = None,
+    max_num_results: Optional[int] = None,
+    db_comparison_types: Optional[list[str]] = None,
 ) -> list[dict]:
     """Query an SQL database with constraints, and return a list of dictionaries.
     One dictionary per entry returned from the query.
@@ -508,9 +509,9 @@ def xmatch_import_db(
     dec_field_name: str = "dec",
     query_dist=False,
     q3c=False,
-    db_comparison_types: list[str] = None,
-    order_field_name: str = None,
-    num_limit: int = None,
+    db_comparison_types: Optional[list[str]] = None,
+    order_field_name: Optional[str] = None,
+    num_limit: Optional[int] = None,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     db_password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ) -> list[dict]:
@@ -605,8 +606,8 @@ def modify_db_entry(
     db_query_values: str | int | float | list[str | float | int | list],
     value_dict: dict | astropy.io.fits.Header,
     db_alter_columns: str | list[str],
-    return_columns: str | list[str] = None,
-    db_query_comparison_types: list[str] = None,
+    return_columns: Optional[str | list[str]] = None,
+    db_query_comparison_types: Optional[list[str]] = None,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ):

@@ -16,7 +16,7 @@ A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
 """
 import logging
 from pathlib import Path
-from typing import Type
+from typing import Optional, Type
 
 from winterdrp.paths import base_name_key, raw_img_key
 
@@ -175,7 +175,7 @@ class DataBatch(PseudoList):
     def data_type(self) -> Type[DataBlock]:
         raise NotImplementedError()
 
-    def __init__(self, batch: list[DataBlock] | DataBlock = None):
+    def __init__(self, batch: Optional[list[DataBlock] | DataBlock] = None):
         super().__init__(data_list=batch)
 
     def get_batch(self) -> list[DataBlock]:
@@ -214,7 +214,7 @@ class Dataset(PseudoList):
         """
         return self.get_data_list()
 
-    def __init__(self, batches: list[DataBatch] | DataBatch = None):
+    def __init__(self, batches: Optional[list[DataBatch] | DataBatch] = None):
         super().__init__(data_list=batches)
 
     def append(self, item: DataBatch):

@@ -8,6 +8,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
+from typing import Optional
 
 from winterdrp.data import ImageBatch
 from winterdrp.paths import (
@@ -54,12 +55,12 @@ class Sextractor(BaseImageProcessor):
         starnnw_path: str,
         saturation: float = default_saturation,
         verbose_type: str = "QUIET",
-        checkimage_name: str | list = None,
-        checkimage_type: str | list = None,
-        gain: float = None,
+        checkimage_name: Optional[str | list] = None,
+        checkimage_type: Optional[str | list] = None,
+        gain: Optional[float] = None,
         dual: bool = False,
         cache: bool = False,
-        mag_zp: float = None,
+        mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
     ):
         # pylint: disable=too-many-arguments

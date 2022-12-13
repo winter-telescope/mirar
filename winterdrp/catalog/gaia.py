@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import astropy.table
 import astropy.units as u
@@ -22,7 +23,7 @@ class Gaia2Mass(BaseCatalog):
         filter_name: str = "j",
         ph_qual_cut: bool = False,
         trim: bool = False,
-        image_catalog_path: str = None,
+        image_catalog_path: Optional[str] = None,
     ):
         super().__init__(search_radius_arcmin, min_mag, max_mag, filter_name)
         self.ph_qual_cut = ph_qual_cut

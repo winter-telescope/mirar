@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 import pandas as pd
 
@@ -23,7 +24,7 @@ def write_regions_file(
 class RegionsWriter(BaseDataframeProcessor):
     def __init__(
         self,
-        output_dir_name: str = None,
+        output_dir_name: Optional[str] = None,
         region_pix_radius: float = 8,
         output_dir: str = base_output_dir,
         *args,

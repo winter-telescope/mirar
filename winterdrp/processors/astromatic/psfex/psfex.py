@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 import numpy as np
 from astropy.io import fits
@@ -22,7 +23,7 @@ def run_psfex(
     sextractor_cat_path: str,
     config_path: str,
     psf_output_dir: str,
-    norm_psf_output_name: str = None,
+    norm_psf_output_name: Optional[str] = None,
 ):
     psfex_command = (
         f"psfex -c {config_path} {sextractor_cat_path} "
@@ -45,7 +46,7 @@ class PSFex(BaseImageProcessor):
 
     def __init__(
         self,
-        config_path: str = None,
+        config_path: Optional[str] = None,
         output_sub_dir: str = "psf",
         norm_fits: bool = True,
     ):
