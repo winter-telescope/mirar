@@ -6,7 +6,7 @@ import numpy as np
 
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ImageNotFoundError
-from winterdrp.paths import bias_frame_key, latest_save_key
+from winterdrp.paths import BIAS_FRAME_KEY, LATEST_SAVE_KEY
 from winterdrp.processors.base_processor import (
     ProcessorPremadeCache,
     ProcessorWithCache,
@@ -49,7 +49,7 @@ class BiasCalibrator(ProcessorWithCache):
             data = image.get_data()
             data = data - master_bias.get_data()
             image.set_data(data)
-            image[bias_frame_key] = master_bias[latest_save_key]
+            image[BIAS_FRAME_KEY] = master_bias[LATEST_SAVE_KEY]
 
         return batch
 

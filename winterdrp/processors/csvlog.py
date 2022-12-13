@@ -8,12 +8,12 @@ from typing import Optional
 import pandas as pd
 
 from winterdrp.data import ImageBatch
-from winterdrp.paths import base_name_key, core_fields, get_output_path
+from winterdrp.paths import BASE_NAME_KEY, core_fields, get_output_path
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
-default_log_keys = [base_name_key] + core_fields
+default_log_keys = [BASE_NAME_KEY] + core_fields
 
 
 class CSVLog(BaseImageProcessor):

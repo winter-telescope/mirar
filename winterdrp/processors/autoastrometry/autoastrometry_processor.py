@@ -3,7 +3,7 @@ import os
 from typing import Optional
 
 from winterdrp.data import ImageBatch
-from winterdrp.paths import base_name_key, get_output_dir
+from winterdrp.paths import BASE_NAME_KEY, get_output_dir
 from winterdrp.processors.autoastrometry.autoastrometry import run_autoastrometry_single
 from winterdrp.processors.base_processor import BaseImageProcessor
 
@@ -50,7 +50,7 @@ class AutoAstrometry(BaseImageProcessor):
 
         for i, image in enumerate(batch):
 
-            temp_path = os.path.join(sextractor_out_dir, image[base_name_key])
+            temp_path = os.path.join(sextractor_out_dir, image[BASE_NAME_KEY])
             self.save_fits(image, temp_path)
 
             run_autoastrometry_single(

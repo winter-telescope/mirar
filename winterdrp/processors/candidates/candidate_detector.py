@@ -8,7 +8,7 @@ import pandas as pd
 from astropy.io import fits
 
 from winterdrp.data import ImageBatch, SourceBatch, SourceTable
-from winterdrp.paths import base_name_key, core_fields, get_output_dir
+from winterdrp.paths import BASE_NAME_KEY, core_fields, get_output_dir
 from winterdrp.processors.astromatic.sextractor.sourceextractor import (
     run_sextractor_dual,
 )
@@ -220,7 +220,7 @@ class DetectCandidates(BaseCandidateGenerator):
             )
 
             sci_image_path = os.path.join(
-                self.get_sub_output_dir(), image[base_name_key]
+                self.get_sub_output_dir(), image[BASE_NAME_KEY]
             )
             ref_image_path = os.path.join(self.get_sub_output_dir(), image["REFIMG"])
             cands_table = self.generate_candidates_table(

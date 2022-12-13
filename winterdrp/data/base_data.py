@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Type
 
-from winterdrp.paths import base_name_key, raw_img_key
+from winterdrp.paths import BASE_NAME_KEY, RAW_IMG_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ class DataBlock:
     """Base unit for processing, corresponding to a single image."""
 
     def __init__(self):
-        self.raw_img_list = self[raw_img_key].split(",")
-        self.base_name = self[base_name_key]
+        self.raw_img_list = self[RAW_IMG_KEY].split(",")
+        self.base_name = self[BASE_NAME_KEY]
 
     def __getitem__(self, item):
         raise NotImplementedError
@@ -37,7 +37,7 @@ class DataBlock:
         raise NotImplementedError
 
     def get_name(self) -> str:
-        """Function to retrieve the :variable:`winterdrp.paths.base_name_key`
+        """Function to retrieve the :variable:`winterdrp.paths.BASE_NAME_KEY`
         of the parent image
 
         :return: Base name of parent image

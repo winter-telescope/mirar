@@ -5,7 +5,7 @@ lists which are used to build configurations for the
 :class:`~winterdrp.pipelines.summer.summer_pipeline.SummerPipeline`.
 """
 from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.paths import base_name_key, core_fields
+from winterdrp.paths import BASE_NAME_KEY, core_fields
 from winterdrp.pipelines.summer.config import (  # summer_weight_path,
     DB_NAME,
     PIPELINE_NAME,
@@ -79,7 +79,7 @@ load_test_proc = [
         input_sub_dir="processed",
         load_image=load_proc_summer_image,
     ),
-    ImageSelector((base_name_key, "SUMMER_20220816_042349_Camera0.resamp.fits")),
+    ImageSelector((BASE_NAME_KEY, "SUMMER_20220816_042349_Camera0.resamp.fits")),
 ]
 
 sim_realtime = [
@@ -104,7 +104,7 @@ build_log = [
             "TARGTYPE",
             "PROGID",
             "PROGPI",
-            base_name_key,
+            BASE_NAME_KEY,
         ]
         + core_fields
     ),
@@ -143,7 +143,7 @@ process_raw = [
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
-    ImageBatcher(split_key=base_name_key),
+    ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name="detrend", write_mask=True),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
@@ -197,7 +197,7 @@ standard_summer_reduction = export_raw + cal_hunter + process_raw
 
 
 subtract = [
-    ImageBatcher(split_key=base_name_key),
+    ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", "SCIENCE")),
     Reference(
         ref_image_generator=summer_reference_image_generator,

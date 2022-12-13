@@ -9,7 +9,7 @@ import numpy as np
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ImageNotFoundError
 from winterdrp.io import open_fits
-from winterdrp.paths import base_raw_dir, core_fields, raw_img_sub_dir
+from winterdrp.paths import RAW_IMG_SUB_DIR, base_raw_dir, core_fields
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class ImageLoader(BaseImageProcessor):
     def __init__(
         self,
         *args,
-        input_sub_dir: str = raw_img_sub_dir,
+        input_sub_dir: str = RAW_IMG_SUB_DIR,
         input_img_dir: str = base_raw_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
         **kwargs,

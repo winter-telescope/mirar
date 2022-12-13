@@ -9,7 +9,7 @@ import numpy as np
 from winterdrp.catalog.base_catalog import BaseCatalog
 from winterdrp.data import ImageBatch
 from winterdrp.paths import (
-    base_name_key,
+    BASE_NAME_KEY,
     copy_temp_file,
     get_output_dir,
     get_temp_path,
@@ -85,7 +85,7 @@ class Scamp(BaseImageProcessor):
 
         scamp_image_list_path = os.path.join(
             scamp_output_dir,
-            os.path.splitext(batch[0][base_name_key])[0] + "_scamp_list.txt",
+            os.path.splitext(batch[0][BASE_NAME_KEY])[0] + "_scamp_list.txt",
         )
 
         logger.info(f"Writing file list to {scamp_image_list_path}")
@@ -101,7 +101,7 @@ class Scamp(BaseImageProcessor):
                     output_dir=scamp_output_dir, file_path=image[SEXTRACTOR_HEADER_KEY]
                 )
 
-                temp_img_path = get_temp_path(scamp_output_dir, image[base_name_key])
+                temp_img_path = get_temp_path(scamp_output_dir, image[BASE_NAME_KEY])
                 self.save_fits(image, temp_img_path)
                 temp_mask_path = self.save_mask(image, temp_img_path)
                 f.write(f"{temp_cat_path}\n")

@@ -6,7 +6,7 @@ import numpy as np
 
 from winterdrp.data import ImageBatch
 from winterdrp.errors import ErrorStack
-from winterdrp.paths import proc_fail_key, raw_img_key
+from winterdrp.paths import PROC_FAIL_KEY, RAW_IMG_KEY
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -45,12 +45,12 @@ class ErrorStackAnnotator(BaseImageProcessor):
 
         for i, image in enumerate(batch):
 
-            base_name = str(Path(image[raw_img_key]).name)
+            base_name = str(Path(image[RAW_IMG_KEY]).name)
 
             if base_name in self.image_dict.keys():
-                image[proc_fail_key] += ",".join(self.image_dict[base_name])
+                image[PROC_FAIL_KEY] += ",".join(self.image_dict[base_name])
             elif self.processed_images is not None:
                 if base_name not in self.processed_images:
-                    image[proc_fail_key] += "Not Processed"
+                    image[PROC_FAIL_KEY] += "Not Processed"
 
         return batch

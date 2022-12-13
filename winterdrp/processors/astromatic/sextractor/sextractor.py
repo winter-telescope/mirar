@@ -12,10 +12,10 @@ from typing import Optional
 
 from winterdrp.data import ImageBatch
 from winterdrp.paths import (
-    base_name_key,
+    BASE_NAME_KEY,
+    LATEST_WEIGHT_SAVE_KEY,
     get_output_dir,
     get_temp_path,
-    latest_mask_save_key,
 )
 from winterdrp.processors.astromatic.sextractor.sourceextractor import (
     default_saturation,
@@ -109,7 +109,7 @@ class Sextractor(BaseImageProcessor):
             if self.gain is None and "GAIN" in image.keys():
                 self.gain = image["GAIN"]
 
-            temp_path = get_temp_path(sextractor_out_dir, image[base_name_key])
+            temp_path = get_temp_path(sextractor_out_dir, image[BASE_NAME_KEY])
 
             if not os.path.exists(temp_path):
                 self.save_fits(image, temp_path)
@@ -118,12 +118,12 @@ class Sextractor(BaseImageProcessor):
 
             mask_path = None
 
-            if latest_mask_save_key in image.keys():
+            if LATEST_WEIGHT_SAVE_KEY in image.keys():
                 image_mask_path = os.path.join(
-                    sextractor_out_dir, image[latest_mask_save_key]
+                    sextractor_out_dir, image[LATEST_WEIGHT_SAVE_KEY]
                 )
                 temp_mask_path = get_temp_path(
-                    sextractor_out_dir, image[latest_mask_save_key]
+                    sextractor_out_dir, image[LATEST_WEIGHT_SAVE_KEY]
                 )
                 if os.path.exists(image_mask_path):
                     shutil.copyfile(image_mask_path, temp_mask_path)
@@ -137,13 +137,13 @@ class Sextractor(BaseImageProcessor):
                 temp_files.append(Path(mask_path))
 
             output_cat = os.path.join(
-                sextractor_out_dir, image[base_name_key].replace(".fits", ".cat")
+                sextractor_out_dir, image[BASE_NAME_KEY].replace(".fits", ".cat")
             )
 
             _, self.checkimage_name = parse_checkimage(
                 checkimage_name=self.checkimage_name,
                 checkimage_type=self.checkimage_type,
-                image=os.path.join(sextractor_out_dir, image[base_name_key]),
+                image=os.path.join(sextractor_out_dir, image[BASE_NAME_KEY]),
             )
 
             output_cat, checkimage_name = run_sextractor_single(

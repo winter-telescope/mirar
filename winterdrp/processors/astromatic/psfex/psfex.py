@@ -7,10 +7,10 @@ from astropy.io import fits
 
 from winterdrp.data import ImageBatch
 from winterdrp.paths import (
+    NORM_PSFEX_KEY,
+    PSFEX_CAT_KEY,
+    SEXTRACTOR_HEADER_KEY,
     get_output_dir,
-    norm_psfex_header_key,
-    psfex_header_key,
-    sextractor_header_key,
 )
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.base_processor import BaseImageProcessor
@@ -73,7 +73,7 @@ class PSFex(BaseImageProcessor):
             pass
 
         for image in batch:
-            sextractor_cat_path = image[sextractor_header_key]
+            sextractor_cat_path = image[SEXTRACTOR_HEADER_KEY]
 
             psf_path = sextractor_cat_path.replace(".cat", ".psf")
             norm_psf_path = sextractor_cat_path.replace(".cat", ".psfmodel")
@@ -84,8 +84,8 @@ class PSFex(BaseImageProcessor):
                 norm_psf_output_name=norm_psf_path,
             )
 
-            image[psfex_header_key] = psf_path
-            image[norm_psfex_header_key] = norm_psf_path
+            image[PSFEX_CAT_KEY] = psf_path
+            image[NORM_PSFEX_KEY] = norm_psf_path
         return batch
 
     def check_prerequisites(

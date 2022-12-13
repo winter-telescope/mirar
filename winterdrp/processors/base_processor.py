@@ -23,16 +23,16 @@ from winterdrp.errors import (
 )
 from winterdrp.io import open_fits, save_to_path
 from winterdrp.paths import (
-    base_name_key,
-    cal_output_sub_dir,
-    get_mask_path,
+    BASE_NAME_KEY,
+    CAL_OUTPUT_SUB_DIR,
+    LATEST_SAVE_KEY,
+    LATEST_WEIGHT_SAVE_KEY,
+    PROC_HISTORY_KEY,
+    RAW_IMG_KEY,
     get_output_path,
-    latest_mask_save_key,
-    latest_save_key,
+    get_weight_path,
     max_n_cpu,
     package_name,
-    proc_history_key,
-    raw_img_key,
 )
 
 logger = logging.getLogger(__name__)
@@ -219,7 +219,7 @@ class BaseProcessor:
         :return: Updated data batch
         """
         for i, data_block in enumerate(batch):
-            data_block[proc_history_key] += self.base_key + ","
+            data_block[PROC_HISTORY_KEY] += self.base_key + ","
             data_block["REDUCER"] = getpass.getuser()
             data_block["REDMACH"] = socket.gethostname()
             data_block["REDTIME"] = str(datetime.datetime.now())
@@ -240,10 +240,10 @@ class ImageHandler:
     def open_fits(path: str | Path) -> Image:
         path = str(path)
         data, header = open_fits(path)
-        if raw_img_key not in header:
-            header[raw_img_key] = path
-        if base_name_key not in header:
-            header[base_name_key] = Path(path).name
+        if RAW_IMG_KEY not in header:
+            header[RAW_IMG_KEY] = path
+        if BASE_NAME_KEY not in header:
+            header[BASE_NAME_KEY] = Path(path).name
         return Image(data=data, header=header)
 
     @staticmethod
@@ -255,22 +255,22 @@ class ImageHandler:
         data = image.get_data()
         header = image.get_header()
         if header is not None:
-            header[latest_save_key] = path
+            header[LATEST_SAVE_KEY] = path
         logger.info(f"Saving to {path}")
         save_to_path(data, header, path)
 
     def save_mask(self, image: Image, img_path: str) -> str:
         data = image.get_data()
         mask = (~np.isnan(data)).astype(float)
-        mask_path = get_mask_path(img_path)
+        mask_path = get_weight_path(img_path)
         header = image.get_header()
-        header[latest_mask_save_key] = mask_path
+        header[LATEST_WEIGHT_SAVE_KEY] = mask_path
         self.save_fits(Image(mask, header), mask_path)
         return mask_path
 
     @staticmethod
     def get_hash(image: ImageBatch):
-        key = "".join(sorted([x[base_name_key] + x[proc_history_key] for x in image]))
+        key = "".join(sorted([x[BASE_NAME_KEY] + x[PROC_HISTORY_KEY] for x in image]))
         return hashlib.sha1(key.encode()).hexdigest()
 
 
@@ -292,7 +292,7 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         try_load_cache: bool = True,
         write_to_cache: bool = True,
         overwrite: bool = True,
-        cache_sub_dir: str = cal_output_sub_dir,
+        cache_sub_dir: str = CAL_OUTPUT_SUB_DIR,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)

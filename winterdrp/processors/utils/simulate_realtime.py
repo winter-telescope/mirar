@@ -8,11 +8,11 @@ import numpy as np
 
 from winterdrp.data import ImageBatch
 from winterdrp.paths import (
+    LATEST_SAVE_KEY,
+    LATEST_WEIGHT_SAVE_KEY,
     base_output_dir,
     get_output_dir,
     get_output_path,
-    latest_mask_save_key,
-    latest_save_key,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor
 

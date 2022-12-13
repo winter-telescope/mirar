@@ -4,7 +4,7 @@ import astropy.io.fits
 import numpy as np
 
 from winterdrp.data import ImageBatch
-from winterdrp.paths import base_name_key
+from winterdrp.paths import BASE_NAME_KEY
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class HeaderReader(BaseImageProcessor):
 
         for image in batch:
 
-            msg = f"{image[base_name_key]} \n"
+            msg = f"{image[BASE_NAME_KEY]} \n"
             for key in self.keys:
                 msg += f"{key}: {image[key]} \n"
             logger.info(msg)

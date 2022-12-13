@@ -8,12 +8,12 @@ from astropy.wcs import WCS
 
 from winterdrp.data import Image, ImageBatch
 from winterdrp.paths import (
-    base_name_key,
+    BASE_NAME_KEY,
+    NORM_PSFEX_KEY,
+    RAW_IMG_KEY,
+    REF_IMG_KEY,
+    REF_PSF_KEY,
     get_output_dir,
-    norm_psfex_header_key,
-    raw_img_key,
-    ref_img_key,
-    ref_psf_key,
 )
 from winterdrp.processors.astromatic.psfex.psfex import PSFex
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
@@ -94,13 +94,13 @@ class Reference(BaseImageProcessor):
 
             ref_image = self.open_fits(ref_image_path)
 
-            if base_name_key not in ref_image.keys():
+            if BASE_NAME_KEY not in ref_image.keys():
                 base_name = Path(ref_image_path).name
                 logger.debug(f"Setting basename to {base_name})")
-                ref_image[base_name_key] = base_name
+                ref_image[BASE_NAME_KEY] = base_name
 
-            if raw_img_key not in ref_image.keys():
-                ref_image[raw_img_key] = str(ref_image_path)
+            if RAW_IMG_KEY not in ref_image.keys():
+                ref_image[RAW_IMG_KEY] = str(ref_image_path)
 
             ref_gain = ref_image["GAIN"]
 
@@ -198,11 +198,11 @@ class Reference(BaseImageProcessor):
             )[0]
 
             # Copy over header keys from ref to sci
-            resampled_sci_image[ref_psf_key] = resampled_ref_sextractor_img[
-                norm_psfex_header_key
+            resampled_sci_image[REF_PSF_KEY] = resampled_ref_sextractor_img[
+                NORM_PSFEX_KEY
             ]
-            resampled_sci_image[ref_img_key] = resampled_ref_sextractor_img[
-                base_name_key
+            resampled_sci_image[REF_IMG_KEY] = resampled_ref_sextractor_img[
+                BASE_NAME_KEY
             ]
 
             new_batch.append(resampled_sci_image)

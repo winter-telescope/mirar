@@ -7,11 +7,11 @@ from astropy.io import fits
 from astropy.time import Time
 
 from winterdrp.paths import (
-    base_name_key,
-    coadd_key,
-    proc_fail_key,
-    proc_history_key,
-    raw_img_key,
+    BASE_NAME_KEY,
+    COADD_KEY,
+    PROC_FAIL_KEY,
+    PROC_HISTORY_KEY,
+    RAW_IMG_KEY,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,17 +28,17 @@ def load_raw_wirc_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
 
-        header[base_name_key] = os.path.basename(path)
-        header[raw_img_key] = path
+        header[BASE_NAME_KEY] = os.path.basename(path)
+        header[RAW_IMG_KEY] = path
         header["TARGET"] = header["OBJECT"].lower()
         header["UTCTIME"] = header["UTSHUT"]
         header["MJD-OBS"] = Time(header["UTSHUT"]).mjd
-        if coadd_key not in header.keys():
-            logger.debug(f"No {coadd_key} entry. Setting coadds to 1.")
-            header[coadd_key] = 1
+        if COADD_KEY not in header.keys():
+            logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
+            header[COADD_KEY] = 1
 
-        header[proc_history_key] = ""
-        header[proc_fail_key] = ""
+        header[PROC_HISTORY_KEY] = ""
+        header[PROC_FAIL_KEY] = ""
 
         filter_dict = {"J": 1, "H": 2, "Ks": 3}
 

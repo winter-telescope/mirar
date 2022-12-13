@@ -11,7 +11,7 @@ from astropy.table import Table
 from astroquery.vizier import Vizier
 from penquins import Kowalski
 
-from winterdrp.paths import base_name_key
+from winterdrp.paths import BASE_NAME_KEY
 from winterdrp.utils.ldac_tools import save_table_as_ldac
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class BaseCatalog:
         ra_deg = header["CRVAL1"]
         dec_deg = header["CRVAL2"]
 
-        base_name = os.path.basename(header[base_name_key])
+        base_name = os.path.basename(header[BASE_NAME_KEY])
 
         cat = self.get_catalog(ra_deg=ra_deg, dec_deg=dec_deg)
 

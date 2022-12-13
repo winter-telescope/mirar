@@ -24,13 +24,13 @@ from astropy.table import Table
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ProcessorError
 from winterdrp.paths import (
-    base_name_key,
+    BASE_NAME_KEY,
+    LATEST_WEIGHT_SAVE_KEY,
+    NORM_PSFEX_KEY,
+    RAW_IMG_KEY,
+    REF_IMG_KEY,
+    REF_PSF_KEY,
     get_output_dir,
-    latest_mask_save_key,
-    norm_psfex_header_key,
-    raw_img_key,
-    ref_img_key,
-    ref_psf_key,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
@@ -241,8 +241,8 @@ class ZOGYPrepare(BaseImageProcessor):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         for image in batch:
-            ref_img_path = image[ref_img_key]
-            sci_img_path = image[base_name_key]
+            ref_img_path = image[REF_IMG_KEY]
+            sci_img_path = image[BASE_NAME_KEY]
 
             ref_img = self.open_fits(self.get_path(ref_img_path))
 
@@ -367,8 +367,8 @@ class ZOGY(ZOGYPrepare):
             ref_image_path = self.get_path(image["REFSCL"])
             sci_rms = image["SCIRMS"]
             ref_rms = image["REFRMS"]
-            sci_psf_path = self.get_path(image[norm_psfex_header_key])
-            ref_psf_path = self.get_path(image[ref_psf_key])
+            sci_psf_path = self.get_path(image[NORM_PSFEX_KEY])
+            ref_psf_path = self.get_path(image[REF_PSF_KEY])
             sci_rms_path = self.get_path(image["SCUNCPTH"])
             ref_rms_path = self.get_path(image["RFUNCPTH"])
             ast_unc_x = image["ASTUNCX"]
@@ -429,8 +429,8 @@ class ZOGY(ZOGYPrepare):
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
 
             psf_header = fits.Header({"SIMPLE": True})
-            psf_header[base_name_key] = diff_psf_path.name
-            psf_header[raw_img_key] = diff_psf_path.as_posix()
+            psf_header[BASE_NAME_KEY] = diff_psf_path.name
+            psf_header[RAW_IMG_KEY] = diff_psf_path.as_posix()
 
             self.save_fits(
                 image=Image(diff_psf_data, psf_header),
@@ -438,7 +438,7 @@ class ZOGY(ZOGYPrepare):
             )
 
             scorr = Image(scorr_data, header=image.header.copy())
-            scorr[latest_mask_save_key] = image["SCORMASK"]
+            scorr[LATEST_WEIGHT_SAVE_KEY] = image["SCORMASK"]
 
             self.save_fits(image=scorr, path=self.get_path(scorr_image_path))
 
