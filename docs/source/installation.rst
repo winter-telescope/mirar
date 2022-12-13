@@ -44,9 +44,9 @@ Now you should have installed winterdrp. You can check it worked by opening up p
 
 .. doctest::
 
-    >>> from winterdrp.paths import package_name, __version__
-    >>> print(f"This is the {package_name} package, version {__version__}")
-    This is the winterdrp package, version 0.5.1
+    >>> from winterdrp.paths import package_name
+    >>> print(f"This is the {package_name} package")
+    This is the winterdrp package
 
 Non-python dependencies
 -----------------------
@@ -87,5 +87,3 @@ You can try installing things via conda:
 .. code-block:: bash
 
     conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex
-
-
