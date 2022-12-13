@@ -17,6 +17,7 @@ from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.references import WIRCRef
+from winterdrp.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ pipeline.add_configuration(
 )
 
 
-class TestWircImsubPipeline(unittest.TestCase):
+class TestWircImsubPipeline(BaseTestCase):
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)

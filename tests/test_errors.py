@@ -1,11 +1,12 @@
-"""Script for testing the error handling in ..module::winterdrp.errors
+"""
+Script for testing the error handling in ..module::winterdrp.errors
 """
 import logging
-import unittest
 
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.errors import ImageNotFoundError
 from winterdrp.pipelines import get_pipeline
+from winterdrp.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ expected_error = {
 }
 
 
-class TestErrors(unittest.TestCase):
+class TestErrors(BaseTestCase):
 
     """Class for testing errors in ..module::winterdrp.errors"""
 

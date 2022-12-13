@@ -3,6 +3,7 @@ import unittest
 
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.pipelines.summer.summer_pipeline import SummerPipeline
+from winterdrp.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ expected_values = {
 pipeline = SummerPipeline(night="20220815", selected_configurations=["test_imsub"])
 
 
-class TestSummerPipeline(unittest.TestCase):
+class TestSummerImsubPipeline(BaseTestCase):
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)

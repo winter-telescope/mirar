@@ -5,6 +5,7 @@ import unittest
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.monitor.base_monitor import Monitor
 from winterdrp.processors.utils.cal_hunter import CalRequirement
+from winterdrp.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ summer_cal_requirements = [
 ]
 
 
-class TestMonitor(unittest.TestCase):
+class TestMonitor(BaseTestCase):
     """Class for testing ..module::winterdrp.monitor"""
 
     def setUp(self):

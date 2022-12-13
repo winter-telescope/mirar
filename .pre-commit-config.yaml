@@ -22,7 +22,7 @@ repos:
         types: [python]
         args:
           [
-            "--disable=C,fixme",
+            "--disable=missing-function-docstring,missing-module-docstring,missing-class-docstring",
             "-rn", # Only display messages
             "-sn", # Don't display the score
           ]

@@ -31,6 +31,7 @@ from winterdrp.processors.utils.image_selector import (
     ImageDebatcher,
     ImageSelector,
 )
+from winterdrp.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ pipeline = WircPipeline(night="20210330", selected_configurations="test")
 pipeline.add_configuration(configuration_name="test", configuration=test_configuration)
 
 
-class TestWircPipeline(unittest.TestCase):
+class TestWircPipeline(BaseTestCase):
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)

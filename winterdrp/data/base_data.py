@@ -166,8 +166,8 @@ class PseudoList:
 class DataBatch(PseudoList):
     """
     Base class for a collection of individual
-    :class:`~winterdrp.data.image_data.DataBlock` objects.
-    Each :class:`~winterdrp.data.image_data.DataBatch` will be operated on
+    :class:`~winterdrp.data.base_data.DataBlock` objects.
+    Each :class:`~winterdrp.data.base_data.DataBatch` will be operated on
     by a :class:`~wintedrp.processors.BaseProcessor`
     """
 
@@ -179,10 +179,10 @@ class DataBatch(PseudoList):
         super().__init__(data_list=batch)
 
     def get_batch(self) -> list[DataBlock]:
-        """Returns the :class:`~winterdrp.data.image_data.DataBlock`
+        """Returns the :class:`~winterdrp.data.base_data.DataBlock`
         items within the batch
 
-        :return: list of :class:`~winterdrp.data.image_data.DataBlock` objects
+        :return: list of :class:`~winterdrp.data.base_data.DataBlock` objects
         """
         return self.get_data_list()
 
@@ -200,19 +200,28 @@ class DataBatch(PseudoList):
 class Dataset(PseudoList):
     """
     Base class for a collection of individual
-    :class:`~winterdrp.data.image_data.DataBatch` objects.
+    :class:`~winterdrp.data.base_data.DataBatch` objects.
     A :class:`~wintedrp.processors.BaseProcessor` will iterate over these.
     """
 
     data_type = DataBatch
 
     def get_batches(self):
-        """Returns the :class:`~winterdrp.data.image_data.DataBatch`
+        """Returns the :class:`~winterdrp.data.base_data.DataBatch`
         items within the batch
 
-        :return: list of :class:`~winterdrp.data.image_data.DataBatch` objects
+        :return: list of :class:`~winterdrp.data.base_data.DataBatch` objects
         """
         return self.get_data_list()
 
     def __init__(self, batches: list[DataBatch] | DataBatch = None):
         super().__init__(data_list=batches)
+
+    def append(self, item: DataBatch):
+        """
+        Function to append, list-style, new objects.
+
+        :param item: Object to be added
+        :return: None
+        """
+        super()._append(item)
