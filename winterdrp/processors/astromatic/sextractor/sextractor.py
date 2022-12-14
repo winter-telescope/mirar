@@ -133,7 +133,7 @@ class Sextractor(BaseImageProcessor):
                     mask_path = None
 
             if mask_path is None:
-                mask_path = self.save_mask(image, temp_path)
+                mask_path = self.save_weight_image(image, temp_path)
                 temp_files.append(Path(mask_path))
 
             output_cat = os.path.join(

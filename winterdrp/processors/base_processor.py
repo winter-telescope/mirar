@@ -259,12 +259,12 @@ class ImageHandler:
         logger.info(f"Saving to {path}")
         save_to_path(data, header, path)
 
-    def save_mask(self, image: Image, img_path: str) -> str:
+    def save_weight_image(self, image: Image, img_path: Path) -> Path:
         data = image.get_data()
         mask = (~np.isnan(data)).astype(float)
         mask_path = get_weight_path(img_path)
         header = image.get_header()
-        header[LATEST_WEIGHT_SAVE_KEY] = mask_path
+        header[LATEST_WEIGHT_SAVE_KEY] = str(mask_path)
         self.save_fits(Image(mask, header), mask_path)
         return mask_path
 

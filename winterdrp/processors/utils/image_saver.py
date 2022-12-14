@@ -1,7 +1,5 @@
 import os
-
-import astropy.io.fits
-import numpy as np
+from pathlib import Path
 
 from winterdrp.data import ImageBatch
 from winterdrp.paths import (
@@ -23,12 +21,12 @@ class ImageSaver(BaseImageProcessor):
         self,
         output_dir_name: str,
         write_mask: bool = True,
-        output_dir: str = base_output_dir,
+        output_dir: str | Path = base_output_dir,
     ):
         super().__init__()
         self.output_dir_name = output_dir_name
         self.write_mask = write_mask
-        self.output_dir = output_dir
+        self.output_dir = Path(output_dir)
 
     def __str__(self):
         return f"Processor to save images to the '{self.output_dir_name}' subdirectory"
@@ -58,10 +56,10 @@ class ImageSaver(BaseImageProcessor):
                 output_dir=self.output_dir,
             )
 
-            image[LATEST_SAVE_KEY] = path
+            image[LATEST_SAVE_KEY] = str(path)
             if self.write_mask:
-                mask_path = self.save_mask(image, img_path=path)
-                image[LATEST_WEIGHT_SAVE_KEY] = mask_path
+                mask_path = self.save_weight_image(image, img_path=path)
+                image[LATEST_WEIGHT_SAVE_KEY] = str(mask_path)
             self.save_fits(image, path)
 
         return batch

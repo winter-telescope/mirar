@@ -29,8 +29,6 @@ else:
     default_n_cpu = max(int(_n_cpu / 2), 1)
 max_n_cpu: int = int(os.getenv("MAX_N_CPU", default_n_cpu))
 
-USE_CACHE: bool = bool(os.getenv("USE_WINTER_CACHE", "true"))
-
 # Set up default directories
 
 default_dir = Path.home()
@@ -61,6 +59,18 @@ if _base_output_dir is None:
     base_output_dir = default_dir
 else:
     base_output_dir = Path(_base_output_dir)
+
+# Set up cache for image data
+
+USE_CACHE: bool = bool(os.getenv("USE_WINTER_CACHE", "true"))
+
+CACHE_DIR = base_output_dir.joinpath(f"{package_name}_cache")
+
+if not CACHE_DIR.exists():
+    CACHE_DIR.mkdir(parents=True)
+
+
+# Set up special directories
 
 
 RAW_IMG_SUB_DIR = "raw"
@@ -117,12 +127,6 @@ def get_output_path(
     ).joinpath(base_name)
 
 
-CACHE_DIR = base_output_dir.joinpath(f"{package_name}_cache")
-
-if not CACHE_DIR.exists():
-    CACHE_DIR.mkdir(parents=True)
-
-
 def get_weight_path(
     img_path: str | Path,
 ) -> Path:
@@ -135,7 +139,7 @@ def get_weight_path(
     return Path(img_path).with_suffix(".weight.fits")
 
 
-def get_temp_path(output_dir: Path, file_path: Path) -> Path:
+def get_temp_path(output_dir: Path, file_path: Path | str) -> Path:
     """
     Gets a temporary path, in output dir, with name of file_path
 
@@ -143,10 +147,10 @@ def get_temp_path(output_dir: Path, file_path: Path) -> Path:
     :param file_path: current path of file
     :return: temporary path
     """
-    return output_dir.joinpath("temp_" + file_path.name)
+    return output_dir.joinpath("temp_" + Path(file_path).name)
 
 
-def get_untemp_path(temp_path: Path) -> Path:
+def get_untemp_path(temp_path: Path | str) -> Path:
     """
     Converts a temporary path to a regular path.
 
@@ -155,6 +159,7 @@ def get_untemp_path(temp_path: Path) -> Path:
     :param temp_path: temporary file path
     :return: normal file path
     """
+    temp_path = Path(temp_path)
     return temp_path.with_name(temp_path.name.replace("temp_", ""))
 
 

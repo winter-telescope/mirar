@@ -1,12 +1,13 @@
 import logging
 import os
+from pathlib import Path
 from typing import Optional
 
-import astropy.io.fits
 import numpy as np
 from astropy.wcs import WCS
 
 from winterdrp.data import ImageBatch
+from winterdrp.errors import ProcessorError
 from winterdrp.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
@@ -16,18 +17,22 @@ from winterdrp.paths import (
     get_temp_path,
 )
 from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
-from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor, PrerequisiteError
 from winterdrp.utils import execute
 
 logger = logging.getLogger(__name__)
 
 
+class SwarpError(ProcessorError):
+    """Error relating to swarp"""
+
+
 def run_swarp(
-    stack_list_path: str,
-    swarp_config_path: str,
-    out_path: str,
-    weight_list_path: Optional[str] = None,
-    weight_out_path: Optional[str] = None,
+    stack_list_path: str | Path,
+    swarp_config_path: str | Path,
+    out_path: str | Path,
+    weight_list_path: Optional[str | Path] = None,
+    weight_out_path: Optional[str | Path] = None,
     pixscale: Optional[float] = None,
     x_imgpixsize: Optional[float] = None,
     y_imgpixsize: Optional[float] = None,
@@ -37,7 +42,7 @@ def run_swarp(
     combine: bool = True,
     gain: Optional[float] = None,
     subtract_bkg: bool = False,
-):  # resample and stack images with swarp
+):
     """
     Resample and stack given images with swarp
     Parameters
@@ -64,13 +69,13 @@ def run_swarp(
     )
 
     if subtract_bkg:
-        swarp_command += f"-SUBTRACT_BACK Y "
+        swarp_command += "-SUBTRACT_BACK Y "
     else:
-        swarp_command += f"-SUBTRACT_BACK N "
+        swarp_command += "-SUBTRACT_BACK N "
     if combine:
-        swarp_command += f"-COMBINE Y -COMBINE_TYPE MEDIAN "
+        swarp_command += "-COMBINE Y -COMBINE_TYPE MEDIAN "
     else:
-        swarp_command += f"-COMBINE N "
+        swarp_command += "-COMBINE N "
 
     if weight_list_path is not None:
         swarp_command += f" -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE @{weight_list_path} "
@@ -139,7 +144,7 @@ class Swarp(BaseImageProcessor):
     def __str__(self) -> str:
         return f"Processor to apply swarp to images, stacking them together."
 
-    def get_swarp_output_dir(self):
+    def get_swarp_output_dir(self) -> Path:
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
     def _apply_to_images(
@@ -148,35 +153,29 @@ class Swarp(BaseImageProcessor):
     ) -> ImageBatch:
 
         swarp_output_dir = self.get_swarp_output_dir()
+        swarp_output_dir.mkdir(parents=True, exist_ok=True)
 
-        try:
-            os.makedirs(swarp_output_dir)
-        except OSError:
-            pass
-
-        swarp_image_list_path = os.path.join(
-            swarp_output_dir,
-            os.path.splitext(batch[0][BASE_NAME_KEY])[0] + "_swarp_img_list.txt",
+        swarp_image_list_path = swarp_output_dir.joinpath(
+            Path(batch[0][BASE_NAME_KEY]).name + "_swarp_img_list.txt",
         )
 
-        swarp_weight_list_path = os.path.join(
-            swarp_output_dir,
-            os.path.splitext(batch[0][BASE_NAME_KEY])[0] + "_swarp_weight_list.txt",
+        swarp_weight_list_path = swarp_output_dir.joinpath(
+            Path(batch[0][BASE_NAME_KEY]).name + "_swarp_weight_list.txt",
         )
         logger.debug(f"Writing file list to {swarp_image_list_path}")
 
         temp_files = [swarp_image_list_path, swarp_weight_list_path]
 
-        # If swarp is run with combine -N option, it just sets the output name as inpname+.resamp.fits
+        # If swarp is run with combine -N option,
+        # it just sets the output name as inpname+.resamp.fits
+
         if self.combine:
-            output_image_path = os.path.join(
-                swarp_output_dir,
-                os.path.splitext(batch[0][BASE_NAME_KEY])[0] + "_stack.fits",
+            output_image_path = swarp_output_dir.joinpath(
+                Path(batch[0][BASE_NAME_KEY]).name + "_stack.fits",
             )
         else:
-            output_image_path = os.path.join(
-                swarp_output_dir,
-                os.path.splitext(batch[0][BASE_NAME_KEY])[0] + ".resamp.fits",
+            output_image_path = swarp_output_dir.joinpath(
+                Path(batch[0][BASE_NAME_KEY]).name + ".resamp.fits",
             )
         logger.debug(f"Saving to {output_image_path}")
 
@@ -240,14 +239,14 @@ class Swarp(BaseImageProcessor):
                 if self.include_scamp:
                     temp_head_path = copy_temp_file(
                         output_dir=swarp_output_dir,
-                        file_path=str(image[scamp_header_key]).replace("\n", ""),
+                        file_path=Path(image[scamp_header_key]),
                     )
 
                 temp_img_path = get_temp_path(swarp_output_dir, image[BASE_NAME_KEY])
 
                 self.save_fits(image, temp_img_path)
 
-                temp_mask_path = self.save_mask(image, temp_img_path)
+                temp_mask_path = self.save_weight_image(image, temp_img_path)
 
                 f.write(f"{temp_img_path}\n")
                 g.write(f"{temp_mask_path}\n")
@@ -270,7 +269,7 @@ class Swarp(BaseImageProcessor):
 
         logger.debug(f"{self.center_ra}, {center_ra_to_use}")
 
-        output_image_weight_path = output_image_path.replace(".fits", ".weight.fits")
+        output_image_weight_path = output_image_path.with_suffix(".weight.fits")
 
         run_swarp(
             stack_list_path=swarp_image_list_path,
@@ -294,19 +293,24 @@ class Swarp(BaseImageProcessor):
 
             temp_output_image_path = get_temp_path(
                 swarp_output_dir,
-                os.path.splitext(batch[0][BASE_NAME_KEY])[0] + ".resamp.fits",
+                Path(os.path.splitext(batch[0][BASE_NAME_KEY])[0]).with_suffix(
+                    ".resamp.fits"
+                ),
             )
-            temp_output_image_weight_path = temp_output_image_path.replace(
-                ".fits", ".weight.fits"
+            temp_output_image_weight_path = temp_output_image_path.with_suffix(
+                ".weight.fits"
             )
 
-            if os.path.exists(temp_output_image_path):
-                os.rename(temp_output_image_path, output_image_path)
-                os.rename(temp_output_image_weight_path, output_image_weight_path)
+            if temp_output_image_path.exists():
+                temp_output_image_path.rename(output_image_path)
+                temp_output_image_weight_path.rename(output_image_weight_path)
             else:
-                err = f"Swarp seems to have misbehaved, and not made the correct output file {output_image_path}"
+                err = (
+                    f"Swarp seems to have misbehaved, "
+                    f"and not made the correct output file {output_image_path}"
+                )
                 logger.error(err)
-                raise ValueError(err)
+                raise SwarpError(err)
 
         new_image = self.open_fits(output_image_path)
 
@@ -319,12 +323,12 @@ class Swarp(BaseImageProcessor):
 
         if not self.cache:
             for temp_file in temp_files:
-                os.remove(temp_file)
+                temp_file.unlink()
                 logger.debug(f"Deleted temporary file {temp_file}")
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
-        new_image[BASE_NAME_KEY] = os.path.basename(output_image_path)
-        new_image[LATEST_WEIGHT_SAVE_KEY] = os.path.basename(output_image_weight_path)
+        new_image[BASE_NAME_KEY] = output_image_path.name
+        new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.name
         return ImageBatch([new_image])
 
     def check_prerequisites(
@@ -337,4 +341,4 @@ class Swarp(BaseImageProcessor):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError
+            raise PrerequisiteError(err)

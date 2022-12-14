@@ -27,7 +27,7 @@ class DataBlock:
     """Base unit for processing, corresponding to a single image."""
 
     def __init__(self):
-        self.raw_img_list = self[RAW_IMG_KEY].split(",")
+        self.raw_img_list = [Path(x) for x in self[RAW_IMG_KEY].split(",")]
         self.base_name = self[BASE_NAME_KEY]
 
     def __getitem__(self, item):
@@ -44,7 +44,7 @@ class DataBlock:
         """
         return self.base_name
 
-    def get_raw_img_list(self) -> list[str]:
+    def get_raw_img_list(self) -> list[Path]:
         """Function to retrieve the paths of all raw images from
         which this object is derived.
         Because of stacking, this list may include multiple entries.

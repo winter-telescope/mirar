@@ -1,6 +1,7 @@
 import logging
 import os
 from abc import ABC
+from pathlib import Path
 from typing import Optional
 
 import astropy.io.fits
@@ -38,18 +39,18 @@ class BaseCatalog:
     def get_catalog(ra_deg: float, dec_deg: float) -> astropy.table.Table:
         raise NotImplementedError()
 
-    def write_catalog(self, header: astropy.io.fits.Header, output_dir: str) -> str:
+    def write_catalog(
+        self, header: astropy.io.fits.Header, output_dir: str | Path
+    ) -> Path:
         ra_deg = header["CRVAL1"]
         dec_deg = header["CRVAL2"]
 
-        base_name = os.path.basename(header[BASE_NAME_KEY])
+        base_name = Path(header[BASE_NAME_KEY]).with_suffix(".ldac").name
 
         cat = self.get_catalog(ra_deg=ra_deg, dec_deg=dec_deg)
 
-        output_path = self.get_output_path(output_dir, base_name) + ".ldac"
-
-        if os.path.exists(output_path):
-            os.remove(output_path)
+        output_path = self.get_output_path(output_dir, base_name)
+        output_path.unlink(missing_ok=True)
 
         logger.info(f"Saving catalog to {output_path}")
 
@@ -57,9 +58,9 @@ class BaseCatalog:
 
         return output_path
 
-    def get_output_path(self, output_dir: str, base_name: str) -> str:
-        cat_base_name = os.path.splitext(base_name)[0] + f".{self.abbreviation}.cat"
-        return os.path.join(output_dir, cat_base_name)
+    def get_output_path(self, output_dir: Path, base_name: str | Path) -> Path:
+        cat_base_name = Path(base_name).with_suffix(f".{self.abbreviation}.cat")
+        return output_dir.joinpath(cat_base_name)
 
     def get_catalog_from_header(self, header: astropy.io.fits.header) -> astropy.table:
         ra_deg = header["CRVAL1"]

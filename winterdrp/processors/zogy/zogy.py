@@ -99,7 +99,6 @@ class ZOGYPrepare(BaseImageProcessor):
 
     def __init__(
         self,
-        *args,
         output_sub_dir: str = "sub",
         sci_zp_header_key: str = "ZP",
         catalog_purifier: Callable[
@@ -108,9 +107,8 @@ class ZOGYPrepare(BaseImageProcessor):
         ] = default_wirc_catalog_purifier,
         write_region_bool: bool = False,
         crossmatch_radius_arcsec: float = 1.0,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.output_sub_dir = output_sub_dir
         self.sci_zp_header_key = sci_zp_header_key
         self.catalog_purifier = catalog_purifier
@@ -247,11 +245,11 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_img = self.open_fits(self.get_path(ref_img_path))
 
             ref_catalog_path = ref_img["SRCCAT"]  # convert to key
-            ref_mask_path = ref_img["MASKPATH"]  # Change to 'weightpath' everywhere,
+            ref_mask_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
             # change in Swarp too, also fix (get_mask/write_mask)?
 
             sci_catalog_path = image["SRCCAT"]  # convert to key
-            sci_mask_path = image["MASKPATH"]
+            sci_mask_path = image[LATEST_WEIGHT_SAVE_KEY]
 
             ref_weight_data = self.open_fits(self.get_path(ref_mask_path))
             sci_weight_data = self.open_fits(self.get_path(sci_mask_path))
@@ -391,12 +389,11 @@ class ZOGY(ZOGYPrepare):
 
             diff = Image(data=diff_data, header=image.get_header())
 
-            diff_image_path = Path(str(sci_image_path).replace(".fits", ".diff.fits"))
+            diff_image_path = Path(sci_image_path).with_suffix(".diff.fits")
             diff_psf_path = diff_image_path.with_suffix(".psf")
 
-            scorr_image_path = Path(
-                str(sci_image_path).replace(".fits", "") + ".scorr.fits"
-            )
+            scorr_image_path = Path(sci_image_path).with_suffix(".scorr.fits")
+
             scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(scorr_data)
 
             logger.info(
