@@ -3,7 +3,7 @@ name: mypy
 on: [push, pull_request]
 
 jobs:
-  mpypy:
+  mypy:
 
     runs-on: ubuntu-latest
 
