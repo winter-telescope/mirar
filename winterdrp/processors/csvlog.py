@@ -3,16 +3,17 @@ Module to generate a CSV log of observations
 """
 import logging
 import os
+from typing import Optional
 
 import pandas as pd
 
 from winterdrp.data import ImageBatch
-from winterdrp.paths import base_name_key, core_fields, get_output_path
+from winterdrp.paths import BASE_NAME_KEY, core_fields, get_output_path
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
-default_log_keys = [base_name_key] + core_fields
+default_log_keys = [BASE_NAME_KEY] + core_fields
 
 
 class CSVLog(BaseImageProcessor):
@@ -24,9 +25,9 @@ class CSVLog(BaseImageProcessor):
 
     def __init__(
         self,
-        export_keys: list[str] = None,
+        export_keys: Optional[list[str]] = None,
         output_sub_dir: str = "",
-        output_base_dir: str = None,
+        output_base_dir: Optional[str] = None,
     ):
         super().__init__()
         if export_keys is None:

@@ -7,7 +7,7 @@ import numpy as np
 
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ImageNotFoundError
-from winterdrp.paths import flat_frame_key, latest_save_key
+from winterdrp.paths import FLAT_FRAME_KEY, LATEST_SAVE_KEY
 from winterdrp.processors.base_processor import (
     ProcessorPremadeCache,
     ProcessorWithCache,
@@ -66,7 +66,7 @@ class FlatCalibrator(ProcessorWithCache):
             data = image.get_data()
             data = data / master_flat_data
             image.set_data(data)
-            image[flat_frame_key] = master_flat[latest_save_key]
+            image[FLAT_FRAME_KEY] = master_flat[LATEST_SAVE_KEY]
 
         return batch
 

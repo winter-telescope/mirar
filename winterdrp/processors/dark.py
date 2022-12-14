@@ -9,7 +9,7 @@ import pandas as pd
 
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ImageNotFoundError
-from winterdrp.paths import base_name_key
+from winterdrp.paths import BASE_NAME_KEY
 from winterdrp.processors.base_processor import (
     ProcessorPremadeCache,
     ProcessorWithCache,

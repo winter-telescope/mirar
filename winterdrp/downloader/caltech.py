@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 from winterdrp.paths import raw_img_dir
 
@@ -13,7 +14,7 @@ def download_via_ssh(
     night: str | int,
     pipeline: str,
     prefix: str = "",
-    server_sub_dir: str = None,
+    server_sub_dir: Optional[str] = None,
     username: str = os.getenv("SSH_USER"),
 ):
     if username is None:

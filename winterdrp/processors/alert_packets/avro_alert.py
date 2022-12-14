@@ -69,9 +69,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
             candidate = {}
             for key in df.keys():
                 try:
-                    if (
-                        type(df.iloc[i].get(key)) is str
-                        or type(df.iloc[i].get(key)) is list
+                    if isinstance(df.iloc[i].get(key), str) or isinstance(
+                        df.iloc[i].get(key), list
                     ):
                         candidate[key] = df.iloc[i].get(key)
                     else:
@@ -399,12 +398,12 @@ class AvroPacketMaker(BaseDataframeProcessor):
         #     cand_data = [field_data for field_data in reader]
         #     reader.close()
 
-        ## cand_data is a list with the first item as the nested
-        ## dictionary of the avro schema
-        ## length of cand_data: 1
-        ## 0-index item: dictionary, length 9, keys:
-        ## ['schemavsn', 'publisher', 'objectId', 'candid', 'candidate',
-        ##  'prv_candidates', 'cutoutScience', 'cutoutTemplate', 'cutoutDifference'])]
+        # cand_data is a list with the first item as the nested
+        # dictionary of the avro schema
+        # length of cand_data: 1
+        # 0-index item: dictionary, length 9, keys:
+        # ['schemavsn', 'publisher', 'objectId', 'candid', 'candidate',
+        # 'prv_candidates', 'cutoutScience', 'cutoutTemplate', 'cutoutDifference'])]
 
         # cand_dict = cand_data[0]
         # single_cand = cand_dict['candidate']

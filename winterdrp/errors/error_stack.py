@@ -7,6 +7,7 @@ A :class:`~winterdrp.errors.error_stack.ErrorStack` object will contain a list o
 """
 
 import logging
+from typing import Optional
 
 import numpy as np
 
@@ -22,7 +23,7 @@ class ErrorStack:
     :class:`~winterdrp.errors.error_report.ErrorReport` objects
     """
 
-    def __init__(self, reports: list[ErrorReport] = None):
+    def __init__(self, reports: Optional[list[ErrorReport]] = None):
         self.reports = []
         self.noncritical_reports = []
         self.failed_images = []

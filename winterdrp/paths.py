@@ -4,12 +4,9 @@ Central module hosting all shared paths/directory conventions/keys/variables
 import logging
 import os
 import shutil
-from collections.abc import Callable
-from glob import glob
 from pathlib import Path
 
 import toml
-from astropy.io import fits
 
 logger = logging.getLogger(__name__)
 
@@ -25,38 +22,63 @@ __version__ = toml_info["tool"]["poetry"]["version"]
 
 doc_dir = winter_code_dir.joinpath("docs/")
 
-max_n_cpu = int(os.getenv("MAX_N_CPU", max(int(os.cpu_count() / 2), 1)))
-USE_CACHE = bool(os.getenv("USE_WINTER_CACHE", "true"))
+_n_cpu = os.cpu_count()
+if _n_cpu is None:
+    default_n_cpu: int = 1
+else:
+    default_n_cpu = max(int(_n_cpu / 2), 1)
+max_n_cpu: int = int(os.getenv("MAX_N_CPU", default_n_cpu))
 
-base_raw_dir = os.getenv("RAW_DATA_DIR")
+# Set up default directories
 
-if base_raw_dir is None:
+default_dir = Path.home()
+
+_base_raw_dir: str | None = os.getenv("RAW_DATA_DIR")
+
+if _base_raw_dir is None:
     warning = (
         "No raw data directory specified. "
         "Run 'export RAW_DATA_DIR=/path/to/data' to set. "
         "The raw data directory will need to be specified manually for path function."
+        f"The raw directory is being set to {default_dir}."
     )
     logger.warning(warning)
+    base_raw_dir: Path = default_dir
+else:
+    base_raw_dir = Path(_base_raw_dir)
 
 _base_output_dir = os.getenv("OUTPUT_DATA_DIR")
 
 if _base_output_dir is None:
-    default = Path.home()
     warning = (
         f"No output data directory specified. "
         f"Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. "
-        f"The output directory is being set to {default}."
+        f"The output directory is being set to {default_dir}."
     )
     logger.warning(warning)
-    base_output_dir = default
+    base_output_dir = default_dir
 else:
     base_output_dir = Path(_base_output_dir)
 
-raw_img_sub_dir = "raw"
+# Set up cache for image data
+
+USE_CACHE: bool = bool(os.getenv("USE_WINTER_CACHE", "true"))
+
+CACHE_DIR = base_output_dir.joinpath(f"{package_name}_cache")
+
+if not CACHE_DIR.exists():
+    CACHE_DIR.mkdir(parents=True)
+
+
+# Set up special directories
+
+
+RAW_IMG_SUB_DIR = "raw"
+CAL_OUTPUT_SUB_DIR = "calibration"
 
 
 def raw_img_dir(
-    sub_dir: str = "", raw_dir: str = base_raw_dir, img_sub_dir: str = raw_img_sub_dir
+    sub_dir: str = "", raw_dir: Path = base_raw_dir, img_sub_dir: str = RAW_IMG_SUB_DIR
 ) -> str:
     """
     Get directory for raw images
@@ -69,131 +91,108 @@ def raw_img_dir(
     return os.path.join(raw_dir, os.path.join(str(sub_dir), img_sub_dir))
 
 
-def get_preprocess_path(raw_img_path: str) -> str:
-    return raw_img_path.replace("/raw/", "/preprocess/")
-
-
 def get_output_dir(
-    dir_root: str, sub_dir: str | int = "", output_dir: str = base_output_dir
-) -> str:
-    return os.path.join(output_dir, os.path.join(str(sub_dir), dir_root))
+    dir_root: str, sub_dir: str | int = "", output_dir: Path = base_output_dir
+) -> Path:
+    """
+    Generic function to get a full output directory combining dir_root, sub_dir and
+    the parent output directory
+
+    :param dir_root: directory within subdir, e.g 'raw' or 'processed'
+    :param sub_dir: subdirectory in parent directory, typically a night e.g 20221223
+    :param output_dir: parent output directory
+    :return: full output directory
+    """
+    return output_dir.joinpath(os.path.join(str(sub_dir), dir_root))
 
 
 def get_output_path(
     base_name: str,
     dir_root: str,
     sub_dir: str | int = "",
-    output_dir: str = base_output_dir,
-) -> str:
-    return os.path.join(
-        get_output_dir(dir_root, sub_dir=str(sub_dir), output_dir=output_dir), base_name
-    )
+    output_dir: Path = base_output_dir,
+) -> Path:
+    """
+    Generic function to get a full output path combining the file name, dir_root,
+    sub_dir and the parent output directory
 
-
-CACHE_DIR = base_output_dir.joinpath(f"{package_name}_cache")
-
-if not CACHE_DIR.exists():
-    CACHE_DIR.mkdir(parents=True)
-
-
-def cal_output_dir(sub_dir: str | int = "", output_dir: str = base_output_dir) -> str:
-    return get_output_dir("calibration", sub_dir=str(sub_dir), output_dir=output_dir)
-
-
-cal_output_sub_dir = "calibration"
-
-
-def reduced_img_dir(sub_dir: str | int = "", output_dir: str = base_output_dir) -> str:
-    return get_output_dir("redux", sub_dir=str(sub_dir), output_dir=output_dir)
-
-
-def reduced_img_path(
-    img_name: str, sub_dir: str | int = "", output_dir: str = base_output_dir
-) -> str:
-    return os.path.join(reduced_img_dir(str(sub_dir), output_dir=output_dir), img_name)
-
-
-def astrometry_output_dir(
-    sub_dir: str = "", astro_pass: int = 1, output_dir: str = base_output_dir
-) -> str:
+    :param base_name: name of file
+    :param dir_root: directory within subdir, e.g 'raw' or 'processed'
+    :param sub_dir: subdirectory in parent directory, typically a night e.g 20221223
+    :param output_dir: parent output directory
+    :return: full output directory
+    """
     return get_output_dir(
-        f"astrometry_{astro_pass}", sub_dir=str(sub_dir), output_dir=output_dir
-    )
+        dir_root, sub_dir=str(sub_dir), output_dir=output_dir
+    ).joinpath(base_name)
 
 
-def get_mask_path(
-    img_path: str,
-) -> str:
-    return os.path.splitext(img_path)[0] + ".mask.fits"
+def get_weight_path(
+    img_path: str | Path,
+) -> Path:
+    """
+    Returns a weight image path
+
+    :param img_path: parent image
+    :return: custom path for weight image
+    """
+    return Path(img_path).with_suffix(".weight.fits")
 
 
-def get_temp_path(output_dir: str, file_path: str) -> str:
-    return os.path.join(output_dir, "temp_" + os.path.basename(file_path))
+def get_temp_path(output_dir: Path, file_path: Path | str) -> Path:
+    """
+    Gets a temporary path, in output dir, with name of file_path
+
+    :param output_dir: Output directory
+    :param file_path: current path of file
+    :return: temporary path
+    """
+    return output_dir.joinpath("temp_" + Path(file_path).name)
 
 
-def get_untemp_path(temp_path: str) -> str:
-    path = os.path.join(
-        os.path.dirname(temp_path), os.path.basename(temp_path).replace("temp_", "")
-    )
-    return path
+def get_untemp_path(temp_path: Path | str) -> Path:
+    """
+    Converts a temporary path to a regular path.
+
+    Essentially undoes ..:func:`winterdrp.path.get_temp_path`
+
+    :param temp_path: temporary file path
+    :return: normal file path
+    """
+    temp_path = Path(temp_path)
+    return temp_path.with_name(temp_path.name.replace("temp_", ""))
 
 
-def copy_temp_file(output_dir: str, file_path: str) -> str:
+def copy_temp_file(output_dir: Path, file_path: Path) -> Path:
+    """
+    Copies a file at file_path to a temporary path in output dir,
+    then returns temp path
+
+    :param output_dir: output directory
+    :param file_path: file to cope
+    :return: path of temporary file
+    """
     output_path = get_temp_path(output_dir=output_dir, file_path=file_path)
     logger.debug(f"Copying from {file_path} to {output_path}")
     shutil.copyfile(file_path, output_path)
     return output_path
 
 
-def parse_image_list(
-    sub_dir: str | int = "",
-    group_by_object: bool = True,
-    base_dir_f: Callable[[str], str] = raw_img_dir,
-):
-    object_dict = dict()
-
-    img_list = glob(f"{base_dir_f(sub_dir)}/*.fits")
-
-    if not group_by_object:
-        return sorted(img_list)
-
-    for img_file in img_list:
-        img = fits.open(img_file)
-
-        obj = img[0].header["OBJECT"]
-
-        if obj not in object_dict.keys():
-            object_dict[obj] = [img_file]
-        else:
-            object_dict[obj].append(img_file)
-
-    logger.debug(
-        f"Data contains {len(object_dict.keys())} objects: {list(object_dict.keys())}"
-    )
-
-    for key in ["dark", "flat", "bias"]:
-        if key not in object_dict.keys():
-            object_dict[key] = []
-
-    return object_dict
-
-
-raw_img_key = "RAWPATH"
-base_name_key = "BASENAME"
-ref_img_key = "REFPATH"
-proc_history_key = "CALSTEPS"
-proc_fail_key = "PROCFAIL"
-latest_save_key = "SAVEPATH"
-latest_mask_save_key = "MASKPATH"
-saturate_key = "SATURATE"
-sextractor_header_key = "SRCCAT"
-psfex_header_key = "PSFCAT"
-norm_psfex_header_key = "NPSFCAT"
-ref_psf_key = "REFPSF"
-flat_frame_key = "FLATNAME"
-bias_frame_key = "BIASNAME"
-dark_frame_key = "DARKNAME"
-coadd_key = "COADDS"
+RAW_IMG_KEY = "RAWPATH"
+BASE_NAME_KEY = "BASENAME"
+REF_IMG_KEY = "REFPATH"
+PROC_HISTORY_KEY = "CALSTEPS"
+PROC_FAIL_KEY = "PROCFAIL"
+LATEST_SAVE_KEY = "SAVEPATH"
+LATEST_WEIGHT_SAVE_KEY = "WGHTPATH"
+SEXTRACTOR_HEADER_KEY = "SRCCAT"
+PSFEX_CAT_KEY = "PSFCAT"
+NORM_PSFEX_KEY = "NPSFCAT"
+REF_PSF_KEY = "REFPSF"
+FLAT_FRAME_KEY = "FLATNAME"
+BIAS_FRAME_KEY = "BIASNAME"
+DARK_FRAME_KEY = "DARKNAME"
+COADD_KEY = "COADDS"
 sextractor_checkimg_keys = {
     "BACKGROUND": "BKGPT",
     "BACKGROUND_RMS": "BKGRMS",
@@ -205,13 +204,13 @@ core_fields = [
     "OBSCLASS",
     "TARGET",
     "UTCTIME",
-    coadd_key,
-    proc_history_key,
-    proc_fail_key,
-    raw_img_key,
-    base_name_key,
+    COADD_KEY,
+    PROC_HISTORY_KEY,
+    PROC_FAIL_KEY,
+    RAW_IMG_KEY,
+    BASE_NAME_KEY,
 ]
 
-watchdog_email_key = "WATCHDOG_EMAIL"
-watchdog_password_key = "WATCHDOG_EMAIL_PASSWORD"
-watchdog_recipient_key = "WATCHDOG_EMAIL_RECIPIENTS"
+MONITOR_EMAIL_KEY = "WATCHDOG_EMAIL"
+MONITOR_PASSWORD_KEY = "WATCHDOG_EMAIL_PASSWORD"
+MONITOR_RECIPIENT_KEY = "WATCHDOG_EMAIL_RECIPIENTS"

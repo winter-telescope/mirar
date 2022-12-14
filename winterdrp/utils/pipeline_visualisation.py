@@ -5,6 +5,7 @@ Module for generating visualisations of
 import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import matplotlib.pyplot as plt
 
@@ -115,7 +116,10 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
     plt.savefig(output_path)
 
 
-def iterate_flowify(config: str | list[str] = None, pipelines: str | list[str] = None):
+def iterate_flowify(
+    config: Optional[str | list[str]] = None,
+    pipelines: Optional[str | list[str]] = None,
+):
     """
     Function to iterate the visualisation of all configurations and pipelines
 

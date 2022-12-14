@@ -1,28 +1,30 @@
 import logging
 import os
+from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from astropy.io import fits
 
 from winterdrp.data import ImageBatch
 from winterdrp.paths import (
+    NORM_PSFEX_KEY,
+    PSFEX_CAT_KEY,
+    SEXTRACTOR_HEADER_KEY,
     get_output_dir,
-    norm_psfex_header_key,
-    psfex_header_key,
-    sextractor_header_key,
 )
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
-from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.processors.base_processor import BaseImageProcessor, PrerequisiteError
 from winterdrp.utils import execute
 
 logger = logging.getLogger(__name__)
 
 
 def run_psfex(
-    sextractor_cat_path: str,
+    sextractor_cat_path: Path,
     config_path: str,
     psf_output_dir: str,
-    norm_psf_output_name: str = None,
+    norm_psf_output_name: Optional[str] = None,
 ):
     psfex_command = (
         f"psfex -c {config_path} {sextractor_cat_path} "
@@ -32,7 +34,7 @@ def run_psfex(
     execute(psfex_command)
 
     if norm_psf_output_name is not None:
-        psf_path = sextractor_cat_path.replace(".cat", ".psf")
+        psf_path = sextractor_cat_path.with_suffix(".psf")
         with fits.open(psf_path) as data_file:
             psf_model_data = data_file[1].data[0][0][0]
         psf_model_data = psf_model_data / np.sum(psf_model_data)
@@ -45,7 +47,7 @@ class PSFex(BaseImageProcessor):
 
     def __init__(
         self,
-        config_path: str = None,
+        config_path: Optional[str] = None,
         output_sub_dir: str = "psf",
         norm_fits: bool = True,
     ):
@@ -60,22 +62,18 @@ class PSFex(BaseImageProcessor):
             f"sources and saving these to the '{self.output_sub_dir}' directory."
         )
 
-    def get_psfex_output_dir(self):
+    def get_psfex_output_dir(self) -> Path:
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         psfex_out_dir = self.get_psfex_output_dir()
-
-        try:
-            os.makedirs(psfex_out_dir)
-        except OSError:
-            pass
+        psfex_out_dir.mkdir(parents=True, exist_ok=True)
 
         for image in batch:
-            sextractor_cat_path = image[sextractor_header_key]
+            sextractor_cat_path = Path(image[SEXTRACTOR_HEADER_KEY])
 
-            psf_path = sextractor_cat_path.replace(".cat", ".psf")
-            norm_psf_path = sextractor_cat_path.replace(".cat", ".psfmodel")
+            psf_path = sextractor_cat_path.with_suffix(".psf")
+            norm_psf_path = sextractor_cat_path.with_suffix(".psfmodel")
             run_psfex(
                 sextractor_cat_path=sextractor_cat_path,
                 config_path=self.config_path,
@@ -83,8 +81,8 @@ class PSFex(BaseImageProcessor):
                 norm_psf_output_name=norm_psf_path,
             )
 
-            image[psfex_header_key] = psf_path
-            image[norm_psfex_header_key] = norm_psf_path
+            image[PSFEX_CAT_KEY] = str(psf_path)
+            image[NORM_PSFEX_KEY] = str(norm_psf_path)
         return batch
 
     def check_prerequisites(
@@ -97,4 +95,4 @@ class PSFex(BaseImageProcessor):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError
+            raise PrerequisiteError(err)

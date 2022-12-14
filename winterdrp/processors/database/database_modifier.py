@@ -1,6 +1,7 @@
 import logging
 from abc import ABC
 from collections.abc import Callable
+from typing import Optional
 
 import astropy.io.fits
 import numpy as np
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 class BaseDatabaseModifier(BaseDatabaseImporter, ABC):
     base_key = "dbmodifier"
 
-    def __init__(self, db_alter_columns: str = None, *args, **kwargs):
+    def __init__(self, db_alter_columns: Optional[str] = None, *args, **kwargs):
         super(BaseDatabaseModifier, self).__init__(
             db_output_columns=db_alter_columns, *args, **kwargs
         )
@@ -66,7 +67,7 @@ class ImageDatabaseModifier(BaseDatabaseModifier, BaseImageDatabaseImporter):
 
 
 class ModifyImageDatabaseSeq(ImageDatabaseModifier):
-    def __init__(self, sequence_key: str | list[str] = None, *args, **kwargs):
+    def __init__(self, sequence_key: Optional[str | list[str]] = None, *args, **kwargs):
         super(ModifyImageDatabaseSeq, self).__init__(*args, **kwargs)
         self.sequence_key = sequence_key
 

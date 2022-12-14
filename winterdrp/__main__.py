@@ -13,7 +13,7 @@ from astropy.time import Time
 
 from winterdrp.data import Dataset, ImageBatch, clean_cache
 from winterdrp.monitor.base_monitor import Monitor
-from winterdrp.paths import package_name, raw_img_sub_dir
+from winterdrp.paths import RAW_IMG_SUB_DIR, package_name
 from winterdrp.pipelines import Pipeline, get_pipeline
 from winterdrp.processors.utils import ImageLoader
 
@@ -71,7 +71,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--rawdir",
-    default=raw_img_sub_dir,
+    default=RAW_IMG_SUB_DIR,
     help="Subdirectory to look in for raw images of a given night",
 )
 

@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 import pandas as pd
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 class DataframeWriter(BaseDataframeProcessor):
     def __init__(
         self,
-        output_dir_name: str = None,
+        output_dir_name: Optional[str] = None,
         output_dir: str = base_output_dir,
         *args,
         **kwargs,

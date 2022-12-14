@@ -16,9 +16,9 @@ A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
 """
 import logging
 from pathlib import Path
-from typing import Type
+from typing import Optional, Type
 
-from winterdrp.paths import base_name_key, raw_img_key
+from winterdrp.paths import BASE_NAME_KEY, RAW_IMG_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ class DataBlock:
     """Base unit for processing, corresponding to a single image."""
 
     def __init__(self):
-        self.raw_img_list = self[raw_img_key].split(",")
-        self.base_name = self[base_name_key]
+        self.raw_img_list = [Path(x) for x in self[RAW_IMG_KEY].split(",")]
+        self.base_name = self[BASE_NAME_KEY]
 
     def __getitem__(self, item):
         raise NotImplementedError
@@ -37,14 +37,14 @@ class DataBlock:
         raise NotImplementedError
 
     def get_name(self) -> str:
-        """Function to retrieve the :variable:`winterdrp.paths.base_name_key`
+        """Function to retrieve the :variable:`winterdrp.paths.BASE_NAME_KEY`
         of the parent image
 
         :return: Base name of parent image
         """
         return self.base_name
 
-    def get_raw_img_list(self) -> list[str]:
+    def get_raw_img_list(self) -> list[Path]:
         """Function to retrieve the paths of all raw images from
         which this object is derived.
         Because of stacking, this list may include multiple entries.
@@ -175,7 +175,7 @@ class DataBatch(PseudoList):
     def data_type(self) -> Type[DataBlock]:
         raise NotImplementedError()
 
-    def __init__(self, batch: list[DataBlock] | DataBlock = None):
+    def __init__(self, batch: Optional[list[DataBlock] | DataBlock] = None):
         super().__init__(data_list=batch)
 
     def get_batch(self) -> list[DataBlock]:
@@ -214,7 +214,7 @@ class Dataset(PseudoList):
         """
         return self.get_data_list()
 
-    def __init__(self, batches: list[DataBatch] | DataBatch = None):
+    def __init__(self, batches: Optional[list[DataBatch] | DataBatch] = None):
         super().__init__(data_list=batches)
 
     def append(self, item: DataBatch):

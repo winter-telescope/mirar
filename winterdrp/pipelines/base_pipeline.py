@@ -13,6 +13,7 @@ import copy
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 import astropy.io.fits
 import numpy as np
@@ -219,9 +220,9 @@ class Pipeline:
     def reduce_images(
         self,
         dataset: Dataset,
-        output_error_path: str = None,
+        output_error_path: Optional[str] = None,
         catch_all_errors: bool = True,
-        selected_configurations: str | list[str] = None,
+        selected_configurations: Optional[str | list[str]] = None,
     ) -> tuple[Dataset, ErrorStack]:
         """
         Function to process a given dataset.
@@ -272,7 +273,7 @@ class Pipeline:
         self,
         errorstack: ErrorStack,
         selected_configurations: str | list[str],
-        processed_images: list[str] = None,
+        processed_images: Optional[list[str]] = None,
     ) -> list[BaseProcessor]:
         """
         Generate a postprocessing/cleanup processor sequence,

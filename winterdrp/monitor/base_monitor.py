@@ -12,6 +12,7 @@ import warnings
 from pathlib import Path
 from queue import Queue
 from threading import Thread
+from typing import Optional
 from warnings import catch_warnings
 
 import numpy as np
@@ -25,15 +26,15 @@ from watchdog.observers import Observer
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.errors import ErrorReport, ErrorStack, ImageNotFoundError
 from winterdrp.paths import (
+    MONITOR_EMAIL_KEY,
+    MONITOR_RECIPIENT_KEY,
+    RAW_IMG_SUB_DIR,
     __version__,
     base_raw_dir,
     get_output_path,
     max_n_cpu,
     package_name,
     raw_img_dir,
-    raw_img_sub_dir,
-    watchdog_email_key,
-    watchdog_recipient_key,
 )
 from winterdrp.pipelines import get_pipeline
 from winterdrp.processors.csvlog import CSVLog
@@ -71,15 +72,15 @@ class Monitor:
         self,
         night: str,
         pipeline: str,
-        cal_requirements: list[CalRequirement] = None,
+        cal_requirements: Optional[list[CalRequirement]] = None,
         realtime_configurations: str | list[str] = "default",
-        postprocess_configurations: str | list[str] = None,
-        email_sender: str = os.getenv(watchdog_email_key),
-        email_recipients: str | list = os.getenv(watchdog_recipient_key),
+        postprocess_configurations: Optional[str | list[str]] = None,
+        email_sender: str = os.getenv(MONITOR_EMAIL_KEY),
+        email_recipients: str | list = os.getenv(MONITOR_RECIPIENT_KEY),
         midway_postprocess_hours: float = 16.0,
         final_postprocess_hours: float = 48.0,
         log_level: str = "INFO",
-        raw_dir: str = raw_img_sub_dir,
+        raw_dir: str = RAW_IMG_SUB_DIR,
         base_raw_img_dir: str = base_raw_dir,
     ):
 

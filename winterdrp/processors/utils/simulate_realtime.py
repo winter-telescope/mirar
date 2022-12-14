@@ -1,25 +1,23 @@
+"""
+Module to 'simulate' real-time data, by copying images into a directory.
+Used to test performance of the :module:`wintedrp.processors`
+"""
 import logging
-import os
 from pathlib import Path
 from shutil import copy
 
-import astropy.io.fits
-import numpy as np
-
 from winterdrp.data import ImageBatch
-from winterdrp.paths import (
-    base_output_dir,
-    get_output_dir,
-    get_output_path,
-    latest_mask_save_key,
-    latest_save_key,
-)
+from winterdrp.paths import base_output_dir, get_output_dir
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
 
 class RealtimeImageSimulator(BaseImageProcessor):
+    """
+    Processor to copy images into a directory, thereby simulating
+    real-time data acquisition.
+    """
 
     base_key = "simrealtime"
 
@@ -28,11 +26,9 @@ class RealtimeImageSimulator(BaseImageProcessor):
         input_img_dir: str,
         input_img_names: str | list[str],
         output_dir_name: str,
-        output_dir: str = base_output_dir,
-        *args,
-        **kwargs,
+        output_dir: str | Path = base_output_dir,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
         if not isinstance(input_img_names, list):
             input_img_names = [input_img_names]
@@ -40,7 +36,7 @@ class RealtimeImageSimulator(BaseImageProcessor):
         self.input_img_names = input_img_names
         self.input_img_dir = Path(input_img_dir)
         self.output_dir_name = output_dir_name
-        self.output_dir = output_dir
+        self.output_dir = Path(output_dir)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
 

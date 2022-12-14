@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pandas as pd
 
 from winterdrp.data.base_data import DataBatch, DataBlock
@@ -32,7 +34,7 @@ class SourceBatch(DataBatch):
 
     data_type = SourceTable
 
-    def __init__(self, batch: list[SourceTable] | SourceTable = None):
+    def __init__(self, batch: Optional[list[SourceTable] | SourceTable] = None):
         super().__init__(batch=batch)
 
     def append(self, data: SourceTable):

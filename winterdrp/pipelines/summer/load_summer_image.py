@@ -9,12 +9,12 @@ from astropy.io import fits
 from astropy.time import Time
 
 from winterdrp.paths import (
+    BASE_NAME_KEY,
+    LATEST_SAVE_KEY,
+    PROC_FAIL_KEY,
+    PROC_HISTORY_KEY,
+    RAW_IMG_KEY,
     __version__,
-    base_name_key,
-    latest_save_key,
-    proc_fail_key,
-    proc_history_key,
-    raw_img_key,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,18 +48,18 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["TELDEC"] = tel_crd.dec.deg
         header["BZERO"] = 0
 
-        header[latest_save_key] = path
-        header[raw_img_key] = path
+        header[LATEST_SAVE_KEY] = path
+        header[RAW_IMG_KEY] = path
 
         data[0].data = data[0].data * 1.0
 
         if "other" in header["FILTERID"]:
             header["FILTERID"] = "r"
 
-        header[proc_history_key] = ""
+        header[PROC_HISTORY_KEY] = ""
 
         base_name = os.path.basename(path)
-        header[base_name_key] = base_name
+        header[BASE_NAME_KEY] = base_name
         header["EXPID"] = int("".join(base_name.split("_")[1:3])[2:])
         # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
 
@@ -113,7 +113,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
         header["PROCFLAG"] = 0
 
-        header[proc_fail_key] = ""
+        header[PROC_FAIL_KEY] = ""
 
         sunmoon_keywords = [
             "MOONRA",

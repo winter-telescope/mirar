@@ -5,7 +5,7 @@ import astropy.io.fits
 import numpy as np
 
 from winterdrp.data import Dataset, Image, ImageBatch
-from winterdrp.paths import base_name_key
+from winterdrp.paths import BASE_NAME_KEY
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -79,13 +79,13 @@ class SplitImage(BaseImageProcessor):
                     k += 1
 
                     new_header["SRCIMAGE"] = (
-                        image[base_name_key],
+                        image[BASE_NAME_KEY],
                         "Source data name, from which sub-data was made",
                     )
 
                     new_header["NAXIS1"], new_header["NAXIS2"] = new_data.shape
 
-                    new_header[base_name_key] = image[base_name_key].replace(
+                    new_header[BASE_NAME_KEY] = image[BASE_NAME_KEY].replace(
                         ".fits", f"_{sub_img_id}.fits"
                     )
                     new_images.append(Image(data=new_data, header=new_header))
