@@ -1,5 +1,5 @@
 """
-Module relating to :ref:`swarp <https://www.astromatic.net/software/swarp`_
+Module relating to `swarp <https://www.astromatic.net/software/swarp`_
 """
 import logging
 import os
