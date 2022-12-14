@@ -15,7 +15,8 @@ from winterdrp.processors.astromatic.sextractor.sourceextractor import (
 from winterdrp.processors.base_processor import BaseCandidateGenerator
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 
-# TODO : Move photometry to its own thing like catalogs, user can choose whichever way they want to do photometry
+# TODO : Move photometry to its own thing like catalogs, user can choose
+# whichever way they want to do photometry
 logger = logging.getLogger(__name__)
 
 

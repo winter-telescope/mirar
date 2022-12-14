@@ -36,7 +36,8 @@ class BaseReferenceGenerator:
             + "_ref.fits"
         )
 
-        # This is because Swarp requires the COADDS keyword. I am setting it to zero manually
+        # This is because Swarp requires the COADDS keyword. I am setting it to
+        # zero manually
         if "COADDS" not in refHDU.header.keys():
             logger.debug("Setting COADDS to 1")
             refHDU.header[COADD_KEY] = 1

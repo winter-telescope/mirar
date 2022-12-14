@@ -256,8 +256,7 @@ def dec_str_2_deg(dec_str: str) -> float:
 
 
 def unique(input_list: list) -> list:
-    lis = input_list[:]  # make a copy
-    lis.sort()
+    lis = sorted(input_list[:])  # make a copy
     llen = len(lis)
     i = 0
     while i < llen - 1:
@@ -436,7 +435,8 @@ def get_img_src_list(
         fwhm_mode = min_fwhm
         fwhm_20 = min_fwhm
 
-    # formerly a max, but occasionally a preponderance of long CR's could cause fwhm_mode to be bigger than the stars
+    # formerly a max, but occasionally a preponderance of long CR's could
+    # cause fwhm_mode to be bigger than the stars
     refined_min_fwhm = median([0.75 * fwhm_mode, 0.9 * fwhm_20, min_fwhm])
     # if CR's are bigger and more common than stars, this is dangerous...
     logger.debug(f"Refined min FWHM: {refined_min_fwhm} pix")
@@ -807,7 +807,7 @@ def distance_match(
                 dpa = []
                 # Here, dpa[n] is the mean rotation of the PA from the primary star of this match
                 #  to the stars in its match RELATIVE TO those same angles for those same stars
-                #  in the catalog.  Therefore it is a robust measurement of the rotation.
+                # in the catalog.  Therefore it is a robust measurement of the rotation.
 
                 for i in range(len(img_match_in)):
                     ddpa = position_angle(
@@ -821,7 +821,8 @@ def distance_match(
                         ddpa += 360.0
                     dpa.append(ddpa)
 
-                # If user was confident the initial PA was right, remove bad PA'src right away
+                # If user was confident the initial PA was right, remove bad PA'src
+                # right away
                 for i in range(len(img_match_in) - 1, -1, -1):
                     if abs(dpa[i]) > unc_pa:
                         del img_match_in[i]
@@ -947,7 +948,8 @@ def distance_match(
                     1  # these aren't necessarily bad, just making more manageable.
                 )
 
-    # New verification step: calculate distances and PAs between central stars of matches
+    # New verification step: calculate distances and PAs between central stars
+    # of matches
     n_dist_flags = [0] * len(primary_match_img)
     for v in range(2):  # two iterations
         # find bad pairs
@@ -1298,9 +1300,11 @@ def parse_header(
                 )
                 logger.error(err)
                 raise
-                # Some images might use CROT parameters, could try to be compatible with this too...?
+                # Some images might use CROT parameters, could try to be compatible with
+                # this too...?
 
-        # Wipe nonstandard hdu info from the header (otherwise this will confuse verification)
+        # Wipe nonstandard hdu info from the header (otherwise this will confuse
+        # verification)
         header_keys = list(header.keys())
         ctype_change = 0
         iraf_keys = []
@@ -1520,7 +1524,8 @@ def crosscheck_source_lists(
     box_size_arcsec: float,
     area_sq_min: float,
 ) -> tuple[list[SextractorSource], int, float, list[BaseSource], int, float]:
-    # If this image is actually shallower than reference catalog, trim the reference catalog down
+    # If this image is actually shallower than reference catalog, trim the
+    # reference catalog down
     if n_ref > 16 and ref_density > 3 * img_density:
         logger.debug("Image is shallow.  Trimming reference catalog...")
         while ref_density > 3 * img_density:
@@ -1841,7 +1846,8 @@ def autoastrometry(
             )
         max_rad = min(max_rad, field_width * 3.0 / 4)
 
-        # note that img_density is per arcmin^2, while the radii are in arcsec, hence the conversion factor.
+        # note that img_density is per arcmin^2, while the radii are in arcsec,
+        # hence the conversion factor.
 
     circ_density = img_density * min(
         [area_sq_min, (math.pi * (max_rad / 60.0) ** 2 - math.pi * (min_rad / 60) ** 2)]
@@ -1931,7 +1937,8 @@ def autoastrometry(
     stdev_pa = stdev(mpa)
 
     sky_offset_pa = -parity * median_pa
-    # This appears to be necessary for the printed value to agree with our normal definition.
+    # This appears to be necessary for the printed value to agree with our
+    # normal definition.
 
     logger.debug("PA offset:")
     logger.debug(f"  dPA = {sky_offset_pa:.3f}  (unc. {stdev_pa:.3f})")
@@ -2048,7 +2055,8 @@ def autoastrometry(
         slash_pos = filename.rfind("/")
         dir_name = filename[0 : slash_pos + 1]
         fil = filename[slash_pos + 1 :]
-        outfile = f"{dir_name}a{fil}"  # alternate behavior would always output to current directory
+        # alternate behavior would always output to current directory
+        outfile = f"{dir_name}a{fil}"
 
     if outfile is not None:
         with fits.open(temp_path) as hdu:

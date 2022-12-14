@@ -23,7 +23,6 @@ class PS1Ref(BaseReferenceGenerator):
         super(PS1Ref, self).__init__(filter_name)
 
     def getimages(self, ra, dec, filters="grizy"):
-
         """Query ps1filenames.py service to get a list of images
 
         ra, dec = position in degrees
@@ -92,7 +91,6 @@ class PS1Ref(BaseReferenceGenerator):
         format="fits",
         color=False,
     ):
-
         """Get URL for images in the table
 
         ra, dec = position in degrees
