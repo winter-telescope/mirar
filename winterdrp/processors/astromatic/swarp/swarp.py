@@ -1,3 +1,6 @@
+"""
+Module relating to :ref:`swarp <https://www.astromatic.net/software/swarp`_
+"""
 import logging
 import os
 from pathlib import Path
@@ -44,7 +47,8 @@ def run_swarp(
     subtract_bkg: bool = False,
 ):
     """
-    Resample and stack given images with swarp
+    Wrapper to resample and stack images with swarp
+
     Parameters
     ----------
     stack_list_path : string
@@ -87,7 +91,7 @@ def run_swarp(
         swarp_command += f" -PIXELSCALE_TYPE MANUAL -PIXEL_SCALE {pixscale}"
 
     if propogate_headerlist is not None:
-        swarp_command += f" -COPY_KEYWORDS "
+        swarp_command += " -COPY_KEYWORDS "
         for keyword in propogate_headerlist:
             swarp_command += f"{keyword},"
 
@@ -108,6 +112,10 @@ def run_swarp(
 
 
 class Swarp(BaseImageProcessor):
+    """
+    Processor to apply Swarp
+    """
+
     base_key = "swarp"
 
     def __init__(
@@ -142,9 +150,14 @@ class Swarp(BaseImageProcessor):
         self.subtract_bkg = subtract_bkg
 
     def __str__(self) -> str:
-        return f"Processor to apply swarp to images, stacking them together."
+        return "Processor to apply swarp to images, stacking them together."
 
     def get_swarp_output_dir(self) -> Path:
+        """
+        Get custom output directory for swarp
+
+        :return: Swarp directory
+        """
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
     def _apply_to_images(
@@ -175,7 +188,7 @@ class Swarp(BaseImageProcessor):
             )
         else:
             output_image_path = swarp_output_dir.joinpath(
-                Path(batch[0][BASE_NAME_KEY]).name + ".resamp.fits",
+                Path(batch[0][BASE_NAME_KEY]).with_suffix(".resamp.fits").name,
             )
         logger.debug(f"Saving to {output_image_path}")
 
@@ -184,9 +197,9 @@ class Swarp(BaseImageProcessor):
         all_ras = []
         all_decs = []
 
-        with open(swarp_image_list_path, "w") as f, open(
-            swarp_weight_list_path, "w"
-        ) as g:
+        with open(swarp_image_list_path, "w", encoding="utf8") as img_list, open(
+            swarp_weight_list_path, "w", encoding="utf8"
+        ) as weight_list:
             for image in batch:
 
                 pixscale_to_use = None
@@ -208,12 +221,10 @@ class Swarp(BaseImageProcessor):
                     center_ra_to_use = self.center_ra
                     center_dec_to_use = self.center_dec
                 else:
-                    w = WCS(image.get_header())
+                    wcs = WCS(image.get_header())
 
                     cd11 = image["CD1_1"]
                     cd21 = image["CD2_1"]
-                    cd12 = image["CD1_2"]
-                    cd22 = image["CD2_2"]
 
                     nxpix = image["NAXIS1"]
                     nypix = image["NAXIS2"]
@@ -221,10 +232,9 @@ class Swarp(BaseImageProcessor):
                     image_x_cen = nxpix / 2
                     image_y_cen = nypix / 2
 
-                    [ra, dec] = w.all_pix2world(image_x_cen, image_y_cen, 1)
+                    [ra, dec] = wcs.all_pix2world(image_x_cen, image_y_cen, 1)
 
                     xscale = np.sqrt(cd11**2 + cd21**2)
-                    yscale = np.sqrt(cd12**2 + cd22**2)
 
                     pixscale = xscale * 3600
                     imgpixsize = max(nxpix, nypix)
@@ -248,8 +258,8 @@ class Swarp(BaseImageProcessor):
 
                 temp_mask_path = self.save_weight_image(image, temp_img_path)
 
-                f.write(f"{temp_img_path}\n")
-                g.write(f"{temp_mask_path}\n")
+                img_list.write(f"{temp_img_path}\n")
+                weight_list.write(f"{temp_mask_path}\n")
 
                 if self.include_scamp:
                     temp_files += [temp_head_path, temp_img_path, temp_mask_path]
@@ -293,10 +303,9 @@ class Swarp(BaseImageProcessor):
 
             temp_output_image_path = get_temp_path(
                 swarp_output_dir,
-                Path(os.path.splitext(batch[0][BASE_NAME_KEY])[0]).with_suffix(
-                    ".resamp.fits"
-                ),
+                output_image_path.name,
             )
+
             temp_output_image_weight_path = temp_output_image_path.with_suffix(
                 ".weight.fits"
             )
