@@ -4,10 +4,12 @@ Python script containing all IO functions.
 All opening/writing of fits files should run via this script.
 """
 
+import warnings
 from pathlib import Path
 
 import numpy as np
 from astropy.io import fits
+from astropy.utils.exceptions import AstropyUserWarning
 
 
 def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU:
@@ -57,3 +59,33 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
         header = hdu.header
 
     return data, header
+
+
+def check_file_is_complete(path: str) -> bool:
+    """
+    Function to check whether a fits file is as large as expected.
+    Useful to verify with e.g rsync, where files can be partially transferred
+
+    Disclaimer: I (Robert) do not feel great about having written
+    this code block.
+    It seems to works though, let's hope no one finds out!
+    I will cover my tracks by hiding the astropy warning which
+    inspired this block, informing the user that the file
+    is not as long as expected
+
+    :param path: path of file to check
+    :return: boolean file complete
+    """
+    check = False
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=AstropyUserWarning)
+        try:
+            with fits.open(path) as hdul:
+                check = (
+                    hdul._file.size  # pylint: disable=protected-access
+                    == hdul._file.tell()  # pylint: disable=protected-access
+                )
+        except OSError:
+            pass
+
+    return check
