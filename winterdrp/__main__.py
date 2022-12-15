@@ -7,11 +7,12 @@ Main executable for winterdrp. You can execute the code from the terminal like:
 import argparse
 import logging
 import sys
+import tempfile
 
 from astropy import units as u
 from astropy.time import Time
 
-from winterdrp.data import Dataset, ImageBatch, clean_cache
+from winterdrp.data import Dataset, ImageBatch, cache
 from winterdrp.monitor.base_monitor import Monitor
 from winterdrp.paths import RAW_IMG_SUB_DIR, package_name
 from winterdrp.pipelines import Pipeline, get_pipeline
@@ -90,7 +91,9 @@ if night is None:
     night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
 
 
-try:
+with tempfile.TemporaryDirectory() as temp_dir:
+
+    cache.set_cache_dir(temp_dir)
 
     if args.monitor:
 
@@ -177,7 +180,3 @@ try:
         )
 
         logger.info("End of winterdrp execution")
-
-finally:
-    # Delete everything added to the cache
-    clean_cache()

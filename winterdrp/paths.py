@@ -60,15 +60,6 @@ if _base_output_dir is None:
 else:
     base_output_dir = Path(_base_output_dir)
 
-# Set up cache for image data
-
-USE_CACHE: bool = bool(os.getenv("USE_WINTER_CACHE", "true"))
-
-CACHE_DIR = base_output_dir.joinpath(f"{package_name}_cache")
-
-if not CACHE_DIR.exists():
-    CACHE_DIR.mkdir(parents=True)
-
 
 # Set up special directories
 
