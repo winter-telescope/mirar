@@ -1,6 +1,7 @@
+"""
+Tests for image subtraction with WIRC
+"""
 import logging
-import os
-import unittest
 
 from astropy.io import fits
 
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 test_data_dir = get_test_data_dir()
 
-ref_img_directory = os.path.join(test_data_dir, "wirc/ref")
+ref_img_directory = test_data_dir.joinpath("wirc/ref")
 
 
 def test_reference_image_generator(

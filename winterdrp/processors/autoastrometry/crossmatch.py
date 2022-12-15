@@ -20,8 +20,7 @@ from winterdrp.processors.autoastrometry.utils import median, mode, stdev, uniqu
 
 logger = logging.getLogger(__name__)
 
-# TODO: swap mode
-FAST_MATCH = True
+FAST_MATCH = False
 SHOW_MATCH = False
 
 

@@ -1,6 +1,5 @@
 import logging
 import os
-import unittest
 
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
@@ -41,11 +40,11 @@ expected_zp = {
     "ZP_2.0": 25.774316787719727,
     "ZP_2.0_std": 0.32469287514686584,
     "ZP_2.0_nstars": 15,
-    "ZP_4.0": 27.227283477783203,
+    "ZP_4.0": 27.22728157043457,
     "ZP_4.0_std": 0.09417041391134262,
     "ZP_4.0_nstars": 13,
-    "ZP_5.0": 27.59035301208496,
-    "ZP_5.0_std": 0.08887326717376709,
+    "ZP_5.0": 27.59035873413086,
+    "ZP_5.0_std": 0.08887325972318649,
     "ZP_5.0_nstars": 13,
     "ZP_8.0": 28.080671310424805,
     "ZP_8.0_std": 0.21738892793655396,
@@ -53,7 +52,7 @@ expected_zp = {
     "ZP_10.0": 28.32463264465332,
     "ZP_10.0_std": 0.08160017430782318,
     "ZP_10.0_nstars": 13,
-    "ZP_AUTO": 28.462337493896484,
+    "ZP_AUTO": 28.46233558654785,
     "ZP_AUTO_std": 0.18256542086601257,
     "ZP_AUTO_nstars": 15,
 }
@@ -111,9 +110,7 @@ class TestWircPipeline(BaseTestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(
-            Dataset([ImageBatch()]), catch_all_errors=False
-        )
+        res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
 

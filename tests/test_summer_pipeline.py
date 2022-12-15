@@ -1,35 +1,35 @@
+"""
+Tests for summer reduction
+"""
 import logging
-import unittest
 
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.pipelines import get_pipeline
 from winterdrp.testing import BaseTestCase
 
-# from winterdrp.data.image_data import clean_cache
-
 logger = logging.getLogger(__name__)
 
 expected_zp = {
-    "ZP_2.0": 24.381802801640834,
-    "ZP_2.0_std": 0.08222868531222044,
+    "ZP_2.0": 24.379148900858567,
+    "ZP_2.0_std": 0.07320184249312667,
     "ZP_2.0_nstars": 30,
-    "ZP_3.0": 25.06422489916484,
-    "ZP_3.0_std": 0.06870406816807186,
+    "ZP_3.0": 25.072568754704793,
+    "ZP_3.0_std": 0.06529106709538676,
     "ZP_3.0_nstars": 30,
-    "ZP_4.0": 25.451230355453497,
-    "ZP_4.0_std": 0.06158930864995796,
+    "ZP_4.0": 25.449809682718914,
+    "ZP_4.0_std": 0.06168474184669056,
     "ZP_4.0_nstars": 30,
-    "ZP_5.0": 25.659666622034713,
-    "ZP_5.0_std": 0.06283258570749543,
+    "ZP_5.0": 25.66054034665426,
+    "ZP_5.0_std": 0.06357885150281098,
     "ZP_5.0_nstars": 30,
-    "ZP_6.0": 25.78091181551616,
-    "ZP_6.0_std": 0.06342292306060344,
+    "ZP_6.0": 25.779508960596722,
+    "ZP_6.0_std": 0.06472718057714481,
     "ZP_6.0_nstars": 30,
-    "ZP_7.0": 25.853334717305508,
-    "ZP_7.0_std": 0.06322232852162107,
+    "ZP_7.0": 25.851914108149213,
+    "ZP_7.0_std": 0.06594640100455139,
     "ZP_7.0_nstars": 30,
-    "ZP_8.0": 25.90134099756877,
-    "ZP_8.0_std": 0.06359669923996372,
+    "ZP_8.0": 25.89904772872925,
+    "ZP_8.0_std": 0.06650479236590319,
     "ZP_8.0_nstars": 30,
 }
 
@@ -48,9 +48,7 @@ class TestSummerPipeline(BaseTestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(
-            Dataset([ImageBatch()]), catch_all_errors=False
-        )
+        res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res[0]), 1)
 
