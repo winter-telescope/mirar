@@ -13,6 +13,7 @@ Subpackages
    :maxdepth: 4
 
    winterdrp.catalog.kowalski
+   winterdrp.catalog.vizier
 
 Submodules
 ----------
@@ -29,30 +30,6 @@ winterdrp.catalog.gaia module
 -----------------------------
 
 .. automodule:: winterdrp.catalog.gaia
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-winterdrp.catalog.ps1 module
-----------------------------
-
-.. automodule:: winterdrp.catalog.ps1
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-winterdrp.catalog.sdss module
------------------------------
-
-.. automodule:: winterdrp.catalog.sdss
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-winterdrp.catalog.skymapper module
-----------------------------------
-
-.. automodule:: winterdrp.catalog.skymapper
    :members:
    :undoc-members:
    :show-inheritance:

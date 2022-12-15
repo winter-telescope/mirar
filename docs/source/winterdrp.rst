@@ -40,3 +40,11 @@ winterdrp.paths module
    :members:
    :undoc-members:
    :show-inheritance:
+
+winterdrp.testing module
+------------------------
+
+.. automodule:: winterdrp.testing
+   :members:
+   :undoc-members:
+   :show-inheritance:

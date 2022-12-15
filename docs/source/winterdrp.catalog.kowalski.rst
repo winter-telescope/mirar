@@ -9,6 +9,14 @@ winterdrp.catalog.kowalski package
 Submodules
 ----------
 
+winterdrp.catalog.kowalski.base\_kowalski\_catalog module
+---------------------------------------------------------
+
+.. automodule:: winterdrp.catalog.kowalski.base_kowalski_catalog
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 winterdrp.catalog.kowalski.ps1 module
 -------------------------------------
 
