@@ -1,10 +1,14 @@
-import pandas as pd
-import penquins
-
-from winterdrp.catalog.base_catalog import BaseKowalskiXMatch, BaseXMatchCatalog
+"""
+Module for querying 2MASS using Kowalski
+"""
+from winterdrp.catalog.kowalski.base_kowalski_catalog import BaseKowalskiXMatch
 
 
 class TMASS(BaseKowalskiXMatch):
+    """
+    2MASS Kowalski catalog
+    """
+
     catalog_name = "2MASS_PSC"
     abbreviation = "tm"
     projection = {
@@ -46,6 +50,3 @@ class TMASS(BaseKowalskiXMatch):
         "tmobjectid": str,
         "tmph_qual": str,
     }
-
-    def __init__(self, *args, **kwargs):
-        super(TMASS, self).__init__(*args, **kwargs)

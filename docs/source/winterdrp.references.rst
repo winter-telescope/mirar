@@ -17,6 +17,14 @@ winterdrp.references.base\_reference\_generator module
    :undoc-members:
    :show-inheritance:
 
+winterdrp.references.errors module
+----------------------------------
+
+.. automodule:: winterdrp.references.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 winterdrp.references.ps1 module
 -------------------------------
 

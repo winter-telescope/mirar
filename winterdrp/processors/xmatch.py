@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import pandas as pd
 
 from winterdrp.catalog.base_catalog import BaseXMatchCatalog
 from winterdrp.data import SourceBatch
@@ -14,18 +13,9 @@ class XMatch(BaseDataframeProcessor):
     def __init__(
         self,
         catalog: BaseXMatchCatalog,
-        num_stars: int = 1,
-        search_radius_arcsec: float = 30,
-        *args,
-        **kwargs,
     ):
         self.catalog = catalog
-        self.num_stars = num_stars
-        self.search_radius_arcsec = search_radius_arcsec
-
-        self.catalog.search_radius_arcsec = search_radius_arcsec
-        self.catalog.num_sources = num_stars
-        super(XMatch, self).__init__(*args, **kwargs)
+        super().__init__()
 
     def _apply_to_candidates(
         self,
@@ -53,7 +43,7 @@ class XMatch(BaseDataframeProcessor):
                     available_projection_keys += [k]
 
             for key in available_projection_keys:
-                for num in range(self.num_stars):
+                for num in range(self.catalog.num_sources):
                     colname = catalog.column_names[key]
                     candidate_table[colname + f"{num + 1}"] = np.array(
                         np.zeros(len(candidate_table)) - 99,

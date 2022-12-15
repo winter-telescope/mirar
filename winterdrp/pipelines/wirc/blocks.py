@@ -113,8 +113,8 @@ candidates = [
         col_suffix_list=["", "big"],
     ),
     DataframeWriter(output_dir_name="candidates"),
-    XMatch(catalog=TMASS(), num_stars=3, search_radius_arcsec=30),
-    XMatch(catalog=PS1(), num_stars=3, search_radius_arcsec=30),
+    XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
+    XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     DataframeWriter(output_dir_name="kowalski"),
     DatabaseHistoryImporter(
         xmatch_radius_arcsec=2,

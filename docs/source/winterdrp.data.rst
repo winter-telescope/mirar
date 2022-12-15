@@ -17,6 +17,14 @@ winterdrp.data.base\_data module
    :undoc-members:
    :show-inheritance:
 
+winterdrp.data.cache module
+---------------------------
+
+.. automodule:: winterdrp.data.cache
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 winterdrp.data.image\_data module
 ---------------------------------
 

@@ -1,7 +1,14 @@
-from winterdrp.catalog.base_catalog import BaseKowalskiXMatch
+"""
+Module for querying PS1 using Kowalski
+"""
+from winterdrp.catalog.kowalski.base_kowalski_catalog import BaseKowalskiXMatch
 
 
 class PS1(BaseKowalskiXMatch):
+    """
+    PS1 Kowalski catalog
+    """
+
     catalog_name = "PS1_DR1"
     abbreviation = "ps"
     projection = {
@@ -33,6 +40,3 @@ class PS1(BaseKowalskiXMatch):
         "simag": float,
         "szmag": float,
     }
-
-    def __init__(self, *args, **kwargs):
-        super(PS1, self).__init__(*args, **kwargs)
