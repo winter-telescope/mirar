@@ -70,7 +70,7 @@ CAL_OUTPUT_SUB_DIR = "calibration"
 
 def raw_img_dir(
     sub_dir: str = "", raw_dir: Path = base_raw_dir, img_sub_dir: str = RAW_IMG_SUB_DIR
-) -> str:
+) -> Path:
     """
     Get directory for raw images
 
@@ -79,7 +79,7 @@ def raw_img_dir(
     :param img_sub_dir: Default 'raw'
     :return: Full path of raw images
     """
-    return os.path.join(raw_dir, os.path.join(str(sub_dir), img_sub_dir))
+    return raw_dir.joinpath(os.path.join(str(sub_dir), img_sub_dir))
 
 
 def get_output_dir(
