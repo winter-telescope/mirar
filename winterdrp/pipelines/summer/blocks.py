@@ -85,7 +85,10 @@ load_test_proc = [
 sim_realtime = [
     RealtimeImageSimulator(
         input_img_dir=get_test_data_dir(),
-        input_img_names="summer/20220402/raw/SUMMER_20220402_214324_Camera0.fits",
+        input_img_names=[
+            "summer/20220402/raw/SUMMER_20220402_193104_Camera0.fits",
+            "summer/20220402/raw/SUMMER_20220402_214324_Camera0.fits",
+        ],
         output_dir=get_test_data_dir(),
         output_dir_name="raw",
     )
