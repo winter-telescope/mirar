@@ -20,4 +20,4 @@ How does the code actually work?
 
 .. include:: ../../winterdrp/data/image_data.py
     :start-line: 5
-    :end-line: 54
+    :end-line: 55

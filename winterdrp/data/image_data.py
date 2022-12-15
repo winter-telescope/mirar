@@ -32,19 +32,18 @@ somewhat-complicated method of 'garbage collection' (see
 for more info), and it is not guaranteed that Image objects will
 clean themselves.
 
-As a fallback, we provide the helper function to delete all cache files created
-during a session. When you run the code from the command line (and therefore call
-__main__), we automatically run the cleanup before exiting,
-even if the code crashes/raises errors. This is also true for the unit tests,
-as provided by the  base test class. **If you try to interact with the code in
-any other way, please be mindful of this behaviour, and ensure that you clean your
-cache in a responsible way!**
+As a fallback, when you run the code from the command line (and therefore call
+__main__),  we use the standard python
+`tempfile library <https://docs.python.org/3/library/tempfile.html>` to create a
+temporary directory, and set this as a cache. We call the directory using `with`
+context manager, ensuring that cleanup runs automatically before exiting,
+even if the code crashes/raises errors. We also use `tempfile` and careful cleaning
+ for the unit tests, as provided by the  base test class.
+ **If you try to interact with the code in any other way, please be mindful of this
+ behaviour, and ensure that you clean your cache in a responsible way!**
 
 If you don't like this feature, you don't need to use it. Cache mode is entirely
 optional, and can be disabled by setting the environment variable to false.
-
-.. literalinclude:: ../../winterdrp/paths.py
-    :lines: 29
 
 You can change this via an environment variable.
 
@@ -65,7 +64,7 @@ from astropy.io.fits import Header
 from astropy.time import Time
 
 from winterdrp.data.base_data import DataBatch, DataBlock
-from winterdrp.paths import CACHE_DIR, USE_CACHE
+from winterdrp.data.cache import USE_CACHE, cache
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +100,7 @@ class Image(DataBlock):
         """
         base = "".join([str(Time.now()), self.get_name()])
         name = f"{hashlib.sha1(base.encode()).hexdigest()}.npy"
-        return CACHE_DIR.joinpath(name)
+        return cache.get_cache_dir().joinpath(name)
 
     def __str__(self):
         return f"<An {self.__class__.__name__} object, built from {self.get_name()}>"
@@ -226,13 +225,3 @@ class ImageBatch(DataBatch):
         :return: list of :class:`~winterdrp.data.image_data.Image` objects
         """
         return self.get_data_list()
-
-
-def clean_cache():
-    """Function to clear all created cache files
-
-    :return: None
-    """
-    for path in Image.cache_files:
-        path.unlink(missing_ok=True)
-    Image.cache_files = []
