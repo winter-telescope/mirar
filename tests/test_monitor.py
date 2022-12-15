@@ -1,6 +1,5 @@
 """Test suite for ..module::winterdrp.monitor module"""
 import logging
-import unittest
 
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.monitor.base_monitor import Monitor
@@ -43,3 +42,5 @@ class TestMonitor(BaseTestCase):
         )
         monitor.process_realtime()
         self.assertEqual(len(monitor.processed_science_images), 1)
+        self.assertEqual(len(monitor.processed_cal_images), 1)
+        self.assertEqual(len(monitor.failed_images), 0)
