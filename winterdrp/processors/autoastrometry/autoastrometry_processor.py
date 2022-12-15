@@ -1,5 +1,7 @@
+"""
+Module containing a processor to run automastrometry
+"""
 import logging
-import os
 from typing import Optional
 
 from winterdrp.data import ImageBatch
@@ -11,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class AutoAstrometry(BaseImageProcessor):
+    """Processor to run automastrometry"""
 
     base_key = "autoastrometry"
 
@@ -22,10 +25,8 @@ class AutoAstrometry(BaseImageProcessor):
         pixel_scale: Optional[float] = None,
         inv: bool = False,
         pa: Optional[float] = None,
-        *args,
-        **kwargs,
     ):
-        super(AutoAstrometry, self).__init__(*args, **kwargs)
+        super().__init__()
 
         self.temp_output_sub_dir = temp_output_sub_dir
         self.write_crosscheck_files = write_crosscheck_files
@@ -35,7 +36,7 @@ class AutoAstrometry(BaseImageProcessor):
         self.pa = pa
 
     def __str__(self) -> str:
-        return f"Processor to perform astrometric calibration."
+        return "Processor to perform astrometric calibration."
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
 
@@ -43,14 +44,11 @@ class AutoAstrometry(BaseImageProcessor):
             self.temp_output_sub_dir, self.night_sub_dir
         )
 
-        try:
-            os.makedirs(sextractor_out_dir)
-        except OSError:
-            pass
+        sextractor_out_dir.mkdir(parents=True, exist_ok=True)
 
         for i, image in enumerate(batch):
 
-            temp_path = os.path.join(sextractor_out_dir, image[BASE_NAME_KEY])
+            temp_path = sextractor_out_dir.joinpath(image[BASE_NAME_KEY])
             self.save_fits(image, temp_path)
 
             run_autoastrometry_single(
@@ -69,7 +67,7 @@ class AutoAstrometry(BaseImageProcessor):
 
             batch[i] = image
 
-            os.remove(temp_path)
+            temp_path.unlink()
             logger.info(
                 f"Loaded updated header, and deleted temporary file {temp_path}"
             )
