@@ -24,15 +24,14 @@ class Gaia2Mass(BaseCatalog):
 
     def __init__(
         self,
-        search_radius_arcmin: float,
-        min_mag: float,
-        max_mag: float,
+        *args,
         filter_name: str = "j",
         ph_qual_cut: bool = False,
         trim: bool = False,
         image_catalog_path: Optional[str] = None,
+        **kwargs,
     ):
-        super().__init__(search_radius_arcmin, min_mag, max_mag, filter_name)
+        super().__init__(*args, filter_name=filter_name, **kwargs)
         self.ph_qual_cut = ph_qual_cut
         self.trim = trim
         self.image_catalog_path = image_catalog_path

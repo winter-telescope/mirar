@@ -62,8 +62,8 @@ def convert_table_to_ldac(tbl: astropy.table.Table) -> astropy.io.fits.HDUList:
         table.write(temp_file, format="fits")
         temp_file.seek(0)
         with fits.open(temp_file, mode="update") as hdulist:
-            tbl1, tbl2 = convert_hdu_to_ldac(hdulist[1])
-            new_hdulist = [hdulist[0], tbl1, tbl2]
+            tbl1, tbl2 = convert_hdu_to_ldac(hdulist[1].copy())
+            new_hdulist = [hdulist[0].copy(), tbl1, tbl2]
             new_hdulist = fits.HDUList(new_hdulist)
     return new_hdulist
 

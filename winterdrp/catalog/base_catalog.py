@@ -14,9 +14,9 @@ from winterdrp.utils.ldac_tools import save_table_as_ldac
 logger = logging.getLogger(__name__)
 
 
-class BaseCatalog:
+class ABCatalog:
     """
-    Base class for catalog objects
+    Abstract class for catalog objects
     """
 
     @property
@@ -29,11 +29,19 @@ class BaseCatalog:
     def __init__(
         self,
         search_radius_arcmin: float,
-        min_mag: float,
-        max_mag: float,
-        filter_name: str,
     ):
         self.search_radius_arcmin = search_radius_arcmin
+
+
+class BaseCatalog(ABCatalog, ABC):
+    """
+    Base class for catalog objects
+    """
+
+    def __init__(
+        self, *args, min_mag: float, max_mag: float, filter_name: str, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
         self.min_mag = min_mag
         self.max_mag = max_mag
         self.filter_name = filter_name
@@ -84,7 +92,7 @@ class BaseCatalog:
         return output_dir.joinpath(cat_base_name)
 
 
-class BaseXMatchCatalog(BaseCatalog, ABC):
+class BaseXMatchCatalog(ABCatalog, ABC):
     """
     Base Catalog for crossmatching
     """
@@ -114,8 +122,8 @@ class BaseXMatchCatalog(BaseCatalog, ABC):
         """
         raise NotImplementedError
 
-    def __init__(self, *args, num_sources: int = 1):
-        super().__init__(*args)
+    def __init__(self, *args, num_sources: int = 1, **kwargs):
+        super().__init__(*args, **kwargs)
         self.search_radius_arcsec = self.search_radius_arcmin * 60.0
         self.num_sources = num_sources
 
