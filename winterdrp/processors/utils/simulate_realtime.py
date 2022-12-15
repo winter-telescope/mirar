@@ -23,7 +23,7 @@ class RealtimeImageSimulator(BaseImageProcessor):
 
     def __init__(
         self,
-        input_img_dir: str,
+        input_img_dir: Path,
         input_img_names: str | list[str],
         output_dir_name: str,
         output_dir: str | Path = base_output_dir,
