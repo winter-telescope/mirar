@@ -1,5 +1,9 @@
+"""
+Module handling the downloading of test data
+"""
 import logging
 import os
+from pathlib import Path
 
 from winterdrp.paths import package_name, winter_code_dir
 
@@ -7,30 +11,51 @@ logger = logging.getLogger(__name__)
 
 TEST_DATA_URL = "git@github.com:winter-telescope/wirc_starterpack.git"
 
-test_data_dir = os.path.join(
-    os.path.dirname(winter_code_dir),
-    os.path.basename(TEST_DATA_URL.replace(".git", "")),
+test_data_dir = winter_code_dir.parent.joinpath(
+    os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
+
 
 TEST_DATA_TAG = "v0.1.4"
 
 COMPLETED_CHECK_BOOL = f"{package_name}_testdata_check"
-NEED_TEST_DATA = f"TESTDATA_CHECK"
+NEED_TEST_DATA = "TESTDATA_CHECK"
 
 
-def do_testdata_check():
+def do_testdata_check() -> bool:
+    """
+    Returns a boolean for whether the test data needs to be checked
+
+    :return: Bool
+    """
     return bool(os.environ.get(NEED_TEST_DATA, default=False))
 
 
-def completed_testdata_check():
+def completed_testdata_check() -> bool:
+    """
+    Returns a boolean for whether the test data was already checked
+
+    :return: Bool
+    """
     return bool(os.environ.get(COMPLETED_CHECK_BOOL, default=False))
 
 
 def require_test_data():
+    """
+    Function to set the test data to be required
+
+    :return: None
+    """
     os.environ[NEED_TEST_DATA] = "True"
 
 
 def update_test_data():
+    """
+    Updates the test data by fetching the latest version with git, and then
+    checking out the specific tagged version
+
+    :return: None
+    """
     if not os.path.isdir(test_data_dir):
 
         cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
@@ -54,7 +79,12 @@ def update_test_data():
     os.environ[COMPLETED_CHECK_BOOL] = "True"
 
 
-def get_test_data_dir() -> str:
+def get_test_data_dir() -> Path:
+    """
+    Returns the local path of the test data directory
+
+    :return: None
+    """
     if do_testdata_check() and not completed_testdata_check():
         update_test_data()
     return test_data_dir
