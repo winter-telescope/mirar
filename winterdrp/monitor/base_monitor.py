@@ -8,23 +8,20 @@ import os
 import sys
 import threading
 import time
-import warnings
 from pathlib import Path
 from queue import Queue
 from threading import Thread
 from typing import Optional
-from warnings import catch_warnings
 
 import numpy as np
 from astropy import units as u
-from astropy.io import fits
 from astropy.time import Time
-from astropy.utils.exceptions import AstropyUserWarning
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from winterdrp.data import Dataset, ImageBatch
+from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.errors import ErrorReport, ErrorStack, ImageNotFoundError
+from winterdrp.io import check_file_is_complete
 from winterdrp.paths import (
     MONITOR_EMAIL_KEY,
     MONITOR_RECIPIENT_KEY,
@@ -42,6 +39,7 @@ from winterdrp.processors.utils.cal_hunter import (
     CalHunter,
     CalRequirement,
     find_required_cals,
+    update_requirements,
 )
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.utils.send_email import send_gmail
@@ -75,13 +73,13 @@ class Monitor:
         cal_requirements: Optional[list[CalRequirement]] = None,
         realtime_configurations: str | list[str] = "default",
         postprocess_configurations: Optional[str | list[str]] = None,
-        email_sender: str = os.getenv(MONITOR_EMAIL_KEY),
-        email_recipients: str | list = os.getenv(MONITOR_RECIPIENT_KEY),
+        email_sender: Optional[str] = os.getenv(MONITOR_EMAIL_KEY),
+        email_recipients: Optional[str | list] = os.getenv(MONITOR_RECIPIENT_KEY),
         midway_postprocess_hours: float = 16.0,
         final_postprocess_hours: float = 48.0,
         log_level: str = "INFO",
         raw_dir: str = RAW_IMG_SUB_DIR,
-        base_raw_img_dir: str = base_raw_dir,
+        base_raw_img_dir: Path = base_raw_dir,
     ):
 
         logger.info(f"Software version: {package_name}=={__version__}")
@@ -108,24 +106,13 @@ class Monitor:
             )
         )
 
-        self.sub_dir = raw_dir
+        self.raw_image_directory.mkdir(parents=True, exist_ok=True)
 
-        if not self.raw_image_directory.exists():
-            self.raw_image_directory.parent.mkdir(parents=True)
+        self.sub_dir = raw_dir
 
         self.log_level = log_level
         self.log_path = self.configure_logs(log_level)
         self.error_path = self.pipeline.get_error_output_path()
-
-        check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
-        if np.sum(check_email) == 1:
-            err = (
-                "In order to send emails, you must specify both a sender"
-                f" and a recipient. \n In this case, sender is {email_sender} "
-                f"and recipient is {email_recipients}."
-            )
-            logger.error(err)
-            raise ValueError(err)
 
         self.final_postprocess_hours = float(final_postprocess_hours) * u.hour
         logger.info(f"Will terminate after {final_postprocess_hours} hours.")
@@ -140,6 +127,16 @@ class Monitor:
                 f"{self.final_postprocess_hours}. Setting to to 95% of max wait."
             )
             self.midway_postprocess_hours = 0.95 * self.final_postprocess_hours
+
+        check_email = np.sum([x is not None for x in [email_recipients, email_sender]])
+        if np.sum(check_email) == 1:
+            err = (
+                "In order to send emails, you must specify both a sender"
+                f" and a recipient. \n In this case, sender is {email_sender} "
+                f"and recipient is {email_recipients}."
+            )
+            logger.error(err)
+            raise ValueError(err)
 
         if np.sum(check_email) == 2:
             logger.info(
@@ -158,18 +155,21 @@ class Monitor:
         self.latest_csv_log = None
 
         self.processed_science_images = []
-        self.corrupted_images = []
+        self.processed_cal_images = []
+        self.failed_images = []
 
         # default to "pipeline default cal requirements"
 
         if cal_requirements is None:
             cal_requirements = self.pipeline.default_cal_requirements
 
-        self.cal_images = ImageBatch()
+        self.archival_cals = ImageBatch()
+        self.new_cals = ImageBatch()
+        self.cal_requirements = copy.deepcopy(cal_requirements)
 
         if cal_requirements is not None:
             try:
-                self.cal_images = find_required_cals(
+                self.archival_cals = find_required_cals(
                     latest_dir=str(self.raw_image_directory),
                     night=night,
                     open_f=self.pipeline.load_raw_image,
@@ -179,8 +179,47 @@ class Monitor:
                 err = "No CalHunter images found. Will need to rely on nightly data."
                 logger.error(err)
                 self.errorstack.add_report(
-                    ErrorReport(error=exc, processor_name=CalHunter, contents=[])
+                    ErrorReport(
+                        error=exc, processor_name=CalHunter.__name__, contents=[]
+                    )
                 )
+
+    def get_cals(self) -> ImageBatch:
+        """
+        Returns a copy of the calibration images (new and archival)
+
+        :return:
+        """
+        return copy.deepcopy(self.new_cals + self.archival_cals)
+
+    def update_cals(self, new_calibration_image: Image):
+        """
+        Updates the calibration images by adding a new calibration image.
+        The archival cal images are then rechecked, and only those which are still
+        required are loaded.
+
+        :param new_calibration_image: new image
+        :return: None
+        """
+        self.new_cals.append(new_calibration_image)
+        cal_requirements = copy.deepcopy(self.cal_requirements)
+        cal_requirements = [
+            x
+            for x in update_requirements(cal_requirements, self.new_cals)
+            if not x.success
+        ]
+
+        cal_requirements = update_requirements(cal_requirements, self.archival_cals)
+        new_archival_cals = ImageBatch()
+
+        for archival_cal in self.archival_cals:
+            for req in cal_requirements:
+                for batch in req.data.values():
+                    if archival_cal in batch:
+                        if archival_cal not in new_archival_cals:
+                            new_archival_cals.append(archival_cal)
+
+        self.archival_cals = new_archival_cals
 
     def summarise_errors(
         self,
@@ -391,32 +430,18 @@ class Monitor:
 
                     # Verify that file transfer is complete, useful for rsync latency
 
-                    # Disclaimer: I (Robert) do not feel great about having written
-                    # this code block.
-                    # It seems to works though, let's hope no one finds out!
-                    # I will cover my tracks by hiding the astropy warning which
-                    # inspired this block, informing the user that the file
-                    # is not as long as expected
+                    transfer_done = False
 
-                    check = False
+                    while not transfer_done:
 
-                    while not check:
-                        with catch_warnings():
-                            warnings.filterwarnings(
-                                "ignore", category=AstropyUserWarning
+                        transfer_done = check_file_is_complete(event.src_path)
+
+                        if not transfer_done:
+                            print(
+                                "Seems like the file is not fully transferred. "
+                                "Waiting a couple of seconds before trying again."
                             )
-                            try:
-                                with fits.open(event.src_path) as hdul:
-                                    check = hdul._file.tell() == hdul._file.size
-                            except OSError:
-                                pass
-
-                            if not check:
-                                print(
-                                    "Seems like the file is not fully transferred. "
-                                    "Waiting a couple of seconds before trying again."
-                                )
-                                time.sleep(3)
+                            time.sleep(3)
 
                     try:
 
@@ -424,23 +449,28 @@ class Monitor:
 
                         is_science = img["OBSCLASS"] == "science"
 
-                        all_img = ImageBatch(img) + copy.deepcopy(self.cal_images)
-
                         if not is_science:
-                            print(f"Skipping {event.src_path} (calibration image)")
-                        else:
-                            print(
-                                f"Reducing {event.src_path} (science image) "
-                                f"on thread {threading.get_ident()}"
-                            )
-                            _, errorstack = self.pipeline.reduce_images(
-                                dataset=Dataset(all_img),
-                                selected_configurations=self.realtime_configurations,
-                                catch_all_errors=True,
-                            )
+                            self.update_cals(img)
+
+                        all_img = ImageBatch(img) + self.get_cals()
+
+                        print(
+                            f"Reducing {event.src_path} "
+                            f"on thread {threading.get_ident()}, "
+                            f"(science={is_science})"
+                        )
+                        _, errorstack = self.pipeline.reduce_images(
+                            dataset=Dataset(all_img),
+                            selected_configurations=self.realtime_configurations,
+                            catch_all_errors=True,
+                        )
+                        self.errorstack += errorstack
+                        self.update_error_log()
+
+                        if is_science:
                             self.processed_science_images.append(event.src_path)
-                            self.errorstack += errorstack
-                            self.update_error_log()
+                        else:
+                            self.processed_cal_images.append(event.src_path)
 
                     # RS: Please forgive me for this coding sin
                     # I just want the monitor to never crash
@@ -450,6 +480,7 @@ class Monitor:
                         )
                         self.errorstack.add_report(err_report)
                         self.update_error_log()
+                        self.failed_images.append(event.src_path)
 
             else:
                 time.sleep(1)
