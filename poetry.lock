@@ -132,7 +132,7 @@ python-dateutil = ">=2.7.0"
 
 [[package]]
 name = "asdf"
-version = "2.14.2"
+version = "2.14.3"
 description = "Python implementation of the ASDF Standard"
 category = "main"
 optional = false
@@ -140,8 +140,9 @@ python-versions = ">=3.8"
 
 [package.dependencies]
 asdf-standard = ">=1.0.1"
-asdf-transform-schemas = ">=0.2.2"
+asdf-transform-schemas = ">=0.3.0"
 asdf-unit-schemas = ">=0.1.0"
+importlib-metadata = ">=4.11.4"
 jmespath = ">=0.6.2"
 jsonschema = ">=4.0.1"
 numpy = ">=1.18"
@@ -2990,8 +2991,8 @@ arrow = [
     {file = "arrow-1.2.3.tar.gz", hash = "sha256:3934b30ca1b9f292376d9db15b19446088d12ec58629bc3f0da28fd55fb633a1"},
 ]
 asdf = [
-    {file = "asdf-2.14.2-py3-none-any.whl", hash = "sha256:c42ffd1d8fd194e475e6336a4c30d8888a10eb04939294440031d9a634c17767"},
-    {file = "asdf-2.14.2.tar.gz", hash = "sha256:7804467832d959ea2f819935ff09d58add33b6087f46f152e021cd1739d1c119"},
+    {file = "asdf-2.14.3-py3-none-any.whl", hash = "sha256:80203adee64611eb0bbb098af9df7120c23d5060a9eb215f0881a8c6c0dde8bd"},
+    {file = "asdf-2.14.3.tar.gz", hash = "sha256:aa05f870b078f6cad74e5cfefc815fa4589b446cf456fd036d978238baf3dc16"},
 ]
 asdf-standard = [
     {file = "asdf_standard-1.0.3-py3-none-any.whl", hash = "sha256:1c628379c75f0663b6376a7e681d31b1b54391053e53447c9921fb04c26d41da"},

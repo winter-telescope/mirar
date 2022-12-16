@@ -5,7 +5,6 @@ Central module for handling the cache, currently used only for storing image dat
 import logging
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import numpy as np
 
@@ -49,21 +48,13 @@ class Cache:
         logger.error(err)
         raise CacheError(err)
 
-    def set_cache_dir(self, cache_dir: TemporaryDirectory | Path | str):
+    def set_cache_dir(self, cache_dir: Path | str):
         """
         Function to set the cache directory
 
         :param cache_dir: Cache dir to set
         :return: None
         """
-        if isinstance(cache_dir, TemporaryDirectory):
-            cache_dir = cache_dir.name
-        else:
-            logger.warning(
-                f"Setting the cache to directory {cache_dir}, "
-                f"rather than using a {TemporaryDirectory}. "
-                f"Remember to clean this cache yourself after you are done!"
-            )
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
