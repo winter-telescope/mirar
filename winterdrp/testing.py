@@ -15,5 +15,5 @@ class BaseTestCase(unittest.TestCase):
         self.temp_dir = (
             tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         )
-        cache.set_cache_dir(self.temp_dir)
+        cache.set_cache_dir(self.temp_dir.name)
         self.addCleanup(self.temp_dir.cleanup)
