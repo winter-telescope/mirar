@@ -446,11 +446,11 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
     Processor with pre-made master image
     """
 
-    def __init__(self, master_image_path: str, *args, **kwargs):
+    def __init__(self, master_image_path: str | Path, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.master_image_path = master_image_path
+        self.master_image_path = Path(master_image_path)
 
-    def get_cache_path(self, images: ImageBatch) -> str:
+    def get_cache_path(self, images: ImageBatch) -> Path:
         return self.master_image_path
 
 
