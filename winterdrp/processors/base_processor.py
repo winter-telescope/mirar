@@ -5,8 +5,8 @@ import datetime
 import getpass
 import hashlib
 import logging
-import os
 import socket
+import threading
 from abc import ABC
 from pathlib import Path
 from queue import Queue
@@ -74,7 +74,8 @@ class BaseProcessor:
         self.night = None
         self.night_sub_dir = None
         self.preceding_steps = None
-        self.passed_dataset = self.err_stack = None
+        self.passed_dataset = {}
+        self.err_stack = {}
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -103,23 +104,43 @@ class BaseProcessor:
     def generate_error_report(
         self, exception: Exception, batch: DataBatch
     ) -> ErrorReport:
+        """
+        Generates an error report based on a python Exception
+
+        :param exception: exception raised
+        :param batch: batch which generated exception
+        :return: error report
+        """
         return ErrorReport(exception, self.__module__, batch.get_raw_image_names())
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
+        """
+        Update a dataset after processing
+
+        :param dataset: Initial dataset
+        :return: Updated dataset
+        """
         return dataset
 
     def check_prerequisites(
         self,
     ):
-        pass
-
-    def clean_cache(self):
         """
-        Function to clean the internal cache filled by base_apply
+        Check to see if any prerequisite processors are missing
 
         :return: None
         """
-        self.passed_dataset = self.err_stack = None
+
+    def clean_cache(self, cache_id: int):
+        """
+        Function to clean the internal cache filled by base_apply
+
+        :param cache_id: key for cache
+        :return: None
+
+        """
+        del self.passed_dataset[cache_id]
+        del self.err_stack[cache_id]
 
     def base_apply(self, dataset: Dataset) -> tuple[Dataset, ErrorStack]:
         """
@@ -128,9 +149,10 @@ class BaseProcessor:
         :param dataset: Input dataset
         :return: Updated dataset, and any caught errors
         """
+        cache_id = threading.get_ident()
 
-        self.passed_dataset = Dataset()
-        self.err_stack = ErrorStack()
+        self.passed_dataset[cache_id] = Dataset()
+        self.err_stack[cache_id] = ErrorStack()
 
         if len(dataset) > 0:
 
@@ -142,7 +164,9 @@ class BaseProcessor:
 
             for _ in range(n_cpu):
                 # Set up a worker thread to process database load
-                worker = Thread(target=self.apply_to_batch, args=(watchdog_queue,))
+                worker = Thread(
+                    target=self.apply_to_batch, args=(watchdog_queue, cache_id)
+                )
                 worker.daemon = True
                 worker.start()
 
@@ -153,35 +177,36 @@ class BaseProcessor:
 
             watchdog_queue.join()
 
-        dataset = self.update_dataset(self.passed_dataset)
-        err_stack = self.err_stack
+        dataset = self.update_dataset(self.passed_dataset[cache_id])
+        err_stack = self.err_stack[cache_id]
 
-        self.clean_cache()
+        self.clean_cache(cache_id=cache_id)
 
         return dataset, err_stack
 
-    def apply_to_batch(self, queue):
+    def apply_to_batch(self, queue, cache_id: int):
         """
         Function to run self.apply on a batch in the queue, catch any errors, and then
         update the internal cache with the results.
 
         :param queue: python threading queue
+        :param cache_id: key for cache
         :return: None
         """
         while True:
             batch = queue.get()
             try:
                 batch = self.apply(batch)
-                self.passed_dataset.append(batch)
+                self.passed_dataset[cache_id].append(batch)
             except NoncriticalProcessingError as exc:
                 err = self.generate_error_report(exc, batch)
                 logger.error(err.generate_log_message())
-                self.err_stack.add_report(err)
-                self.passed_dataset.append(batch)
+                self.err_stack[cache_id].add_report(err)
+                self.passed_dataset[cache_id].append(batch)
             except Exception as exc:  # pylint: disable=broad-except
                 err = self.generate_error_report(exc, batch)
                 logger.error(err.generate_log_message())
-                self.err_stack.add_report(err)
+                self.err_stack[cache_id].add_report(err)
             queue.task_done()
 
     def apply(self, batch: DataBatch):
@@ -229,6 +254,10 @@ class BaseProcessor:
 
 
 class CleanupProcessor(BaseProcessor, ABC):
+    """
+    Processor which 'cleans up' by deleting empty batches
+    """
+
     def update_dataset(self, dataset: Dataset) -> Dataset:
         # Remove empty dataset
         new_dataset = Dataset([x for x in dataset.get_batches() if len(x) > 0])
@@ -236,8 +265,18 @@ class CleanupProcessor(BaseProcessor, ABC):
 
 
 class ImageHandler:
+    """
+    Base class for handling images
+    """
+
     @staticmethod
     def open_fits(path: str | Path) -> Image:
+        """
+        Opens a fits file, and returns an Image object
+
+        :param path: Path of image
+        :return: Image object
+        """
         path = str(path)
         data, header = open_fits(path)
         if RAW_IMG_KEY not in header:
@@ -251,6 +290,13 @@ class ImageHandler:
         image: Image,
         path: str | Path,
     ):
+        """
+        Save an Image to path
+
+        :param image: Image to save
+        :param path: path
+        :return: None
+        """
         path = str(path)
         data = image.get_data()
         header = image.get_header()
@@ -260,21 +306,40 @@ class ImageHandler:
         save_to_path(data, header, path)
 
     def save_weight_image(self, image: Image, img_path: Path) -> Path:
+        """
+        Saves a weight image
+
+        :param image: Weight image
+        :param img_path: Path of parent image
+        :return: Path of weight image
+        """
         data = image.get_data()
         mask = (~np.isnan(data)).astype(float)
-        mask_path = get_weight_path(img_path)
+        weight_path = get_weight_path(img_path)
         header = image.get_header()
-        header[LATEST_WEIGHT_SAVE_KEY] = str(mask_path)
-        self.save_fits(Image(mask, header), mask_path)
-        return mask_path
+        header[LATEST_WEIGHT_SAVE_KEY] = str(weight_path)
+        self.save_fits(Image(mask, header), weight_path)
+        return weight_path
 
     @staticmethod
-    def get_hash(image: ImageBatch):
-        key = "".join(sorted([x[BASE_NAME_KEY] + x[PROC_HISTORY_KEY] for x in image]))
+    def get_hash(image_batch: ImageBatch):
+        """
+        Get a unique hash for an image batch
+
+        :param image_batch: image batch
+        :return: unique hash for that batch
+        """
+        key = "".join(
+            sorted([x[BASE_NAME_KEY] + x[PROC_HISTORY_KEY] for x in image_batch])
+        )
         return hashlib.sha1(key.encode()).hexdigest()
 
 
 class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
+    """
+    Base processor handling images in/images out
+    """
+
     def _apply(self, batch: ImageBatch) -> ImageBatch:
         return self._apply_to_images(batch)
 
@@ -286,6 +351,10 @@ class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
 
 
 class ProcessorWithCache(BaseImageProcessor, ABC):
+    """
+    Image processor with cached images associated to it, e.g a master flat
+    """
+
     def __init__(
         self,
         *args,
@@ -302,9 +371,21 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         self.cache_sub_dir = cache_sub_dir
 
     def select_cache_images(self, images: ImageBatch) -> ImageBatch:
+        """
+        Select the appropriate cached image for the batch
+
+        :param images: images to process
+        :return: cached images to use
+        """
         raise NotImplementedError
 
-    def get_cache_path(self, images: ImageBatch) -> str:
+    def get_cache_path(self, images: ImageBatch) -> Path:
+        """
+        Gets path for saving/loading cached image
+
+        :param images: images to process
+        :return: cache path
+        """
 
         file_name = self.get_cache_file_name(images)
 
@@ -312,22 +393,31 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
             base_name=file_name, dir_root=self.cache_sub_dir, sub_dir=self.night_sub_dir
         )
 
-        try:
-            os.makedirs(os.path.dirname(output_path))
-        except OSError:
-            pass
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
         return output_path
 
     def get_cache_file_name(self, images: ImageBatch) -> str:
+        """
+        Get unique cache name for images
+
+        :param images: images to process
+        :return: unique hashed name
+        """
         cache_images = self.select_cache_images(images)
         return f"{self.base_key}_{self.get_hash(cache_images)}.fits"
 
     def get_cache_file(self, images: ImageBatch) -> Image:
+        """
+        Return the appropriate cached image for the batch
+
+        :param images: images to process
+        :return: cached image to use
+        """
 
         path = self.get_cache_path(images)
 
-        exists = os.path.exists(path)
+        exists = path.exists()
 
         if np.logical_and(self.try_load_cache, exists):
             logger.info(f"Loading cached file {path}")
@@ -342,19 +432,33 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         return image
 
     def make_image(self, images: ImageBatch) -> Image:
+        """
+        Make a cached image (e.g master flat)
+
+        :param images: images to use
+        :return: cached image
+        """
         raise NotImplementedError
 
 
 class ProcessorPremadeCache(ProcessorWithCache, ABC):
-    def __init__(self, master_image_path: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.master_image_path = master_image_path
+    """
+    Processor with pre-made master image
+    """
 
-    def get_cache_path(self, images: ImageBatch) -> str:
+    def __init__(self, master_image_path: str | Path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.master_image_path = Path(master_image_path)
+
+    def get_cache_path(self, images: ImageBatch) -> Path:
         return self.master_image_path
 
 
 class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
+    """
+    Base CadidateGenerator processor (image batch in, source batch out)
+    """
+
     @classmethod
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -375,6 +479,10 @@ class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
 
 
 class BaseDataframeProcessor(BaseProcessor, ABC):
+    """
+    Base dataframe processor (Source batch in, source batch out)
+    """
+
     @classmethod
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
