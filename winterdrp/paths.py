@@ -62,7 +62,8 @@ else:
 
 
 # Set up special directories
-
+TEMP_DIR = base_output_dir.joinpath(f"{package_name}_temp")
+TEMP_DIR.mkdir(exist_ok=True)
 
 RAW_IMG_SUB_DIR = "raw"
 CAL_OUTPUT_SUB_DIR = "calibration"

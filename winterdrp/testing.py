@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 from winterdrp.data.cache import cache
+from winterdrp.paths import TEMP_DIR
 
 
 class BaseTestCase(unittest.TestCase):
@@ -12,8 +13,7 @@ class BaseTestCase(unittest.TestCase):
 
     def __init__(self, *arg, **kwargs):
         super().__init__(*arg, **kwargs)
-        self.temp_dir = (
-            tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
-        )
+        # pylint: disable=consider-using-with
+        self.temp_dir = tempfile.TemporaryDirectory(dir=TEMP_DIR)
         cache.set_cache_dir(self.temp_dir.name)
         self.addCleanup(self.temp_dir.cleanup)

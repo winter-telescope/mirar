@@ -456,7 +456,7 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
 
 class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
     """
-    Base CadidateGenerator processor (image batch in, source batch out)
+    Base CandidateGenerator processor (image batch in, source batch out)
     """
 
     @classmethod
