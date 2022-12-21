@@ -14,7 +14,7 @@ from astropy.time import Time
 
 from winterdrp.data import Dataset, ImageBatch, cache
 from winterdrp.monitor.base_monitor import Monitor
-from winterdrp.paths import RAW_IMG_SUB_DIR, package_name
+from winterdrp.paths import RAW_IMG_SUB_DIR, TEMP_DIR, package_name
 from winterdrp.pipelines import Pipeline, get_pipeline
 from winterdrp.processors.utils import ImageLoader
 
@@ -29,7 +29,7 @@ ln = Time.now() - 1.0 * u.day
 parser.add_argument(
     "-n", "--night", default=None, help="Sub-directory to use in the data directory"
 )
-parser.add_argument("-p", "--pipeline", default="summer", help="Pipeline to be used")
+parser.add_argument("-p", "--pipeline", help="Pipeline to be used", required=True)
 parser.add_argument(
     "-c", "--config", default=None, help="Pipeline configuration to be used"
 )
@@ -90,10 +90,11 @@ night = args.night
 if night is None:
     night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
 
+with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
 
-with tempfile.TemporaryDirectory() as temp_dir:
+    print(f"Using cache {temp_dir_path}")
 
-    cache.set_cache_dir(temp_dir)
+    cache.set_cache_dir(temp_dir_path)
 
     if args.monitor:
 
