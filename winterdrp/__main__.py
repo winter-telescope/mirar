@@ -12,7 +12,7 @@ import tempfile
 from astropy import units as u
 from astropy.time import Time
 
-from winterdrp.data import Dataset, ImageBatch, cache
+from winterdrp.data import cache
 from winterdrp.monitor.base_monitor import Monitor
 from winterdrp.paths import RAW_IMG_SUB_DIR, TEMP_DIR, package_name
 from winterdrp.pipelines import Pipeline, get_pipeline
@@ -41,7 +41,7 @@ parser.add_argument(
     default=None,
     help="If a path is passed, all logs will be written to this file.",
 )
-parser.add_argument("--level", default="DEBUG", help="Python logging level")
+parser.add_argument("--level", default="INFO", help="Python logging level")
 parser.add_argument(
     "-b", "--batch", default=None, help="Only process a specific image batch"
 )
@@ -151,9 +151,8 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             night=night,
         )
 
-        batches, errorstack = pipe.reduce_images(
-            Dataset([ImageBatch()]), catch_all_errors=True
-        )
+        batches, errorstack = pipe.reduce_images(catch_all_errors=True)
+
         if args.postprocessconfig is not None:
             post_config = [
                 x for x in pipe.set_configuration(CONFIG) if isinstance(x, ImageLoader)
@@ -169,13 +168,13 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             pipe.set_configuration(PROTECTED_KEY)
 
             _, new_errorstack = pipe.reduce_images(
-                Dataset([ImageBatch()]),
                 selected_configurations=PROTECTED_KEY,
                 catch_all_errors=True,
             )
             errorstack += new_errorstack
 
         print(errorstack.summarise_error_stack(verbose=False))
+
         errorstack.summarise_error_stack(
             output_path=pipe.get_error_output_path(), verbose=True
         )

@@ -18,7 +18,7 @@ from typing import Optional
 import astropy.io.fits
 import numpy as np
 
-from winterdrp.data import Dataset, Image
+from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.errors import ErrorStack
 from winterdrp.paths import get_output_path
 from winterdrp.processors.base_processor import BaseProcessor
@@ -219,7 +219,7 @@ class Pipeline:
 
     def reduce_images(
         self,
-        dataset: Dataset,
+        dataset: Optional[Dataset] = None,
         output_error_path: Optional[str] = None,
         catch_all_errors: bool = True,
         selected_configurations: Optional[str | list[str]] = None,
@@ -233,6 +233,9 @@ class Pipeline:
         :param selected_configurations: Configuration to use
         :return: Post-processing dataset and summary of errors caught
         """
+
+        if dataset is None:
+            dataset = Dataset([ImageBatch()])
 
         if output_error_path is None:
             output_error_path = self.get_error_output_path()
