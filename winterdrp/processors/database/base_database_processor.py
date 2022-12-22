@@ -140,7 +140,6 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
 
         admin_user = os.environ.get(PG_ADMIN_USER_KEY)
         admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
-        q3c_dir = self.schema_dir.joinpath("q3c")
 
         if np.logical_and(self.db_exists(), np.invert(self.user_exists())):
             err = "Database exists but user does not exist"

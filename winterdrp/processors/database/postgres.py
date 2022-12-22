@@ -532,7 +532,7 @@ def parse_constraints(
             for x in [db_query_columns, db_comparison_types, db_accepted_values]
         ]
     )
-    assert len(extra_constraints) in [0, 3]
+    assert extra_constraints in [0, 3]
 
     if extra_constraints == 3:
         return ""

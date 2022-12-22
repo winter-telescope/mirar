@@ -56,14 +56,13 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
     def __init__(
         self,
         db_output_columns: str | list[str],
-        *args,
         output_alias_map: Optional[str | list[str]] = None,
         update_header: Callable[
             [Image, list[dict]], Image
         ] = update_header_with_single_match,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.update_header = update_header
         self.db_output_columns = db_output_columns
         self.output_alias_map = output_alias_map
