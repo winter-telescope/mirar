@@ -14,6 +14,7 @@ from winterdrp.processors.base_processor import (
     BaseImageProcessor,
 )
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
+from winterdrp.processors.database.constraints import DBQueryConstraints
 from winterdrp.processors.database.postgres import (
     crossmatch_with_database,
     import_from_db,
@@ -74,16 +75,12 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
 
         for i, image in enumerate(batch):
 
-            query_columns, accepted_values, comparison_types = self.get_constraints(
-                image
-            )
+            query_constraints = self.get_constraints(image)
 
             res = import_from_db(
                 db_name=self.db_name,
                 db_table=self.db_table,
-                db_query_columns=query_columns,
-                db_accepted_values=accepted_values,
-                db_comparison_types=comparison_types,
+                db_constraints=query_constraints,
                 db_output_columns=self.db_output_columns,
                 output_alias_map=self.output_alias_map,
                 db_user=self.db_user,
@@ -99,14 +96,12 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
 
         return batch
 
-    def get_constraints(
-        self, data: DataBlock
-    ) -> tuple[None, None, None] | tuple[list[str], list[str], list[str]]:
+    def get_constraints(self, data: DataBlock) -> None | DBQueryConstraints:
         """
         Get db query constraints for a given datablock object
 
         :param data: data block
-        :return: constraint columns, accepted values and comparison types
+        :return: db query constraints object
         """
         raise NotImplementedError()
 
@@ -128,9 +123,7 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
         accepted_values = [data[x.upper()] for x in self.db_query_columns]
         return accepted_values
 
-    def get_constraints(
-        self, data: DataBlock
-    ) -> tuple[list[str], list[str | float | int], list[str]]:
+    def get_constraints(self, data: DataBlock) -> DBQueryConstraints:
         """
         Get db query constraints for a datablock
 
@@ -139,8 +132,13 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
         """
         query_columns = self.db_query_columns
         accepted_values = self.get_accepted_values(data)
-        accepted_types = ["=" for _ in self.db_query_columns]
-        return query_columns, accepted_values, accepted_types
+        comparison_types = ["=" for _ in self.db_query_columns]
+        query_constraints = DBQueryConstraints(
+            columns=query_columns,
+            accepted_values=accepted_values,
+            comparison_types=comparison_types,
+        )
+        return query_constraints
 
 
 # def update_dataframe_with_single_match(
@@ -191,9 +189,9 @@ class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor, AB
     #             res = import_from_db(
     #                 db_name=self.db_name,
     #                 db_table=self.db_table,
-    #                 db_query_columns=query_columns,
-    #                 db_accepted_values=comparison_values,
-    #                 db_comparison_types=comparison_types,
+    #                 columns=query_columns,
+    #                 accepted_values=comparison_values,
+    #                 comparison_types=comparison_types,
     #                 db_output_columns=self.db_output_columns,
     #                 output_alias_map=self.output_alias_map,
     #                 db_user=self.db_user,
@@ -217,7 +215,9 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcess
     def __init__(
         self,
         crossmatch_radius_arcsec: float,
-        user_defined_constraints: Optional[Callable[[pd.DataFrame], tuple]] = None,
+        user_defined_constraints: Optional[
+            Callable[[pd.DataFrame], DBQueryConstraints]
+        ] = None,
         ra_field_name: str = "ra",
         dec_field_name: str = "dec",
         order_field_name: Optional[str] = None,
@@ -253,19 +253,16 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcess
                 candidate_table[f"{key}{num + 1}"] = [x[num][key] for x in results]
         return candidate_table
 
-    def get_source_constraints(
-        self, cand: pd.DataFrame
-    ) -> tuple[None, None, None] | tuple[list, list, list]:
+    def get_source_constraints(self, cand: pd.DataFrame) -> None | DBQueryConstraints:
         """
         Get db query constraints for a single source
 
         :param cand: single source
-        :return: constraint tuple
+        :return: db constraint
         """
         if self.user_defined_constraints is None:
-            return None, None, None
-        constraint_tuple = self.user_defined_constraints(cand)
-        return constraint_tuple
+            return None
+        return self.user_defined_constraints(cand)
 
     def _apply_to_candidates(
         self,
@@ -277,11 +274,7 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcess
             results = []
             for ind in range(len(candidate_table)):
                 cand = candidate_table.loc[ind]
-                (
-                    query_columns,
-                    comparison_types,
-                    accepted_values,
-                ) = self.get_source_constraints(cand)
+                query_constraints = self.get_source_constraints(cand)
                 res = crossmatch_with_database(
                     db_name=self.db_name,
                     db_table=self.db_table,
@@ -289,9 +282,7 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcess
                     db_password=self.db_password,
                     db_output_columns=self.db_output_columns,
                     output_alias_map=self.output_alias_map,
-                    db_query_columns=query_columns,
-                    db_comparison_types=comparison_types,
-                    db_accepted_values=accepted_values,
+                    query_constraints=query_constraints,
                     ra=cand[self.ra_field_name],
                     dec=cand[self.dec_field_name],
                     crossmatch_radius_arcsec=self.xmatch_radius_arcsec,
@@ -340,18 +331,15 @@ class DatabaseHistoryImporter(DatabaseCrossmatchImporter):
         candidate_table[self.history_key] = results
         return candidate_table
 
-    def get_source_constraints(self, cand: pd.DataFrame) -> tuple[list, list, list]:
-        if self.user_defined_constraints is None:
-            query_columns = []
-            comparison_types = []
-            accepted_values = []
-        else:
-            (
-                query_columns,
-                comparison_types,
-                accepted_values,
-            ) = self.user_defined_constraints(cand)
-        query_columns.append(self.time_field_name)
-        comparison_types.append(">")
-        accepted_values.append(cand[self.time_field_name] - self.history_duration_days)
-        return query_columns, comparison_types, accepted_values
+    def get_source_constraints(self, cand: pd.DataFrame) -> DBQueryConstraints:
+
+        t_detection = float(cand[self.time_field_name])
+
+        query_constraints = DBQueryConstraints(
+            columns=self.time_field_name,
+            accepted_values=t_detection - self.history_duration_days,
+            comparison_types=">",
+        )
+        if self.user_defined_constraints is not None:
+            query_constraints += self.user_defined_constraints(cand)
+        return query_constraints

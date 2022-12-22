@@ -6,6 +6,7 @@ from abc import ABC
 from typing import Optional
 
 from winterdrp.data import ImageBatch
+from winterdrp.processors.database.constraints import DBQueryConstraints
 from winterdrp.processors.database.database_importer import (
     BaseDatabaseImporter,
     BaseImageDatabaseImporter,
@@ -38,14 +39,11 @@ class ImageDatabaseModifier(BaseDatabaseModifier, BaseImageDatabaseImporter, ABC
         batch: ImageBatch,
     ) -> ImageBatch:
         for image in batch:
-            query_columns, accepted_values, accepted_types = self.get_constraints(image)
-            logger.debug(f"{query_columns}, {accepted_values}, {accepted_types}")
+            query_constraints = self.get_constraints(image)
 
             modify_db_entry(
                 value_dict=image,
-                db_query_columns=query_columns,
-                db_query_values=accepted_values,
-                db_query_comparison_types=accepted_types,
+                db_constraints=query_constraints,
                 db_alter_columns=self.db_alter_columns,
                 db_table=self.db_table,
                 db_name=self.db_name,
@@ -72,5 +70,12 @@ class ModifyImageDatabaseSeq(ImageDatabaseModifier):
             )
 
         accepted_values = [data[x.upper()] for x in self.sequence_key]
-        accepted_types = ["="] * len(accepted_values)
-        return self.sequence_key, accepted_values, accepted_types
+        comparison_types = ["="] * len(accepted_values)
+
+        query_constraints = DBQueryConstraints(
+            columns=self.sequence_key,
+            accepted_values=accepted_values,
+            comparison_types=comparison_types,
+        )
+
+        return query_constraints

@@ -15,11 +15,14 @@ from psycopg.rows import Row
 
 from winterdrp.data import DataBlock
 from winterdrp.errors import ProcessorError
+from winterdrp.processors.database.constraints import DBQueryConstraints
 
 logger = logging.getLogger(__name__)
 
 PG_ADMIN_USER_KEY = "PG_ADMIN_USER"
 PG_ADMIN_PWD_KEY = "PG_ADMIN_PWD"
+
+POSTGRES_DUPLICATE_PROTOCOLS = ["fail", "ignore", "replace"]
 
 
 class DataBaseError(ProcessorError):
@@ -37,11 +40,12 @@ def validate_credentials(db_user: str, password: str, admin: bool = False):
     """
 
     if db_user is None:
-        user = "db_user"
-        env_user_var = "DB_USER"
         if admin:
             user = "admin_db_user"
             env_user_var = PG_ADMIN_USER_KEY
+        else:
+            user = "db_user"
+            env_user_var = "DB_USER"
         err = (
             f"'{user}' is set as None. Please pass a db_user as an argument, "
             f"or set the environment variable '{env_user_var}'. Using "
@@ -50,11 +54,12 @@ def validate_credentials(db_user: str, password: str, admin: bool = False):
         raise DataBaseError(err)
 
     if password is None:
-        pwd = "password"
-        env_pwd_var = "DB_PWD"
         if admin:
             pwd = "db_admin_password"
             env_pwd_var = PG_ADMIN_PWD_KEY
+        else:
+            pwd = "password"
+            env_pwd_var = "DB_PWD"
         err = (
             f"'{pwd}' is set as None. Please pass a password as an argument, "
             f"or set the environment variable '{env_pwd_var}'."
@@ -246,6 +251,7 @@ def check_if_db_exists(
     :param password: password to use for check
     :return: boolean
     """
+
     check_command = """SELECT datname FROM pg_database;"""
 
     db_exist_bool = check_if_exists(
@@ -253,6 +259,7 @@ def check_if_db_exists(
         check_value=db_name,
         db_user=db_user,
         password=password,
+        db_name="postgres",
     )
 
     logger.debug(
@@ -379,9 +386,6 @@ def create_tables_from_schema(
         )
 
 
-POSTGRES_DUPLICATE_PROTOCOLS = ["fail", "ignore", "replace"]
-
-
 def export_to_db(
     value_dict: dict | DataBlock,
     db_name: str,
@@ -490,13 +494,19 @@ def export_to_db(
                         f"Updating duplicate entry with "
                         f"{primary_key}={primary_key_values} in {db_name}."
                     )
+
+                    db_constraints = DBQueryConstraints(
+                        columns=primary_key,
+                        accepted_values=primary_key_values,
+                    )
+
                     update_colnames = []
                     for column in colnames:
                         if column not in primary_key:
                             update_colnames.append(column)
+
                     serial_key_values = modify_db_entry(
-                        db_query_columns=primary_key,
-                        db_query_values=primary_key_values,
+                        db_constraints=db_constraints,
                         value_dict=value_dict,
                         db_alter_columns=update_colnames,
                         db_table=db_table,
@@ -509,57 +519,6 @@ def export_to_db(
     return serial_keys, serial_key_values
 
 
-POSTGRES_ACCEPTED_COMPARISONS = ["=", "<", ">", "between"]
-
-
-def parse_constraints(
-    db_query_columns: Optional[list[str]],
-    db_comparison_types: Optional[list[str]],
-    db_accepted_values: Optional[list[str | float | int | list]],
-) -> str:
-    """
-    Converts a list of constraints in sql
-
-    :param db_query_columns: columns to query
-    :param db_comparison_types: comparisons
-    :param db_accepted_values: accepted values
-    :return: sql string
-    """
-    # If everything is None, then there are no constraints
-    extra_constraints = np.sum(
-        [
-            int(x is None)
-            for x in [db_query_columns, db_comparison_types, db_accepted_values]
-        ]
-    )
-    assert extra_constraints in [0, 3]
-
-    if extra_constraints == 3:
-        return ""
-
-    # Otherwise, check things!
-    assert len(db_comparison_types) == len(db_accepted_values)
-    assert np.all(
-        np.isin(np.unique(db_comparison_types), POSTGRES_ACCEPTED_COMPARISONS)
-    )
-    constraints = ""
-    for i, column in enumerate(db_query_columns):
-        if db_comparison_types[i] == "between":
-            assert len(db_accepted_values[i]) == 2
-            constraints += (
-                f"{column} between {db_accepted_values[i][0]} "
-                f"and {db_accepted_values[i][1]} AND "
-            )
-        else:
-            constraints += (
-                f"{column} {db_comparison_types[i]} " f"{db_accepted_values[i]} AND "
-            )
-
-        constraints = constraints[:-4]  # strip the last AND
-
-    return constraints
-
-
 def import_from_db(
     db_name: str,
     db_table: str,
@@ -568,9 +527,7 @@ def import_from_db(
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
     max_num_results: Optional[int] = None,
-    db_query_columns: Optional[list[str]] = None,
-    db_comparison_types: Optional[list[str]] = None,
-    db_accepted_values: Optional[list[str | float | int | list]] = None,
+    db_constraints: Optional[DBQueryConstraints] = None,
 ) -> list[dict]:
     """Query an SQL database with constraints, and return a list of dictionaries.
     One dictionary per entry returned from the query.
@@ -579,30 +536,19 @@ def import_from_db(
     ----------
     db_name: Name of database to query
     db_table: Name of database table to query
-    db_query_columns: Name of column to query
-    db_accepted_values: Accepted value for query for column
     db_output_columns: Name(s) of columns to return for matched database entries
     output_alias_map: Alias to assign for each output column
     db_user: Username for database
     password: password for database
     max_num_results: Maximum number of results to return
-    db_comparison_types: ???
 
     Returns
     -------
     A list of dictionaries (one per entry)
     """
 
-    if not isinstance(db_query_columns, list):
-        db_query_columns = [db_query_columns]
-
-    if not isinstance(db_accepted_values, list):
-        db_accepted_values = [db_accepted_values]
-
     if not isinstance(db_output_columns, list):
         db_output_columns = [db_output_columns]
-
-    assert len(db_query_columns) == len(db_accepted_values)
 
     if output_alias_map is None:
         output_alias_map = db_output_columns
@@ -614,16 +560,10 @@ def import_from_db(
 
     all_query_res = []
 
-    if db_comparison_types is None:
-        db_comparison_types = ["="] * len(db_accepted_values)
-    assert len(db_comparison_types) == len(db_accepted_values)
-    assert np.isin(
-        np.all(np.unique(db_comparison_types), POSTGRES_ACCEPTED_COMPARISONS)
-    )
-
-    constraints = parse_constraints(
-        db_query_columns, db_comparison_types, db_accepted_values
-    )
+    if db_constraints is not None:
+        constraints = db_constraints.parse_constraints()
+    else:
+        constraints = ""
 
     with psycopg.connect(
         f"dbname={db_name} user={db_user} password={password}"
@@ -694,9 +634,7 @@ def crossmatch_with_database(
     dec_field_name: str = "dec",
     query_distance_bool: bool = False,
     q3c_bool: bool = False,
-    db_query_columns: Optional[str | list[str]] = None,
-    db_comparison_types: Optional[list[str]] = None,
-    db_accepted_values: Optional[str | int | float | list[str | float | int]] = None,
+    query_constraints: Optional[DBQueryConstraints] = None,
     order_field_name: Optional[str] = None,
     num_limit: Optional[int] = None,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
@@ -717,9 +655,6 @@ def crossmatch_with_database(
     :param dec_field_name: name of dec column in database
     :param query_distance_bool: boolean where to return crossmatch distance
     :param q3c_bool: boolean whether to use q3c_bool
-    :param db_query_columns: additional columns to query
-    :param db_comparison_types: additional comparison types
-    :param db_accepted_values: accepted values for query
     :param order_field_name: field to order result by
     :param num_limit: limit on sql query
     :param db_user: db user
@@ -749,11 +684,8 @@ def crossmatch_with_database(
             f"{dec_field_name} between {dec_min} and {dec_max} "
         )
 
-    parsed_constraints = parse_constraints(
-        db_query_columns, db_comparison_types, db_accepted_values
-    )
-    if len(parsed_constraints) > 0:
-        constraints += f"""AND {parsed_constraints}"""
+    if query_constraints is not None:
+        constraints += f"""AND {query_constraints.parse_constraints()}"""
 
     select = f""" {'"' + '","'.join(db_output_columns) + '"'}"""
     if query_distance_bool:
@@ -822,34 +754,26 @@ def get_sequence_keys_from_table(
 def modify_db_entry(
     db_name: str,
     db_table: str,
-    db_query_columns: str | list[str],
-    db_query_values: str | int | float | list[str | float | int | list],
+    db_constraints: DBQueryConstraints,
     value_dict: dict | DataBlock,
     db_alter_columns: str | list[str],
     return_columns: Optional[str | list[str]] = None,
-    db_query_comparison_types: Optional[list[str]] = None,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
-):
+) -> list[Row]:
     """
     Modify a db entry
 
     :param db_name: name of db
     :param db_table: Name of table
-    :param db_query_columns: Columns to query
-    :param db_query_values: values to query
-    :param value_dict:
-    :param db_alter_columns:
-    :param return_columns:
-    :param db_query_comparison_types:
-    :param db_user:
-    :param password:
-    :return:
+    :param value_dict: dict-like object to provide updated values
+    :param db_alter_columns: columns to alter in db
+    :param return_columns: columns to return
+    :param db_user: db user
+    :param password: db password
+    :return: db query (return columns)
     """
-    if not isinstance(db_query_columns, list):
-        db_query_columns = [db_query_columns]
-    if not isinstance(db_query_values, list):
-        db_query_values = [db_query_values]
+
     if not isinstance(db_alter_columns, list):
         db_alter_columns = [db_alter_columns]
 
@@ -858,21 +782,8 @@ def modify_db_entry(
     if not isinstance(return_columns, list):
         return_columns = [return_columns]
 
-    assert len(db_query_columns) == len(db_query_values)
+    constraints = db_constraints.parse_constraints()
 
-    if db_query_comparison_types is None:
-        db_query_comparison_types = ["="] * len(db_query_values)
-    assert len(db_query_comparison_types) == len(db_query_values)
-    assert np.all(
-        np.isin(np.unique(db_query_comparison_types), ["=", "<", ">", "between"])
-    )
-
-    parsed_constraints = parse_constraints(
-        db_query_columns, db_query_comparison_types, db_query_values
-    )
-
-    constraints = f"""{parsed_constraints}"""
-    logger.debug(db_query_columns)
     with psycopg.connect(
         f"dbname={db_name} user={db_user} password={password}"
     ) as conn:
@@ -886,8 +797,8 @@ def modify_db_entry(
         ]
 
         sql_query = f"""
-                UPDATE {db_table} SET {', '.join(alter_values_txt)} WHERE {constraints}
-                """
+                    UPDATE {db_table} SET {', '.join(alter_values_txt)} WHERE {constraints}
+                    """
         if len(return_columns) > 0:
             logger.debug(return_columns)
             sql_query += f""" RETURNING {', '.join(return_columns)}"""
