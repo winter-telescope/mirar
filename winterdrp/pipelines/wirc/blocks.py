@@ -126,7 +126,7 @@ candidates = [
         db_table="candidates",
         db_output_columns=candidate_colnames,
         schema_path=wirc_candidate_schema_path,
-        q3c=False,
+        q3c_bool=False,
     ),
     CandidateNamer(
         db_name="wirc",
