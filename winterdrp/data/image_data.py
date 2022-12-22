@@ -152,7 +152,7 @@ class Image(DataBlock):
 
         :return: image data (numpy array)
         """
-        return np.load(self.cache_path.as_posix())
+        return np.load(self.cache_path.as_posix(), allow_pickle=True)
 
     def get_ram_data(self) -> np.ndarray:
         """
