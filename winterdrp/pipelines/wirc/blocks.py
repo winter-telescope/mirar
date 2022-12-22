@@ -117,7 +117,7 @@ candidates = [
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     DataframeWriter(output_dir_name="kowalski"),
     DatabaseHistoryImporter(
-        xmatch_radius_arcsec=2,
+        crossmatch_radius_arcsec=2,
         time_field_name="jd",
         history_duration_days=500,
         db_name="wirc",

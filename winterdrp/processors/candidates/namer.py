@@ -1,18 +1,29 @@
+"""
+Module containing a processor for assigning names to sources
+"""
 import logging
 import os
 
-import numpy as np
-import pandas as pd
 from astropy.time import Time
 
 from winterdrp.data import SourceBatch
 from winterdrp.processors.base_processor import BaseDataframeProcessor
-from winterdrp.processors.database.postgres import execute_query, xmatch_import_db
+from winterdrp.processors.database.postgres import (
+    crossmatch_with_database,
+    execute_query,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class CandidateNamer(BaseDataframeProcessor):
+    """Processor to sequentially assign names to sources, of the form a, aa, aba..."""
+
+    base_key = "namer"
+
+    # Go one at a time to avoid... race conditions
+    max_n_cpu = 1
+
     def __init__(
         self,
         db_name: str,
@@ -25,10 +36,8 @@ class CandidateNamer(BaseDataframeProcessor):
         db_name_field: str = "objectId",
         db_order_field: str = "candid",
         date_field: str = "jd",
-        *args,
-        **kwargs,
     ):
-        super(CandidateNamer, self).__init__(*args, **kwargs)
+        super().__init__()
         self.db_name = db_name
         self.db_user = db_user
         self.db_pwd = db_pwd
@@ -38,7 +47,7 @@ class CandidateNamer(BaseDataframeProcessor):
         self.base_name = base_name
         self.name_start = name_start
         self.date_field = date_field
-        self.xmatch_radius_arcsec = xmatch_radius_arcsec
+        self.crossmatch_radius_arcsec = xmatch_radius_arcsec
 
     @staticmethod
     def increment_string(string: str):
@@ -52,72 +61,86 @@ class CandidateNamer(BaseDataframeProcessor):
         -------
         An incremented string, eg. aaa -> aab, aaz -> aba, azz -> baa, zzz-> aaaa
         """
-        charpos = len(string) - 1
+        character_position = len(string) - 1
         # will iteratively try to increment characters starting from the last
-        inctrue = False
-        newstring = ""
-        while charpos >= 0:
-            cref = string[charpos]
-            if inctrue:
-                newstring = cref + newstring
-                charpos -= 1
+        increment_bool = False
+        new_string = ""
+        while character_position >= 0:
+            cref = string[character_position]
+            if increment_bool:
+                new_string = cref + new_string
+                character_position -= 1
                 continue
-            creford = ord(cref)
+            cref_ordered = ord(cref)
             # increment each character, if at 'z', increment the next one
-            if creford + 1 > 122:
-                newstring = "a" + newstring
-                if charpos == 0:
-                    newstring = "a" + newstring
+            if cref_ordered + 1 > 122:
+                new_string = "a" + new_string
+                if character_position == 0:
+                    new_string = "a" + new_string
             else:
-                nextchar = chr(creford + 1)
-                newstring = nextchar + newstring
-                inctrue = True
-            charpos -= 1
+                next_character = chr(cref_ordered + 1)
+                new_string = next_character + new_string
+                increment_bool = True
+            character_position -= 1
             continue
 
-        return newstring
+        return new_string
 
-    def get_next_name(self, candjd, lastname=None):
-        candyear = Time(candjd, format="jd").datetime.year % 1000
-        if lastname is None:
-            query = f"""SELECT "{self.db_name_field}" FROM {self.cand_table_name} ORDER BY {self.db_order_field} desc LIMIT 1;"""
+    def get_next_name(self, cand_jd: float, last_name: str = None) -> str:
+        """
+        Function to get a new candidate name
+
+        :param cand_jd: jd of detection
+        :param last_name: last name
+        :return: new name
+        """
+        cand_year = Time(cand_jd, format="jd").datetime.year % 1000
+        if last_name is None:
+            query = (
+                f'SELECT "{self.db_name_field}" FROM {self.cand_table_name} '
+                f"ORDER BY {self.db_order_field} desc LIMIT 1;"
+            )
+
             res = execute_query(
                 query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd
             )
-            if len(res) == 0:
-                name = self.base_name + str(candyear) + self.name_start
-                return name
-            else:
-                lastname = res[0][0]
-                logger.debug(res)
-        lastyear = int(lastname[len(self.base_name) : len(self.base_name) + 2])
-        if candyear != lastyear:
-            name = self.base_name + str(candyear) + self.name_start
-        else:
-            lastname_letters = lastname[len(self.base_name) + 2 :]
-            newname_letters = self.increment_string(lastname_letters)
-            name = self.base_name + str(candyear) + newname_letters
-        logger.info(name)
 
+            if len(res) == 0:
+                name = self.base_name + str(cand_year) + self.name_start
+                return name
+
+            last_name = res[0][0]
+            logger.debug(res)
+
+        last_year = int(last_name[len(self.base_name) : len(self.base_name) + 2])
+        if cand_year != last_year:
+            name = self.base_name + str(cand_year) + self.name_start
+        else:
+            last_name_letters = last_name[len(self.base_name) + 2 :]
+            new_name_letters = self.increment_string(last_name_letters)
+            name = self.base_name + str(cand_year) + new_name_letters
+        logger.debug(name)
         return name
 
-    def is_detected_previously(self, ra, dec):
-        name = xmatch_import_db(
+    def is_detected_previously(self, ra_deg: float, dec_deg: float) -> tuple[bool, str]:
+        """
+        Checks whether a source has been detected previously
+
+        :param ra_deg: ra (deg)
+        :param dec_deg: dec (deg)
+        :return: boolean whether a source has been detected previously
+        """
+        name = crossmatch_with_database(
             db_name=self.db_name,
             db_user=self.db_user,
             db_password=self.db_pwd,
             db_table=self.cand_table_name,
             db_output_columns=[self.db_name_field],
             num_limit=1,
-            ra=ra,
-            dec=dec,
-            xmatch_radius_arcsec=self.xmatch_radius_arcsec,
-            db_query_columns=[],
-            db_comparison_types=[],
-            output_alias_map=[],
-            db_accepted_values=[],
-        )
-        logger.info(name)
+            ra=ra_deg,
+            dec=dec_deg,
+            crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
+        )[0]
         return len(name) > 0, name
 
     def _apply_to_candidates(
@@ -142,10 +165,10 @@ class CandidateNamer(BaseDataframeProcessor):
                     )
 
                     if prv_det:
-                        cand_name = prv_name[0]
+                        cand_name = prv_name
                     else:
                         cand_name = self.get_next_name(
-                            cand[self.date_field], lastname=lastname
+                            cand[self.date_field], last_name=lastname
                         )
                     lastname = cand_name
                 names.append(cand_name)

@@ -1,6 +1,9 @@
+"""
+Module containing WIRC-specific paths
+"""
 from pathlib import Path
 
-from winterdrp.processors.database.postgres import get_colnames_from_schema
+from winterdrp.processors.database.postgres import get_column_names_from_schema
 
 wirc_file_dir = Path(__file__).parent.joinpath("files")
 wirc_schema_dir = Path(__file__).parent.joinpath("schema")
@@ -20,7 +23,7 @@ swarp_sp_path = wirc_file_dir.joinpath("second_pass.swarp")
 
 wirc_candidate_schema_path = wirc_schema_dir.joinpath("candidates.sql")
 
-candidate_colnames = get_colnames_from_schema(wirc_candidate_schema_path)
+candidate_colnames = get_column_names_from_schema(wirc_candidate_schema_path)
 
 sextractor_reference_config = {
     "config_path": wirc_file_dir.joinpath("photomCat.sex"),

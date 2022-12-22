@@ -5,13 +5,15 @@ Module containing postgres util functions
 import logging
 import os
 from glob import glob
+from pathlib import Path
 from typing import Optional
 
-import astropy.io.fits
 import numpy as np
 import psycopg
 from psycopg import errors
+from psycopg.rows import Row
 
+from winterdrp.data import DataBlock
 from winterdrp.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
@@ -24,7 +26,15 @@ class DataBaseError(ProcessorError):
     """Error relating to postgres interactions"""
 
 
-def validate_credentials(db_user: str, password: str, admin=False):
+def validate_credentials(db_user: str, password: str, admin: bool = False):
+    """
+    Checks that user credentials exist
+
+    :param db_user: Username
+    :param password: Password
+    :param admin: boolean whether the account is an admin one
+    :return: None
+    """
 
     if db_user is None:
         user = "db_user"
@@ -54,8 +64,15 @@ def validate_credentials(db_user: str, password: str, admin=False):
 
 
 def create_db(db_name: str):
+    """
+    Creates a database using credentials
+
+    :param db_name: DB to create
+    :return: None
+    """
     admin_user = os.environ.get(PG_ADMIN_USER_KEY)
     admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
+
     validate_credentials(db_user=admin_user, password=admin_password)
 
     with psycopg.connect(
@@ -67,7 +84,23 @@ def create_db(db_name: str):
         logger.info(f"Created db {db_name}")
 
 
-def run_sql_command_from_file(file_path, db_name, db_user, password, admin=False):
+def run_sql_command_from_file(
+    file_path: str | Path,
+    db_name: str,
+    db_user: str,
+    password: str,
+    admin: bool = False,
+):
+    """
+    Execute SQL command from file
+
+    :param file_path: File to execute
+    :param db_name: name of database
+    :param db_user: Postgres db user
+    :param password: Postgress password
+    :param admin: Whether to use an admin user
+    :return: False
+    """
     validate_credentials(db_name, db_user, admin)
     with psycopg.connect(
         f"dbname={db_name} user={db_user} password={password}"
@@ -78,7 +111,16 @@ def run_sql_command_from_file(file_path, db_name, db_user, password, admin=False
         logger.info(f"Executed sql commands from file {file_path}")
 
 
-def create_table(schema_path: str, db_name: str, db_user: str, password: str):
+def create_table(schema_path: str | Path, db_name: str, db_user: str, password: str):
+    """
+    Create a database table
+
+    :param schema_path: File to execute
+    :param db_name: name of database
+    :param db_user: Postgres db user
+    :param password: Postgress password
+    :return: False
+    """
     validate_credentials(db_user, password)
 
     with psycopg.connect(
@@ -92,6 +134,13 @@ def create_table(schema_path: str, db_name: str, db_user: str, password: str):
 
 
 def create_new_user(new_db_user: str, new_password: str):
+    """
+    Create a new postgres user
+
+    :param new_db_user: new username
+    :param new_password: new user password
+    :return: None
+    """
     admin_user = os.environ.get(PG_ADMIN_USER_KEY)
     admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
 
@@ -107,6 +156,13 @@ def create_new_user(new_db_user: str, new_password: str):
 
 
 def grant_privileges(db_name: str, db_user: str):
+    """
+    Grant privilege to user on database
+
+    :param db_name: name of database
+    :param db_user: username
+    :return: None
+    """
     admin_user = os.environ.get(PG_ADMIN_USER_KEY)
     admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
     validate_credentials(admin_user, admin_password, admin=True)
@@ -119,21 +175,58 @@ def grant_privileges(db_name: str, db_user: str):
         conn.execute(command)
 
 
+def check_if_exists(
+    check_command: str,
+    check_value: str,
+    db_name: str = "postgres",
+    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
+    password: str = os.environ.get(PG_ADMIN_PWD_KEY),
+) -> bool:
+    """
+    Check if a user account exists
+
+    :param check_command if a user/database/table exists
+    :param check_value: username to check
+    :param db_name: name of database to query
+    :param db_user: username to use for check
+    :param password: password to use for check
+    :return: boolean
+    """
+    validate_credentials(db_user, password)
+
+    with psycopg.connect(
+        f"dbname={db_name} user={db_user} password={password}"
+    ) as conn:
+        conn.autocommit = True
+        data = conn.execute(check_command).fetchall()
+    existing_user_names = [x[0] for x in data]
+    logger.debug(f"Found the following values: {existing_user_names}")
+
+    return check_value in existing_user_names
+
+
 def check_if_user_exists(
     user_name: str,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ) -> bool:
-    validate_credentials(db_user, password)
+    """
+    Check if a user account exists
 
-    with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
-        conn.autocommit = True
-        command = """SELECT usename FROM pg_user;"""
-        data = conn.execute(command).fetchall()
-    existing_user_names = [x[0] for x in data]
-    logger.debug(f"Found the following users: {existing_user_names}")
+    :param user_name: username to check
+    :param db_user: username to use for check
+    :param password: password to use for check
+    :return: boolean
+    """
+    check_command = """SELECT usename FROM pg_user;"""
 
-    user_exist_bool = user_name in existing_user_names
+    user_exist_bool = check_if_exists(
+        check_command=check_command,
+        check_value=user_name,
+        db_user=db_user,
+        password=password,
+    )
+
     logger.debug(
         f"User '{user_name}' {['does not exist', 'already exists'][user_exist_bool]}"
     )
@@ -145,17 +238,23 @@ def check_if_db_exists(
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ) -> bool:
-    validate_credentials(db_user, password)
+    """
+    Check if a user account exists
 
-    with psycopg.connect(f"dbname=postgres user={db_user} password={password}") as conn:
-        conn.autocommit = True
-        command = """SELECT datname FROM pg_database;"""
-        data = conn.execute(command).fetchall()
+    :param db_name: database to check
+    :param db_user: username to use for check
+    :param password: password to use for check
+    :return: boolean
+    """
+    check_command = """SELECT datname FROM pg_database;"""
 
-    existing_db_names = [x[0] for x in data]
-    logger.debug(f"Found the following databases: {existing_db_names}")
+    db_exist_bool = check_if_exists(
+        check_command=check_command,
+        check_value=db_name,
+        db_user=db_user,
+        password=password,
+    )
 
-    db_exist_bool = db_name in existing_db_names
     logger.debug(
         f"Database '{db_name}' {['does not exist', 'already exists'][db_exist_bool]}"
     )
@@ -166,22 +265,29 @@ def check_if_db_exists(
 def check_if_table_exists(
     db_name: str, db_table: str, db_user: str, password: str
 ) -> bool:
-    validate_credentials(db_user=db_user, password=password)
+    """
+    Check if a db table account exists
 
-    with psycopg.connect(
-        f"dbname={db_name} user={db_user} password={password}"
-    ) as conn:
-        conn.autocommit = True
-        command = (
-            "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema='public';"
-        )
-        data = conn.execute(command).fetchall()
+    :param db_name: database to check
+    :param db_table: table to check
+    :param db_user: username to use for check
+    :param password: password to use for check
+    :return: boolean
+    """
 
-    existing_table_names = [x[0] for x in data]
-    logger.debug(f"Found the following tables: {existing_table_names}")
+    check_command = (
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_schema='public';"
+    )
 
-    table_exist_bool = db_table in existing_table_names
+    table_exist_bool = check_if_exists(
+        check_command=check_command,
+        check_value=db_table,
+        db_name=db_name,
+        db_user=db_user,
+        password=password,
+    )
+
     logger.debug(
         f"Database table '{db_table}' "
         f"{['does not exist', 'already exists'][table_exist_bool]}"
@@ -191,6 +297,12 @@ def check_if_table_exists(
 
 
 def get_foreign_tables_list(schema_files: list[str]) -> np.ndarray:
+    """
+    Returns a list of foreign tables
+
+    :param schema_files: List of schema files to read
+    :return: Returns list of foreign keys in schema
+    """
     foreign_tables_list = []
     for schema_file_path in schema_files:
         table_names = []
@@ -214,6 +326,13 @@ def get_foreign_tables_list(schema_files: list[str]) -> np.ndarray:
 
 
 def get_ordered_schema_list(schema_files: list[str]) -> list[str]:
+    """
+    Returns an ordered list of schema, ensuring connected database tables
+    are created in the right order
+
+    :param schema_files: List of schema files to read
+    :return: Returns list of foreign keys in schema
+    """
     foreign_tables_list = get_foreign_tables_list(schema_files)
     ordered_schema_list = []
     tables_created = []
@@ -237,11 +356,20 @@ def get_ordered_schema_list(schema_files: list[str]) -> list[str]:
 
 
 def create_tables_from_schema(
-    schema_dir: str,
+    schema_dir: str | Path,
     db_name: str,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ):
+    """
+    Creates a db with tables, as described by .sql files in a directory
+
+    :param schema_dir: Directory containing schema files
+    :param db_name: name of DB
+    :param db_user: db user
+    :param password: db password
+    :return: None
+    """
     schema_files = glob(f"{schema_dir}/*.sql")
     ordered_schema_files = get_ordered_schema_list(schema_files)
     logger.info(f"Creating the following tables - {ordered_schema_files}")
@@ -251,14 +379,32 @@ def create_tables_from_schema(
         )
 
 
+POSTGRES_DUPLICATE_PROTOCOLS = ["fail", "ignore", "replace"]
+
+
 def export_to_db(
-    value_dict: dict | astropy.io.fits.Header,
+    value_dict: dict | DataBlock,
     db_name: str,
     db_table: str,
-    db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
-    password: str = os.environ.get(PG_ADMIN_PWD_KEY),
+    db_user: str,
+    password: str,
     duplicate_protocol: str = "fail",
 ) -> tuple[list, list]:
+    """
+    Export a list of fields in value dict to a batabase table
+
+    :param value_dict: dictionary/DataBlock/other dictonary-like object to export
+    :param db_name: name of db to export to
+    :param db_table: table of DB to export to
+    :param db_user: db user
+    :param password: password
+    :param duplicate_protocol: protocol for handling duplicates,
+        in "fail"/"ignore"/"replace"
+    :return:
+    """
+
+    assert duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
+
     with psycopg.connect(
         f"dbname={db_name} user={db_user} password={password}"
     ) as conn:
@@ -363,9 +509,39 @@ def export_to_db(
     return serial_keys, serial_key_values
 
 
-def parse_constraints(db_query_columns, db_comparison_types, db_accepted_values):
+POSTGRES_ACCEPTED_COMPARISONS = ["=", "<", ">", "between"]
+
+
+def parse_constraints(
+    db_query_columns: Optional[list[str]],
+    db_comparison_types: Optional[list[str]],
+    db_accepted_values: Optional[list[str | float | int | list]],
+) -> str:
+    """
+    Converts a list of constraints in sql
+
+    :param db_query_columns: columns to query
+    :param db_comparison_types: comparisons
+    :param db_accepted_values: accepted values
+    :return: sql string
+    """
+    # If everything is None, then there are no constraints
+    extra_constraints = np.sum(
+        [
+            int(x is None)
+            for x in [db_query_columns, db_comparison_types, db_accepted_values]
+        ]
+    )
+    assert len(extra_constraints) in [0, 3]
+
+    if extra_constraints == 3:
+        return ""
+
+    # Otherwise, check things!
     assert len(db_comparison_types) == len(db_accepted_values)
-    assert np.all(np.isin(np.unique(db_comparison_types), ["=", "<", ">", "between"]))
+    assert np.all(
+        np.isin(np.unique(db_comparison_types), POSTGRES_ACCEPTED_COMPARISONS)
+    )
     constraints = ""
     for i, column in enumerate(db_query_columns):
         if db_comparison_types[i] == "between":
@@ -384,21 +560,17 @@ def parse_constraints(db_query_columns, db_comparison_types, db_accepted_values)
     return constraints
 
 
-def parse_select():
-    pass
-
-
 def import_from_db(
     db_name: str,
     db_table: str,
-    db_query_columns: str | list[str],
-    db_accepted_values: str | int | float | list[str | float | int | list],
     db_output_columns: str | list[str],
-    output_alias_map: str | list[str],
+    output_alias_map: Optional[str | list[str]] = None,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
     max_num_results: Optional[int] = None,
+    db_query_columns: Optional[list[str]] = None,
     db_comparison_types: Optional[list[str]] = None,
+    db_accepted_values: Optional[list[str | float | int | list]] = None,
 ) -> list[dict]:
     """Query an SQL database with constraints, and return a list of dictionaries.
     One dictionary per entry returned from the query.
@@ -413,6 +585,8 @@ def import_from_db(
     output_alias_map: Alias to assign for each output column
     db_user: Username for database
     password: password for database
+    max_num_results: Maximum number of results to return
+    db_comparison_types: ???
 
     Returns
     -------
@@ -443,7 +617,9 @@ def import_from_db(
     if db_comparison_types is None:
         db_comparison_types = ["="] * len(db_accepted_values)
     assert len(db_comparison_types) == len(db_accepted_values)
-    assert np.isin(np.all(np.unique(db_comparison_types), ["=", "<", ">", "between"]))
+    assert np.isin(
+        np.all(np.unique(db_comparison_types), POSTGRES_ACCEPTED_COMPARISONS)
+    )
 
     constraints = parse_constraints(
         db_query_columns, db_comparison_types, db_accepted_values
@@ -482,7 +658,18 @@ def import_from_db(
     return all_query_res
 
 
-def execute_query(sql_query, db_name, db_user, password):
+def execute_query(
+    sql_query: str, db_name: str, db_user: str, password: str
+) -> list[Row]:
+    """
+    Generically execute SQL query
+
+    :param sql_query: SQL query to execute
+    :param db_name: db name
+    :param db_user: db user
+    :param password: db password
+    :return: rows from db
+    """
     with psycopg.connect(
         f"dbname={db_name} user={db_user} password={password}"
     ) as conn:
@@ -492,47 +679,71 @@ def execute_query(sql_query, db_name, db_user, password):
         with conn.execute(sql_query) as cursor:
             query_output = cursor.fetchall()
 
-        return query_output
+    return query_output
 
 
-def xmatch_import_db(
+def crossmatch_with_database(
     db_name: str,
     db_table: str,
-    db_query_columns: str | list[str],
-    db_accepted_values: str | int | float | list[str | float | int],
     db_output_columns: str | list[str],
-    output_alias_map: str | list[str],
     ra: float,
     dec: float,
-    xmatch_radius_arcsec: float,
+    crossmatch_radius_arcsec: float,
+    output_alias_map: Optional[dict] = None,
     ra_field_name: str = "ra",
     dec_field_name: str = "dec",
-    query_dist=False,
-    q3c=False,
+    query_distance_bool: bool = False,
+    q3c_bool: bool = False,
+    db_query_columns: Optional[str | list[str]] = None,
     db_comparison_types: Optional[list[str]] = None,
+    db_accepted_values: Optional[str | int | float | list[str | float | int]] = None,
     order_field_name: Optional[str] = None,
     num_limit: Optional[int] = None,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     db_password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ) -> list[dict]:
+    """
+    Crossmatch a given spatial position (ra/dec) with sources in a database,
+    and returns a list of matches
+
+    :param db_name: name of db to query
+    :param db_table: name of db table
+    :param db_output_columns: columns to return
+    :param output_alias_map: mapping for renaming columns
+    :param ra: RA
+    :param dec: dec
+    :param crossmatch_radius_arcsec: radius for crossmatch
+    :param ra_field_name: name of ra column in database
+    :param dec_field_name: name of dec column in database
+    :param query_distance_bool: boolean where to return crossmatch distance
+    :param q3c_bool: boolean whether to use q3c_bool
+    :param db_query_columns: additional columns to query
+    :param db_comparison_types: additional comparison types
+    :param db_accepted_values: accepted values for query
+    :param order_field_name: field to order result by
+    :param num_limit: limit on sql query
+    :param db_user: db user
+    :param db_password: db password
+    :return: list of query result dictionaries
+    """
 
     if output_alias_map is None:
         output_alias_map = {}
         for col in db_output_columns:
             output_alias_map[col] = col
 
-    xmatch_radius_deg = xmatch_radius_arcsec / 3600.0
+    crossmatch_radius_deg = crossmatch_radius_arcsec / 3600.0
 
-    if q3c:
+    if q3c_bool:
         constraints = (
             f"q3c_radial_query({ra_field_name},{dec_field_name},"
-            f"{ra},{dec},{xmatch_radius_deg}) "
+            f"{ra},{dec},{crossmatch_radius_deg}) "
         )
     else:
-        ra_min = ra - xmatch_radius_deg
-        ra_max = ra + xmatch_radius_deg
-        dec_min = dec - xmatch_radius_deg
-        dec_max = dec + xmatch_radius_deg
+        ra_min = ra - crossmatch_radius_deg
+        ra_max = ra + crossmatch_radius_deg
+        dec_min = dec - crossmatch_radius_deg
+        dec_max = dec + crossmatch_radius_deg
         constraints = (
             f" {ra_field_name} between {ra_min} and {ra_max} AND "
             f"{dec_field_name} between {dec_min} and {dec_max} "
@@ -545,8 +756,8 @@ def xmatch_import_db(
         constraints += f"""AND {parsed_constraints}"""
 
     select = f""" {'"' + '","'.join(db_output_columns) + '"'}"""
-    if query_dist:
-        if q3c:
+    if query_distance_bool:
+        if q3c_bool:
             select = (
                 f"""q3c_dist({ra_field_name},{dec_field_name},{ra},{dec}) AS xdist,"""
                 + select
@@ -567,14 +778,14 @@ def xmatch_import_db(
     all_query_res = []
 
     for entry in query_output:
-        if not query_dist:
+        if not query_distance_bool:
             assert len(entry) == len(db_output_columns)
         else:
             assert len(entry) == len(db_output_columns) + 1
         query_res = {}
         for i, key in enumerate(output_alias_map):
             query_res[key] = entry[i]
-            if query_dist:
+            if query_distance_bool:
                 query_res["dist"] = entry["xdist"]
         all_query_res.append(query_res)
     return all_query_res
@@ -582,7 +793,16 @@ def xmatch_import_db(
 
 def get_sequence_keys_from_table(
     db_table: str, db_name: str, db_user: str, password: str
-):
+) -> np.ndarray:
+    """
+    Gets sequence keys of db table
+
+    :param db_table: database table to use
+    :param db_name: dataname name
+    :param db_user: db user
+    :param password: db password
+    :return: numpy array of keys
+    """
     with psycopg.connect(
         f"dbname={db_name} user={db_user} password={password}"
     ) as conn:
@@ -604,13 +824,28 @@ def modify_db_entry(
     db_table: str,
     db_query_columns: str | list[str],
     db_query_values: str | int | float | list[str | float | int | list],
-    value_dict: dict | astropy.io.fits.Header,
+    value_dict: dict | DataBlock,
     db_alter_columns: str | list[str],
     return_columns: Optional[str | list[str]] = None,
     db_query_comparison_types: Optional[list[str]] = None,
     db_user: str = os.environ.get(PG_ADMIN_USER_KEY),
     password: str = os.environ.get(PG_ADMIN_PWD_KEY),
 ):
+    """
+    Modify a db entry
+
+    :param db_name: name of db
+    :param db_table: Name of table
+    :param db_query_columns: Columns to query
+    :param db_query_values: values to query
+    :param value_dict:
+    :param db_alter_columns:
+    :param return_columns:
+    :param db_query_comparison_types:
+    :param db_user:
+    :param password:
+    :return:
+    """
     if not isinstance(db_query_columns, list):
         db_query_columns = [db_query_columns]
     if not isinstance(db_query_values, list):
@@ -662,7 +897,13 @@ def modify_db_entry(
     return query_output
 
 
-def get_colnames_from_schema(schema_file_path):
+def get_column_names_from_schema(schema_file_path: str | Path) -> list[str]:
+    """
+    Get column names from a schema file
+
+    :param schema_file_path: file to read
+    :return: list of columns
+    """
     with open(schema_file_path, "r", encoding="utf8") as schema_file:
         dat = schema_file.read()
     dat = dat.split(");")[0]
