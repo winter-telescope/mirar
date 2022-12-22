@@ -174,6 +174,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
                 )
 
                 if self.q3c:
+                    q3c_dir = self.schema_dir.joinpath("q3c")
                     q3c_indexes_file = q3c_dir.joinpath("q3c_indexes.sql")
                     run_sql_command_from_file(
                         file_path=q3c_indexes_file,
@@ -188,7 +189,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             self.make_table(self.schema_path)
 
             if self.q3c:
-
+                q3c_dir = self.schema_dir.joinpath("q3c")
                 table_q3c_path = q3c_dir.joinpath(f"q3c_{self.db_table}.sql")
 
                 if not table_q3c_path.exists():
