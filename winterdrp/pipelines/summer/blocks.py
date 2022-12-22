@@ -125,7 +125,7 @@ export_raw = [
         full_setup=True,
         schema_dir=summer_schema_dir,
         duplicate_protocol="ignore",
-        q3c=False,
+        q3c_bool=False,
     ),
     MaskPixels(mask_path=summer_mask_path),
     DatabaseImageExporter(
