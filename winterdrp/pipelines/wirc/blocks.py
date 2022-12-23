@@ -1,8 +1,6 @@
 """
 Module containing standard processing blocks for WIRC
 """
-import os
-
 from winterdrp.catalog.kowalski import PS1, TMASS
 from winterdrp.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
@@ -117,23 +115,22 @@ candidates = [
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     DataframeWriter(output_dir_name="kowalski"),
     DatabaseHistoryImporter(
-        xmatch_radius_arcsec=2,
+        crossmatch_radius_arcsec=2.0,
         time_field_name="jd",
-        history_duration_days=500,
+        history_duration_days=500.0,
         db_name="wirc",
-        db_user=os.environ.get("DB_USER"),
-        db_password=os.environ.get("DB_PWD"),
         db_table="candidates",
         db_output_columns=candidate_colnames,
         schema_path=wirc_candidate_schema_path,
-        q3c=False,
+        q3c_bool=False,
     ),
     CandidateNamer(
         db_name="wirc",
-        cand_table_name="candidates",
+        db_table="candidates",
         base_name="WIRC",
         name_start="aaaaa",
         xmatch_radius_arcsec=2,
+        schema_path=wirc_candidate_schema_path,
     ),
     DatabaseDataframeExporter(
         db_name="wirc", db_table="candidates", schema_path=wirc_candidate_schema_path

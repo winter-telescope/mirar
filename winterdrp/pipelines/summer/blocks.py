@@ -122,10 +122,10 @@ export_raw = [
         db_name=DB_NAME,
         db_table="exposures",
         schema_path=get_summer_schema_path("exposures"),
-        full_setup=True,
+        has_foreign_keys=True,
         schema_dir=summer_schema_dir,
         duplicate_protocol="ignore",
-        q3c=False,
+        q3c_bool=False,
     ),
     MaskPixels(mask_path=summer_mask_path),
     DatabaseImageExporter(
