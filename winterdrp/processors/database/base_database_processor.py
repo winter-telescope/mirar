@@ -6,6 +6,7 @@ from abc import ABC
 from pathlib import Path
 from typing import Optional
 
+from winterdrp.paths import max_n_cpu
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.database.postgres import (
     POSTGRES_DUPLICATE_PROTOCOLS,
@@ -19,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 class BaseDatabaseProcessor(BaseProcessor, ABC):
     """Base class for processors which interact with a postgres database"""
+
+    max_n_cpu = min(max_n_cpu, 10)
 
     def __init__(
         self,
