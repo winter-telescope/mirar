@@ -54,8 +54,10 @@ You can change this via an environment variable.
 See :doc:`usage` for more information about selecting cache mode,
 and setting the output data directory.
 """
+import copy
 import hashlib
 import logging
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -98,7 +100,7 @@ class Image(DataBlock):
 
         :return: unique cache file path
         """
-        base = "".join([str(Time.now()), self.get_name()])
+        base = "".join([str(Time.now()), self.get_name(), str(threading.get_ident())])
         name = f"{hashlib.sha1(base.encode()).hexdigest()}.npy"
         return cache.get_cache_dir().joinpath(name)
 
@@ -124,7 +126,7 @@ class Image(DataBlock):
         :param data: Updated image data
         :return: None
         """
-        np.save(self.cache_path.as_posix(), data)
+        np.save(self.cache_path.as_posix(), data, allow_pickle=False)
 
     def set_ram_data(self, data: np.ndarray):
         """
@@ -196,6 +198,18 @@ class Image(DataBlock):
     def __del__(self):
         self.cache_path.unlink(missing_ok=True)
         self.cache_files.remove(self.cache_path)
+
+    def __deepcopy__(self, memo):
+        new = type(self)(
+            data=copy.deepcopy(self.get_data()), header=copy.deepcopy(self.get_header())
+        )
+        return new
+
+    def __copy__(self):
+        new = type(self)(
+            data=self.get_data().__copy__(), header=self.get_header().__copy__()
+        )
+        return new
 
 
 class ImageBatch(DataBatch):
