@@ -3,7 +3,7 @@ Module containing WIRC-specific paths
 """
 from pathlib import Path
 
-from winterdrp.processors.database.postgres import get_column_names_from_schema
+from winterdrp.processors.database.utils import get_column_names_from_schema
 
 wirc_file_dir = Path(__file__).parent.joinpath("files")
 wirc_schema_dir = Path(__file__).parent.joinpath("schema")

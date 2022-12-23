@@ -15,10 +15,6 @@ from winterdrp.processors.base_processor import (
 )
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
 from winterdrp.processors.database.constraints import DBQueryConstraints
-from winterdrp.processors.database.postgres import (
-    crossmatch_with_database,
-    import_from_db,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -77,14 +73,12 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
 
             query_constraints = self.get_constraints(image)
 
-            res = import_from_db(
+            res = self.pg_user.import_from_db(
                 db_name=self.db_name,
                 db_table=self.db_table,
                 db_constraints=query_constraints,
                 db_output_columns=self.db_output_columns,
                 output_alias_map=self.output_alias_map,
-                db_user=self.db_user,
-                password=self.db_password,
             )
 
             image = self.update_header(image, res)
@@ -275,11 +269,9 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcess
             for ind in range(len(candidate_table)):
                 cand = candidate_table.loc[ind]
                 query_constraints = self.get_source_constraints(cand)
-                res = crossmatch_with_database(
+                res = self.pg_user.crossmatch_with_database(
                     db_name=self.db_name,
                     db_table=self.db_table,
-                    db_user=self.db_user,
-                    db_password=self.db_password,
                     db_output_columns=self.db_output_columns,
                     output_alias_map=self.output_alias_map,
                     query_constraints=query_constraints,

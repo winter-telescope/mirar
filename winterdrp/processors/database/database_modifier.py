@@ -11,10 +11,6 @@ from winterdrp.processors.database.database_importer import (
     BaseDatabaseImporter,
     BaseImageDatabaseImporter,
 )
-from winterdrp.processors.database.postgres import (
-    get_sequence_keys_from_table,
-    modify_db_entry,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +37,12 @@ class ImageDatabaseModifier(BaseDatabaseModifier, BaseImageDatabaseImporter, ABC
         for image in batch:
             query_constraints = self.get_constraints(image)
 
-            modify_db_entry(
+            self.pg_user.modify_db_entry(
                 value_dict=image,
                 db_constraints=query_constraints,
                 db_alter_columns=self.db_alter_columns,
                 db_table=self.db_table,
                 db_name=self.db_name,
-                db_user=self.db_user,
-                password=self.db_password,
             )
 
         return batch
@@ -64,9 +58,7 @@ class ModifyImageDatabaseSeq(ImageDatabaseModifier):
     def get_constraints(self, data):
         if self.sequence_key is None:
             self.sequence_key = list(
-                get_sequence_keys_from_table(
-                    self.db_table, self.db_name, self.db_user, self.db_password
-                )
+                self.pg_user.get_sequence_keys_from_table(self.db_table, self.db_name)
             )
 
         accepted_values = [data[x.upper()] for x in self.sequence_key]

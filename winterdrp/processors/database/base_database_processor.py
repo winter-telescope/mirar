@@ -2,28 +2,16 @@
 Module containing base database processor class
 """
 import logging
-import os
 from abc import ABC
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
-
 from winterdrp.processors.base_processor import BaseProcessor
 from winterdrp.processors.database.postgres import (
-    PG_ADMIN_PWD_KEY,
-    PG_ADMIN_USER_KEY,
     POSTGRES_DUPLICATE_PROTOCOLS,
     DataBaseError,
-    check_if_db_exists,
-    check_if_table_exists,
-    check_if_user_exists,
-    create_db,
-    create_new_user,
-    create_table,
-    create_tables_from_schema,
-    grant_privileges,
-    run_sql_command_from_file,
+    PostgresAdmin,
+    PostgresUser,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,9 +25,9 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         db_name: str,
         db_table: str,
         schema_path: str | Path,
-        db_user: str = os.environ.get("DB_USER"),
-        db_password: str = os.environ.get("DB_PWD"),
-        full_setup: bool = False,
+        pg_user: PostgresUser = PostgresUser(),
+        pg_admin: PostgresAdmin = PostgresAdmin(),
+        has_foreign_keys: bool = False,
         schema_dir: Optional[str | Path] = None,
         duplicate_protocol: str = "fail",
         q3c_bool: bool = False,
@@ -47,14 +35,18 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         super().__init__()
         self.db_name = db_name
         self.db_table = db_table
-        self.db_user = db_user
-        self.db_password = db_password
-        self.full_setup = full_setup
+
         self.schema_path = schema_path
         self.schema_dir = Path(schema_dir) if schema_dir is not None else None
+
+        self.pg_user = pg_user
+        self._pg_admin = pg_admin
+
+        self.has_foreign_keys = has_foreign_keys
         self.db_check_bool = False
         self.duplicate_protocol = duplicate_protocol
         self.q3c = q3c_bool
+
         assert self.duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
 
     def db_exists(self) -> bool:
@@ -63,39 +55,41 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
 
         :return: boolean
         """
-        return check_if_db_exists(db_name=self.db_name)
+        return self._pg_admin.check_if_db_exists(db_name=self.db_name)
 
-    def make_db(self):
+    def _make_db(self):
         """
         Creates a database
 
         :return:
         """
-        create_db(db_name=self.db_name)
+        self._pg_admin.create_db(db_name=self.db_name)
 
-    def user_exists(self):
+    def pg_user_exists(self):
         """
         Check if the specified db user exists
 
         :return: boolean
         """
-        return check_if_user_exists(self.db_user)
+        return self._pg_admin.check_if_user_exists(self.pg_user.db_user)
 
-    def make_user(self):
+    def _make_pg_user(self):
         """
         Creates a new database user
 
         :return: None
         """
-        create_new_user(new_db_user=self.db_user, new_password=self.db_password)
+        self._pg_admin.create_new_user(
+            new_db_user=self.pg_user.db_user, new_password=self.pg_user.db_password
+        )
 
-    def grant_privileges(self):
+    def _grant_privileges_to_pg_user(self):
         """
         Grants db privilege to user
 
         :return: None
         """
-        grant_privileges(self.db_name, self.db_user)
+        self._pg_admin.grant_privileges(self.db_name, db_user=self.pg_user.db_user)
 
     def table_exists(self):
         """
@@ -103,25 +97,21 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
 
         :return: boolean
         """
-        return check_if_table_exists(
+        return self.pg_user.check_if_table_exists(
             db_name=self.db_name,
             db_table=self.db_table,
-            db_user=self.db_user,
-            password=self.db_password,
         )
 
-    def make_table(self, schema_path: str | Path):
+    def _create_table(self, schema_path: str | Path):
         """
         Makes a database table using schema
 
         :param schema_path: Path of schema file
         :return: None
         """
-        create_table(
+        self.pg_user.create_table(
             schema_path,
             db_name=self.db_name,
-            db_user=self.db_user,
-            password=self.db_password,
         )
 
     def check_prerequisites(
@@ -137,55 +127,50 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
 
         :return: None
         """
+        # If not specified, admin credentials equal user credentials
+        # Check that the credentials work at all
 
-        admin_user = os.environ.get(PG_ADMIN_USER_KEY)
-        admin_password = os.environ.get(PG_ADMIN_PWD_KEY)
+        self._pg_admin.validate_credentials()
 
-        if np.logical_and(self.db_exists(), np.invert(self.user_exists())):
-            err = "Database exists but user does not exist"
-            logger.error(err)
-            raise DataBaseError(err)
+        # Create pg user for the first time
+
+        if not self.pg_user_exists():
+            self._make_pg_user()
+        self.pg_user.validate_credentials()
+
+        # Check there is a db
 
         if not self.db_exists():
-            self.make_db()
+            self._make_db()
+            self._grant_privileges_to_pg_user()
 
-            if not self.user_exists():
-                self.make_user()
-
-            self.grant_privileges()
-
-            if self.full_setup:
+            if self.has_foreign_keys:
 
                 if self.schema_dir is None:
                     self.schema_dir = self.schema_path.parent
                     logger.warning(
-                        f"Warning, full db setup requested, "
+                        f"Warning, integrated db setup with foreign keys requested, "
                         f"but no schema directory specified. "
                         f"Will search for schema files in {self.schema_dir} directory."
                     )
 
-                logger.info(
+                logger.debug(
                     f"Looking in {self.schema_dir} directory to search for schema files"
                 )
 
-                create_tables_from_schema(
-                    self.schema_dir, self.db_name, self.db_user, self.db_password
-                )
+                self.pg_user.create_tables_from_schema(self.schema_dir, self.db_name)
 
                 if self.q3c:
                     q3c_dir = self.schema_dir.joinpath("q3c")
                     q3c_indexes_file = q3c_dir.joinpath("q3c_indexes.sql")
-                    run_sql_command_from_file(
-                        file_path=q3c_indexes_file,
-                        db_name=self.db_name,
-                        db_user=admin_user,
-                        password=admin_password,
+                    self.pg_user.run_sql_command_from_file(
+                        file_path=q3c_indexes_file, db_name=self.db_name
                     )
-                    logger.info("Created q3c_bool indexes")
+                    logger.debug("Created q3c_bool indexes")
 
         if not self.table_exists():
 
-            self.make_table(self.schema_path)
+            self._create_table(self.schema_path)
 
             if self.q3c:
                 q3c_dir = self.schema_dir.joinpath("q3c")
@@ -199,9 +184,6 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
                     logger.error(err)
                     raise DataBaseError(err)
 
-                run_sql_command_from_file(
-                    file_path=table_q3c_path,
-                    db_name=self.db_name,
-                    db_user=admin_user,
-                    password=admin_password,
+                self.pg_user.run_sql_command_from_file(
+                    file_path=table_q3c_path, db_name=self.db_name
                 )

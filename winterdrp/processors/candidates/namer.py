@@ -2,21 +2,17 @@
 Module containing a processor for assigning names to sources
 """
 import logging
-import os
 
 from astropy.time import Time
 
 from winterdrp.data import SourceBatch
 from winterdrp.processors.base_processor import BaseDataframeProcessor
-from winterdrp.processors.database.postgres import (
-    crossmatch_with_database,
-    execute_query,
-)
+from winterdrp.processors.database import BaseDatabaseProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class CandidateNamer(BaseDataframeProcessor):
+class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
     """Processor to sequentially assign names to sources, of the form a, aa, aba..."""
 
     base_key = "namer"
@@ -26,22 +22,15 @@ class CandidateNamer(BaseDataframeProcessor):
 
     def __init__(
         self,
-        db_name: str,
         base_name: str,
         xmatch_radius_arcsec: float,
         name_start: str = "aaaaa",
-        cand_table_name: str = "candidates",
-        db_user: str = os.environ.get("DB_USER"),
-        db_pwd: str = os.environ.get("DB_PWD"),
         db_name_field: str = "objectId",
         db_order_field: str = "candid",
         date_field: str = "jd",
+        **kwargs,
     ):
-        super().__init__()
-        self.db_name = db_name
-        self.db_user = db_user
-        self.db_pwd = db_pwd
-        self.cand_table_name = cand_table_name
+        super().__init__(**kwargs)
         self.db_name_field = db_name_field
         self.db_order_field = db_order_field
         self.base_name = base_name
@@ -97,13 +86,11 @@ class CandidateNamer(BaseDataframeProcessor):
         cand_year = Time(cand_jd, format="jd").datetime.year % 1000
         if last_name is None:
             query = (
-                f'SELECT "{self.db_name_field}" FROM {self.cand_table_name} '
+                f'SELECT "{self.db_name_field}" FROM {self.db_table} '
                 f"ORDER BY {self.db_order_field} desc LIMIT 1;"
             )
 
-            res = execute_query(
-                query, db_name=self.db_name, db_user=self.db_user, password=self.db_pwd
-            )
+            res = self.pg_user.execute_query(query, db_name=self.db_name)
 
             if len(res) == 0:
                 name = self.base_name + str(cand_year) + self.name_start
@@ -130,11 +117,9 @@ class CandidateNamer(BaseDataframeProcessor):
         :param dec_deg: dec (deg)
         :return: boolean whether a source has been detected previously
         """
-        name = crossmatch_with_database(
+        name = self.pg_user.crossmatch_with_database(
             db_name=self.db_name,
-            db_user=self.db_user,
-            db_password=self.db_pwd,
-            db_table=self.cand_table_name,
+            db_table=self.db_table,
             db_output_columns=[self.db_name_field],
             num_limit=1,
             ra=ra_deg,
