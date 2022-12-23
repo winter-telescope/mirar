@@ -1,0 +1,1 @@
+from winterdrp.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
