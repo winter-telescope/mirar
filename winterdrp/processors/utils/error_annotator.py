@@ -1,31 +1,36 @@
+"""
+Module for adding saved errors into image header metadata
+"""
 import logging
-from pathlib import Path
-
-import astropy.io.fits
-import numpy as np
 
 from winterdrp.data import ImageBatch
 from winterdrp.errors import ErrorStack
-from winterdrp.paths import PROC_FAIL_KEY, RAW_IMG_KEY
+from winterdrp.paths import PROC_FAIL_KEY
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
 
 class ErrorStackAnnotator(BaseImageProcessor):
+    """
+    Processor to update image headers with processing failurs
+    """
 
     base_key = "errorannotate"
 
-    def __init__(
-        self, errorstack: ErrorStack, processed_images: list[str], *args, **kwargs
-    ):
-        super().__init__(*args, **kwargs)
+    def __init__(self, errorstack: ErrorStack, processed_images: list[str]):
+        super().__init__()
         self.errorstack = errorstack
         self.image_dict = self.unpack_errorstack()
         self.processed_images = processed_images
 
     def unpack_errorstack(self) -> dict:
-        image_dict = dict()
+        """
+        Convert an errorstack to an image-indexed dictionary
+
+        :return: dictionary of errors
+        """
+        image_dict = {}
 
         all_reports = self.errorstack.get_all_reports()
 
@@ -34,7 +39,7 @@ class ErrorStackAnnotator(BaseImageProcessor):
             error_name = error_report.get_error_name()
 
             for image_name in image_names:
-                if image_name not in image_dict.keys():
+                if image_name not in image_dict:
                     image_dict[image_name] = [error_name]
                 else:
                     image_dict[image_name].append(error_name)
@@ -43,11 +48,11 @@ class ErrorStackAnnotator(BaseImageProcessor):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
 
-        for i, image in enumerate(batch):
+        for image in batch:
 
-            base_name = str(Path(image[RAW_IMG_KEY]).name)
+            base_name = image.get_name()
 
-            if base_name in self.image_dict.keys():
+            if base_name in self.image_dict:
                 image[PROC_FAIL_KEY] += ",".join(self.image_dict[base_name])
             elif self.processed_images is not None:
                 if base_name not in self.processed_images:
