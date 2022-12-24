@@ -1,3 +1,7 @@
+"""
+Module containing WIRC-specific generator functions to
+yield e.g catalog for astrometric calibrations
+"""
 import logging
 import os
 

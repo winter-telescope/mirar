@@ -1,3 +1,6 @@
+"""
+Module for the WIRC (https://doi.org/10.1117/12.460336) pipeline
+"""
 import logging
 
 import astropy.io.fits
@@ -11,25 +14,18 @@ from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 logger = logging.getLogger(__name__)
 
 
-pipeline_name = "wirc"
+PIPELINE_NAME = "wirc"
 
 
 class WircPipeline(Pipeline):
+    """
+    Pipeline for WIRC on the Palomar 200-inch telescope
+    """
 
-    name = pipeline_name
+    name = PIPELINE_NAME
 
     non_linear_level = 30000
     gain = 1.2
-
-    # Set up elements to use
-
-    header_keys = [
-        "UTSHUT",
-        "OBJECT",
-        "FILTER",
-        "EXPTIME",
-        "COADDS",
-    ]
 
     all_pipeline_configurations = {
         "default": load_raw + reduce,
@@ -43,7 +39,7 @@ class WircPipeline(Pipeline):
             base_dir="/scr2/ptf/observation_data",
             prefix="WIRC_",
             night=night,
-            pipeline=pipeline_name,
+            pipeline=PIPELINE_NAME,
             server_sub_dir="raw",
         )
 
