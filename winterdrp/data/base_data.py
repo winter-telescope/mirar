@@ -196,6 +196,12 @@ class DataBatch(PseudoList):
             img_list += [Path(x).name for x in data_block.get_raw_img_list()]
         return img_list
 
+    def __str__(self):
+        return (
+            f"<An {self.__class__.__name__} object, "
+            f"containing {[x.get_name() for x in self.get_batch()]}>"
+        )
+
 
 class Dataset(PseudoList):
     """
