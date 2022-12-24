@@ -1,7 +1,9 @@
+"""
+Module containing processprs for bias correction
+"""
 import logging
 from collections.abc import Callable
 
-import astropy.io.fits
 import numpy as np
 
 from winterdrp.data import Image, ImageBatch
@@ -19,24 +21,33 @@ logger = logging.getLogger(__name__)
 def default_select_bias(
     images: ImageBatch,
 ) -> ImageBatch:
+    """
+    Returns images in a batch with are tagged as bias
+
+    :param images: set of images
+    :return: subset of bias images
+    """
     return select_from_images(images, target_values="bias")
 
 
 class BiasCalibrator(ProcessorWithCache):
+    """
+    Processor to bias-correct images
+    """
 
     base_key = "bias"
 
     def __init__(
         self,
-        select_bias_images: Callable[[ImageBatch], ImageBatch] = default_select_bias,
         *args,
+        select_bias_images: Callable[[ImageBatch], ImageBatch] = default_select_bias,
         **kwargs,
     ):
-        super(BiasCalibrator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.select_cache_images = select_bias_images
 
     def __str__(self) -> str:
-        return f"Creates a bias image, and subtracts this from the other images."
+        return "Creates a bias image, and subtracts this from the other images."
 
     def _apply_to_images(
         self,
@@ -45,7 +56,7 @@ class BiasCalibrator(ProcessorWithCache):
 
         master_bias = self.get_cache_file(batch)
 
-        for i, image in enumerate(batch):
+        for image in batch:
             data = image.get_data()
             data = data - master_bias.get_data()
             image.set_data(data)
@@ -55,10 +66,10 @@ class BiasCalibrator(ProcessorWithCache):
 
     def make_image(
         self,
-        image_batch: ImageBatch,
+        images: ImageBatch,
     ) -> Image:
 
-        images = self.select_cache_images(image_batch)
+        images = self.select_cache_images(images)
 
         n_frames = len(images)
 
@@ -74,12 +85,16 @@ class BiasCalibrator(ProcessorWithCache):
         for i, img in enumerate(images):
             biases[:, :, i] = img.get_data()
 
-        logger.info(f"Median combining {n_frames} biases")
+        logger.debug(f"Median combining {n_frames} biases")
         master_bias = Image(np.nanmedian(biases, axis=2), header=images[0].get_header())
 
         return master_bias
 
 
 class MasterBiasCalibrator(ProcessorPremadeCache, BiasCalibrator):
+    """
+    Processor to bias-correct with a master bias
+    """
+
     def __str__(self) -> str:
-        return f"Loads a master bias image, and subtracts this from the other images."
+        return "Loads a master bias image, and subtracts this from the other images."
