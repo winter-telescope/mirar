@@ -1,5 +1,9 @@
+"""
+Module for loading raw WIRC images and ensuring they have the correct format
+"""
 import logging
 import os
+from pathlib import Path
 
 import astropy
 import numpy as np
@@ -17,10 +21,18 @@ from winterdrp.paths import (
 logger = logging.getLogger(__name__)
 
 
-def load_raw_wirc_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_wirc_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
+    """
+    Function to load a raw WIRC image
+
+    :param path: path of file
+    :return: data and header of image
+    """
     with fits.open(path) as img:
+        # pylint: disable=E1101
         data = img[0].data
         header = img[0].header
+        # pylint: enable=E1101
         header["FILTER"] = header["AFT"].split("__")[0]
 
         if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:

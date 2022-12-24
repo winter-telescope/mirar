@@ -1,3 +1,6 @@
+"""
+Module for finding archival calibration images if these are missing
+"""
 import copy
 import logging
 import os
@@ -86,7 +89,7 @@ def update_requirements(
 
 
 def find_required_cals(
-    latest_dir: str,
+    latest_dir: str | Path,
     night: str,
     requirements: list[CalRequirement],
     open_f: Callable[[str], Image] = open_fits,
@@ -106,7 +109,9 @@ def find_required_cals(
     """
 
     path = Path(latest_dir)
-    logger.debug(path)
+
+    logger.debug(f"Searching for archival images for {path}")
+
     split = latest_dir.split(night)
 
     root = split[0]

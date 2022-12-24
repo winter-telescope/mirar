@@ -1,10 +1,13 @@
+"""
+Module for executing bash commands
+"""
 import logging
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 import docker
-from docker.errors import DockerException
 
 from winterdrp.utils.dockerutil import (
     docker_batch_put,
@@ -17,13 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 class ExecutionError(Exception):
-    pass
+    """Error relating to executing bash command"""
 
 
-default_timeout = 300.0
+DEFAULT_TIMEOUT = 300.0
 
 
-def run_local(cmd: str, output_dir: str = ".", timeout: float = default_timeout):
+def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT):
     """
     Function to run on local machine using subprocess, with error handling.
 
@@ -32,7 +35,8 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = default_timeout)
 
     Parameters
     ----------
-    cmd: A string containing the command you want to use to run sextractor. An example would be:
+    cmd: A string containing the command you want to use to run sextractor.
+    An example would be:
         cmd = '/usr/bin/source-extractor image0001.fits -c sex.config'
     output_dir: A local directory to save the output files to.
     timeout: Time to timeout in seconds
@@ -58,7 +62,7 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = default_timeout)
             cmd, check=True, capture_output=True, shell=True, timeout=timeout
         )
 
-        msg = f"Successfully executed command. "
+        msg = "Successfully executed command. "
 
         if rval.stdout.decode() != "":
             msg += f"Found the following output: {rval.stdout.decode()}"
@@ -88,7 +92,8 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = default_timeout)
         if len(new_files) > 0:
 
             logger.debug(
-                f"The following new files were created in the current directory: {new_files}"
+                f"The following new files were created in the current directory: "
+                f"{new_files}"
             )
 
         for file in new_files:
@@ -103,20 +108,30 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = default_timeout)
     except subprocess.CalledProcessError as err:
         msg = (
             f"Error found when running with command: \n \n '{err.cmd}' \n \n"
-            f"This yielded a return code of {err.returncode}. The following traceback was found: \n {err.stderr.decode()}"
+            f"This yielded a return code of {err.returncode}. "
+            f"The following traceback was found: \n {err.stderr.decode()}"
         )
         logger.error(msg)
-        raise ExecutionError(msg)
+        raise ExecutionError(msg) from err
 
 
-def temp_config(config_path: str, output_dir: str) -> str:
-    basename = f"temp_{os.path.basename(config_path)}"
-    return os.path.join(output_dir, basename)
+def temp_config(config_path: str | Path, output_dir: str | Path) -> Path:
+    """
+    Get a
+
+    :param config_path:
+    :param output_dir:
+    :return:
+    """
+    basename = f"temp_{Path(config_path).name}"
+    return Path(output_dir).joinpath(basename)
 
 
-def run_docker(cmd: str, output_dir: str = "."):
-    """Function to run a command via Docker. A container will be generated automatically,
-    but a Docker server must be running first. You can start one via the Desktop application,
+def run_docker(cmd: str, output_dir: Path | str = "."):
+    """Function to run a command via Docker.
+    A container will be generated automatically,
+    but a Docker server must be running first.
+    You can start one via the Desktop application,
     or on the command line with `docker start'.
 
     After the specified 'cmd' command has been run, any newly-generated files
@@ -124,7 +139,8 @@ def run_docker(cmd: str, output_dir: str = "."):
 
     Parameters
     ----------
-    cmd: A string containing the base arguments you want to use to run sextractor. An example would be:
+    cmd: A string containing the base arguments you want to use to run sextractor.
+    An example would be:
         cmd = 'image01.fits -c sex.config'
     output_dir: A local directory to save the output files to.
 
@@ -197,8 +213,8 @@ def run_docker(cmd: str, output_dir: str = "."):
 
             new_file = []
 
-            with open(path, "rb") as f:
-                for line in f.readlines():
+            with open(path, "rb", encoding="utf8") as local_file:
+                for line in local_file.readlines():
                     args = [x for x in line.decode().split(" ") if x not in [""]]
                     new_args = list(args)
                     for i, arg in enumerate(args):
@@ -207,17 +223,17 @@ def run_docker(cmd: str, output_dir: str = "."):
                             new_args[i] = docker_path(arg)
                         elif os.path.isfile(arg.strip("\n")):
                             copy_list.append(arg.strip("\n"))
-                            new_args[i] = docker_path(arg.strip("\n")) + "\n"
+                            new_args[i] = str(docker_path(arg.strip("\n"))) + "\n"
                     new_file.append(" ".join(new_args))
 
-            temp_file = temp_config(path, output_dir)
+            temp_file_path = temp_config(path, output_dir)
 
-            with open(temp_file, "w") as g:
-                g.writelines(new_file)
+            with open(temp_file_path, "w", encoding="utf8") as temp_file:
+                temp_file.writelines(new_file)
 
-            copy_list.append(temp_file)
+            copy_list.append(temp_file_path)
 
-            cmd = cmd.replace(path + " ", docker_path(temp_file) + " ")
+            cmd = cmd.replace(path + " ", str(docker_path(temp_file_path)) + " ")
 
         # Copy in files, and see what files are already there
 
@@ -231,16 +247,17 @@ def run_docker(cmd: str, output_dir: str = "."):
 
         log = container.exec_run(cmd, stderr=True, stdout=True)
 
-        for temp_file in temp_files:
-            logger.debug(f"Deleting temporary file {temp_file}")
-            os.remove(temp_file)
+        for temp_file_path in temp_files:
+            logger.debug(f"Deleting temporary file {temp_file_path}")
+            os.remove(temp_file_path)
 
         if not log.output == b"":
             logger.info(f"Output: {log.output.decode()}")
 
         if not log.exit_code == 0:
             err = (
-                f"Error running command: \n '{cmd}'\n which resulted in returncode '{log.exit_code}' and"
+                f"Error running command: \n '{cmd}'\n "
+                f"which resulted in returncode '{log.exit_code}' and"
                 f"the following error message: \n '{log.output.decode()}'"
             )
             logger.error(err)
@@ -256,14 +273,28 @@ def run_docker(cmd: str, output_dir: str = "."):
 
     except docker.errors.APIError as err:
         logger.error(err)
-        raise ExecutionError(err)
+        raise ExecutionError(err) from err
     finally:
         # In any case, clean up by killing the container and removing files
         container.kill()
         container.remove()
 
 
-def execute(cmd, output_dir=".", local=True, timeout: float = default_timeout):
+def execute(
+    cmd: str,
+    output_dir: Path | str = ".",
+    local: bool = True,
+    timeout: float = DEFAULT_TIMEOUT,
+):
+    """
+    Generically execute a command either via bash or a docker container
+
+    :param cmd: command
+    :param output_dir: output directory for command
+    :param local: boolean whether use local or docker
+    :param timeout: timeout for local execution
+    :return: None
+    """
     logger.debug(
         f"Using '{['docker', 'local'][local]}' " f" installation to run `{cmd}`"
     )

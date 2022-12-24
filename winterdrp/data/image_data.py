@@ -226,12 +226,6 @@ class ImageBatch(DataBatch):
     def append(self, item: Image):
         self._append(item)
 
-    def __str__(self):
-        return (
-            f"<An {self.__class__.__name__} object, "
-            f"containing {[x.get_name() for x in self.get_batch()]}>"
-        )
-
     def get_batch(self) -> list[Image]:
         """Returns the :class:`~winterdrp.data.image_data.ImageBatch`
         items within the batch

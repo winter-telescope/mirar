@@ -1,7 +1,11 @@
+"""
+Module for loading images
+"""
 import logging
 import os
 from collections.abc import Callable
 from glob import glob
+from pathlib import Path
 
 import astropy.io.fits
 import numpy as np
@@ -22,13 +26,11 @@ class ImageLoader(BaseImageProcessor):
 
     def __init__(
         self,
-        *args,
         input_sub_dir: str = RAW_IMG_SUB_DIR,
         input_img_dir: str = base_raw_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.input_sub_dir = input_sub_dir
         self.load_image = load_image
         self.input_img_dir = input_img_dir
@@ -40,6 +42,12 @@ class ImageLoader(BaseImageProcessor):
         )
 
     def open_raw_image(self, path: str) -> Image:
+        """
+        Function to open a raw image as an Image object
+
+        :param path: path of raw image
+        :return: Image object
+        """
 
         data, header = self.load_image(path)
 
@@ -55,13 +63,6 @@ class ImageLoader(BaseImageProcessor):
 
         return Image(data.astype(np.float64), header)
 
-    def open_raw_image_batch(self, paths: list) -> ImageBatch:
-        image_batch = ImageBatch()
-        for path in paths:
-            image = self.open_raw_image(path)
-            image_batch.append(image)
-        return image_batch
-
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
 
         input_dir = os.path.join(
@@ -71,7 +72,16 @@ class ImageLoader(BaseImageProcessor):
         return load_from_dir(input_dir, open_f=self.open_raw_image)
 
 
-def load_from_dir(input_dir: str, open_f: Callable[[str], Image]) -> ImageBatch:
+def load_from_dir(
+    input_dir: str | Path, open_f: Callable[[str | Path], Image]
+) -> ImageBatch:
+    """
+    Function to load all images in a directory
+
+    :param input_dir:
+    :param open_f:
+    :return:
+    """
 
     img_list = sorted(glob(f"{input_dir}/*.fits"))
 

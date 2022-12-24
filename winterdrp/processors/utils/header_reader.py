@@ -1,7 +1,7 @@
+"""
+Module for reading/logging values from image headers
+"""
 import logging
-
-import astropy.io.fits
-import numpy as np
 
 from winterdrp.data import ImageBatch
 from winterdrp.paths import BASE_NAME_KEY
@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class HeaderReader(BaseImageProcessor):
+    """
+    Processor to extract data from image headers, and print it to the log
+    """
 
     base_key = "header_reader"
 

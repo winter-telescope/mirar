@@ -1,7 +1,7 @@
+"""
+Module for adding metadata to Image headers
+"""
 import logging
-
-import astropy.io.fits
-import numpy as np
 
 from winterdrp.data import ImageBatch
 from winterdrp.processors.base_processor import BaseImageProcessor
@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class HeaderAnnotator(BaseImageProcessor):
+    """
+    Processor for adding metadata to Image headers
+    """
 
     base_key = "header_annotator"
 
@@ -26,7 +29,10 @@ class HeaderAnnotator(BaseImageProcessor):
         self.output_key = output_key
 
     def __str__(self) -> str:
-        return f"Updates image headers by adding values for {' and '.join(self.output_key)}."
+        return (
+            f"Updates image headers by adding values "
+            f"for {' and '.join(self.output_key)}."
+        )
 
     def _apply_to_images(
         self,
@@ -46,6 +52,9 @@ class HeaderAnnotator(BaseImageProcessor):
 
 
 class HeaderEditor(BaseImageProcessor):
+    """
+    Processor for modifying metadata in Image headers
+    """
 
     base_key = "header_editor"
 
@@ -66,7 +75,10 @@ class HeaderEditor(BaseImageProcessor):
         self.values = values
 
     def __str__(self) -> str:
-        return f"Modifies image headers by updating values for {' and '.join(self.edit_keys)}."
+        return (
+            f"Modifies image headers by "
+            f"updating values for {' and '.join(self.edit_keys)}."
+        )
 
     def _apply_to_images(
         self,
