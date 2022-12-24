@@ -1,4 +1,6 @@
-import os
+"""
+Module for saving images
+"""
 from pathlib import Path
 
 from winterdrp.data import ImageBatch
@@ -7,13 +9,15 @@ from winterdrp.paths import (
     LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     base_output_dir,
-    get_output_dir,
     get_output_path,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor
 
 
 class ImageSaver(BaseImageProcessor):
+    """
+    Processor to save images
+    """
 
     base_key = "save"
 
@@ -36,18 +40,7 @@ class ImageSaver(BaseImageProcessor):
         batch: ImageBatch,
     ) -> ImageBatch:
 
-        try:
-            os.makedirs(
-                get_output_dir(
-                    dir_root=self.output_dir_name,
-                    sub_dir=self.night_sub_dir,
-                    output_dir=self.output_dir,
-                )
-            )
-        except OSError:
-            pass
-
-        for i, image in enumerate(batch):
+        for image in batch:
 
             path = get_output_path(
                 image[BASE_NAME_KEY],
@@ -55,6 +48,9 @@ class ImageSaver(BaseImageProcessor):
                 sub_dir=self.night_sub_dir,
                 output_dir=self.output_dir,
             )
+
+            if not path.parent.exists():
+                path.parent.mkdir(parents=True)
 
             image[LATEST_SAVE_KEY] = str(path)
             if self.write_mask:
