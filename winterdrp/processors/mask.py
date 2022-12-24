@@ -1,6 +1,9 @@
+"""
+Module containing processors which mask pixels
+"""
 import logging
+from pathlib import Path
 
-import astropy.io.fits
 import numpy as np
 
 from winterdrp.data import ImageBatch
@@ -8,23 +11,31 @@ from winterdrp.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
-# mask_value = -99.
-mask_value = np.nan
+# MASK_VALUE = -99.
+MASK_VALUE = np.nan
 
 
 class MaskPixels(BaseImageProcessor):
+    """
+    Processor to apply bias calibration
+    """
 
     base_key = "mask"
 
-    def __init__(self, mask_path: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, mask_path: str | Path):
+        super().__init__()
         self.mask = None
-        self.mask_path = mask_path
+        self.mask_path = Path(mask_path)
 
     def __str__(self) -> str:
         return f"Processor to mask bad pixels using a pre-defined map: {self.mask_path}"
 
     def get_mask(self):
+        """
+        loads mask if needed, and returns it
+
+        :return: mask
+        """
         if self.mask is None:
             self.mask = self.open_fits(self.mask_path)
         return self.mask
@@ -34,11 +45,11 @@ class MaskPixels(BaseImageProcessor):
         batch: ImageBatch,
     ) -> ImageBatch:
 
-        for i, image in enumerate(batch):
+        for image in batch:
             data = image.get_data()
             mask = self.get_mask().get_data()
             mask = mask != 0
-            data[mask] = mask_value
+            data[mask] = MASK_VALUE
             image.set_data(data)
 
         return batch
