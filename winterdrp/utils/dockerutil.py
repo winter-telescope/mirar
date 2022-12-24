@@ -1,7 +1,11 @@
+"""
+Module containing docker integration (beta-stage)
+"""
 import io
 import logging
 import os
 import tarfile
+from pathlib import Path
 
 import docker
 from docker.errors import DockerException
@@ -9,45 +13,54 @@ from docker.models.containers import Container
 
 logger = logging.getLogger(__name__)
 
-docker_image_name = "robertdstein/astrodocker"
-docker_dir = "/usr/src/astrodocker"
+DOCKER_IMAGE_NAME = "robertdstein/astrodocker"
+docker_dir = Path("/usr/src/astrodocker")
 
 
 def new_container():
-    f"""Generate a new docker.models.containers.Container object, using the default
-    docker daemon and the "{docker_image_name}" image. If the image is not found locally,
+    """Generate a new docker.models.containers.Container object, using the default
+    docker daemon and the docker image.
+    If the image is not found locally,
     the image will first be pulled from DockerHub.
 
     This function requires a Docker daemon to first be running.
 
     Returns
     -------
-    A docker container built with the {docker_image_name} image
+    A docker container built with the {DOCKER_IMAGE_NAME} image
     """
     try:
         client = docker.from_env()
-    except DockerException:
+    except DockerException as exc:
         err = (
-            "Unable to connect to Docker daemon. Have you installed Docker, and started a daemon? "
+            "Unable to connect to Docker daemon. "
+            "Have you installed Docker, and started a daemon? "
             "Find out more at https://www.docker.com "
         )
         logger.error(err)
-        raise ConnectionError(err)
+        raise ConnectionError(err) from exc
 
-    if len(client.images.list(docker_image_name)) < 1:
-        logger.info(f"Pulling docker image {docker_image_name}")
-        client.images.pull(docker_image_name)
+    if len(client.images.list(DOCKER_IMAGE_NAME)) < 1:
+        logger.info(f"Pulling docker image {DOCKER_IMAGE_NAME}")
+        client.images.pull(DOCKER_IMAGE_NAME)
 
-    return client.containers.run(docker_image_name, tty=True, detach=True)
-
-
-def docker_path(file):
-    return os.path.join(docker_dir, os.path.basename(file))
+    return client.containers.run(DOCKER_IMAGE_NAME, tty=True, detach=True)
 
 
-def docker_get(container: Container, local_path: str):
+def docker_path(file_path: str | Path) -> Path:
+    """
+    Converts a local path to the corresponding path in the docker container
+
+    :param file_path: file path
+    :return:
+    """
+    return docker_dir.joinpath(Path(file_path).name)
+
+
+def docker_get(container: Container, local_path: str | Path):
     """Function to cope one file from the Docker container 'container' to 'local_path'.
-    The file in the container should have the same name as the base file in 'local_path'.
+    The file in the container should have
+    the same name as the base file in 'local_path'.
 
     Parameters
     ----------
@@ -60,13 +73,13 @@ def docker_get(container: Container, local_path: str):
 
     container_path = docker_path(local_path)
 
-    with open(local_path, "wb") as f:
-        bits, stat = container.get_archive(container_path)
+    with open(local_path, "wb") as local_file:
+        bits, _ = container.get_archive(container_path.as_posix())
         for chunk in bits:
-            f.write(chunk)
+            local_file.write(chunk)
 
 
-def docker_put(container, local_path):
+def docker_put(container: Container, local_path: str | Path):
     """Function to one file, at 'local_path' into the Docker container 'container'
 
     Parameters
@@ -79,12 +92,14 @@ def docker_put(container, local_path):
     """
     stream = io.BytesIO()
 
-    with tarfile.open(fileobj=stream, mode="w|") as tar, open(local_path, "rb") as f:
-        info = tar.gettarinfo(fileobj=f)
+    with tarfile.open(fileobj=stream, mode="w|") as tar, open(
+        local_path, "rb"
+    ) as local_file:
+        info = tar.gettarinfo(fileobj=local_file)
         info.name = os.path.basename(local_path)
-        tar.addfile(info, f)
+        tar.addfile(info, local_file)
 
-    return container.put_archive(docker_dir, stream.getvalue())
+    return container.put_archive(docker_dir.as_posix(), stream.getvalue())
 
 
 def docker_batch_put(container: Container, local_paths: str | list):
@@ -111,12 +126,17 @@ def docker_batch_put(container: Container, local_paths: str | list):
     )
 
 
-def docker_get_new_files(container: Container, output_dir: str, ignore_files: list):
+def docker_get_new_files(
+    container: Container, output_dir: str | Path, ignore_files: list[str | Path]
+):
     """
-    Function to copy new files out of a container. All files in the work directory of 'container'
-    will be copied out to 'output_dir', unless they appear in the 'ignore_files' list.
+    Function to copy new files out of a container.
+    All files in the work directory of 'container'
+    will be copied out to 'output_dir',
+    unless they appear in the 'ignore_files' list.
 
-    The normal procedure is to run this in tandem with docker_batch_put(), so that only new files
+    The normal procedure is to run this in tandem with docker_batch_put(),
+    so that only new files
     are copied out of the container. For example:
 
         ignore_files = docker_batch_put(
@@ -152,20 +172,18 @@ def docker_get_new_files(container: Container, output_dir: str, ignore_files: li
 
     # Make output directory if it doesn't exist
 
-    try:
-        os.makedirs(output_dir)
-    except OSError:
-        pass
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Collect output files
 
     for output_file in new_files:
 
-        output_path = os.path.join(output_dir, output_file)
+        output_path = output_dir.joinpath(output_file)
 
         docker_get(container, output_path)
 
-        if os.path.exists(output_path):
+        if output_path.exists():
             logger.debug(f"Saved to {output_path}")
         else:
             raise FileNotFoundError(f"Unable to find {output_path}")
