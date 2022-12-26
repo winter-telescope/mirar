@@ -32,7 +32,7 @@ wget = "^3.2"
 toml = "^0.10.2"
 sphinx-mdinclude = "^0.5.3"
 black = "^22.10.0"
-pre-commit = "^2.20.0"
+pre-commit = "^2.21.0"
 isort = {extras = ["pyproject"], version = "^5.10.1"}
 pylint = "^2.15.7"
 mypy = "^0.991"
