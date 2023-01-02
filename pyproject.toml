@@ -27,7 +27,7 @@ psycopg = {extras = ["binary"], version = "^3.1.4"}
 pydl = {version = "^1.0.0rc1", allow-prereleases = true}
 pyFFTW = "^0.13.0"
 setuptools = "^65.6.3"
-watchdog = "^2.1.9"
+watchdog = "^2.2.1"
 wget = "^3.2"
 toml = "^0.10.2"
 sphinx-mdinclude = "^0.5.3"
