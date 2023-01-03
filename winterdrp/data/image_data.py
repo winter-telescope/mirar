@@ -87,9 +87,11 @@ class Image(DataBlock):
         self._data = None
         self.header = header
         super().__init__()
-        self.cache_path = self.get_cache_path()
         if USE_CACHE:
+            self.cache_path = self.get_cache_path()
             self.cache_files.append(self.cache_path)
+        else:
+            self.cache_path = None
         self.set_data(data=data)
 
     def get_cache_path(self) -> Path:
@@ -196,8 +198,9 @@ class Image(DataBlock):
         return self.header.keys()
 
     def __del__(self):
-        self.cache_path.unlink(missing_ok=True)
-        self.cache_files.remove(self.cache_path)
+        if self.cache_path is not None:
+            self.cache_path.unlink(missing_ok=True)
+            self.cache_files.remove(self.cache_path)
 
     def __deepcopy__(self, memo):
         new = type(self)(
