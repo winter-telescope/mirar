@@ -25,7 +25,7 @@ penquins = "^2.2.0"
 photutils = "^1.6.0"
 psycopg = {extras = ["binary"], version = "^3.1.4"}
 pydl = {version = "^1.0.0rc1", allow-prereleases = true}
-pyFFTW = "^0.13.0"
+pyFFTW = "^0.13.1"
 setuptools = "^65.6.3"
 watchdog = "^2.2.1"
 wget = "^3.2"
