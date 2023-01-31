@@ -18,6 +18,7 @@ from winterdrp.pipelines.summer.blocks import (
     process_raw,
     sim_realtime,
     subtract,
+    process_raw_crtest
 )
 from winterdrp.pipelines.summer.config import PIPELINE_NAME, summer_cal_requirements
 from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image
@@ -43,6 +44,7 @@ class SummerPipeline(Pipeline):
         "log": load_raw + build_log,
         "simrealtime": sim_realtime,
         "testlog": load_test + build_log,
+        "crtest": load_raw + process_raw_crtest + build_log
     }
 
     @staticmethod
