@@ -14,6 +14,7 @@ from winterdrp.paths import (
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    GAIN_KEY,
     __version__,
 )
 
@@ -175,6 +176,8 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["RA"] = crds.ra.deg
         header["DEC"] = crds.dec.deg
 
+        if GAIN_KEY not in header.keys():
+            header[GAIN_KEY] = 1
         data[0].header = header
     return data[0].data, data[0].header
 
