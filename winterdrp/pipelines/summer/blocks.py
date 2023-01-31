@@ -143,7 +143,7 @@ cal_hunter = [
     CalHunter(load_image=load_raw_summer_image, requirements=summer_cal_requirements),
 ]
 
-process_raw_crtest = [
+test_cr = [
     MaskPixels(mask_path=summer_mask_path),
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
@@ -162,7 +162,9 @@ process_raw = [
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    ImageSaver(output_dir_name="detrend", write_mask=True),
+    LACosmicCleaner(effective_gain_key=GAIN_KEY,
+                    readnoise=2),
+    ImageSaver(output_dir_name='detrend', write_mask=True),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
     ImageSaver(output_dir_name="detrend", write_mask=True),
     Sextractor(
