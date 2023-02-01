@@ -41,7 +41,6 @@ types-requests = "^2.28.11.8"
 types-toml = "^0.10.8.1"
 pandas-stubs = "^1.5.2.230105"
 autopep8 = "^2.0.0"
-lacosmic = "^1.0.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.3.0"

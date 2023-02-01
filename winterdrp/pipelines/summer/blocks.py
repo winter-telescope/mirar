@@ -5,7 +5,7 @@ lists which are used to build configurations for the
 :class:`~winterdrp.pipelines.summer.summer_pipeline.SummerPipeline`.
 """
 from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.paths import BASE_NAME_KEY, core_fields, GAIN_KEY
+from winterdrp.paths import BASE_NAME_KEY, GAIN_KEY, core_fields
 from winterdrp.pipelines.summer.config import (  # summer_weight_path,
     DB_NAME,
     PIPELINE_NAME,
@@ -38,6 +38,7 @@ from winterdrp.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 from winterdrp.processors.candidates.utils import DataframeWriter, RegionsWriter
+from winterdrp.processors.cosmic_rays import LACosmicCleaner
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.processors.database.database_exporter import DatabaseImageExporter
 from winterdrp.processors.database.database_modifier import ModifyImageDatabaseSeq
@@ -55,13 +56,11 @@ from winterdrp.processors.utils import (
 from winterdrp.processors.utils.cal_hunter import CalHunter
 from winterdrp.processors.utils.header_annotate import HeaderEditor
 from winterdrp.processors.utils.simulate_realtime import RealtimeImageSimulator
-
 from winterdrp.processors.zogy.zogy import (
     ZOGY,
     ZOGYPrepare,
     default_summer_catalog_purifier,
 )
-from winterdrp.processors.cosmic_rays import LACosmicCleaner
 
 load_raw = [
     ImageLoader(load_image=load_raw_summer_image),
@@ -150,9 +149,8 @@ test_cr = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    LACosmicCleaner(effective_gain_key=GAIN_KEY,
-                    readnoise=2),
-    ImageSaver(output_dir_name='crclean')
+    LACosmicCleaner(effective_gain_key=GAIN_KEY, readnoise=2),
+    ImageSaver(output_dir_name="crclean"),
 ]
 
 process_raw = [
@@ -162,9 +160,8 @@ process_raw = [
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    LACosmicCleaner(effective_gain_key=GAIN_KEY,
-                    readnoise=2),
-    ImageSaver(output_dir_name='detrend', write_mask=True),
+    LACosmicCleaner(effective_gain_key=GAIN_KEY, readnoise=2),
+    ImageSaver(output_dir_name="detrend", write_mask=True),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
     ImageSaver(output_dir_name="detrend", write_mask=True),
     Sextractor(

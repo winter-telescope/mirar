@@ -1,3 +1,6 @@
+"""
+Module with functions to load raw and processed summer images
+"""
 import logging
 import os
 
@@ -10,11 +13,11 @@ from astropy.time import Time
 
 from winterdrp.paths import (
     BASE_NAME_KEY,
+    GAIN_KEY,
     LATEST_SAVE_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
-    GAIN_KEY,
     __version__,
 )
 
@@ -22,13 +25,21 @@ logger = logging.getLogger(__name__)
 
 
 def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+    """
+    Function to load a raw summer image and add/modify the required headers
+    Args:
+        path: Path to the raw image
+
+    Returns: [image data, image header]
+
+    """
     with fits.open(path) as data:
         header = data[0].header
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
         header["UTCTIME"] = header["UTCSHUT"]
         try:
             header["TARGET"] = header["OBSTYPE"].lower()
-        except (ValueError, AttributeError) as e:
+        except (ValueError, AttributeError):
             header["TARGET"] = header["OBSTYPE"]
 
         crd = SkyCoord(
@@ -77,8 +88,8 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
         header["TIMEUTC"] = header["UTCISO"]
 
-        t0 = Time("2018-01-01", format="iso")
-        header["NIGHT"] = int(obstime.jd) - int(t0.jd)
+        t_init = Time("2018-01-01", format="iso")
+        header["NIGHT"] = int(obstime.jd) - int(t_init.jd)
         header["EXPMJD"] = header["OBSMJD"]
 
         default_id = 0
@@ -142,7 +153,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
             "OTHER": 5,
         }
 
-        if not header["OBSTYPE"] in itid_dict.keys():
+        if not header["OBSTYPE"] in itid_dict:
             header["ITID"] = 5
         else:
             header["ITID"] = itid_dict[header["OBSTYPE"]]
@@ -183,7 +194,14 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
 
 def load_proc_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+    """
+    Function to load a processed summer image and add/modify the required headers
+    Args:
+        path: Path to the processed image
 
+    Returns: [image data, image header]
+
+    """
     with fits.open(path) as img:
         data = img[0].data
         header = img[0].header

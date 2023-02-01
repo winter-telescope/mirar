@@ -1,3 +1,6 @@
+"""
+Module to run the summer data reduction pipeline
+"""
 import logging
 import os
 
@@ -18,11 +21,10 @@ from winterdrp.pipelines.summer.blocks import (
     process_raw,
     sim_realtime,
     subtract,
-    test_cr
+    test_cr,
 )
 from winterdrp.pipelines.summer.config import PIPELINE_NAME, summer_cal_requirements
 from winterdrp.pipelines.summer.load_summer_image import load_raw_summer_image
-
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
@@ -30,6 +32,9 @@ logger = logging.getLogger(__name__)
 
 
 class SummerPipeline(Pipeline):
+    """
+    Class to run summer data reduction pipeline
+    """
 
     name = PIPELINE_NAME
     default_cal_requirements = summer_cal_requirements
@@ -45,7 +50,7 @@ class SummerPipeline(Pipeline):
         "log": load_raw + build_log,
         "simrealtime": sim_realtime,
         "testlog": load_test + build_log,
-        "crtest": load_raw + test_cr + build_log
+        "crtest": load_raw + test_cr + build_log,
     }
 
     @staticmethod
