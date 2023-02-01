@@ -1,6 +1,9 @@
+import os
+from pathlib import Path
+
 from astropy.wcs import WCS
 
-from winterdrp.paths import BASE_NAME_KEY
+from winterdrp.paths import BASE_NAME_KEY, UNC_IMG_KEY, get_output_dir
 from winterdrp.processors.base_processor import (
     BaseDataframeProcessor,
     BaseImageProcessor,
@@ -8,6 +11,7 @@ from winterdrp.processors.base_processor import (
 )
 from winterdrp.processors.photometry.utils import (
     aper_photometry,
+    get_rms_image,
     make_cutouts,
     make_psf_shifted_array,
     psf_photometry,
@@ -89,9 +93,22 @@ class BasePhotometryProcessor(BaseProcessor):
     Parent processor to run photometry
     """
 
-    def __init__(self, phot_cutout_size: int = 20):
+    def __init__(self, phot_cutout_size: int = 20, output_sub_dir: str = "photometry"):
         super().__init__()
         self.phot_cutout_size = phot_cutout_size
+        self.output_sub_dir = output_sub_dir
+
+    def get_sub_output_dir(self) -> Path:
+        return Path(get_output_dir(self.output_sub_dir, self.night_sub_dir))
+
+    def get_path(self, name: str | Path) -> Path:
+        """
+        Get output path for a file of name
+
+        :param name: Name of file
+        :return: Full output path
+        """
+        return self.get_sub_output_dir().joinpath(name)
 
     def get_filenames(self, data_item):
         raise NotImplementedError
@@ -119,14 +136,20 @@ class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
         self,
         target_ra_key: str = "TARGRA",
         target_dec_key: str = "TARGDEC",
+        *args,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.target_ra_key = target_ra_key
         self.target_dec_key = target_dec_key
 
     def get_filenames(self, image):
         imagename = image.header[BASE_NAME_KEY]
-        unc_filename = None
+        unc_filename = image.header[UNC_IMG_KEY]
+        if not os.path.exists(unc_filename):
+            rms_image = get_rms_image(image)
+            unc_filename = image[BASE_NAME_KEY] + ".unc"
+            self.save_fits(rms_image, path=os.path.join(self.get_path(unc_filename)))
         return imagename, unc_filename
 
     def get_physical_coordinates(self, image):
@@ -148,8 +171,10 @@ class BaseCandidatePhotometry(BasePhotometryProcessor, BaseDataframeProcessor):
         psf_file_colname="diffpsfname",
         x_colname="xpeak",
         y_colname="ypeak",
+        *args,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.image_colname = image_colname
         self.unc_image_colname = unc_image_colname
         self.psf_file_colname = psf_file_colname
