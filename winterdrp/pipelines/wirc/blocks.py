@@ -36,8 +36,8 @@ from winterdrp.processors.database.database_importer import DatabaseHistoryImpor
 from winterdrp.processors.flat import SkyFlatCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.processors.photometry.aperture_photometry import AperturePhotometry
-from winterdrp.processors.photometry.psf_photometry import PSFPhotometry
+from winterdrp.processors.photometry.aperture_photometry import CandidateAperturePhotometry
+from winterdrp.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.sky import NightSkyMedianCalibrator
 from winterdrp.processors.utils import ImageLoader, ImageSaver
@@ -102,10 +102,10 @@ subtract = [
 candidates = [
     DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
     RegionsWriter(output_dir_name="candidates"),
-    PSFPhotometry(),
-    AperturePhotometry(
+    CandidatePSFPhotometry(),
+    CandidateAperturePhotometry(
         aper_diameters=[16, 70],
-        cutout_size_aper_phot=100,
+        phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
