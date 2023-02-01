@@ -36,7 +36,9 @@ from winterdrp.processors.database.database_importer import DatabaseHistoryImpor
 from winterdrp.processors.flat import SkyFlatCalibrator
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.processors.photometry.aperture_photometry import CandidateAperturePhotometry
+from winterdrp.processors.photometry.aperture_photometry import (
+    CandidateAperturePhotometry,
+)
 from winterdrp.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.sky import NightSkyMedianCalibrator
