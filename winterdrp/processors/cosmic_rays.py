@@ -132,8 +132,5 @@ class LACosmicCleaner(BaseImageProcessor):
                 )
                 logger.info("LACosmic finished cleaning")
                 image.set_data(cleaned_data)
-                # pylint: disable=E1101
-                image[
-                    "history"
-                ] = f"Cleaned with LACosmic version {lacosmic.__version__}"
+
         return batch
