@@ -7,10 +7,23 @@ from astropy.stats import sigma_clipped_stats
 from matplotlib.patches import Circle
 from photutils import CircularAnnulus, CircularAperture, aperture_photometry
 
+from winterdrp.data import Image
+from winterdrp.paths import GAIN_KEY
+
 logger = logging.getLogger(__name__)
 
 
 def make_cutouts(image_paths: str | list[str], position: tuple, half_size: int):
+    """
+    Function to make cutouts
+    Args:
+        image_paths: Path or list of paths to the images
+        position: (x,y) coordinates of the center of the cutouts
+        half_size: half_size of the square cutouts
+
+    Returns:
+        cutout_list: list of 2D numpy arrays
+    """
     if not isinstance(image_paths, list):
         image_paths = [image_paths]
 
@@ -194,3 +207,22 @@ def aper_photometry(
     counts = phot_table["aperture_sum"][0]
     counts_err = error
     return counts, counts_err
+
+
+def get_rms_image(image: Image) -> Image:
+    """Get an RMS image from a regular image
+
+    :param image: An :class:`~winterdrp.data.image_data.Image`
+    :param rms: rms of the image
+    :return: An RMS :class:`~winterdrp.data.image_data.Image`
+    """
+    image_data = image.get_data()
+    rms = 0.5 * (
+        np.percentile(image_data[image_data != 0.0], 84.13)
+        - np.percentile(image_data[image_data != 0.0], 15.86)
+    )
+    gain = image[GAIN_KEY]
+    poisson_noise = np.copy(image.get_data()) / gain
+    poisson_noise[poisson_noise < 0] = 0
+    rms_image = Image(data=np.sqrt(poisson_noise + rms**2), header=image.get_header())
+    return rms_image
