@@ -4,15 +4,21 @@ from winterdrp.paths import BASE_NAME_KEY
 from winterdrp.processors.base_processor import (
     BaseDataframeProcessor,
     BaseImageProcessor,
+    BaseProcessor,
 )
 from winterdrp.processors.photometry.utils import (
     aper_photometry,
+    make_cutouts,
     make_psf_shifted_array,
     psf_photometry,
 )
 
 
 class BasePhotometry:
+    """
+    Parent class to run photometry on cutouts
+    """
+
     def __init__(self):
         pass
 
@@ -21,6 +27,10 @@ class BasePhotometry:
 
 
 class PSFPhotometry(BasePhotometry):
+    """
+    Class to run PSF photometry on cutouts
+    """
+
     def __init__(self, psf_filename: str):
         super().__init__()
         self.psf_filename = psf_filename
@@ -37,6 +47,10 @@ class PSFPhotometry(BasePhotometry):
 
 
 class AperturePhotometry(BasePhotometry):
+    """
+    Class to run aperture photometry on cutouts
+    """
+
     def __init__(
         self,
         aper_diameters: float | list[float] = 10.0,
@@ -61,7 +75,7 @@ class AperturePhotometry(BasePhotometry):
             flux, fluxunc = aper_photometry(
                 image_cutout,
                 unc_image_cutout,
-                self.aper_diameters[ind],
+                aper_diam,
                 self.bkg_in_diameters[ind],
                 self.bkg_out_diameters[ind],
             )
@@ -70,15 +84,43 @@ class AperturePhotometry(BasePhotometry):
         return fluxes, fluxuncs
 
 
-class BaseImagePhotometry(BaseImageProcessor):
+class BasePhotometryProcessor(BaseProcessor):
+    """
+    Parent processor to run photometry
+    """
+
+    def __init__(self, phot_cutout_size: int = 20):
+        super().__init__()
+        self.phot_cutout_size = phot_cutout_size
+
+    def get_filenames(self, data_item):
+        raise NotImplementedError
+
+    def get_physical_coordinates(self, data_item):
+        raise NotImplementedError
+
+    def generate_cutouts(self, data_item):
+        imagename, unc_imagename = self.get_filenames(data_item)
+        x, y = self.get_physical_coordinates(data_item)
+        image_cutout, unc_image_cutout = make_cutouts(
+            image_paths=[imagename, unc_imagename],
+            position=(x, y),
+            half_size=self.phot_cutout_size,
+        )
+        return image_cutout, unc_image_cutout
+
+
+class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
+    """
+    Processor to run photometry on an image
+    """
+
     def __init__(
         self,
-        phot_cutout_size: int = 20,
         target_ra_key: str = "TARGRA",
         target_dec_key: str = "TARGDEC",
     ):
         super().__init__()
-        self.phot_cutout_size = phot_cutout_size
         self.target_ra_key = target_ra_key
         self.target_dec_key = target_dec_key
 
@@ -94,20 +136,20 @@ class BaseImagePhotometry(BaseImageProcessor):
         return x, y
 
 
-class BaseCandidatePhotometry(BasePhotometry, BaseDataframeProcessor):
+class BaseCandidatePhotometry(BasePhotometryProcessor, BaseDataframeProcessor):
+    """
+    Processor to run photometry on a candidates table
+    """
+
     def __init__(
         self,
-        phot_cutout_size: int = 20,
         image_colname="diffimname",
         unc_image_colname="diffuncname",
         psf_file_colname="diffpsfname",
         x_colname="xpeak",
         y_colname="ypeak",
-        *args,
-        **kwargs
     ):
-        super().__init__(*args, **kwargs)
-        self.phot_cutout_size = phot_cutout_size
+        super().__init__()
         self.image_colname = image_colname
         self.unc_image_colname = unc_image_colname
         self.psf_file_colname = psf_file_colname
