@@ -1,8 +1,10 @@
+"""
+Module with processors to perform point-spread-function photometry
+"""
 import numpy as np
 
 from winterdrp.data import Image, ImageBatch, SourceBatch
 from winterdrp.paths import (
-    BASE_NAME_KEY,
     MAG_PSF_KEY,
     MAGERR_PSF_KEY,
     NORM_PSFEX_KEY,
@@ -15,12 +17,12 @@ from winterdrp.processors.photometry.base_photometry import (
     BaseImagePhotometry,
     PSFPhotometry,
 )
-from winterdrp.processors.photometry.utils import make_cutouts
 
 
 class CandidatePSFPhotometry(BaseCandidatePhotometry):
-    base_key = "PSFPHOTDF"
-
+    """
+    Processor to run PSF photometry on all candidates in candidate table
+    """
     def __init__(self, zp_colname="magzpsci"):
         super().__init__()
         self.zp_colname = zp_colname
@@ -41,14 +43,8 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
 
             for ind in range(len(candidate_table)):
                 row = candidate_table.iloc[ind]
-                imagename, unc_imagename = self.get_filenames(row)
-                x, y = self.get_physical_coordinates(row)
 
-                image_cutout, unc_image_cutout = make_cutouts(
-                    image_paths=[imagename, unc_imagename],
-                    position=(x, y),
-                    half_size=self.phot_cutout_size,
-                )
+                image_cutout, unc_image_cutout = self.generate_cutouts(row)
                 psf_filename = self.get_psf_filename(row)
                 psf_photometer = PSFPhotometry(psf_filename=psf_filename)
                 (
@@ -81,6 +77,10 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
 
 
 class ImagePSFPhotometry(BaseImagePhotometry):
+    """
+    Processor to run PSF photometry at the RA/Dec specified in the header
+    """
+
     def get_psf_filename(self, image: Image):
         psf_filename = image[NORM_PSFEX_KEY]
         return psf_filename
@@ -90,18 +90,12 @@ class ImagePSFPhotometry(BaseImagePhotometry):
         batch: ImageBatch,
     ) -> ImageBatch:
         for image in batch:
-            imagename, unc_imagename = self.get_filenames(image)
-            x, y = self.get_physical_coordinates(image)
-            image_cutout, unc_image_cutout = make_cutouts(
-                image_paths=[imagename, unc_imagename],
-                position=(x, y),
-                half_size=self.phot_cutout_size,
-            )
+            image_cutout, unc_image_cutout = self.generate_cutouts(image)
             psf_filename = self.get_psf_filename(image)
 
             psf_photometer = PSFPhotometry(psf_filename=psf_filename)
 
-            flux, fluxunc, minchi2, xshift, yshift = psf_photometer.perform_photometry(
+            flux, fluxunc, _, _, _ = psf_photometer.perform_photometry(
                 image_cutout, unc_image_cutout
             )
 

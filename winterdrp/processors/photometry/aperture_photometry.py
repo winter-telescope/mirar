@@ -1,3 +1,6 @@
+"""
+Module with processors to perform aperture photometry
+"""
 from typing import Optional
 
 import numpy as np
@@ -8,18 +11,19 @@ from winterdrp.processors.photometry.base_photometry import (
     BaseCandidatePhotometry,
     BaseImagePhotometry,
 )
-from winterdrp.processors.photometry.utils import make_cutouts
 
 
 class CandidateAperturePhotometry(BaseCandidatePhotometry):
-    base_key = "APERPHOTDF"
+    """
+    Processor to run aperture photometry on all candidates in candidate table
+    """
     def __init__(
         self,
         aper_diameters: float | list[float] = 10.0,
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
-        col_suffix_list: Optional[list[str]] = None,
-        zp_colname="magzpsci",
+        zp_colname: str = "magzpsci",
+        col_suffix_list: str | list[str] = None,
         *args,
         **kwargs,
     ):
@@ -45,14 +49,8 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
             all_fluxes, all_fluxuncs = [], []
             for cand_ind in range(len(candidate_table)):
                 row = candidate_table.iloc[cand_ind]
-                imagename, unc_imagename = self.get_filenames(row)
-                x, y = self.get_physical_coordinates(row)
 
-                image_cutout, unc_image_cutout = make_cutouts(
-                    image_paths=[imagename, unc_imagename],
-                    position=(x, y),
-                    half_size=self.phot_cutout_size,
-                )
+                image_cutout, unc_image_cutout = self.generate_cutouts(row)
 
                 fluxes, fluxuncs = self.aperture_photometer.perform_photometry(
                     image_cutout=image_cutout, unc_image_cutout=unc_image_cutout
@@ -76,6 +74,10 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
 
 
 class ImageAperturePhotometry(BaseImagePhotometry):
+    """
+    Processor to run aperture photometry at the RA/Dec specified in the header
+    """
+
     def __init__(
         self,
         aper_diameters: float | list[float] = 10.0,
@@ -99,20 +101,14 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         batch: ImageBatch,
     ) -> ImageBatch:
         for image in batch:
-            imagename, unc_imagename = self.get_filenames(image)
-            x, y = self.get_physical_coordinates(image)
-            image_cutout, unc_image_cutout = make_cutouts(
-                image_paths=[imagename, unc_imagename],
-                position=(x, y),
-                half_size=self.phot_cutout_size,
-            )
+            image_cutout, unc_image_cutout = self.generate_cutouts(image)
 
             fluxes, fluxuncs = self.aperture_photometer.perform_photometry(
                 image_cutout, unc_image_cutout
             )
 
-            for ind in range(len(fluxes)):
-                flux, fluxunc = fluxes[ind], fluxuncs[ind]
+            for ind, flux in enumerate(fluxes):
+                fluxunc = fluxuncs[ind]
                 suffix = self.col_suffix_list[ind]
                 image[f"fluxap{suffix}"] = flux
                 image[f"fluxunc{suffix}"] = fluxunc
