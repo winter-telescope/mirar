@@ -8,6 +8,8 @@ from winterdrp.processors.photometry.utils import make_cutouts
 
 
 class PSFPhotometry(BaseDataframeProcessor):
+    base_key = "PSFPHOT"
+
     def __init__(self, cutout_size_psf_phot: float = 20, *args, **kwargs):
         super(BaseDataframeProcessor, self).__init__(*args, **kwargs)
         self.cutout_size_psf_phot = cutout_size_psf_phot
@@ -49,7 +51,7 @@ class PSFPhotometry(BaseDataframeProcessor):
         return best_fit_psf_flux, best_fit_psf_fluxunc, minchi2, xshift, yshift
 
     @staticmethod
-    def make_psf_shifted_array(psf_filename):
+    def make_psf_shifted_array(psf_filename, cutout_size_psf_phot=20):
         psf = fits.getdata(psf_filename)
         normpsf = psf / np.sum(psf)
         ngrid = 81
@@ -68,7 +70,7 @@ class PSFPhotometry(BaseDataframeProcessor):
         x1, x2 = np.where(padpsfs[:, :, 12] == normpsfmax)
         x1 = int(x1)
         x2 = int(x2)
-        cutout_size_psf_phot = 20
+
         psfmodels = padpsfs[
             x1 - cutout_size_psf_phot : x1 + cutout_size_psf_phot + 1,
             x2 - cutout_size_psf_phot : x2 + cutout_size_psf_phot + 1,

@@ -1,8 +1,9 @@
+"""
+Module with classes to write a candidate table to a pandas dataframe
+"""
 import logging
 import os
 from typing import Optional
-
-import pandas as pd
 
 from winterdrp.data import SourceBatch
 from winterdrp.paths import base_output_dir, get_output_dir, get_output_path
@@ -12,20 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class DataframeWriter(BaseDataframeProcessor):
+    """
+    Class to write a candidate table to a pandas dataframe
+    """
+
+    base_key = "DFWRITE"
+
     def __init__(
-        self,
-        output_dir_name: Optional[str] = None,
-        output_dir: str = base_output_dir,
-        *args,
-        **kwargs,
+        self, output_dir_name: Optional[str] = None, output_dir: str = base_output_dir
     ):
-        super(DataframeWriter, self).__init__(*args, **kwargs)
+        super().__init__()
         self.output_dir_name = output_dir_name
         self.output_dir = output_dir
         logger.debug(f"Saving candidates to {self.output_dir_name}")
 
     def __str__(self) -> str:
-        return f"Processor to save candidates as a pickle file. "
+        return "Processor to save candidates as a pickle file. "
 
     def _apply_to_candidates(
         self,
