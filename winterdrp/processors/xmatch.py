@@ -1,3 +1,6 @@
+"""
+Module to cross-match a candidate_table with different catalogs
+"""
 import logging
 
 import numpy as np
@@ -10,6 +13,12 @@ logger = logging.getLogger(__name__)
 
 
 class XMatch(BaseDataframeProcessor):
+    """
+    Class to cross-match a candidate_table to a catalog
+    """
+
+    base_key = "XMATCH"
+
     def __init__(
         self,
         catalog: BaseXMatchCatalog,
@@ -60,6 +69,6 @@ class XMatch(BaseDataframeProcessor):
 
                 candidate_table.at[query_ind, nmatch_colname] = len(results)
 
-            candidate_table.set_data(candidate_table)
+            source_list.set_data(candidate_table)
 
         return batch
