@@ -322,13 +322,14 @@ class Swarp(BaseImageProcessor):
                 raise SwarpError(err)
 
         new_image = self.open_fits(output_image_path)
-
+        # Add missing keywords to header of resampled image, and save again
         for key in batch[0].keys():
             if np.sum([x[key] == batch[0][key] for x in batch]) == len(batch):
                 if key not in new_image.keys():
                     new_image[key] = batch[0][key]
 
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
+        self.save_fits(new_image, output_image_path)
 
         if not self.cache:
             for temp_file in temp_files:
@@ -338,6 +339,7 @@ class Swarp(BaseImageProcessor):
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
         new_image[BASE_NAME_KEY] = output_image_path.name
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.name
+        logger.info(f"Saved resampled image to {output_image_path.name}")
         return ImageBatch([new_image])
 
     def check_prerequisites(
