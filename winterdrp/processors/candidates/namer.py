@@ -125,7 +125,8 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
             ra=ra_deg,
             dec=dec_deg,
             crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
-        )[0]
+        )  # [0]
+        logger.info(name)
         return len(name) > 0, name
 
     def _apply_to_candidates(
