@@ -7,7 +7,9 @@ from astropy.io import fits
 
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.pipelines.wirc.blocks import subtract
+from winterdrp.io import open_fits
+from winterdrp.paths import get_output_path
+from winterdrp.pipelines.wirc.blocks import candidates, subtract
 from winterdrp.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
@@ -26,6 +28,8 @@ test_data_dir = get_test_data_dir()
 
 ref_img_directory = test_data_dir.joinpath("wirc/ref")
 
+NIGHT_NAME = "20210330"
+
 
 def test_reference_image_generator(
     header: fits.header,
@@ -40,27 +44,36 @@ def test_reference_image_generator(
     )
 
 
-expected_values = {
+EXPECTED_HEADER_VALUES = {
     "SCORSTD": 1.081806800432295,
     "SCORMED": -8.757084251543588e-05,
     "SCORMEAN": -0.031172912552408068,
 }
 
-test_imsub_configuration = [
-    ImageLoader(
-        input_img_dir=test_data_dir,
-        input_sub_dir="stack",
-        load_image=load_raw_wirc_image,
-    ),
-    Reference(
-        ref_image_generator=test_reference_image_generator,
-        swarp_resampler=wirc_reference_image_resampler,
-        sextractor=wirc_reference_sextractor,
-        ref_psfex=wirc_reference_psfex,
-    ),
-] + subtract
+EXPECTED_DATAFRAME_VALUES = {
+    "magpsf": [19.319820, 19.242908, 17.197002, 17.565868],
+    "magap": [19.302467, 19.122576, 17.110327, 17.845793],
+}
 
-pipeline = WircPipeline(night="20210330", selected_configurations="test_imsub")
+test_imsub_configuration = (
+    [
+        ImageLoader(
+            input_img_dir=test_data_dir,
+            input_sub_dir="stack",
+            load_image=load_raw_wirc_image,
+        ),
+        Reference(
+            ref_image_generator=test_reference_image_generator,
+            swarp_resampler=wirc_reference_image_resampler,
+            sextractor=wirc_reference_sextractor,
+            ref_psfex=wirc_reference_psfex,
+        ),
+    ]
+    + subtract
+    + candidates
+)
+
+pipeline = WircPipeline(night=NIGHT_NAME, selected_configurations="test_imsub")
 pipeline.add_configuration(
     configuration_name="test_imsub", configuration=test_imsub_configuration
 )
@@ -74,15 +87,21 @@ class TestWircImsubPipeline(BaseTestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing wirc imsub pipeline \n\n")
 
-        res, errorstack = pipeline.reduce_images(
+        res, _ = pipeline.reduce_images(
             dataset=Dataset(ImageBatch()), catch_all_errors=False
         )
 
         self.assertEqual(len(res), 1)
 
-        header = res[0][0].get_header()
+        candidates_table = res[0][0].get_data()
+        diff_imgpath = get_output_path(
+            base_name=candidates_table.iloc[0]["diffimname"],
+            dir_root="subtract",
+            sub_dir=NIGHT_NAME,
+        )
 
-        for key, value in expected_values.items():
+        _, header = open_fits(diff_imgpath)
+        for key, value in EXPECTED_HEADER_VALUES.items():
             if isinstance(value, float):
                 self.assertAlmostEqual(value, header[key], places=2)
             elif isinstance(value, int):
@@ -92,6 +111,14 @@ class TestWircImsubPipeline(BaseTestCase):
                     f"Type for value ({type(value)} is neither float not int."
                 )
 
+        self.assertEqual(len(candidates_table), 4)
+        for key, value in EXPECTED_DATAFRAME_VALUES.items():
+            if isinstance(value, list):
+                for ind, val in enumerate(value):
+                    self.assertAlmostEqual(
+                        candidates_table.iloc[ind][key], val, places=2
+                    )
+
 
 if __name__ == "__main__":
 
@@ -100,12 +127,23 @@ if __name__ == "__main__":
     # Code to generate updated ZP dict of the results change
 
     new_res, new_errorstack = pipeline.reduce_images(catch_all_errors=False)
+    new_candidates_table = new_res[0][0].get_data()
+    new_diff_imgpath = get_output_path(
+        base_name=new_candidates_table.iloc[0]["diffimname"],
+        dir_root="subtract",
+        sub_dir="20210330",
+    )
+    _, new_header = open_fits(new_diff_imgpath)
 
-    new_header = new_res[0][1][0]
-
-    new_exp = "expected_values = { \n"
+    new_exp_header = "expected_header_values = { \n"
     for header_key in new_header.keys():
         if "SCOR" in header_key:
-            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp += "}"
-    print(new_exp)
+            new_exp_header += f'    "{header_key}": {new_header[header_key]}, \n'
+    new_exp_header += "}"
+    print(new_exp_header)
+
+    new_exp_dataframe = "expected_dataframe_values = { \n"
+    for key in EXPECTED_DATAFRAME_VALUES:
+        new_exp_dataframe += f'    "{key}": {list(new_candidates_table[key])}, \n'
+    new_exp_dataframe += "}"
+    print(new_exp_dataframe)
