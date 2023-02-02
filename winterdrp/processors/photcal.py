@@ -44,19 +44,19 @@ class PhotometryError(ProcessorError):
 
 
 class PhotometryReferenceError(PhotometryError):
-    """Error related to the photometic reference catalogue"""
+    """Error related to the photometric reference catalogue"""
 
 
 class PhotometrySourceError(PhotometryError):
-    """Error related to the photometic source catalogue"""
+    """Error related to the photometric source catalogue"""
 
 
 class PhotometryCrossMatchError(PhotometryError):
-    """Error related to cross-matching photometic reference and source catalogues"""
+    """Error related to cross-matching photometric reference and source catalogues"""
 
 
 class PhotometryCalculationError(PhotometryError):
-    """Error related to the photometic calibration"""
+    """Error related to the photometric calibration"""
 
 
 class PhotCalibrator(BaseImageProcessor):
@@ -113,7 +113,6 @@ class PhotCalibrator(BaseImageProcessor):
             raise PhotometryReferenceError(err)
 
         ref_coords = SkyCoord(ra=ref_cat["ra"], dec=ref_cat["dec"], unit=(u.deg, u.deg))
-
         clean_mask = (
             (img_cat["FLAGS"] == 0)
             & (img_cat["FWHM_WORLD"] < self.fwhm_threshold_arcsec / 3600.0)
@@ -125,7 +124,6 @@ class PhotCalibrator(BaseImageProcessor):
 
         clean_img_cat = img_cat[clean_mask]
         logger.debug(f"Found {len(clean_img_cat)} clean sources in image.")
-
         clean_img_coords = SkyCoord(
             ra=clean_img_cat["ALPHAWIN_J2000"],
             dec=clean_img_cat["DELTAWIN_J2000"],
@@ -144,7 +142,6 @@ class PhotCalibrator(BaseImageProcessor):
         logger.info(
             f"Cross-matched {len(matched_img_cat)} sources from catalog to the image."
         )
-
         if len(matched_img_cat) < self.num_matches_threshold:
             err = (
                 "Not enough cross-matched sources "
@@ -153,7 +150,7 @@ class PhotCalibrator(BaseImageProcessor):
             logger.error(err)
             raise PhotometryCrossMatchError(err)
 
-        apertures = self.get_sextractor_apetures()  # aperture diameters
+        apertures = self.get_sextractor_apertures()  # aperture diameters
         zeropoints = []
 
         for i, aperture in enumerate(apertures):
@@ -339,24 +336,24 @@ class PhotCalibrator(BaseImageProcessor):
                 logger.error(err)
                 raise PrerequisiteError(err)
 
-    def get_sextractor_apetures(self) -> list[float]:
+    def get_sextractor_apertures(self) -> list[float]:
         sextractor_config_path = self.get_sextractor_module().config
 
         with open(sextractor_config_path, "rb") as sextractor_config_file:
-            apeture_lines = [
+            aperture_lines = [
                 x.decode()
                 for x in sextractor_config_file.readlines()
                 if np.logical_and(b"PHOT_APERTURES" in x, x.decode()[0] != "#")
             ]
 
-        if len(apeture_lines) > 1:
+        if len(aperture_lines) > 1:
             err = (
                 f"The config file {sextractor_config_path} has "
-                f"multiple entries for PHOT_APETURES."
+                f"multiple entries for PHOT_APERTURES."
             )
             logger.error(err)
             raise ProcessorError(err)
 
-        line = apeture_lines[0].replace("PHOT_APERTURES", " ").split("#")[0]
+        line = aperture_lines[0].replace("PHOT_APERTURES", " ").split("#")[0]
 
         return [float(x) for x in line.split(",") if x not in [""]]

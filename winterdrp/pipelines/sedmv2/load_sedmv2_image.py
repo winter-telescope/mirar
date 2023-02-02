@@ -7,15 +7,15 @@ from astropy.io import fits
 from astropy.time import Time
 from astropy import units as u
 
-from winterdrp.paths import latest_save_key, raw_img_key, base_name_key, proc_history_key, proc_fail_key, __version__
+from winterdrp.paths import LATEST_SAVE_KEY, RAW_IMG_KEY, BASE_NAME_KEY, PROC_HISTORY_KEY, PROC_FAIL_KEY, __version__
 
 logger = logging.getLogger(__name__)
 
-def load_raw_sedmv2_image(
-        path: str
-) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+
     with fits.open(path) as data:
-        header, header_1 = data[0].header, data[1].header
+        header = data[0].header
+
 
         # science / flat / bias / etc...
         if header['IMGTYPE'] == 'object':
@@ -28,41 +28,80 @@ def load_raw_sedmv2_image(
 
         # coordinates
         ## change to deg units
-        crd = SkyCoord(ra=header['RA'], dec=header['DEC'], unit=(u.deg, u.deg))
+        crd = SkyCoord(ra=header['RA'], dec=header['DEC'], unit=(u.hourangle, u.deg)) # HOURANGLE!!!!!
+        # TODO: access RAD instead
         header['RA'] = crd.ra.deg
         header['DEC'] = crd.dec.deg
 
-        header['CRVAL1'] = header['RA']  # TODO: use header_1['CRVAL1'] instead??
-        header['CRVAL2'] = header['DEC']
+        tel_crd = SkyCoord(ra=header["TELRA"], dec=header["TELDEC"], unit=(u.hourangle, u.deg)) # HOURANGLE!
+        header["TELRA"] = tel_crd.ra.deg
+        header["TELDEC"] = tel_crd.dec.deg
 
-        data[1].data = data[1].data * 1.0
+        # ASSUME THAT CRVAL1 and CRVAL2 are correct based on a-net solution!!!!!!!!
+        #header['CRVAL1'] = header['RA']
+        #header['CRVAL2'] = header['DEC']
+
+
+        data[0].data = data[0].data * 1.0
+        data_save = data[0].data
+        #except:
+        #    data[0].data = data[1].data * 1.0
+        #    data_save = data[0].data
 
         # filter
         header['FILTERID'] = header['FILTER'].split(' ')[1][0]  # overwrites numerical filterid
         header['FILTER'] = header['FILTERID']
 
         # keys...
-        header[latest_save_key] = path
-        header[raw_img_key] = path
-        header[proc_history_key] = ""
-        header[proc_fail_key] = ""
+        header[LATEST_SAVE_KEY] = path
+        header[RAW_IMG_KEY] = path
+        header[PROC_HISTORY_KEY] = ""
+        header["PROCFLAG"] = 0
+        header[PROC_FAIL_KEY] = ""
 
         base_name = os.path.basename(path)
-        header[base_name_key] = base_name
+        header[BASE_NAME_KEY] = base_name
+        header["EXPID"] = int("".join(base_name.split("_")[1:3])[2:])
 
-        # header.append(('GAIN', sedmv2_gain, 'Gain in electrons / ADU'), end=True)  # TODO: is this gain true?
+        pipeline_version = __version__
+        pipeline_version_padded_str = "".join(
+            [x.rjust(2, "0") for x in pipeline_version.split(".")]
+        )
+        header["PROCID"] = int(str(header["EXPID"]) + str(pipeline_version_padded_str))
+
+        header.append(('GAIN', 1.0, 'Gain in electrons / ADU'), end=True)
 
         # times
-        header['OBSDATE'] = int(header_1['UTC'].split('_')[0])
+        header['UTCTIME'] = header['UTC']
+        header['TIMEUTC'] = header['UTCTIME']
+        header['OBSDATE'] = int(header['UTC'].split('_')[0])
 
         obstime = Time(header['DATE'], format='isot')
         t0 = Time('2018-01-01', format='iso')  # TODO: change this to sedmv2 start date? otherwise NIGHT starts in 1700s
         header['NIGHT'] = int(obstime.jd) - int(t0.jd)  # integer value, night 1, night 2...
+        header["EXPMJD"] = header["OBSDATE"] # TODO: verify
+        header["SHUTOPEN"] = obstime.jd
+        header["SHUTCLSD"] = obstime.jd
 
         # IDs # TODO: clean this up...
         default_id = 0
+
+        for key in ["PROGID", "OBSID"]:
+            if key not in header.keys():
+                # logger.warning(f"No {key} found in header of {path}")
+                header[key] = default_id
+            else:
+                try:
+                    header[key] = int(header[key])
+                except ValueError:
+                    header[key] = default_id
+
+        if "SUBPROG" not in header.keys():
+            # logger.warning(f"No SUBPROG found in header of {path}")
+            header["SUBPROG"] = "none"
+
         if 'OBSID' not in header.keys():
-            # logger.warning(f"No {key} found in header of {path}") # TODO: uncomment
+            logger.warning(f"No {key} found in header of {path}")
             header['OBSID'] = default_id
         else:
             try:
@@ -91,20 +130,39 @@ def load_raw_sedmv2_image(
             'FOCUS': 3,
             'POINTING': 4,
             'OTHER': 5
-        }  # may be unecessary
+        }  # may be unnecessary
 
         if not header['OBSTYPE'] in itid_dict.keys():
             header['ITID'] = 5
         else:
             header['ITID'] = itid_dict[header['OBSTYPE']]
 
-        # if header['FIELDID'] == 'radec':
-        #    header['FIELDID'] = 999999999 # TODO: get rid of FIELDID dependence in other files - is that okay?
+        header['FIELDID'] = 999999999 # TODO: get rid of FIELDID dependence in other files - is that okay?
 
+        # others
         if 'COADDS' not in header.keys():
             header['COADDS'] = 1
+        header["BZERO"] = 0
 
-    return data[1].data, data[0].header
+        sunmoon_keywords = [
+            "MOONRA",
+            "MOONDEC",
+            "MOONILLF",
+            "MOONPHAS",
+            "MOONALT",
+            "SUNAZ",
+            "SUNALT",
+        ]
+
+        for key in sunmoon_keywords:
+            val = 0
+            if key in header.keys():
+                if header[key] not in [""]:
+                    val = header[key]
+            header[key] = val
+
+
+    return data_save, data[0].header
 
 
 def load_proc_sedmv2_image(

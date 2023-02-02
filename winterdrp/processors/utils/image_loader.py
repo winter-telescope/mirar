@@ -48,7 +48,6 @@ class ImageLoader(BaseImageProcessor):
         :param path: path of raw image
         :return: Image object
         """
-
         data, header = self.load_image(path)
 
         for key in core_fields:
