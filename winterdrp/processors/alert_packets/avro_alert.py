@@ -1,3 +1,6 @@
+"""
+Module with classes to make avro alert packets
+"""
 import datetime
 import io
 import json
@@ -29,16 +32,16 @@ class AvroPacketMaker(BaseDataframeProcessor):
         broadcast (bool): send to brokers at IPAC.
     """
 
+    base_key = "AVRO"
+
     def __init__(
         self,
         output_sub_dir: str,
         base_name: str,
         save_local=False,
         broadcast=True,
-        *args,
-        **kwargs,
     ):
-        super(AvroPacketMaker, self).__init__(*args, **kwargs)
+        super().__init__()
         self.output_sub_dir = output_sub_dir
         self.base_name = base_name
         self.save_local = save_local
@@ -48,7 +51,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-        self.make_alert(batch)
+        for source in batch:
+            candidate_table = source.get_data()
+            self.make_alert(candidate_table)
         return batch
 
     @staticmethod
@@ -69,9 +74,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             candidate = {}
             for key in df.keys():
                 try:
-                    if isinstance(df.iloc[i].get(key), str) or isinstance(
-                        df.iloc[i].get(key), list
-                    ):
+                    if isinstance(df.iloc[i].get(key), (str, list)):
                         candidate[key] = df.iloc[i].get(key)
                     else:
                         # change to native python type
@@ -120,7 +123,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         curdir = os.path.dirname(__file__)
         file_path = os.path.join(curdir, file_path)
 
-        with open(file_path) as file_text:
+        with open(file_path, "rb") as file_text:
             json_data = json.load(file_text)
 
         # SchemaFromJSONData not working
@@ -216,10 +219,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         avro_packet_path = os.path.join(
             self.get_sub_output_dir(), str(candid) + ".avro"
         )
-        out = open(avro_packet_path, "wb")
-        # logger.info(f'out file: {out}')
-        fastavro.writer(out, schema, records)
-        out.close()
+        with open(avro_packet_path, "wb") as out:
+            # logger.info(f'out file: {out}')
+            fastavro.writer(out, schema, records)
 
     def save_alert_packet(self, packet, cand, schema):
         """Saves packet as .avro to output subdirectory.
@@ -247,7 +249,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Modified from: https://github.com/dekishalay/pgirdps
 
         Args:
-            topicname (str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
+            topicname (str): name of the topic sending to,
+            e.g. ztf_20191221_programid2_zuds.
             records (list): a list of dictionaries (the avro packet to send).
             schema (dict): schema definition.
         """
@@ -259,7 +262,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         # Connect to the IPAC Kafka brokers
         producer = confluent_kafka.Producer(
             {
-                "bootstrap.servers": "ztfalerts04.ipac.caltech.edu:9092,ztfalerts05.ipac.caltech.edu:9092,ztfalerts06.ipac.caltech.edu:9092"
+                "bootstrap.servers": "ztfalerts04.ipac.caltech.edu:9092,"
+                "ztfalerts05.ipac.caltech.edu:9092,"
+                "ztfalerts06.ipac.caltech.edu:9092"
             }
         )
 
@@ -276,7 +281,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
             packet (dict): candidate data in avro packed dict format.
             cand (dict): all data of a single candidate.
             schema (dict): schema definition.
-            topic_name (str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
+            topic_name (str): name of the topic sending to,
+            e.g. ztf_20191221_programid2_zuds.
             cand_num (int): number of current candidate being sent.
             num_cands (int): total number of candidates to send.
 
@@ -285,7 +291,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
         """
         try:
             self._send_alert(topic_name, [packet], schema)
-            # logger.info(f"Sent candid {cand['candid']}, name {cand['objectId']}, {cand_num} out of {num_cands}")
             return 1
         except OSError:
             logger.info(f"Could not send candid {cand['candid']}")
@@ -297,7 +302,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
         Args:
             cand (dict): all data of a single candidate.
             schema (dict): schema definition.
-            topic_name (str): name of the topic sending to, e.g. ztf_20191221_programid2_zuds.
+            topic_name (str): name of the topic sending to,
+            e.g. ztf_20191221_programid2_zuds.
             cand_num (int): number of current candidate being sent.
             num_cands (int): total number of candidates to send.
 
@@ -408,7 +414,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
         # cand_dict = cand_data[0]
         # single_cand = cand_dict['candidate']
         # jd_val = single_cand['jd']
-        # logger.info(f"jd: {jd_val}, date: {Time(jd_val, format = 'jd').tt.datetime.strftime('%Y%m%d')}")
 
         # logger.info(f'Schema that we parsed:\n {schema}')
         # logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
