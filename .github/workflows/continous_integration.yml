@@ -53,9 +53,10 @@ jobs:
 
       - name: install packages
         run: |
-          echo "deb http://ftp.us.debian.org/debian sid main" | sudo tee -a /etc/apt/sources.list
           sudo apt-get update
-          sudo apt-get install -y sextractor scamp swarp psfex build-essential
+          sudo apt-get install -y sextractor scamp swarp build-essential
+          echo "deb http://ftp.us.debian.org/debian sid main" | sudo tee -a /etc/apt/sources.list
+          sudo apt-get update && sudo apt-get install -y psfex
           sudo ln -s /usr/bin/source-extractor /usr/bin/sex
           sudo ln -s /usr/bin/SWarp /usr/bin/swarp
           echo `sex --version`
