@@ -2,7 +2,6 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from astropy.stats import sigma_clipped_stats
 from matplotlib.patches import Circle
 from photutils import CircularAnnulus, CircularAperture, aperture_photometry
@@ -13,6 +12,8 @@ from winterdrp.processors.photometry.utils import make_cutouts
 
 
 class AperturePhotometry(BaseDataframeProcessor):
+    base_key = "APERPHOT"
+
     def __init__(
         self,
         aper_diameters: Optional[list[float]] = None,

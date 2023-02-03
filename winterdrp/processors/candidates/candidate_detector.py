@@ -1,3 +1,6 @@
+"""
+Module to detect candidates in an image
+"""
 import gzip
 import io
 import logging
@@ -8,7 +11,7 @@ import pandas as pd
 from astropy.io import fits
 
 from winterdrp.data import ImageBatch, SourceBatch, SourceTable
-from winterdrp.paths import BASE_NAME_KEY, core_fields, get_output_dir
+from winterdrp.paths import BASE_NAME_KEY, REF_IMG_KEY, core_fields, get_output_dir
 from winterdrp.processors.astromatic.sextractor.sourceextractor import (
     run_sextractor_dual,
 )
@@ -30,10 +33,8 @@ class DetectCandidates(BaseCandidateGenerator):
         cand_det_sextractor_nnw: str,
         cand_det_sextractor_params: str,
         output_sub_dir: str = "candidates",
-        *args,
-        **kwargs,
     ):
-        super(DetectCandidates, self).__init__(*args, **kwargs)
+        super().__init__()
         self.output_sub_dir = output_sub_dir
         self.cand_det_sextractor_config = cand_det_sextractor_config
         self.cand_det_sextractor_filter = cand_det_sextractor_filter
@@ -41,7 +42,10 @@ class DetectCandidates(BaseCandidateGenerator):
         self.cand_det_sextractor_params = cand_det_sextractor_params
 
     def __str__(self) -> str:
-        return f"Extracts detected sources from images, and converts them to a pandas dataframe"
+        return (
+            "Extracts detected sources from images, "
+            "and converts them to a pandas dataframe"
+        )
 
     def get_sub_output_dir(self):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
@@ -126,14 +130,13 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs["ypeak"] = ypeaks
         det_srcs["scorr"] = scorr_peaks
 
-        cutout_size_psf_phot = 20
         cutout_size_display = 40
 
         display_sci_ims = []
         display_ref_ims = []
         display_diff_ims = []
 
-        for ind, src in enumerate(det_srcs):
+        for ind, _ in enumerate(det_srcs):
             xpeak, ypeak = int(xpeaks[ind]), int(ypeaks[ind])
 
             display_sci_cutout = self.make_alert_cutouts(
@@ -223,7 +226,7 @@ class DetectCandidates(BaseCandidateGenerator):
             sci_image_path = os.path.join(
                 self.get_sub_output_dir(), image[BASE_NAME_KEY]
             )
-            ref_image_path = os.path.join(self.get_sub_output_dir(), image["REFIMG"])
+            ref_image_path = os.path.join(self.get_sub_output_dir(), image[REF_IMG_KEY])
             cands_table = self.generate_candidates_table(
                 scorr_catalog_name=cands_catalog_name,
                 sci_resamp_imagename=sci_image_path,
@@ -235,11 +238,11 @@ class DetectCandidates(BaseCandidateGenerator):
             )
 
             if len(cands_table) > 0:
-                x_shape, y_shape = image.shape
+                x_shape, y_shape = image.get_data().shape
                 cands_table["X_SHAPE"] = x_shape
                 cands_table["Y_SHAPE"] = y_shape
 
-            metadata = dict()
+            metadata = {}
 
             for key in core_fields:
                 metadata[key] = image[key]

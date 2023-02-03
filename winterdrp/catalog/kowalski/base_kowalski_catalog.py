@@ -28,7 +28,7 @@ def get_kowalski() -> Kowalski:
     :return: Kowalski object
     """
 
-    token_kowalski = os.environ.get("kowalski_token")
+    token_kowalski = os.environ.get("KOWALSKI_TOKEN")
 
     if token_kowalski is not None:
         logger.debug("Using kowalski token")
@@ -39,13 +39,13 @@ def get_kowalski() -> Kowalski:
 
     else:
 
-        username_kowalski = os.environ.get("kowalski_user")
-        password_kowalski = os.environ.get("kowalski_pwd")
+        username_kowalski = os.environ.get("KOWALSKI_USER")
+        password_kowalski = os.environ.get("KOWALSKI_PWD")
 
         if username_kowalski is None:
             err = (
                 "Kowalski username not provided, "
-                "please run export kowalski_user=<user>"
+                "please run export KOWALSKI_USER=<user>"
             )
             logger.error(err)
             raise KowalskiError(err)

@@ -1,8 +1,9 @@
+"""
+Module with classes to write a regions file from a pandas dataframe
+"""
 import logging
 import os
 from typing import Optional
-
-import pandas as pd
 
 from winterdrp.data import SourceBatch
 from winterdrp.paths import base_output_dir, get_output_dir, get_output_path
@@ -14,14 +15,32 @@ logger = logging.getLogger(__name__)
 def write_regions_file(
     regions_path, x_coords, y_coords, system="image", region_radius=5
 ):
+    """
+    Function to write a regions file
+    Args:
+        regions_path: str, path to regions file
+        x_coords: list, x-coordinates or RA
+        y_coords: list, y-coordinates or Dec
+        system: str, image or wcs
+        region_radius: float, radius of circle
+
+    Returns:
+
+    """
     logger.info(f"Writing regions path to {regions_path}")
     with open(f"{regions_path}", "w") as f:
-        f.write("image\n")
-        for ind in range(len(x_coords)):
-            f.write(f"CIRCLE({x_coords[ind]},{y_coords[ind]},{region_radius})\n")
+        f.write(f"{system}\n")
+        for ind, x in enumerate(x_coords):
+            f.write(f"CIRCLE({x},{y_coords[ind]},{region_radius})\n")
 
 
 class RegionsWriter(BaseDataframeProcessor):
+    """
+    Class to write a regions file from candidate table
+    """
+
+    base_key = "REGWRIT"
+
     def __init__(
         self,
         output_dir_name: Optional[str] = None,
