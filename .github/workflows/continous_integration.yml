@@ -56,6 +56,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y sextractor scamp swarp build-essential
           echo "deb http://ftp.us.debian.org/debian sid main" | sudo tee -a /etc/apt/sources.list
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0E98404D386FA1D9
           sudo apt-get update && sudo apt-get install -y psfex
           sudo ln -s /usr/bin/source-extractor /usr/bin/sex
           sudo ln -s /usr/bin/SWarp /usr/bin/swarp
