@@ -120,6 +120,7 @@ def psf_photometry(diff_cutout, diff_unc_cutout, psfmodels):
 
 def make_psf_shifted_array(psf_filename, cutout_size_psf_phot=20):
     psf = fits.getdata(psf_filename)
+    print(psf.shape)
     normpsf = psf / np.sum(psf)
     ngrid = 81
     xs = np.linspace(-4, 4, 9)
@@ -137,12 +138,12 @@ def make_psf_shifted_array(psf_filename, cutout_size_psf_phot=20):
     x1, x2 = np.where(padpsfs[:, :, 12] == normpsfmax)
     x1 = int(x1)
     x2 = int(x2)
-
+    print(padpsfs.shape, cutout_size_psf_phot, x1 - cutout_size_psf_phot, x1 + cutout_size_psf_phot + 1)
     psfmodels = padpsfs[
         x1 - cutout_size_psf_phot : x1 + cutout_size_psf_phot + 1,
         x2 - cutout_size_psf_phot : x2 + cutout_size_psf_phot + 1,
     ]
-
+    print(psfmodels.shape)
     return psfmodels
 
 

@@ -41,7 +41,8 @@ class PSFPhotometry(BasePhotometry):
 
     def perform_photometry(self, image_cutout, unc_image_cutout):
         psfmodels = make_psf_shifted_array(
-            psf_filename=self.psf_filename, cutout_size_psf_phot=image_cutout.shape[0]
+            psf_filename=self.psf_filename,
+            cutout_size_psf_phot=int(image_cutout.shape[0]/2)
         )
 
         flux, fluxunc, minchi2, xshift, yshift = psf_photometry(
