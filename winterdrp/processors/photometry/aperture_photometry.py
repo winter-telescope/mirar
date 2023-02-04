@@ -4,6 +4,7 @@ Module with processors to perform aperture photometry
 from typing import Optional
 
 import numpy as np
+
 from winterdrp.data import ImageBatch, SourceBatch
 from winterdrp.paths import ZP_KEY
 from winterdrp.processors.photometry.base_photometry import (
@@ -14,10 +15,10 @@ from winterdrp.processors.photometry.base_photometry import (
 
 
 class CandidateAperturePhotometry(BaseCandidatePhotometry):
-    base_key = 'APERPHOTDF'
     """
     Processor to run aperture photometry on all candidates in candidate table
     """
+    base_key = 'APERPHOTDF'
     def __init__(
         self,
         aper_diameters: float | list[float] = 10.0,
@@ -70,6 +71,7 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
                 ] - 2.5 * np.log10(flux)
                 candidate_table[f"sigmagap{suffix}"] = 1.086 * fluxunc / flux
                 print(candidate_table[f"magap{suffix}"])
+
             source_table.set_data(candidate_table)
         return batch
 
@@ -79,6 +81,7 @@ class ImageAperturePhotometry(BaseImagePhotometry):
     Processor to run aperture photometry at the RA/Dec specified in the header
     """
     base_key = 'APERPHOTIM'
+
     def __init__(
         self,
         aper_diameters: float | list[float] = 10.0,
