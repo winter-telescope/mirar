@@ -113,7 +113,7 @@ class TestWircImsubPipeline(BaseTestCase):
 
         self.assertEqual(len(candidates_table), 4)
         for key, value in EXPECTED_DATAFRAME_VALUES.items():
-            print(candidates_table[key])
+            print(candidates_table['xpeak'], candidates_table['ypeak'])
             if isinstance(value, list):
                 for ind, val in enumerate(value):
                     self.assertAlmostEqual(
