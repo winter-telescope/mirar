@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 def sedmv2_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
     """
     Returns an astrometric catalog for sedmv2,
-    which is just a Gaia/2MASS one
+    either Gaia or 2MASS
 
     :param image: image to generate a catalog for
     :return: Gaia/2MASS catalog around image
@@ -32,7 +32,7 @@ def sedmv2_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
     cat = Gaia2Mass(
         min_mag=10,
         max_mag=20,
-        search_radius_arcmin=5, #7.5,
+        search_radius_arcmin=5,  # 7.5,
         trim=True,
         image_catalog_path=temp_cat_path,
         filter_name="j",
@@ -44,7 +44,7 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
     """
     Generate a photometric calibration catalog for sedmv2 images
 
-    For u band: SDSS if possible, otherwise Skymapper, otherwise fail
+    For u band: SDSS if possible, otherwise Skymapper (otherwise fail)
     For g/r1: use PS1
 
     :param image: Image
@@ -52,20 +52,21 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
     """
     filter_name = image["FILTERID"]
     dec = image["DEC"]
+    min_mag, max_mag = 10, 20
 
     if filter_name in ["u", "U"]:
         if in_sdss(image["RA"], image["DEC"]):
             return SDSS(
-                min_mag=10,
-                max_mag=20,
+                min_mag=min_mag,
+                max_mag=max_mag,
                 search_radius_arcmin=5,
                 filter_name=filter_name,
             )
 
         if dec < 0.0:
             return SkyMapper(
-                min_mag=10,
-                max_mag=20,
+                min_mag=min_mag,
+                max_mag=max_mag,
                 search_radius_arcmin=5,
                 filter_name=filter_name,
             )
