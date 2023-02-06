@@ -23,7 +23,9 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
     """
     Processor to run PSF photometry on all candidates in candidate table
     """
-    base_key = 'PSFPHOTDF'
+
+    base_key = "PSFPHOTDF"
+
     def __init__(self, zp_colname="magzpsci"):
         super().__init__()
         self.zp_colname = zp_colname
@@ -81,7 +83,8 @@ class ImagePSFPhotometry(BaseImagePhotometry):
     """
     Processor to run PSF photometry at the RA/Dec specified in the header
     """
-    base_key = 'PSFPHOTIM'
+
+    base_key = "PSFPHOTIM"
 
     def get_psf_filename(self, image: Image):
         psf_filename = image[NORM_PSFEX_KEY]

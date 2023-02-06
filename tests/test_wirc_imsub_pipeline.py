@@ -92,6 +92,7 @@ class TestWircImsubPipeline(BaseTestCase):
     """
     Class to test WIRC image subtraction pipeline
     """
+
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)

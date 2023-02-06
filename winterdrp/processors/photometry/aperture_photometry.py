@@ -18,7 +18,9 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
     """
     Processor to run aperture photometry on all candidates in candidate table
     """
-    base_key = 'APERPHOTDF'
+
+    base_key = "APERPHOTDF"
+
     def __init__(
         self,
         aper_diameters: float | list[float] = 10.0,
@@ -80,7 +82,8 @@ class ImageAperturePhotometry(BaseImagePhotometry):
     """
     Processor to run aperture photometry at the RA/Dec specified in the header
     """
-    base_key = 'APERPHOTIM'
+
+    base_key = "APERPHOTIM"
 
     def __init__(
         self,
