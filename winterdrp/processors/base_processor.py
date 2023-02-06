@@ -14,7 +14,6 @@ from threading import Thread
 
 import numpy as np
 
-
 from winterdrp.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
 from winterdrp.errors import (
     ErrorReport,
@@ -30,11 +29,11 @@ from winterdrp.paths import (
     LATEST_WEIGHT_SAVE_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    __version__,
     get_output_path,
     get_weight_path,
     max_n_cpu,
     package_name,
-    __version__
 )
 
 logger = logging.getLogger(__name__)
@@ -350,8 +349,6 @@ class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
     ) -> ImageBatch:
         raise NotImplementedError
 
-    def generate_error_report(self, exception: Exception, batch: ImageBatch) -> ErrorReport:
-        return self.image_batch_error_report(exception, batch)
 
 class ProcessorWithCache(BaseImageProcessor, ABC):
     """
