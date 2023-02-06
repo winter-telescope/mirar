@@ -155,7 +155,6 @@ class BaseProcessor:
         self.err_stack[cache_id] = ErrorStack()
 
         if len(dataset) > 0:
-
             n_cpu = min([self.max_n_cpu, len(dataset)])
 
             watchdog_queue = Queue()

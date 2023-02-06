@@ -61,16 +61,13 @@ def send_gmail(
         attachments = [attachments]
 
     for file_path in attachments:
-
         if os.path.exists(file_path):
-
             base_name = os.path.basename(file_path)
 
             if not isinstance(file_path, Path):
                 file_path = Path(file_path)
 
             with open(file_path, "rb") as attachment:
-
                 if np.logical_and(
                     auto_compress, file_path.stat().st_size > (1024 * 1024)
                 ):

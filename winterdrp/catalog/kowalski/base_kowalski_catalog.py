@@ -38,7 +38,6 @@ def get_kowalski() -> Kowalski:
         )
 
     else:
-
         username_kowalski = os.environ.get("KOWALSKI_USER")
         password_kowalski = os.environ.get("KOWALSKI_PWD")
 

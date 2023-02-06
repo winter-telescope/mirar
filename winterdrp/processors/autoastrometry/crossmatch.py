@@ -110,7 +110,6 @@ def distance_match(
         distances = []
         distances_j_index = []
         for j, src2 in enumerate(ref_src_list):
-
             if i == j:
                 continue
 
@@ -141,12 +140,10 @@ def distance_match(
     primary_match_ref = []
 
     for img_i, img_dist_array in enumerate(img_src_dists):
-
         if len(img_dist_array) < 2:
             continue
 
         for ref_i, ref_dist_array in enumerate(ref_src_dists):
-
             if len(ref_dist_array) < 2:
                 continue
 
@@ -155,11 +152,9 @@ def distance_match(
             ref_match_in = []
 
             for img_j, img_src_dist in enumerate(img_dist_array):
-
                 new_match = 1
 
                 for ref_j, ref_src_dist in enumerate(ref_dist_array):
-
                     if abs((img_src_dist / ref_src_dist) - 1.0) < tolerance:
                         match += new_match
 
@@ -171,7 +166,6 @@ def distance_match(
                         ref_match_in.append(ref_src_match_ids[ref_i][ref_j])
 
             if match >= req_match:
-
                 dpa = []
                 # Here, dpa[n] is the mean rotation of the PA from
                 # the primary star of this match to the stars in its match
@@ -329,7 +323,6 @@ def distance_match(
 
         for i, img_i in enumerate(primary_match_img):
             for j, img_j in enumerate(primary_match_img):
-
                 if i == j:
                     continue
 
@@ -393,7 +386,6 @@ def distance_match(
             logger.debug(f'Refined pixel scale measurement: {pix_scale:.4f}"/pix')
 
     for i, img_i in enumerate(primary_match_img):
-
         ref_i = primary_match_ref[i]
 
         if SHOW_MATCH:
@@ -420,7 +412,6 @@ def distance_match(
             )
 
     if write_crosscheck_files:
-
         match_lines_im = os.path.splitext(base_output_path)[0] + ".matchlines.im.reg"
 
         logger.info(f"Writing match lines to {match_lines_im}")
@@ -543,7 +534,6 @@ def crosscheck_source_lists(
 
     for i, src in enumerate(ref_src_list):
         for j, src2 in enumerate(ref_src_list[i + 1 :]):
-
             dist = distance(src, src2)
             if dist < min_sep:
                 if src.mag > src2.mag:

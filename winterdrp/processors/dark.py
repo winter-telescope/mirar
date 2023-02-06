@@ -45,7 +45,6 @@ class DarkCalibrator(ProcessorWithCache):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         master_dark = self.get_cache_file(batch)
 
         for i, image in enumerate(batch):

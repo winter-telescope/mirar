@@ -58,7 +58,6 @@ def parse_checkimage(
     cmd = ""
 
     if checkimage_type is not None:
-
         cmd = f"-CHECKIMAGE_TYPE {','.join(checkimage_type)} "
 
         if checkimage_name is not None:
@@ -88,7 +87,6 @@ def parse_checkimage(
         cmd += " "
 
     else:
-
         cmd = f" -CHECKIMAGE_TYPE NONE "
         checkimage_name = []
     return cmd, checkimage_name

@@ -14,7 +14,6 @@ sub_id_key = "SUBID"
 
 
 class SplitImage(BaseImageProcessor):
-
     base_key = "split"
 
     def __init__(
@@ -42,19 +41,16 @@ class SplitImage(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         new_images = ImageBatch()
 
         logger.info(f"Splitting each data into {self.n_x*self.n_y} sub-images")
 
         for i, image in enumerate(batch):
-
             pix_width_x, pix_width_y = image.get_data().shape
 
             k = 0
 
             for ix in range(self.n_x):
-
                 x_0, x_1 = self.get_range(self.n_x, pix_width_x, ix)
 
                 for iy in range(self.n_y):
@@ -93,7 +89,6 @@ class SplitImage(BaseImageProcessor):
         return new_images
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
-
         all_new_batches = []
 
         for batch in dataset:

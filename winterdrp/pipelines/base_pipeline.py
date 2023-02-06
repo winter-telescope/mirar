@@ -72,7 +72,6 @@ class Pipeline:
         selected_configurations: str | list[str] = "default",
         night: int | str = "",
     ):
-
         self.night_sub_dir = os.path.join(self.name, night)
         self.night = night
         if not isinstance(selected_configurations, list):
@@ -249,7 +248,6 @@ class Pipeline:
             selected_configurations = [selected_configurations]
 
         for j, configuration in enumerate(selected_configurations):
-
             logger.info(
                 f"Using pipeline configuration {configuration} "
                 f"({j+1}/{len(selected_configurations)})"

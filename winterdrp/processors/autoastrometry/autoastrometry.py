@@ -482,7 +482,6 @@ def autoastrometry(
     header["ASTR_NUM"] = (len(primary_match_img), "Number of matches")
 
     if write_crosscheck_files:
-
         write_text_file(
             file_path=os.path.splitext(base_output_path)[0] + ".det.wcs.txt",
             src_list=img_src_list,
@@ -743,7 +742,6 @@ def run_autoastrometry_batch(
     multi_info = []
 
     for img_path in files:
-
         if len(files) > 1:
             logger.debug(f"Processing {img_path}")
 
@@ -782,7 +780,6 @@ def run_autoastrometry_batch(
             questionable.append(img_path)
 
     if n_image > 1:
-
         if len(failures) == 0 and len(questionable) == 0:
             logger.debug("Successfully processed all images!")
         else:

@@ -47,9 +47,7 @@ class ErrorStackAnnotator(BaseImageProcessor):
         return image_dict
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-
         for image in batch:
-
             base_name = image.get_name()
 
             if base_name in self.image_dict:

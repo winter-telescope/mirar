@@ -38,9 +38,7 @@ class HeaderAnnotator(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         for i, image in enumerate(batch):
-
             new_val = ""
             for key in self.input_keys:
                 new_val += str(image[key])
@@ -84,9 +82,7 @@ class HeaderEditor(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         for i, image in enumerate(batch):
-
             for ind, key in enumerate(self.edit_keys):
                 image[key] = self.values[ind]
 

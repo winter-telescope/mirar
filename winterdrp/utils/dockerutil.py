@@ -178,7 +178,6 @@ def docker_get_new_files(
     # Collect output files
 
     for output_file in new_files:
-
         output_path = output_dir.joinpath(output_file)
 
         docker_get(container, output_path)

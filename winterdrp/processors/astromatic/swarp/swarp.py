@@ -164,7 +164,6 @@ class Swarp(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         swarp_output_dir = self.get_swarp_output_dir()
         swarp_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -201,7 +200,6 @@ class Swarp(BaseImageProcessor):
             swarp_weight_list_path, "w", encoding="utf8"
         ) as weight_list:
             for image in batch:
-
                 pixscale_to_use = None
                 x_imgpixsize_to_use = None
                 y_imgpixsize_to_use = None
@@ -300,7 +298,6 @@ class Swarp(BaseImageProcessor):
 
         # Check if output image exists if combine is no
         if not self.combine:
-
             temp_output_image_path = get_temp_path(
                 swarp_output_dir,
                 output_image_path.name,

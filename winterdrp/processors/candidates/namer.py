@@ -133,9 +133,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-
         for source_table in batch:
-
             candidate_table = source_table.get_data()
 
             names = []

@@ -81,7 +81,6 @@ class Monitor:
         raw_dir: str = RAW_IMG_SUB_DIR,
         base_raw_img_dir: Path = base_raw_dir,
     ):
-
         logger.info(f"Software version: {package_name}=={__version__}")
 
         self.errorstack = ErrorStack()
@@ -243,7 +242,6 @@ class Monitor:
         errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
 
         if self.email_info is not None:
-
             sender, recipients = self.email_info
 
             subject = f"{self.pipeline_name}: Summary for night {self.night}"
@@ -363,7 +361,6 @@ class Monitor:
         logger.info("Running postprocess steps")
 
         if self.postprocess_configurations is not None:
-
             postprocess_config = [
                 ImageLoader(
                     load_image=self.pipeline.unpack_raw_image,
@@ -410,7 +407,6 @@ class Monitor:
           queue:  Queue() object
         """
         while True:
-
             if Time.now() - self.t_start > self.midway_postprocess_hours:
                 if not self.midway_postprocess_complete:
                     self.midway_postprocess_complete = True
@@ -427,13 +423,11 @@ class Monitor:
                 event = queue.get()
 
                 if event.src_path[-5:] == ".fits":
-
                     # Verify that file transfer is complete, useful for rsync latency
 
                     transfer_done = False
 
                     while not transfer_done:
-
                         transfer_done = check_file_is_complete(event.src_path)
 
                         if not transfer_done:
@@ -444,7 +438,6 @@ class Monitor:
                             time.sleep(3)
 
                     try:
-
                         img = self.pipeline.load_raw_image(event.src_path)
 
                         is_science = img["OBSCLASS"] == "science"

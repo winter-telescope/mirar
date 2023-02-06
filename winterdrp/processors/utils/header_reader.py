@@ -28,9 +28,7 @@ class HeaderReader(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         for image in batch:
-
             msg = f"{image[BASE_NAME_KEY]} \n"
             for key in self.keys:
                 msg += f"{key}: {image[key]} \n"

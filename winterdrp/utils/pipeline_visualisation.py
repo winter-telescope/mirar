@@ -53,7 +53,6 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
     x_offset_description = 0.6
 
     for i, processor in enumerate(processor_list):
-
         y_0 = 1.0 - y_scale * (i + base_offset + 0.7)
         y_1 = 1.0 - y_scale * (i + base_offset)
 
@@ -138,7 +137,6 @@ def iterate_flowify(
         selected_config = config
 
     for pipeline in pipelines:
-
         pipe = get_pipeline(
             pipeline,
             selected_configurations=selected_config,

@@ -162,7 +162,6 @@ class PostgresUser:
             """
             serial_keys, serial_key_values = [], []
             with conn.execute(sql_query) as cursor:
-
                 primary_key = [x[0] for x in cursor.fetchall()]
                 serial_keys = list(self.get_sequence_keys_from_table(db_table, db_name))
                 logger.debug(serial_keys)
@@ -394,7 +393,6 @@ class PostgresUser:
                 query_output = cursor.fetchall()
 
             for entry in query_output:
-
                 assert len(entry) == len(db_output_columns)
 
                 query_res = {}

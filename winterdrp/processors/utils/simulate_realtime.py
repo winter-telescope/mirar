@@ -39,9 +39,7 @@ class RealtimeImageSimulator(BaseImageProcessor):
         self.output_dir = Path(output_dir)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-
         for image_name in self.input_img_names:
-
             img_path = self.input_img_dir.joinpath(image_name)
 
             output_path = Path(

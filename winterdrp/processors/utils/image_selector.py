@@ -75,9 +75,7 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
-        for (header_key, target_values) in self.targets:
-
+        for header_key, target_values in self.targets:
             batch = select_from_images(
                 batch, key=header_key, target_values=target_values
             )
@@ -135,7 +133,6 @@ class ImageBatcher(BaseImageProcessor):
         self.split_key = split_key
 
     def __str__(self) -> str:
-
         if isinstance(self.split_key, list):
             split = self.split_key
         else:
@@ -153,7 +150,6 @@ class ImageBatcher(BaseImageProcessor):
         return batch
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
-
         new_dataset = Dataset()
 
         for batch in dataset:
@@ -178,7 +174,6 @@ class ImageDebatcher(BaseImageProcessor):
         return batch
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
-
         combo_batch = ImageBatch()
 
         for batch in dataset:

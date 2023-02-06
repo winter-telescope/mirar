@@ -39,9 +39,7 @@ class ImageSaver(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         for image in batch:
-
             path = get_output_path(
                 image[BASE_NAME_KEY],
                 dir_root=self.output_dir_name,

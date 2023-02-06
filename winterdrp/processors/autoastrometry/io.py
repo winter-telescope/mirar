@@ -50,7 +50,6 @@ def parse_header(
 
         # Check for old-style WCS header
         if pixel_scale is None:
-
             old_wcs_type = False
 
             for hkey in header.keys():

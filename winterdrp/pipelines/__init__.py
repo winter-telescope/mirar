@@ -16,7 +16,6 @@ class PipelineConfigError(ProcessorError, KeyError):
 
 
 def get_pipeline(instrument, selected_configurations=None, *args, **kwargs):
-
     try:
         pipeline = Pipeline.pipelines[instrument.lower()]
         logger.info(f"Found {instrument} pipeline")

@@ -54,9 +54,7 @@ class ImageRejector(BaseImageProcessor, CleanupProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
-        for (header_key, reject_values) in self.rejects:
-
+        for header_key, reject_values in self.rejects:
             batch = filter_images(
                 batch, header_key=header_key, reject_values=reject_values
             )

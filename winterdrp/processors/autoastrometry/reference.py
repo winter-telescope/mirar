@@ -46,7 +46,6 @@ def get_catalog(
     # Get catalog from USNO
 
     if max_mag is None:
-
         if catalog == "ub2":
             max_mag = 21.0  # 19.5
         elif catalog == "sdss":

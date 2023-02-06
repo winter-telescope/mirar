@@ -48,7 +48,6 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-
         for source_table in batch:
             candidate_table = source_table.get_data()
             all_fluxes, all_fluxuncs = [], []
@@ -109,7 +108,6 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         for image in batch:
             image_cutout, unc_image_cutout = self.generate_cutouts(image)
 

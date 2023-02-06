@@ -39,7 +39,6 @@ class AutoAstrometry(BaseImageProcessor):
         return "Processor to perform astrometric calibration."
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-
         sextractor_out_dir = get_output_dir(
             self.temp_output_sub_dir, self.night_sub_dir
         )
@@ -47,7 +46,6 @@ class AutoAstrometry(BaseImageProcessor):
         sextractor_out_dir.mkdir(parents=True, exist_ok=True)
 
         for i, image in enumerate(batch):
-
             temp_path = sextractor_out_dir.joinpath(image[BASE_NAME_KEY])
             self.save_fits(image, temp_path)
 

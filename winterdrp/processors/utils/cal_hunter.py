@@ -138,7 +138,6 @@ def find_required_cals(
     ordered_nights = sorted(preceding_dirs)[::-1]
 
     while np.sum([req.success for req in requirements]) != len(requirements):
-
         if len(ordered_nights) == 0:
             err = (
                 "Despite checking all past nights, there are still "
@@ -211,7 +210,6 @@ class CalHunter(ImageLoader):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         requirements = copy.deepcopy(self.requirements)
         requirements = update_requirements(requirements, batch)
 

@@ -47,7 +47,6 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT)
     """
 
     try:
-
         # See what files are in the directory beforehand
 
         ignore_files = (
@@ -90,14 +89,12 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT)
         )
 
         if len(new_files) > 0:
-
             logger.debug(
                 f"The following new files were created in the current directory: "
                 f"{new_files}"
             )
 
         for file in new_files:
-
             current_path = os.path.join(current_dir, file)
             output_path = os.path.join(output_dir, file)
 
@@ -152,7 +149,6 @@ def run_docker(cmd: str, output_dir: Path | str = "."):
     container = new_container()
 
     try:
-
         container.attach()
 
         container.start()
@@ -210,7 +206,6 @@ def run_docker(cmd: str, output_dir: Path | str = "."):
         )
 
         for path in files_of_files:
-
             new_file = []
 
             with open(path, "rb", encoding="utf8") as local_file:

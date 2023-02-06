@@ -218,9 +218,7 @@ def pyzogy(
 
 
 if __name__ == "__main__":
-
     if len(sys.argv) == 12:
-
         D, P_D, S_corr = pyzogy(
             sys.argv[1],
             sys.argv[2],
@@ -247,7 +245,6 @@ if __name__ == "__main__":
         tmp.writeto(sys.argv[10], output_verify="warn", overwrite=True)
 
     elif len(sys.argv) == 14:
-
         D, P_D, S_corr = pyzogy(
             sys.argv[1],
             sys.argv[2],
@@ -276,7 +273,6 @@ if __name__ == "__main__":
         tmp.writeto(sys.argv[12], output_verify="warn", overwrite=True)
 
     else:
-
         print(
             "Usage: python py_zogy.py <NewImage> <RefImage> <NewPSF> <RefPSF> <NewSigmaImage> <RefSigmaImage> <NewSigmaMode> <RefSigmaMode> <AstUncertX> <AstUncertY> <DiffImage> <DiffPSF> <ScorrImage>"
         )

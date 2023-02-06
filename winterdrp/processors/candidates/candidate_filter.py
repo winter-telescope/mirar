@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class FilterCandidates(BaseDataframeProcessor):
-
     base_key = "filter"
 
     def __init__(self, *args, **kwargs):
