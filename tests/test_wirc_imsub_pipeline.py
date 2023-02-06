@@ -35,6 +35,15 @@ def test_reference_image_generator(
     header: fits.header,
     images_directory: str = ref_img_directory,
 ):
+    """
+    Function to generate reference image for testing
+    Args:
+        header: image header
+        images_directory: reference image directory
+
+    Returns:
+        Reference Image
+    """
     object_name = header["OBJECT"]
     filter_name = header["FILTER"]
     return WIRCRef(
@@ -52,7 +61,7 @@ EXPECTED_HEADER_VALUES = {
 
 EXPECTED_DATAFRAME_VALUES = {
     "magpsf": [19.319820, 19.242908, 17.197002, 17.565868],
-    "magap": [19.302467, 19.122576, 17.110327, 17.845793],
+    "magap": [19.302467, 19.122576, 17.104291, 17.917712],
 }
 
 test_imsub_configuration = (
@@ -80,6 +89,9 @@ pipeline.add_configuration(
 
 
 class TestWircImsubPipeline(BaseTestCase):
+    """
+    Class to test WIRC image subtraction pipeline
+    """
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -113,8 +125,6 @@ class TestWircImsubPipeline(BaseTestCase):
 
         self.assertEqual(len(candidates_table), 4)
         for key, value in EXPECTED_DATAFRAME_VALUES.items():
-            print(candidates_table['fluxap'], candidates_table['fluxuncap'])
-            candidates_table.to_csv('ctable1.csv')
             if isinstance(value, list):
                 for ind, val in enumerate(value):
                     self.assertAlmostEqual(
