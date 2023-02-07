@@ -153,7 +153,10 @@ candidates = [
         schema_path=wirc_candidate_schema_path,
     ),
     DatabaseDataframeExporter(
-        db_name="wirc", db_table="candidates", schema_path=wirc_candidate_schema_path
+        db_name="wirc",
+        db_table="candidates",
+        schema_path=wirc_candidate_schema_path,
+        duplicate_protocol="replace",
     ),
     DataframeWriter(output_dir_name="dbop"),
     # EdgeCandidatesMask(edge_boundary_size=100)
