@@ -30,6 +30,7 @@ from winterdrp.paths import (
     RAW_IMG_KEY,
     REF_IMG_KEY,
     REF_PSF_KEY,
+    UNC_IMG_KEY,
     get_output_dir,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor
@@ -443,6 +444,10 @@ class ZOGY(ZOGYPrepare):
                 image=Image(data=diff_rms_data, header=image.get_header()),
                 path=self.get_path(diff_rms_path),
             )
+
+            diff[BASE_NAME_KEY] = diff_image_path.name
+            diff[NORM_PSFEX_KEY] = diff_psf_path.as_posix()
+            diff[UNC_IMG_KEY] = diff_rms_path.as_posix()
 
             diff_batch.append(diff)
         return diff_batch
