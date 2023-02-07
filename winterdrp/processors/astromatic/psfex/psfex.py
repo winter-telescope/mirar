@@ -24,7 +24,7 @@ def run_psfex(
     sextractor_cat_path: Path,
     config_path: str,
     psf_output_dir: str,
-    norm_psf_output_name: Optional[str] = None,
+    norm_psf_output_name: Optional[str | Path] = None,
 ):
     psfex_command = (
         f"psfex -c {config_path} {sextractor_cat_path} "
