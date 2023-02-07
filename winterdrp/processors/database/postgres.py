@@ -239,14 +239,25 @@ class PostgresUser:
                             if column not in primary_key:
                                 update_colnames.append(column)
 
-                        serial_key_values = self.modify_db_entry(
-                            db_constraints=db_constraints,
-                            value_dict=value_dict,
-                            db_alter_columns=update_colnames,
-                            db_table=db_table,
-                            db_name=db_name,
-                            return_columns=serial_keys,
-                        )
+                        if len(serial_keys) > 0:
+                            serial_key_values = self.modify_db_entry(
+                                db_constraints=db_constraints,
+                                value_dict=value_dict,
+                                db_alter_columns=update_colnames,
+                                db_table=db_table,
+                                db_name=db_name,
+                                return_columns=serial_keys,
+                            )
+                        else:
+                            # Cannot run with no
+                            self.modify_db_entry(
+                                db_constraints=db_constraints,
+                                value_dict=value_dict,
+                                db_alter_columns=update_colnames,
+                                db_table=db_table,
+                                db_name=db_name,
+                                return_columns=primary_key,
+                            )
 
         return serial_keys, serial_key_values
 

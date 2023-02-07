@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS candidates (
     "ra" REAL,
     "dec" REAL,
     "fwhm" REAL,
-    "jd" REAL,
+    "jd"  DOUBLE PRECISION,
     "fid" INT,
     "diffimname" VARCHAR(255),
     "sciimname" VARCHAR(255),

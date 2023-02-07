@@ -324,9 +324,9 @@ class DatabaseHistoryImporter(DatabaseCrossmatchImporter):
         t_detection = float(cand[self.time_field_name])
 
         query_constraints = DBQueryConstraints(
-            columns=self.time_field_name,
-            accepted_values=t_detection - self.history_duration_days,
-            comparison_types=">",
+            columns=[self.time_field_name, self.time_field_name],
+            accepted_values=[t_detection - self.history_duration_days, t_detection],
+            comparison_types=[">", "<"],
         )
         if self.user_defined_constraints is not None:
             query_constraints += self.user_defined_constraints(cand)

@@ -2,6 +2,7 @@
 Module containing a processor for assigning names to sources
 """
 import logging
+from typing import Optional
 
 from astropy.time import Time
 
@@ -109,7 +110,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
         logger.debug(name)
         return name
 
-    def is_detected_previously(self, ra_deg: float, dec_deg: float) -> tuple[bool, str]:
+    def previous_name(self, ra_deg: float, dec_deg: float) -> Optional[str]:
         """
         Checks whether a source has been detected previously
 
@@ -117,7 +118,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
         :param dec_deg: dec (deg)
         :return: boolean whether a source has been detected previously
         """
-        name = self.pg_user.crossmatch_with_database(
+        res = self.pg_user.crossmatch_with_database(
             db_name=self.db_name,
             db_table=self.db_table,
             db_output_columns=[self.db_name_field],
@@ -126,8 +127,16 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
             dec=dec_deg,
             crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
         )  # [0]
-        logger.info(name)
-        return len(name) > 0, name
+
+        if len(res) == 1:
+            return list(res[0].values())[0]
+
+        if len(res) == 0:
+            return
+
+        err = f"Unrecognised db query of length {len(res)}:\n {res}"
+        logger.error(err)
+        raise ValueError
 
     def _apply_to_candidates(
         self,
@@ -144,11 +153,9 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
                     cand_name = cand["prv_candidates"][0][self.db_name_field]
 
                 else:
-                    prv_det, prv_name = self.is_detected_previously(
-                        cand["ra"], cand["dec"]
-                    )
+                    prv_name = self.previous_name(cand["ra"], cand["dec"])
 
-                    if prv_det:
+                    if prv_name is not None:
                         cand_name = prv_name
                     else:
                         cand_name = self.get_next_name(

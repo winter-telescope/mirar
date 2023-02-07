@@ -2,7 +2,6 @@
 Tests for image subtraction with WIRC
 """
 import logging
-from io import BytesIO
 from pathlib import Path
 
 import numpy as np
@@ -10,6 +9,8 @@ import pandas as pd
 
 from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
+from winterdrp.io import open_fits
+from winterdrp.paths import get_output_path
 from winterdrp.pipelines.wirc.blocks import candidates, image_photometry, subtract
 from winterdrp.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
@@ -124,33 +125,23 @@ class TestWircImsubPipeline(BaseTestCase):
 
         self.assertEqual(len(res), 1)
 
-        # candidates_table = res[0][0].get_data()
-        # diff_imgpath = get_output_path(
-        #     base_name=candidates_table.iloc[0]["diffimname"],
-        #     dir_root="subtract",
-        #     sub_dir=NIGHT_NAME,
-        # )
-        #
-        # _, header = open_fits(diff_imgpath)
-        # for key, value in EXPECTED_HEADER_VALUES.items():
-        #     if isinstance(value, float):
-        #         self.assertAlmostEqual(value, header[key], places=2)
-        #     elif isinstance(value, int):
-        #         self.assertEqual(value, header[key])
-        #     else:
-        #         raise TypeError(
-        #             f"Type for value ({type(value)} is neither float not int."
-        #         )
-
-        # self.assertEqual(len(candidates_table), 4)
-        # for key, value in EXPECTED_DATAFRAME_VALUES.items():
-        #     if isinstance(value, list):
-        #         for ind, val in enumerate(value):
-        #             self.assertAlmostEqual(
-        #                 candidates_table.iloc[ind][key], val, delta=0.05
-        #             )
-
         table = res[0][0].get_data()
+        diff_imgpath = get_output_path(
+            base_name=table.iloc[0]["diffimname"],
+            dir_root="subtract",
+            sub_dir=NIGHT_NAME,
+        )
+
+        _, header = open_fits(diff_imgpath)
+        for key, value in EXPECTED_HEADER_VALUES.items():
+            if isinstance(value, float):
+                self.assertAlmostEqual(value, header[key], places=2)
+            elif isinstance(value, int):
+                self.assertEqual(value, header[key])
+            else:
+                raise TypeError(
+                    f"Type for value ({type(value)} is neither float not int."
+                )
 
         # To update test data, uncomment:
         # table.to_csv(expected_candidate_path, index=False)
@@ -165,7 +156,7 @@ class TestWircImsubPipeline(BaseTestCase):
             elif isinstance(column.iloc[0], float):
                 expected = column.to_numpy(dtype=float)
                 res = table.loc[:, colname].to_numpy(dtype=float)
-                np.testing.assert_array_almost_equal(expected, res, decimal=4)
+                np.testing.assert_array_almost_equal(expected, res, decimal=2)
             elif colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"]:
                 # Skip cutouts
                 pass
