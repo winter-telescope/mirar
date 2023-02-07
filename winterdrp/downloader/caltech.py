@@ -1,3 +1,6 @@
+"""
+Module for downloading data from caltech machines
+"""
 import logging
 import os
 from pathlib import Path
@@ -17,6 +20,18 @@ def download_via_ssh(
     server_sub_dir: Optional[str] = None,
     username: str = os.getenv("SSH_USER"),
 ):
+    """
+    Function to download data via rsync+ssh from a caltech machine
+
+    :param server: host server
+    :param base_dir: base directory on host server
+    :param night: night of data to download
+    :param pipeline: instrument to download
+    :param prefix: prefix for server data directory
+    :param server_sub_dir: subdirectory within night directory on server
+    :param username: username to use for ssh
+    :return: None
+    """
     if username is None:
         username = input(f"Please enter your username for {server}: \n")
 
@@ -26,13 +41,12 @@ def download_via_ssh(
         source_dir += f"{server_sub_dir}/"
 
     output_dir = raw_img_dir(os.path.join(pipeline, night))
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        os.makedirs(output_dir)
-    except OSError:
-        pass
-
-    cmd = f"rsync -a -v --exclude 'sub*' --exclude 'diff*' --include '*.fits' --exclude '*' {source_dir} {output_dir}"
+    cmd = (
+        f"rsync -a -v --exclude 'sub*' --exclude 'diff*' --include '*.fits' "
+        f"--exclude '*' {source_dir} {output_dir}"
+    )
 
     logger.info(f"Executing '{cmd}'")
 
