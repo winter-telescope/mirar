@@ -212,7 +212,6 @@ class DetectCandidates(BaseCandidateGenerator):
     ) -> SourceBatch:
         all_cands = SourceBatch()
         for image in batch:
-
             scorr_image_path = self.get_path(image["DIFFSCR"])
             diff_image_path = self.get_path(image["DIFFIMG"])
             diff_psf_path = self.get_path(image["DIFFPSF"])
