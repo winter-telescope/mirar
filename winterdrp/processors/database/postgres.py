@@ -301,7 +301,6 @@ class PostgresUser:
                 logger.debug(return_columns)
                 sql_query += f""" RETURNING {', '.join(return_columns)}"""
             sql_query += ";"
-            print(sql_query)
             query_output = self.execute_query(sql_query, db_name)
 
         return query_output

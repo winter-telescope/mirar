@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import time
+from pathlib import PosixPath
 
 import avro
 import avro.io
@@ -74,7 +75,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             candidate = {}
             for key in df.keys():
                 try:
-                    if isinstance(df.iloc[i].get(key), (str, list)):
+                    if isinstance(df.iloc[i].get(key), (str, list, PosixPath)):
                         candidate[key] = df.iloc[i].get(key)
                     else:
                         # change to native python type
