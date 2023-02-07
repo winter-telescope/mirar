@@ -100,7 +100,7 @@ class DBQueryConstraints:
                 )
             else:
                 constraints.append(
-                    f"{column} {self.comparison_types[i]} {self.accepted_values[i]}"
+                    f"\"{column}\"{self.comparison_types[i]}'{self.accepted_values[i]}'"
                 )
 
         return " AND ".join(constraints)

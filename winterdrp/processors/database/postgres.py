@@ -288,7 +288,7 @@ class PostgresUser:
             db_alter_values = [str(value_dict[c]) for c in db_alter_columns]
 
             alter_values_txt = [
-                f"{db_alter_columns[ind]}='{db_alter_values[ind]}'"
+                f"\"{db_alter_columns[ind]}\"='{db_alter_values[ind]}'"
                 for ind in range(len(db_alter_columns))
             ]
 
@@ -301,6 +301,7 @@ class PostgresUser:
                 logger.debug(return_columns)
                 sql_query += f""" RETURNING {', '.join(return_columns)}"""
             sql_query += ";"
+            print(sql_query)
             query_output = self.execute_query(sql_query, db_name)
 
         return query_output
