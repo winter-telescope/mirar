@@ -2,16 +2,14 @@
 Tests for image subtraction with WIRC
 """
 import logging
-
-from astropy.io import fits
-
 from pathlib import Path
 
-from winterdrp.testing import BaseTestCase
+import numpy as np
+import pandas as pd
+
+from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.io import open_fits
-from winterdrp.paths import get_output_path
-from winterdrp.pipelines.wirc.blocks import candidates, image_photometry, subtract
+from winterdrp.pipelines.wirc.blocks import candidates, subtract, image_photometry
 from winterdrp.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
@@ -21,9 +19,9 @@ from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.utils.header_annotate import HeaderEditor
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_saver import ImageSaver
-from winterdrp.references import WIRCRef
+
+from winterdrp.processors.utils import ImageLoader, ImageSaver
+from winterdrp.references.wirc import WIRCRef
 from winterdrp.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -38,27 +36,25 @@ expected_candidate_path = Path(test_data_dir).joinpath("wirc/wirc_sources.csv")
 expected_res = pd.read_csv(expected_candidate_path)
 
 
-
 def test_reference_image_generator(
-    header: fits.header,
+    image: Image,
     images_directory: str = ref_img_directory,
-):
+) -> WIRCRef:
     """
-    Function to generate reference image for testing
-    Args:
-        header: image header
-        images_directory: reference image directory
+    Generate a test reference image using WIRC
 
-    Returns:
-        Reference Image
+    :param image: science image
+    :param images_directory: directiry of reference image
+    :return: reference image object
     """
-    object_name = header["OBJECT"]
-    filter_name = header["FILTER"]
+    object_name = image["OBJECT"]
+    filter_name = image["FILTER"]
     return WIRCRef(
         object_name=object_name,
         filter_name=filter_name,
         images_directory_path=images_directory,
     )
+
 
 EXPECTED_HEADER_VALUES = {
     "SCORSTD": 1.081806800432295,
@@ -107,7 +103,7 @@ pipeline.configure_processors(test_imsub_configuration)
 
 class TestWircImsubPipeline(BaseTestCase):
     """
-    Class to test WIRC image subtraction pipeline
+    Class for testing image subtraction with WIRC
     """
 
     def setUp(self):
@@ -115,6 +111,11 @@ class TestWircImsubPipeline(BaseTestCase):
         self.logger.setLevel(logging.INFO)
 
     def test_pipeline(self):
+        """
+        Test the full image subtraction pipeline
+
+        :return: None
+        """
         self.logger.info("\n\n Testing wirc imsub pipeline \n\n")
 
         res, _ = pipeline.reduce_images(
@@ -129,7 +130,7 @@ class TestWircImsubPipeline(BaseTestCase):
         #     dir_root="subtract",
         #     sub_dir=NIGHT_NAME,
         # )
-        # 
+        #
         # _, header = open_fits(diff_imgpath)
         # for key, value in EXPECTED_HEADER_VALUES.items():
         #     if isinstance(value, float):
@@ -159,20 +160,25 @@ class TestWircImsubPipeline(BaseTestCase):
         for colname, column in expected_res.items():
 
             if isinstance(column.iloc[0], (int, np.integer)):
-                pd.testing.assert_series_equal(column, table.loc[:, colname], check_dtype=False)
+                pd.testing.assert_series_equal(
+                    column, table.loc[:, colname], check_dtype=False
+                )
             elif isinstance(column.iloc[0], float):
-                e = column.to_numpy()
-                r = table.loc[:, colname].to_numpy()
-                np.testing.assert_array_almost_equal(e, r, decimal=4)
+                expected = column.to_numpy()
+                res = table.loc[:, colname].to_numpy()
+                np.testing.assert_array_almost_equal(expected, res, decimal=4)
             elif colname in ["programpi"]:
-                pd.testing.assert_series_equal(column, table.loc[:, colname], check_dtype=False)
+                pd.testing.assert_series_equal(
+                    column, table.loc[:, colname], check_dtype=False
+                )
             elif "name" in colname:
                 # Though path will vary, check base name of images
                 self.assertEqual(
-                    Path(column.iloc[0]).name,
-                    Path(table.loc[0, colname]).name
+                    Path(column.iloc[0]).name, Path(table.loc[0, colname]).name
                 )
 
             else:
                 # Check the only thing left is a cutout
-                self.assertTrue(colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"])
+                self.assertTrue(
+                    colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
+                )
