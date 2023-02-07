@@ -1,10 +1,9 @@
 """
-Module to detect candidates in an image
+Module to detect sources in a difference image
 """
 import gzip
 import io
 import logging
-import os
 from pathlib import Path
 
 import numpy as np
@@ -16,7 +15,7 @@ from winterdrp.paths import BASE_NAME_KEY, REF_IMG_KEY, core_fields, get_output_
 from winterdrp.processors.astromatic.sextractor.sourceextractor import (
     run_sextractor_dual,
 )
-from winterdrp.processors.base_processor import BaseCandidateGenerator
+from winterdrp.processors.base_processor import BaseSourceGenerator
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 
 # TODO : Move photometry to its own thing like catalogs, user can choose
@@ -24,8 +23,12 @@ from winterdrp.utils.ldac_tools import get_table_from_ldac
 logger = logging.getLogger(__name__)
 
 
-class DetectCandidates(BaseCandidateGenerator):
-    base_key = "DETCANDS"
+class DetectTransients(BaseSourceGenerator):
+    """
+    Module for detecting transient sources in difference images
+    """
+
+    base_key = "DETSRCS"
 
     def __init__(
         self,
@@ -33,7 +36,7 @@ class DetectCandidates(BaseCandidateGenerator):
         cand_det_sextractor_filter: str,
         cand_det_sextractor_nnw: str,
         cand_det_sextractor_params: str,
-        output_sub_dir: str = "candidates",
+        output_sub_dir: str = "sources",
     ):
         super().__init__()
         self.output_sub_dir = output_sub_dir
@@ -43,15 +46,39 @@ class DetectCandidates(BaseCandidateGenerator):
         self.cand_det_sextractor_params = cand_det_sextractor_params
 
     def __str__(self) -> str:
-        return f"<Extracts detected sources from images, and converts them to a pandas dataframe>"
+        return (
+            "<Extracts detected sources from images, "
+            "and converts them to a pandas dataframe>"
+        )
 
-    def get_sub_output_dir(self):
+    def get_sub_output_dir(self) -> Path:
+        """
+        Get output directory
+
+        :return: path
+        """
         return Path(get_output_dir(self.output_sub_dir, self.night_sub_dir))
 
     def get_path(self, name: str) -> Path:
+        """
+        Get output path for named candidate
+
+        :param name: name
+        :return: output path
+        """
         return self.get_sub_output_dir().joinpath(name)
 
-    def make_alert_cutouts(self, image_path: str, position, half_size):
+    def make_alert_cutouts(
+        self, image_path: str, position: tuple[int, int], half_size: int
+    ) -> np.ndarray:
+        """
+        Make cutouts of an image
+
+        :param image_path: path of image
+        :param position: x/y tuple (pixels?)
+        :param half_size: half size of cutout edge
+        :return: np.ndarray
+        """
         data = self.open_fits(image_path).get_data()
 
         y_image_size, x_image_size = np.shape(data)
@@ -86,30 +113,27 @@ class DetectCandidates(BaseCandidateGenerator):
         return cutout
 
     @staticmethod
-    def makebitims(image):
-        ######################################################
-        # make bit images of the cutouts for the marshal
-        #
-        # Inputs:
-        # image: input image cutout
-        #
-        # Returns:
-        # buf2: a gzipped fits file of the cutout image as
+    def makebitims(image: np.ndarray) -> io.BytesIO:
+        """
+        make bit images of the cutouts for alert
+
+        :param image: input image cutout
+        :return: a gzipped fits file of the cutout image as
         #  a BytesIO object
-        ######################################################
+        """
 
         # open buffer and store image in memory
         buf = io.BytesIO()
         buf2 = io.BytesIO()
         fits.writeto(buf, image)
-        with gzip.open(buf2, "wb") as fz:
-            fz.write(buf.getvalue())
+        with gzip.open(buf2, "wb") as zip_f:
+            zip_f.write(buf.getvalue())
 
         return buf2
 
-    def generate_candidates_table(
+    def generate_source_table(
         self,
-        scorr_catalog_name: str | Path,
+        scorr_catalog_path: str | Path,
         sci_resamp_path: str | Path,
         ref_resamp_path: str | Path,
         diff_path: str | Path,
@@ -117,7 +141,19 @@ class DetectCandidates(BaseCandidateGenerator):
         diff_psf_path: str | Path,
         diff_unc_path: str | Path,
     ) -> pd.DataFrame:
-        det_src_table = get_table_from_ldac(scorr_catalog_name)
+        """
+        Generate a source table
+
+        :param scorr_catalog_path: Path to SCorr catalogue
+        :param sci_resamp_path: path to resampled science image
+        :param ref_resamp_path: path to resampled ref image
+        :param diff_path: path to difference image
+        :param diff_scorr_path: path to difference image scorr file
+        :param diff_psf_path: path to difference image psf file
+        :param diff_unc_path: path to difference image uncertainty file
+        :return: Source table
+        """
+        det_src_table = get_table_from_ldac(scorr_catalog_path)
 
         if len(det_src_table) == 0:
             return pd.DataFrame()
@@ -146,7 +182,7 @@ class DetectCandidates(BaseCandidateGenerator):
         display_ref_ims = []
         display_diff_ims = []
 
-        for ind, src in enumerate(det_src_table):
+        for ind, _ in enumerate(det_src_table):
             xpeak, ypeak = int(xpeaks[ind]), int(ypeaks[ind])
 
             display_sci_cutout = self.make_alert_cutouts(
@@ -202,7 +238,7 @@ class DetectCandidates(BaseCandidateGenerator):
         det_src_table["diffmaglim"] = diff_image["DIFFMLIM"]
         det_src_table["isdiffpos"] = 1
         det_src_table = det_src_table.to_pandas()
-        logger.info(det_src_table["diffmaglim"])
+        logger.debug(det_src_table["diffmaglim"])
 
         return det_src_table
 
@@ -236,8 +272,8 @@ class DetectCandidates(BaseCandidateGenerator):
             sci_image_path = self.get_path(image[BASE_NAME_KEY])
             ref_image_path = self.get_path(image[REF_IMG_KEY])
 
-            cands_table = self.generate_candidates_table(
-                scorr_catalog_name=cands_catalog_name,
+            cands_table = self.generate_source_table(
+                scorr_catalog_path=cands_catalog_name,
                 sci_resamp_path=sci_image_path,
                 ref_resamp_path=ref_image_path,
                 diff_path=diff_image_path,

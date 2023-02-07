@@ -9,10 +9,7 @@ from typing import Optional
 import pandas as pd
 
 from winterdrp.data import DataBlock, Image, ImageBatch, SourceBatch
-from winterdrp.processors.base_processor import (
-    BaseDataframeProcessor,
-    BaseImageProcessor,
-)
+from winterdrp.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
 from winterdrp.processors.database.constraints import DBQueryConstraints
 
@@ -146,7 +143,7 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
 #     return candidate_table
 
 
-class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor, ABC):
+class DatabaseDataframeImporter(BaseDatabaseImporter, BaseSourceProcessor, ABC):
     """
     Base Class for dataframe DB importers
     """
@@ -199,7 +196,7 @@ class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor, AB
     #     raise NotImplementedError
 
 
-class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcessor):
+class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseSourceProcessor):
     """
     Processor to crossmatch to sources in a database
     """

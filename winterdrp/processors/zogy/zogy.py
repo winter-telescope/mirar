@@ -34,7 +34,7 @@ from winterdrp.paths import (
     get_output_dir,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
+from winterdrp.processors.sources.utils.regions_writer import write_regions_file
 from winterdrp.processors.zogy.pyzogy import pyzogy
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 

@@ -5,10 +5,7 @@ import logging
 from abc import ABC
 
 from winterdrp.data import ImageBatch, SourceBatch
-from winterdrp.processors.base_processor import (
-    BaseDataframeProcessor,
-    BaseImageProcessor,
-)
+from winterdrp.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
 
 logger = logging.getLogger(__name__)
@@ -48,7 +45,7 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
         return batch
 
 
-class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
+class DatabaseDataframeExporter(BaseDatabaseExporter, BaseSourceProcessor):
     """
     Processor for exporting sources to a database
     """

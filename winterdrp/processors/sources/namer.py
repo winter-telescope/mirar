@@ -7,13 +7,13 @@ from typing import Optional
 from astropy.time import Time
 
 from winterdrp.data import SourceBatch
-from winterdrp.processors.base_processor import BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseSourceProcessor
 from winterdrp.processors.database import BaseDatabaseProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
+class SourceNamer(BaseDatabaseProcessor, BaseSourceProcessor):
     """Processor to sequentially assign names to sources, of the form a, aa, aba..."""
 
     base_key = "namer"
@@ -40,7 +40,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
         self.crossmatch_radius_arcsec = xmatch_radius_arcsec
 
     @staticmethod
-    def increment_string(string: str):
+    def increment_string(string: str) -> str:
         """
 
         Parameters
@@ -132,7 +132,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
             return list(res[0].values())[0]
 
         if len(res) == 0:
-            return
+            return None
 
         err = f"Unrecognised db query of length {len(res)}:\n {res}"
         logger.error(err)

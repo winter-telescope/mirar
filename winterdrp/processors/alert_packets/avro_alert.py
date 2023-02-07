@@ -19,12 +19,12 @@ import pandas as pd
 
 from winterdrp.data import SourceBatch
 from winterdrp.paths import get_output_dir
-from winterdrp.processors.base_processor import BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class AvroPacketMaker(BaseDataframeProcessor):
+class AvroPacketMaker(BaseSourceProcessor):
     """Class to generate Avro Packets from a dataframe of candidates.
 
     Attributes:

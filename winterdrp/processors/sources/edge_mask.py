@@ -1,15 +1,21 @@
+"""
+Module for masking sources close to an image edge
+"""
 import logging
 
 import numpy as np
-import pandas as pd
 
 from winterdrp.data import SourceBatch
-from winterdrp.processors.base_processor import BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class EdgeCandidatesMask(BaseDataframeProcessor):
+class EdgeSourceMask(BaseSourceProcessor):
+    """
+    Processor to mask sources close to an image edge
+    """
+
     base_key = "egdemask"
 
     def __init__(
@@ -19,10 +25,8 @@ class EdgeCandidatesMask(BaseDataframeProcessor):
         image_ysize_column_key: str = "Y_SHAPE",
         x_column_key: str = "X_IMAGE",
         y_column_key: str = "Y_IMAGE",
-        *args,
-        **kwargs,
     ):
-        super(EdgeCandidatesMask, self).__init__(*args, **kwargs)
+        super().__init__()
 
         self.edge_boundary_size = edge_boundary_size
         self.image_xsize_column_key = image_xsize_column_key

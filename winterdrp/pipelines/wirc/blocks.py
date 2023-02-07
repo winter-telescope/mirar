@@ -26,9 +26,6 @@ from winterdrp.processors.alert_packets.avro_alert import AvroPacketMaker
 from winterdrp.processors.astromatic import Scamp, Sextractor, Swarp
 from winterdrp.processors.astromatic.psfex import PSFex
 from winterdrp.processors.autoastrometry import AutoAstrometry
-from winterdrp.processors.candidates.candidate_detector import DetectCandidates
-from winterdrp.processors.candidates.namer import CandidateNamer
-from winterdrp.processors.candidates.utils import DataframeWriter, RegionsWriter
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.processors.dark import DarkCalibrator
 from winterdrp.processors.database.database_exporter import DatabaseDataframeExporter
@@ -46,6 +43,9 @@ from winterdrp.processors.photometry.psf_photometry import (
 )
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.sky import NightSkyMedianCalibrator
+from winterdrp.processors.sources.namer import SourceNamer
+from winterdrp.processors.sources.transient_detector import DetectTransients
+from winterdrp.processors.sources.utils import DataframeWriter, RegionsWriter
 from winterdrp.processors.utils import ImageLoader, ImageSaver
 from winterdrp.processors.utils.image_selector import (
     ImageBatcher,
@@ -120,7 +120,7 @@ image_photometry = [
 ]
 
 candidates = [
-    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
+    DetectTransients(output_sub_dir="subtract", **sextractor_candidate_config),
     RegionsWriter(output_dir_name="candidates"),
     CandidatePSFPhotometry(),
     CandidateAperturePhotometry(
@@ -144,7 +144,7 @@ candidates = [
         schema_path=wirc_candidate_schema_path,
         q3c_bool=False,
     ),
-    CandidateNamer(
+    SourceNamer(
         db_name="wirc",
         db_table="candidates",
         base_name="WIRC",
@@ -159,12 +159,12 @@ candidates = [
         duplicate_protocol="replace",
     ),
     DataframeWriter(output_dir_name="dbop"),
-    # EdgeCandidatesMask(edge_boundary_size=100)
+    # EdgeSourceMask(edge_boundary_size=100)
     # FilterCandidates(),
     AvroPacketMaker(
         output_sub_dir="avro", base_name="WNTR", broadcast=False, save_local=True
     ),
-    # SendToFritz(update_thumbnails = True)
+    # SendToSkyportal(update_thumbnails = True)
 ]
 
 imsub = reference + subtract + candidates

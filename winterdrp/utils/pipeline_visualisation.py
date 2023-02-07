@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 from winterdrp.paths import doc_dir
 from winterdrp.pipelines import Pipeline, get_pipeline
 from winterdrp.processors.base_processor import (
-    BaseCandidateGenerator,
-    BaseDataframeProcessor,
     BaseImageProcessor,
     BaseProcessor,
+    BaseSourceGenerator,
+    BaseSourceProcessor,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,9 +63,9 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
 
         if isinstance(processor, BaseImageProcessor):
             class_kwargs = {"color": "g"}
-        elif isinstance(processor, BaseCandidateGenerator):
+        elif isinstance(processor, BaseSourceGenerator):
             class_kwargs = {"color": "purple"}
-        elif isinstance(processor, BaseDataframeProcessor):
+        elif isinstance(processor, BaseSourceProcessor):
             class_kwargs = {"color": "red"}
         else:
             raise Exception(f"processor type ({type(processor)} not recognised")

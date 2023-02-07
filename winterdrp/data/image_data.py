@@ -78,7 +78,7 @@ class Image(DataBlock):
 
     This class serves as input for
     :class:`~winterdrp.processors.base_processor.BaseImageProcessor` and
-    :class:`~winterdrp.processors.base_processor.BaseCandidateGenerator` processors.
+    :class:`~winterdrp.processors.base_processor.BaseSourceGenerator` processors.
     """
 
     cache_files = []

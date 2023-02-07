@@ -452,9 +452,9 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
         return self.master_image_path
 
 
-class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
+class BaseSourceGenerator(BaseProcessor, ImageHandler, ABC):
     """
-    Base CandidateGenerator processor (image batch in, source batch out)
+    Base SourceGenerator processor (image batch in, source batch out)
     """
 
     @classmethod
@@ -476,9 +476,9 @@ class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
         raise NotImplementedError
 
 
-class BaseDataframeProcessor(BaseProcessor, ABC):
+class BaseSourceProcessor(BaseProcessor, ABC):
     """
-    Base dataframe processor (Source batch in, source batch out)
+    Base Source processor (Source batch in, source batch out)
     """
 
     @classmethod
