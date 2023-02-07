@@ -9,7 +9,7 @@ from winterdrp.data import Dataset, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.io import open_fits
 from winterdrp.paths import get_output_path
-from winterdrp.pipelines.wirc.blocks import candidates, subtract
+from winterdrp.pipelines.wirc.blocks import candidates, image_photometry, subtract
 from winterdrp.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
@@ -18,7 +18,9 @@ from winterdrp.pipelines.wirc.generator import (
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.processors.reference import Reference
+from winterdrp.processors.utils.header_annotate import HeaderEditor
 from winterdrp.processors.utils.image_loader import ImageLoader
+from winterdrp.processors.utils.image_saver import ImageSaver
 from winterdrp.references import WIRCRef
 from winterdrp.testing import BaseTestCase
 
@@ -35,6 +37,15 @@ def test_reference_image_generator(
     header: fits.header,
     images_directory: str = ref_img_directory,
 ):
+    """
+    Function to generate reference image for testing
+    Args:
+        header: image header
+        images_directory: reference image directory
+
+    Returns:
+        Reference Image
+    """
     object_name = header["OBJECT"]
     filter_name = header["FILTER"]
     return WIRCRef(
@@ -48,11 +59,13 @@ EXPECTED_HEADER_VALUES = {
     "SCORSTD": 1.081806800432295,
     "SCORMED": -8.757084251543588e-05,
     "SCORMEAN": -0.031172912552408068,
+    "MAGAP": 17.104291,
+    "MAGPSF": 17.197002,
 }
 
 EXPECTED_DATAFRAME_VALUES = {
     "magpsf": [19.319820, 19.242908, 17.197002, 17.565868],
-    "magap": [19.302467, 19.122576, 17.110327, 17.845793],
+    "magap": [19.302467, 19.122576, 17.104291, 17.917712],
 }
 
 test_imsub_configuration = (
@@ -70,6 +83,13 @@ test_imsub_configuration = (
         ),
     ]
     + subtract
+    + [
+        HeaderEditor(
+            edit_keys=["TARGRA", "TARGDEC"], values=[160.643041603707, 34.4374610722322]
+        )
+    ]
+    + image_photometry
+    + [ImageSaver(output_dir_name="subtract")]
     + candidates
 )
 
@@ -77,9 +97,14 @@ pipeline = WircPipeline(night=NIGHT_NAME, selected_configurations="test_imsub")
 pipeline.add_configuration(
     configuration_name="test_imsub", configuration=test_imsub_configuration
 )
+pipeline.configure_processors(test_imsub_configuration)
 
 
 class TestWircImsubPipeline(BaseTestCase):
+    """
+    Class to test WIRC image subtraction pipeline
+    """
+
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)

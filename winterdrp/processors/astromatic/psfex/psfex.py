@@ -24,8 +24,19 @@ def run_psfex(
     sextractor_cat_path: Path,
     config_path: str,
     psf_output_dir: str,
-    norm_psf_output_name: Optional[str] = None,
+    norm_psf_output_name: Optional[str | Path] = None,
 ):
+    """
+    Function to run PSFex
+    Args:
+        sextractor_cat_path: path to sextractor catalog
+        config_path: path of psfex config file
+        psf_output_dir: output directory to store PSF
+        norm_psf_output_name: normalized PSF output path
+
+    Returns:
+
+    """
     psfex_command = (
         f"psfex -c {config_path} {sextractor_cat_path} "
         f"-PSF_DIR {psf_output_dir} -CHECKIMAGE_TYPE NONE"
@@ -43,6 +54,10 @@ def run_psfex(
 
 
 class PSFex(BaseImageProcessor):
+    """
+    Class to run PSFex on an image.
+    """
+
     base_key = "psfex"
 
     def __init__(
