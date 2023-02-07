@@ -390,10 +390,12 @@ class ZOGY(ZOGYPrepare):
 
             diff = Image(data=diff_data, header=image.get_header())
 
-            diff_image_path = Path(sci_image_path).with_suffix(".diff.fits")
+            diff_image_path = Path(
+                str(sci_image_path).replace(".fits", "")
+            ).with_suffix(".diff.fits")
             diff_psf_path = diff_image_path.with_suffix(".psf")
 
-            scorr_image_path = Path(sci_image_path).with_suffix(".scorr.fits")
+            scorr_image_path = sci_image_path.with_suffix(".scorr.fits")
 
             scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(scorr_data)
 

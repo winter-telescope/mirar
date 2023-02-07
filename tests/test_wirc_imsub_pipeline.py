@@ -2,6 +2,7 @@
 Tests for image subtraction with WIRC
 """
 import logging
+from io import BytesIO
 from pathlib import Path
 
 import numpy as np
@@ -9,7 +10,7 @@ import pandas as pd
 
 from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.pipelines.wirc.blocks import candidates, subtract, image_photometry
+from winterdrp.pipelines.wirc.blocks import candidates, image_photometry, subtract
 from winterdrp.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
@@ -18,9 +19,8 @@ from winterdrp.pipelines.wirc.generator import (
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.processors.reference import Reference
-from winterdrp.processors.utils.header_annotate import HeaderEditor
-
 from winterdrp.processors.utils import ImageLoader, ImageSaver
+from winterdrp.processors.utils.header_annotate import HeaderEditor
 from winterdrp.references.wirc import WIRCRef
 from winterdrp.testing import BaseTestCase
 
@@ -141,7 +141,7 @@ class TestWircImsubPipeline(BaseTestCase):
         #         raise TypeError(
         #             f"Type for value ({type(value)} is neither float not int."
         #         )
-        #
+
         # self.assertEqual(len(candidates_table), 4)
         # for key, value in EXPECTED_DATAFRAME_VALUES.items():
         #     if isinstance(value, list):
@@ -158,27 +158,25 @@ class TestWircImsubPipeline(BaseTestCase):
         self.assertEqual(len(table), len(expected_res))
 
         for colname, column in expected_res.items():
-
             if isinstance(column.iloc[0], (int, np.integer)):
                 pd.testing.assert_series_equal(
                     column, table.loc[:, colname], check_dtype=False
                 )
             elif isinstance(column.iloc[0], float):
-                expected = column.to_numpy()
-                res = table.loc[:, colname].to_numpy()
+                expected = column.to_numpy(dtype=float)
+                res = table.loc[:, colname].to_numpy(dtype=float)
                 np.testing.assert_array_almost_equal(expected, res, decimal=4)
-            elif colname in ["programpi"]:
+            elif colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"]:
+                # Skip cutouts
+                pass
+            elif isinstance(column.iloc[0], str):
                 pd.testing.assert_series_equal(
-                    column, table.loc[:, colname], check_dtype=False
+                    column.astype(str), table.loc[:, colname].astype(str)
                 )
             elif "name" in colname:
                 # Though path will vary, check base name of images
                 self.assertEqual(
                     Path(column.iloc[0]).name, Path(table.loc[0, colname]).name
                 )
-
             else:
-                # Check the only thing left is a cutout
-                self.assertTrue(
-                    colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
-                )
+                raise ValueError(f"Unexpected column {column}")
