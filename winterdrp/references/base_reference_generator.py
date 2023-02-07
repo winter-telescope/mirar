@@ -30,8 +30,7 @@ class BaseReferenceGenerator:
     def __init__(self, filter_name: str):
         self.filter_name = filter_name
 
-    @staticmethod
-    def get_reference(image: Image) -> astropy.io.fits.PrimaryHDU:
+    def get_reference(self, image: Image) -> astropy.io.fits.PrimaryHDU:
         """
         Get loaded ref image for image
 
