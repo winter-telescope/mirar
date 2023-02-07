@@ -81,7 +81,7 @@ profile = "black"
 [tool.pylint.format]
 max-line-length = "88"
 disable=["logging-fstring-interpolation"]
-good-names=["i", "j", "k", "ex", "Run", "_", "ra", "pa", "x", "y", "nx", "ny", "dx", "dy"]
+good-names=["i", "j", "k", "ex", "Run", "_", "ra", "pa", "x", "y", "nx", "ny", "dx", "dy", "df", "t0", "t1"]
 
 [build-system]
 requires = ["setuptools", "wheel", "poetry-core>=1.2.0",]
