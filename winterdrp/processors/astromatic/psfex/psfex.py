@@ -57,6 +57,7 @@ class PSFex(BaseImageProcessor):
     """
     Class to run PSFex on an image.
     """
+
     base_key = "psfex"
 
     def __init__(
