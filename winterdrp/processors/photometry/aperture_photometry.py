@@ -1,6 +1,7 @@
 """
 Module with processors to perform aperture photometry
 """
+import shutil
 from typing import Optional
 
 import numpy as np
@@ -72,7 +73,6 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
                     self.zp_colname
                 ] - 2.5 * np.log10(flux)
                 candidate_table[f"sigmagap{suffix}"] = 1.086 * fluxunc / flux
-                print(candidate_table[f"magap{suffix}"])
 
             source_table.set_data(candidate_table)
         return batch
@@ -91,8 +91,10 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
         col_suffix_list: Optional[list[str]] = None,
+        *args,
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.aperture_photometer = AperturePhotometry(
             aper_diameters=aper_diameters,
@@ -107,6 +109,7 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
+
         for image in batch:
             image_cutout, unc_image_cutout = self.generate_cutouts(image)
 
@@ -119,7 +122,9 @@ class ImageAperturePhotometry(BaseImagePhotometry):
                 suffix = self.col_suffix_list[ind]
                 image[f"fluxap{suffix}"] = flux
                 image[f"fluxunc{suffix}"] = fluxunc
-                image[f"magap{suffix}"] = image[ZP_KEY] - 2.5 * np.log10(flux)
+                image[f"magap{suffix}"] = float(image[ZP_KEY]) - 2.5 * np.log10(flux)
                 image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
 
+        if self.photometry_out_temp_dir is not None:
+            shutil.rmtree(self.photometry_out_temp_dir)
         return batch

@@ -1,6 +1,9 @@
 """
 Module with processors to perform point-spread-function photometry
 """
+import logging
+import shutil
+
 import numpy as np
 
 from winterdrp.data import Image, ImageBatch, SourceBatch
@@ -12,11 +15,26 @@ from winterdrp.paths import (
     PSF_FLUXUNC_KEY,
     ZP_KEY,
 )
+from winterdrp.processors.astromatic.psfex import PSFex
+from winterdrp.processors.base_processor import PrerequisiteError
 from winterdrp.processors.photometry.base_photometry import (
     BaseCandidatePhotometry,
     BaseImagePhotometry,
     PSFPhotometry,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def check_psf_phot_prerequisites(processor):
+    mask = [isinstance(x, PSFex) for x in processor.preceding_steps]
+    if np.sum(mask) < 1:
+        err = (
+            f"{processor.__module__} requires {PSFex} as a prerequisite. "
+            f"However, the following steps were found: {processor.preceding_steps}."
+        )
+        logger.error(err)
+        raise PrerequisiteError(err)
 
 
 class CandidatePSFPhotometry(BaseCandidatePhotometry):
@@ -78,6 +96,11 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
             source_table.set_data(candidate_table)
         return batch
 
+    def check_prerequisites(
+        self,
+    ):
+        check_psf_phot_prerequisites(self)
+
 
 class ImagePSFPhotometry(BaseImagePhotometry):
     """
@@ -106,7 +129,14 @@ class ImagePSFPhotometry(BaseImagePhotometry):
 
             image[PSF_FLUX_KEY] = flux
             image[PSF_FLUXUNC_KEY] = fluxunc
-            image[MAG_PSF_KEY] = -2.5 * np.log10(flux) + image[ZP_KEY]
+            image[MAG_PSF_KEY] = -2.5 * np.log10(flux) + float(image[ZP_KEY])
             image[MAGERR_PSF_KEY] = 1.086 * fluxunc / flux
 
+        if self.photometry_out_temp_dir is not None:
+            shutil.rmtree(self.photometry_out_temp_dir)
         return batch
+
+    def check_prerequisites(
+        self,
+    ):
+        check_psf_phot_prerequisites(self)
