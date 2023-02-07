@@ -58,7 +58,6 @@ class RegionsWriter(BaseDataframeProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-
         try:
             os.makedirs(
                 get_output_dir(

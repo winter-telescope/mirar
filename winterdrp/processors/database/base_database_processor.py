@@ -148,7 +148,6 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
             self._grant_privileges_to_pg_user()
 
             if self.has_foreign_keys:
-
                 if self.schema_dir is None:
                     self.schema_dir = self.schema_path.parent
                     logger.warning(
@@ -172,7 +171,6 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
                     logger.debug("Created q3c_bool indexes")
 
         if not self.table_exists():
-
             self._create_table(self.schema_path)
 
             if self.q3c:

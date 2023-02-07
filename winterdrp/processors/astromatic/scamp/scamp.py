@@ -45,7 +45,6 @@ def run_scamp(
 
 
 class Scamp(BaseImageProcessor):
-
     base_key = "scamp"
 
     def __init__(
@@ -68,7 +67,6 @@ class Scamp(BaseImageProcessor):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-
         scamp_output_dir = self.get_scamp_output_dir()
         scamp_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -91,7 +89,6 @@ class Scamp(BaseImageProcessor):
 
         with open(scamp_image_list_path, "w") as f:
             for image in batch:
-
                 temp_cat_path = copy_temp_file(
                     output_dir=scamp_output_dir, file_path=image[SEXTRACTOR_HEADER_KEY]
                 )

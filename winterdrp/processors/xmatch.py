@@ -30,9 +30,7 @@ class XMatch(BaseDataframeProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-
         for source_list in batch:
-
             candidate_table = source_list.get_data()
 
             ras = candidate_table["ra"]

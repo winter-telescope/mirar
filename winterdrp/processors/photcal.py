@@ -157,7 +157,6 @@ class PhotCalibrator(BaseImageProcessor):
         zeropoints = []
 
         for i, aperture in enumerate(apertures):
-
             offsets = np.ma.array(
                 matched_ref_cat["magnitude"] - matched_img_cat["MAG_APER"][:, i]
             )
@@ -214,7 +213,6 @@ class PhotCalibrator(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         phot_output_dir = self.get_phot_output_dir()
 
         try:
@@ -309,7 +307,6 @@ class PhotCalibrator(BaseImageProcessor):
     def check_prerequisites(
         self,
     ):
-
         mask = [isinstance(x, Sextractor) for x in self.preceding_steps]
         if np.sum(mask) < 1:
             err = (

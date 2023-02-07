@@ -103,7 +103,6 @@ def get_img_src_list(
     rejects = []
 
     for line in catlines:
-
         if line[0] == "#":
             continue
 
@@ -167,9 +166,7 @@ def get_img_src_list(
     thresh_prob = 0.0001
     ct_bad_col = 0
     for _ in range(5):
-
         for variable in ["x", "y"]:
-
             txp = 1.0
             val_thresh = 1
             while txp > thresh_prob:

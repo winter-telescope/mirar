@@ -96,7 +96,6 @@ class Sextractor(BaseImageProcessor):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-
         sextractor_out_dir = self.get_sextractor_output_dir()
 
         try:
@@ -105,7 +104,6 @@ class Sextractor(BaseImageProcessor):
             pass
 
         for image in batch:
-
             if self.gain is None and "GAIN" in image.keys():
                 self.gain = image["GAIN"]
 

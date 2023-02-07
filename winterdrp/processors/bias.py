@@ -53,7 +53,6 @@ class BiasCalibrator(ProcessorWithCache):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         master_bias = self.get_cache_file(batch)
 
         for image in batch:
@@ -68,7 +67,6 @@ class BiasCalibrator(ProcessorWithCache):
         self,
         images: ImageBatch,
     ) -> Image:
-
         images = self.select_cache_images(images)
 
         n_frames = len(images)

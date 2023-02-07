@@ -83,7 +83,6 @@ class ErrorStack:
         all_reports = self.get_all_reports()
 
         if len(all_reports) > 0:
-
             summary += (
                 f"The following {len(self.failed_images)} images were affected "
                 f"by at least one error during processing: \n "
@@ -99,7 +98,6 @@ class ErrorStack:
             error_lines = [err.get_error_message() for err in all_reports]
 
             for error_type in list(set(error_lines)):
-
                 matching_errors = [
                     x for x in all_reports if x.get_error_message() == error_type
                 ]

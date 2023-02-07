@@ -51,7 +51,6 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 class SendToFritz(BaseDataframeProcessor):
-
     base_key = "fritzsender"
 
     def __init__(

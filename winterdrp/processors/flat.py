@@ -64,7 +64,6 @@ class FlatCalibrator(ProcessorWithCache):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         master_flat = self.get_cache_file(batch)
         master_flat_data = master_flat.get_data()
 

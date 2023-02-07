@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class EdgeCandidatesMask(BaseDataframeProcessor):
-
     base_key = "egdemask"
 
     def __init__(
@@ -35,7 +34,6 @@ class EdgeCandidatesMask(BaseDataframeProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-
         for source_table in batch:
             candidate_table = source_table.get_data()
             x_coords = candidate_table[self.x_column_key]

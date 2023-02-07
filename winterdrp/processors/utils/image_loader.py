@@ -64,7 +64,6 @@ class ImageLoader(BaseImageProcessor):
         return Image(data.astype(np.float64), header)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-
         input_dir = os.path.join(
             self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
         )

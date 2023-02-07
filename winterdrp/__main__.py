@@ -79,7 +79,6 @@ parser.add_argument(
 args = parser.parse_args()
 
 if args.download:
-
     Pipeline.pipelines[args.pipeline.lower()].download_raw_images_for_night(
         night=args.night
     )
@@ -91,13 +90,11 @@ if night is None:
     night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
 
 with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
-
     print(f"Using cache {temp_dir_path}")
 
     cache.set_cache_dir(temp_dir_path)
 
     if args.monitor:
-
         if args.emailrecipients is not None:
             EMAIL_RECIPIENTS = args.emailrecipients.split(",")
         else:
@@ -124,7 +121,6 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
         monitor.process_realtime()
 
     else:
-
         # Set up logging
 
         log = logging.getLogger("winterdrp")

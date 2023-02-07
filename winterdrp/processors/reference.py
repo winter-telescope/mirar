@@ -76,7 +76,6 @@ class Reference(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         try:
             os.makedirs(self.get_sub_output_dir())
         except OSError:
@@ -85,7 +84,6 @@ class Reference(BaseImageProcessor):
         new_batch = ImageBatch()
 
         for image in batch:
-
             ref_writer = self.ref_image_generator(image)
 
             ref_image_path = ref_writer.write_reference(

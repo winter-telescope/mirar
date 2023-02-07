@@ -74,7 +74,6 @@ class CSVLog(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         output_path = self.get_output_path()
 
         all_rows = []

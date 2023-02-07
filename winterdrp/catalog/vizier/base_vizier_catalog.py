@@ -61,7 +61,6 @@ class VizierCatalog(BaseCatalog, ABC):
         return f"e_{self.get_mag_key()}"
 
     def get_catalog(self, ra_deg: float, dec_deg: float) -> astropy.table.Table:
-
         logger.info(
             f"Querying {self.abbreviation} catalog around RA {ra_deg:.4f}, "
             f"Dec {dec_deg:.4f} with a radius of {self.search_radius_arcmin:.4f} arcmin"

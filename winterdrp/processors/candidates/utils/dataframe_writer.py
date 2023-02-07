@@ -34,7 +34,6 @@ class DataframeWriter(BaseDataframeProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-
         try:
             os.makedirs(
                 get_output_dir(
@@ -47,7 +46,6 @@ class DataframeWriter(BaseDataframeProcessor):
             pass
 
         for source_list in batch:
-
             candidate_table = source_list.get_data()
 
             df_basepath = os.path.basename(

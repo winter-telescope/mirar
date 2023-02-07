@@ -43,7 +43,6 @@ class Gaia2Mass(BaseCatalog):
         ra_deg: float,
         dec_deg: float,
     ) -> astropy.table.Table:
-
         logger.info(
             f"Querying 2MASS - Gaia cross-match around RA {ra_deg:.4f}, "
             f"Dec {dec_deg:.4f} with a radius of {self.search_radius_arcmin:.4f} arcmin"
@@ -80,7 +79,6 @@ class Gaia2Mass(BaseCatalog):
         logger.info(f"Found {len(src_list)} sources in Gaia")
 
         if self.trim:
-
             if self.image_catalog_path is None:
                 logger.error(
                     "Gaia catalog trimming requested but "

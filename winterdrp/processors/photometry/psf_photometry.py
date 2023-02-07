@@ -56,7 +56,6 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-
         for source_table in batch:
             candidate_table = source_table.get_data()
 

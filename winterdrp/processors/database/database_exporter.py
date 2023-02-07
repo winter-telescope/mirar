@@ -35,7 +35,6 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
     """
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-
         for image in batch:
             primary_keys, primary_key_values = self.pg_user.export_to_db(
                 image,
@@ -55,9 +54,7 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
     """
 
     def _apply_to_candidates(self, batch: SourceBatch) -> SourceBatch:
-
         for source_list in batch:
-
             candidate_table = source_list.get_data()
 
             primary_key_dict = {}

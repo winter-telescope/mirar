@@ -68,9 +68,7 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         for i, image in enumerate(batch):
-
             query_constraints = self.get_constraints(image)
 
             res = self.pg_user.import_from_db(
@@ -262,7 +260,6 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcess
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-
         for source_table in batch:
             candidate_table = source_table.get_data()
             results = []
@@ -324,7 +321,6 @@ class DatabaseHistoryImporter(DatabaseCrossmatchImporter):
         return candidate_table
 
     def get_source_constraints(self, cand: pd.DataFrame) -> DBQueryConstraints:
-
         t_detection = float(cand[self.time_field_name])
 
         query_constraints = DBQueryConstraints(

@@ -44,7 +44,6 @@ class MaskPixels(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         for image in batch:
             data = image.get_data()
             mask = self.get_mask().get_data()

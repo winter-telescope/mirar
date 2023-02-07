@@ -23,7 +23,6 @@ FLAGS"""
 
 
 def write_conv_file(conv_path: str = default_conv_path):
-
     convol = """CONV NORM
 # 3x3 ``all-ground'' convolution mask with FWHM = 2 pixels.
 1 2 1

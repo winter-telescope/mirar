@@ -21,7 +21,6 @@ class WIRCRef(BaseReferenceGenerator):
         self.images_directory_path = images_directory_path
 
     def get_reference(self, image: Image) -> fits.PrimaryHDU:
-
         header = image.get_header()
 
         full_imagelist = np.array(

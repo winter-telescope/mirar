@@ -11,14 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class NightSkyMedianCalibrator(SkyFlatCalibrator):
-
     base_key = "sky"
 
     def _apply_to_images(
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-
         master_sky = self.get_cache_file(batch)
 
         mask = master_sky.get_data() <= self.flat_nan_threshold

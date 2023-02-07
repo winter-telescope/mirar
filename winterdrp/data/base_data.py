@@ -75,7 +75,6 @@ class PseudoList:
         raise NotImplementedError()
 
     def __init__(self, data_list=None):
-
         self._datalist = []
 
         if data_list is None:
