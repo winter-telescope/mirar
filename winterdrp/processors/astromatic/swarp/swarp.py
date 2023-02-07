@@ -19,7 +19,7 @@ from winterdrp.paths import (
     get_output_dir,
     get_temp_path,
 )
-from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
+from winterdrp.processors.astromatic.scamp.scamp import SCAMP_HEADER_KEY, Scamp
 from winterdrp.processors.base_processor import BaseImageProcessor, PrerequisiteError
 from winterdrp.utils import execute
 
@@ -247,7 +247,7 @@ class Swarp(BaseImageProcessor):
                 if self.include_scamp:
                     temp_head_path = copy_temp_file(
                         output_dir=swarp_output_dir,
-                        file_path=Path(image[scamp_header_key]),
+                        file_path=Path(image[SCAMP_HEADER_KEY]),
                     )
 
                 temp_img_path = get_temp_path(swarp_output_dir, image[BASE_NAME_KEY])
