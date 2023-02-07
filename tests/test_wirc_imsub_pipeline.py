@@ -146,7 +146,6 @@ class TestWircImsubPipeline(BaseTestCase):
 
 
 if __name__ == "__main__":
-
     print("Calculating latest scorr metrics dictionary")
 
     # Code to generate updated ZP dict of the results change

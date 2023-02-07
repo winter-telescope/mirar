@@ -2652,7 +2652,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-requests"
-version = "2.28.11.9"
+version = "2.28.11.10"
 description = "Typing stubs for requests"
 category = "main"
 optional = false
@@ -2663,7 +2663,7 @@ types-urllib3 = "<1.27"
 
 [[package]]
 name = "types-toml"
-version = "0.10.8.2"
+version = "0.10.8.3"
 description = "Typing stubs for toml"
 category = "main"
 optional = false
@@ -4991,12 +4991,12 @@ types-pytz = [
     {file = "types_pytz-2022.7.1.0-py3-none-any.whl", hash = "sha256:10ec7d009a02340f1cecd654ac03f0c29b6088a03b63d164401fc52df45936b2"},
 ]
 types-requests = [
-    {file = "types-requests-2.28.11.9.tar.gz", hash = "sha256:b942e832566810c4b521c2ae70c6cd990abd7f518e0c661d9a8d90a29b1cd19a"},
-    {file = "types_requests-2.28.11.9-py3-none-any.whl", hash = "sha256:8fd62803b8830d8f88591a40d95e92a34e2495fff052b8d7f713a5008a5fb0fa"},
+    {file = "types-requests-2.28.11.10.tar.gz", hash = "sha256:0279661f4f4d8721d7d5c47fb5053b83d39cf105c7d9f210a8ce9b6a0c312de4"},
+    {file = "types_requests-2.28.11.10-py3-none-any.whl", hash = "sha256:d2083d9245dd6463fc6ea9eb43ccc719c6922ae33e7debcdacb498f7ca84033d"},
 ]
 types-toml = [
-    {file = "types-toml-0.10.8.2.tar.gz", hash = "sha256:51d428666b30e9cc047791f440d0f11a82205e789c40debbb86f3add7472cf3e"},
-    {file = "types_toml-0.10.8.2-py3-none-any.whl", hash = "sha256:3cf6a09449527b087b6c800a9d6d2dd22faf15fd47006542da7c9c3d067a6ced"},
+    {file = "types-toml-0.10.8.3.tar.gz", hash = "sha256:f37244eff4cd7eace9cb70d0bac54d3eba77973aa4ef26c271ac3d1c6503a48e"},
+    {file = "types_toml-0.10.8.3-py3-none-any.whl", hash = "sha256:a2286a053aea6ab6ff814659272b1d4a05d86a1dd52b807a87b23511993b46c5"},
 ]
 types-urllib3 = [
     {file = "types-urllib3-1.26.25.4.tar.gz", hash = "sha256:eec5556428eec862b1ac578fb69aab3877995a99ffec9e5a12cf7fbd0cc9daee"},
