@@ -1,6 +1,7 @@
 """
 Module with classes to perform photometry on an image or candidates
 """
+import logging
 import os
 from pathlib import Path
 
@@ -22,6 +23,8 @@ from winterdrp.processors.photometry.utils import (
     make_psf_shifted_array,
     psf_photometry,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class BasePhotometry:
@@ -100,27 +103,12 @@ class BasePhotometryProcessor(BaseProcessor):
     Parent processor to run photometry
     """
 
-    def __init__(self, phot_cutout_size: int = 20, output_sub_dir: str = "photometry"):
+    def __init__(
+        self, phot_cutout_size: int = 20, temp_output_sub_dir: str = "photometry"
+    ):
         super().__init__()
         self.phot_cutout_size = phot_cutout_size
-        self.output_sub_dir = output_sub_dir
-
-    def get_sub_output_dir(self) -> Path:
-        """
-        Get output directory of the processor
-
-        :return: Full output directory
-        """
-        return Path(get_output_dir(self.output_sub_dir, self.night_sub_dir))
-
-    def get_path(self, name: str | Path) -> Path:
-        """
-        Get output path for a file of name
-
-        :param name: Name of file
-        :return: Full output path
-        """
-        return self.get_sub_output_dir().joinpath(name)
+        self.temp_output_sub_dir = temp_output_sub_dir
 
     def get_filenames(self, data_item: Image | pd.Series):
         """
@@ -174,26 +162,41 @@ class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
         target_ra_key: str = "TARGRA",
         target_dec_key: str = "TARGDEC",
         *args,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.target_ra_key = target_ra_key
         self.target_dec_key = target_dec_key
+        self.photometry_out_temp_dir = None
 
     def get_filenames(self, image: Image):
-        imagename = image.header[BASE_NAME_KEY]
-        unc_filename = image.header[UNC_IMG_KEY]
-        if not os.path.exists(unc_filename):
+        self.photometry_out_temp_dir = get_output_dir(
+            self.temp_output_sub_dir, self.night_sub_dir
+        )
+        self.photometry_out_temp_dir.mkdir(parents=True, exist_ok=True)
+
+        image_basename = image.header[BASE_NAME_KEY]
+        temp_imagepath = self.photometry_out_temp_dir.joinpath(image_basename)
+        self.save_fits(image, temp_imagepath)
+
+        unc_exists, temp_unc_imagepath = False, None
+        if UNC_IMG_KEY in image.header.keys():
+            unc_filename = image.header[UNC_IMG_KEY]
+            temp_unc_imagepath = Path(unc_filename)
+            unc_exists = os.path.exists(unc_filename)
+        if not unc_exists:
             rms_image = get_rms_image(image)
             unc_filename = image[BASE_NAME_KEY] + ".unc"
-            self.save_fits(rms_image, path=os.path.join(self.get_path(unc_filename)))
-        return imagename, unc_filename
+            temp_unc_imagepath = self.photometry_out_temp_dir.joinpath(unc_filename)
+            self.save_fits(rms_image, path=temp_unc_imagepath)
+            logger.info(f"Saved unc file to {temp_unc_imagepath}")
+        return temp_imagepath, temp_unc_imagepath
 
-    def get_physical_coordinates(self, image: Image):
+    def get_physical_coordinates(self, image: Image) -> (int, int):
         ra, dec = image[self.target_ra_key], image[self.target_dec_key]
         wcs = WCS(image.header)
-        x, y = wcs.all_world2pix(ra, dec, 1)
-        return x, y
+        x, y = wcs.all_world2pix(ra, dec, 0)
+        return int(np.round(x)), int(np.round(y))
 
 
 class BaseCandidatePhotometry(BasePhotometryProcessor, BaseDataframeProcessor):
@@ -209,7 +212,7 @@ class BaseCandidatePhotometry(BasePhotometryProcessor, BaseDataframeProcessor):
         x_colname="xpeak",
         y_colname="ypeak",
         *args,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.image_colname = image_colname
