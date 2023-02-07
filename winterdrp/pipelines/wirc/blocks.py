@@ -38,8 +38,12 @@ from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.photometry.aperture_photometry import (
     CandidateAperturePhotometry,
+    ImageAperturePhotometry,
 )
-from winterdrp.processors.photometry.psf_photometry import CandidatePSFPhotometry
+from winterdrp.processors.photometry.psf_photometry import (
+    CandidatePSFPhotometry,
+    ImagePSFPhotometry,
+)
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.sky import NightSkyMedianCalibrator
 from winterdrp.processors.utils import ImageLoader, ImageSaver
@@ -99,6 +103,20 @@ subtract = [
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     ZOGYPrepare(output_sub_dir="subtract"),
     ZOGY(output_sub_dir="subtract"),
+]
+
+image_photometry = [
+    ImageAperturePhotometry(
+        aper_diameters=[16],
+        bkg_in_diameters=[25],
+        bkg_out_diameters=[40],
+        col_suffix_list=[""],
+        phot_cutout_size=100,
+        target_ra_key="TARGRA",
+        target_dec_key="TARGDEC",
+    ),
+    ImagePSFPhotometry(target_ra_key="TARGRA", target_dec_key="TARGDEC"),
+    ImageSaver(output_dir_name="photometry"),
 ]
 
 candidates = [
