@@ -5,12 +5,12 @@ import logging
 import os
 from pathlib import Path
 
-import astropy.io.fits
 import numpy as np
+from astropy.io import fits
 
 from winterdrp.data import Image
+from winterdrp.io import save_hdu_as_fits
 from winterdrp.paths import BASE_NAME_KEY, COADD_KEY, PROC_HISTORY_KEY
-from winterdrp.utils.fits_tools import save_HDU_as_fits
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class BaseReferenceGenerator:
     def __init__(self, filter_name: str):
         self.filter_name = filter_name
 
-    def get_reference(self, image: Image) -> astropy.io.fits.PrimaryHDU:
+    def get_reference(self, image: Image) -> fits.PrimaryHDU:
         """
         Get loaded ref image for image
 
@@ -72,8 +72,8 @@ class BaseReferenceGenerator:
 
         logger.info(f"Saving reference image to {output_path}")
         ref_hdu.header[BASE_NAME_KEY] = os.path.basename(output_path)
-        ref_hdu.data[ref_hdu.data == 0] = np.nan
-        save_HDU_as_fits(ref_hdu, output_path)
+        ref_hdu.data[ref_hdu.data == 0] = np.nan  # pylint: disable=no-member
+        save_hdu_as_fits(ref_hdu, output_path)
 
         return output_path
 

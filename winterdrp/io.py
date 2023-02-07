@@ -26,6 +26,18 @@ def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU
     return proc_hdu
 
 
+def save_hdu_as_fits(hdu: fits.PrimaryHDU, path: str | Path, overwrite: bool = True):
+    """
+    Wrapper hunction to save an astropy hdu to file
+
+    :param hdu: hdu to save
+    :param path: path to save
+    :param overwrite: boolean whether to overwrite
+    :return: None
+    """
+    hdu.writeto(path, overwrite=overwrite)
+
+
 def save_to_path(
     data: np.ndarray,
     header: fits.Header | None,
@@ -39,11 +51,11 @@ def save_to_path(
     :param header: astropy Header object
     :param path: output path to save to
     :param overwrite: boolean variable opn whether to overwrite of an
-        image exists at <path>.Defaults to True.
+        image exists at <path>. Defaults to True.
     :return: None
     """
     img = create_fits(data, header=header)
-    img.writeto(path, overwrite=overwrite)
+    save_hdu_as_fits(hdu=img, path=path, overwrite=overwrite)
 
 
 def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
