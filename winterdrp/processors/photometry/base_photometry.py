@@ -12,9 +12,9 @@ from astropy.wcs import WCS
 from winterdrp.data import Image
 from winterdrp.paths import BASE_NAME_KEY, UNC_IMG_KEY, get_output_dir
 from winterdrp.processors.base_processor import (
-    BaseDataframeProcessor,
     BaseImageProcessor,
     BaseProcessor,
+    BaseSourceProcessor,
 )
 from winterdrp.processors.photometry.utils import (
     aper_photometry,
@@ -199,7 +199,7 @@ class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
         return int(np.round(x)), int(np.round(y))
 
 
-class BaseCandidatePhotometry(BasePhotometryProcessor, BaseDataframeProcessor):
+class BaseCandidatePhotometry(BasePhotometryProcessor, BaseSourceProcessor):
     """
     Processor to run photometry on a candidates table
     """

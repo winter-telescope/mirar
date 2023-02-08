@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import time
+from pathlib import Path, PosixPath
 
 import avro
 import avro.io
@@ -14,15 +15,16 @@ import avro.schema
 import avro.tool
 import confluent_kafka
 import fastavro
+import pandas as pd
 
 from winterdrp.data import SourceBatch
 from winterdrp.paths import get_output_dir
-from winterdrp.processors.base_processor import BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class AvroPacketMaker(BaseDataframeProcessor):
+class AvroPacketMaker(BaseSourceProcessor):
     """Class to generate Avro Packets from a dataframe of candidates.
 
     Attributes:
@@ -57,7 +59,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         return batch
 
     @staticmethod
-    def read_input_df(df):
+    def read_input_df(df: pd.DataFrame) -> list[dict]:
         """Takes a DataFrame, which has multiple candidate
         and creates list of dictionaries, each dictionary
         representing a single candidate.
@@ -74,7 +76,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             candidate = {}
             for key in df.keys():
                 try:
-                    if isinstance(df.iloc[i].get(key), (str, list)):
+                    if isinstance(df.iloc[i].get(key), (str, list, PosixPath)):
                         candidate[key] = df.iloc[i].get(key)
                     else:
                         # change to native python type
@@ -85,7 +87,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         return all_candidates
 
-    def combine_schemas(self, schema_files):
+    def combine_schemas(self, schema_files: list[str]) -> dict:
         """Combine multiple nested schemas into a single schema.
         Modified from https://github.com/dekishalay/pgirdps
 
@@ -97,8 +99,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
         """
         known_schemas = avro.schema.Names()  # avro.schema.Names object
 
-        for s in schema_files:
-            schema = self.load_single_avsc(s, known_schemas)
+        for schema_f in schema_files:
+            schema = self.load_single_avsc(schema_f, known_schemas)
 
         # using schema.to_json() doesn't fully propagate the nested schemas
         # work around as below
@@ -109,7 +111,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         return props
 
     @staticmethod
-    def load_single_avsc(file_path, names):
+    def load_single_avsc(
+        file_path: str, names: avro.schema.Names
+    ) -> avro.schema.RecordSchema:
         """Load a single avsc file.
         Modified from https://github.com/dekishalay/pgirdps
 
@@ -133,7 +137,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         return schema
 
     @staticmethod
-    def write_avro_data(json_dict, avro_schema):
+    def write_avro_data(
+        json_dict: dict, avro_schema: avro.schema.RecordSchema
+    ) -> io.BytesIO:
         """Encode json into avro format given a schema.
         For testing packet integrity.
 
@@ -151,7 +157,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         return bytes_io
 
     @staticmethod
-    def read_avro_data(bytes_io, avro_schema):
+    def read_avro_data(
+        bytes_io: io.BytesIO, avro_schema: avro.schema.RecordSchema
+    ) -> dict:
         """Read avro data and decode with a given schema.
         For testing packet integrity.
 
@@ -170,7 +178,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         return message
 
     @staticmethod
-    def create_alert_packet(cand, scicut, refcut, diffcut):
+    def create_alert_packet(
+        cand: dict, scicut: bytes, refcut: bytes, diffcut: bytes
+    ) -> dict:
         """Create top level avro packet from input candidate.
         Args:
             cand (dict): all data of a single candidate.
@@ -195,19 +205,18 @@ class AvroPacketMaker(BaseDataframeProcessor):
         }
         return alert
 
-    def get_sub_output_dir(self):
+    def get_sub_output_dir(self) -> Path:
         """Returns path of output subdirectory."""
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     def _make_avro_output_dir(self):
         """Make 'avro' subdirectory for avro packet output."""
         avro_output_dir = self.get_sub_output_dir()
-        try:  # subdir doesn't exist
-            os.makedirs(avro_output_dir, exist_ok=True)
-        except OSError:
-            pass
+        avro_output_dir.mkdir(exist_ok=True)
 
-    def _save_local(self, candid, records, schema):
+    def _save_local(
+        self, candid: int, records: list[dict], schema: avro.schema.RecordSchema
+    ):
         """Save avro file in given schema to output subdirectory.
 
         Args:
@@ -223,7 +232,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             # logger.info(f'out file: {out}')
             fastavro.writer(out, schema, records)
 
-    def save_alert_packet(self, packet, cand, schema):
+    def save_alert_packet(
+        self, packet: dict, cand: dict, schema: avro.schema.RecordSchema
+    ) -> int:
         """Saves packet as .avro to output subdirectory.
 
         Args:
@@ -238,13 +249,12 @@ class AvroPacketMaker(BaseDataframeProcessor):
             self._save_local(cand["candid"], [packet], schema)
             # logger.info(f"Saved candid {cand['candid']}: {cand['objectId']}")
             return 1
-        except Exception as e:
-            logger.info(f"{e}")
-            logger.info(f"Could not save candid {cand['candid']}")
+        except Exception as exc:
+            logger.error(f"Could not save candid {cand['candid']}, with error: {exc}")
             return -1
 
     @staticmethod
-    def _send_alert(topicname, records, schema):
+    def _send_alert(topicname: str, records: list[dict], schema: dict):
         """Send an avro "packet" to a particular topic at IPAC.
         Modified from: https://github.com/dekishalay/pgirdps
 
@@ -272,7 +282,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
         producer.produce(topic=topicname, value=out.read())
         producer.flush()
 
-    def broadcast_alert_packet(self, packet, cand, schema, topic_name):
+    def broadcast_alert_packet(
+        self, packet: dict, cand: dict, schema: dict, topic_name: str
+    ):
         """
         Sends avro-formatted packets to specified topicname using Kafka.
         Modified from https://github.com/dekishalay/pgirdps
@@ -283,8 +295,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
             schema (dict): schema definition.
             topic_name (str): name of the topic sending to,
             e.g. ztf_20191221_programid2_zuds.
-            cand_num (int): number of current candidate being sent.
-            num_cands (int): total number of candidates to send.
 
         Returns:
             (int): 1 if broadcast successful or -1 if candidate not sent.
@@ -293,10 +303,10 @@ class AvroPacketMaker(BaseDataframeProcessor):
             self._send_alert(topic_name, [packet], schema)
             return 1
         except OSError:
-            logger.info(f"Could not send candid {cand['candid']}")
+            logger.error(f"Could not send candid {cand['candid']}")
             return -1
 
-    def _make_ind_packet(self, cand, schema, topic_name):
+    def _make_ind_packet(self, cand: dict, schema: dict, topic_name: str):
         """Makes a single avro alert. Saves or broadcasts alert based on global var.
 
         Args:
@@ -304,8 +314,6 @@ class AvroPacketMaker(BaseDataframeProcessor):
             schema (dict): schema definition.
             topic_name (str): name of the topic sending to,
             e.g. ztf_20191221_programid2_zuds.
-            cand_num (int): number of current candidate being sent.
-            num_cands (int): total number of candidates to send.
 
         Returns:
             (int): 1 if broadcast successful,
@@ -327,7 +335,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         return flag
 
-    def _success_message(self):
+    def _success_message(self) -> str:
         """Text for successful save and/or broadcast."""
         message = ""
         if self.save_local:
@@ -340,7 +348,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
             message += "broadcasted"
         return message
 
-    def make_alert(self, df):
+    def make_alert(self, df: pd.DataFrame):
         """Top level method to make avro alert.
 
         Args:
@@ -374,7 +382,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
 
         # TODO topic_name creation used for testing
         topic_name = f"winter_{datetime.datetime.utcnow().strftime('%Y%m%d')}"
-        logger.info(f"topic name {topic_name}")
+        logger.debug(f"topic name {topic_name}")
 
         # Send/make avro packet for each candidate from the dataframe
         for cand in all_cands:
@@ -386,12 +394,12 @@ class AvroPacketMaker(BaseDataframeProcessor):
             # cand_id = cand["candid"] # save candid of avro packet to open
 
         t1 = time.time()
-        logger.info("###########################################")
-        logger.info(f"Took {(t1 - t0):.2f} seconds to process {num_cands} candidates.")
+        logger.debug("###########################################")
+        logger.debug(f"Took {(t1 - t0):.2f} seconds to process {num_cands} candidates.")
         logger.info(
             f"{successes} of {num_cands} successfully {self._success_message()}."
         )
-        logger.info("###########################################")
+        logger.debug("###########################################")
 
         # ########## Testing avro packet creation script ##########
         # # Read data from an avro file

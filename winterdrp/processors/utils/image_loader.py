@@ -27,13 +27,13 @@ class ImageLoader(BaseImageProcessor):
     def __init__(
         self,
         input_sub_dir: str = RAW_IMG_SUB_DIR,
-        input_img_dir: str = base_raw_dir,
+        input_img_dir: str | Path = base_raw_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
     ):
         super().__init__()
         self.input_sub_dir = input_sub_dir
         self.load_image = load_image
-        self.input_img_dir = input_img_dir
+        self.input_img_dir = Path(input_img_dir)
 
     def __str__(self):
         return (
@@ -64,8 +64,8 @@ class ImageLoader(BaseImageProcessor):
         return Image(data.astype(np.float64), header)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-        input_dir = os.path.join(
-            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
+        input_dir = self.input_img_dir.joinpath(
+            os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
 
         return load_from_dir(input_dir, open_f=self.open_raw_image)

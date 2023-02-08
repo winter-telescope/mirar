@@ -78,12 +78,12 @@ class Image(DataBlock):
 
     This class serves as input for
     :class:`~winterdrp.processors.base_processor.BaseImageProcessor` and
-    :class:`~winterdrp.processors.base_processor.BaseCandidateGenerator` processors.
+    :class:`~winterdrp.processors.base_processor.BaseSourceGenerator` processors.
     """
 
     cache_files = []
 
-    def __init__(self, data: np.ndarray, header: Header):
+    def __init__(self, data: np.ndarray, header: Header | None):
         self._data = None
         self.header = header
         super().__init__()

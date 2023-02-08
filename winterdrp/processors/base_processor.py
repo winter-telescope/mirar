@@ -29,6 +29,7 @@ from winterdrp.paths import (
     LATEST_WEIGHT_SAVE_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    __version__,
     get_output_path,
     get_weight_path,
     max_n_cpu,
@@ -247,7 +248,7 @@ class BaseProcessor:
             data_block["REDUCER"] = getpass.getuser()
             data_block["REDMACH"] = socket.gethostname()
             data_block["REDTIME"] = str(datetime.datetime.now())
-            data_block["REDSOFT"] = package_name
+            data_block["REDSOFT"] = f"{package_name}:{__version__}"
             batch[i] = data_block
         return batch
 
@@ -451,9 +452,9 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
         return self.master_image_path
 
 
-class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
+class BaseSourceGenerator(BaseProcessor, ImageHandler, ABC):
     """
-    Base CandidateGenerator processor (image batch in, source batch out)
+    Base SourceGenerator processor (image batch in, source batch out)
     """
 
     @classmethod
@@ -475,9 +476,9 @@ class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
         raise NotImplementedError
 
 
-class BaseDataframeProcessor(BaseProcessor, ABC):
+class BaseSourceProcessor(BaseProcessor, ABC):
     """
-    Base dataframe processor (Source batch in, source batch out)
+    Base Source processor (Source batch in, source batch out)
     """
 
     @classmethod

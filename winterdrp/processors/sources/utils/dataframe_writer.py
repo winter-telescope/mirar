@@ -1,5 +1,5 @@
 """
-Module with classes to write a candidate table to a pandas dataframe
+Module with classes to write a source table to a pandas dataframe
 """
 import logging
 import os
@@ -7,14 +7,14 @@ from typing import Optional
 
 from winterdrp.data import SourceBatch
 from winterdrp.paths import base_output_dir, get_output_dir, get_output_path
-from winterdrp.processors.base_processor import BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class DataframeWriter(BaseDataframeProcessor):
+class DataframeWriter(BaseSourceProcessor):
     """
-    Class to write a candidate table to a pandas dataframe
+    Class to write a source table to a pandas dataframe
     """
 
     base_key = "DFWRITE"
@@ -57,7 +57,7 @@ class DataframeWriter(BaseDataframeProcessor):
                 sub_dir=self.night_sub_dir,
                 output_dir=self.output_dir,
             )
-            logger.info(f"Writing dataframe to {df_path}")
+            logger.debug(f"Writing dataframe to {df_path}")
             candidate_table.to_pickle(df_path)
 
         return batch

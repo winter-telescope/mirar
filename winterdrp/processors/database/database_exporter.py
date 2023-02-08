@@ -5,10 +5,7 @@ import logging
 from abc import ABC
 
 from winterdrp.data import ImageBatch, SourceBatch
-from winterdrp.processors.base_processor import (
-    BaseDataframeProcessor,
-    BaseImageProcessor,
-)
+from winterdrp.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
 
 logger = logging.getLogger(__name__)
@@ -48,7 +45,7 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
         return batch
 
 
-class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
+class DatabaseDataframeExporter(BaseDatabaseExporter, BaseSourceProcessor):
     """
     Processor for exporting sources to a database
     """
@@ -63,6 +60,7 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
                     candidate_row.to_dict(),
                     db_name=self.db_name,
                     db_table=self.db_table,
+                    duplicate_protocol=self.duplicate_protocol,
                 )
                 for ind, key in enumerate(primary_keys):
                     if key not in primary_key_dict:

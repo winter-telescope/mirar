@@ -36,8 +36,6 @@ from winterdrp.pipelines.summer.load_summer_image import (
 from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from winterdrp.processors.autoastrometry import AutoAstrometry
-from winterdrp.processors.candidates.candidate_detector import DetectCandidates
-from winterdrp.processors.candidates.utils import DataframeWriter, RegionsWriter
 from winterdrp.processors.cosmic_rays import LACosmicCleaner
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.processors.database.database_exporter import DatabaseImageExporter
@@ -49,6 +47,8 @@ from winterdrp.processors.photometry.aperture_photometry import (
 )
 from winterdrp.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from winterdrp.processors.reference import Reference
+from winterdrp.processors.sources.transient_detector import DetectTransients
+from winterdrp.processors.sources.utils import DataframeWriter, RegionsWriter
 from winterdrp.processors.utils import (
     ImageBatcher,
     ImageLoader,
@@ -248,7 +248,7 @@ export_diff_to_db = [
 ]
 
 extract_candidates = [
-    DetectCandidates(output_sub_dir="subtract", **sextractor_candidates_config),
+    DetectTransients(output_sub_dir="subtract", **sextractor_candidates_config),
     RegionsWriter(output_dir_name="candidates"),
     CandidatePSFPhotometry(),
     CandidateAperturePhotometry(

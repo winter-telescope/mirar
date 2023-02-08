@@ -7,13 +7,17 @@ from typing import Optional
 
 from winterdrp.data import SourceBatch
 from winterdrp.paths import base_output_dir, get_output_dir, get_output_path
-from winterdrp.processors.base_processor import BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
 def write_regions_file(
-    regions_path, x_coords, y_coords, system="image", region_radius=5
+    regions_path: str,
+    x_coords: list[float | int],
+    y_coords: list[float | int],
+    system: str = "image",
+    region_radius: float = 5.0,
 ):
     """
     Function to write a regions file
@@ -27,16 +31,16 @@ def write_regions_file(
     Returns:
 
     """
-    logger.info(f"Writing regions path to {regions_path}")
-    with open(f"{regions_path}", "w") as f:
-        f.write(f"{system}\n")
+    logger.debug(f"Writing regions path to {regions_path}")
+    with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
+        regions_f.write(f"{system}\n")
         for ind, x in enumerate(x_coords):
-            f.write(f"CIRCLE({x},{y_coords[ind]},{region_radius})\n")
+            regions_f.write(f"CIRCLE({x},{y_coords[ind]},{region_radius})\n")
 
 
-class RegionsWriter(BaseDataframeProcessor):
+class RegionsWriter(BaseSourceProcessor):
     """
-    Class to write a regions file from candidate table
+    Processor to write a regions file from candidate table
     """
 
     base_key = "REGWRIT"
@@ -46,10 +50,8 @@ class RegionsWriter(BaseDataframeProcessor):
         output_dir_name: Optional[str] = None,
         region_pix_radius: float = 8,
         output_dir: str = base_output_dir,
-        *args,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.output_dir_name = output_dir_name
         self.region_pix_radius = region_pix_radius
         self.output_dir = output_dir
@@ -87,13 +89,14 @@ class RegionsWriter(BaseDataframeProcessor):
 
                 if regions_path not in started_regions_paths:
                     logger.info(f"Writing regions path to {regions_path}")
-                    with open(f"{regions_path}", "w") as f:
-                        f.write("image\n")
+                    with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
+                        regions_f.write("image\n")
                     started_regions_paths.append(regions_path)
 
-                with open(f"{regions_path}", "w") as f:
-                    f.write(
-                        f"CIRCLE({row['X_IMAGE']},{row['Y_IMAGE']},{self.region_pix_radius})\n"
+                with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
+                    regions_f.write(
+                        f"CIRCLE({row['X_IMAGE']},{row['Y_IMAGE']},"
+                        f"{self.region_pix_radius})\n"
                     )
 
         return batch

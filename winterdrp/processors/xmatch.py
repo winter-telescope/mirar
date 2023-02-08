@@ -7,12 +7,12 @@ import numpy as np
 
 from winterdrp.catalog.base_catalog import BaseXMatchCatalog
 from winterdrp.data import SourceBatch
-from winterdrp.processors.base_processor import BaseDataframeProcessor
+from winterdrp.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class XMatch(BaseDataframeProcessor):
+class XMatch(BaseSourceProcessor):
     """
     Class to cross-match a candidate_table to a catalog
     """

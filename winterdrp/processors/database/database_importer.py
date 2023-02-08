@@ -9,10 +9,7 @@ from typing import Optional
 import pandas as pd
 
 from winterdrp.data import DataBlock, Image, ImageBatch, SourceBatch
-from winterdrp.processors.base_processor import (
-    BaseDataframeProcessor,
-    BaseImageProcessor,
-)
+from winterdrp.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from winterdrp.processors.database.base_database_processor import BaseDatabaseProcessor
 from winterdrp.processors.database.constraints import DBQueryConstraints
 
@@ -146,7 +143,7 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
 #     return candidate_table
 
 
-class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor, ABC):
+class DatabaseDataframeImporter(BaseDatabaseImporter, BaseSourceProcessor, ABC):
     """
     Base Class for dataframe DB importers
     """
@@ -199,7 +196,7 @@ class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor, AB
     #     raise NotImplementedError
 
 
-class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcessor):
+class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseSourceProcessor):
     """
     Processor to crossmatch to sources in a database
     """
@@ -324,9 +321,9 @@ class DatabaseHistoryImporter(DatabaseCrossmatchImporter):
         t_detection = float(cand[self.time_field_name])
 
         query_constraints = DBQueryConstraints(
-            columns=self.time_field_name,
-            accepted_values=t_detection - self.history_duration_days,
-            comparison_types=">",
+            columns=[self.time_field_name, self.time_field_name],
+            accepted_values=[t_detection - self.history_duration_days, t_detection],
+            comparison_types=[">", "<"],
         )
         if self.user_defined_constraints is not None:
             query_constraints += self.user_defined_constraints(cand)

@@ -32,6 +32,10 @@ class DBQueryConstraints:
 
         if comparison_types is None:
             comparison_types = ["="] * len(accepted_values)
+
+        if not isinstance(comparison_types, list):
+            comparison_types = [comparison_types]
+
         assert len(comparison_types) == len(accepted_values)
 
         for i, column in enumerate(columns):
@@ -100,7 +104,7 @@ class DBQueryConstraints:
                 )
             else:
                 constraints.append(
-                    f"{column} {self.comparison_types[i]} {self.accepted_values[i]}"
+                    f"\"{column}\"{self.comparison_types[i]}'{self.accepted_values[i]}'"
                 )
 
         return " AND ".join(constraints)

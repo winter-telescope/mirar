@@ -23,7 +23,7 @@ from winterdrp.processors.astromatic.sextractor.sourceextractor import (
     run_sextractor_single,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
+from winterdrp.processors.sources.utils.regions_writer import write_regions_file
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)

@@ -2,10 +2,12 @@
 Tests for image subtraction with WIRC
 """
 import logging
+from pathlib import Path
 
-from astropy.io import fits
+import numpy as np
+import pandas as pd
 
-from winterdrp.data import Dataset, ImageBatch
+from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.io import open_fits
 from winterdrp.paths import get_output_path
@@ -18,10 +20,9 @@ from winterdrp.pipelines.wirc.generator import (
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.processors.reference import Reference
+from winterdrp.processors.utils import ImageLoader, ImageSaver
 from winterdrp.processors.utils.header_annotate import HeaderEditor
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_saver import ImageSaver
-from winterdrp.references import WIRCRef
+from winterdrp.references.wirc import WIRCRef
 from winterdrp.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -31,23 +32,24 @@ test_data_dir = get_test_data_dir()
 ref_img_directory = test_data_dir.joinpath("wirc/ref")
 
 NIGHT_NAME = "20210330"
+expected_candidate_path = Path(test_data_dir).joinpath("wirc/wirc_sources.csv")
+
+expected_res = pd.read_csv(expected_candidate_path)
 
 
 def test_reference_image_generator(
-    header: fits.header,
+    image: Image,
     images_directory: str = ref_img_directory,
-):
+) -> WIRCRef:
     """
-    Function to generate reference image for testing
-    Args:
-        header: image header
-        images_directory: reference image directory
+    Generate a test reference image using WIRC
 
-    Returns:
-        Reference Image
+    :param image: science image
+    :param images_directory: directiry of reference image
+    :return: reference image object
     """
-    object_name = header["OBJECT"]
-    filter_name = header["FILTER"]
+    object_name = image["OBJECT"]
+    filter_name = image["FILTER"]
     return WIRCRef(
         object_name=object_name,
         filter_name=filter_name,
@@ -102,7 +104,7 @@ pipeline.configure_processors(test_imsub_configuration)
 
 class TestWircImsubPipeline(BaseTestCase):
     """
-    Class to test WIRC image subtraction pipeline
+    Class for testing image subtraction with WIRC
     """
 
     def setUp(self):
@@ -110,6 +112,11 @@ class TestWircImsubPipeline(BaseTestCase):
         self.logger.setLevel(logging.INFO)
 
     def test_pipeline(self):
+        """
+        Test the full image subtraction pipeline
+
+        :return: None
+        """
         self.logger.info("\n\n Testing wirc imsub pipeline \n\n")
 
         res, _ = pipeline.reduce_images(
@@ -118,9 +125,9 @@ class TestWircImsubPipeline(BaseTestCase):
 
         self.assertEqual(len(res), 1)
 
-        candidates_table = res[0][0].get_data()
+        table = res[0][0].get_data()
         diff_imgpath = get_output_path(
-            base_name=candidates_table.iloc[0]["diffimname"],
+            base_name=table.iloc[0]["diffimname"],
             dir_root="subtract",
             sub_dir=NIGHT_NAME,
         )
@@ -136,38 +143,31 @@ class TestWircImsubPipeline(BaseTestCase):
                     f"Type for value ({type(value)} is neither float not int."
                 )
 
-        self.assertEqual(len(candidates_table), 4)
-        for key, value in EXPECTED_DATAFRAME_VALUES.items():
-            if isinstance(value, list):
-                for ind, val in enumerate(value):
-                    self.assertAlmostEqual(
-                        candidates_table.iloc[ind][key], val, delta=0.05
-                    )
+        # To update test data, uncomment:
+        # table.to_csv(expected_candidate_path, index=False)
 
+        self.assertEqual(len(table), len(expected_res))
 
-if __name__ == "__main__":
-    print("Calculating latest scorr metrics dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images(catch_all_errors=False)
-    new_candidates_table = new_res[0][0].get_data()
-    new_diff_imgpath = get_output_path(
-        base_name=new_candidates_table.iloc[0]["diffimname"],
-        dir_root="subtract",
-        sub_dir="20210330",
-    )
-    _, new_header = open_fits(new_diff_imgpath)
-
-    new_exp_header = "expected_header_values = { \n"
-    for header_key in new_header.keys():
-        if "SCOR" in header_key:
-            new_exp_header += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp_header += "}"
-    print(new_exp_header)
-
-    new_exp_dataframe = "expected_dataframe_values = { \n"
-    for key in EXPECTED_DATAFRAME_VALUES:
-        new_exp_dataframe += f'    "{key}": {list(new_candidates_table[key])}, \n'
-    new_exp_dataframe += "}"
-    print(new_exp_dataframe)
+        for colname, column in expected_res.items():
+            if isinstance(column.iloc[0], (int, np.integer)):
+                pd.testing.assert_series_equal(
+                    column, table.loc[:, colname], check_dtype=False
+                )
+            elif isinstance(column.iloc[0], float):
+                expected = column.to_numpy(dtype=float)
+                res = table.loc[:, colname].to_numpy(dtype=float)
+                np.testing.assert_array_almost_equal(expected, res, decimal=2)
+            elif colname in ["cutoutScience", "cutoutTemplate", "cutoutDifference"]:
+                # Skip cutouts
+                pass
+            elif isinstance(column.iloc[0], str):
+                pd.testing.assert_series_equal(
+                    column.astype(str), table.loc[:, colname].astype(str)
+                )
+            elif "name" in colname:
+                # Though path will vary, check base name of images
+                self.assertEqual(
+                    Path(column.iloc[0]).name, Path(table.loc[0, colname]).name
+                )
+            else:
+                raise ValueError(f"Unexpected column {column}")

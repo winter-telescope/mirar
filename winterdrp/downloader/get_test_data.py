@@ -15,8 +15,7 @@ test_data_dir = winter_code_dir.parent.joinpath(
     os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
 
-
-TEST_DATA_TAG = "v0.1.4"
+TEST_DATA_TAG = "v0.1.5"
 
 COMPLETED_CHECK_BOOL = f"{package_name}_testdata_check"
 NEED_TEST_DATA = "TESTDATA_CHECK"
