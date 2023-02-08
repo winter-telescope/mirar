@@ -63,7 +63,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header[LATEST_SAVE_KEY] = path
         header[RAW_IMG_KEY] = path
 
-        data[0].data = data[0].data * 1.0
+        data[0].data = data[0].data * 1.0  # pylint: disable=no-member
 
         if "other" in header["FILTERID"]:
             header["FILTERID"] = "r"
@@ -190,7 +190,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         if GAIN_KEY not in header.keys():
             header[GAIN_KEY] = 1
         data[0].header = header
-    return data[0].data, data[0].header
+    return data[0].data, data[0].header  # pylint: disable=no-member
 
 
 def load_proc_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
@@ -203,7 +203,7 @@ def load_proc_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]
 
     """
     with fits.open(path) as img:
-        data = img[0].data
+        data = img[0].data  # pylint: disable=no-member
         header = img[0].header
 
     if "ZP" not in header.keys():

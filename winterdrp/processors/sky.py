@@ -1,6 +1,8 @@
+"""
+Module for sky subtraction
+"""
 import logging
 
-import astropy.io.fits
 import numpy as np
 
 from winterdrp.data import ImageBatch
@@ -11,6 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class NightSkyMedianCalibrator(SkyFlatCalibrator):
+    """
+    Processor for sky subtraction
+    """
+
     base_key = "sky"
 
     def _apply_to_images(
@@ -24,7 +30,7 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
         if np.sum(mask) > 0:
             master_sky[mask] = np.nan
 
-        for i, image in enumerate(batch):
+        for image in batch:
             data = image.get_data()
             header = image.get_header()
 
@@ -41,8 +47,13 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
         return batch
 
     def __str__(self) -> str:
-        return f"Processor to create a median sky background map, and subtract this from images."
+        return (
+            "Processor to create a median sky background map,"
+            "and subtract this from images."
+        )
 
 
 class MasterSkyCalibrator(ProcessorPremadeCache, NightSkyMedianCalibrator):
-    pass
+    """
+    Processor to subtract a master sky image
+    """
