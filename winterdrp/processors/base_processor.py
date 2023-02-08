@@ -356,14 +356,12 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
 
     def __init__(
         self,
-        *args,
         try_load_cache: bool = True,
         write_to_cache: bool = True,
         overwrite: bool = True,
         cache_sub_dir: str = CAL_OUTPUT_SUB_DIR,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.try_load_cache = try_load_cache
         self.write_to_cache = write_to_cache
         self.overwrite = overwrite
