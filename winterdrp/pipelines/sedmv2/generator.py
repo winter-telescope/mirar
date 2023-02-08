@@ -29,15 +29,16 @@ def sedmv2_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
     :return: Gaia/2MASS catalog around image
     """
     temp_cat_path = image[SEXTRACTOR_HEADER_KEY]
+    min_mag, max_mag = 10, 20
     cat = Gaia2Mass(
-        min_mag=10,
-        max_mag=20,
+        min_mag=min_mag,
+        max_mag=max_mag,
         search_radius_arcmin=5,  # 7.5,
         trim=True,
         image_catalog_path=temp_cat_path,
         filter_name="j",
     )
-    return cat
+    return cat  # pylint: disable=duplicate-code
 
 
 def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
@@ -70,7 +71,6 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
                 search_radius_arcmin=5,
                 filter_name=filter_name,
             )
-
         err = "U band image is in a field with no reference image."
         logger.error(err)
         raise NotInSDSSError(err)
@@ -81,10 +81,10 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
 
 def sedmv2_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     """
-    Get a reference image generator for a sedmv2 image
+    Get a reference image generator for an sedmv2 image
 
     For u band: SDSS if possible, otherwise fail
-    For g/r1: use PS1
+    For g/r: use PS1
 
     :param image: image
     :return: Reference image generator

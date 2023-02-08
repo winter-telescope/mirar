@@ -71,7 +71,7 @@ cal_hunter = [
     CalHunter(load_image=load_raw_sedmv2_image, requirements=sedmv2_cal_requirements),
 ]
 
-build_log = [
+build_log = [  # pylint: disable=duplicate-code
     CSVLog(
         export_keys=[
             "UTC",
@@ -88,7 +88,7 @@ build_log = [
         ]
         + core_fields
     ),
-]
+]  # pylint: disable=duplicate-code
 
 process_raw = [
     BiasCalibrator(),
@@ -96,48 +96,40 @@ process_raw = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
+    ImageSelector(("OBSTYPE", ["SCIENCE"])),  # pylint: disable=duplicate-code
     ImageSaver(output_dir_name="detrend", write_mask=True),
     # maybe Astrometry.net, maybe get rid of AutoAstrometry
     # AutoAstrometry(pa=0, inv=True, pixel_scale=SEDMV2_PIXEL_SCALE),
-    ImageSaver(output_dir_name="detrend", write_mask=True),
+    ImageSaver(
+        output_dir_name="detrend", write_mask=True
+    ),  # pylint: disable=duplicate-code
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
         checkimage_type=None,
         **sextractor_astrometry_config
     ),
-    Scamp(
+    Scamp(  # pylint: disable=duplicate-code
         ref_catalog_generator=sedmv2_astrometric_catalog_generator,
         scamp_config_path=scamp_path,
     ),
     Swarp(
         swarp_config_path=swarp_config_path,
     ),
-    ImageSaver(output_dir_name="processed", write_mask=True),
+    ImageSaver(
+        output_dir_name="processed", write_mask=True
+    ),  # pylint: disable=duplicate-code
     Sextractor(
         output_sub_dir="photprocess",
         checkimage_type="BACKGROUND_RMS",
         **sextractor_photometry_config
-    ),
+    ),  # pylint: disable=duplicate-code
     PhotCalibrator(ref_catalog_generator=sedmv2_photometric_catalog_generator),
     ImageSaver(
         output_dir_name="processed",
         write_mask=True,
     ),
     HeaderEditor(edit_keys="procflag", values=1),
-    # DatabaseImageExporter(
-    #    db_name=DB_NAME,
-    #    db_table="proc",
-    #    schema_path=get_sedmv2_schema_path("proc"),
-    #    duplicate_protocol="replace",
-    # ),
-    # ModifyImageDatabaseSeq(
-    #    db_name=DB_NAME,
-    #    db_table="raw",
-    #    schema_path=get_sedmv2_schema_path("raw"),
-    #    db_alter_columns="procflag",
-    # ),
 ]
 
 subtract = [
@@ -147,7 +139,7 @@ subtract = [
         ref_image_generator=sedmv2_reference_image_generator,
         ref_psfex=sedmv2_reference_psfex,
         sextractor=sedmv2_reference_sextractor,
-        swarp_resampler=sedmv2_reference_image_resampler,
+        swarp_resampler=sedmv2_reference_image_resampler,  # pylint: disable=duplicate-code
     ),
     Sextractor(
         output_sub_dir="subtract",

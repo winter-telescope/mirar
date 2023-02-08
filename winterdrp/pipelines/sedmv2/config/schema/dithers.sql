@@ -1,1 +1,0 @@
-CREATE TABLE IF NOT EXISTS dithers ( did SERIAL PRIMARY KEY, deltara FLOAT, deltadec FLOAT);
