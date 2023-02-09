@@ -93,7 +93,6 @@ def sedmv2_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     logger.info(f"Filter is {filter_name}")
 
     if filter_name in ["u", "U"]:
-
         if in_sdss(image["RA"], image["DEC"]):
             logger.debug("Will query reference image from SDSS")
             return SDSSRef(filter_name=filter_name)
