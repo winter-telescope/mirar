@@ -470,7 +470,7 @@ def crosscheck_source_lists(
     area_sq_min: float,
 ) -> tuple[list[SextractorSource], int, float, list[BaseSource], int, float]:
     """
-    Compares detected sources in image and reference, and trims so their are
+    Compares detected sources in image and reference, and trims so they are
     of comparable density
 
     :param img_src_list: list of image sources

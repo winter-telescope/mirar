@@ -4,10 +4,10 @@ Module containing the base of the :class:`~winterdrp.pipelines.base_pipeline.Pip
 
 Each :class:`~winterdrp.pipelines.base_pipeline.Pipeline` will have several
 `configurations`. A configuration corresponds to a list of
-:class:`~wintedrp.processors.BaseProcessor` objects.
+:class:`~winterdrp.processors.BaseProcessor` objects.
 
 The pipeline will process data using a chosen list of these individual
-:class:`~wintedrp.processors.BaseProcessor` objects.
+:class:`~winterdrp.processors.BaseProcessor` objects.
 """
 import copy
 import logging

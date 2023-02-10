@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   winterdrp.pipelines.sedmv2
    winterdrp.pipelines.summer
    winterdrp.pipelines.wirc
 
