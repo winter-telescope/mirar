@@ -25,14 +25,6 @@ winterdrp.utils.execute\_cmd module
    :undoc-members:
    :show-inheritance:
 
-winterdrp.utils.fits\_tools module
-----------------------------------
-
-.. automodule:: winterdrp.utils.fits_tools
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 winterdrp.utils.ldac\_tools module
 ----------------------------------
 

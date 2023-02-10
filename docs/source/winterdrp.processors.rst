@@ -13,6 +13,7 @@ Subpackages
    :maxdepth: 4
 
    winterdrp.processors.astromatic
+   winterdrp.processors.astrometry_net
    winterdrp.processors.autoastrometry
    winterdrp.processors.candidates
    winterdrp.processors.database
@@ -33,6 +34,14 @@ winterdrp.processors.bias module
 --------------------------------
 
 .. automodule:: winterdrp.processors.bias
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+winterdrp.processors.cosmic\_rays module
+----------------------------------------
+
+.. automodule:: winterdrp.processors.cosmic_rays
    :members:
    :undoc-members:
    :show-inheritance:
