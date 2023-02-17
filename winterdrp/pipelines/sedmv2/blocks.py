@@ -24,6 +24,7 @@ from winterdrp.pipelines.sedmv2.generator import (
 )
 from winterdrp.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
 from winterdrp.processors import BiasCalibrator, FlatCalibrator
+from winterdrp.processors.anet import AstrometryNet
 from winterdrp.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.processors.photcal import PhotCalibrator
@@ -98,11 +99,13 @@ process_raw = [
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),  # pylint: disable=duplicate-code
     ImageSaver(output_dir_name="detrend", write_mask=True),
-    # maybe Astrometry.net, maybe get rid of AutoAstrometry
     # AutoAstrometry(pa=0, inv=True, pixel_scale=SEDMV2_PIXEL_SCALE),
-    ImageSaver(
-        output_dir_name="detrend", write_mask=True
-    ),  # pylint: disable=duplicate-code
+    # AstrometryNet(scale_upper=0.1667, scale_lower=0.0333, scale_units='degw'),
+    AstrometryNet(scale_bounds=(0.1667, 0.0333), scale_units="degw", downsample=2),
+    ImageSaver(output_dir_name="a-net"),
+    # ImageSaver(
+    #    output_dir_name="detrend", write_mask=True
+    # ),  # pylint: disable=duplicate-code
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
