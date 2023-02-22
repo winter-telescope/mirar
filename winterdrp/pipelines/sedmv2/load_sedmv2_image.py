@@ -28,71 +28,151 @@ def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
     :param path: path of file
     :return: data and header of image
     """
-    # print("opening: ", path)
+
     with fits.open(path) as data:
         header = data[0].header  # pylint: disable=no-member
 
-        if header["IMGTYPE"] == "object":
-            header["OBSTYPE"] = "SCIENCE"
-        else:
-            header["OBSTYPE"] = header["IMGTYPE"].upper()
+        if "PREPTAG" not in header.keys():
+            if "IMGTYPE" in header.keys():
+                path_new = prepare_science(path, 1)  # should change w/ MEF ImageLoader
+            else:  # IMGTYPE not in cal; may change w updated cal files
+                path_new = prepare_cal(path)
+            data = fits.open(path_new)
+            header = data[0].header  # pylint: disable=no-member
+
         header["TARGET"] = header["OBSTYPE"].lower()
+        data[0].data = data[0].data * 1.0  # pylint: disable=no-member
+        header.append(("GAIN", 1.0, "Gain in electrons / ADU"), end=True)
 
-        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
-
+        # positions
         header["RA"] = header["RAD"]
         header["DEC"] = header["DECD"]
         header["TELRA"] = header["TELRAD"]
         header["TELDEC"] = header["TELDECD"]
 
-        # ASSUME THAT CRVAL1 and CRVAL2 are correct based on a-net solution!!!!!!!!
-        # header['CRVAL1'] = header['RA']
-        # header['CRVAL2'] = header['DEC']
-
-        data[0].data = data[0].data * 1.0  # pylint: disable=no-member
-
+        # filters
         header["FILTERID"] = header["FILTER"].split(" ")[1][0]
         header["FILTER"] = header["FILTERID"]
 
+        # keys, IDs
         base_name = os.path.basename(path)
         header[BASE_NAME_KEY] = base_name
         header["EXPID"] = int("".join(base_name.split("_")[1:3])[2:])
-
         header[LATEST_SAVE_KEY] = path
         header[RAW_IMG_KEY] = path
         header[PROC_HISTORY_KEY] = ""
         header["PROCFLAG"] = 0
         header[PROC_FAIL_KEY] = ""
-
         pipeline_version = __version__
         pipeline_version_padded_str = "".join(
             [x.rjust(2, "0") for x in pipeline_version.split(".")]
         )
         header["PROCID"] = int(str(header["EXPID"]) + str(pipeline_version_padded_str))
+        header["OBSID"] = 0
+        header["PROGID"] = int(3)  # sedmv2's ID
+        header["FIELDID"] = 999999999
+        header["COADDS"] = 1
+        header["BZERO"] = 0
 
-        header.append(("GAIN", 1.0, "Gain in electrons / ADU"), end=True)
-
+        # times
         header["UTCTIME"] = header["UTC"]
         header["TIMEUTC"] = header["UTCTIME"]
         header["OBSDATE"] = int(header["UTC"].split("_")[0])
-
-        # obstime = Time(header["DATE"], format="isot")
         header["NIGHT"] = int(Time(header["DATE"], format="isot").jd) - int(
             Time("2018-01-01", format="iso").jd
         )  # integer value, night 1, night 2...
         header["EXPMJD"] = header["OBSDATE"]
 
-        # IDs
-        header["PROGID"] = 0
-        header["OBSID"] = 0
-        header["SUBPROG"] = "none"
-        header["OBSID"] = 0
-        header["PROGID"] = "SEDMv2"
-        if header["PROGID"] == "SEDMv2":
-            header["PROGID"] = 3
-        header["PROGID"] = int(header["PROGID"])
-        header["FIELDID"] = 999999999
-        header["COADDS"] = 1
-        header["BZERO"] = 0
-
     return data[0].data, data[0].header  # pylint: disable=no-member
+
+
+def prepare_science(filepath: str, extension: int) -> str:
+    """
+    Additional steps to get sedmv2 science files into working order
+    - combine info in header from given extension (arg: extension) with
+      info from primary header
+    - save image data from given extension (arg: extension) and combined
+      header info into new single-extension file
+
+    :param filepath: path of file
+    :return: path of revised file
+    """
+
+    file = fits.open(filepath)
+
+    data = file[extension].data
+    hdr0, hdrext = file[0].header, file[extension].header  # pylint: disable=no-member
+
+    # zip hdr0's values and comments
+    zipped = list(zip(hdr0.values(), hdr0.comments))
+    # append hdr0 to hdrext
+    for count, key in enumerate(list(hdr0.keys())):
+        hdrext.append((key, zipped[count][0], zipped[count][1]))
+
+    hdrext["OBSTYPE"] = "SCIENCE"
+    hdrext["OBSCLASS"] = "science"
+    hdrext["PREPTAG"] = 0  # label files that have already run through this function
+    # save to file with 1 extension
+    fits.writeto(filepath, data, hdrext, overwrite=True)  # pylint: disable=no-member
+
+    return filepath
+
+
+def prepare_cal(filepath: str) -> str:
+    """
+    Additional steps to get sedmv2 calibration files into working order
+    - add required header keywords that are currently missing
+
+    :param filepath: path of file
+    :return: path of revised file
+    """
+
+    cal = fits.open(filepath)
+    hdr0, hdr1 = cal[0].header, cal[1].header  # pylint: disable=no-member
+
+    hdr0["OBSTYPE"] = hdr1["IMGTYPE"].upper()
+    hdr0["IMGTYPE"] = hdr1["IMGTYPE"]
+    hdr0["OBSCLASS"] = "calibration"
+
+    # flat/bias-specific keys
+    if hdr0["IMGTYPE"] == "flat":
+        filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
+        hdr0["FILTERID"] = filt
+        hdr0["FILTER"] = f"SDSS {filt}' (Chroma)"
+    if hdr0["IMGTYPE"] == "bias":
+        hdr0["FILTER"] = "SDSS g"
+
+    req_headers = [
+        "RA",
+        "DEC",
+        "TELRA",
+        "TELDEC",
+        "RAD",
+        "DECD",
+        "TELRAD",
+        "TELDECD",
+        "UTC",
+        "DATE",
+    ]
+    default_vals = [
+        "+00:00:00",
+        "+00:00:00",
+        "+00:00:00",
+        "+00:00:00",
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        "20221223_023123.072011",
+        "2022-12-23T02:31:23.073",
+    ]  # can these be changed? shortened?
+
+    for count, key in enumerate(req_headers):
+        hdr0[key] = default_vals[count]
+
+    # to label files that have already run through this function
+    hdr0["PREPTAG"] = 0
+    fits.writeto(
+        filepath, cal[1].data, hdr0, overwrite=True  # pylint: disable=no-member
+    )
+    return filepath

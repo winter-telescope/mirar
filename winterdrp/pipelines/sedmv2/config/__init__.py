@@ -46,9 +46,6 @@ swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
 
 sedmv2_cal_requirements = [
-    # CalRequirement(
-    #    target_name="bias", required_field="EXPTIME", required_values=["0.0"]
-    # ),
     CalRequirement(
         target_name="flat",
         required_field="FILTERID",
