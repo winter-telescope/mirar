@@ -6,11 +6,10 @@ lists which are used to build configurations for the
 """
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import BASE_NAME_KEY, GAIN_KEY, core_fields
-from winterdrp.pipelines.summer.config import (  # summer_weight_path,
+from winterdrp.pipelines.summer.config import (  # summer_weight_path,; get_summer_schema_path,
     DB_NAME,
     PIPELINE_NAME,
     SUMMER_PIXEL_SCALE,
-    get_summer_schema_path,
     psfex_config_path,
     scamp_path,
     sextractor_astrometry_config,
@@ -20,7 +19,6 @@ from winterdrp.pipelines.summer.config import (  # summer_weight_path,
     summer_mask_path,
     swarp_config_path,
 )
-from winterdrp.pipelines.summer.config.schema import summer_schema_dir
 from winterdrp.pipelines.summer.generator import (
     summer_astrometric_catalog_generator,
     summer_photometric_catalog_generator,
@@ -121,22 +119,22 @@ load_processed = [
 ]
 
 export_raw = [
-    DatabaseImageExporter(
-        db_name=DB_NAME,
-        db_table="exposures",
-        schema_path=get_summer_schema_path("exposures"),
-        has_foreign_keys=True,
-        schema_dir=summer_schema_dir,
-        duplicate_protocol="ignore",
-        q3c_bool=False,
-    ),
+    # DatabaseImageExporter(
+    #     db_name=DB_NAME,
+    #     db_table="exposures",
+    #     schema_path=get_summer_schema_path("exposures"),#FIXME
+    #     has_foreign_keys=True,
+    #     schema_dir=summer_schema_dir,
+    #     duplicate_protocol="ignore",
+    #     q3c_bool=False,
+    # ),
     MaskPixels(mask_path=summer_mask_path),
-    DatabaseImageExporter(
-        db_name=DB_NAME,
-        db_table="raw",
-        schema_path=get_summer_schema_path("raw"),
-        duplicate_protocol="replace",
-    ),
+    # DatabaseImageExporter(
+    #     db_name=DB_NAME,
+    #     db_table="raw",#FIXME
+    #     schema_path=get_summer_schema_path("raw"),
+    #     duplicate_protocol="replace",
+    # ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
 ]
 
@@ -197,21 +195,21 @@ process_raw = [
         write_mask=True,
     ),
     HeaderEditor(edit_keys="procflag", values=1),
-    DatabaseImageExporter(
-        db_name=DB_NAME,
-        db_table="proc",
-        schema_path=get_summer_schema_path("proc"),
-        duplicate_protocol="replace",
-    ),
-    ModifyImageDatabaseSeq(
-        db_name=DB_NAME,
-        db_table="raw",
-        schema_path=get_summer_schema_path("raw"),
-        db_alter_columns="procflag",
-    ),
+    # DatabaseImageExporter(
+    #     db_name=DB_NAME,
+    #     db_table="proc",  #FIXME
+    #     schema_path=get_summer_schema_path("proc"),
+    #     duplicate_protocol="replace",
+    # ),
+    # ModifyImageDatabaseSeq(
+    #     db_name=DB_NAME,
+    #     db_table="raw", #FIXME
+    #     schema_path=get_summer_schema_path("raw"),
+    #     db_alter_columns="procflag",
+    # ),
 ]
 
-standard_summer_reduction = export_raw + cal_hunter + process_raw
+# standard_summer_reduction = export_raw + cal_hunter + process_raw #FIXME
 
 
 subtract = [
@@ -240,11 +238,11 @@ subtract = [
 ]
 
 export_diff_to_db = [
-    DatabaseImageExporter(
-        db_name=PIPELINE_NAME,
-        db_table="diff",
-        schema_path=get_summer_schema_path("diff"),
-    ),
+    #     DatabaseImageExporter(
+    #         db_name=PIPELINE_NAME,  # FIXME
+    #         db_table="diff",
+    #         schema_path=get_summer_schema_path("diff"),
+    #     ),
 ]
 
 extract_candidates = [
@@ -261,4 +259,4 @@ extract_candidates = [
     DataframeWriter(output_dir_name="candidates"),
 ]
 
-imsub = subtract + export_diff_to_db + extract_candidates
+imsub = subtract + export_diff_to_db + extract_candidates  # FIXME
