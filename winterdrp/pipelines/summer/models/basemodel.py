@@ -4,7 +4,7 @@ Base class for models
 from typing import ClassVar
 
 from pydantic import BaseModel, Extra, Field, root_validator, validator
-from sqlalchemy import Insert, Table
+from sqlalchemy import Insert, Select, Table
 from sqlalchemy.orm import declarative_base
 
 from winterdrp.utils.sql import get_engine
@@ -73,6 +73,20 @@ class BaseDB(PydanticBase):
 
 
 Base = declarative_base()
+
+
+def _exists(stmt: Select) -> bool:
+    """
+    Checks if the pydantic-ified data exists the corresponding sql database
+
+    :return: bool
+    """
+    engine = get_engine()
+    with engine.connect() as conn:
+        with conn.begin():
+            res = conn.execute(stmt).fetchall()
+    return len(res) > 0
+
 
 ra: float = Field(title="RA (degrees)", ge=0.0, le=360.0)
 dec: float = Field(title="Dec (degrees)", ge=-90.0, le=90.0)

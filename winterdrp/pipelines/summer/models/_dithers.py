@@ -11,10 +11,10 @@ from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB
 
 class DithersTable(Base):  # pylint: disable=too-few-public-methods
     """
-    Field table in database
+    Dithers table in database
     """
 
-    __tablename__ = "fields"
+    __tablename__ = "dithers"
 
     did = Column(Integer, primary_key=True)
     deltara = Column(REAL)
@@ -23,7 +23,7 @@ class DithersTable(Base):  # pylint: disable=too-few-public-methods
 
 class Dithers(BaseDB):
     """
-    A pydantic model for a fields database entry
+    A pydantic model for a dithers database entry
     """
 
     sql_model: ClassVar = DithersTable

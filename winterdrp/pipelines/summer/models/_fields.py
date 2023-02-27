@@ -9,6 +9,8 @@ from sqlalchemy import REAL, Column, Integer
 from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, dec, ra
 
 
+DEFAULT_FIELD = 999999999
+
 class FieldsTable(Base):  # pylint: disable=too-few-public-methods
     """
     Field table in database
@@ -17,7 +19,7 @@ class FieldsTable(Base):  # pylint: disable=too-few-public-methods
     __tablename__ = "fields"
 
     fieldid = Column(Integer, primary_key=True)
-    fldid = Column(Integer)
+    fldid = Column(Integer, unique=True)
     ra = Column(REAL)
     dec = Column(REAL)
 

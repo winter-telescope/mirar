@@ -3,7 +3,17 @@ Models for database and pydantic dataclass models
 """
 from winterdrp.pipelines.summer.models._dithers import Dithers, DithersTable
 from winterdrp.pipelines.summer.models._fields import Fields, FieldsTable
-from winterdrp.pipelines.summer.models._filters import Filters, FiltersTable
+from winterdrp.pipelines.summer.models._filters import (
+    Filters,
+    FiltersTable,
+    populate_filters,
+)
+from winterdrp.pipelines.summer.models._itid import (
+    ALL_ITID,
+    ITIDs,
+    ITIDsTable,
+    populate_itid,
+)
 from winterdrp.pipelines.summer.models._programs import (
     ProgramCredentials,
     Programs,
@@ -20,3 +30,6 @@ if DB_USER is not None:
 
     if not default_program.exists():
         default_program.insert_entry()
+
+    populate_itid()
+    populate_filters()

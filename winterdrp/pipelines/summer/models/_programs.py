@@ -6,9 +6,8 @@ from typing import ClassVar
 from pydantic import BaseModel, Field, validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer, Select
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB
+from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists
 from winterdrp.utils.security import generate_key
-from winterdrp.utils.sql import get_engine
 
 _LEN_PROG_KEY = 20
 
@@ -89,18 +88,13 @@ class Programs(BaseDB, ProgramCredentials):
 
     def exists(self) -> bool:
         """
-        Insert the pydantic-ified data into the corresponding sql database
+        Checks if the pydantic-ified data exists the corresponding sql database
 
-        :return: None
+        :return: bool
         """
-        engine = get_engine()
-        with engine.connect() as conn:
-            with conn.begin():
-                stmt = Select(self.sql_model).where(
-                    self.sql_model.progname == self.progname
-                )
-                res = conn.execute(stmt).fetchall()
-        return len(res) > 0
+        return _exists(
+            Select(self.sql_model).where(self.sql_model.progname == self.progname)
+        )
 
 
 default_program = Programs(
