@@ -75,7 +75,7 @@ class BaseDB(PydanticBase):
 Base = declarative_base()
 
 
-def _exists(stmt: Select) -> bool:
+def _execute(stmt):
     """
     Checks if the pydantic-ified data exists the corresponding sql database
 
@@ -85,7 +85,16 @@ def _exists(stmt: Select) -> bool:
     with engine.connect() as conn:
         with conn.begin():
             res = conn.execute(stmt).fetchall()
-    return len(res) > 0
+    return res
+
+
+def _exists(stmt: Select) -> bool:
+    """
+    Checks if the pydantic-ified data exists the corresponding sql database
+
+    :return: bool
+    """
+    return len(_execute(stmt)) > 0
 
 
 ra: float = Field(title="RA (degrees)", ge=0.0, le=360.0)
