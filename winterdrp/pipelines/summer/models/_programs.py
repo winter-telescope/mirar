@@ -4,12 +4,16 @@ Models for the 'program' table
 from typing import ClassVar
 
 from pydantic import BaseModel, Field, validator
-from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
+from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer, Select
 
 from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB
+from winterdrp.utils.security import generate_key
+from winterdrp.utils.sql import get_engine
+
+_LEN_PROG_KEY = 20
 
 
-class ProgramTable(Base):  # pylint: disable=too-few-public-methods
+class ProgramsTable(Base):  # pylint: disable=too-few-public-methods
     """
     Program table in database
     """
@@ -18,7 +22,7 @@ class ProgramTable(Base):  # pylint: disable=too-few-public-methods
 
     id = Column(Integer, primary_key=True)
     progname = Column(CHAR(8), unique=True)
-    prog_key = Column(VARCHAR(50))
+    prog_key = Column(CHAR(_LEN_PROG_KEY))
     progid = Column(Integer)
     progtitle = Column(VARCHAR(20))
     piname = Column(VARCHAR(20))
@@ -35,15 +39,15 @@ class ProgramCredentials(BaseModel):
     """
 
     progname: str = Field(min_length=8, max_length=8, example="2020A000")
-    prog_key: str = Field(min_length=1)
+    prog_key: str = Field(min_length=_LEN_PROG_KEY, max_length=_LEN_PROG_KEY)
 
 
-class Program(BaseDB, ProgramCredentials):
+class Programs(BaseDB, ProgramCredentials):
     """
     A pydantic model for a program database entry
     """
 
-    sql_model: ClassVar = ProgramTable
+    sql_model: ClassVar = ProgramsTable
     progid: int = Field()
     progtitle: str = Field(min_length=1)
     piname: str = Field(min_length=1)
@@ -80,5 +84,34 @@ class Program(BaseDB, ProgramCredentials):
         """
         total_time = values["hours_allocated"]
         assert not field_value > total_time
-        assert field_value > 0.0
+        assert not field_value < 0.0
         return field_value
+
+    def exists(self) -> bool:
+        """
+        Insert the pydantic-ified data into the corresponding sql database
+
+        :return: None
+        """
+        engine = get_engine()
+        with engine.connect() as conn:
+            with conn.begin():
+                stmt = Select(self.sql_model).where(
+                    self.sql_model.progname == self.progname
+                )
+                res = conn.execute(stmt).fetchall()
+        return len(res) > 0
+
+
+default_program = Programs(
+    progname="2001A000",
+    prog_key=generate_key(_LEN_PROG_KEY),
+    piname="HAL",
+    progid=1,
+    progtitle="Auto-pilot",
+    startdate="2001-01-01",
+    enddate="3001-01-01",
+    hours_allocated=0,
+    hours_remaining=0,
+    basepriority=0,
+)

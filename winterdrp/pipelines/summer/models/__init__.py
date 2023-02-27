@@ -1,10 +1,14 @@
 """
 Models for database and pydantic dataclass models
 """
-from winterdrp.pipelines.summer.models._program import (
-    Program,
+from winterdrp.pipelines.summer.models._dithers import Dithers, DithersTable
+from winterdrp.pipelines.summer.models._fields import Fields, FieldsTable
+from winterdrp.pipelines.summer.models._filters import Filters, FiltersTable
+from winterdrp.pipelines.summer.models._programs import (
     ProgramCredentials,
-    ProgramTable,
+    Programs,
+    ProgramsTable,
+    default_program,
 )
 from winterdrp.pipelines.summer.models.basemodel import Base
 from winterdrp.processors.database.postgres import DB_USER
@@ -14,18 +18,5 @@ if DB_USER is not None:
     engine = get_engine()
     Base.metadata.create_all(engine)
 
-
-if __name__ == "__main__":
-    p = Program(
-        progname="2019A000",
-        prog_key="???",
-        piname="drwho",
-        progid=1,
-        progtitle="???",
-        startdate="2019-01-01",
-        enddate="2020-01-01",
-        hours_allocated=100,
-        hours_remaining=100,
-        basepriority=100,
-    )
-    p.insert_entry()
+    if not default_program.exists():
+        default_program.insert_entry()

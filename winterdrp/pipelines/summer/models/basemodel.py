@@ -3,7 +3,7 @@ Base class for models
 """
 from typing import ClassVar
 
-from pydantic import BaseModel, Extra, root_validator, validator
+from pydantic import BaseModel, Extra, Field, root_validator, validator
 from sqlalchemy import Insert, Table
 from sqlalchemy.orm import declarative_base
 
@@ -73,3 +73,6 @@ class BaseDB(PydanticBase):
 
 
 Base = declarative_base()
+
+ra: float = Field(title="RA (degrees)", ge=0.0, le=360.0)
+dec: float = Field(title="Dec (degrees)", ge=-90.0, le=90.0)
