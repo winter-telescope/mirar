@@ -4,9 +4,10 @@ Models for the 'program' table
 from typing import ClassVar
 
 from pydantic import BaseModel, Field, validator
+from datetime import date
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer, Select
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists
+from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists, date_field
 from winterdrp.utils.security import generate_key
 
 _LEN_PROG_KEY = 20
@@ -50,26 +51,23 @@ class Programs(BaseDB, ProgramCredentials):
     progid: int = Field()
     progtitle: str = Field(min_length=1)
     piname: str = Field(min_length=1)
-    startdate: str = Field(max_length=10, min_length=10, example="2020-01-01")
-    enddate: str = Field(max_length=10, min_length=10, example="2020-01-01")
+    startdate: date = date_field
+    enddate: date = date_field
     hours_allocated: float = Field(ge=0.0)
     hours_remaining: float = Field(ge=0.0)
     basepriority: float = Field(ge=0.0, example=100.0)
 
-    @validator("startdate", "enddate")
-    def check_date(cls, value):
+    @validator("enddate")
+    def check_date(cls, field_value, values):
         """
         Ensure dates are correctly formatted
 
         :param value: value
         :return: value
         """
-        split = value.split("-")
-        assert len(split) == 3
-        assert len(split[0]) == 4
-        assert len(split[1]) == 2
-        assert len(split[2]) == 2
-        return value
+        startdate = values["startdate"]
+        assert field_value > startdate
+        return field_value
 
     @validator("hours_remaining")
     @classmethod
@@ -103,8 +101,8 @@ default_program = Programs(
     piname="HAL",
     progid=1,
     progtitle="Auto-pilot",
-    startdate="2001-01-01",
-    enddate="3001-01-01",
+    startdate=date(2001, 1, 1),
+    enddate=date(3001, 1, 1),
     hours_allocated=0,
     hours_remaining=0,
     basepriority=0,

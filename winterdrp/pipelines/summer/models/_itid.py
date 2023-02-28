@@ -11,6 +11,8 @@ from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists
 ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "OTHER"]
 DEFAULT_ITID = 5
 
+itid_field = Field(ge=0, le=5, default=5)
+
 
 class ITIDsTable(Base):  # pylint: disable=too-few-public-methods
     """
@@ -29,7 +31,7 @@ class ITIDs(BaseDB):
     """
 
     sql_model: ClassVar = ITIDsTable
-    itid: int = Field(ge=0)
+    itid: int = itid_field
     imgtype: str = Field(min_length=1, max_length=20)
 
     def exists(self) -> bool:

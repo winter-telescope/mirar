@@ -28,13 +28,15 @@ class FieldsTable(Base):  # pylint: disable=too-few-public-methods
     dec = Column(REAL, nullable=True)
 
 
+fieldid_field: int = Field(ge=0)
+
 class Fields(BaseDB):
     """
     A pydantic model for a fields database entry
     """
 
     sql_model: ClassVar = FieldsTable
-    fieldid: int = Field()
+    fieldid: int = fieldid_field
     ra: float = ra
     dec: float = dec
 
