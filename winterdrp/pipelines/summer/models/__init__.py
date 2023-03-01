@@ -25,13 +25,23 @@ from winterdrp.pipelines.summer.models._programs import (
     ProgramsTable,
     default_program,
 )
-from winterdrp.pipelines.summer.models._raw import RawTable, Raw
+from winterdrp.pipelines.summer.models._raw import Raw, RawTable
 from winterdrp.pipelines.summer.models.basemodel import Base
 from winterdrp.processors.database.postgres import DB_USER
 from winterdrp.utils.sql import get_engine
+from winterdrp.processors.database.postgres import (
+    PostgresAdmin,
+)
 
 if DB_USER is not None:
-    engine = get_engine()
+    db_name = "summer"
+    engine = get_engine(db_name=db_name)
+
+    pg_admin = PostgresAdmin()
+
+    if not pg_admin.check_if_db_exists(db_name=db_name):
+        pg_admin.create_db(db_name=db_name)
+
     Base.metadata.create_all(engine)
 
     if not default_program.exists():
@@ -45,7 +55,8 @@ if DB_USER is not None:
 
     night_id = date(2002, 1, 1)
 
-    new = Raw(nightid=night_id)
+    new = Raw(
+        nightid=night_id,
+        # fid=1
+    )
     new.insert_entry()
-
-    print(NightsTable)

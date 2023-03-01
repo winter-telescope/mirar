@@ -3,7 +3,7 @@ Models for the 'filters' table
 """
 from typing import ClassVar
 
-from pydantic import Field
+from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Integer, Select
 
 from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists
@@ -18,9 +18,12 @@ class FiltersTable(Base):  # pylint: disable=too-few-public-methods
 
     __tablename__ = "filters"
 
-    fid = Column(Integer, primary_key=True)
+    fuid = Column(Integer, primary_key=True)
+    fid = Column(Integer, unique=True)
     filtername = Column(VARCHAR(20), unique=True)
 
+
+fid_field: int = Field(ge=0)
 
 class Filters(BaseDB):
     """
@@ -28,7 +31,7 @@ class Filters(BaseDB):
     """
 
     sql_model: ClassVar = FiltersTable
-    fid: int = Field(ge=0)
+    fid: int = fid_field
     filtername: str = Field(min_length=1)
 
     def exists(self) -> bool:
@@ -38,6 +41,18 @@ class Filters(BaseDB):
         :return: bool
         """
         return _exists(Select(self.sql_model).where(self.sql_model.fid == self.fid))
+
+    @validator("fid")
+    @classmethod
+    def validate_fid(cls, field_value):
+        """
+        Ensure that path exists
+
+        :param field_value: field value
+        :return: field value
+        """
+        assert field_value in list(summer_filters_map.values())
+        return field_value
 
 
 def populate_filters(filter_map: dict = None):

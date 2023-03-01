@@ -28,7 +28,8 @@ class FieldsTable(Base):  # pylint: disable=too-few-public-methods
     dec = Column(REAL, nullable=True)
 
 
-fieldid_field: int = Field(ge=0)
+fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD)
+
 
 class Fields(BaseDB):
     """
@@ -78,9 +79,6 @@ def populate_fields(url=_SUMMER_FIELDS_URL):
 
             stmt = Insert(FieldsTable).values(
                 res[keys].to_dict(orient="records"),
-                # fieldid=res["#ID"].astype(int).tolist(),
-                # ra=res["RA"].astype(float).tolist(),
-                # dec=res["Dec"].astype(float).tolist()
             )
 
             with engine.connect() as conn:

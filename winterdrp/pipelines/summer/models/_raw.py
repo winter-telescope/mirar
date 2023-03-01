@@ -1,18 +1,19 @@
 """
 Models for the 'raw' table
 """
+from datetime import date, datetime
+from pathlib import Path
 from typing import ClassVar, List
 
 from pydantic import Field, validator
-from datetime import date, datetime
-from sqlalchemy import VARCHAR, Column, Integer, ForeignKey
-from sqlalchemy.orm import mapped_column, Mapped, relationship
-from pathlib import Path
+from sqlalchemy import VARCHAR, Column, ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, date_field
 from winterdrp.pipelines.summer.models._itid import itid_field
-from winterdrp.pipelines.summer.models._fields import fieldid_field
 from winterdrp.pipelines.summer.models._nights import Nights, NightsTable
+from winterdrp.pipelines.summer.models._fields import FieldsTable, DEFAULT_FIELD, fieldid_field
+from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, date_field
+from winterdrp.pipelines.summer.models._filters import fid_field, FiltersTable
 
 
 class RawTable(Base):  # pylint: disable=too-few-public-methods
@@ -21,13 +22,14 @@ class RawTable(Base):  # pylint: disable=too-few-public-methods
     """
 
     __tablename__ = "raw"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = {"extend_existing": True}
 
     fid = Column(Integer, primary_key=True)
     filtername = Column(VARCHAR(20), unique=True)
-    # nid: Mapped[int] = mapped_column(ForeignKey("nights.nid"))
     nightid: Mapped[int] = mapped_column(ForeignKey("nights.nightid"))
     night: Mapped["NightsTable"] = relationship(back_populates="raw")
+    fieldid: Mapped[int] = mapped_column(ForeignKey("fields.fieldid"))
+    # fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
 
 
 class Raw(BaseDB):
@@ -42,8 +44,10 @@ class Raw(BaseDB):
     # timeutc: datetime = Field()
     # obsid: int = Field()
     # itid: int = itid_field
-    nightid: date = Field() #FIXME : why different to obsdate?
-    # fieldid: int = fieldid_field
+
+    nightid: date = Field()  # FIXME : why different to obsdate?
+    fieldid: int = fieldid_field
+    # fid: int = fid_field
 
     # @validator("savepath")
     # @classmethod
@@ -70,6 +74,7 @@ class Raw(BaseDB):
         if not night.exists():
             night.insert_entry()
         return field_value
+
     #
     # def insert_entry(self):
     #     """
@@ -80,7 +85,6 @@ class Raw(BaseDB):
     #     self._insert_entry()
     #     night = Nights(nightid=self.nightid)
     #     night.increment_raw()
-
 
     # def exists(self) -> bool:
     #     """

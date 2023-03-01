@@ -1,13 +1,18 @@
 """
 Models for the 'program' table
 """
+from datetime import date
 from typing import ClassVar
 
 from pydantic import BaseModel, Field, validator
-from datetime import date
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer, Select
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists, date_field
+from winterdrp.pipelines.summer.models.basemodel import (
+    Base,
+    BaseDB,
+    _exists,
+    date_field,
+)
 from winterdrp.utils.security import generate_key
 
 _LEN_PROG_KEY = 20

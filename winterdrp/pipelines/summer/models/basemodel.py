@@ -1,12 +1,12 @@
 """
 Base class for models
 """
+from datetime import date
 from typing import ClassVar
 
 from pydantic import BaseModel, Extra, Field, root_validator, validator
 from sqlalchemy import Insert, Select, Table
-from sqlalchemy.orm import declarative_base, DeclarativeBase
-from datetime import date
+from sqlalchemy.orm import DeclarativeBase, declarative_base
 
 from winterdrp.utils.sql import get_engine
 
