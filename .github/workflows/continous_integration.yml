@@ -6,8 +6,8 @@ name: CI
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-
   pull_request:
+  merge_group:
 
   # run the pipeline on the 0th minute of the 0th hour of day 1 and 15 every month
   schedule:
