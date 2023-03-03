@@ -1,6 +1,9 @@
 name: Black
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  merge_group:
 
 jobs:
   black:
