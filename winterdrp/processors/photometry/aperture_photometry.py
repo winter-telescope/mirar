@@ -7,7 +7,13 @@ from typing import Optional
 import numpy as np
 
 from winterdrp.data import ImageBatch, SourceBatch
-from winterdrp.paths import ZP_KEY
+from winterdrp.paths import (
+    APFLUX_PREFIX_KEY,
+    APFLUXUNC_PREFIX_KEY,
+    APMAG_PREFIX_KEY,
+    APMAGUNC_PREFIX_KEY,
+    ZP_KEY,
+)
 from winterdrp.processors.photometry.base_photometry import (
     AperturePhotometry,
     BaseCandidatePhotometry,
@@ -27,7 +33,7 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
         aper_diameters: float | list[float] = 10.0,
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
-        zp_colname: str = "magzpsci",
+        zp_colname: str = ZP_KEY,
         col_suffix_list: str | list[str] = None,
         *args,
         **kwargs,
@@ -66,14 +72,19 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
 
             for ind, suffix in enumerate(self.col_suffix_list):
                 flux, fluxunc = all_fluxes[ind], all_fluxuncs[ind]
-                candidate_table[f"fluxap{suffix}"] = flux
-                candidate_table[f"fluxuncap{suffix}"] = fluxunc
-                candidate_table[f"magap{suffix}"] = candidate_table[
-                    self.zp_colname
-                ] - 2.5 * np.log10(flux)
-                candidate_table[f"sigmagap{suffix}"] = 1.086 * fluxunc / flux
+                candidate_table[f"{APFLUX_PREFIX_KEY}{suffix}"] = flux
+                candidate_table[f"{APFLUXUNC_PREFIX_KEY}{suffix}"] = fluxunc
+                candidate_table[f"{APMAG_PREFIX_KEY}{suffix}"] = np.array(
+                    candidate_table[self.zp_colname], dtype=float
+                ) - 2.5 * np.log10(flux)
+                candidate_table[f"{APMAGUNC_PREFIX_KEY}{suffix}"] = (
+                    1.086 * fluxunc / flux
+                )
 
             source_table.set_data(candidate_table)
+
+        if self.photometry_out_temp_dir is not None:
+            shutil.rmtree(self.photometry_out_temp_dir)
         return batch
 
 
