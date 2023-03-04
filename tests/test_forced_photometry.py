@@ -6,17 +6,18 @@ import logging
 from winterdrp.data import Dataset, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.io import open_fits
-from winterdrp.paths import get_output_path
-from winterdrp.pipelines.wirc.blocks import image_photometry, \
-    export_candidates_from_header, candidate_photometry
+from winterdrp.paths import LATEST_SAVE_KEY, get_output_path
+from winterdrp.pipelines.wirc.blocks import (
+    candidate_photometry,
+    export_candidates_from_header,
+    image_photometry,
+)
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
-
 from winterdrp.processors.utils.header_annotate import HeaderEditor
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_saver import ImageSaver
 from winterdrp.testing import BaseTestCase
-from winterdrp.paths import LATEST_SAVE_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ EXPECTED_HEADER_VALUES = {
 EXPECTED_DATAFRAME_VALUES = {
     "magpsf": [16.957492],
     "magap": [17.014131],
-    "objectId": ["ZTF21aagppzg"]
+    "objectId": ["ZTF21aagppzg"],
 }
 test_fp_configuration = (
     [
@@ -41,11 +42,11 @@ test_fp_configuration = (
             input_sub_dir="stack",
             load_image=load_raw_wirc_image,
         ),
-
         HeaderEditor(
             edit_keys=["TARGRA", "TARGDEC", "TARGNAME"],
-            values=[160.643041603707, 34.4374610722322, "ZTF21aagppzg"]
-        )]
+            values=[160.643041603707, 34.4374610722322, "ZTF21aagppzg"],
+        ),
+    ]
     + image_photometry
     + [ImageSaver(output_dir_name="photom")]
     + export_candidates_from_header
@@ -109,8 +110,9 @@ if __name__ == "__main__":
 
     # Code to generate updated ZP dict of the results change
 
-    new_res, new_errorstack = pipeline.reduce_images(dataset=Dataset(ImageBatch()),
-                                                     catch_all_errors=False)
+    new_res, new_errorstack = pipeline.reduce_images(
+        dataset=Dataset(ImageBatch()), catch_all_errors=False
+    )
     new_candidates_table = new_res[0][0].get_data()
     new_diff_imgpath = get_output_path(
         base_name=new_candidates_table.iloc[0][LATEST_SAVE_KEY],
@@ -119,15 +121,14 @@ if __name__ == "__main__":
     )
     _, new_header = open_fits(new_diff_imgpath)
 
-    new_exp_header = "expected_header_values = { \n"
-    for key in EXPECTED_HEADER_VALUES.keys():
-        new_exp_header += f'    "{key}": {new_header[key]}, \n'
-    new_exp_header += "}"
-    print(new_exp_header)
+    NEW_EXP_HEADER = "expected_header_values = { \n"
+    for key in EXPECTED_HEADER_VALUES:
+        NEW_EXP_HEADER += f'    "{key}": {new_header[key]}, \n'
+    NEW_EXP_HEADER += "}"
+    print(NEW_EXP_HEADER)
 
-    new_exp_dataframe = "expected_dataframe_values = { \n"
+    NEW_EXP_DATAFRAME = "expected_dataframe_values = { \n"
     for key in EXPECTED_DATAFRAME_VALUES:
-        new_exp_dataframe += f'    "{key}": {list(new_candidates_table[key])}, \n'
-    new_exp_dataframe += "}"
-    print(new_exp_dataframe)
-
+        NEW_EXP_DATAFRAME += f'    "{key}": {list(new_candidates_table[key])}, \n'
+    NEW_EXP_DATAFRAME += "}"
+    print(NEW_EXP_DATAFRAME)
