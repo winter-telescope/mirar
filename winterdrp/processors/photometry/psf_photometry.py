@@ -128,7 +128,7 @@ class ImagePSFPhotometry(BaseImagePhotometry):
         """
         Function to get PSF file name of an image
         Args:
-            image: Image 
+            image: Image
 
         Returns:
 
