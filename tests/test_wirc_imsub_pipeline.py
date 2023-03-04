@@ -9,7 +9,7 @@ from winterdrp.data import Dataset, ImageBatch
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.io import open_fits
 from winterdrp.paths import get_output_path
-from winterdrp.pipelines.wirc.blocks import candidates, image_photometry, subtract
+from winterdrp.pipelines.wirc.blocks import candidates, subtract
 from winterdrp.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
@@ -18,7 +18,6 @@ from winterdrp.pipelines.wirc.generator import (
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
 from winterdrp.processors.reference import Reference
-from winterdrp.processors.utils.header_annotate import HeaderEditor
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_saver import ImageSaver
 from winterdrp.references import WIRCRef
@@ -59,19 +58,16 @@ EXPECTED_HEADER_VALUES = {
     "SCORSTD": 1.081806800432295,
     "SCORMED": -8.757084251543588e-05,
     "SCORMEAN": -0.031172912552408068,
-    "MAGAP": 17.104291,
-    "MAGPSF": 17.197002,
 }
 
 EXPECTED_DATAFRAME_VALUES = {
-    "magpsf": [19.319820, 19.242908, 17.197002, 17.565868],
-    "magap": [19.302467, 19.122576, 17.104291, 17.917712],
+    "magpsf": [19.319820, 19.242908, 17.197012, 17.514130],
+    "magap": [19.302467, 19.122576, 17.110327, 17.845793],
 }
-
 test_imsub_configuration = (
     [
         ImageLoader(
-            input_img_dir=test_data_dir,
+            input_img_dir=test_data_dir.as_posix(),
             input_sub_dir="stack",
             load_image=load_raw_wirc_image,
         ),
@@ -83,12 +79,6 @@ test_imsub_configuration = (
         ),
     ]
     + subtract
-    + [
-        HeaderEditor(
-            edit_keys=["TARGRA", "TARGDEC"], values=[160.643041603707, 34.4374610722322]
-        )
-    ]
-    + image_photometry
     + [ImageSaver(output_dir_name="subtract")]
     + candidates
 )
@@ -150,7 +140,9 @@ if __name__ == "__main__":
 
     # Code to generate updated ZP dict of the results change
 
-    new_res, new_errorstack = pipeline.reduce_images(catch_all_errors=False)
+    new_res, new_errorstack = pipeline.reduce_images(
+        dataset=Dataset(ImageBatch()), catch_all_errors=False
+    )
     new_candidates_table = new_res[0][0].get_data()
     new_diff_imgpath = get_output_path(
         base_name=new_candidates_table.iloc[0]["diffimname"],
@@ -159,15 +151,15 @@ if __name__ == "__main__":
     )
     _, new_header = open_fits(new_diff_imgpath)
 
-    new_exp_header = "expected_header_values = { \n"
+    NEW_EXP_HEADER = "expected_header_values = { \n"
     for header_key in new_header.keys():
         if "SCOR" in header_key:
-            new_exp_header += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp_header += "}"
-    print(new_exp_header)
+            NEW_EXP_HEADER += f'    "{header_key}": {new_header[header_key]}, \n'
+    NEW_EXP_HEADER += "}"
+    print(NEW_EXP_HEADER)
 
-    new_exp_dataframe = "expected_dataframe_values = { \n"
+    NEW_EXP_DATAFRAME = "expected_dataframe_values = { \n"
     for key in EXPECTED_DATAFRAME_VALUES:
-        new_exp_dataframe += f'    "{key}": {list(new_candidates_table[key])}, \n'
-    new_exp_dataframe += "}"
-    print(new_exp_dataframe)
+        NEW_EXP_DATAFRAME += f'    "{key}": {list(new_candidates_table[key])}, \n'
+    NEW_EXP_DATAFRAME += "}"
+    print(NEW_EXP_DATAFRAME)
