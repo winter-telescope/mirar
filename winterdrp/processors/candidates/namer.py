@@ -6,6 +6,7 @@ import logging
 from astropy.time import Time
 
 from winterdrp.data import SourceBatch
+from winterdrp.paths import CAND_NAME_KEY
 from winterdrp.processors.base_processor import BaseDataframeProcessor
 from winterdrp.processors.database import BaseDatabaseProcessor
 
@@ -25,7 +26,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
         base_name: str,
         xmatch_radius_arcsec: float,
         name_start: str = "aaaaa",
-        db_name_field: str = "objectId",
+        db_name_field: str = CAND_NAME_KEY,
         db_order_field: str = "candid",
         date_field: str = "jd",
         **kwargs,
