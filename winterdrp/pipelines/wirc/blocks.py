@@ -27,6 +27,9 @@ from winterdrp.processors.astromatic import Scamp, Sextractor, Swarp
 from winterdrp.processors.astromatic.psfex import PSFex
 from winterdrp.processors.autoastrometry import AutoAstrometry
 from winterdrp.processors.candidates.candidate_detector import DetectCandidates
+from winterdrp.processors.candidates.candidate_extractor import (
+    ForcedPhotometryCandidateTable,
+)
 from winterdrp.processors.candidates.namer import CandidateNamer
 from winterdrp.processors.candidates.utils import DataframeWriter, RegionsWriter
 from winterdrp.processors.csvlog import CSVLog
@@ -115,12 +118,34 @@ image_photometry = [
         target_ra_key="TARGRA",
         target_dec_key="TARGDEC",
     ),
+    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
+    PSFex(config_path=psfex_path, output_sub_dir="photometry", norm_fits=True),
     ImagePSFPhotometry(target_ra_key="TARGRA", target_dec_key="TARGDEC"),
     ImageSaver(output_dir_name="photometry"),
 ]
 
-candidates = [
-    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
+export_candidates_from_header = [
+    ForcedPhotometryCandidateTable(
+        ra_header_key="TARGRA", dec_header_key="TARGDEC", name_header_key="TARGNAME"
+    ),
+]
+
+candidate_photometry = [
+    CandidateAperturePhotometry(
+        aper_diameters=[16, 70],
+        phot_cutout_size=100,
+        bkg_in_diameters=[25, 90],
+        bkg_out_diameters=[40, 100],
+        col_suffix_list=["", "big"],
+    ),
+    CandidatePSFPhotometry(),
+]
+
+detect_candidates = [
+    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config)
+]
+
+process_candidates = [
     RegionsWriter(output_dir_name="candidates"),
     CandidatePSFPhotometry(),
     CandidateAperturePhotometry(
@@ -158,10 +183,14 @@ candidates = [
     DataframeWriter(output_dir_name="dbop"),
     # EdgeCandidatesMask(edge_boundary_size=100)
     # FilterCandidates(),
+]
+
+package_candidates = [
     AvroPacketMaker(
         output_sub_dir="avro", base_name="WNTR", broadcast=False, save_local=True
-    ),
+    )
     # SendToFritz(update_thumbnails = True)
 ]
 
+candidates = detect_candidates + process_candidates + package_candidates
 imsub = reference + subtract + candidates
