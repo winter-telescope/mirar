@@ -57,7 +57,7 @@ pipeline = WircPipeline(night=NIGHT_NAME, selected_configurations="test_fp")
 pipeline.add_configuration(
     configuration_name="test_fp", configuration=test_fp_configuration
 )
-pipeline.configure_processors(test_fp_configuration)
+pipeline.configure_processors(test_fp_configuration, sub_dir=NIGHT_NAME)
 
 
 class TestForcedPhot(BaseTestCase):
