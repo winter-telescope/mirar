@@ -37,10 +37,9 @@ def create_q3c_extension(__tablename__, ra_column_name, dec_column_name, conn=No
 
     trig_ddl = DDL(
         "CREATE EXTENSION IF NOT EXISTS q3c;"
-        f"CREATE INDEX {__tablename__}_q3c_idx ON "
-        f"{__tablename__} USING "
-        f"q3c({ra_column_name}, {dec_column_name});"
-        f"CLUSTER {__tablename__} USING {__tablename__}_q3c_idx;"
+        f"CREATE INDEX ON {__tablename__} USING "
+        f"q3c_ang2ipix({ra_column_name}, {dec_column_name});"
+        f"CLUSTER {__tablename__} USING {__tablename__}_q3c_ang2ipix_idx;"
         f"ANALYZE {__tablename__};"
     )
 
