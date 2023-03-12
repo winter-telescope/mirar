@@ -6,7 +6,7 @@ from typing import ClassVar
 
 from pydantic import BaseModel, Extra, Field, root_validator, validator
 from sqlalchemy import Insert, Select, Table
-from sqlalchemy.orm import DeclarativeBase, declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 from winterdrp.utils.sql import get_engine
 
@@ -82,7 +82,9 @@ class BaseDB(PydanticBase):
 
 
 class Base(DeclarativeBase):
-    pass
+    """
+    Parent class for databases
+    """
 
 
 def _execute(stmt):
@@ -107,6 +109,8 @@ def _exists(stmt: Select) -> bool:
     return len(_execute(stmt)) > 0
 
 
-ra: float = Field(title="RA (degrees)", ge=0.0, le=360.0)
-dec: float = Field(title="Dec (degrees)", ge=-90.0, le=90.0)
+ra_field: float = Field(title="RA (degrees)", ge=0.0, le=360.0)
+dec_field: float = Field(title="Dec (degrees)", ge=-90.0, le=90.0)
+alt_field: float = Field(title="Alt (degrees)", ge=0.0, le=90.0)
+az_field: float = Field(title="Az (degrees)", ge=0.0, le=360.0)
 date_field: date = Field()

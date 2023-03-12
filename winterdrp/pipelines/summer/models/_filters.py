@@ -5,6 +5,7 @@ from typing import ClassVar
 
 from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Integer, Select
+from sqlalchemy.orm import Mapped, relationship
 
 from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists
 
@@ -21,9 +22,11 @@ class FiltersTable(Base):  # pylint: disable=too-few-public-methods
     fuid = Column(Integer, primary_key=True)
     fid = Column(Integer, unique=True)
     filtername = Column(VARCHAR(20), unique=True)
+    raw: Mapped["RawTable"] = relationship(back_populates="filt")
 
 
 fid_field: int = Field(ge=0)
+
 
 class Filters(BaseDB):
     """

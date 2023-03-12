@@ -4,8 +4,7 @@ Models for the 'nights' table
 from datetime import date
 from typing import ClassVar
 
-from pydantic import Field
-from sqlalchemy import DATE, REAL, Column, Integer, Select
+from sqlalchemy import DATE, Column, Integer, Select, Sequence
 from sqlalchemy.orm import Mapped, relationship
 
 from winterdrp.pipelines.summer.models.basemodel import (
@@ -24,7 +23,7 @@ class NightsTable(Base):  # pylint: disable=too-few-public-methods
     __tablename__ = "nights"
     __table_args__ = {"extend_existing": True}
 
-    nid = Column(Integer, primary_key=True)
+    nid = Column(Integer, Sequence(name="nid-seq", start=1), primary_key=True)
     nightid = Column(DATE, unique=True)
     raw: Mapped["RawTable"] = relationship(back_populates="night")
 

@@ -6,6 +6,7 @@ from typing import ClassVar
 
 from pydantic import BaseModel, Field, validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer, Select
+from sqlalchemy.orm import Mapped, relationship
 
 from winterdrp.pipelines.summer.models.basemodel import (
     Base,
@@ -16,6 +17,7 @@ from winterdrp.pipelines.summer.models.basemodel import (
 from winterdrp.utils.security import generate_key
 
 _LEN_PROG_KEY = 20
+program_id_field: int = Field(default=1)
 
 
 class ProgramsTable(Base):  # pylint: disable=too-few-public-methods
@@ -23,7 +25,7 @@ class ProgramsTable(Base):  # pylint: disable=too-few-public-methods
     Program table in database
     """
 
-    __tablename__ = "program"
+    __tablename__ = "programs"
 
     id = Column(Integer, primary_key=True)
     progname = Column(CHAR(8), unique=True)
@@ -36,6 +38,10 @@ class ProgramsTable(Base):  # pylint: disable=too-few-public-methods
     hours_allocated = Column(REAL)
     hours_remaining = Column(REAL)
     basepriority = Column(REAL)
+    raw: Mapped["RawTable"] = relationship(back_populates="programid")
+
+    def exists(self, program_id):
+        return _exists(Select(self.__class__).where(self.progid == program_id))
 
 
 class ProgramCredentials(BaseModel):
@@ -53,7 +59,7 @@ class Programs(BaseDB, ProgramCredentials):
     """
 
     sql_model: ClassVar = ProgramsTable
-    progid: int = Field()
+    progid: int = program_id_field
     progtitle: str = Field(min_length=1)
     piname: str = Field(min_length=1)
     startdate: date = date_field

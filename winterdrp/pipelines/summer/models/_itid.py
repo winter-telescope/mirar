@@ -5,6 +5,7 @@ from typing import ClassVar
 
 from pydantic import Field
 from sqlalchemy import VARCHAR, Column, Integer, Select
+from sqlalchemy.orm import Mapped, relationship
 
 from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists
 
@@ -23,6 +24,7 @@ class ITIDsTable(Base):  # pylint: disable=too-few-public-methods
 
     itid = Column(Integer, primary_key=True)
     imgtype = Column(VARCHAR(20), unique=True)
+    raw: Mapped["RawTable"] = relationship(back_populates="img_type")
 
 
 class ITIDs(BaseDB):

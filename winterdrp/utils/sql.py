@@ -1,7 +1,7 @@
 """
 Util functions for database interactions
 """
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, DDL
 
 from winterdrp.processors.database.postgres import DB_PASSWORD, DB_USER
 
@@ -10,7 +10,7 @@ def get_engine(
     db_user: str = DB_USER,
     db_password: str = DB_PASSWORD,
     db_host: str = "localhost",
-    db_name: str = "summer",
+    db_name: str = "summertest",
 ) -> Engine:
     """
     Function to create a postgres engine
@@ -25,3 +25,18 @@ def get_engine(
         f"postgresql+psycopg://{db_user}:{db_password}" f"@{db_host}/{db_name}",
         future=True,
     )
+
+
+def create_q3c_extension(__tablename__, ra_column_name, dec_column_name):
+    print("Executing DDL")
+
+    trig_ddl = DDL('CREATE EXTENSION IF NOT EXISTS q3c;'
+                   f'CREATE INDEX {__tablename__}_q3c_idx ON '
+                   f'{__tablename__} USING '
+                   f'q3c({ra_column_name}, {dec_column_name});'
+                   f'CLUSTER {__tablename__} USING {__tablename__}_q3c_idx;'
+                   f'ANALYZE {__tablename__};')
+
+    engine = get_engine()
+    with engine.connect() as conn:
+        conn.execute(trig_ddl)

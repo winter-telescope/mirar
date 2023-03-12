@@ -8,9 +8,16 @@ from typing import ClassVar
 import pandas as pd
 from pydantic import Field
 from sqlalchemy import REAL, Column, Insert, Integer, Select
+from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists, dec, ra
+from winterdrp.pipelines.summer.models.basemodel import (
+    Base,
+    BaseDB,
+    _exists,
+    dec_field,
+    ra_field,
+)
 from winterdrp.utils.sql import get_engine
 
 DEFAULT_FIELD = 999999999
@@ -26,6 +33,7 @@ class FieldsTable(Base):  # pylint: disable=too-few-public-methods
     fieldid = Column(Integer, primary_key=True)
     ra = Column(REAL, nullable=True)
     dec = Column(REAL, nullable=True)
+    raw: Mapped["RawTable"] = relationship(back_populates="field")
 
 
 fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD)
@@ -38,8 +46,8 @@ class Fields(BaseDB):
 
     sql_model: ClassVar = FieldsTable
     fieldid: int = fieldid_field
-    ra: float = ra
-    dec: float = dec
+    ra: float = ra_field
+    dec: float = dec_field
 
 
 _SUMMER_FIELDS_URL = (
