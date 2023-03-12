@@ -29,12 +29,16 @@ from winterdrp.pipelines.summer.models._programs import (
 )
 from winterdrp.pipelines.summer.models._raw import Raw, RawTable
 from winterdrp.pipelines.summer.models.basemodel import Base
-from winterdrp.processors.database.postgres import DB_PASSWORD, DB_USER, PostgresAdmin
+from winterdrp.processors.database.postgres import DB_PASSWORD, DB_USER, PostgresAdmin, \
+    ADMIN_USER, ADMIN_PASSWORD
 from winterdrp.utils.sql import get_engine
 
 if DB_USER is not None:
     db_name = "summertest"
-    engine = get_engine(db_name=db_name)
+    engine = get_engine(db_name=db_name,
+                        db_user=ADMIN_USER,
+                        db_password=ADMIN_PASSWORD)
+    # Because extensions need to be created as a superuser
 
     pg_admin = PostgresAdmin()
 

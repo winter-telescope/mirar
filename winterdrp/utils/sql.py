@@ -1,10 +1,14 @@
 """
 Util functions for database interactions
 """
-from sqlalchemy import Engine, create_engine, DDL
+from sqlalchemy import DDL, Engine, create_engine
 
-from winterdrp.processors.database.postgres import DB_PASSWORD, DB_USER
-from winterdrp.processors.database.postgres import ADMIN_USER, ADMIN_PASSWORD
+from winterdrp.processors.database.postgres import (
+    ADMIN_PASSWORD,
+    ADMIN_USER,
+    DB_PASSWORD,
+    DB_USER,
+)
 
 
 def get_engine(
@@ -31,12 +35,14 @@ def get_engine(
 def create_q3c_extension(__tablename__, ra_column_name, dec_column_name, conn=None):
     print("Executing DDL")
 
-    trig_ddl = DDL('CREATE EXTENSION IF NOT EXISTS q3c;'
-                   f'CREATE INDEX {__tablename__}_q3c_idx ON '
-                   f'{__tablename__} USING '
-                   f'q3c({ra_column_name}, {dec_column_name});'
-                   f'CLUSTER {__tablename__} USING {__tablename__}_q3c_idx;'
-                   f'ANALYZE {__tablename__};')
+    trig_ddl = DDL(
+        "CREATE EXTENSION IF NOT EXISTS q3c;"
+        f"CREATE INDEX {__tablename__}_q3c_idx ON "
+        f"{__tablename__} USING "
+        f"q3c({ra_column_name}, {dec_column_name});"
+        f"CLUSTER {__tablename__} USING {__tablename__}_q3c_idx;"
+        f"ANALYZE {__tablename__};"
+    )
 
     if conn is None:
         conn = get_engine().connect()
