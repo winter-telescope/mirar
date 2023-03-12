@@ -38,25 +38,27 @@ from winterdrp.processors.database.postgres import (
     DB_USER,
     PostgresAdmin,
 )
-from winterdrp.utils.sql import get_engine
+from winterdrp.utils.sql import get_engine, create_q3c_extension
 
 if DB_USER is not None:
     db_name = "summertest"
     admin_engine = get_engine(
         db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
     )
-    #  # Because extensions need to be created as a superuser
+
     engine = get_engine(db_name=db_name)
     pg_admin = PostgresAdmin()
 
     if not pg_admin.check_if_db_exists(db_name=db_name):
         pg_admin.create_db(db_name=db_name)
 
-    Base.metadata.create_all(admin_engine)
+    Base.metadata.create_all(
+        admin_engine)  # extensions need to be created as a superuser
 
     if not pg_admin.check_if_user_exists(user_name=DB_USER):
         pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
-        pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
+
+    pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
 
     session = Session(bind=engine)
     if not default_program.exists(session):
