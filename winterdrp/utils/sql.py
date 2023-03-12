@@ -28,7 +28,7 @@ def get_engine(
     )
 
 
-def create_q3c_extension(db_name, __tablename__, ra_column_name, dec_column_name):
+def create_q3c_extension(__tablename__, ra_column_name, dec_column_name, conn=None):
     print("Executing DDL")
 
     trig_ddl = DDL('CREATE EXTENSION IF NOT EXISTS q3c;'
@@ -38,8 +38,6 @@ def create_q3c_extension(db_name, __tablename__, ra_column_name, dec_column_name
                    f'CLUSTER {__tablename__} USING {__tablename__}_q3c_idx;'
                    f'ANALYZE {__tablename__};')
 
-    engine = get_engine(db_user=ADMIN_USER,
-                        db_password=DB_PASSWORD,
-                        db_name=db_name)
-    with engine.connect() as conn:
-        conn.execute(trig_ddl)
+    if conn is None:
+        conn = get_engine().connect()
+    conn.execute(trig_ddl)
