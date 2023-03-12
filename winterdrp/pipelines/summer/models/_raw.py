@@ -38,6 +38,9 @@ from winterdrp.pipelines.summer.models.basemodel import (
 from winterdrp.utils.sql import create_q3c_extension
 
 
+db_name = "summertest"
+
+
 class RawTable(Base):  # pylint: disable=too-few-public-methods
     """
     Raw table in database
@@ -102,6 +105,7 @@ class RawTable(Base):  # pylint: disable=too-few-public-methods
 @event.listens_for(target=RawTable.__table__, identifier="after_create")
 def raw_q3c(*args, **kw):
     create_q3c_extension(
+        db_name=db_name,
         __tablename__=RawTable.__tablename__,
         ra_column_name=RawTable.ra_column_name,
         dec_column_name=RawTable.dec_column_name,
