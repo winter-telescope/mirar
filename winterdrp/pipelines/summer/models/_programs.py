@@ -5,7 +5,7 @@ from datetime import date
 from typing import ClassVar
 
 from pydantic import BaseModel, Field, validator
-from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer, Select
+from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer, Select, select
 from sqlalchemy.orm import Mapped, relationship
 
 from winterdrp.pipelines.summer.models.basemodel import (
@@ -95,15 +95,17 @@ class Programs(BaseDB, ProgramCredentials):
         assert not field_value < 0.0
         return field_value
 
-    def exists(self) -> bool:
+    def exists(self, session) -> bool:
         """
         Checks if the pydantic-ified data exists the corresponding sql database
 
         :return: bool
         """
-        return _exists(
-            Select(self.sql_model).where(self.sql_model.progname == self.progname)
-        )
+        stmt = select(self.sql_model).where(self.sql_model.progname == self.progname)
+        return len(session.execute(stmt).fetchall()) > 0
+        # return _exists(
+        #     session.execute(stmt)
+        # )
 
 
 default_program = Programs(
