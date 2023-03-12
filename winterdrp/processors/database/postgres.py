@@ -631,7 +631,7 @@ class PostgresAdmin(PostgresUser):
             command = f"CREATE ROLE {new_db_user} WITH password '{new_password}' LOGIN;"
             conn.execute(command)
 
-    def grant_privileges(self, db_name: str, db_user: str, schema: str = 'public'):
+    def grant_privileges(self, db_name: str, db_user: str, schema: str = "public"):
         """
         Grant privilege to user on database
 
