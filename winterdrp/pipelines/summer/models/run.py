@@ -3,6 +3,8 @@ Models for database and pydantic dataclass models
 """
 from datetime import date, datetime
 
+from sqlalchemy.orm import Session
+
 from winterdrp.pipelines.summer.models._dithers import Dithers, DithersTable
 from winterdrp.pipelines.summer.models._fields import (
     Fields,
@@ -29,16 +31,20 @@ from winterdrp.pipelines.summer.models._programs import (
 )
 from winterdrp.pipelines.summer.models._raw import Raw, RawTable
 from winterdrp.pipelines.summer.models.basemodel import Base
-from winterdrp.processors.database.postgres import DB_PASSWORD, DB_USER, PostgresAdmin, \
-    ADMIN_USER, ADMIN_PASSWORD
+from winterdrp.processors.database.postgres import (
+    ADMIN_PASSWORD,
+    ADMIN_USER,
+    DB_PASSWORD,
+    DB_USER,
+    PostgresAdmin,
+)
 from winterdrp.utils.sql import get_engine
-from sqlalchemy.orm import Session
 
 if DB_USER is not None:
     db_name = "summertest"
-    admin_engine = get_engine(db_name=db_name,
-                              db_user=ADMIN_USER,
-                              db_password=ADMIN_PASSWORD)
+    admin_engine = get_engine(
+        db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
+    )
     #  # Because extensions need to be created as a superuser
     engine = get_engine(db_name=db_name)
     pg_admin = PostgresAdmin()
@@ -46,7 +52,7 @@ if DB_USER is not None:
     if not pg_admin.check_if_db_exists(db_name=db_name):
         pg_admin.create_db(db_name=db_name)
 
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(admin_engine)
 
     if not pg_admin.check_if_user_exists(user_name=DB_USER):
         pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
