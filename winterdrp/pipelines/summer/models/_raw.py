@@ -1,6 +1,7 @@
 """
 Models for the 'raw' table
 """
+import time
 from datetime import date, datetime
 from typing import ClassVar
 
@@ -36,7 +37,6 @@ from winterdrp.pipelines.summer.models.basemodel import (
     ra_field,
 )
 from winterdrp.utils.sql import create_q3c_extension
-
 
 db_name = "summertest"
 
@@ -104,6 +104,7 @@ class RawTable(Base):  # pylint: disable=too-few-public-methods
 
 @event.listens_for(target=RawTable.__table__, identifier="after_create")
 def raw_q3c(*args, **kw):
+    time.sleep(3)
     create_q3c_extension(
         db_name=db_name,
         __tablename__=RawTable.__tablename__,
