@@ -104,7 +104,6 @@ class RawTable(Base):  # pylint: disable=too-few-public-methods
 
 @event.listens_for(target=RawTable.__table__, identifier="after_create")
 def raw_q3c(tbl, conn, *args, **kw):
-    print(conn)
     create_q3c_extension(
         conn=conn,
         __tablename__=RawTable.__tablename__,
