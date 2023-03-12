@@ -32,26 +32,28 @@ from winterdrp.pipelines.summer.models.basemodel import Base
 from winterdrp.processors.database.postgres import DB_PASSWORD, DB_USER, PostgresAdmin, \
     ADMIN_USER, ADMIN_PASSWORD
 from winterdrp.utils.sql import get_engine
+from sqlalchemy.orm import Session
 
 if DB_USER is not None:
     db_name = "summertest"
-    engine = get_engine(db_name=db_name,
-                        db_user=ADMIN_USER,
-                        db_password=ADMIN_PASSWORD)
-    # Because extensions need to be created as a superuser
-
+    admin_engine = get_engine(db_name=db_name,
+                              db_user=ADMIN_USER,
+                              db_password=ADMIN_PASSWORD)
+    #  # Because extensions need to be created as a superuser
+    engine = get_engine(db_name=db_name)
     pg_admin = PostgresAdmin()
 
     if not pg_admin.check_if_db_exists(db_name=db_name):
         pg_admin.create_db(db_name=db_name)
 
+    Base.metadata.create_all(engine)
+
     if not pg_admin.check_if_user_exists(user_name=DB_USER):
         pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
         pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
 
-    Base.metadata.create_all(engine)
-
-    if not default_program.exists():
+    session = Session(bind=engine)
+    if not default_program.exists(session):
         default_program.insert_entry()
 
     # populate_fields()
