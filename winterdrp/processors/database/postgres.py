@@ -631,7 +631,7 @@ class PostgresAdmin(PostgresUser):
             command = f"CREATE ROLE {new_db_user} WITH password '{new_password}' LOGIN;"
             conn.execute(command)
 
-    def grant_privileges(self, db_name: str, db_user: str):
+    def grant_privileges(self, db_name: str, db_user: str, schema: str = 'public'):
         """
         Grant privilege to user on database
 
@@ -644,6 +644,19 @@ class PostgresAdmin(PostgresUser):
         ) as conn:
             conn.autocommit = True
             command = f"""GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {db_user};"""
+            conn.execute(command)
+            command = f"""ALTER DATABASE {db_name} OWNER TO {db_user}"""
+            conn.execute(command)
+
+        with psycopg.connect(
+            f"dbname={db_name} user={self.db_user} password={self.db_password}"
+        ) as conn:
+            conn.autocommit = True
+            command = f"""GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA {schema} 
+            TO {db_user};"""
+            conn.execute(command)
+            command = f"""GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA {schema} 
+                        TO {db_user};"""
             conn.execute(command)
 
     def check_if_user_exists(self, user_name: str) -> bool:
