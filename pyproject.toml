@@ -16,7 +16,7 @@ coveralls = {extras = ["toml"], version = "^3.3.1"}
 confluent-kafka = "^2.0.2"
 docker = "^6.0.1"
 ephem = "^4.1.3"
-fastavro = "^1.7.1"
+fastavro = "^1.7.3"
 jupyter = "^1.0.0"
 matplotlib = "^3.6.3"
 lacosmic = "^1.0.0"
