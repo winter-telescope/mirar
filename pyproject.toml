@@ -45,6 +45,7 @@ sqlalchemy = "^2.0.4"
 pydantic = "^1.10.5"
 pylint-pydantic = "^0.1.6"
 
+
 [tool.poetry.group.docs.dependencies]
 sphinx = "^6.1.3"
 
