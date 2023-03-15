@@ -4,7 +4,6 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~winterdrp.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
-from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import BASE_NAME_KEY, core_fields
 from winterdrp.pipelines.sedmv2.config import (
     psfex_config_path,
@@ -32,10 +31,10 @@ from winterdrp.processors.utils import (
     ImageLoader,
     ImageSaver,
     ImageSelector,
+    MultiExtParser,
 )
 from winterdrp.processors.utils.cal_hunter import CalHunter
 from winterdrp.processors.utils.header_annotate import HeaderEditor
-from winterdrp.processors.utils.simulate_realtime import RealtimeImageSimulator
 from winterdrp.processors.zogy.zogy import (
     ZOGY,
     ZOGYPrepare,
@@ -43,27 +42,8 @@ from winterdrp.processors.zogy.zogy import (
 )
 
 load_raw = [
+    MultiExtParser(input_sub_dir="raw/mef/"),
     ImageLoader(load_image=load_raw_sedmv2_image),
-]
-
-load_test = [
-    ImageLoader(
-        input_img_dir=get_test_data_dir(),
-        input_sub_dir="raw",
-        load_image=load_raw_sedmv2_image,
-    ),
-]
-
-sim_realtime = [
-    RealtimeImageSimulator(
-        input_img_dir=get_test_data_dir(),
-        input_img_names=[
-            "sedmv2/20220402/raw/SEDMV2_20220402_193104_Camera0.fits",
-            "sedmv2/20220402/raw/SEDMV2_20220402_214324_Camera0.fits",
-        ],
-        output_dir=get_test_data_dir(),
-        output_dir_name="raw",
-    )
 ]
 
 cal_hunter = [

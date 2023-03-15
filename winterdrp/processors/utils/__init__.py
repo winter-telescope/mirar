@@ -11,3 +11,4 @@ from winterdrp.processors.utils.image_selector import (
     ImageSelector,
     select_from_images,
 )
+from winterdrp.processors.utils.multi_ext_parser import MultiExtParser

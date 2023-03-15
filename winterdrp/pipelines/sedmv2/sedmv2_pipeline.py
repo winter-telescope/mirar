@@ -14,9 +14,7 @@ from winterdrp.pipelines.sedmv2.blocks import (
     cal_hunter,
     imsub,
     load_raw,
-    load_test,
     process_raw,
-    sim_realtime,
 )
 from winterdrp.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
 from winterdrp.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
@@ -38,14 +36,11 @@ class SEDMv2Pipeline(Pipeline):
     # removed export_raw and load_processed blocks
     all_pipeline_configurations = {
         "default": load_raw + cal_hunter + process_raw,
-        "test": load_test + process_raw,
         "postprocess": build_log,
         "imsub": imsub,
         "full": load_raw + build_log + cal_hunter + process_raw + imsub,
         "realtime": process_raw,
         "log": load_raw + build_log,
-        "simrealtime": sim_realtime,
-        "testlog": load_test + build_log,
     }
 
     @staticmethod

@@ -21,20 +21,25 @@ from winterdrp.paths import (
 logger = logging.getLogger(__name__)
 
 
-def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_sedmv2_image(
+    path: str, ext: int
+) -> tuple[np.array, astropy.io.fits.Header]:
     """
     Function to load a raw SEDMv2 image
 
     :param path: path of file
+    :param ext: extension, since SEDMv2 files are MEF
     :return: data and header of image
     """
 
     with fits.open(path) as data:
-        header = data[0].header  # pylint: disable=no-member
+        header = data[0].header  # pylint: disable=no-member, this is the MAIN header,
 
         if "PREPTAG" not in header.keys():
             if "IMGTYPE" in header.keys():
-                path_new = prepare_science(path, 1)  # should change w/ MEF ImageLoader
+                path_new = prepare_science(
+                    path, ext
+                )  # should change w/ MEF ImageLoader
             else:  # IMGTYPE not in cal; may change w updated cal files
                 path_new = prepare_cal(path)
             data = fits.open(path_new)
@@ -113,8 +118,10 @@ def prepare_science(filepath: str, extension: int) -> str:
     hdrext["OBSCLASS"] = "science"
     hdrext["PREPTAG"] = 0  # label files that have already run through this function
     # save to file with 1 extension
-    fits.writeto(filepath, data, hdrext, overwrite=True)  # pylint: disable=no-member
+    # fits.writeto(filepath, data, hdrext, overwrite=True)  # pylint: disable=no-member
+    newpath = filepath.split(".fits")[0] + "_" + str(extension) + ".fits"
 
+    fits.writeto(newpath, data, hdrext)
     return filepath
 
 
