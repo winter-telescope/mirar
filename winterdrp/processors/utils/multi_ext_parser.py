@@ -12,9 +12,9 @@ import numpy as np
 
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ImageNotFoundError
+from winterdrp.io import open_fits
 from winterdrp.paths import RAW_IMG_SUB_DIR, base_raw_dir
 from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.processors.utils import ImageLoader
 
 logger = logging.getLogger(__name__)
 
@@ -30,28 +30,30 @@ class MultiExtParser(BaseImageProcessor):
         self,
         input_sub_dir: str = RAW_IMG_SUB_DIR,
         input_img_dir: str = base_raw_dir,
+        load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
     ):
         super().__init__()
         self.input_sub_dir = input_sub_dir
         self.input_img_dir = input_img_dir
+        self.load_image = load_image
 
     def __str__(self):
         return (
             f"Processor to parse MEF images from the {self.input_sub_dir} subdirectory "
         )
 
-    def parse(self, path: str) -> Image:
+    def parse(self, path: str) -> list:
         """
         Function to open a raw MEF image, write each extension to a new file
 
         :param path: path of raw MEF image
-        :return: ????????/ ###Image objects (or ImageBatch?)
+        :return: new paths of single-extension files (moved out of raw/mef/, into raw/)
 
-        ** should only run on science images **
-        *** need to manually place MEF science images in a /mef/ subdirectory,
-        ex: /[instrument]/[night]/raw/mef/ ***
+        *** need to manually place MEF science images in a /mef/ subdirectory ***
+            ex: /[instrument]/[night]/raw/mef/
         """
 
+        new_paths = []
         with astropy.io.fits.open(path) as hdu:
             num_ext = len(hdu)
             print("This file has ", num_ext, "extensions")
@@ -74,27 +76,27 @@ class MultiExtParser(BaseImageProcessor):
                 astropy.io.fits.writeto(
                     newpath, data, hdrext, overwrite=True
                 )  # pylint: disable=no-member
+                new_paths.append(newpath)
 
-        msg = "parse function complete... now what?"
-        return msg
+        return new_paths
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         input_dir = os.path.join(
             self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
         print("input_dir: ", input_dir)
-        return load_from_dir(input_dir, open_f=self.parse)
+        return load_from_dir(input_dir, parse_f=self.parse)
 
 
 def load_from_dir(
-    input_dir: str | Path, open_f: Callable[[str | Path], Image]
+    input_dir: str | Path, parse_f: Callable[[str | Path], Image]
 ) -> ImageBatch:
     """
-    Function to load all images in a directory
+    Function to parse all MEF images in a directory
 
     :param input_dir: directory path
-    :param open_f: function to open raw images
-    :return: ImageBatch
+    :param parse_f: function to parse MEF images
+    :return: nothing...
     """
 
     img_list = sorted(glob(f"{input_dir}/*.fits"))
@@ -106,10 +108,8 @@ def load_from_dir(
         logger.error(err)
         raise ImageNotFoundError(err)
 
-    images = ImageBatch()
-
     for path in img_list:
-        image = open_f(path)
-        images.append(image)
+        parse_f(path)
 
-    return images
+    empty_batch = ImageBatch()
+    return empty_batch

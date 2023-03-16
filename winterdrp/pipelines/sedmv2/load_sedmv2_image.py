@@ -21,14 +21,11 @@ from winterdrp.paths import (
 logger = logging.getLogger(__name__)
 
 
-def load_raw_sedmv2_image(
-    path: str, ext: int
-) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
     """
     Function to load a raw SEDMv2 image
 
-    :param path: path of file
-    :param ext: extension, since SEDMv2 files are MEF
+    :param path:- path of file
     :return: data and header of image
     """
 
@@ -37,9 +34,7 @@ def load_raw_sedmv2_image(
 
         if "PREPTAG" not in header.keys():
             if "IMGTYPE" in header.keys():
-                path_new = prepare_science(
-                    path, ext
-                )  # should change w/ MEF ImageLoader
+                path_new = prepare_science(path)
             else:  # IMGTYPE not in cal; may change w updated cal files
                 path_new = prepare_cal(path)
             data = fits.open(path_new)
@@ -91,7 +86,7 @@ def load_raw_sedmv2_image(
     return data[0].data, data[0].header  # pylint: disable=no-member
 
 
-def prepare_science(filepath: str, extension: int) -> str:
+def prepare_science(filepath: str) -> str:
     """
     Additional steps to get sedmv2 science files into working order
     - combine info in header from given extension (arg: extension) with
@@ -105,23 +100,14 @@ def prepare_science(filepath: str, extension: int) -> str:
 
     file = fits.open(filepath)
 
-    data = file[extension].data
-    hdr0, hdrext = file[0].header, file[extension].header  # pylint: disable=no-member
+    data = file[0].data
+    hdr = file[0].header  # pylint: disable=no-member
 
-    # zip hdr0's values and comments
-    zipped = list(zip(hdr0.values(), hdr0.comments))
-    # append hdr0 to hdrext
-    for count, key in enumerate(list(hdr0.keys())):
-        hdrext.append((key, zipped[count][0], zipped[count][1]))
-
-    hdrext["OBSTYPE"] = "SCIENCE"
-    hdrext["OBSCLASS"] = "science"
-    hdrext["PREPTAG"] = 0  # label files that have already run through this function
+    hdr["OBSTYPE"] = "SCIENCE"
+    hdr["OBSCLASS"] = "science"
+    hdr["PREPTAG"] = 0  # label files that have already run through this function
     # save to file with 1 extension
-    # fits.writeto(filepath, data, hdrext, overwrite=True)  # pylint: disable=no-member
-    newpath = filepath.split(".fits")[0] + "_" + str(extension) + ".fits"
-
-    fits.writeto(newpath, data, hdrext)
+    fits.writeto(filepath, data, hdr, overwrite=True)  # pylint: disable=no-member
     return filepath
 
 
