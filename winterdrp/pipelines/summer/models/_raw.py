@@ -1,7 +1,6 @@
 """
 Models for the 'raw' table
 """
-import time
 from datetime import date, datetime
 from typing import ClassVar
 
@@ -102,14 +101,14 @@ class RawTable(Base):  # pylint: disable=too-few-public-methods
     dec_column_name = "dec"
 
 
-@event.listens_for(target=RawTable.__table__, identifier="after_create")
-def raw_q3c(tbl, conn, *args, **kw):
-    create_q3c_extension(
-        conn=conn,
-        __tablename__=RawTable.__tablename__,
-        ra_column_name=RawTable.ra_column_name,
-        dec_column_name=RawTable.dec_column_name,
-    )
+# @event.listens_for(target=RawTable.__table__, identifier="after_create")
+# def raw_q3c(tbl, conn, *args, **kw):
+#     create_q3c_extension(
+#         conn=conn,
+#         __tablename__=RawTable.__tablename__,
+#         ra_column_name=RawTable.ra_column_name,
+#         dec_column_name=RawTable.dec_column_name,
+#     )
 
 
 default_unknown_field = Field(default=-999)
@@ -183,15 +182,15 @@ class Raw(BaseDB):
         if not night.exists():
             night.insert_entry()
 
-        if not ProgramsTable().exists(program_id=self.progID):
+        if not ProgramsTable().exists(value=self.progID, key="progid"):
             self.progID = default_program.progid
 
         self._insert_entry()
 
-    # def exists(self) -> bool:
-    #     """
-    #     Checks if the pydantic-ified data exists the corresponding sql database
-    #
-    #     :return: bool
-    #     """
-    #     return _exists(Select(self.sql_model).where(self.sql_model.fid == self.fid))
+    def exists(self) -> bool:
+        """
+        Checks if the pydantic-ified data exists the corresponding sql database
+
+        :return: bool
+        """
+        return self.sql_model().exists(value=self.rawid, key="rawid")

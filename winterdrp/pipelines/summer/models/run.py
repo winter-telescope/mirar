@@ -38,10 +38,10 @@ from winterdrp.processors.database.postgres import (
     DB_USER,
     PostgresAdmin,
 )
-from winterdrp.utils.sql import get_engine, create_q3c_extension
+from winterdrp.utils.sql import get_engine
 
 if DB_USER is not None:
-    db_name = "summertest"
+    db_name = Base.db_name
     admin_engine = get_engine(
         db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
     )
@@ -61,10 +61,10 @@ if DB_USER is not None:
     pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
 
     session = Session(bind=engine)
-    if not default_program.exists(session):
+    if not default_program.exists():
         default_program.insert_entry()
 
-    # populate_fields()
+    populate_fields()
     populate_itid()
     populate_filters()
 
