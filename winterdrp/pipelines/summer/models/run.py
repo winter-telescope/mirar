@@ -91,4 +91,4 @@ if DB_USER is not None:
         dec=45.5667,
     )
     #
-    # new.insert_entry()
+    new.insert_entry()
