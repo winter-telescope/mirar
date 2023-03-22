@@ -4,10 +4,10 @@ Models for the 'itid' table
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import VARCHAR, Column, Integer, Select
+from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists
+from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB
 
 ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "OTHER"]
 DEFAULT_ITID = 5
@@ -42,7 +42,7 @@ class ITIDs(BaseDB):
 
         :return: bool
         """
-        return _exists(Select(self.sql_model).where(self.sql_model.itid == self.itid))
+        return self.sql_model().exists(value=self.itid, key="itid")
 
 
 def populate_itid():

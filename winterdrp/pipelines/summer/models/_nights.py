@@ -4,15 +4,10 @@ Models for the 'nights' table
 from datetime import date
 from typing import ClassVar
 
-from sqlalchemy import DATE, Column, Integer, Select, Sequence
+from sqlalchemy import DATE, Column, Integer, Sequence
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import (
-    Base,
-    BaseDB,
-    _exists,
-    date_field,
-)
+from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, date_field
 
 
 class NightsTable(Base):  # pylint: disable=too-few-public-methods
@@ -42,9 +37,7 @@ class Nights(BaseDB):
 
         :return: bool
         """
-        return _exists(
-            Select(self.sql_model).where(self.sql_model.nightid == self.nightid)
-        )
+        return self.sql_model().exists(value=self.nightid, key="nightid")
 
     #
     # def increment_raw(self):

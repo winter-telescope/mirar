@@ -64,9 +64,8 @@ def populate_fields(url=_SUMMER_FIELDS_URL):
     :return: None
     """
 
-    if not _exists(Select(FieldsTable)):
-        engine = get_engine()
-
+    engine = get_engine(db_name=FieldsTable.db_name)
+    if not _exists(Select(FieldsTable), engine=engine):
         with urllib.request.urlopen(url) as url_s:
             full_res = pd.read_csv(url_s, sep=r"\s+")
 

@@ -5,15 +5,10 @@ from datetime import date
 from typing import ClassVar
 
 from pydantic import BaseModel, Field, validator
-from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer, Select, select
+from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import (
-    Base,
-    BaseDB,
-    _exists,
-    date_field,
-)
+from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, date_field
 from winterdrp.utils.security import generate_key
 
 _LEN_PROG_KEY = 20
@@ -39,9 +34,6 @@ class ProgramsTable(Base):  # pylint: disable=too-few-public-methods
     hours_remaining = Column(REAL)
     basepriority = Column(REAL)
     raw: Mapped["RawTable"] = relationship(back_populates="programid")
-
-    def exists(self, program_id):
-        return _exists(Select(self.__class__).where(self.progid == program_id))
 
 
 class ProgramCredentials(BaseModel):
@@ -95,17 +87,13 @@ class Programs(BaseDB, ProgramCredentials):
         assert not field_value < 0.0
         return field_value
 
-    def exists(self, session) -> bool:
+    def exists(self) -> bool:
         """
         Checks if the pydantic-ified data exists the corresponding sql database
 
         :return: bool
         """
-        stmt = select(self.sql_model).where(self.sql_model.progname == self.progname)
-        return len(session.execute(stmt).fetchall()) > 0
-        # return _exists(
-        #     session.execute(stmt)
-        # )
+        return self.sql_model().exists(value=self.progid, key="progid")
 
 
 default_program = Programs(

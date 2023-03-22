@@ -4,10 +4,10 @@ Models for the 'filters' table
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import VARCHAR, Column, Integer, Select
+from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, _exists
+from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB
 
 summer_filters_map = {"u": 1, "g": 2, "r": 3, "i": 4}
 
@@ -43,7 +43,7 @@ class Filters(BaseDB):
 
         :return: bool
         """
-        return _exists(Select(self.sql_model).where(self.sql_model.fid == self.fid))
+        return self.sql_model().exists(value=self.fid, key="fid")
 
     @validator("fid")
     @classmethod
