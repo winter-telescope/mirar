@@ -77,13 +77,14 @@ process_raw = [
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),  # pylint: disable=duplicate-code
     ImageSaver(output_dir_name="detrend", write_mask=True),
-    # AutoAstrometry(pa=0, inv=True, pixel_scale=SEDMV2_PIXEL_SCALE),
-    # AstrometryNet(scale_upper=0.1667, scale_lower=0.0333, scale_units='degw'),
-    AstrometryNet(scale_bounds=(0.1667, 0.0333), scale_units="degw", downsample=2),
-    ImageSaver(output_dir_name="a-net"),
-    # ImageSaver(
-    #    output_dir_name="detrend", write_mask=True
-    # ),  # pylint: disable=duplicate-code
+    # AstrometryNet(scale_bounds=(0.1667, 0.0333), scale_units="degw", downsample=2),
+    AstrometryNet(
+        output_sub_dir="a-net",
+        scale_bounds=(0.1667, 0.0333),
+        scale_units="degw",
+        downsample=2,
+    ),
+    # ImageSaver(output_dir_name="a-net"),
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,

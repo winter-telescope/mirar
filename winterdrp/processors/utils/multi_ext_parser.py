@@ -24,7 +24,7 @@ class MultiExtParser(BaseImageProcessor):
     Should be run before ImageLoader, especially for SEDMv2
     """
 
-    base_key = "load"  # TODO: should this be changed?
+    base_key = "load"  # should this be changed?
 
     def __init__(
         self,
@@ -58,7 +58,7 @@ class MultiExtParser(BaseImageProcessor):
             num_ext = len(hdu)
             print("This file has ", num_ext, "extensions")
 
-            hdr0 = hdu[0].header
+            hdr0 = hdu[0].header  # pylint: disable=no-member
             # zip hdr0's values and comments
             zipped = list(zip(hdr0.values(), hdr0.comments))
             # combining main header (hdr0) with extension header

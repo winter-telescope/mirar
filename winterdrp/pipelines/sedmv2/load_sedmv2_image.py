@@ -30,7 +30,7 @@ def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
     """
 
     with fits.open(path) as data:
-        header = data[0].header  # pylint: disable=no-member, this is the MAIN header,
+        header = data[0].header  # pylint: disable=no-member
 
         if "PREPTAG" not in header.keys():
             if "IMGTYPE" in header.keys():
@@ -100,7 +100,7 @@ def prepare_science(filepath: str) -> str:
 
     file = fits.open(filepath)
 
-    data = file[0].data
+    data = file[0].data  # pylint: disable=no-member
     hdr = file[0].header  # pylint: disable=no-member
 
     hdr["OBSTYPE"] = "SCIENCE"
