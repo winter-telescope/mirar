@@ -74,9 +74,7 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
         err = "U band image is in a field with no reference image."
         logger.error(err)
         raise NotInSDSSError(err)
-    return PS1(
-        min_mag=10, max_mag=20, search_radius_arcmin=7.5, filter_name=filter_name
-    )
+    return PS1(min_mag=10, max_mag=20, search_radius_arcmin=5, filter_name=filter_name)
 
 
 def sedmv2_reference_image_generator(image: Image) -> BaseReferenceGenerator:

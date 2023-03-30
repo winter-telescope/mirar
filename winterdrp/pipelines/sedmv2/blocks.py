@@ -8,6 +8,7 @@ from winterdrp.paths import BASE_NAME_KEY, core_fields
 from winterdrp.pipelines.sedmv2.config import (
     psfex_config_path,
     sedmv2_cal_requirements,
+    sedmv2_mask_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
     swarp_config_path,
@@ -24,6 +25,7 @@ from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.anet import AstrometryNet
 from winterdrp.processors.astromatic import PSFex, Sextractor, Swarp
 from winterdrp.processors.csvlog import CSVLog
+from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.utils import (
@@ -77,14 +79,13 @@ process_raw = [
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),  # pylint: disable=duplicate-code
     ImageSaver(output_dir_name="detrend", write_mask=True),
-    # AstrometryNet(scale_bounds=(0.1667, 0.0333), scale_units="degw", downsample=2),
     AstrometryNet(
         output_sub_dir="a-net",
         scale_bounds=(0.1667, 0.0333),
         scale_units="degw",
         downsample=2,
     ),
-    # ImageSaver(output_dir_name="a-net"),
+    MaskPixels(mask_path=sedmv2_mask_path),
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
