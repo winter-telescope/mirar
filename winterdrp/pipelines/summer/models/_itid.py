@@ -7,7 +7,8 @@ from pydantic import Field
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB
+from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
 
 ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "OTHER"]
 DEFAULT_ITID = 5
@@ -15,7 +16,7 @@ DEFAULT_ITID = 5
 itid_field = Field(ge=0, le=5, default=5)
 
 
-class ITIDsTable(Base):  # pylint: disable=too-few-public-methods
+class ITIDsTable(SummerBase):  # pylint: disable=too-few-public-methods
     """
     ITID table in database
     """

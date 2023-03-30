@@ -7,10 +7,11 @@ from typing import ClassVar
 from sqlalchemy import DATE, Column, Integer, Sequence
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, date_field
+from winterdrp.pipelines.summer.models.basemodel import SummerBase, date_field
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
 
 
-class NightsTable(Base):  # pylint: disable=too-few-public-methods
+class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods
     """
     Nights table in database
     """
@@ -18,7 +19,8 @@ class NightsTable(Base):  # pylint: disable=too-few-public-methods
     __tablename__ = "nights"
     __table_args__ = {"extend_existing": True}
 
-    nid = Column(Integer, Sequence(name="nid-seq", start=1), primary_key=True)
+    nid = Column(Integer, primary_key=True)  # Starts at 1 and
+    # creates a sequence by default
     nightid = Column(DATE, unique=True)
     raw: Mapped["RawTable"] = relationship(back_populates="night")
 

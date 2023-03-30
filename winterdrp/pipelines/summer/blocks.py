@@ -6,7 +6,7 @@ lists which are used to build configurations for the
 """
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import BASE_NAME_KEY, GAIN_KEY, core_fields
-from winterdrp.pipelines.summer.config import (  # summer_weight_path,; get_summer_schema_path,
+from winterdrp.pipelines.summer.config import (
     DB_NAME,
     PIPELINE_NAME,
     SUMMER_PIXEL_SCALE,
@@ -31,6 +31,7 @@ from winterdrp.pipelines.summer.load_summer_image import (
     load_proc_summer_image,
     load_raw_summer_image,
 )
+from winterdrp.pipelines.summer.models._raw import Raw
 from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from winterdrp.processors.autoastrometry import AutoAstrometry
@@ -38,7 +39,6 @@ from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 from winterdrp.processors.candidates.utils import DataframeWriter, RegionsWriter
 from winterdrp.processors.cosmic_rays import LACosmicCleaner
 from winterdrp.processors.csvlog import CSVLog
-from winterdrp.processors.database.database_exporter import DatabaseImageExporter
 from winterdrp.processors.database.database_modifier import ModifyImageDatabaseSeq
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
@@ -47,6 +47,7 @@ from winterdrp.processors.photometry.aperture_photometry import (
 )
 from winterdrp.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from winterdrp.processors.reference import Reference
+from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from winterdrp.processors.utils import (
     ImageBatcher,
     ImageLoader,
@@ -119,15 +120,12 @@ load_processed = [
 ]
 
 export_raw = [
-    # DatabaseImageExporter(
-    #     db_name=DB_NAME,
-    #     db_table="exposures",
-    #     schema_path=get_summer_schema_path("exposures"),#FIXME
-    #     has_foreign_keys=True,
-    #     schema_dir=summer_schema_dir,
-    #     duplicate_protocol="ignore",
-    #     q3c_bool=False,
-    # ),
+    # ImageSelector(("BASENAME", "SUMMER_20220402_193152_Camera0.fits")),
+    DatabaseImageExporter(
+        db_table=Raw,
+        duplicate_protocol="replace",
+        q3c_bool=False,
+    ),
     MaskPixels(mask_path=summer_mask_path),
     # DatabaseImageExporter(
     #     db_name=DB_NAME,

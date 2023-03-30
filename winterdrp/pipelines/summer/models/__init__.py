@@ -68,28 +68,3 @@ if DB_USER is not None:
     populate_fields()
     populate_itid()
     populate_filters()
-
-    night_id = date(2002, 1, 1)
-    rawid = 1000001
-    new = Raw(
-        rawid=rawid,
-        nightid=night_id,
-        fid=1,
-        expid=rawid,
-        savepath=f"/Users/viraj/raw/{rawid}",
-        obsdate=date(year=2020, month=10, day=2),
-        timeutc=datetime(year=2020, month=10, day=2),
-        obsID=1,
-        itid=1,
-        AExpTime=30,
-        expMJD=59001.32,
-        airmass=1.2,
-        shutopen=datetime(year=2020, month=10, day=2),
-        shutclsd=datetime(year=2020, month=10, day=2),
-        altitude=30.0,
-        azimuth=265.5,
-        ra=284.66587,
-        dec=45.5667,
-    )
-    #
-    new.insert_entry()

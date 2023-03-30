@@ -8,14 +8,15 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB, date_field
+from winterdrp.pipelines.summer.models.basemodel import SummerBase, date_field
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
 from winterdrp.utils.security import generate_key
 
 _LEN_PROG_KEY = 20
 program_id_field: int = Field(default=1)
 
 
-class ProgramsTable(Base):  # pylint: disable=too-few-public-methods
+class ProgramsTable(SummerBase):  # pylint: disable=too-few-public-methods
     """
     Program table in database
     """

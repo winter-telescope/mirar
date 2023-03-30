@@ -11,19 +11,14 @@ from sqlalchemy import REAL, Column, Insert, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 
-from winterdrp.pipelines.summer.models.basemodel import (
-    Base,
-    BaseDB,
-    _exists,
-    dec_field,
-    ra_field,
-)
+from winterdrp.pipelines.summer.models.basemodel import SummerBase, dec_field, ra_field
+from winterdrp.processors.sqldatabase.basemodel import BaseDB, _exists
 from winterdrp.utils.sql import get_engine
 
 DEFAULT_FIELD = 999999999
 
 
-class FieldsTable(Base):  # pylint: disable=too-few-public-methods
+class FieldsTable(SummerBase):  # pylint: disable=too-few-public-methods
     """
     Field table in database
     """
@@ -36,7 +31,7 @@ class FieldsTable(Base):  # pylint: disable=too-few-public-methods
     raw: Mapped["RawTable"] = relationship(back_populates="field")
 
 
-fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD)
+fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD, exclude={-99})
 
 
 class Fields(BaseDB):

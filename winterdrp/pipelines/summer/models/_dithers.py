@@ -6,10 +6,11 @@ from typing import ClassVar
 from pydantic import Field
 from sqlalchemy import REAL, Column, Integer
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB
+from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
 
 
-class DithersTable(Base):  # pylint: disable=too-few-public-methods
+class DithersTable(SummerBase):  # pylint: disable=too-few-public-methods
     """
     Dithers table in database
     """

@@ -10,9 +10,11 @@ from sqlalchemy import (
     VARCHAR,
     Column,
     DateTime,
+    Double,
     Float,
     ForeignKey,
     Integer,
+    Sequence,
     event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -27,20 +29,20 @@ from winterdrp.pipelines.summer.models._programs import (
     program_id_field,
 )
 from winterdrp.pipelines.summer.models.basemodel import (
-    Base,
-    BaseDB,
+    SummerBase,
     alt_field,
     az_field,
     date_field,
     dec_field,
     ra_field,
 )
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
 from winterdrp.utils.sql import create_q3c_extension
 
 db_name = "summertest"
 
 
-class RawTable(Base):  # pylint: disable=too-few-public-methods
+class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
     """
     Raw table in database
     """
@@ -48,7 +50,8 @@ class RawTable(Base):  # pylint: disable=too-few-public-methods
     __tablename__ = "raw"
     __table_args__ = {"extend_existing": True}
 
-    rawid = Column(Integer, primary_key=True)
+    rawid = Column(Double, primary_key=True, autoincrement=False)
+    rawcount = Column(Integer, Sequence("raw_rawcount_seq", start=1))
     filtername = Column(VARCHAR(20), unique=True)
 
     nightid: Mapped[int] = mapped_column(ForeignKey("nights.nightid"))
@@ -66,7 +69,7 @@ class RawTable(Base):  # pylint: disable=too-few-public-methods
     progID: Mapped[int] = mapped_column(ForeignKey("programs.id"))
     programid: Mapped["ProgramsTable"] = relationship(back_populates="raw")
 
-    expid = Column(Integer, unique=True)
+    expid = Column(Double, unique=True)
     savepath = Column(VARCHAR(255), unique=True)
     obsdate = Column(DATE)
     timeutc = Column(DateTime(timezone=True))
@@ -172,7 +175,7 @@ class Raw(BaseDB):
     #     assert field_value.exists()
     #     return field_value
 
-    def insert_entry(self):
+    def insert_entry(self, returning_keys=None) -> tuple:
         """
         Insert the pydantic-ified data into the corresponding sql database
 
@@ -185,7 +188,7 @@ class Raw(BaseDB):
         if not ProgramsTable().exists(value=self.progID, key="progid"):
             self.progID = default_program.progid
 
-        self._insert_entry()
+        return self._insert_entry()
 
     def exists(self) -> bool:
         """

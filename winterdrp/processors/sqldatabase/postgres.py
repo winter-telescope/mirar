@@ -4,19 +4,22 @@ Module containing postgres util functions
 # pylint: disable=not-context-manager
 import logging
 import os
-from glob import glob
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Type
 
 import numpy as np
 import psycopg
 from psycopg import errors
 from psycopg.rows import Row
 
+# from winterdrp.processors.database.basemodel import BaseDB
+from pydantic import BaseModel, ValidationError
+from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
+
 from winterdrp.data import DataBlock
 from winterdrp.errors import ProcessorError
 from winterdrp.processors.database.constraints import DBQueryConstraints
-from winterdrp.processors.database.utils import get_ordered_schema_list
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +36,39 @@ ADMIN_USER = os.getenv(PG_ADMIN_USER_KEY, DB_USER)
 ADMIN_PASSWORD = os.getenv(PG_ADMIN_PWD_KEY, DB_PASSWORD)
 
 POSTGRES_DUPLICATE_PROTOCOLS = ["fail", "ignore", "replace"]
+
+
+def get_sequence_key_names_from_table(
+    db_table: str,
+    db_name: str,
+    db_user: str = DB_USER,
+    db_password: str = DB_PASSWORD,
+) -> np.ndarray:
+    """
+    Gets sequence keys of db table
+
+    :param db_table: database table to use
+    :param db_name: database name
+    :param db_user: database user
+    :param db_password: dataname password
+    :return: numpy array of keys
+
+    """
+    with psycopg.connect(
+        f"dbname={db_name} user={db_user} password={db_password}"
+    ) as conn:
+        conn.autocommit = True
+        sequences = [
+            x[0]
+            for x in conn.execute(
+                "SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';"
+            ).fetchall()
+        ]
+        logger.debug(sequences)
+        seq_tables = np.array([x.split("_")[0] for x in sequences])
+        seq_columns = np.array([x.split("_")[1] for x in sequences])
+        table_sequence_keys = seq_columns[(seq_tables == db_table)]
+    return table_sequence_keys
 
 
 class DataBaseError(ProcessorError):
@@ -90,53 +126,16 @@ class PostgresUser:
 
             logger.info(f"Executed sql commands from file {file_path}")
 
-    def create_table(self, schema_path: str | Path, db_name: str):
-        """
-        Create a database table
-
-        :param schema_path: File to execute
-        :param db_name: name of database
-        :return: None
-        """
-        with psycopg.connect(
-            f"dbname={db_name} user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-            with open(schema_path, "r", encoding="utf8") as schema_file:
-                conn.execute(schema_file.read())
-
-        logger.info(f"Created table from schema path {schema_path}")
-
-    def create_tables_from_schema(
-        self,
-        schema_dir: str | Path,
-        db_name: str,
-    ):
-        """
-        Creates a db with tables, as described by .sql files in a directory
-
-        :param schema_dir: Directory containing schema files
-        :param db_name: name of DB
-        :return: None
-        """
-        schema_files = glob(f"{schema_dir}/*.sql")
-        ordered_schema_files = get_ordered_schema_list(schema_files)
-        logger.info(f"Creating the following tables - {ordered_schema_files}")
-        for schema_file in ordered_schema_files:
-            self.create_table(schema_path=schema_file, db_name=db_name)
-
     def export_to_db(
         self,
         value_dict: dict | DataBlock,
-        db_name: str,
-        db_table: str,
+        db_table: Type[BaseModel],
         duplicate_protocol: str = "fail",
     ) -> tuple[list, list]:
         """
         Export a list of fields in value dict to a batabase table
 
         :param value_dict: dictionary/DataBlock/other dictonary-like object to export
-        :param db_name: name of db to export to
         :param db_table: table of DB to export to
         :param duplicate_protocol: protocol for handling duplicates,
             in "fail"/"ignore"/"replace"
@@ -145,188 +144,75 @@ class PostgresUser:
 
         assert duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
 
+        column_names = [
+            x for x in db_table.__dict__["__annotations__"] if x != "sql_model"
+        ]
+
+        column_dict = {}
+        for column in column_names:
+            column_dict[column] = value_dict[column]
+
+        try:
+            new = db_table(**column_dict)
+        except ValidationError as err:
+            logger.error(err)
+            raise DataBaseError from err
+
+        db_name = new.sql_model.db_name
+        primary_key = inspect(db_table.sql_model).primary_key[0]
+
+        sequence_key_names, sequence_values = [], []
+        try:
+            sequence_key_names, sequence_values = new.insert_entry()
+
+        except IntegrityError as exc:
+            if not isinstance(exc.orig, errors.UniqueViolation):
+                raise exc
+
+            if duplicate_protocol == "fail":
+                err = f"Duplicate error, entry already exists in {db_name}."
+                logger.error(err)
+                raise errors.UniqueViolation from exc
+
+            if duplicate_protocol == "ignore":
+                logger.debug(
+                    f"Found duplicate entry in {db_name} - "
+                    f"{str(exc)}."
+                    f"Ignoring, no new entry made."
+                )
+                # TODO : Query serial values with primary key
+
+            if duplicate_protocol == "replace":
+                logger.debug(
+                    f"Found duplicate entry in {db_name} - "
+                    f"{str(exc)}."
+                    f"Replacing with a new entry."
+                )
+                primary_key_val = value_dict[primary_key.name]
+                sequence_key_names, sequence_values = new.update_entry(
+                    primary_key_val=primary_key_val
+                )
+
+        return sequence_key_names, sequence_values
+
+    def execute_query(self, sql_query: str, db_name: str) -> list[Row]:
+        """
+        Generically execute SQL query
+
+        :param sql_query: SQL query to execute
+        :param db_name: db name
+        :return: rows from db
+        """
         with psycopg.connect(
             f"dbname={db_name} user={self.db_user} password={self.db_password}"
         ) as conn:
             conn.autocommit = True
+            logger.debug(f"Query: {sql_query}")
 
-            sql_query = f"""
-            SELECT Col.Column_Name from
-                INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab,
-                INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col
-            WHERE
-                Col.Constraint_Name = Tab.Constraint_Name
-                AND Col.Table_Name = Tab.Table_Name
-                AND Constraint_Type = 'PRIMARY KEY'
-                AND Col.Table_Name = '{db_table}'
-            """
-            serial_keys, serial_key_values = [], []
             with conn.execute(sql_query) as cursor:
-                primary_key = [x[0] for x in cursor.fetchall()]
-                serial_keys = list(self.get_sequence_keys_from_table(db_table, db_name))
-                logger.debug(serial_keys)
-                colnames = [
-                    desc[0]
-                    for desc in conn.execute(
-                        f"SELECT * FROM {db_table} LIMIT 1"
-                    ).description
-                    if desc[0] not in serial_keys
-                ]
-
-                colnames_str = ""
-                for column in colnames:
-                    colnames_str += f'"{column}",'
-                colnames_str = colnames_str[:-1]
-                txt = f"INSERT INTO {db_table} ({colnames_str}) VALUES ("
-
-                for char in ["[", "]", "'"]:
-                    txt = txt.replace(char, "")
-
-                for column in colnames:
-                    txt += f"'{str(value_dict[column])}', "
-
-                txt = txt + ") "
-                txt = txt.replace(", )", ")")
-
-                if len(serial_keys) > 0:
-                    txt += "RETURNING "
-                    for key in serial_keys:
-                        txt += f"{key},"
-                    txt += ";"
-                    txt = txt.replace(",;", ";")
-
-                logger.debug(txt)
-                command = txt
-
-                try:
-                    cursor.execute(command)
-                    if len(serial_keys) > 0:
-                        serial_key_values = cursor.fetchall()[0]
-                    else:
-                        serial_key_values = []
-
-                except errors.UniqueViolation as exc:
-                    primary_key_values = [value_dict[x] for x in primary_key]
-
-                    if duplicate_protocol == "fail":
-                        err = (
-                            f"Duplicate error, entry with "
-                            f"{primary_key}={primary_key_values} "
-                            f"already exists in {db_name}."
-                        )
-                        logger.error(err)
-                        raise errors.UniqueViolation from exc
-
-                    if duplicate_protocol == "ignore":
-                        logger.debug(
-                            f"Found duplicate entry with "
-                            f"{primary_key}={primary_key_values} in {db_name}. "
-                            f"Ignoring."
-                        )
-                    elif duplicate_protocol == "replace":
-                        logger.debug(
-                            f"Updating duplicate entry with "
-                            f"{primary_key}={primary_key_values} in {db_name}."
-                        )
-
-                        db_constraints = DBQueryConstraints(
-                            columns=primary_key,
-                            accepted_values=primary_key_values,
-                        )
-
-                        update_colnames = []
-                        for column in colnames:
-                            if column not in primary_key:
-                                update_colnames.append(column)
-
-                        serial_key_values = self.modify_db_entry(
-                            db_constraints=db_constraints,
-                            value_dict=value_dict,
-                            db_alter_columns=update_colnames,
-                            db_table=db_table,
-                            db_name=db_name,
-                            return_columns=serial_keys,
-                        )
-
-        return serial_keys, serial_key_values
-
-    def modify_db_entry(
-        self,
-        db_name: str,
-        db_table: str,
-        db_constraints: DBQueryConstraints,
-        value_dict: dict | DataBlock,
-        db_alter_columns: str | list[str],
-        return_columns: Optional[str | list[str]] = None,
-    ) -> list[Row]:
-        """
-        Modify a db entry
-
-        :param db_name: name of db
-        :param db_table: Name of table
-        :param value_dict: dict-like object to provide updated values
-        :param db_alter_columns: columns to alter in db
-        :param return_columns: columns to return
-        :return: db query (return columns)
-        """
-
-        if not isinstance(db_alter_columns, list):
-            db_alter_columns = [db_alter_columns]
-
-        if return_columns is None:
-            return_columns = db_alter_columns
-        if not isinstance(return_columns, list):
-            return_columns = [return_columns]
-
-        constraints = db_constraints.parse_constraints()
-
-        with psycopg.connect(
-            f"dbname={db_name} user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-
-            db_alter_values = [str(value_dict[c]) for c in db_alter_columns]
-
-            alter_values_txt = [
-                f"{db_alter_columns[ind]}='{db_alter_values[ind]}'"
-                for ind in range(len(db_alter_columns))
-            ]
-
-            sql_query = (
-                f"UPDATE {db_table} SET {', '.join(alter_values_txt)} "
-                f"WHERE {constraints}"
-            )
-
-            if len(return_columns) > 0:
-                logger.debug(return_columns)
-                sql_query += f""" RETURNING {', '.join(return_columns)}"""
-            sql_query += ";"
-            query_output = self.execute_query(sql_query, db_name)
+                query_output = cursor.fetchall()
 
         return query_output
-
-    def get_sequence_keys_from_table(self, db_table: str, db_name: str) -> np.ndarray:
-        """
-        Gets sequence keys of db table
-
-        :param db_table: database table to use
-        :param db_name: dataname name
-        :return: numpy array of keys
-        """
-        with psycopg.connect(
-            f"dbname={db_name} user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-            sequences = [
-                x[0]
-                for x in conn.execute(
-                    "SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';"
-                ).fetchall()
-            ]
-            seq_tables = np.array([x.split("_")[0] for x in sequences])
-            seq_columns = np.array([x.split("_")[1] for x in sequences])
-            table_sequence_keys = seq_columns[(seq_tables == db_table)]
-        return table_sequence_keys
 
     def import_from_db(
         self,
@@ -403,25 +289,6 @@ class PostgresUser:
                 all_query_res.append(query_res)
 
         return all_query_res
-
-    def execute_query(self, sql_query: str, db_name: str) -> list[Row]:
-        """
-        Generically execute SQL query
-
-        :param sql_query: SQL query to execute
-        :param db_name: db name
-        :return: rows from db
-        """
-        with psycopg.connect(
-            f"dbname={db_name} user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-            logger.debug(f"Query: {sql_query}")
-
-            with conn.execute(sql_query) as cursor:
-                query_output = cursor.fetchall()
-
-        return query_output
 
     def crossmatch_with_database(
         self,
@@ -543,22 +410,6 @@ class PostgresUser:
 
         return check_value in existing_user_names
 
-    def create_db(self, db_name: str):
-        """
-        Creates a database using credentials
-
-        :param db_name: DB to create
-        :return: None
-        """
-
-        with psycopg.connect(
-            f"dbname=postgres user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-            sql = f"""CREATE database {db_name}"""
-            conn.execute(sql)
-            logger.info(f"Created db {db_name}")
-
     def check_if_db_exists(self, db_name: str) -> bool:
         """
         Check if a user account exists
@@ -578,6 +429,22 @@ class PostgresUser:
         logger.debug(f"Database '{db_name}' does {['not ', ''][db_exist_bool]} exist")
 
         return db_exist_bool
+
+    def create_db(self, db_name: str):
+        """
+        Creates a database using credentials
+
+        :param db_name: DB to create
+        :return: None
+        """
+
+        with psycopg.connect(
+            f"dbname=postgres user={self.db_user} password={self.db_password}"
+        ) as conn:
+            conn.autocommit = True
+            sql = f"""CREATE database {db_name}"""
+            conn.execute(sql)
+            logger.info(f"Created db {db_name}")
 
     def check_if_table_exists(self, db_name: str, db_table: str) -> bool:
         """
@@ -602,6 +469,61 @@ class PostgresUser:
         logger.debug(f"Table '{db_table}' does {['not ', ''][table_exist_bool]} exist")
 
         return table_exist_bool
+
+    def modify_db_entry(
+        self,
+        db_name: str,
+        db_table: str,
+        db_constraints: DBQueryConstraints,
+        value_dict: dict | DataBlock,
+        db_alter_columns: str | list[str],
+        return_columns: Optional[str | list[str]] = None,
+    ) -> list[Row]:
+        """
+        Modify a db entry
+
+        :param db_name: name of db
+        :param db_table: Name of table
+        :param value_dict: dict-like object to provide updated values
+        :param db_alter_columns: columns to alter in db
+        :param return_columns: columns to return
+        :return: db query (return columns)
+        """
+
+        if not isinstance(db_alter_columns, list):
+            db_alter_columns = [db_alter_columns]
+
+        if return_columns is None:
+            return_columns = db_alter_columns
+        if not isinstance(return_columns, list):
+            return_columns = [return_columns]
+
+        constraints = db_constraints.parse_constraints()
+
+        with psycopg.connect(
+            f"dbname={db_name} user={self.db_user} password={self.db_password}"
+        ) as conn:
+            conn.autocommit = True
+
+            db_alter_values = [str(value_dict[c]) for c in db_alter_columns]
+
+            alter_values_txt = [
+                f"{db_alter_columns[ind]}='{db_alter_values[ind]}'"
+                for ind in range(len(db_alter_columns))
+            ]
+
+            sql_query = (
+                f"UPDATE {db_table} SET {', '.join(alter_values_txt)} "
+                f"WHERE {constraints}"
+            )
+
+            if len(return_columns) > 0:
+                logger.debug(return_columns)
+                sql_query += f""" RETURNING {', '.join(return_columns)}"""
+            sql_query += ";"
+            query_output = self.execute_query(sql_query, db_name)
+
+        return query_output
 
 
 class PostgresAdmin(PostgresUser):

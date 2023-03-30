@@ -7,12 +7,13 @@ from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import Base, BaseDB
+from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
 
 summer_filters_map = {"u": 1, "g": 2, "r": 3, "i": 4}
 
 
-class FiltersTable(Base):  # pylint: disable=too-few-public-methods
+class FiltersTable(SummerBase):  # pylint: disable=too-few-public-methods
     """
     Field table in database
     """
