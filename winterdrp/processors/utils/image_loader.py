@@ -83,7 +83,12 @@ def load_from_dir(
 
     img_list = sorted(glob(f"{input_dir}/*.fits"))
 
-    logger.info(f"Loading from {input_dir}, with {len(img_list)} images")
+    # check for zipped files too
+    zipped_list = sorted(glob(f"{input_dir}/*.fz"))
+    if len(zipped_list) > 0:
+        unzipped_list = unzip(zipped_list)
+        for file in unzipped_list:
+            img_list.append(file)
 
     if len(img_list) < 1:
         err = f"No images found in {input_dir}. Please check path is correct!"
@@ -97,3 +102,11 @@ def load_from_dir(
         images.append(image)
 
     return images
+
+
+def unzip(zipped_list: list[str]) -> list[str]:
+    unzipped_list = [file.split(".fz")[0] for file in zipped_list]
+    for i, file in enumerate(zipped_list):
+        os.rename(file, unzipped_list[i])
+
+    return unzipped_list
