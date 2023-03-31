@@ -278,32 +278,32 @@ python-dateutil = ">=2.7.0"
 
 [[package]]
 name = "asdf"
-version = "2.14.4"
+version = "2.15.0"
 description = "Python implementation of the ASDF Standard"
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "asdf-2.14.4-py3-none-any.whl", hash = "sha256:101dd245e2fbeee9cc13a6c78f59fdf4bc66c8290f742644656c5946c97231dd"},
-    {file = "asdf-2.14.4.tar.gz", hash = "sha256:d1251a9d85ec83437ddddeb205d32381a04ab1240520750189a1d07ee8e91129"},
+    {file = "asdf-2.15.0-py3-none-any.whl", hash = "sha256:11fae326d1f3a39a2c0c4cd42d4fcb789ef46f9ebe00c79564f34b066f05027a"},
+    {file = "asdf-2.15.0.tar.gz", hash = "sha256:686f1c91ebf987d41f915cfb6aa70940d7ad17f87ede0be70463147ad2314587"},
 ]
 
 [package.dependencies]
 asdf-standard = ">=1.0.1"
-asdf-transform-schemas = ">=0.3.0"
-asdf-unit-schemas = ">=0.1.0"
+asdf-transform-schemas = ">=0.3"
+asdf-unit-schemas = ">=0.1"
 importlib-metadata = ">=4.11.4"
 jmespath = ">=0.6.2"
 jsonschema = ">=4.0.1,<4.18"
-numpy = ">=1.18"
-packaging = ">=16.0"
-pyyaml = ">=3.10"
+numpy = ">=1.20"
+packaging = ">=19"
+pyyaml = ">=5.4.1"
 semantic-version = ">=2.8"
 
 [package.extras]
 all = ["lz4 (>=0.10)"]
 docs = ["sphinx-asdf (>=0.1.4)", "tomli"]
-tests = ["astropy (>=5.0.4)", "fsspec[http] (>=2022.8.2)", "gwcs", "lz4 (>=0.10)", "psutil", "pytest (>=6.0.0)", "pytest-doctestplus", "pytest-openfiles", "pytest-remotedata"]
+tests = ["astropy (>=5.0.4)", "fsspec[http] (>=2022.8.2)", "gwcs (>=0.18.3)", "lz4 (>=0.10)", "psutil", "pytest (>=6)", "pytest-doctestplus", "pytest-openfiles", "pytest-remotedata"]
 
 [[package]]
 name = "asdf-standard"
@@ -2909,14 +2909,14 @@ files = [
 
 [[package]]
 name = "nbclassic"
-version = "0.5.4"
+version = "0.5.5"
 description = "Jupyter Notebook as a Jupyter Server extension."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "nbclassic-0.5.4-py3-none-any.whl", hash = "sha256:df78e4ba143f35084ad060deec16cb1d4839dde47bfdbc4232beb7071a6d70ea"},
-    {file = "nbclassic-0.5.4.tar.gz", hash = "sha256:312b3f7d7ff2e6c261d51799bb12e6493498ab47d3469d3a01015d5533fd4d2b"},
+    {file = "nbclassic-0.5.5-py3-none-any.whl", hash = "sha256:47791b04dbcb89bf7fde910a3d848fd4793a4248a8936202453631a87da37d51"},
+    {file = "nbclassic-0.5.5.tar.gz", hash = "sha256:d2c91adc7909b0270c73e3e253d3687a6704b4f0a94bc156a37c85eba09f4d37"},
 ]
 
 [package.dependencies]
@@ -3478,14 +3478,14 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pre-commit"
-version = "3.2.1"
+version = "3.2.2"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pre_commit-3.2.1-py2.py3-none-any.whl", hash = "sha256:a06a7fcce7f420047a71213c175714216498b49ebc81fe106f7716ca265f5bb6"},
-    {file = "pre_commit-3.2.1.tar.gz", hash = "sha256:b5aee7d75dbba21ee161ba641b01e7ae10c5b91967ebf7b2ab0dfae12d07e1f1"},
+    {file = "pre_commit-3.2.2-py2.py3-none-any.whl", hash = "sha256:0b4210aea813fe81144e87c5a291f09ea66f199f367fa1df41b55e1d26e1e2b4"},
+    {file = "pre_commit-3.2.2.tar.gz", hash = "sha256:5b808fcbda4afbccf6d6633a56663fed35b6c2bc08096fd3d47ce197ac351d9d"},
 ]
 
 [package.dependencies]
