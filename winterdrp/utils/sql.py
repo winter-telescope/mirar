@@ -26,8 +26,9 @@ def get_engine(
     :param db_name: name of db
     :return: sqlalchemy engine
     """
+
     return create_engine(
-        f"postgresql+psycopg://{db_user}:{db_password}" f"@{db_host}/{db_name}",
+        f"postgresql+psycopg://{db_user}:{db_password}" f"@/{db_name}",
         future=True,
     )
 
