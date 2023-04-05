@@ -80,11 +80,11 @@ def run_astrometry_net_single(
     try:
         execute(cmd_loc, output_dir)
         if os.path.isfile(img):
-            print("ran a-net with ra,dec guess \n command: ", cmd_loc)
+            logger.info(f"Ran a-net with ra,dec guess. \n A-net command: {cmd_loc}")
         else:
             execute(cmd, output_dir)
             if os.path.isfile(img):
-                print("ran a-net without ra,dec guess \n command: ", cmd)
+                logger.info(f"Ran a-net without ra,dec guess. \n A-net command: {cmd}")
     except ExecutionError as err:
         raise AstrometryNetError(err) from err
 

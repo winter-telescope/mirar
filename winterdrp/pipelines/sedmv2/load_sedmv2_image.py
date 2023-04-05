@@ -89,25 +89,20 @@ def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 def prepare_science(filepath: str) -> str:
     """
     Additional steps to get sedmv2 science files into working order
-    - combine info in header from given extension (arg: extension) with
-      info from primary header
-    - save image data from given extension (arg: extension) and combined
-      header info into new single-extension file
 
     :param filepath: path of file
     :return: path of revised file
     """
 
-    file = fits.open(filepath)
+    with fits.open(filepath) as file:
+        data = file[0].data  # pylint: disable=no-member
+        hdr = file[0].header  # pylint: disable=no-member
 
-    data = file[0].data  # pylint: disable=no-member
-    hdr = file[0].header  # pylint: disable=no-member
-
-    hdr["OBSTYPE"] = "SCIENCE"
-    hdr["OBSCLASS"] = "science"
-    hdr["PREPTAG"] = 0  # label files that have already run through this function
-    # save to file with 1 extension
-    fits.writeto(filepath, data, hdr, overwrite=True)  # pylint: disable=no-member
+        hdr["OBSTYPE"] = "SCIENCE"
+        hdr["OBSCLASS"] = "science"
+        hdr["PREPTAG"] = 0  # label files that have already run through this function
+        # save to file with 1 extension
+        fits.writeto(filepath, data, hdr, overwrite=True)  # pylint: disable=no-member
     return filepath
 
 
@@ -120,52 +115,52 @@ def prepare_cal(filepath: str) -> str:
     :return: path of revised file
     """
 
-    cal = fits.open(filepath)
-    hdr0, hdr1 = cal[0].header, cal[1].header  # pylint: disable=no-member
+    with fits.open(filepath) as cal:
+        hdr0, hdr1 = cal[0].header, cal[1].header  # pylint: disable=no-member
 
-    hdr0["OBSTYPE"] = hdr1["IMGTYPE"].upper()
-    hdr0["IMGTYPE"] = hdr1["IMGTYPE"]
-    hdr0["OBSCLASS"] = "calibration"
+        hdr0["OBSTYPE"] = hdr1["IMGTYPE"].upper()
+        hdr0["IMGTYPE"] = hdr1["IMGTYPE"]
+        hdr0["OBSCLASS"] = "calibration"
 
-    # flat/bias-specific keys
-    if hdr0["IMGTYPE"] == "flat":
-        filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
-        hdr0["FILTERID"] = filt
-        hdr0["FILTER"] = f"SDSS {filt}' (Chroma)"
-    if hdr0["IMGTYPE"] == "bias":
-        hdr0["FILTER"] = "SDSS g"
+        # flat/bias-specific keys
+        if hdr0["IMGTYPE"] == "flat":
+            filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
+            hdr0["FILTERID"] = filt
+            hdr0["FILTER"] = f"SDSS {filt}' (Chroma)"
+        if hdr0["IMGTYPE"] == "bias":
+            hdr0["FILTER"] = "SDSS g"
 
-    req_headers = [
-        "RA",
-        "DEC",
-        "TELRA",
-        "TELDEC",
-        "RAD",
-        "DECD",
-        "TELRAD",
-        "TELDECD",
-        "UTC",
-        "DATE",
-    ]
-    default_vals = [
-        "+00:00:00",
-        "+00:00:00",
-        "+00:00:00",
-        "+00:00:00",
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        "20221223_023123.072011",
-        "2022-12-23T02:31:23.073",
-    ]  # can these be changed? shortened?
+        req_headers = [
+            "RA",
+            "DEC",
+            "TELRA",
+            "TELDEC",
+            "RAD",
+            "DECD",
+            "TELRAD",
+            "TELDECD",
+            "UTC",
+            "DATE",
+        ]
+        default_vals = [
+            "+00:00:00",
+            "+00:00:00",
+            "+00:00:00",
+            "+00:00:00",
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            "20221223_023123.072011",
+            "2022-12-23T02:31:23.073",
+        ]  # can these be changed? shortened?
 
-    for count, key in enumerate(req_headers):
-        hdr0[key] = default_vals[count]
+        for count, key in enumerate(req_headers):
+            hdr0[key] = default_vals[count]
 
-    # to label files that have already run through this function
-    hdr0["PREPTAG"] = 0
-    fits.writeto(
-        filepath, cal[1].data, hdr0, overwrite=True  # pylint: disable=no-member
-    )
+        # to label files that have already run through this function
+        hdr0["PREPTAG"] = 0
+        fits.writeto(
+            filepath, cal[1].data, hdr0, overwrite=True  # pylint: disable=no-member
+        )
     return filepath
