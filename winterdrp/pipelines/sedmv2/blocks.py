@@ -8,14 +8,12 @@ from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import BASE_NAME_KEY, core_fields
 from winterdrp.pipelines.sedmv2.config import (
     psfex_config_path,
-    scamp_path,
     sedmv2_cal_requirements,
     sextractor_astrometry_config,
     sextractor_photometry_config,
     swarp_config_path,
 )
 from winterdrp.pipelines.sedmv2.generator import (
-    sedmv2_astrometric_catalog_generator,
     sedmv2_photometric_catalog_generator,
     sedmv2_reference_image_generator,
     sedmv2_reference_image_resampler,
@@ -25,7 +23,7 @@ from winterdrp.pipelines.sedmv2.generator import (
 from winterdrp.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
 from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.anet import AstrometryNet
-from winterdrp.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
+from winterdrp.processors.astromatic import PSFex, Sextractor, Swarp
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.reference import Reference
@@ -112,12 +110,9 @@ process_raw = [
         checkimage_type=None,
         **sextractor_astrometry_config
     ),
-    Scamp(  # pylint: disable=duplicate-code
-        ref_catalog_generator=sedmv2_astrometric_catalog_generator,
-        scamp_config_path=scamp_path,
-    ),
     Swarp(
         swarp_config_path=swarp_config_path,
+        include_scamp=False,
     ),
     ImageSaver(
         output_dir_name="processed", write_mask=True

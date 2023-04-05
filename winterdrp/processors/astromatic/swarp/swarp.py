@@ -19,8 +19,8 @@ from winterdrp.paths import (
     get_output_dir,
     get_temp_path,
 )
-from winterdrp.processors.astromatic.scamp.scamp import Scamp, scamp_header_key
-from winterdrp.processors.base_processor import BaseImageProcessor, PrerequisiteError
+from winterdrp.processors.astromatic.scamp.scamp import scamp_header_key
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.utils import execute
 
 logger = logging.getLogger(__name__)
@@ -338,15 +338,3 @@ class Swarp(BaseImageProcessor):
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.name
         logger.info(f"Saved resampled image to {output_image_path.name}")
         return ImageBatch([new_image])
-
-    def check_prerequisites(
-        self,
-    ):
-        check = np.sum([isinstance(x, Scamp) for x in self.preceding_steps])
-        if check < 1:
-            err = (
-                f"{self.__module__} requires {Scamp} as a prerequisite. "
-                f"However, the following steps were found: {self.preceding_steps}."
-            )
-            logger.error(err)
-            raise PrerequisiteError(err)
