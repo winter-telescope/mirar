@@ -56,7 +56,7 @@ class MultiExtParser(BaseImageProcessor):
         new_paths = []
         with astropy.io.fits.open(path) as hdu:
             num_ext = len(hdu)
-            print("This file has ", num_ext, "extensions")
+            logger.info(f"This file has {num_ext} extensions.")
 
             hdr0 = hdu[0].header  # pylint: disable=no-member
             # zip hdr0's values and comments
@@ -84,7 +84,6 @@ class MultiExtParser(BaseImageProcessor):
         input_dir = os.path.join(
             self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
-        print("input_dir: ", input_dir)
         return load_from_dir(input_dir, parse_f=self.parse)
 
 
