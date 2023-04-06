@@ -4,11 +4,11 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~winterdrp.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
-from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import BASE_NAME_KEY, core_fields
 from winterdrp.pipelines.sedmv2.config import (
     psfex_config_path,
     sedmv2_cal_requirements,
+    sedmv2_mask_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
     swarp_config_path,
@@ -25,6 +25,7 @@ from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.anet import AstrometryNet
 from winterdrp.processors.astromatic import PSFex, Sextractor, Swarp
 from winterdrp.processors.csvlog import CSVLog
+from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.utils import (
@@ -32,10 +33,10 @@ from winterdrp.processors.utils import (
     ImageLoader,
     ImageSaver,
     ImageSelector,
+    MultiExtParser,
 )
 from winterdrp.processors.utils.cal_hunter import CalHunter
 from winterdrp.processors.utils.header_annotate import HeaderEditor
-from winterdrp.processors.utils.simulate_realtime import RealtimeImageSimulator
 from winterdrp.processors.zogy.zogy import (
     ZOGY,
     ZOGYPrepare,
@@ -43,27 +44,8 @@ from winterdrp.processors.zogy.zogy import (
 )
 
 load_raw = [
+    MultiExtParser(input_sub_dir="raw/mef/"),
     ImageLoader(load_image=load_raw_sedmv2_image),
-]
-
-load_test = [
-    ImageLoader(
-        input_img_dir=get_test_data_dir(),
-        input_sub_dir="raw",
-        load_image=load_raw_sedmv2_image,
-    ),
-]
-
-sim_realtime = [
-    RealtimeImageSimulator(
-        input_img_dir=get_test_data_dir(),
-        input_img_names=[
-            "sedmv2/20220402/raw/SEDMV2_20220402_193104_Camera0.fits",
-            "sedmv2/20220402/raw/SEDMV2_20220402_214324_Camera0.fits",
-        ],
-        output_dir=get_test_data_dir(),
-        output_dir_name="raw",
-    )
 ]
 
 cal_hunter = [
@@ -97,13 +79,13 @@ process_raw = [
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),  # pylint: disable=duplicate-code
     ImageSaver(output_dir_name="detrend", write_mask=True),
-    # AutoAstrometry(pa=0, inv=True, pixel_scale=SEDMV2_PIXEL_SCALE),
-    # AstrometryNet(scale_upper=0.1667, scale_lower=0.0333, scale_units='degw'),
-    AstrometryNet(scale_bounds=(0.1667, 0.0333), scale_units="degw", downsample=2),
-    ImageSaver(output_dir_name="a-net"),
-    # ImageSaver(
-    #    output_dir_name="detrend", write_mask=True
-    # ),  # pylint: disable=duplicate-code
+    AstrometryNet(
+        output_sub_dir="a-net",
+        scale_bounds=(0.1667, 0.0333),
+        scale_units="degw",
+        downsample=2,
+    ),
+    MaskPixels(mask_path=sedmv2_mask_path),
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
