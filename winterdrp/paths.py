@@ -189,16 +189,26 @@ COADD_KEY = "COADDS"
 GAIN_KEY = "GAIN"
 EXPTIME_KEY = "AEXPTIME"
 ZP_KEY = "ZP"
-PSF_FLUX_KEY = "PSFLUX"
-PSF_FLUXUNC_KEY = "PSFLUXUN"
-MAG_PSF_KEY = "MAGPSF"
-MAGERR_PSF_KEY = "MAGPSFUN"
+PSF_FLUX_KEY = "psf_flux"
+PSF_FLUXUNC_KEY = "psf_fluxunc"
+MAG_PSF_KEY = "magpsf"
+MAGERR_PSF_KEY = "sigmapsf"
+XPOS_KEY = "xpos"
+YPOS_KEY = "ypos"
+CAND_NAME_KEY = "objectId"
+CAND_RA_KEY = "ra"
+CAND_DEC_KEY = "dec"
 sextractor_checkimg_keys = {
     "BACKGROUND": "BKGPT",
     "BACKGROUND_RMS": "BKGRMS",
     "MINIBACKGROUND": "MINIBKG",
     "MINIBACK_RMS": "MINIBGRM",
 }
+
+APFLUX_PREFIX_KEY = "fluxap"
+APFLUXUNC_PREFIX_KEY = "fluxucap"
+APMAG_PREFIX_KEY = "magap"
+APMAGUNC_PREFIX_KEY = "sigmagap"
 
 core_fields = [
     "OBSCLASS",

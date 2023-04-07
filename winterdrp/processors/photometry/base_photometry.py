@@ -7,14 +7,24 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from astropy.io import fits
 from astropy.wcs import WCS
 
 from winterdrp.data import Image
-from winterdrp.paths import BASE_NAME_KEY, UNC_IMG_KEY, get_output_dir
+from winterdrp.paths import (
+    BASE_NAME_KEY,
+    LATEST_SAVE_KEY,
+    NORM_PSFEX_KEY,
+    UNC_IMG_KEY,
+    XPOS_KEY,
+    YPOS_KEY,
+    get_output_dir,
+)
 from winterdrp.processors.base_processor import (
     BaseDataframeProcessor,
     BaseImageProcessor,
     BaseProcessor,
+    ImageHandler,
 )
 from winterdrp.processors.photometry.utils import (
     aper_photometry,
@@ -36,6 +46,15 @@ class BasePhotometry:
         pass
 
     def perform_photometry(self, image_cutout: np.array, unc_image_cutout: np.array):
+        """
+        Function to perform photometry
+        Args:
+            image_cutout: 2D image cutout array
+            unc_image_cutout: 2D image uncertainty cutout
+
+        Returns:
+
+        """
         raise NotImplementedError
 
 
@@ -98,7 +117,7 @@ class AperturePhotometry(BasePhotometry):
         return fluxes, fluxuncs
 
 
-class BasePhotometryProcessor(BaseProcessor):
+class BasePhotometryProcessor(BaseProcessor, ImageHandler):
     """
     Parent processor to run photometry
     """
@@ -109,8 +128,11 @@ class BasePhotometryProcessor(BaseProcessor):
         super().__init__()
         self.phot_cutout_size = phot_cutout_size
         self.temp_output_sub_dir = temp_output_sub_dir
+        self.photometry_out_temp_dir = get_output_dir(
+            self.temp_output_sub_dir, self.night_sub_dir
+        )
 
-    def get_filenames(self, data_item: Image | pd.Series):
+    def get_image_filenames(self, data_item: Image | pd.Series):
         """
         Get image and uncertainty image filenames
         Args:
@@ -133,6 +155,30 @@ class BasePhotometryProcessor(BaseProcessor):
         """
         raise NotImplementedError
 
+    def get_temp_image_unc_imagenames(self, image: Image) -> (str, str):
+        print(f"AA {self.photometry_out_temp_dir}")
+        self.photometry_out_temp_dir.mkdir(parents=True, exist_ok=True)
+
+        image_basename = image.header[BASE_NAME_KEY]
+        temp_imagepath = self.photometry_out_temp_dir.joinpath(image_basename)
+        self.save_fits(image, temp_imagepath)
+
+        unc_exists, temp_unc_imagepath = False, None
+        if UNC_IMG_KEY in image.header.keys():
+            unc_filename = image.header[UNC_IMG_KEY]
+            if unc_filename is None:
+                unc_exists = False
+            else:
+                temp_unc_imagepath = Path(unc_filename)
+                unc_exists = os.path.exists(unc_filename)
+        if not unc_exists:
+            rms_image = get_rms_image(image)
+            unc_filename = image[BASE_NAME_KEY] + ".unc"
+            temp_unc_imagepath = self.photometry_out_temp_dir.joinpath(unc_filename)
+            self.save_fits(rms_image, path=temp_unc_imagepath)
+            logger.info(f"Saved unc file to {temp_unc_imagepath}")
+        return temp_imagepath, temp_unc_imagepath
+
     def generate_cutouts(self, data_item: Image | pd.Series):
         """
         Generate image cutouts
@@ -142,7 +188,7 @@ class BasePhotometryProcessor(BaseProcessor):
         Returns:
             tuple: 2D numpy arrays of the image cutout and uncertainty image cutout
         """
-        imagename, unc_imagename = self.get_filenames(data_item)
+        imagename, unc_imagename = self.get_image_filenames(data_item)
         x, y = self.get_physical_coordinates(data_item)
         image_cutout, unc_image_cutout = make_cutouts(
             image_paths=[imagename, unc_imagename],
@@ -167,30 +213,10 @@ class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
         super().__init__(*args, **kwargs)
         self.target_ra_key = target_ra_key
         self.target_dec_key = target_dec_key
-        self.photometry_out_temp_dir = None
 
-    def get_filenames(self, image: Image):
-        self.photometry_out_temp_dir = get_output_dir(
-            self.temp_output_sub_dir, self.night_sub_dir
-        )
-        self.photometry_out_temp_dir.mkdir(parents=True, exist_ok=True)
-
-        image_basename = image.header[BASE_NAME_KEY]
-        temp_imagepath = self.photometry_out_temp_dir.joinpath(image_basename)
-        self.save_fits(image, temp_imagepath)
-
-        unc_exists, temp_unc_imagepath = False, None
-        if UNC_IMG_KEY in image.header.keys():
-            unc_filename = image.header[UNC_IMG_KEY]
-            temp_unc_imagepath = Path(unc_filename)
-            unc_exists = os.path.exists(unc_filename)
-        if not unc_exists:
-            rms_image = get_rms_image(image)
-            unc_filename = image[BASE_NAME_KEY] + ".unc"
-            temp_unc_imagepath = self.photometry_out_temp_dir.joinpath(unc_filename)
-            self.save_fits(rms_image, path=temp_unc_imagepath)
-            logger.info(f"Saved unc file to {temp_unc_imagepath}")
-        return temp_imagepath, temp_unc_imagepath
+    def get_image_filenames(self, image: Image):
+        image_filename, unc_filename = self.get_temp_image_unc_imagenames(image)
+        return image_filename, unc_filename
 
     def get_physical_coordinates(self, image: Image) -> (int, int):
         ra, dec = image[self.target_ra_key], image[self.target_dec_key]
@@ -206,26 +232,30 @@ class BaseCandidatePhotometry(BasePhotometryProcessor, BaseDataframeProcessor):
 
     def __init__(
         self,
-        image_colname="diffimname",
-        unc_image_colname="diffuncname",
-        psf_file_colname="diffpsfname",
-        x_colname="xpeak",
-        y_colname="ypeak",
+        image_colname=LATEST_SAVE_KEY,
+        unc_image_colname=UNC_IMG_KEY,
+        psf_file_colname=NORM_PSFEX_KEY,
+        x_colname=XPOS_KEY,
+        y_colname=YPOS_KEY,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.image_colname = image_colname
-        self.unc_image_colname = unc_image_colname
-        self.psf_file_colname = psf_file_colname
-        self.x_colname = x_colname
-        self.y_colname = y_colname
+        self.image_key = image_colname
+        self.unc_image_key = unc_image_colname
+        self.psf_file_key = psf_file_colname
+        self.xpos_key = x_colname
+        self.ypos_key = y_colname
+        print(self.night)
 
-    def get_filenames(self, row):
-        imagename = row[self.image_colname]
-        unc_filename = row[self.unc_image_colname]
-        return imagename, unc_filename
+    def get_image_filenames(self, row):
+        imagename = row[self.image_key]
+        image = Image(header=fits.getheader(imagename), data=fits.getdata(imagename))
+
+        image_filename, unc_filename = self.get_temp_image_unc_imagenames(image)
+
+        return image_filename, unc_filename
 
     def get_physical_coordinates(self, row: pd.Series):
-        x, y = row[self.x_colname], row[self.y_colname]
+        x, y = row[self.xpos_key], row[self.ypos_key]
         return int(x), int(y)

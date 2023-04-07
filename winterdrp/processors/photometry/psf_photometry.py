@@ -27,6 +27,12 @@ logger = logging.getLogger(__name__)
 
 
 def check_psf_phot_prerequisites(processor):
+    """
+    Function to check prerequisites for running PSF photometry
+    Args:
+        processor: PSF photometry processor
+
+    """
     mask = [isinstance(x, PSFex) for x in processor.preceding_steps]
     if np.sum(mask) < 1:
         err = (
@@ -44,12 +50,20 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
 
     base_key = "PSFPHOTDF"
 
-    def __init__(self, zp_colname="magzpsci"):
+    def __init__(self, zp_colname=ZP_KEY):
         super().__init__()
         self.zp_colname = zp_colname
 
     def get_psf_filename(self, row):
-        psf_filename = row[self.psf_file_colname]
+        """
+        Function to get the name of psf file
+        Args:
+            row: row of a pandas Dataframe
+
+        Returns:
+
+        """
+        psf_filename = row[self.psf_file_key]
         return psf_filename
 
     def _apply_to_candidates(
@@ -80,19 +94,21 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
                 xshifts.append(xshift)
                 yshifts.append(yshift)
 
-            candidate_table["psf_flux"] = fluxes
-            candidate_table["psf_fluxunc"] = fluxuncs
+            candidate_table[PSF_FLUX_KEY] = fluxes
+            candidate_table[PSF_FLUXUNC_KEY] = fluxuncs
             candidate_table["chipsf"] = minchi2s
             candidate_table["xshift"] = xshifts
             candidate_table["yshift"] = yshifts
-            candidate_table["magpsf"] = candidate_table[
-                self.zp_colname
-            ] - 2.5 * np.log10(candidate_table["psf_flux"])
-            candidate_table["sigmapsf"] = (
-                1.086 * candidate_table["psf_fluxunc"] / candidate_table["psf_flux"]
+            candidate_table[MAG_PSF_KEY] = np.array(
+                candidate_table[self.zp_colname], dtype=float
+            ) - 2.5 * np.log10(candidate_table[PSF_FLUX_KEY])
+            candidate_table[MAGERR_PSF_KEY] = (
+                1.086 * candidate_table[PSF_FLUXUNC_KEY] / candidate_table[PSF_FLUX_KEY]
             )
 
             source_table.set_data(candidate_table)
+        if self.photometry_out_temp_dir is not None:
+            shutil.rmtree(self.photometry_out_temp_dir)
         return batch
 
     def check_prerequisites(
@@ -109,6 +125,14 @@ class ImagePSFPhotometry(BaseImagePhotometry):
     base_key = "PSFPHOTIM"
 
     def get_psf_filename(self, image: Image):
+        """
+        Function to get PSF file name of an image
+        Args:
+            image: Image
+
+        Returns:
+
+        """
         psf_filename = image[NORM_PSFEX_KEY]
         return psf_filename
 

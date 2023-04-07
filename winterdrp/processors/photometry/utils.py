@@ -1,3 +1,6 @@
+"""
+Module with utis for photometry
+"""
 import logging
 
 import matplotlib.pyplot as plt
@@ -13,7 +16,9 @@ from winterdrp.paths import GAIN_KEY
 logger = logging.getLogger(__name__)
 
 
-def make_cutouts(image_paths: str | list[str], position: tuple, half_size: int):
+def make_cutouts(
+    image_paths: str | list[str], position: tuple, half_size: int
+) -> list[np.array]:
     """
     Function to make cutouts
     Args:
@@ -49,7 +54,8 @@ def make_cutouts(image_paths: str | list[str], position: tuple, half_size: int):
 
         elif y < half_size:
             logger.info(
-                f"Cutout parameters are {y + half_size + 1}, {x - half_size}, {x + half_size + 1},{y_image_size},"
+                f"Cutout parameters are {y + half_size + 1}, {x - half_size},"
+                f" {x + half_size + 1},{y_image_size},"
                 f"{x_image_size}"
             )
             cutout = data[0 : y + half_size + 1, x - half_size : x + half_size + 1]
@@ -82,21 +88,33 @@ def make_cutouts(image_paths: str | list[str], position: tuple, half_size: int):
     return cutout_list
 
 
-def psf_photometry(diff_cutout, diff_unc_cutout, psfmodels):
+def psf_photometry(
+    image_cutout: np.array, image_unc_cutout: np.array, psfmodels: np.array
+):
+    """
+    Function to perform PSF photometry
+    Args:
+        image_cutout:
+        image_unc_cutout:
+        psfmodels:
+
+    Returns:
+
+    """
     numpsfmodels = psfmodels.shape[2]
 
     chi2s, psf_fluxes, psf_flux_uncs = [], [], []
     for ind in range(numpsfmodels):
         psfmodel = psfmodels[:, :, ind]
-        psf_flux = np.sum(psfmodel * diff_cutout) / np.sum(np.square(psfmodel))
+        psf_flux = np.sum(psfmodel * image_cutout) / np.sum(np.square(psfmodel))
         psf_flux_unc = np.sqrt(
-            np.sum(np.square(psfmodel) * np.square(diff_unc_cutout))
+            np.sum(np.square(psfmodel) * np.square(image_unc_cutout))
         ) / np.sum(np.square(psfmodel))
-        deg_freedom = np.size(diff_cutout) - 1
+        deg_freedom = np.size(image_cutout) - 1
         chi2 = (
             np.sum(
-                np.square(diff_cutout - psfmodel * psf_flux)
-                / np.square(diff_unc_cutout)
+                np.square(image_cutout - psfmodel * psf_flux)
+                / np.square(image_unc_cutout)
             )
             / deg_freedom
         )
@@ -118,7 +136,16 @@ def psf_photometry(diff_cutout, diff_unc_cutout, psfmodels):
     return best_fit_psf_flux, best_fit_psf_fluxunc, minchi2, xshift, yshift
 
 
-def make_psf_shifted_array(psf_filename, cutout_size_psf_phot=20):
+def make_psf_shifted_array(psf_filename: str, cutout_size_psf_phot: int = 20):
+    """
+    Function to make a shifted array from a PSF model
+    Args:
+        psf_filename:
+        cutout_size_psf_phot:
+
+    Returns:
+
+    """
     psf = fits.getdata(psf_filename)
     normpsf = psf / np.sum(psf)
     ngrid = 81
@@ -146,23 +173,36 @@ def make_psf_shifted_array(psf_filename, cutout_size_psf_phot=20):
 
 
 def aper_photometry(
-    diff_cutout,
-    diff_unc_cutout,
-    aper_diameter,
-    bkg_in_diameter,
-    bkg_out_diameter,
-    plot=False,
+    image_cutout: np.array,
+    image_unc_cutout: np.array,
+    aper_diameter: float,
+    bkg_in_diameter: float,
+    bkg_out_diameter: float,
+    plot: bool = False,
 ):
-    x, y = int(diff_cutout.shape[0] / 2), int(diff_cutout.shape[1] / 2)
+    """
+    Perform aperture photometry
+    Args:
+        image_cutout:
+        image_unc_cutout:
+        aper_diameter:
+        bkg_in_diameter:
+        bkg_out_diameter:
+        plot:
+
+    Returns:
+
+    """
+    x, y = int(image_cutout.shape[0] / 2), int(image_cutout.shape[1] / 2)
     if plot:
         fig, ax = plt.subplots()
-        m, s = np.nanmean(diff_cutout), np.nanstd(diff_cutout)
-        im = ax.imshow(
-            diff_cutout,
+        mean, std = np.nanmean(image_cutout), np.nanstd(image_cutout)
+        ax.imshow(
+            image_cutout,
             interpolation="nearest",
             cmap="gray",
-            vmin=m - s,
-            vmax=m + 10 * s,
+            vmin=mean - std,
+            vmax=mean + 10 * std,
             origin="lower",
         )
         # c = Circle(xy=(x_img, y_img),radius=15)
@@ -188,21 +228,21 @@ def aper_photometry(
     )
 
     annulus_masks = annulus_aperture.to_mask(method="center")
-    annulus_data = annulus_masks.multiply(diff_cutout)
+    annulus_data = annulus_masks.multiply(image_cutout)
     mask = annulus_masks.data
     annulus_data_1d = annulus_data[mask > 0]
     bkg_mean, bkg_median, bkg_std = sigma_clipped_stats(annulus_data_1d, sigma=2)
-    bkg = np.zeros(diff_cutout.shape) + bkg_median
-    bkg_error = np.zeros(diff_cutout.shape) + bkg_std
+    bkg = np.zeros(image_cutout.shape) + bkg_median
+    bkg_error = np.zeros(image_cutout.shape) + bkg_std
 
     aperture_mask = aperture.to_mask(method="center")
-    aperture_unc_data = aperture_mask.multiply(diff_unc_cutout)
+    aperture_unc_data = aperture_mask.multiply(image_unc_cutout)
     # effective_gain = header['GAIN']
     # error = calc_total_error(data, bkg_error, effective_gain)
     # phot_table = aperture_photometry(diff_cutout - bkg, aperture, error=error)
     # counts_err = phot_table['aperture_sum_err'][0]
     error = np.sqrt(np.sum(aperture_unc_data**2))
-    phot_table = aperture_photometry(diff_cutout - bkg, aperture)
+    phot_table = aperture_photometry(image_cutout - bkg, aperture)
     counts = phot_table["aperture_sum"][0]
     counts_err = error
     return counts, counts_err
@@ -216,6 +256,7 @@ def get_rms_image(image: Image) -> Image:
     :return: An RMS :class:`~winterdrp.data.image_data.Image`
     """
     image_data = image.get_data()
+    image_data = image_data[np.invert(np.isnan(image_data))]
     rms = 0.5 * (
         np.percentile(image_data[image_data != 0.0], 84.13)
         - np.percentile(image_data[image_data != 0.0], 15.86)

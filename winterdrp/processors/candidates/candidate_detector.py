@@ -1,8 +1,7 @@
 """
 Module to detect candidates in an image
 """
-import gzip
-import io
+
 import logging
 import os
 
@@ -11,19 +10,36 @@ import pandas as pd
 from astropy.io import fits
 
 from winterdrp.data import ImageBatch, SourceBatch, SourceTable
-from winterdrp.paths import BASE_NAME_KEY, REF_IMG_KEY, core_fields, get_output_dir
+from winterdrp.paths import (
+    BASE_NAME_KEY,
+    CAND_DEC_KEY,
+    CAND_RA_KEY,
+    LATEST_SAVE_KEY,
+    NORM_PSFEX_KEY,
+    REF_IMG_KEY,
+    UNC_IMG_KEY,
+    XPOS_KEY,
+    YPOS_KEY,
+    ZP_KEY,
+    core_fields,
+    get_output_dir,
+)
 from winterdrp.processors.astromatic.sextractor.sourceextractor import (
     run_sextractor_dual,
 )
 from winterdrp.processors.base_processor import BaseCandidateGenerator
+from winterdrp.processors.candidates.utils import makebitims
+from winterdrp.processors.photometry.utils import make_cutouts
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 
-# TODO : Move photometry to its own thing like catalogs, user can choose
-# whichever way they want to do photometry
 logger = logging.getLogger(__name__)
 
 
 class DetectCandidates(BaseCandidateGenerator):
+    """
+    Class to detect candidates by running sourceextractor on an image
+    """
+
     base_key = "DETCANDS"
 
     def __init__(
@@ -48,63 +64,12 @@ class DetectCandidates(BaseCandidateGenerator):
         )
 
     def get_sub_output_dir(self):
+        """
+        Get output sub-directory
+        Returns:
+
+        """
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
-
-    @staticmethod
-    def make_alert_cutouts(image_path: str, position, half_size):
-        data = fits.getdata(image_path)
-        y_image_size, x_image_size = np.shape(data)
-        x, y = position
-        # logger.debug(f'{x},{y},{np.shape(data)}')
-        if y < half_size:
-            cutout = data[0 : y + half_size + 1, x - half_size : x + half_size + 1]
-            n_pix = half_size - y
-            cutout = np.pad(cutout, ((n_pix, 0), (0, 0)), "constant")
-
-        elif y + half_size + 1 > y_image_size:
-            cutout = data[
-                y - half_size : y_image_size, x - half_size : x + half_size + 1
-            ]
-            n_pix = (half_size + y + 1) - y_image_size
-            cutout = np.pad(cutout, ((0, n_pix), (0, 0)), "constant")
-
-        elif x < half_size:
-            cutout = data[y - half_size : y + half_size + 1, 0 : x + half_size + 1]
-            n_pix = half_size - x
-            cutout = np.pad(cutout, ((0, 0), (n_pix, 0)), "constant")
-        elif x + half_size > x_image_size:
-            cutout = data[
-                y - half_size : y + half_size + 1, x - half_size : x_image_size
-            ]
-            n_pix = (half_size + x + 1) - x_image_size
-            cutout = np.pad(cutout, ((0, 0), (0, n_pix)), "constant")
-        else:
-            cutout = data[
-                y - half_size : y + half_size + 1, x - half_size : x + half_size + 1
-            ]
-        return cutout
-
-    @staticmethod
-    def makebitims(image):
-        ######################################################
-        # make bit images of the cutouts for the marshal
-        #
-        # Inputs:
-        # image: input image cutout
-        #
-        # Returns:
-        # buf2: a gzipped fits file of the cutout image as
-        #  a BytesIO object
-        ######################################################
-
-        # open buffer and store image in memory
-        buf = io.BytesIO()
-        buf2 = io.BytesIO()
-        fits.writeto(buf, image)
-        with gzip.open(buf2, "wb") as fz:
-            fz.write(buf.getvalue())
-
-        return buf2
 
     def generate_candidates_table(
         self,
@@ -120,8 +85,8 @@ class DetectCandidates(BaseCandidateGenerator):
         if len(det_srcs) == 0:
             return pd.DataFrame()
         logger.info(f"Found {len(det_srcs)} candidates in image {diff_filename}.")
-        det_srcs["xpos"] = det_srcs["X_IMAGE"] - 1
-        det_srcs["ypos"] = det_srcs["Y_IMAGE"] - 1
+        det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"] - 1
+        det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"] - 1
 
         scorr_data = fits.getdata(diff_scorr_filename)
         xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"] - 1, det_srcs["YPEAK_IMAGE"] - 1
@@ -139,19 +104,15 @@ class DetectCandidates(BaseCandidateGenerator):
         for ind, _ in enumerate(det_srcs):
             xpeak, ypeak = int(xpeaks[ind]), int(ypeaks[ind])
 
-            display_sci_cutout = self.make_alert_cutouts(
-                sci_resamp_imagename, (xpeak, ypeak), cutout_size_display
-            )
-            display_ref_cutout = self.make_alert_cutouts(
-                ref_resamp_imagename, (xpeak, ypeak), cutout_size_display
-            )
-            display_diff_cutout = self.make_alert_cutouts(
-                diff_filename, (xpeak, ypeak), cutout_size_display
+            display_sci_cutout, display_ref_cutout, display_diff_cutout = make_cutouts(
+                [sci_resamp_imagename, ref_resamp_imagename, diff_filename],
+                (xpeak, ypeak),
+                cutout_size_display,
             )
 
-            display_sci_bit = self.makebitims(display_sci_cutout.astype(np.float32))
-            display_ref_bit = self.makebitims(display_ref_cutout.astype(np.float32))
-            display_diff_bit = self.makebitims(display_diff_cutout.astype(np.float32))
+            display_sci_bit = makebitims(display_sci_cutout.astype(np.float32))
+            display_ref_bit = makebitims(display_ref_cutout.astype(np.float32))
+            display_diff_bit = makebitims(display_diff_cutout.astype(np.float32))
 
             display_sci_ims.append(display_sci_bit)
             display_ref_ims.append(display_ref_bit)
@@ -162,16 +123,18 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs["cutoutDifference"] = display_diff_ims
 
         diff_zp = float(fits.getval(diff_filename, "ZP"))
+        det_srcs[ZP_KEY] = diff_zp
+        det_srcs[LATEST_SAVE_KEY] = diff_filename
         det_srcs["magzpsci"] = diff_zp
         diff_zp_unc = float(fits.getval(diff_filename, "ZP_std"))
         det_srcs["magzpsciunc"] = diff_zp_unc
         det_srcs["diffimname"] = diff_filename
         det_srcs["sciimname"] = sci_resamp_imagename
         det_srcs["refimname"] = ref_resamp_imagename
-        det_srcs["diffpsfname"] = diff_psf_filename
-        det_srcs["diffuncname"] = diff_unc_filename
-        det_srcs["ra"] = det_srcs["ALPHA_J2000"]
-        det_srcs["dec"] = det_srcs["DELTA_J2000"]
+        det_srcs[NORM_PSFEX_KEY] = diff_psf_filename
+        det_srcs[UNC_IMG_KEY] = diff_unc_filename
+        det_srcs[CAND_RA_KEY] = det_srcs["ALPHA_J2000"]
+        det_srcs[CAND_DEC_KEY] = det_srcs["DELTA_J2000"]
         det_srcs["fwhm"] = det_srcs["FWHM_IMAGE"]
         det_srcs["aimage"] = det_srcs["A_IMAGE"]
         det_srcs["bimage"] = det_srcs["B_IMAGE"]
