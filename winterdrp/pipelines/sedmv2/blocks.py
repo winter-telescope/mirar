@@ -11,6 +11,7 @@ from winterdrp.pipelines.sedmv2.config import (
     sedmv2_mask_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
+    sextractor_reference_config,
     swarp_config_path,
 )
 from winterdrp.pipelines.sedmv2.generator import (
@@ -27,6 +28,14 @@ from winterdrp.processors.astromatic import PSFex, Sextractor, Swarp
 from winterdrp.processors.csvlog import CSVLog
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
+from winterdrp.processors.photometry.aperture_photometry import (
+    CandidateAperturePhotometry,
+    ImageAperturePhotometry,
+)
+from winterdrp.processors.photometry.psf_photometry import (
+    CandidatePSFPhotometry,
+    ImagePSFPhotometry,
+)
 from winterdrp.processors.reference import Reference
 from winterdrp.processors.utils import (
     ImageBatcher,
@@ -58,20 +67,17 @@ build_log = [  # pylint: disable=duplicate-code
             "UTC",
             "FIELDID",
             "FILTERID",
-            "EXPTIME",
             "OBSTYPE",
             "RA",
             "DEC",
-            "TARGTYPE",
             "PROGID",
-            "PROGPI",
             BASE_NAME_KEY,
         ]
         + core_fields
     ),
 ]  # pylint: disable=duplicate-code
 
-process_raw = [
+reduce = [
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
@@ -92,13 +98,20 @@ process_raw = [
         checkimage_type=None,
         **sextractor_astrometry_config
     ),
+]
+
+resample = [
     Swarp(
         swarp_config_path=swarp_config_path,
         include_scamp=False,
+        combine=False,
     ),
     ImageSaver(
-        output_dir_name="processed", write_mask=True
+        output_dir_name="resampled", write_mask=True
     ),  # pylint: disable=duplicate-code
+]
+
+calibrate = [
     Sextractor(
         output_sub_dir="photprocess",
         checkimage_type="BACKGROUND_RMS",
@@ -111,6 +124,61 @@ process_raw = [
     ),
     HeaderEditor(edit_keys="procflag", values=1),
 ]
+
+process = reduce + resample + calibrate
+
+
+# stellar --
+
+parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
+
+process_stellar = parse_stellar + process
+
+image_photometry = [  # imported from wirc/blocks.py
+    ImageSelector(("SOURCE", "stellar")),
+    ImageAperturePhotometry(
+        aper_diameters=[16],
+        bkg_in_diameters=[25],
+        bkg_out_diameters=[40],
+        col_suffix_list=[""],
+        phot_cutout_size=100,
+        target_ra_key="TARGRA",
+        target_dec_key="TARGDEC",
+    ),
+    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
+    PSFex(config_path=psfex_config_path, output_sub_dir="photometry", norm_fits=True),
+    ImagePSFPhotometry(target_ra_key="TARGRA", target_dec_key="TARGDEC"),
+    ImageSaver(output_dir_name="photometry"),
+]
+
+candidate_photometry = [  # imported from wirc/blocks.py
+    CandidateAperturePhotometry(
+        aper_diameters=[16, 70],
+        phot_cutout_size=100,
+        bkg_in_diameters=[25, 90],
+        bkg_out_diameters=[40, 100],
+        col_suffix_list=["", "big"],
+    ),
+    CandidatePSFPhotometry(),
+]
+
+
+# transients --
+
+parse_transient = [ImageSelector(("SOURCE", ["transient", "None"]))]
+
+resample_transient = [
+    Swarp(
+        swarp_config_path=swarp_config_path,
+        include_scamp=False,
+        combine=True,
+    ),
+    ImageSaver(
+        output_dir_name="resampled", write_mask=True
+    ),  # pylint: disable=duplicate-code
+]
+
+process_transient = parse_transient + reduce + resample_transient + calibrate
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
@@ -137,5 +205,4 @@ subtract = [
     ZOGY(output_sub_dir="subtract"),
 ]
 
-# imsub = subtract + export_diff_to_db + extract_candidates
-imsub = subtract
+imsub = subtract  # + export_diff_to_db + extract_candidates

@@ -39,6 +39,13 @@ sextractor_candidates_config = {
     "cand_det_sextractor_params": os.path.join(astromatic_config_dir, "Scorr.param"),
 }
 
+sextractor_reference_config = {
+    "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
+    "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
+    "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
+    "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
+}
+
 scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
 
 swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")

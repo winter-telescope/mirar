@@ -15,6 +15,7 @@ from winterdrp.errors import ImageNotFoundError
 from winterdrp.io import open_fits
 from winterdrp.paths import RAW_IMG_SUB_DIR, base_raw_dir
 from winterdrp.processors.base_processor import BaseImageProcessor
+from winterdrp.processors.utils.image_loader import unzip
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,13 @@ def load_from_dir(
     """
 
     img_list = sorted(glob(f"{input_dir}/*.fits"))
+
+    # check for zipped files too
+    zipped_list = sorted(glob(f"{input_dir}/*.fz"))
+    if len(zipped_list) > 0:
+        unzipped_list = unzip(zipped_list)
+        for file in unzipped_list:
+            img_list.append(file)
 
     logger.info(f"Loading from {input_dir}, with {len(img_list)} images")
 

@@ -101,6 +101,13 @@ def prepare_science(filepath: str) -> str:
         hdr["OBSTYPE"] = "SCIENCE"
         hdr["OBSCLASS"] = "science"
         hdr["PREPTAG"] = 0  # label files that have already run through this function
+
+        # discern transient vs. stellar based on filename
+        if "ZTF2" in filepath:
+            hdr["SOURCE"] = "transient"
+        else:
+            hdr["SOURCE"] = "stellar"
+
         # save to file with 1 extension
         fits.writeto(filepath, data, hdr, overwrite=True)  # pylint: disable=no-member
     return filepath
@@ -129,6 +136,8 @@ def prepare_cal(filepath: str) -> str:
             hdr0["FILTER"] = f"SDSS {filt}' (Chroma)"
         if hdr0["IMGTYPE"] == "bias":
             hdr0["FILTER"] = "SDSS g"
+
+        hdr0["SOURCE"] = "None"
 
         req_headers = [
             "RA",
