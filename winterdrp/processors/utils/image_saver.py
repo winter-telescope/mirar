@@ -47,8 +47,7 @@ class ImageSaver(BaseImageProcessor):
                 output_dir=self.output_dir,
             )
 
-            if not path.parent.exists():
-                path.parent.mkdir(parents=True)
+            path.parent.mkdir(parents=True, exist_ok=True)
 
             image[LATEST_SAVE_KEY] = str(path)
             if self.write_mask:
