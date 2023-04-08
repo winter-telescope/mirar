@@ -9,7 +9,13 @@ import numpy as np
 
 from winterdrp.downloader.caltech import download_via_ssh
 from winterdrp.pipelines.base_pipeline import Pipeline
-from winterdrp.pipelines.sedmv2.blocks import cal_hunter, imsub, load_raw, process_raw
+from winterdrp.pipelines.sedmv2.blocks import (
+    cal_hunter,
+    load_raw,
+    process,
+    process_stellar,
+    process_transient,
+)
 from winterdrp.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
 from winterdrp.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
 
@@ -28,8 +34,9 @@ class SEDMv2Pipeline(Pipeline):
     non_linear_level = 30000  # no idea, for pylint
     default_cal_requirements = sedmv2_cal_requirements
     all_pipeline_configurations = {
-        "default": load_raw + cal_hunter + process_raw,
-        "imsub": imsub,
+        "default": load_raw + cal_hunter + process,
+        "default_stellar": load_raw + cal_hunter + process_stellar,  # +image_photometry
+        "default_transient": load_raw + cal_hunter + process_transient,  # +imsub,
     }
 
     @staticmethod
