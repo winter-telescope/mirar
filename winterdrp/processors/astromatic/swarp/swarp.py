@@ -326,11 +326,12 @@ class Swarp(BaseImageProcessor):
         for key in batch[0].keys():
             if np.logical_and(
                 np.sum([x[key] == batch[0][key] for x in batch]) == len(batch),
-                key not in all_astrometric_keywords,
+                key.strip() not in all_astrometric_keywords,
             ):
                 if key not in new_image.keys():
+                    logger.info(key)
                     new_image[key] = batch[0][key]
-
+        logger.info(f"NAXIS {new_image['NAXIS1']}, {new_image['NAXIS2']}")
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
         self.save_fits(new_image, output_image_path)
 
