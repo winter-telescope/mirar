@@ -195,6 +195,10 @@ def get_astrometry_keys() -> list:
         "PC1_2",
         "PC2_1",
         "PC2_2",
+        "PC001001",
+        "PC002001",
+        "PC001002",
+        "PC002002",
     ]
     # Add TPV/ZPN distortion keywords -
     # https://fits.gsfc.nasa.gov/registry/tpvwcs/tpv.html
@@ -205,6 +209,8 @@ def get_astrometry_keys() -> list:
     # Add SIP distortion keywords, upto order 10
     astrometric_keywords.append("A_ORDER")
     astrometric_keywords.append("B_ORDER")
+    astrometric_keywords.append("AP_ORDER")
+    astrometric_keywords.append("BP_ORDER")
     for i in range(10):
         for j in range(10):
             astrometric_keywords.append(f"A_{i}_{j}")
