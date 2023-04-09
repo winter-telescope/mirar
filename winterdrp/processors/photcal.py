@@ -125,12 +125,12 @@ class PhotCalibrator(BaseImageProcessor):
 
         ref_coords = SkyCoord(ra=ref_cat["ra"], dec=ref_cat["dec"], unit=(u.deg, u.deg))
         clean_mask = (
-            (img_cat["FLAGS"] == 0)
-            & (img_cat["FWHM_WORLD"] < self.fwhm_threshold_arcsec / 3600.0)
-            & (img_cat["X_IMAGE"] > self.x_lower_limit)
-            & (img_cat["X_IMAGE"] < self.x_upper_limit)
-            & (img_cat["Y_IMAGE"] > self.y_lower_limit)
-            & (img_cat["Y_IMAGE"] < self.y_upper_limit)
+                (img_cat["FLAGS"] == 0)
+                & (img_cat["FWHM_WORLD"] < self.fwhm_threshold_arcsec / 3600.0)
+                & (img_cat["X_IMAGE"] > self.x_lower_limit)
+                & (img_cat["X_IMAGE"] < self.x_upper_limit)
+                & (img_cat["Y_IMAGE"] > self.y_lower_limit)
+                & (img_cat["Y_IMAGE"] < self.y_upper_limit)
         )
 
         clean_img_cat = img_cat[clean_mask]
@@ -247,8 +247,8 @@ class PhotCalibrator(BaseImageProcessor):
         return zeropoints
 
     def _apply_to_images(
-        self,
-        batch: ImageBatch,
+            self,
+            batch: ImageBatch,
     ) -> ImageBatch:
         phot_output_dir = self.get_phot_output_dir()
 
@@ -317,10 +317,10 @@ class PhotCalibrator(BaseImageProcessor):
         imcat = get_table_from_ldac(img_cat_path)
         # TODO: de-hardcode
         nemask = (
-            (imcat["X_IMAGE"] > 50)
-            & (imcat["X_IMAGE"] < 2000)
-            & (imcat["Y_IMAGE"] > 50)
-            & (imcat["Y_IMAGE"] < 2000)
+                (imcat["X_IMAGE"] > 50)
+                & (imcat["X_IMAGE"] < 2000)
+                & (imcat["Y_IMAGE"] > 50)
+                & (imcat["Y_IMAGE"] < 2000)
         )
         imcat = imcat[nemask]
         med_fwhm = np.median(imcat["FWHM_WORLD"])
@@ -334,9 +334,9 @@ class PhotCalibrator(BaseImageProcessor):
 
     @staticmethod
     def get_maglim(
-        bkg_rms_image_path: str | Path,
-        zeropoint: float | list[float],
-        aperture_radius_pixels: float | list[float],
+            bkg_rms_image_path: str | Path,
+            zeropoint: float | list[float],
+            aperture_radius_pixels: float | list[float],
     ) -> float:
         """
         Function to calculate limiting magnitude
@@ -364,7 +364,7 @@ class PhotCalibrator(BaseImageProcessor):
         return np.array(self.preceding_steps)[mask][-1]
 
     def check_prerequisites(
-        self,
+            self,
     ):
         mask = [isinstance(x, Sextractor) for x in self.preceding_steps]
         if np.sum(mask) < 1:

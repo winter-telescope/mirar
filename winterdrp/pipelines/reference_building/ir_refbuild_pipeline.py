@@ -113,9 +113,11 @@ class IRRefBuildPipeline(Pipeline):
         Sextractor(
             output_sub_dir="phot",
             **sextractor_astrometry_config,
-            write_regions_bool=True
+            write_regions_bool=True,
+            cache=True
         ),
-        PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
+        PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator,
+                       write_regions=True),
         ImageSaver(output_dir_name="stacked_ref"),
     ]
 
