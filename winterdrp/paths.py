@@ -60,7 +60,6 @@ if _base_output_dir is None:
 else:
     base_output_dir = Path(_base_output_dir)
 
-
 # Set up special directories
 TEMP_DIR = base_output_dir.joinpath(f"{package_name}_temp")
 TEMP_DIR.mkdir(exist_ok=True)
@@ -170,6 +169,55 @@ def copy_temp_file(output_dir: Path, file_path: Path) -> Path:
     return output_path
 
 
+def get_astrometry_keys() -> list:
+    """
+    Function to get a list of common astrometric keywords that could be present in a
+    fits header
+    Returns:
+
+    """
+    # List for all astrometric keywords that could go in a header
+    # First add basic keywords that could be present in all wcs headers
+    astrometric_keywords = [
+        "CTYPE1",
+        "CTYPE2",
+        "CRVAL1",
+        "CRVAL2",
+        "CRPIX1",
+        "CRPIX2",
+        "CD1_1",
+        "CD1_2",
+        "CD2_1",
+        "CD2_2",
+        "CDELT1",
+        "CDELT2",
+        "PC1_1",
+        "PC1_2",
+        "PC2_1",
+        "PC2_2",
+    ]
+    # Add TPV/ZPN distortion keywords -
+    # https://fits.gsfc.nasa.gov/registry/tpvwcs/tpv.html
+    for i in range(40):
+        astrometric_keywords.append(f"PV1_{i}")
+        astrometric_keywords.append(f"PV2_{i}")
+
+    # Add SIP distortion keywords, upto order 10
+    astrometric_keywords.append("A_ORDER")
+    astrometric_keywords.append("B_ORDER")
+    for i in range(10):
+        for j in range(10):
+            astrometric_keywords.append(f"A_{i}_{j}")
+            astrometric_keywords.append(f"B_{i}_{j}")
+
+    # Add old style WCS keywords
+    for i in range(40):
+        astrometric_keywords.append(f"PROJP{i}")
+
+    return astrometric_keywords
+
+
+all_astrometric_keywords = get_astrometry_keys()
 RAW_IMG_KEY = "RAWPATH"
 BASE_NAME_KEY = "BASENAME"
 REF_IMG_KEY = "REFPATH"
