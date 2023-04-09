@@ -32,7 +32,7 @@ ref_img_directory = test_data_dir.joinpath("wirc/ref")
 NIGHT_NAME = "20210330"
 
 
-def test_reference_image_generator(
+def reference_image_test_generator(
     header: fits.header,
     images_directory: str = ref_img_directory,
 ):
@@ -72,7 +72,7 @@ test_imsub_configuration = (
             load_image=load_raw_wirc_image,
         ),
         Reference(
-            ref_image_generator=test_reference_image_generator,
+            ref_image_generator=reference_image_test_generator,
             swarp_resampler=wirc_reference_image_resampler,
             sextractor=wirc_reference_sextractor,
             ref_psfex=wirc_reference_psfex,
