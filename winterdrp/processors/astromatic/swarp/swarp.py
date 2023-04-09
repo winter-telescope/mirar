@@ -15,6 +15,7 @@ from winterdrp.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     RAW_IMG_KEY,
+    all_astrometric_keywords,
     copy_temp_file,
     get_output_dir,
     get_temp_path,
@@ -319,12 +320,17 @@ class Swarp(BaseImageProcessor):
                 raise SwarpError(err)
 
         new_image = self.open_fits(output_image_path)
-        # Add missing keywords to header of resampled image, and save again
+        # Add missing keywords that are common in all input images to the
+        # header of resampled image, and save again
+        # Omit any astrometric keywords
         for key in batch[0].keys():
-            if np.sum([x[key] == batch[0][key] for x in batch]) == len(batch):
+            if np.logical_and(
+                np.sum([x[key] == batch[0][key] for x in batch]) == len(batch),
+                key.strip() not in all_astrometric_keywords,
+            ):
                 if key not in new_image.keys():
+                    logger.debug(key)
                     new_image[key] = batch[0][key]
-
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
         self.save_fits(new_image, output_image_path)
 

@@ -104,6 +104,11 @@ class PS1Ref(BaseReferenceGenerator):
         with fits.open(fitsurl[0]) as hdul:
             ref_hdu = hdul[0].copy()
 
+        ref_hdu.header.rename_keyword("PC001001", "PC1_1")
+        ref_hdu.header.rename_keyword("PC001002", "PC1_2")
+        ref_hdu.header.rename_keyword("PC002001", "PC2_1")
+        ref_hdu.header.rename_keyword("PC002002", "PC2_2")
+
         ref_hdu.header["GAIN"] = ref_hdu.header["CELL.GAIN"]
         ref_hdu.header["ZP"] = ref_hdu.header["FPA.ZP"]
         del ref_hdu.header["HISTORY"]
