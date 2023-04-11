@@ -128,10 +128,9 @@ def make_image_from_hdulist(
         header_to_append=ukirt_hdulist[0].header,
     )
 
-    logger.debug(combined_header)
     combined_header[RAW_IMG_KEY] = ""
     combined_header[BASE_NAME_KEY] = basename
-    combined_header[COADD_KEY] = 0
+    combined_header[COADD_KEY] = 1
     for key in core_fields:
         if key not in combined_header.keys():
             combined_header[key] = ""
@@ -165,6 +164,9 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             )
             raise UKIRTRefError(err)
 
+    def write_to_db(self):
+        pass
+
     def get_reference(self, image: Image) -> fits.PrimaryHDU:
         header = image.get_header()
         # ra_cent, dec_cent = get_centre_ra_dec_from_header(header)
@@ -192,7 +194,6 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             err = "Coordinates not in UKIRT surveys"
             raise NotinUKIRTError(err)
 
-        # Need to add a cache and check there.
         # Sort surveys in descending order of limiting mags
         lim_mags = [x.lim_mag for x in ukirt_surveys]
         ukirt_surveys = ukirt_surveys[np.argsort(lim_mags)[::-1]]
@@ -208,6 +209,14 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             # url_list = ukirt_query.get_image_list(center_crds, radius=search_radius)
             url_list = []
             for crd in query_crds:
+                # Need to add a cache and check there.
+                images_exist_locally = self.check_ref_images_exist_locally(query_ra=crd.ra,
+                                                                           query_dec=crd.dec,
+                                                                           query_survey=survey,
+                                                                           db_name=self.db_name)
+                if images_exist_locally:
+                    url
+
                 url = ukirt_query.get_image_list(
                     crd, image_width=ukirt_image_width, image_height=ukirt_image_height
                 )
@@ -261,7 +270,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         resampled_batch = resampler.apply(ukirt_image_batch)
 
         resampled_image = resampled_batch[0]
-        resampled_image.header["FILTER"] = "J"
+        # resampled_image.header["FILTER"] = "J"
         # phot_calibrator = self.phot_calibrator(resampled_image)
         # phot_calibrator.set_night(night_sub_dir="ir_refbuild/mock")
         # photcaled_batch = phot_calibrator.apply(resampled_batch)
