@@ -1,3 +1,6 @@
+"""
+Module for summer-specific db creation with psycopg
+"""
 import os
 
 summer_schema_dir = os.path.dirname(__file__)

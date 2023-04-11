@@ -6,7 +6,7 @@ lists which are used to build configurations for the
 """
 from winterdrp.downloader.get_test_data import get_test_data_dir
 from winterdrp.paths import BASE_NAME_KEY, GAIN_KEY, core_fields
-from winterdrp.pipelines.summer.config import (  # summer_weight_path,
+from winterdrp.pipelines.summer.config import (
     DB_NAME,
     PIPELINE_NAME,
     SUMMER_PIXEL_SCALE,
@@ -20,7 +20,6 @@ from winterdrp.pipelines.summer.config import (  # summer_weight_path,
     summer_mask_path,
     swarp_config_path,
 )
-from winterdrp.pipelines.summer.config.schema import summer_schema_dir
 from winterdrp.pipelines.summer.generator import (
     summer_astrometric_catalog_generator,
     summer_photometric_catalog_generator,
@@ -33,6 +32,7 @@ from winterdrp.pipelines.summer.load_summer_image import (
     load_proc_summer_image,
     load_raw_summer_image,
 )
+from winterdrp.pipelines.summer.models._raw import Raw
 from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from winterdrp.processors.autoastrometry import AutoAstrometry
@@ -40,7 +40,9 @@ from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 from winterdrp.processors.candidates.utils import DataframeWriter, RegionsWriter
 from winterdrp.processors.cosmic_rays import LACosmicCleaner
 from winterdrp.processors.csvlog import CSVLog
-from winterdrp.processors.database.database_exporter import DatabaseImageExporter
+from winterdrp.processors.database.database_exporter import (
+    DatabaseImageExporter as PSQLDatabaseImageExporter,
+)
 from winterdrp.processors.database.database_modifier import ModifyImageDatabaseSeq
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
@@ -49,6 +51,7 @@ from winterdrp.processors.photometry.aperture_photometry import (
 )
 from winterdrp.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from winterdrp.processors.reference import Reference
+from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from winterdrp.processors.utils import (
     ImageBatcher,
     ImageLoader,
@@ -121,22 +124,19 @@ load_processed = [
 ]
 
 export_raw = [
+    # ImageSelector(("BASENAME", "SUMMER_20220402_193152_Camera0.fits")),
     DatabaseImageExporter(
-        db_name=DB_NAME,
-        db_table="exposures",
-        schema_path=get_summer_schema_path("exposures"),
-        has_foreign_keys=True,
-        schema_dir=summer_schema_dir,
-        duplicate_protocol="ignore",
+        db_table=Raw,
+        duplicate_protocol="replace",
         q3c_bool=False,
     ),
     MaskPixels(mask_path=summer_mask_path),
-    DatabaseImageExporter(
-        db_name=DB_NAME,
-        db_table="raw",
-        schema_path=get_summer_schema_path("raw"),
-        duplicate_protocol="replace",
-    ),
+    # DatabaseImageExporter(
+    #     db_name=DB_NAME,
+    #     db_table="raw",#FIXME
+    #     schema_path=get_summer_schema_path("raw"),
+    #     duplicate_protocol="replace",
+    # ),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
 ]
 
@@ -197,21 +197,21 @@ process_raw = [
         write_mask=True,
     ),
     HeaderEditor(edit_keys="procflag", values=1),
-    DatabaseImageExporter(
+    PSQLDatabaseImageExporter(
         db_name=DB_NAME,
-        db_table="proc",
+        db_table="proc",  # FIXME
         schema_path=get_summer_schema_path("proc"),
         duplicate_protocol="replace",
     ),
     ModifyImageDatabaseSeq(
         db_name=DB_NAME,
-        db_table="raw",
+        db_table="raw",  # FIXME
         schema_path=get_summer_schema_path("raw"),
         db_alter_columns="procflag",
     ),
 ]
 
-standard_summer_reduction = export_raw + cal_hunter + process_raw
+# standard_summer_reduction = export_raw + cal_hunter + process_raw #FIXME
 
 
 subtract = [
@@ -240,8 +240,8 @@ subtract = [
 ]
 
 export_diff_to_db = [
-    DatabaseImageExporter(
-        db_name=PIPELINE_NAME,
+    PSQLDatabaseImageExporter(
+        db_name=PIPELINE_NAME,  # FIXME
         db_table="diff",
         schema_path=get_summer_schema_path("diff"),
     ),
@@ -261,4 +261,4 @@ extract_candidates = [
     DataframeWriter(output_dir_name="candidates"),
 ]
 
-imsub = subtract + export_diff_to_db + extract_candidates
+imsub = subtract + export_diff_to_db + extract_candidates  # FIXME

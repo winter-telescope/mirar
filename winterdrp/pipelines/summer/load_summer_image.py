@@ -20,6 +20,7 @@ from winterdrp.paths import (
     RAW_IMG_KEY,
     __version__,
 )
+from winterdrp.pipelines.summer.models._fields import DEFAULT_FIELD
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header[BASE_NAME_KEY] = base_name
         header["EXPID"] = int("".join(base_name.split("_")[1:3])[2:])
         # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
-
+        header["RAWID"] = header["EXPID"]
         pipeline_version = __version__
         pipeline_version_padded_str = "".join(
             [x.rjust(2, "0") for x in pipeline_version.split(".")]
@@ -89,7 +90,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["TIMEUTC"] = header["UTCISO"]
 
         t_init = Time("2018-01-01", format="iso")
-        header["NIGHT"] = int(obstime.jd) - int(t_init.jd)
+        header["NIGHTID"] = int(obstime.jd) - int(t_init.jd)
         header["EXPMJD"] = header["OBSMJD"]
 
         default_id = 0
@@ -109,6 +110,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
             header["SUBPROG"] = "none"
 
         header["FILTER"] = header["FILTERID"]
+        header["FID"] = header["FILPOS"]
         try:
             header["SHUTOPEN"] = Time(header["SHUTOPEN"], format="iso").jd
         except ValueError:
@@ -159,10 +161,10 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
             header["ITID"] = itid_dict[header["OBSTYPE"]]
 
         if header["FIELDID"] == "radec":
-            header["FIELDID"] = 999999999
+            header["FIELDID"] = DEFAULT_FIELD
 
         if header["ITID"] != 1:
-            header["FIELDID"] = -99
+            header["FIELDID"] = DEFAULT_FIELD
 
         if "COADDS" not in header.keys():
             header["COADDS"] = 1

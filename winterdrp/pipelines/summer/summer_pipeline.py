@@ -51,6 +51,7 @@ class SummerPipeline(Pipeline):
         "simrealtime": sim_realtime,
         "testlog": load_test + build_log,
         "crtest": load_raw + test_cr + build_log,
+        "dbtest": load_raw + export_raw,
     }
 
     @staticmethod

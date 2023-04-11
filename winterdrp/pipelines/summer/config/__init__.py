@@ -1,3 +1,6 @@
+"""
+Module for summer-specific files
+"""
 import os
 
 from winterdrp.pipelines.summer.config.constants import (
