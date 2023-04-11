@@ -9,6 +9,7 @@ from winterdrp.pipelines.summer.config.constants import (
     SUMMER_GAIN,
     SUMMER_PIXEL_SCALE,
 )
+from winterdrp.pipelines.summer.config.schema import get_summer_schema_path
 from winterdrp.processors.utils.cal_hunter import CalRequirement
 
 summer_dir = os.path.dirname(__file__)
