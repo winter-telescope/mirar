@@ -10,6 +10,7 @@ import astropy.io
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
+from pathlib import Path
 
 
 def convert_hdu_to_ldac(
@@ -85,7 +86,7 @@ def save_table_as_ldac(tbl: astropy.table.Table, file_path: str, **kwargs):
     hdulist.writeto(file_path, **kwargs)
 
 
-def get_table_from_ldac(file_path: str, frame: int = 1) -> astropy.table.Table:
+def get_table_from_ldac(file_path: str | Path, frame: int = 1) -> astropy.table.Table:
     """
     Load an astropy table from a fits_ldac by frame (Since the ldac format has column
     info for odd tables, giving it twce as many tables as a regular fits BinTableHDU,
