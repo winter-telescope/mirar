@@ -1,3 +1,6 @@
+"""
+Module with sextractor utilities
+"""
 import os
 
 from winterdrp.processors.astromatic.config import astromatic_config_dir

@@ -1,3 +1,6 @@
+"""
+Module to run source extractor
+"""
 import logging
 import os
 from pathlib import Path
@@ -18,7 +21,9 @@ default_starnnw_path = os.path.join(astromatic_config_dir, "default.nnw")
 
 
 class SextractorError(ExecutionError):
-    pass
+    """
+    Sextractor processing error
+    """
 
 
 # Either run sextractor locally or on docker
@@ -38,24 +43,27 @@ def parse_checkimage(
 
     Parameters
     ----------
-    checkimage_type: The 'CHECKIMAGE_TYPE' files for sextractor. The default is None. To quote sextractor,
-    available types are: 'NONE, BACKGROUND, BACKGROUND_RMS, MINIBACKGROUND, MINIBACK_RMS, -BACKGROUND,
-    FILTERED, OBJECTS, -OBJECTS, SEGMENTATION, or APERTURES'. Multiple arguments should be specified in a list.
+    checkimage_type: The 'CHECKIMAGE_TYPE' files for sextractor. The default is None.
+    To quote sextractor,
+    available types are: 'NONE, BACKGROUND, BACKGROUND_RMS, MINIBACKGROUND,
+    MINIBACK_RMS, -BACKGROUND,
+    FILTERED, OBJECTS, -OBJECTS, SEGMENTATION, or APERTURES'. Multiple arguments should
+    be specified in a list.
     checkimage_name: The name(s) of the checkput images to be output.
-    image: The name of the image in question. If specified, the name of each checkimage will include the
+    image: The name of the image in question. If specified, the name of each
+    checkimage will include the
     name of the original base image.
 
     Returns
     -------
-    cmd: A string containing the partial sextractor command relating to checkimages. The default is an empty string.
+    cmd: A string containing the partial sextractor command relating to checkimages.
+    The default is an empty string.
     """
     if isinstance(checkimage_type, str):
         checkimage_type = [checkimage_type]
 
     if isinstance(checkimage_name, str):
         checkimage_name = [checkimage_name]
-
-    cmd = ""
 
     if checkimage_type is not None:
         cmd = f"-CHECKIMAGE_TYPE {','.join(checkimage_type)} "
@@ -65,7 +73,8 @@ def parse_checkimage(
                 err = (
                     f"Number of checkimage types {len(checkimage_type)} does not "
                     f"match number of checkimage names {len(checkimage_name)}. "
-                    f"These values must be equal. The following types were given: {checkimage_type}, "
+                    f"These values must be equal. The following types were given: "
+                    f"{checkimage_type}, "
                     f"and the following names were given: {checkimage_name}"
                 )
                 logger.error(err)
@@ -87,12 +96,23 @@ def parse_checkimage(
         cmd += " "
 
     else:
-        cmd = f" -CHECKIMAGE_TYPE NONE "
+        cmd = " -CHECKIMAGE_TYPE NONE "
         checkimage_name = []
     return cmd, checkimage_name
 
 
 def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
+    """
+    Wrapper function to run sextractor
+    Args:
+        images:
+        output_dir:
+        *args:
+        **kwargs:
+
+    Returns:
+
+    """
     if not isinstance(images, list):
         images = [images]
 
@@ -123,6 +143,27 @@ def run_sextractor_single(
     gain: Optional[float] = None,
     mag_zp: Optional[float] = None,
 ):
+    """
+    Function to run sextractor in single mode
+    Args:
+        img:
+        output_dir:
+        catalog_name:
+        config:
+        parameters_name:
+        filter_name:
+        starnnw_name:
+        saturation:
+        weight_image:
+        verbose_type:
+        checkimage_name:
+        checkimage_type:
+        gain:
+        mag_zp:
+
+    Returns:
+
+    """
     if catalog_name is None:
         image_name = Path(img).stem
         catalog_name = f"{image_name}.cat"
@@ -186,6 +227,28 @@ def run_sextractor_dual(
     gain: Optional[float] = None,
     mag_zp: Optional[float] = None,
 ):
+    """
+    Run sextractor in the dual mode
+    Args:
+        det_image:
+        measure_image:
+        output_dir:
+        catalog_name:
+        config:
+        parameters_name:
+        filter_name:
+        starnnw_name:
+        saturation:
+        weight_image:
+        verbose_type:
+        checkimage_name:
+        checkimage_type:
+        gain:
+        mag_zp:
+
+    Returns:
+
+    """
     if catalog_name is None:
         image_name = Path(measure_image).stem
         catalog_name = f"{image_name}.cat"
@@ -227,7 +290,7 @@ def run_sextractor_dual(
 
     try:
         execute(cmd, output_dir)
-    except ExecutionError as e:
-        raise SextractorError(e)
+    except ExecutionError as err:
+        raise SextractorError(err) from err
 
     return catalog_name, checkimage_name

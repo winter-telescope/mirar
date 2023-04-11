@@ -1,3 +1,6 @@
+"""
+Module to run PSFex
+"""
 import logging
 import os
 from pathlib import Path
@@ -78,6 +81,11 @@ class PSFex(BaseImageProcessor):
         )
 
     def get_psfex_output_dir(self) -> Path:
+        """
+        Get PSFex output directory
+        Returns:
+
+        """
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:

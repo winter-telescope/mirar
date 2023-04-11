@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import (
+from sqlalchemy import (  # event,
     DATE,
     VARCHAR,
     Column,
@@ -15,7 +15,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Sequence,
-    event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,9 +36,8 @@ from winterdrp.pipelines.summer.models.basemodel import (
     ra_field,
 )
 from winterdrp.processors.sqldatabase.basemodel import BaseDB
-from winterdrp.utils.sql import create_q3c_extension
 
-db_name = "summertest"
+# from winterdrp.utils.sql import create_q3c_extension
 
 
 class RawTable(SummerBase):  # pylint: disable=too-few-public-methods

@@ -1,8 +1,6 @@
 """
 Models for database and pydantic dataclass models
 """
-from datetime import date, datetime
-
 from sqlalchemy.orm import Session
 
 from winterdrp.pipelines.summer.models._dithers import Dithers, DithersTable

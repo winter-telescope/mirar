@@ -4,7 +4,7 @@ Models for the 'nights' table
 from datetime import date
 from typing import ClassVar
 
-from sqlalchemy import DATE, Column, Integer, Sequence
+from sqlalchemy import DATE, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
 from winterdrp.pipelines.summer.models.basemodel import SummerBase, date_field
