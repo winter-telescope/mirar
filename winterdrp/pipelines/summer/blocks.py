@@ -10,6 +10,7 @@ from winterdrp.pipelines.summer.config import (
     DB_NAME,
     PIPELINE_NAME,
     SUMMER_PIXEL_SCALE,
+    get_summer_schema_path,
     psfex_config_path,
     scamp_path,
     sextractor_astrometry_config,
@@ -39,6 +40,9 @@ from winterdrp.processors.candidates.candidate_detector import DetectCandidates
 from winterdrp.processors.candidates.utils import DataframeWriter, RegionsWriter
 from winterdrp.processors.cosmic_rays import LACosmicCleaner
 from winterdrp.processors.csvlog import CSVLog
+from winterdrp.processors.database.database_exporter import (
+    DatabaseImageExporter as PSQLDatabaseImageExporter,
+)
 from winterdrp.processors.database.database_modifier import ModifyImageDatabaseSeq
 from winterdrp.processors.mask import MaskPixels
 from winterdrp.processors.photcal import PhotCalibrator
@@ -193,18 +197,18 @@ process_raw = [
         write_mask=True,
     ),
     HeaderEditor(edit_keys="procflag", values=1),
-    # DatabaseImageExporter(
-    #     db_name=DB_NAME,
-    #     db_table="proc",  #FIXME
-    #     schema_path=get_summer_schema_path("proc"),
-    #     duplicate_protocol="replace",
-    # ),
-    # ModifyImageDatabaseSeq(
-    #     db_name=DB_NAME,
-    #     db_table="raw", #FIXME
-    #     schema_path=get_summer_schema_path("raw"),
-    #     db_alter_columns="procflag",
-    # ),
+    PSQLDatabaseImageExporter(
+        db_name=DB_NAME,
+        db_table="proc",  # FIXME
+        schema_path=get_summer_schema_path("proc"),
+        duplicate_protocol="replace",
+    ),
+    ModifyImageDatabaseSeq(
+        db_name=DB_NAME,
+        db_table="raw",  # FIXME
+        schema_path=get_summer_schema_path("raw"),
+        db_alter_columns="procflag",
+    ),
 ]
 
 # standard_summer_reduction = export_raw + cal_hunter + process_raw #FIXME
@@ -236,11 +240,11 @@ subtract = [
 ]
 
 export_diff_to_db = [
-    #     DatabaseImageExporter(
-    #         db_name=PIPELINE_NAME,  # FIXME
-    #         db_table="diff",
-    #         schema_path=get_summer_schema_path("diff"),
-    #     ),
+    PSQLDatabaseImageExporter(
+        db_name=PIPELINE_NAME,  # FIXME
+        db_table="diff",
+        schema_path=get_summer_schema_path("diff"),
+    ),
 ]
 
 extract_candidates = [
