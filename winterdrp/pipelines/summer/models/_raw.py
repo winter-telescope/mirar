@@ -99,6 +99,7 @@ class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
     dec = Column(Float)
     altitude = Column(Float)
     azimuth = Column(Float)
+    procflag = Column(Integer, default=0)
 
     ra_column_name = "ra"
     dec_column_name = "dec"

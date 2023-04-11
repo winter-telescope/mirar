@@ -23,10 +23,10 @@ class ProgramsTable(SummerBase):  # pylint: disable=too-few-public-methods
 
     __tablename__ = "programs"
 
-    puid = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
     progname = Column(CHAR(8), unique=True)
     prog_key = Column(CHAR(_LEN_PROG_KEY))
-    progid = Column(Integer, primary_key=True)
+    progid = Column(Integer)
     progtitle = Column(VARCHAR(20))
     piname = Column(VARCHAR(20))
     startdate = Column(DATE)

@@ -2,16 +2,13 @@
 Base class for models
 """
 from datetime import date
-from typing import ClassVar
 
-from pydantic import BaseModel, Extra, Field, root_validator, validator
-from sqlalchemy import Insert, Select, Table, inspect, select
+from pydantic import Field
 from sqlalchemy.orm import DeclarativeBase
 
 from winterdrp.processors.sqldatabase.basemodel import BaseTable
-from winterdrp.utils.sql import get_engine
 
-db_name = "summertest"
+db_name = "summer"
 
 
 class SummerBase(DeclarativeBase, BaseTable):
