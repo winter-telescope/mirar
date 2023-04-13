@@ -172,9 +172,11 @@ process_raw = [
     Scamp(
         ref_catalog_generator=summer_astrometric_catalog_generator,
         scamp_config_path=scamp_path,
+        cache=True
     ),
     Swarp(
         swarp_config_path=swarp_config_path,
+        cache=True
         # TODO: work out why this was ever here...
         # imgpixsize=2400
     ),
