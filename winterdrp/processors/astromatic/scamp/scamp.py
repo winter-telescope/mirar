@@ -74,11 +74,13 @@ class Scamp(BaseImageProcessor):
         ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],
         scamp_config_path: str,
         temp_output_sub_dir: str = "scamp",
+        cache: bool = False
     ):
         super().__init__()
         self.scamp_config = scamp_config_path
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
+        self.cache = cache
 
     def __str__(self) -> str:
         """
@@ -141,9 +143,10 @@ class Scamp(BaseImageProcessor):
             output_dir=scamp_output_dir,
         )
 
-        for path in temp_files:
-            logger.debug(f"Deleting temp file {path}")
-            path.unlink()
+        if not self.cache:
+            for path in temp_files:
+                logger.debug(f"Deleting temp file {path}")
+                path.unlink()
 
         assert len(batch) == len(out_files)
 
