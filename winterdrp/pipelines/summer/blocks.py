@@ -172,7 +172,7 @@ process_raw = [
     Scamp(
         ref_catalog_generator=summer_astrometric_catalog_generator,
         scamp_config_path=scamp_path,
-        cache=True
+        cache=True,
     ),
     Swarp(
         swarp_config_path=swarp_config_path,
