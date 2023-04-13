@@ -8,8 +8,26 @@ import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
 
+from winterdrp.data import Image
 from winterdrp.processors.candidates.utils.dataframe_writer import DataframeWriter
 from winterdrp.processors.candidates.utils.regions_writer import RegionsWriter
+
+
+def get_image_center_wcs_coords(image: Image, origin: int = 0):
+    """
+    Get RA/Dec of an image
+    Args:
+        origin: 0 or 1, depending on whether you want it in DS9 coordinates
+        image: Image
+
+    Returns:
+
+    """
+    header = image.header
+    wcs = WCS(header=header)
+    nx, ny = header["NAXIS1"], header["NAXIS2"]
+    ra_deg, dec_deg = wcs.all_pix2world([nx / 2], [ny / 2], origin)
+    return ra_deg[0], dec_deg[0]
 
 
 def get_xy_from_wcs(
