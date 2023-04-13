@@ -15,6 +15,7 @@ from astroquery.utils.commons import FileContainer
 from survey_coverage import get_known_ukirt_surveys
 from survey_coverage.surveys import MOCSurvey
 
+from typing import Type
 from winterdrp.catalog.base_catalog import BaseCatalog
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ProcessorError
@@ -29,6 +30,7 @@ from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.base_processor import ImageHandler
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.references.base_reference_generator import BaseReferenceGenerator
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ class UKIRTRefNotFoundError(ProcessorError):
 
 
 def get_query_coordinates_from_header(
-    header: fits.Header, numpoints=1
+        header: fits.Header, numpoints=1
 ) -> (list[float], list[float]):
     nx, ny = header["NAXIS1"], header["NAXIS2"]
 
@@ -104,7 +106,7 @@ def find_ukirt_surveys(ra: float, dec: float, band: str) -> list[MOCSurvey]:
 
 def combine_headers(primary_header, header_to_append):
     if "SIMPLE" not in primary_header.keys():
-        primary_header.insert(0, ("SIMPLE", "T"))
+        primary_header.insert(0, ("SIMPLE", True))
     if "XTENSION" in primary_header.keys():
         del primary_header["XTENSION"]
     for k in header_to_append.keys():
@@ -118,7 +120,7 @@ def combine_headers(primary_header, header_to_append):
 
 
 def make_image_from_hdulist(
-    ukirt_hdulist: [fits.hdu.image.PrimaryHDU, fits.hdu.image.ImageHDU], basename
+        ukirt_hdulist: [fits.hdu.image.PrimaryHDU, fits.hdu.image.ImageHDU], basename
 ) -> Image:
     assert len(ukirt_hdulist) == 2
     # combined_header = ukirt_hdulist[1].header.copy()
@@ -128,7 +130,6 @@ def make_image_from_hdulist(
         header_to_append=ukirt_hdulist[0].header,
     )
 
-    combined_header[RAW_IMG_KEY] = ""
     combined_header[BASE_NAME_KEY] = basename
     combined_header[COADD_KEY] = 1
     for key in core_fields:
@@ -145,12 +146,14 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
     """
 
     def __init__(
-        self,
-        filter_name: str,
-        num_query_points: int = 4,
-        stack_multiple_images: bool = True,
-        swarp_resampler: Callable[..., Swarp] = None,
-        phot_calibrator: Callable[..., PhotCalibrator] = None,
+            self,
+            filter_name: str,
+            num_query_points: int = 4,
+            stack_multiple_images: bool = True,
+            swarp_resampler: Callable[..., Swarp] = None,
+            phot_calibrator: Callable[..., PhotCalibrator] = None,
+            check_local_database: bool = True,
+            db_table: Type[BaseDB] = None
     ):
         super(UKIRTRef, self).__init__(filter_name)
         self.stack_multiple_images = stack_multiple_images
@@ -164,8 +167,38 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             )
             raise UKIRTRefError(err)
 
+        self.check_local_database = check_local_database
+        self.db_table = db_table
+        if np.logical_and(self.check_local_database, self.db_table is None):
+            err = "You have requested checking locally, but no database " \
+                  "has been specified"
+            raise UKIRTRefError(err)
+
     def write_to_db(self):
         pass
+
+    def check_ref_images_exist_locally(self,
+                                       query_ra,
+                                       query_dec,
+                                       db_table):
+        # table = db_table(query_ra=query_ra,
+        #                  query_dec=query_dec,
+        #                  savepath=' ',
+        #                  query_url=' ')
+        # exists = table.exists()
+        results = db_table.sql_model().select_query(
+            select_keys='savepath',
+            compare_values=[query_ra, query_dec],
+            compare_keys=['query_ra',
+                          'query_dec'],
+            comparators=['__eq__', '__eq__'],
+        )
+        logger.debug(results)
+        if len(results) == 0:
+            savepaths = []
+        else:
+            savepaths = [x[0] for x in results]
+        return savepaths
 
     def get_reference(self, image: Image) -> fits.PrimaryHDU:
         header = image.get_header()
@@ -198,7 +231,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         lim_mags = [x.lim_mag for x in ukirt_surveys]
         ukirt_surveys = ukirt_surveys[np.argsort(lim_mags)[::-1]]
         logger.debug(f"Surveys are {[x.survey_name for x in ukirt_surveys]}")
-        ukirt_image_urls = []
+        ukirt_image_urls, ukirt_query_ras, ukirt_query_decs = [], [], []
         for survey in ukirt_surveys:
             ukirt_query.database = survey.wfau_dbname
             # url_list = ukirt_query.get_image_list(query_crds,
@@ -207,24 +240,32 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             #                                       )
             # This seems to pull multiextension images, which we don't really want.
             # url_list = ukirt_query.get_image_list(center_crds, radius=search_radius)
-            url_list = []
+            url_list, ukirt_qra_list, ukirt_qdec_list = [], [], []
             for crd in query_crds:
                 # Need to add a cache and check there.
-                images_exist_locally = self.check_ref_images_exist_locally(query_ra=crd.ra,
-                                                                           query_dec=crd.dec,
-                                                                           query_survey=survey,
-                                                                           db_name=self.db_name)
-                if images_exist_locally:
-                    url
+                url = []
+                if self.check_local_database:
+                    url \
+                        = self.check_ref_images_exist_locally(query_ra=crd.ra.deg,
+                                                              query_dec=crd.dec.deg,
+                                                              db_table=self.db_table)
 
-                url = ukirt_query.get_image_list(
-                    crd, image_width=ukirt_image_width, image_height=ukirt_image_height
-                )
+                if len(url) == 0:
+                    url = ukirt_query.get_image_list(
+                        crd, image_width=ukirt_image_width,
+                        image_height=ukirt_image_height
+                    )
+                ra_list, dec_list = [crd.ra.deg] * len(url), [crd.dec.deg] * len(url)
                 url_list += url
+                ukirt_qra_list += ra_list
+                ukirt_qdec_list += dec_list
 
             ukirt_image_urls += url_list
+            ukirt_query_ras += ukirt_qra_list
+            ukirt_query_decs += ukirt_qdec_list
 
         logger.debug(f"UKIRT image url list {ukirt_image_urls}")
+
         if len(ukirt_image_urls) == 0:
             err = "No image found at the given coordinates in the UKIRT database"
             raise UKIRTRefNotFoundError(err)
@@ -234,35 +275,53 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             # if you do not wish to stack
             ukirt_image_urls = [ukirt_image_urls[0]]
 
-        ukirt_image_objects = [
-            FileContainer(
-                url,
-                encoding="binary",
-                remote_timeout=ukirt_query.TIMEOUT,
-                show_progress=True,
-            )
-            for url in ukirt_image_urls
-        ]
+        ukirt_images = []
+        for url, ra, dec in zip(ukirt_image_urls, ukirt_query_ras, ukirt_query_decs):
+            if 'http' in url:
+                obj = FileContainer(
+                    url,
+                    encoding="binary",
+                    remote_timeout=ukirt_query.TIMEOUT,
+                    show_progress=True,
+                )
+                ukirt_img_hdulist = obj.get_fits()
+                # UKIRT ref images are stored as multiHDU files, need to combine the
+                # hdus so no info from the headers is lost.
+                ukirt_image \
+                    = make_image_from_hdulist(ukirt_img_hdulist,
+                                              basename=f"{url.split('/')[-1].split('&')[0].split('.')[0]}"
+                                                       f".fits"
+                                                      )
+                savepath = get_output_path(
+                    ukirt_image[BASE_NAME_KEY],
+                    dir_root="mock/ref",
+                    sub_dir="ir_refbuild",
+                )
 
-        ukirt_image_hdulists = [obj.get_fits() for obj in ukirt_image_objects]
-        # UKIRT ref images are stored as multiHDU files, need to combine the hdus so
-        # no info from the headers is lost.
-        ukirt_images = [
-            make_image_from_hdulist(x, basename=f"ref_{ind}.fits")
-            for ind, x in enumerate(ukirt_image_hdulists)
-        ]
+                if self.check_local_database:
+                    new = self.db_table(query_ra=ra,
+                                        query_dec=dec,
+                                        savepath=savepath.as_posix(),
+                                        query_url=url)
+                    ret = new.insert_entry()
+                ukirt_image[ret[0][0]] = ret[1][0]
+                self.save_fits(ukirt_image, savepath)
 
-        logger.debug(ukirt_images[0].header["NAXIS1"])
-        for img in ukirt_images:
-            path = get_output_path(
-                img[BASE_NAME_KEY],
-                dir_root="mock/ref",
-                sub_dir="ir_refbuild",
-            )
+            else:
+                ukirt_hdulist = fits.open(url, ignore_missing_simple=True)
+                ukirt_image = Image(header=ukirt_hdulist[0].header,
+                                    data=ukirt_hdulist[0].data)
 
-            self.save_fits(img, path)
+            ukirt_images.append(ukirt_image)
+
+        ukirt_images = np.array(ukirt_images)
         # TODO : Figure out how to stack references (they need to be stacked,
-        ukirt_image_batch = ImageBatch(ukirt_images)
+        mag_zps = np.array([x['MAGZPT'] for x in ukirt_images])
+        median_mag_zp = np.median(mag_zps)
+        zpmask = np.abs(mag_zps - median_mag_zp) < 0.5
+
+        ukirt_images = ukirt_images[zpmask]
+        ukirt_image_batch = ImageBatch(list(ukirt_images))
         resampler = self.swarp_resampler(
             center_ra=ra_cent, center_dec=dec_cent, include_scamp=False, combine=True
         )
@@ -270,7 +329,6 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         resampled_batch = resampler.apply(ukirt_image_batch)
 
         resampled_image = resampled_batch[0]
-        # resampled_image.header["FILTER"] = "J"
         # phot_calibrator = self.phot_calibrator(resampled_image)
         # phot_calibrator.set_night(night_sub_dir="ir_refbuild/mock")
         # photcaled_batch = phot_calibrator.apply(resampled_batch)
