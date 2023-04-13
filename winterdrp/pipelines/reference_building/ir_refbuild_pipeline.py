@@ -15,6 +15,12 @@ from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.utils import ImageLoader, ImageSaver
 from winterdrp.references import BaseReferenceGenerator
 from winterdrp.references.ukirt import UKIRTRef
+from winterdrp.pipelines.reference_building.db_models import RefComponents, RefStacks
+from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
+from winterdrp.processors.candidates.utils import get_image_center_wcs_coords
+import logging
+
+logger = logging.getLogger(__name__)
 
 refbuild_dir = os.path.dirname(__file__)
 
@@ -30,6 +36,7 @@ def winter_reference_generator(image: Image):
         swarp_resampler=winter_reference_image_resampler,
         phot_calibrator=winter_reference_phot_calibrator,
         num_query_points=4,
+        db_table=RefComponents
     )
 
 
@@ -78,6 +85,8 @@ class MakeDummyImages(BaseImageProcessor):
     pass
 
 
+
+
 class GetReferenceImage(BaseImageProcessor):
     base_key = "refimg_returner"
 
@@ -97,6 +106,11 @@ class GetReferenceImage(BaseImageProcessor):
             ref_generator = self.ref_image_generator(image)
             ref_image_hdu = ref_generator.get_reference(image)
             ref_image = Image(data=ref_image_hdu.data, header=ref_image_hdu.header)
+            ra_cent, dec_cent = get_image_center_wcs_coords(image=image)
+            logger.debug(ra_cent)
+            logger.debug(dec_cent)
+            ref_image['RA_CENT'] = ra_cent
+            ref_image['DEC_CENT'] = dec_cent
             ref_batch.append(ref_image)
 
         return ref_batch
@@ -119,6 +133,10 @@ class IRRefBuildPipeline(Pipeline):
         PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator,
                        write_regions=True),
         ImageSaver(output_dir_name="stacked_ref"),
+        DatabaseImageExporter(db_table=RefStacks,
+                              duplicate_protocol="replace",
+                              q3c_bool=False,
+                              )
     ]
 
     all_pipeline_configurations = {"default": refbuild}
