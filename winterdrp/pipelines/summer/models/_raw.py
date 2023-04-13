@@ -70,11 +70,11 @@ class Raw(BaseDB):
     @classmethod
     def validate_expid(cls, field_value: int):
         """
-        Ensure that expid exists in exposures table
-        Args:
-            field_value: expid
+            Ensure that expid exists in exposures table
+            Args:
+                field_value: expid
 
-        Returns:
+            Returns:
 
         """
         assert Exposure.sql_model().exists(keys="uexpid", values=field_value)

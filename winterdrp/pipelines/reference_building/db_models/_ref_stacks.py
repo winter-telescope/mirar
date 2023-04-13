@@ -1,5 +1,5 @@
 """
-Module to make reference components table
+Module to make reference stacks table
 """
 from typing import ClassVar
 
@@ -14,32 +14,29 @@ from winterdrp.pipelines.reference_building.db_models.basemodel import (
 from winterdrp.processors.sqldatabase.basemodel import BaseDB
 
 
-class RefComponentsTable(RefBase):
+class RefStacksTable(RefBase):
     """
-    Table for individual reference images
+    Table to store Reference Stacks
     """
 
-    __tablename__ = "refcomponents"
+    __tablename__ = "refstacks"
 
-    compid = Column(Integer, primary_key=True)
-    query_ra = Column(Float)
-    query_dec = Column(Float)
-
+    stackid = Column(Integer, primary_key=True)
+    ra_cent = Column(Float)
+    dec_cent = Column(Float)
     savepath = Column(VARCHAR(255))
-    query_url = Column(VARCHAR(255))
 
 
-class RefComponents(BaseDB):
+class RefStacks(BaseDB):
     """
-    Pydantic model for Reference components
+    Pydantic model for reference stacks table
     """
 
-    sql_model: ClassVar = RefComponentsTable
+    sql_model: ClassVar = RefStacksTable
 
-    query_ra: float = ra_field
-    query_dec: float = dec_field
+    ra_cent: float = ra_field
+    dec_cent: float = dec_field
     savepath: str = Field(min_length=1)
-    query_url: str = Field(min_length=1)
 
     def exists(self) -> bool:
         """
@@ -48,5 +45,8 @@ class RefComponents(BaseDB):
         :return: bool
         """
         return self.sql_model().exists(
-            values=[self.query_ra, self.query_dec], keys=["query_ra", "query_dec"]
+            values=[self.ra_cent, self.dec_cent], keys=["ra_cent", "dec_cent"]
         )
+
+    def insert_entry(self, returning_keys=None):
+        return self._insert_entry(returning_keys=returning_keys)

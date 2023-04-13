@@ -39,3 +39,4 @@ class Night(BaseDB):
         :return: bool
         """
         return self.sql_model().exists(values=self.nightdate, keys="nightdate")
+
