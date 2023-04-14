@@ -105,6 +105,7 @@ resample = [
         swarp_config_path=swarp_config_path,
         include_scamp=False,
         combine=False,
+        calculate_dims_in_swarp=True,
     ),
     ImageSaver(
         output_dir_name="resampled", write_mask=True
