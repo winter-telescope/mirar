@@ -48,6 +48,7 @@ def run_swarp(
     gain: Optional[float] = None,
     subtract_bkg: bool = False,
     flux_scaling_keyword: str = None,
+    cache: bool = False,
 ):
     """
     Wrapper to resample and stack images with swarp
@@ -137,6 +138,11 @@ def run_swarp(
 
     if flux_scaling_keyword is not None:
         swarp_command += f" -FSCALE_KEYWORD {flux_scaling_keyword}"
+
+    if not cache:
+        swarp_command += " -DELETE_TMPFILES Y"
+    else:
+        swarp_command += " -DELETE_TMPFILES N"
 
     execute(swarp_command)
 
@@ -412,6 +418,7 @@ class Swarp(BaseImageProcessor):
             gain=self.gain,
             subtract_bkg=self.subtract_bkg,
             flux_scaling_keyword=SWARP_FLUX_SCALING_KEY,
+            cache=self.cache,
         )
 
         # Check if output image exists if combine is no.
