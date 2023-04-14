@@ -90,6 +90,7 @@ reduce = [
         scale_bounds=(0.1667, 0.0333),
         scale_units="degw",
         downsample=2,
+        timeout=900,
     ),
     MaskPixels(mask_path=sedmv2_mask_path),
     Sextractor(
