@@ -41,6 +41,7 @@ def run_astrometry_net_single(
     scale_bounds: Optional[tuple | list] = None,  # limits on scale (lower, upper)
     scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
     downsample: Optional[float | int] = None,  # downsample by factor of __
+    timeout: Optional[float] = None,  # astrometry cmd execute timeout, in seconds
 ):
     """
     function to run astrometry.net locally on one image, with options to adjust settings
@@ -78,11 +79,19 @@ def run_astrometry_net_single(
     )  # radius takes on units of ra, dec
 
     try:
-        execute(cmd_loc, output_dir)
+        if timeout is not None:
+            execute(cmd_loc, output_dir, timeout=timeout)
+        else:
+            execute(cmd_loc, output_dir)
+
         if os.path.isfile(img):
             logger.info(f"Ran a-net with ra,dec guess. \n A-net command: {cmd_loc}")
         else:
-            execute(cmd, output_dir)
+            if timeout is not None:
+                execute(cmd_loc, output_dir, timeout=timeout)
+            else:
+                execute(cmd_loc, output_dir)
+
             if os.path.isfile(img):
                 logger.info(f"Ran a-net without ra,dec guess. \n A-net command: {cmd}")
     except ExecutionError as err:

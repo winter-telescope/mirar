@@ -16,6 +16,9 @@ from winterdrp.processors.base_processor import BaseImageProcessor
 logger = logging.getLogger(__name__)
 
 
+ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
+
+
 class AstrometryNet(BaseImageProcessor):
     """Processor to run astrometry.net"""
 
@@ -27,6 +30,9 @@ class AstrometryNet(BaseImageProcessor):
         scale_bounds: Optional[tuple | list] = None,  # limits on scale (lower, upper)
         scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
         downsample: Optional[float | int] = None,
+        timeout: Optional[
+            float
+        ] = ASTROMETRY_TIMEOUT,  # astrometry cmd execute timeout, in seconds
     ):
         super().__init__()
 
@@ -34,6 +40,7 @@ class AstrometryNet(BaseImageProcessor):
         self.scale_bounds = scale_bounds
         self.scale_units = scale_units
         self.downsample = downsample
+        self.timeout = timeout
 
     def __str__(self) -> str:
         return "Processor to perform astrometric calibration via astrometry.net."
@@ -67,6 +74,7 @@ class AstrometryNet(BaseImageProcessor):
                 scale_bounds=self.scale_bounds,
                 scale_units=self.scale_units,
                 downsample=self.downsample,
+                timeout=self.timeout,
             )
 
             newname = anet_out_dir.joinpath(Path(str(temp_path).split("temp_")[1]))
