@@ -170,6 +170,7 @@ class Swarp(BaseImageProcessor):
         cache: bool = False,
         subtract_bkg: bool = False,
         flux_scaling_factor: float = None,
+        calculate_dims_in_swarp: bool = False,
     ):
         """
 
@@ -239,6 +240,7 @@ class Swarp(BaseImageProcessor):
         self.gain = gain
         self.subtract_bkg = subtract_bkg
         self.flux_scaling_factor = flux_scaling_factor
+        self.calculate_dims_in_swarp = calculate_dims_in_swarp
 
     def __str__(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
@@ -397,6 +399,10 @@ class Swarp(BaseImageProcessor):
             center_ra_to_use = np.median(all_ras)
         if center_dec_to_use is None:
             center_dec_to_use = np.median(all_decs)
+
+        if self.calculate_dims_in_swarp:
+            x_imgpixsize_to_use = None
+            y_imgpixsize_to_use = None
 
         logger.debug(f"{self.center_ra}, {center_ra_to_use}")
 
