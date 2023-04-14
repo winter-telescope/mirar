@@ -214,16 +214,30 @@ def get_astrometry_keys() -> list:
     for i in range(10):
         for j in range(10):
             astrometric_keywords.append(f"A_{i}_{j}")
+            astrometric_keywords.append(f"AP_{i}_{j}")
             astrometric_keywords.append(f"B_{i}_{j}")
+            astrometric_keywords.append(f"BP_{i}_{j}")
 
+    astrometric_keywords += [
+        "LONPOLE",
+        "LATPOLE",
+        "CUNIT1",
+        "CUNIT2",
+        "IMAGEW",
+        "IMAGEH",
+        "WCSAXES",
+        "EQUINOX",
+    ]
     # Add old style WCS keywords
     for i in range(40):
         astrometric_keywords.append(f"PROJP{i}")
 
+    # Add some SWARP-specific keywords that can come from Scamp
+
+    astrometric_keywords.append(SWARP_FLUX_SCALING_KEY)
     return astrometric_keywords
 
 
-all_astrometric_keywords = get_astrometry_keys()
 RAW_IMG_KEY = "RAWPATH"
 BASE_NAME_KEY = "BASENAME"
 REF_IMG_KEY = "REFPATH"
@@ -233,6 +247,7 @@ PROC_FAIL_KEY = "PROCFAIL"
 LATEST_SAVE_KEY = "SAVEPATH"
 LATEST_WEIGHT_SAVE_KEY = "WGHTPATH"
 SEXTRACTOR_HEADER_KEY = "SRCCAT"
+SWARP_FLUX_SCALING_KEY = "FLXSCALE"
 PSFEX_CAT_KEY = "PSFCAT"
 NORM_PSFEX_KEY = "NPSFCAT"
 REF_PSF_KEY = "REFPSF"
@@ -278,3 +293,5 @@ core_fields = [
 MONITOR_EMAIL_KEY = "WATCHDOG_EMAIL"
 MONITOR_PASSWORD_KEY = "WATCHDOG_EMAIL_PASSWORD"
 MONITOR_RECIPIENT_KEY = "WATCHDOG_EMAIL_RECIPIENTS"
+
+all_astrometric_keywords = get_astrometry_keys()

@@ -1,3 +1,6 @@
+"""
+Module to run Scamp
+"""
 import logging
 import os
 import shutil
@@ -20,7 +23,7 @@ from winterdrp.processors.astromatic.sextractor.sextractor import (
     SEXTRACTOR_HEADER_KEY,
     Sextractor,
 )
-from winterdrp.processors.base_processor import BaseImageProcessor, ProcessorWithCache
+from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.utils import execute
 
 logger = logging.getLogger(__name__)
@@ -34,17 +37,36 @@ def run_scamp(
     ast_ref_cat_path: str | Path,
     output_dir: str | Path,
 ):
+    """
+    Function to run scamp.
+    NOTE : By default, the scamp instance here is only designed to run for astrometry.
+    This function thus enforces SOLVE_PHOTOM = N as otherwise Scamp behaves weirdly and
+    can output FLXSCALE != 1 in the output header. This can cause incosistencies down
+    the line, e.g. with Swarp.
+    Args:
+        scamp_list_path:
+        scamp_config_path:
+        ast_ref_cat_path:
+        output_dir:
+
+    Returns:
+
+    """
     scamp_cmd = (
         f"scamp @{scamp_list_path} "
         f"-c {scamp_config_path} "
         f"-ASTREFCAT_NAME {ast_ref_cat_path} "
-        f"-VERBOSE_TYPE QUIET "
+        f"-VERBOSE_TYPE QUIET -SOLVE_PHOTOM N"
     )
 
     execute(scamp_cmd, output_dir=output_dir, timeout=60.0)
 
 
 class Scamp(BaseImageProcessor):
+    """
+    Class for Scamp Processor
+    """
+
     base_key = "scamp"
 
     def __init__(
@@ -52,18 +74,30 @@ class Scamp(BaseImageProcessor):
         ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],
         scamp_config_path: str,
         temp_output_sub_dir: str = "scamp",
+        cache: bool = False,
     ):
         super().__init__()
         self.scamp_config = scamp_config_path
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
+        self.cache = cache
 
     def __str__(self) -> str:
+        """
+        Description of processor
+        Returns:
+
+        """
         return (
-            f"Processor to apply Scamp to images, calculating more precise astrometry."
+            "Processor to apply Scamp to images, calculating more precise astrometry."
         )
 
     def get_scamp_output_dir(self) -> Path:
+        """
+        Function to get scamp output directory
+        Returns:
+        Path
+        """
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
@@ -109,9 +143,10 @@ class Scamp(BaseImageProcessor):
             output_dir=scamp_output_dir,
         )
 
-        for path in temp_files:
-            logger.debug(f"Deleting temp file {path}")
-            path.unlink()
+        if not self.cache:
+            for path in temp_files:
+                logger.debug(f"Deleting temp file {path}")
+                path.unlink()
 
         assert len(batch) == len(out_files)
 

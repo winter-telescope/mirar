@@ -1,3 +1,6 @@
+"""
+Module to test WIRC pipeline
+"""
 import logging
 import os
 
@@ -37,28 +40,36 @@ logger = logging.getLogger(__name__)
 test_data_dir = get_test_data_dir()
 
 expected_zp = {
-    "ZP_2.0": 25.774316787719727,
-    "ZP_2.0_std": 0.32469287514686584,
-    "ZP_2.0_nstars": 15,
-    "ZP_4.0": 27.22728157043457,
-    "ZP_4.0_std": 0.09417041391134262,
-    "ZP_4.0_nstars": 13,
-    "ZP_5.0": 27.59035873413086,
-    "ZP_5.0_std": 0.08887325972318649,
-    "ZP_5.0_nstars": 13,
-    "ZP_8.0": 28.080671310424805,
-    "ZP_8.0_std": 0.21738892793655396,
-    "ZP_8.0_nstars": 15,
-    "ZP_10.0": 28.32463264465332,
-    "ZP_10.0_std": 0.08160017430782318,
-    "ZP_10.0_nstars": 13,
-    "ZP_AUTO": 28.46233558654785,
-    "ZP_AUTO_std": 0.18256542086601257,
-    "ZP_AUTO_nstars": 15,
+    "ZP_2.0": 25.90504264831543,
+    "ZP_2.0_std": 0.10294787585735321,
+    "ZP_2.0_nstars": 12,
+    "ZP_4.0": 27.229888916015625,
+    "ZP_4.0_std": 0.09965435415506363,
+    "ZP_4.0_nstars": 12,
+    "ZP_5.0": 27.5889835357666,
+    "ZP_5.0_std": 0.09648236632347107,
+    "ZP_5.0_nstars": 12,
+    "ZP_8.0": 28.160614013671875,
+    "ZP_8.0_std": 0.07556212693452835,
+    "ZP_8.0_nstars": 12,
+    "ZP_10.0": 28.322141647338867,
+    "ZP_10.0_std": 0.07936131209135056,
+    "ZP_10.0_nstars": 12,
+    "ZP_AUTO": 28.434335708618164,
+    "ZP_AUTO_std": 0.1449936181306839,
+    "ZP_AUTO_nstars": 12,
 }
 
 
 def get_cal_path(name: str) -> str:
+    """
+    Function to get cal path
+    Args:
+        name:
+
+    Returns:
+
+    """
     return os.path.join(test_data_dir, f"wirc/cals/test_{name}.fits")
 
 
@@ -94,8 +105,8 @@ test_configuration = [
     ),
     Swarp(swarp_config_path=swarp_sp_path),
     Sextractor(output_sub_dir="final_sextractor", **sextractor_astrometry_config),
-    ImageSaver(output_dir_name="final"),
     PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
+    ImageSaver(output_dir_name="final"),
 ]
 
 pipeline = WircPipeline(night="20210330", selected_configurations="test")
@@ -103,11 +114,25 @@ pipeline.add_configuration(configuration_name="test", configuration=test_configu
 
 
 class TestWircPipeline(BaseTestCase):
+    """
+    Class to Test WIRC Pipeline
+    """
+
     def setUp(self):
+        """
+        Test set up
+        Returns:
+
+        """
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
     def test_pipeline(self):
+        """
+        function for testing pipeline
+        Returns:
+
+        """
         self.logger.info("\n\n Testing wirc pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
@@ -125,3 +150,22 @@ class TestWircPipeline(BaseTestCase):
                 raise TypeError(
                     f"Type for value ({type(value)} is neither float not int."
                 )
+
+
+if __name__ == "__main__":
+    print("Calculating latest ZP dictionary")
+
+    # Code to generate updated ZP dict of the results change
+
+    new_res, new_errorstack = pipeline.reduce_images(
+        Dataset(ImageBatch()), catch_all_errors=False
+    )
+
+    new_header = new_res[0][0].get_header()
+
+    new_exp = "expected_zp = { \n"
+    for header_key in new_header.keys():
+        if "ZP_" in header_key:
+            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
+    new_exp += "}"
+    print(new_exp)

@@ -15,6 +15,7 @@ from winterdrp.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     RAW_IMG_KEY,
+    SWARP_FLUX_SCALING_KEY,
     all_astrometric_keywords,
     copy_temp_file,
     get_output_dir,
@@ -46,6 +47,8 @@ def run_swarp(
     combine: bool = True,
     gain: Optional[float] = None,
     subtract_bkg: bool = False,
+    flux_scaling_keyword: str = None,
+    cache: bool = False,
 ):
     """
     Wrapper to resample and stack images with swarp
@@ -64,6 +67,29 @@ def run_swarp(
         Path of stacked output file
     weight_out_path: str
         Path of output weight image
+    pixscale: float
+        Pixelscale in degrees
+    x_imgpixsize: float
+        X-dimension in pixels
+    y_imgpixsize: float
+        Y-dimension in pixels
+    propogate_headerlist: list
+        Headerlist to propagate from header
+    center_ra: float
+        Central RA
+    center_dec: float
+        Central Dec
+    combine: bool
+        Combine and coadd all images? For reasons internal to Swarp, it is strongly
+        advised to always set this to True (even if you are running Swarp on only
+        one image).
+    gain: float
+        Gain
+    subtract_bkg: bool
+        Background subtraction
+    flux_scaling_keyword: str
+        What flux scaling keyword do you want to use? If None, the default value in
+        the config will be used
     """
 
     swarp_command = (
@@ -109,6 +135,15 @@ def run_swarp(
 
     if gain is not None:
         swarp_command += f" -GAIN {gain}"
+
+    if flux_scaling_keyword is not None:
+        swarp_command += f" -FSCALE_KEYWORD {flux_scaling_keyword}"
+
+    if not cache:
+        swarp_command += " -DELETE_TMPFILES Y"
+    else:
+        swarp_command += " -DELETE_TMPFILES N"
+
     execute(swarp_command)
 
 
@@ -131,10 +166,64 @@ class Swarp(BaseImageProcessor):
         center_dec: Optional[float] = None,
         gain: Optional[float] = None,
         include_scamp: bool = True,
-        combine: bool = False,
+        combine: bool = True,
         cache: bool = False,
         subtract_bkg: bool = False,
+        flux_scaling_factor: float = None,
     ):
+        """
+
+        Args:
+            swarp_config_path: str
+                path to config path
+            temp_output_sub_dir: str
+                output sub-directory
+            pixscale: float
+                Pixel scale in degrees
+            x_imgpixsize: float
+                X-dimension in pixels
+            y_imgpixsize: float
+                Y-dimension in pixels
+            propogate_headerlist: list
+                List of header keywords to propagate. Recommended to leave None, the
+                processor will take care of it.
+            center_ra: float
+                Desired central RA of output image
+            center_dec:
+                Desired central Dec of output image
+            gain: float
+                Gain
+            include_scamp: bool
+                Whether to include scamp results or not?
+            combine: bool
+                Combine and coadd all images? For reasons internal to Swarp, it is
+                strongly advised to always set this to True (even if you are running
+                Swarp on only one image). The processor will raise an
+                error if you try running it on a Batch with multiple images by
+                setting combine to False. If you want to resample multiple images,
+                just DeBatch them and run Swarp separately.
+            cache: bool
+                Save temporary files?
+            subtract_bkg:
+                Subtract background?
+            flux_scaling_factor:
+                Do you want to scale the images by some factor? There are two ways to
+                provide this value. First, you can specify the scaling factor for the
+                image in the header using the FLXSCALE keyword. This is the preferred
+                way for a batch with multiple images. This calculation should happen
+                somewhere upstream. The second option, which could be used for cases
+                for single images is by providing a float value to this parameter.
+                The processor will then create a FLXSCALE card in the header with this
+                value. By design, Swarp is forced to look for FLXSCALE in the header
+                for scaling, so this keyword should not be used for other purposes.
+                The FLXSCALE keyword is not propagated to the resampled/stacked image to
+                avoid unwanted re-scalings for future resamplings of the image.
+                If you want this logged, you should add it manually to the headers where
+                you calculate it using some keyword other than FLXSCALE. If no value is
+                provided, it defaults to 1 (no scaling). If multiple images are provided
+                without FLXSCALE in their headers, the same scaling will be applied to
+                all of them.
+        """
         super().__init__()
         self.swarp_config = swarp_config_path
         self.temp_output_sub_dir = temp_output_sub_dir
@@ -149,6 +238,7 @@ class Swarp(BaseImageProcessor):
         self.cache = cache
         self.gain = gain
         self.subtract_bkg = subtract_bkg
+        self.flux_scaling_factor = flux_scaling_factor
 
     def __str__(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
@@ -187,6 +277,23 @@ class Swarp(BaseImageProcessor):
                 Path(batch[0][BASE_NAME_KEY]).name + "_stack.fits",
             )
         else:
+            if len(batch) > 1:
+                err = (
+                    f"Attempting to run Swarp with batch-size of length "
+                    f"{len(batch)} but with combine=False. Either set combine=True"
+                    f", or DeBatch the images"
+                )
+                logger.error(err)
+                raise SwarpError(err)
+
+            logger.warning(
+                "You are choosing to run Swarp without combining the image. "
+                "This causes swarp to output an intermediate image, "
+                "with possibly incorrect FLXSCALE values. Please consider "
+                "running with combine=True, it almost always gives the same "
+                "result as running it without, but will have consistent "
+                "headers."
+            )
             output_image_path = swarp_output_dir.joinpath(
                 Path(batch[0][BASE_NAME_KEY]).with_suffix(".resamp.fits").name,
             )
@@ -251,6 +358,22 @@ class Swarp(BaseImageProcessor):
                         file_path=Path(image[scamp_header_key]),
                     )
 
+                if np.logical_and(
+                    SWARP_FLUX_SCALING_KEY in image.header.keys(),
+                    self.flux_scaling_factor is not None,
+                ):
+                    err = (
+                        f"{SWARP_FLUX_SCALING_KEY} is present in header, and"
+                        f"a value for flux_scaling_factor has also been provided. "
+                        f"Please use only one."
+                    )
+                    raise SwarpError(err)
+                if SWARP_FLUX_SCALING_KEY not in image.header.keys():
+                    if self.flux_scaling_factor is None:
+                        image[SWARP_FLUX_SCALING_KEY] = 1
+                    else:
+                        image[SWARP_FLUX_SCALING_KEY] = self.flux_scaling_factor
+
                 temp_img_path = get_temp_path(swarp_output_dir, image[BASE_NAME_KEY])
 
                 self.save_fits(image, temp_img_path)
@@ -260,10 +383,9 @@ class Swarp(BaseImageProcessor):
                 img_list.write(f"{temp_img_path}\n")
                 weight_list.write(f"{temp_mask_path}\n")
 
+                temp_files += [temp_img_path, temp_mask_path]
                 if self.include_scamp:
-                    temp_files += [temp_head_path, temp_img_path, temp_mask_path]
-                else:
-                    temp_files += [temp_img_path, temp_mask_path]
+                    temp_files += [temp_head_path]
 
         if pixscale_to_use is None:
             pixscale_to_use = np.max(all_pixscales)
@@ -295,9 +417,13 @@ class Swarp(BaseImageProcessor):
             combine=self.combine,
             gain=self.gain,
             subtract_bkg=self.subtract_bkg,
+            flux_scaling_keyword=SWARP_FLUX_SCALING_KEY,
+            cache=self.cache,
         )
 
-        # Check if output image exists if combine is no
+        # Check if output image exists if combine is no.
+        # This is the intermediate image that swarp makes
+        # Hopefully this is obsolete now and noone uses this
         if not self.combine:
             temp_output_image_path = get_temp_path(
                 swarp_output_dir,
@@ -314,7 +440,7 @@ class Swarp(BaseImageProcessor):
             else:
                 err = (
                     f"Swarp seems to have misbehaved, "
-                    f"and not made the correct output file {output_image_path}"
+                    f"and not made the correct output file {temp_output_image_path}"
                 )
                 logger.error(err)
                 raise SwarpError(err)
