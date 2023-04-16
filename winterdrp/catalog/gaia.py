@@ -27,6 +27,7 @@ class Gaia2Mass(BaseCatalog):
         *args,
         filter_name: str = "j",
         ph_qual_cut: bool = False,
+        snr_threshold: float = 5,
         trim: bool = False,
         image_catalog_path: Optional[str] = None,
         **kwargs,
@@ -35,6 +36,7 @@ class Gaia2Mass(BaseCatalog):
         self.ph_qual_cut = ph_qual_cut
         self.trim = trim
         self.image_catalog_path = image_catalog_path
+        self.snr_threshold = snr_threshold
 
         logger.debug(f"Sextractor catalog path is {self.image_catalog_path}")
 
@@ -75,9 +77,10 @@ class Gaia2Mass(BaseCatalog):
         src_list["dec_errdeg"] = src_list["dec_error"] / 3.6e6
         src_list["FLAGS"] = 0
         src_list["magnitude"] = src_list[f"{self.filter_name.lower()}_m"]
-
+        src_list["magnitude_err"] = src_list[f"{self.filter_name.lower()}_msigcom"]
         logger.info(f"Found {len(src_list)} sources in Gaia")
 
+        src_list = src_list[src_list["magnitude_err"] < 1.086 / self.snr_threshold]
         if self.trim:
             if self.image_catalog_path is None:
                 logger.error(
