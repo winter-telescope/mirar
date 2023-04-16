@@ -74,7 +74,7 @@ class Scamp(BaseImageProcessor):
         ref_catalog_generator: Callable[[astropy.io.fits.Header], BaseCatalog],
         scamp_config_path: str,
         temp_output_sub_dir: str = "scamp",
-        cache: bool = False
+        cache: bool = False,
     ):
         super().__init__()
         self.scamp_config = scamp_config_path

@@ -5,12 +5,12 @@ Functions to convert FITS files or astropy Tables to FITS_LDAC files and
 vice versa.
 """
 import tempfile
+from pathlib import Path
 
 import astropy.io
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
-from pathlib import Path
 
 
 def convert_hdu_to_ldac(
