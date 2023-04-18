@@ -2,17 +2,17 @@
 Module to define PSQL database tables using sqlalchemy
 """
 import logging
+from datetime import date
 from typing import ClassVar
 
 import numpy as np
-from pydantic import BaseModel, Extra, root_validator, validator
-from sqlalchemy import Insert, Select, Table, Update, inspect, select, and_
+from pydantic import BaseModel, Extra, Field, root_validator, validator
+from sqlalchemy import Insert, Select, Table, Update, and_, inspect, select
 
-from winterdrp.processors.sqldatabase.postgres_utils import \
-    get_sequence_key_names_from_table
+from winterdrp.processors.sqldatabase.postgres_utils import (
+    get_sequence_key_names_from_table,
+)
 from winterdrp.utils.sql import get_engine
-from pydantic import Field
-from datetime import date
 
 logger = logging.getLogger(__name__)
 
