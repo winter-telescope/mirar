@@ -6,10 +6,13 @@ from typing import ClassVar
 
 import numpy as np
 from pydantic import BaseModel, Extra, root_validator, validator
-from sqlalchemy import Insert, Select, Table, Update, inspect, select
+from sqlalchemy import Insert, Select, Table, Update, inspect, select, and_
 
-from winterdrp.processors.sqldatabase.postgres import get_sequence_key_names_from_table
+from winterdrp.processors.sqldatabase.postgres_utils import \
+    get_sequence_key_names_from_table
 from winterdrp.utils.sql import get_engine
+from pydantic import Field
+from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +41,6 @@ class BaseDB(PydanticBase):
     def sql_model_exists_check(cls, values):
         """
         Validator to ensure an sql model has been specified in the child class
-
         :param values: values
         :return: values
         """
@@ -53,7 +55,6 @@ class BaseDB(PydanticBase):
         """
         Validator to ensure that the field names of a pydantic model
         match the database table
-
         :param value: value
         :param field: field
         :return: value
@@ -63,14 +64,19 @@ class BaseDB(PydanticBase):
             raise ValueError(err)
         return value
 
-    def _insert_entry(self, returning_keys: list = None) -> tuple:
+    def _insert_entry(self, returning_key_names: list = None) -> tuple:
         """
         Insert the pydantic-ified data into the corresponding sql database
-
         :return: sequence_key_names, sequence_key_values of the updated entry
         """
-        if returning_keys is None:
+        if returning_key_names is None:
             returning_keys = self.get_sequence_keys()
+        else:
+            if not isinstance(returning_key_names, list):
+                returning_key_names = [returning_key_names]
+
+            returning_keys = self.get_table_keys_from_names(returning_key_names)
+
         logger.debug(f"Returning keys {returning_keys}")
         stmt = Insert(self.sql_model).values(**self.dict()).returning(*returning_keys)
         engine = get_engine(db_name=self.sql_model.db_name)
@@ -88,13 +94,12 @@ class BaseDB(PydanticBase):
         assert len(returning_values) == len(returning_key_names)
         return returning_key_names, returning_values
 
-    def insert_entry(self, returning_keys=None):
+    def insert_entry(self, returning_key_names: str | list = None):
         """
         Insert the pydantic-ified data into the corresponding sql database
-
         :return: sequence_key_names, sequence_key_values of the updated entry
         """
-        result = self._insert_entry(returning_keys=returning_keys)
+        result = self._insert_entry(returning_key_names=returning_key_names)
         logger.debug(f"Return result {result}")
         return result
 
@@ -115,7 +120,6 @@ class BaseDB(PydanticBase):
         Function to get column instances from names of sql table columns
         Args:
             key_names:
-
         Returns:
             list
         """
@@ -127,7 +131,6 @@ class BaseDB(PydanticBase):
         Args:
             primary_key_val: value of primary key to find the db entry
             update_key_names: names of keys to be updates, if None, will update all keys
-
         Returns:
             sequence_key_names, sequence_key_values of the updated entry
         """
@@ -174,7 +177,6 @@ class BaseDB(PydanticBase):
         Args:
             primary_key_val:
             update_keys:
-
         Returns:
             sequence_key_names, sequence_key_values of the updated entry
         """
@@ -195,45 +197,133 @@ class BaseTable:
     def db_name(self):
         """
         Name of the database.
-
         :return: None
         """
         raise NotImplementedError
 
     def get_primary_key(self) -> str:
+        """
+        Function to get primary key of table
+        Returns:
+        primary key
+        """
         return inspect(self.__class__).primary_key[0].name
 
-    def exists(self, value, key: str = None) -> bool:
+    def construct_select_statement(
+        self,
+        compare_values,
+        select_keys=None,
+        compare_keys=None,
+        comparators: str | list = "__eq__",
+    ):
+        """
+        Function to construct a select statement
+        Args:
+            compare_values: Values to compare
+            select_keys: Keys to select. If None, defaults to primary key
+            compare_keys: Keys to compare. If None, defaults to primary key
+            comparators: Comparators : '__eq__', '__gt__', '__lt__', etc.
+            If not specified, defaults to '__eq__
+        Returns:
+        """
+        if not isinstance(comparators, list):
+            comparators = [comparators]
+
+        if compare_keys is None:
+            compare_keys = [self.get_primary_key()]
+        else:
+            if not isinstance(compare_keys, list):
+                compare_keys = [compare_keys]
+            if not isinstance(compare_values, list):
+                compare_values = [compare_values]
+            assert len(compare_keys) == len(compare_values)
+            columns = inspect(self.__class__).mapper.column_attrs
+            column_names = [c.key for c in columns]
+            for key in compare_keys:
+                if key not in column_names:
+                    err = f"{self.__tablename__} has no column {key}"
+                    raise ValueError(err)
+
+        assert len(compare_keys) == len(comparators)
+
+        logger.debug(
+            f"Checking if {compare_keys} {comparators} {compare_values} "
+            f"exists in {self.__tablename__}"
+        )
+
+        if select_keys is None:
+            select_items = [self.__class__]
+        else:
+            if not isinstance(select_keys, list):
+                select_keys = [select_keys]
+            select_items = [getattr(self.__class__, k) for k in select_keys]
+        stmt = select(*select_items).where(
+            and_(
+                *[
+                    getattr(self.__class__, key).__getattribute__(comparator)(value)
+                    for key, comparator, value in zip(
+                        compare_keys, comparators, compare_values
+                    )
+                ]
+            )
+        )
+
+        return stmt
+
+    def select_query(
+        self, compare_values, select_keys=None, compare_keys=None, comparators="__eq__"
+    ):
+        """
+        Run a select query
+        Args:
+            compare_values: Values to compare
+            select_keys: Keys to select. If None, defaults to primary key
+            compare_keys: Keys to compare. If None, defaults to primary key
+            comparators: Comparators : '__eq__', '__gt__', '__lt__', etc.
+            If not specified, defaults to '__eq__
+        Returns:
+            result of select query
+        """
+        engine = get_engine(db_name=self.db_name)
+        stmt = self.construct_select_statement(
+            compare_values=compare_values,
+            select_keys=select_keys,
+            compare_keys=compare_keys,
+            comparators=comparators,
+        )
+        with engine.connect() as conn:
+            res = conn.execute(stmt)
+            conn.commit()
+        return res.fetchall()
+
+    def exists(self, values, keys: str | list = None) -> bool:
         """
         Function to query a table and see whether an entry with key==value exists.
         If key is None, key will default to the table's primary key.
         Args:
-            value: = Value to match
-            key: str = column name
-
+            values: = Value to match
+            keys: str = column name
         Returns:
             boolean
         """
+        if not isinstance(keys, list):
+            keys = [keys]
+
+        if not isinstance(values, list):
+            values = [values]
+        assert len(values) == len(keys)
         engine = get_engine(db_name=self.db_name)
-        if key is None:
-            key = self.get_primary_key()
-        else:
-            columns = inspect(self.__class__).mapper.column_attrs
-            column_names = [c.key for c in columns]
-            if key not in column_names:
-                err = f"{self.__tablename__} has no column {key}"
-                raise ValueError(err)
 
-        logger.debug(f"Checking if {key}={value} exists in {self.__tablename__}")
-        stmt = select(self.__class__).where(self.__class__.__dict__[key] == value)
-
+        logger.debug(f"Checking if {keys}=={values} exists in {self.__tablename__}")
+        stmt = self.construct_select_statement(
+            compare_values=values, compare_keys=keys, comparators=["__eq__"] * len(keys)
+        )
         return _exists(stmt, engine=engine)
 
 
 def _execute(stmt, engine):
     """
     Checks if the pydantic-ified data exists the corresponding sql database
-
     :return: bool
     """
     with engine.connect() as conn:
@@ -245,7 +335,13 @@ def _execute(stmt, engine):
 def _exists(stmt: Select, engine) -> bool:
     """
     Checks if the pydantic-ified data exists the corresponding sql database
-
     :return: bool
     """
     return len(_execute(stmt, engine)) > 0
+
+
+ra_field: float = Field(title="RA (degrees)", ge=0.0, le=360.0)
+dec_field: float = Field(title="Dec (degrees)", ge=-90.0, le=90.0)
+alt_field: float = Field(title="Alt (degrees)", ge=0.0, le=90.0)
+az_field: float = Field(title="Az (degrees)", ge=0.0, le=360.0)
+date_field: date = Field()
