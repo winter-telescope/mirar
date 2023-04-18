@@ -4,13 +4,16 @@ Module with base class for reference image generation
 import logging
 import os
 from pathlib import Path
+from typing import Type
 
 import numpy as np
 from astropy.io import fits
 
-from winterdrp.data import Image
+from winterdrp.data import Image, ImageBatch
 from winterdrp.io import save_hdu_as_fits
 from winterdrp.paths import BASE_NAME_KEY, COADD_KEY, PROC_HISTORY_KEY
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +30,23 @@ class BaseReferenceGenerator:
         """
         raise NotImplementedError()
 
-    def __init__(self, filter_name: str):
+    def __init__(
+        self,
+        filter_name: str,
+        write_to_db: bool = False,
+        db_table: Type[BaseDB] = None,
+        duplicate_protocol: str = "replace",
+        q3c_bool: bool = True,
+    ):
         self.filter_name = filter_name
+        self.write_to_db = write_to_db
+        self.write_db_table = db_table
+        self.duplicate_protocol = duplicate_protocol
+        self.q3c_bool = q3c_bool
+
+        if np.logical_and(self.write_to_db, self.write_db_table is None):
+            err = "You have set write_to_db=True but not provided a write_db_table."
+            raise ReferenceError(err)
 
     def get_reference(self, image: Image) -> fits.PrimaryHDU:
         """
@@ -74,6 +92,16 @@ class BaseReferenceGenerator:
         ref_hdu.header[BASE_NAME_KEY] = os.path.basename(output_path)
         ref_hdu.data[ref_hdu.data == 0] = np.nan  # pylint: disable=no-member
         save_hdu_as_fits(ref_hdu, output_path)
+
+        if self.write_to_db:
+            dbexporter = DatabaseImageExporter(
+                db_table=self.write_db_table,
+                duplicate_protocol=self.duplicate_protocol,
+                q3c_bool=self.q3c_bool,
+            )
+            ref_image = Image(header=ref_hdu.header, data=ref_hdu.data)
+            ref_image_batch = ImageBatch([ref_image])
+            _ = dbexporter.apply(ref_image_batch)
 
         return output_path
 

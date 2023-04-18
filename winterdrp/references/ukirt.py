@@ -19,8 +19,10 @@ from survey_coverage.surveys import MOCSurvey
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ProcessorError
 from winterdrp.paths import BASE_NAME_KEY, COADD_KEY, core_fields, get_output_path
+from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.base_processor import ImageHandler
+from winterdrp.processors.candidates.utils import get_image_center_wcs_coords
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.sqldatabase.basemodel import BaseDB
 from winterdrp.references.base_reference_generator import BaseReferenceGenerator
@@ -28,7 +30,7 @@ from winterdrp.references.base_reference_generator import BaseReferenceGenerator
 logger = logging.getLogger(__name__)
 
 ukirt_image_height = 90 * u.arcmin
-ukirt_image_width = 15 * u.arcmin
+ukirt_image_width = 90 * u.arcmin
 
 
 class UKIRTRefError(ProcessorError):
@@ -82,8 +84,8 @@ def get_query_coordinates_from_header(
         xcrd_list = [x[0] for x in crd_list]
         ycrd_list = [x[1] for x in crd_list]
 
-    ra_list, dec_list = wcs.all_pix2world(xcrd_list, ycrd_list, 0)
-
+    ra_list, dec_list = wcs.all_pix2world(xcrd_list, ycrd_list, 1)
+    ra_list[ra_list < 0] = ra_list[ra_list < 0] + 360
     return ra_list, dec_list
 
 
@@ -100,7 +102,7 @@ def get_centre_ra_dec_from_header(header: fits.Header) -> (float, float):
 
     wcs = WCS(header)
 
-    ra_cent, dec_cent = wcs.all_pix2world(nx / 2, ny / 2, 0)
+    ra_cent, dec_cent = wcs.all_pix2world(nx / 2, ny / 2, 1)
 
     return ra_cent, dec_cent
 
@@ -204,15 +206,21 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         num_query_points: int = 4,
         stack_multiple_images: bool = True,
         swarp_resampler: Callable[..., Swarp] = None,
-        phot_calibrator: Callable[..., PhotCalibrator] = None,
+        sextractor_generator: Callable[..., Sextractor] = None,
+        phot_calibrator_generator: Callable[..., PhotCalibrator] = None,
         check_local_database: bool = True,
-        db_table: Type[BaseDB] = None,
+        write_to_db: bool = True,
+        components_table: Type[BaseDB] = None,
+        write_db_table: Type[BaseDB] = None,
     ):
-        super().__init__(filter_name)
+        super().__init__(
+            filter_name=filter_name, write_to_db=write_to_db, db_table=write_db_table
+        )
         self.stack_multiple_images = stack_multiple_images
         self.swarp_resampler = swarp_resampler
         self.num_query_points = num_query_points
-        self.phot_calibrator = phot_calibrator
+        self.sextractor_generator = sextractor_generator
+        self.phot_calibrator_generator = phot_calibrator_generator
         if np.logical_and(self.stack_multiple_images, self.swarp_resampler is None):
             err = (
                 "Stacking mutiple reference images requested, but no swarp resampler "
@@ -221,8 +229,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             raise UKIRTRefError(err)
 
         self.check_local_database = check_local_database
-        self.db_table = db_table
-        if np.logical_and(self.check_local_database, self.db_table is None):
+        self.components_table = components_table
+        if np.logical_and(self.check_local_database, self.components_table is None):
             err = (
                 "You have requested checking locally, but no database "
                 "has been specified"
@@ -306,7 +314,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                     url = self.check_ref_images_exist_locally(
                         query_ra=crd.ra.deg,
                         query_dec=crd.dec.deg,
-                        db_table=self.db_table,
+                        db_table=self.components_table,
                     )
 
                 if len(url) == 0:
@@ -359,7 +367,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                 )
 
                 if self.check_local_database:
-                    new = self.db_table(
+                    new = self.components_table(
                         query_ra=ra,
                         query_dec=dec,
                         savepath=savepath.as_posix(),
@@ -408,21 +416,32 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             center_dec=dec_cent,
             include_scamp=False,
             combine=True,
-            x_imgpixsize=2270,
-            y_imgpixsize=2270,
+            x_imgpixsize=25 * 60 / 0.40,
+            y_imgpixsize=25 * 60 / 0.40,
         )
         resampler.set_night(night_sub_dir="ir_refbuild/mock")
         resampled_batch = resampler.apply(ukirt_image_batch)
 
         resampled_image = resampled_batch[0]
-        # phot_calibrator = self.phot_calibrator(resampled_image)
-        # phot_calibrator.set_night(night_sub_dir="ir_refbuild/mock")
-        # photcaled_batch = phot_calibrator.apply(resampled_batch)
-        #
-        # photcaled_image = photcaled_batch[0]
+        ra_cent, dec_cent = get_image_center_wcs_coords(image=resampled_image)
+
+        resampled_image["RA_CENT"] = ra_cent
+        resampled_image["DEC_CENT"] = dec_cent
+
+        ref_sextractor = self.sextractor_generator(resampled_image)
+        ref_sextractor.set_night(night_sub_dir="ir_refbuild/mock")
+        resampled_batch = ref_sextractor.apply(resampled_batch)
+
+        phot_calibrator = self.phot_calibrator_generator(resampled_batch[0])
+        phot_calibrator.set_night(night_sub_dir="ir_refbuild/mock")
+        phot_calibrator.set_preceding_steps([ref_sextractor])
+        photcaled_batch = phot_calibrator.apply(resampled_batch)
+
+        photcaled_image = photcaled_batch[0]
         reference_hdu = fits.PrimaryHDU()
-        reference_hdu.header = resampled_image.get_header()
-        reference_hdu.data = resampled_image.get_data()
+        reference_hdu.header = photcaled_image.get_header()
+        reference_hdu.data = photcaled_image.get_data()
+
         return reference_hdu
         # #  then re-phot-caled)
         # if np.logical_and(self.stack_multiple_images, len(ukirt_images) > 1):

@@ -6,6 +6,7 @@ import pandas as pd
 
 from winterdrp.catalog import Gaia2Mass
 from winterdrp.data import Image, ImageBatch
+from winterdrp.paths import get_output_dir
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.pipelines.reference_building.db_models import RefComponents, RefStacks
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
@@ -13,10 +14,9 @@ from winterdrp.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.base_processor import BaseImageProcessor
-from winterdrp.processors.candidates.utils import get_image_center_wcs_coords
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
-from winterdrp.processors.utils import ImageLoader, ImageSaver
+from winterdrp.processors.utils import ImageDebatcher, ImageLoader, ImageSaver
 from winterdrp.references import BaseReferenceGenerator
 from winterdrp.references.ukirt import UKIRTRef
 
@@ -30,19 +30,17 @@ swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 
 def winter_reference_generator(image: Image):
     filtername = image["FILTER"]
+    # TODO check if exists in DB
     # TODO if in_ukirt and in_vista, different processing
     return UKIRTRef(
         filter_name=filtername,
         swarp_resampler=winter_reference_image_resampler,
-        phot_calibrator=winter_reference_phot_calibrator,
+        sextractor_generator=ref_sextractor,
+        phot_calibrator_generator=winter_reference_phot_calibrator,
         num_query_points=4,
-        db_table=RefComponents,
-    )
-
-
-def dummy_image_generator():
-    winter_fields = pd.read_csv(
-        "~/winter/gwemopt_sims/input/WINTER_fields.txt", delim_whitespace=True
+        components_table=RefComponents,
+        write_to_db=True,
+        write_db_table=RefStacks,
     )
 
 
@@ -92,6 +90,24 @@ class MakeDummyImages(BaseImageProcessor):
     pass
 
 
+def ref_sextractor(image: Image):
+    return Sextractor(
+        output_sub_dir="phot",
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        cache=True
+    )
+
+
+def ref_phot_calibrator(image: Image):
+    return PhotCalibrator(
+        ref_catalog_generator=wirc_photometric_catalog_generator,
+        write_regions=True,
+        x_lower_limit=0,
+        fwhm_threshold_arcsec=3,
+    )
+
+
 class GetReferenceImage(BaseImageProcessor):
     base_key = "refimg_returner"
 
@@ -109,13 +125,15 @@ class GetReferenceImage(BaseImageProcessor):
         ref_batch = ImageBatch()
         for image in batch:
             ref_generator = self.ref_image_generator(image)
-            ref_image_hdu = ref_generator.get_reference(image)
-            ref_image = Image(data=ref_image_hdu.data, header=ref_image_hdu.header)
-            ra_cent, dec_cent = get_image_center_wcs_coords(image=image)
-            logger.debug(ra_cent)
-            logger.debug(dec_cent)
-            ref_image["RA_CENT"] = ra_cent
-            ref_image["DEC_CENT"] = dec_cent
+            ref_image_path = ref_generator.write_reference(
+                image,
+                output_dir=get_output_dir(
+                    dir_root="mock/stacked_ref", sub_dir="ir_refbuild"
+                ).as_posix(),
+            )
+
+            ref_image = self.open_fits(ref_image_path)
+
             ref_batch.append(ref_image)
 
         return ref_batch
@@ -125,28 +143,29 @@ class IRRefBuildPipeline(Pipeline):
     name = "ir_refbuild"
 
     refbuild = [
-        ImageLoader(load_image=load_raw_wirc_image),
+        # ImageLoader(load_image=load_raw_wirc_image),
+        ImageDebatcher(),
         GetReferenceImage(
             ref_image_generator=winter_reference_generator,
         ),
-        Sextractor(
-            output_sub_dir="phot",
-            **sextractor_astrometry_config,
-            write_regions_bool=True,
-            cache=True
-        ),
-        PhotCalibrator(
-            ref_catalog_generator=wirc_photometric_catalog_generator,
-            write_regions=True,
-            x_lower_limit=0,
-            fwhm_threshold_arcsec=3,
-        ),
+        # Sextractor(
+        #     output_sub_dir="phot",
+        #     **sextractor_astrometry_config,
+        #     write_regions_bool=True,
+        #     cache=True
+        # ),
+        # PhotCalibrator(
+        #     ref_catalog_generator=wirc_photometric_catalog_generator,
+        #     write_regions=True,
+        #     x_lower_limit=0,
+        #     fwhm_threshold_arcsec=3,
+        # ),
         ImageSaver(output_dir_name="stacked_ref"),
-        DatabaseImageExporter(
-            db_table=RefStacks,
-            duplicate_protocol="replace",
-            q3c_bool=False,
-        ),
+        # DatabaseImageExporter(
+        #     db_table=RefStacks,
+        #     duplicate_protocol="replace",
+        #     q3c_bool=False,
+        # ),
     ]
 
     all_pipeline_configurations = {"default": refbuild}
