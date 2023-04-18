@@ -3,72 +3,33 @@ Module containing postgres util functions
 """
 # pylint: disable=not-context-manager
 import logging
-import os
 from pathlib import Path
 from typing import Optional, Type
 
-import numpy as np
 import psycopg
 from psycopg import errors
 from psycopg.rows import Row
-
-# from winterdrp.processors.database.basemodel import BaseDB
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
 from winterdrp.data import DataBlock
 from winterdrp.errors import ProcessorError
 from winterdrp.processors.database.constraints import DBQueryConstraints
+from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.processors.sqldatabase.postgres_utils import (
+    ADMIN_PASSWORD,
+    ADMIN_USER,
+    DB_PASSWORD,
+    DB_PASSWORD_KEY,
+    DB_USER,
+    DB_USER_KEY,
+    PG_ADMIN_PWD_KEY,
+    PG_ADMIN_USER_KEY,
+    POSTGRES_DUPLICATE_PROTOCOLS,
+)
 
 logger = logging.getLogger(__name__)
-
-DB_USER_KEY = "DB_USER"
-DB_PASSWORD_KEY = "DB_PWD"
-
-PG_ADMIN_USER_KEY = "PG_ADMIN_USER"
-PG_ADMIN_PWD_KEY = "PG_ADMIN_PWD"
-
-DB_USER = os.getenv(DB_USER_KEY)
-DB_PASSWORD = os.getenv(DB_PASSWORD_KEY)
-
-ADMIN_USER = os.getenv(PG_ADMIN_USER_KEY, DB_USER)
-ADMIN_PASSWORD = os.getenv(PG_ADMIN_PWD_KEY, DB_PASSWORD)
-
-POSTGRES_DUPLICATE_PROTOCOLS = ["fail", "ignore", "replace"]
-
-
-def get_sequence_key_names_from_table(
-    db_table: str,
-    db_name: str,
-    db_user: str = DB_USER,
-    db_password: str = DB_PASSWORD,
-) -> np.ndarray:
-    """
-    Gets sequence keys of db table
-
-    :param db_table: database table to use
-    :param db_name: database name
-    :param db_user: database user
-    :param db_password: dataname password
-    :return: numpy array of keys
-
-    """
-    with psycopg.connect(
-        f"dbname={db_name} user={db_user} password={db_password}"
-    ) as conn:
-        conn.autocommit = True
-        sequences = [
-            x[0]
-            for x in conn.execute(
-                "SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';"
-            ).fetchall()
-        ]
-        logger.debug(sequences)
-        seq_tables = np.array([x.split("_")[0] for x in sequences])
-        seq_columns = np.array([x.split("_")[1] for x in sequences])
-        table_sequence_keys = seq_columns[(seq_tables == db_table)]
-    return table_sequence_keys
 
 
 class DataBaseError(ProcessorError):
@@ -129,7 +90,7 @@ class PostgresUser:
     def export_to_db(
         self,
         value_dict: dict | DataBlock,
-        db_table: Type[BaseModel],
+        db_table: Type[BaseDB],
         duplicate_protocol: str = "fail",
     ) -> tuple[list, list]:
         """
