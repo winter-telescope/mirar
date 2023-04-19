@@ -144,6 +144,7 @@ class PostgresUser:
                 # TODO : Query serial values with primary key
 
             if duplicate_protocol == "replace":
+                logger.debug(f"Conflict at {exc.orig.diag.constraint_name}")
                 logger.debug(
                     f"Found duplicate entry in {db_name} - "
                     f"{str(exc)}."

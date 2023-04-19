@@ -5,7 +5,15 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import REAL, VARCHAR, Column, ForeignKey, Integer  # event,
+from sqlalchemy import (  # event,
+    REAL,
+    VARCHAR,
+    Column,
+    Double,
+    ForeignKey,
+    Integer,
+    Sequence,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from winterdrp.pipelines.winter.models._raw import Raw
@@ -21,9 +29,12 @@ class ProcTable(WinterBase):  # pylint: disable=too-few-public-methods
     __tablename__ = "proc"
     __table_args__ = {"extend_existing": True}
 
-    procid = Column(Integer, primary_key=True)
+    uprocid = Column(
+        Integer, Sequence(start=1, name="raw_urawid_seq"), autoincrement=True
+    )
+    procid = Column(Double, primary_key=True, autoincrement=False)
 
-    rawid: Mapped[int] = mapped_column(ForeignKey("raw.rawid"))
+    urawid: Mapped[int] = mapped_column(ForeignKey("raw.urawid"))
     raw_ids: Mapped["RawTable"] = relationship(back_populates="proc")
 
     savepath = Column(VARCHAR(255), unique=True)
@@ -38,12 +49,12 @@ class ProcTable(WinterBase):  # pylint: disable=too-few-public-methods
     crpix1 = Column(REAL)
     crpix2 = Column(REAL)
     zp_auto = Column(REAL)
-    fwhm_med = (Column(REAL),)
-    fwhm_std = (Column(REAL),)
-    astr_dpa = (Column(REAL),)
-    astr_off = (Column(REAL),)
-    zp_auto_nstars = (Column(Integer),)
-    zp_auto_std = (Column(REAL),)
+    fwhm_med = Column(REAL)
+    fwhm_std = Column(REAL)
+    astr_dpa = Column(REAL)
+    astr_off = Column(REAL)
+    zp_auto_nstars = Column(Integer)
+    zp_auto_std = Column(REAL)
     maglim = Column(REAL)
 
 
@@ -54,7 +65,8 @@ class Proc(BaseDB):
 
     sql_model: ClassVar = ProcTable
 
-    rawid: int = Field(ge=0)
+    procid: int = Field(ge=0)
+    urawid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
     wghtpath: str = Field(min_length=1)
 

@@ -13,6 +13,7 @@ from sqlalchemy import (  # event,
     Float,
     ForeignKey,
     Integer,
+    Sequence,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,8 +23,7 @@ from winterdrp.pipelines.winter.models._imgType import ImgTypesTable
 from winterdrp.pipelines.winter.models._nights import Nights, NightsTable
 from winterdrp.pipelines.winter.models._programs import (
     ProgramsTable,
-    default_program,
-    program_id_field,
+    default_program
 )
 from winterdrp.pipelines.winter.models.basemodel import WinterBase
 from winterdrp.processors.sqldatabase.basemodel import (
@@ -45,8 +45,13 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     __tablename__ = "exposures"
     __table_args__ = {"extend_existing": True}
 
-    uexpid = Column(Integer, primary_key=True)
-    expid = Column(Double, unique=True)  # Deterministic ID of exposure
+    uexpid = Column(
+        Integer,
+        Sequence(name="exposures_uexpid_seq", start=1, increment=1),
+        autoincrement=True,
+    )
+    expid = Column(Double, primary_key=True, unique=True, autoincrement=False)
+    # Deterministic ID of exposure
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
     filt: Mapped["FiltersTable"] = relationship(back_populates="exposures")

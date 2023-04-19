@@ -1,6 +1,8 @@
 """
 Models for the 'exposures' table
 """
+# from winterdrp.utils.sql import create_q3c_extension
+import logging
 from datetime import date, datetime
 from typing import ClassVar
 
@@ -13,6 +15,7 @@ from sqlalchemy import (  # event,
     Float,
     ForeignKey,
     Integer,
+    Sequence,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,7 +33,7 @@ from winterdrp.processors.sqldatabase.basemodel import (
     ra_field,
 )
 
-# from winterdrp.utils.sql import create_q3c_extension
+logger = logging.getLogger(__name__)
 
 
 class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
@@ -41,8 +44,14 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
     __tablename__ = "exposures"
     __table_args__ = {"extend_existing": True}
 
-    uexpid = Column(Integer, primary_key=True)
-    expid = Column(Double, unique=True)  # Deterministic ID of exposure
+    uexpid = Column(
+        Integer,
+        Sequence(name="exposures_uexpid_seq", start=1, increment=1),
+        unique=True,
+        autoincrement=True,
+    )
+    expid = Column(Double, primary_key=True, unique=True, autoincrement=False)
+    # Deterministic ID of exposure
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
     filt: Mapped["FiltersTable"] = relationship(back_populates="exposures")
@@ -155,11 +164,14 @@ class Exposures(BaseDB):
         if not night.exists():
             night.insert_entry()
 
+        logger.debug(f"puid: {self.puID}")
         if not ProgramsTable().exists(values=self.puID, keys="puid"):
             default_puid = ProgramsTable().select_query(
-                compare_values=list(default_program.__dict__.values()),
-                compare_keys=list(default_program.__dict__),
-            )
+                compare_values=default_program.progname,
+                compare_keys="progname",
+                select_keys="puid",
+            )[0][0]
+            logger.debug(f"Found progid {default_puid}")
             self.puID = default_puid
 
         return self._insert_entry()

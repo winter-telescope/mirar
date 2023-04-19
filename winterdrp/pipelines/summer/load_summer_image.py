@@ -75,7 +75,6 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header[BASE_NAME_KEY] = base_name
         header["EXPID"] = int("".join(base_name.split("_")[1:3])[2:])
         # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
-        header["RAWID"] = header["EXPID"]
         pipeline_version = __version__
         pipeline_version_padded_str = "".join(
             [x.rjust(2, "0") for x in pipeline_version.split(".")]
@@ -89,8 +88,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
         header["TIMEUTC"] = header["UTCISO"]
 
-        t_init = Time("2018-01-01", format="iso")
-        header["NIGHTID"] = int(obstime.jd) - int(t_init.jd)
+        header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y%m%d")
         header["EXPMJD"] = header["OBSMJD"]
 
         default_id = 0
@@ -183,11 +181,20 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
                 header["PROGID"] = int(header["PROGPI"])
                 header["PROGPI"] = progpi
             except KeyError:
-                header["PROGID"] = 0
+                header["PROGID"] = 1
 
+        # TODO Figure out how if database query is required for this.
+        header["PUID"] = header["PROGID"]
         crds = SkyCoord(ra=header["RA"], dec=header["DEC"], unit=(u.deg, u.deg))
         header["RA"] = crds.ra.deg
         header["DEC"] = crds.dec.deg
+
+        # TODO Write a processor to calculate the split QID
+        header["QID"] = 1
+        header["PROCSTATUS"] = 0
+
+        # TODO Figure out what to do about primary keys
+        header["RAWID"] = header["EXPID"]
 
         if GAIN_KEY not in header.keys():
             header[GAIN_KEY] = 1

@@ -5,7 +5,7 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import VARCHAR, Column, ForeignKey, Integer
+from sqlalchemy import VARCHAR, Column, Double, ForeignKey, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from winterdrp.pipelines.summer.models._exposures import Exposures
@@ -21,9 +21,15 @@ class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
     __tablename__ = "raw"
     __table_args__ = {"extend_existing": True}
 
-    rawid = Column(Integer, primary_key=True)
+    urawid = Column(
+        Integer,
+        Sequence(start=1, name="raw_urawid_seq"),
+        autoincrement=True,
+        unique=True,
+    )
+    rawid = Column(Double, primary_key=True, autoincrement=False)
 
-    expid: Mapped[int] = mapped_column(ForeignKey("exposures.expid"))
+    uexpid: Mapped[int] = mapped_column(ForeignKey("exposures.uexpid"))
     exposure_ids: Mapped["ExposuresTable"] = relationship(back_populates="raw")
 
     qid: Mapped[int] = mapped_column(ForeignKey("subdets.qid"))
@@ -33,6 +39,8 @@ class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
 
     procstatus = Column(Integer, default=0)
 
+    proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
+
 
 class Raw(BaseDB):
     """
@@ -41,7 +49,8 @@ class Raw(BaseDB):
 
     sql_model: ClassVar = RawTable
 
-    expid: int = Field(ge=0)
+    rawid: int = Field(ge=0)
+    uexpid: int = Field(ge=0)
     qid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
     procstatus: int = Field(ge=0, default=0)
@@ -58,7 +67,7 @@ class Raw(BaseDB):
         assert os.path.exists(field_value)
         return field_value
 
-    @validator("expid")
+    @validator("uexpid")
     @classmethod
     def validate_expid(cls, field_value: int):
         """
@@ -69,5 +78,5 @@ class Raw(BaseDB):
         Returns:
 
         """
-        assert Exposures.sql_model().exists(keys="expid", values=field_value)
+        assert Exposures.sql_model().exists(keys="uexpid", values=field_value)
         return field_value

@@ -30,6 +30,8 @@ from winterdrp.pipelines.summer.models._programs import (
     populate_programs,
 )
 from winterdrp.pipelines.summer.models._raw import Raw, RawTable
+from winterdrp.pipelines.summer.models._exposures import Exposures, ExposuresTable
+from winterdrp.pipelines.summer.models._proc import Proc, ProcTable
 from winterdrp.pipelines.summer.models._subdets import (
     Subdets,
     SubdetsTable,

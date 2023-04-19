@@ -32,7 +32,7 @@ from winterdrp.pipelines.summer.load_summer_image import (
     load_proc_summer_image,
     load_raw_summer_image,
 )
-from winterdrp.pipelines.summer.models._raw import Raw
+from winterdrp.pipelines.summer.models import Exposures, Proc, Raw
 from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from winterdrp.processors.autoastrometry import AutoAstrometry
@@ -124,19 +124,14 @@ load_processed = [
 ]
 
 export_raw = [
-    # ImageSelector(("BASENAME", "SUMMER_20220402_193152_Camera0.fits")),
+    ImageSelector(("BASENAME", "SUMMER_20220402_214324_Camera0.fits")),
     DatabaseImageExporter(
-        db_table=Raw,
+        db_table=Exposures,
         duplicate_protocol="replace",
         q3c_bool=False,
     ),
     MaskPixels(mask_path=summer_mask_path),
-    # DatabaseImageExporter(
-    #     db_name=DB_NAME,
-    #     db_table="raw",#FIXME
-    #     schema_path=get_summer_schema_path("raw"),
-    #     duplicate_protocol="replace",
-    # ),
+    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
 ]
 
@@ -197,17 +192,18 @@ process_raw = [
         write_mask=True,
     ),
     HeaderEditor(edit_keys="procflag", values=1),
-    PSQLDatabaseImageExporter(
-        db_name=DB_NAME,
-        db_table="proc",  # FIXME
-        schema_path=get_summer_schema_path("proc"),
-        duplicate_protocol="replace",
-    ),
+    # PSQLDatabaseImageExporter(
+    #     db_name=DB_NAME,
+    #     db_table="proc",  # FIXME
+    #     schema_path=get_summer_schema_path("proc"),
+    #     duplicate_protocol="replace",
+    # ),
+    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
     ModifyImageDatabaseSeq(
         db_name=DB_NAME,
         db_table="raw",  # FIXME
         schema_path=get_summer_schema_path("raw"),
-        db_alter_columns="procflag",
+        db_alter_columns="procstatus",
     ),
 ]
 

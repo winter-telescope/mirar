@@ -214,7 +214,7 @@ class BaseTable:
         compare_values,
         select_keys=None,
         compare_keys=None,
-        comparators: str | list = "__eq__",
+        comparators: str | list = None,
     ):
         """
         Function to construct a select statement
@@ -226,9 +226,6 @@ class BaseTable:
             If not specified, defaults to '__eq__
         Returns:
         """
-        if not isinstance(comparators, list):
-            comparators = [comparators]
-
         if compare_keys is None:
             compare_keys = [self.get_primary_key()]
         else:
@@ -243,6 +240,12 @@ class BaseTable:
                 if key not in column_names:
                     err = f"{self.__tablename__} has no column {key}"
                     raise ValueError(err)
+
+        if comparators is None:
+            comparators = ["__eq__"] * len(compare_keys)
+
+        if not isinstance(comparators, list):
+            comparators = [comparators]
 
         assert len(compare_keys) == len(comparators)
 
@@ -271,7 +274,7 @@ class BaseTable:
         return stmt
 
     def select_query(
-        self, compare_values, select_keys=None, compare_keys=None, comparators="__eq__"
+        self, compare_values, select_keys=None, compare_keys=None, comparators=None
     ):
         """
         Run a select query
@@ -280,7 +283,7 @@ class BaseTable:
             select_keys: Keys to select. If None, defaults to primary key
             compare_keys: Keys to compare. If None, defaults to primary key
             comparators: Comparators : '__eq__', '__gt__', '__lt__', etc.
-            If not specified, defaults to '__eq__
+            If None, defaults to '__eq__
         Returns:
             result of select query
         """
