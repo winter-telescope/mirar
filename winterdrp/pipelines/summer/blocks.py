@@ -124,7 +124,7 @@ load_processed = [
 ]
 
 export_raw = [
-    ImageSelector(("BASENAME", "SUMMER_20220402_214324_Camera0.fits")),
+    # ImageSelector(("BASENAME", "SUMMER_20220402_214324_Camera0.fits")),
     DatabaseImageExporter(
         db_table=Exposures,
         duplicate_protocol="replace",

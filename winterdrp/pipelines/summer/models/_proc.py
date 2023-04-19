@@ -30,7 +30,10 @@ class ProcTable(SummerBase):  # pylint: disable=too-few-public-methods
     __table_args__ = {"extend_existing": True}
 
     uprocid = Column(
-        Integer, Sequence(start=1, name="raw_urawid_seq"), autoincrement=True
+        Integer,
+        Sequence(start=1, name="raw_urawid_seq"),
+        autoincrement=True,
+        unique=True,
     )
     procid = Column(Double, primary_key=True, autoincrement=False)
 
