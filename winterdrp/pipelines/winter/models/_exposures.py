@@ -21,10 +21,7 @@ from winterdrp.pipelines.winter.models._fields import FieldsTable, fieldid_field
 from winterdrp.pipelines.winter.models._filters import FiltersTable, fid_field
 from winterdrp.pipelines.winter.models._imgType import ImgTypesTable
 from winterdrp.pipelines.winter.models._nights import Nights, NightsTable
-from winterdrp.pipelines.winter.models._programs import (
-    ProgramsTable,
-    default_program
-)
+from winterdrp.pipelines.winter.models._programs import ProgramsTable, default_program
 from winterdrp.pipelines.winter.models.basemodel import WinterBase
 from winterdrp.processors.sqldatabase.basemodel import (
     BaseDB,
