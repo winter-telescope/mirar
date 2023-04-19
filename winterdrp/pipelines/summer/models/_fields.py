@@ -11,8 +11,13 @@ from sqlalchemy import REAL, Column, Insert, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase, dec_field, ra_field
-from winterdrp.processors.sqldatabase.basemodel import BaseDB, _exists
+from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.processors.sqldatabase.basemodel import (
+    BaseDB,
+    _exists,
+    dec_field,
+    ra_field,
+)
 from winterdrp.utils.sql import get_engine
 
 DEFAULT_FIELD = 999999999
@@ -28,7 +33,10 @@ class FieldsTable(SummerBase):  # pylint: disable=too-few-public-methods
     fieldid = Column(Integer, primary_key=True)
     ra = Column(REAL, nullable=True)
     dec = Column(REAL, nullable=True)
-    raw: Mapped["RawTable"] = relationship(back_populates="field")
+    ebv = Column(REAL, nullable=True)
+    gall = Column(REAL, nullable=True)
+    galb = Column(REAL, nullable=True)
+    exposures: Mapped["ExposuresTable"] = relationship(back_populates="field")
 
 
 fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD, exclude={-99})
@@ -43,6 +51,10 @@ class Fields(BaseDB):
     fieldid: int = fieldid_field
     ra: float = ra_field
     dec: float = dec_field
+    ebv: float = Field(ge=1)
+    gall: float = ra_field
+    galb: float = dec_field
+    # Need to fix formatting of fields file in wintertoo before including these.
 
 
 _SUMMER_FIELDS_URL = (
@@ -61,14 +73,21 @@ def populate_fields(url=_SUMMER_FIELDS_URL):
 
     engine = get_engine(db_name=FieldsTable.db_name)
     if not _exists(Select(FieldsTable), engine=engine):
-        with urllib.request.urlopen(url) as url_s:
-            full_res = pd.read_csv(url_s, sep=r"\s+")
-
+        # with urllib.request.urlopen(url) as url_s:
+        #     full_res = pd.read_csv(url_s, sep=r"\s+")
+        url_s = (
+            "/Users/viraj/winter_telescope/wintertoo/wintertoo/data/WINTER_fields."
+            "txt"
+        )
+        full_res = pd.read_csv(url_s, sep=r"\s+")
         chunk = 10000
 
-        full_res["fieldid"] = full_res["#ID"]
+        full_res["fieldid"] = full_res["ID"]
         full_res["ra"] = full_res["RA"]
         full_res["dec"] = full_res["Dec"]
+        full_res["ebv"] = full_res["Ebv"]
+        full_res["gall"] = full_res["Gal_Long"]
+        full_res["galb"] = full_res["Gal_Lat"]
 
         keys = list(Fields.__fields__)
 

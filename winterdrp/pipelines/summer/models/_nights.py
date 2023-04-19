@@ -7,8 +7,8 @@ from typing import ClassVar
 from sqlalchemy import DATE, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase, date_field
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.processors.sqldatabase.basemodel import BaseDB, date_field
 
 
 class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods
@@ -19,10 +19,9 @@ class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods
     __tablename__ = "nights"
     __table_args__ = {"extend_existing": True}
 
-    nid = Column(Integer, primary_key=True)  # Starts at 1 and
-    # creates a sequence by default
-    nightid = Column(DATE, unique=True)
-    raw: Mapped["RawTable"] = relationship(back_populates="night")
+    nid = Column(Integer, primary_key=True)  # Sequence starting at 1
+    nightdate = Column(DATE, unique=True)
+    exposures: Mapped["ExposuresTable"] = relationship(back_populates="night")
 
 
 class Nights(BaseDB):
@@ -31,17 +30,12 @@ class Nights(BaseDB):
     """
 
     sql_model: ClassVar = NightsTable
-    nightid: date = date_field
+    nightdate: date = date_field
 
     def exists(self) -> bool:
         """
-        Checks if the pydantic-ified data exists the corresponding sql database
+        Checks if the pydantic-ified nightid exists the corresponding sql database
 
         :return: bool
         """
-        return self.sql_model().exists(value=self.nightid, key="nightid")
-
-    #
-    # def increment_raw(self):
-    #     self.rawcount += 1
-    #     self.update_entry()
+        return self.sql_model().exists(values=self.nightdate, keys="nightdate")

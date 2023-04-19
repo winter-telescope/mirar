@@ -1,9 +1,10 @@
 """
 Models for database and pydantic dataclass models
 """
-from sqlalchemy.orm import Session
+from typing import Union
 
-from winterdrp.pipelines.summer.models._dithers import Dithers, DithersTable
+from sqlalchemy.orm import DeclarativeBase
+
 from winterdrp.pipelines.summer.models._fields import (
     Fields,
     FieldsTable,
@@ -14,10 +15,10 @@ from winterdrp.pipelines.summer.models._filters import (
     FiltersTable,
     populate_filters,
 )
-from winterdrp.pipelines.summer.models._itid import (
+from winterdrp.pipelines.summer.models._imgType import (
     ALL_ITID,
-    ITIDs,
-    ITIDsTable,
+    ImgTypes,
+    ImgTypesTable,
     populate_itid,
 )
 from winterdrp.pipelines.summer.models._nights import Nights, NightsTable
@@ -26,43 +27,58 @@ from winterdrp.pipelines.summer.models._programs import (
     Programs,
     ProgramsTable,
     default_program,
+    populate_programs,
 )
 from winterdrp.pipelines.summer.models._raw import Raw, RawTable
+from winterdrp.pipelines.summer.models._subdets import (
+    Subdets,
+    SubdetsTable,
+    populate_subdets,
+)
 from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.database.postgres import (
+from winterdrp.processors.sqldatabase.basemodel import BaseTable
+from winterdrp.processors.sqldatabase.postgres import PostgresAdmin
+from winterdrp.processors.sqldatabase.postgres_utils import (
     ADMIN_PASSWORD,
     ADMIN_USER,
     DB_PASSWORD,
     DB_USER,
-    PostgresAdmin,
 )
 from winterdrp.utils.sql import get_engine
 
+
+def setup_database(base: Union[DeclarativeBase, BaseTable]):
+    """
+    Function to setup database
+    Args:
+        base:
+    Returns:
+    """
+    if DB_USER is not None:
+        db_name = base.db_name
+        admin_engine = get_engine(
+            db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
+        )
+
+        pg_admin = PostgresAdmin()
+
+        if not pg_admin.check_if_db_exists(db_name=db_name):
+            pg_admin.create_db(db_name=db_name)
+
+        base.metadata.create_all(
+            admin_engine
+        )  # extensions need to be created as a superuser
+
+        if not pg_admin.check_if_user_exists(user_name=DB_USER):
+            pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
+
+        pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
+
+
 if DB_USER is not None:
-    db_name = SummerBase.db_name
-    admin_engine = get_engine(
-        db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
-    )
-
-    engine = get_engine(db_name=db_name)
-    pg_admin = PostgresAdmin()
-
-    if not pg_admin.check_if_db_exists(db_name=db_name):
-        pg_admin.create_db(db_name=db_name)
-
-    SummerBase.metadata.create_all(
-        admin_engine
-    )  # extensions need to be created as a superuser
-
-    if not pg_admin.check_if_user_exists(user_name=DB_USER):
-        pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
-
-    pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
-
-    session = Session(bind=engine)
-    if not default_program.exists():
-        default_program.insert_entry()
-
+    setup_database(SummerBase)
     populate_fields()
     populate_itid()
     populate_filters()
+    populate_programs()
+    populate_subdets()

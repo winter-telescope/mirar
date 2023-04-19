@@ -16,16 +16,12 @@ from sqlalchemy import (  # event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from winterdrp.pipelines.winter.models._fields import FieldsTable, fieldid_field
-from winterdrp.pipelines.winter.models._filters import FiltersTable, fid_field
-from winterdrp.pipelines.winter.models._imgType import ImgTypesTable
-from winterdrp.pipelines.winter.models._nights import Nights, NightsTable
-from winterdrp.pipelines.winter.models._programs import (
-    ProgramsTable,
-    default_program,
-    program_id_field,
-)
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
+from winterdrp.pipelines.summer.models._fields import FieldsTable, fieldid_field
+from winterdrp.pipelines.summer.models._filters import FiltersTable, fid_field
+from winterdrp.pipelines.summer.models._imgType import ImgTypesTable
+from winterdrp.pipelines.summer.models._nights import Nights, NightsTable
+from winterdrp.pipelines.summer.models._programs import ProgramsTable, default_program
+from winterdrp.pipelines.summer.models.basemodel import SummerBase
 from winterdrp.processors.sqldatabase.basemodel import (
     BaseDB,
     alt_field,
@@ -37,7 +33,7 @@ from winterdrp.processors.sqldatabase.basemodel import (
 # from winterdrp.utils.sql import create_q3c_extension
 
 
-class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
+class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
     """
     Raw table in database
     """

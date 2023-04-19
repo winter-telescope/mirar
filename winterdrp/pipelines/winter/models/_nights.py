@@ -38,7 +38,7 @@ class Nights(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.nightdate, keys="nightid")
+        return self.sql_model().exists(values=self.nightdate, keys="nightdate")
 
     #
     # def increment_raw(self):
