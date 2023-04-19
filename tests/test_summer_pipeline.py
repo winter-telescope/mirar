@@ -63,3 +63,11 @@ class TestSummerPipeline(BaseTestCase):
                 raise TypeError(
                     f"Type for value ({type(value)} is neither float not int."
                 )
+
+
+if __name__ == "__main__":
+    print("Calculating latest ZP dictionary")
+
+    new_res, new_errorstack = pipeline.reduce_images(
+        dataset=Dataset(ImageBatch()), catch_all_errors=False
+    )
