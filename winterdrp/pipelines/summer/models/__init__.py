@@ -5,6 +5,7 @@ from typing import Union
 
 from sqlalchemy.orm import DeclarativeBase
 
+from winterdrp.pipelines.summer.models._exposures import Exposures, ExposuresTable
 from winterdrp.pipelines.summer.models._fields import (
     Fields,
     FieldsTable,
@@ -22,6 +23,7 @@ from winterdrp.pipelines.summer.models._imgType import (
     populate_itid,
 )
 from winterdrp.pipelines.summer.models._nights import Nights, NightsTable
+from winterdrp.pipelines.summer.models._proc import Proc, ProcTable
 from winterdrp.pipelines.summer.models._programs import (
     ProgramCredentials,
     Programs,
@@ -30,8 +32,6 @@ from winterdrp.pipelines.summer.models._programs import (
     populate_programs,
 )
 from winterdrp.pipelines.summer.models._raw import Raw, RawTable
-from winterdrp.pipelines.summer.models._exposures import Exposures, ExposuresTable
-from winterdrp.pipelines.summer.models._proc import Proc, ProcTable
 from winterdrp.pipelines.summer.models._subdets import (
     Subdets,
     SubdetsTable,

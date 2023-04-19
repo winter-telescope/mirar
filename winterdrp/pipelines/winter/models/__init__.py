@@ -5,7 +5,6 @@ from typing import Union
 
 from sqlalchemy.orm import DeclarativeBase
 
-from winterdrp.pipelines.winter.models._subdets import Subdets, SubdetsTable
 from winterdrp.pipelines.winter.models._exposures import Exposures, ExposuresTable
 from winterdrp.pipelines.winter.models._fields import (
     Fields,
@@ -31,6 +30,7 @@ from winterdrp.pipelines.winter.models._programs import (
     populate_programs,
 )
 from winterdrp.pipelines.winter.models._raw import Raw, RawTable
+from winterdrp.pipelines.winter.models._subdets import Subdets, SubdetsTable
 from winterdrp.pipelines.winter.models.basemodel import WinterBase
 from winterdrp.processors.database.postgres import (
     ADMIN_PASSWORD,
