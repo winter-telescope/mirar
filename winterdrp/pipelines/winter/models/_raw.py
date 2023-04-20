@@ -46,6 +46,12 @@ class Raw(BaseDB):
 
     sql_model: ClassVar = RawTable
 
+    urawid = Column(
+        Integer,
+        Sequence(start=1, name="raw_urawid_seq"),
+        autoincrement=True,
+        unique=True,
+    )
     rawid: int = Field(ge=0)
     uexpid: int = Field(ge=0)
     qid: int = Field(ge=0)

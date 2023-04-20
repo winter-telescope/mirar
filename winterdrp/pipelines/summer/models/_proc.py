@@ -35,9 +35,9 @@ class ProcTable(SummerBase):  # pylint: disable=too-few-public-methods
         autoincrement=True,
         unique=True,
     )
-    procid = Column(Double, primary_key=True, autoincrement=False)
+    # procid = Column(Double, primary_key=True, autoincrement=False)
 
-    urawid: Mapped[int] = mapped_column(ForeignKey("raw.urawid"))
+    rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)
     raw_ids: Mapped["RawTable"] = relationship(back_populates="proc")
 
     savepath = Column(VARCHAR(255), unique=True)
@@ -68,8 +68,7 @@ class Proc(BaseDB):
 
     sql_model: ClassVar = ProcTable
 
-    urawid: int = Field(ge=0)
-    procid: int = Field(ge=0)
+    rawid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
     wghtpath: str = Field(min_length=1)
 
@@ -102,16 +101,16 @@ class Proc(BaseDB):
         assert os.path.exists(field_value)
         return field_value
 
-    @validator("urawid")
+    @validator("rawid")
     @classmethod
     def validate_expid(cls, field_value: int):
         """
-        Ensure that expid exists in exposures table
+        Ensure that rawid exists in exposures table
         Args:
             field_value: expid
 
         Returns:
 
         """
-        assert Raw.sql_model().exists(keys="urawid", values=field_value)
+        assert Raw.sql_model().exists(keys="rawid", values=field_value)
         return field_value

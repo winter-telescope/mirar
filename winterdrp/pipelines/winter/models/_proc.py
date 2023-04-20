@@ -32,9 +32,9 @@ class ProcTable(WinterBase):  # pylint: disable=too-few-public-methods
     uprocid = Column(
         Integer, Sequence(start=1, name="raw_urawid_seq"), autoincrement=True
     )
-    procid = Column(Double, primary_key=True, autoincrement=False)
+    # procid = Column(Double, primary_key=True, autoincrement=False)
 
-    urawid: Mapped[int] = mapped_column(ForeignKey("raw.urawid"))
+    rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)
     raw_ids: Mapped["RawTable"] = relationship(back_populates="proc")
 
     savepath = Column(VARCHAR(255), unique=True)
@@ -65,8 +65,7 @@ class Proc(BaseDB):
 
     sql_model: ClassVar = ProcTable
 
-    procid: int = Field(ge=0)
-    urawid: int = Field(ge=0)
+    rawid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
     wghtpath: str = Field(min_length=1)
 

@@ -28,6 +28,7 @@ class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
         unique=True,
     )
     rawid = Column(Double, primary_key=True, autoincrement=False)
+    proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
 
     uexpid: Mapped[int] = mapped_column(ForeignKey("exposures.uexpid"))
     exposure_ids: Mapped["ExposuresTable"] = relationship(back_populates="raw")
@@ -38,8 +39,6 @@ class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
     savepath = Column(VARCHAR(255), unique=True)
 
     procstatus = Column(Integer, default=0)
-
-    proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
 
 
 class Raw(BaseDB):
