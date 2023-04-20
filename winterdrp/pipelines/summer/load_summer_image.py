@@ -73,8 +73,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
         base_name = os.path.basename(path)
         header[BASE_NAME_KEY] = base_name
-        header["EXPID"] = int("".join(base_name.split("_")[1:3])[2:])
-        # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
+
         pipeline_version = __version__
         pipeline_version_padded_str = "".join(
             [x.rjust(2, "0") for x in pipeline_version.split(".")]
@@ -85,6 +84,11 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["OBSDATE"] = int(header["UTC"].split("_")[0])
 
         obstime = Time(header["UTCISO"], format="iso")
+        header["EXPID"] = int(
+            (obstime.mjd - 60000.0) * 86400.0
+        )  # seconds since 60000 MJD
+
+        # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
 
         header["TIMEUTC"] = header["UTCISO"]
 
@@ -194,7 +198,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["PROCSTATUS"] = 0
 
         # TODO Figure out what to do about primary keys
-        header["RAWID"] = header["EXPID"]
+        header["RAWID"] = header["EXPID"]  # + subdetid
 
         if GAIN_KEY not in header.keys():
             header[GAIN_KEY] = 1

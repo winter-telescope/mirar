@@ -73,12 +73,9 @@ def populate_fields(url=_SUMMER_FIELDS_URL):
 
     engine = get_engine(db_name=FieldsTable.db_name)
     if not _exists(Select(FieldsTable), engine=engine):
-        # with urllib.request.urlopen(url) as url_s:
-        #     full_res = pd.read_csv(url_s, sep=r"\s+")
-        url_s = (
-            "/Users/viraj/winter_telescope/wintertoo/wintertoo/data/WINTER_fields."
-            "txt"
-        )
+        with urllib.request.urlopen(url) as url_s:
+            full_res = pd.read_csv(url_s, sep=r"\s+")
+
         full_res = pd.read_csv(url_s, sep=r"\s+")
         chunk = 10000
 
