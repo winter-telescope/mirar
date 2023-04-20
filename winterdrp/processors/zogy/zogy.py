@@ -329,6 +329,14 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_rms_image = self.get_rms_image(image, sci_rms)
             ref_rms_image = self.get_rms_image(ref_img, ref_rms)
 
+            sci_rms_data = sci_rms_image.get_data()
+            sci_rms_data[image_mask] = 0
+            sci_rms_image.set_data(sci_rms_data)
+
+            ref_rms_data = ref_rms_image.get_data()
+            ref_rms_data[image_mask] = 0
+            ref_rms_image.set_data(ref_rms_data)
+
             sci_rms_path = sci_img_path + ".unc"
             ref_rms_path = ref_img_path + ".unc"
 
