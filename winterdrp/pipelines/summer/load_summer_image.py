@@ -78,15 +78,16 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         pipeline_version_padded_str = "".join(
             [x.rjust(2, "0") for x in pipeline_version.split(".")]
         )
-        header["PROCID"] = int(str(header["EXPID"]) + str(pipeline_version_padded_str))
-        # header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
-
-        header["OBSDATE"] = int(header["UTC"].split("_")[0])
 
         obstime = Time(header["UTCISO"], format="iso")
         header["EXPID"] = int(
             (obstime.mjd - 60000.0) * 86400.0
         )  # seconds since 60000 MJD
+
+        header["PROCID"] = int(str(header["EXPID"]) + str(pipeline_version_padded_str))
+        # header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
+
+        header["OBSDATE"] = int(header["UTC"].split("_")[0])
 
         # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
 
