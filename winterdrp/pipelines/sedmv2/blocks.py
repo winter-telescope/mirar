@@ -21,8 +21,10 @@ from winterdrp.pipelines.sedmv2.generator import (
     sedmv2_reference_psfex,
     sedmv2_reference_sextractor,
 )
-from winterdrp.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image, \
-    load_proc_sedmv2_image
+from winterdrp.pipelines.sedmv2.load_sedmv2_image import (
+    load_proc_sedmv2_image,
+    load_raw_sedmv2_image,
+)
 from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.anet import AstrometryNet
 from winterdrp.processors.astromatic import PSFex, Sextractor, Swarp
@@ -208,10 +210,12 @@ subtract = [
         output_sub_dir="subtract",
         sci_zp_header_key="ZP_AUTO",
         catalog_purifier=default_sedmv2_catalog_purifier,
-        write_region_bool=True
+        write_region_bool=True,
     ),
-    ZOGY(output_sub_dir="subtract",
-         sci_zp_header_key="ZP_AUTO",),
+    ZOGY(
+        output_sub_dir="subtract",
+        sci_zp_header_key="ZP_AUTO",
+    ),
 ]
 
 imsub = subtract  # + export_diff_to_db + extract_candidates
