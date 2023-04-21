@@ -1,17 +1,14 @@
 """
 Base class for models
 """
-from datetime import date
-
-from pydantic import Field
 from sqlalchemy.orm import DeclarativeBase
 
 from winterdrp.processors.sqldatabase.basemodel import BaseTable
 
-db_name = "summer"
+db_name = "winter"
 
 
-class SummerBase(DeclarativeBase, BaseTable):
+class WinterBase(DeclarativeBase, BaseTable):
     """
     Parent class for summer database
     """

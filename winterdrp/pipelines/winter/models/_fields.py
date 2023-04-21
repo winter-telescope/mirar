@@ -1,5 +1,5 @@
 """
-Models for the 'field' table
+Models for the 'fields' table
 """
 import time
 import urllib.request
@@ -11,7 +11,7 @@ from sqlalchemy import REAL, Column, Insert, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.pipelines.winter.models.basemodel import WinterBase
 from winterdrp.processors.sqldatabase.basemodel import (
     BaseDB,
     _exists,
@@ -23,7 +23,7 @@ from winterdrp.utils.sql import get_engine
 DEFAULT_FIELD = 999999999
 
 
-class FieldsTable(SummerBase):  # pylint: disable=too-few-public-methods
+class FieldsTable(WinterBase):  # pylint: disable=too-few-public-methods
     """
     Field table in database
     """
@@ -57,13 +57,13 @@ class Fields(BaseDB):
     # Need to fix formatting of fields file in wintertoo before including these.
 
 
-_SUMMER_FIELDS_URL = (
+_WINTER_FIELDS_URL = (
     "https://github.com/winter-telescope/wintertoo/raw/"
-    "main/wintertoo/data/summer_fields.txt"
+    "main/wintertoo/data/WINTER_fields.txt"
 )
 
 
-def populate_fields(url=_SUMMER_FIELDS_URL):
+def populate_fields(url=_WINTER_FIELDS_URL):
     """
     Downloads a field grid (text file) and imports it in chunks into the database
 

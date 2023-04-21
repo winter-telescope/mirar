@@ -7,14 +7,14 @@ from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.pipelines.winter.models.basemodel import WinterBase
 from winterdrp.processors.sqldatabase.basemodel import BaseDB
 
-summer_filters_map = {"u": 1, "g": 2, "r": 3, "i": 4}
+winter_filters_map = {"Y": 1, "J": 2, "Hs": 3, "dark": 4}
 fid_field: int = Field(ge=0)
 
 
-class FiltersTable(SummerBase):  # pylint: disable=too-few-public-methods
+class FiltersTable(WinterBase):  # pylint: disable=too-few-public-methods
     """
     Field table in database
     """
@@ -53,7 +53,7 @@ class Filters(BaseDB):
         :param field_value: field value
         :return: field value
         """
-        assert field_value in list(summer_filters_map.values())
+        assert field_value in list(winter_filters_map.values())
         return field_value
 
 
@@ -64,7 +64,7 @@ def populate_filters(filter_map: dict = None):
     :return: None
     """
     if filter_map is None:
-        filter_map = dict(summer_filters_map)
+        filter_map = dict(winter_filters_map)
 
     for filter_name, fid in filter_map.items():
         summer_filter = Filters(fid=fid, filtername=filter_name)

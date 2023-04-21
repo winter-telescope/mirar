@@ -7,11 +7,11 @@ from typing import ClassVar
 from sqlalchemy import DATE, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.pipelines.winter.models.basemodel import WinterBase
 from winterdrp.processors.sqldatabase.basemodel import BaseDB, date_field
 
 
-class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods
+class NightsTable(WinterBase):  # pylint: disable=too-few-public-methods
     """
     Nights table in database
     """
@@ -39,3 +39,8 @@ class Nights(BaseDB):
         :return: bool
         """
         return self.sql_model().exists(values=self.nightdate, keys="nightdate")
+
+    #
+    # def increment_raw(self):
+    #     self.rawcount += 1
+    #     self.update_entry()

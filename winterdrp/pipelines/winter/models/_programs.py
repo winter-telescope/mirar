@@ -1,5 +1,5 @@
 """
-Models for the 'program' table
+Models for the 'programs' table
 """
 import os
 from datetime import date
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.pipelines.winter.models.basemodel import WinterBase
 from winterdrp.processors.sqldatabase.basemodel import BaseDB, date_field
 from winterdrp.utils.security import generate_key
 
@@ -18,7 +18,7 @@ _LEN_PROG_KEY = 20
 program_id_field: int = Field(default=1)
 
 
-class ProgramsTable(SummerBase):  # pylint: disable=too-few-public-methods
+class ProgramsTable(WinterBase):  # pylint: disable=too-few-public-methods
     """
     Program table in database
     """

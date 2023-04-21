@@ -5,47 +5,41 @@ from typing import Union
 
 from sqlalchemy.orm import DeclarativeBase
 
-from winterdrp.pipelines.summer.models._exposures import Exposures, ExposuresTable
-from winterdrp.pipelines.summer.models._fields import (
+from winterdrp.pipelines.winter.models._exposures import Exposures, ExposuresTable
+from winterdrp.pipelines.winter.models._fields import (
     Fields,
     FieldsTable,
     populate_fields,
 )
-from winterdrp.pipelines.summer.models._filters import (
+from winterdrp.pipelines.winter.models._filters import (
     Filters,
     FiltersTable,
     populate_filters,
 )
-from winterdrp.pipelines.summer.models._imgType import (
+from winterdrp.pipelines.winter.models._imgType import (
     ALL_ITID,
     ImgTypes,
     ImgTypesTable,
     populate_itid,
 )
-from winterdrp.pipelines.summer.models._nights import Nights, NightsTable
-from winterdrp.pipelines.summer.models._proc import Proc, ProcTable
-from winterdrp.pipelines.summer.models._programs import (
+from winterdrp.pipelines.winter.models._nights import Nights, NightsTable
+from winterdrp.pipelines.winter.models._programs import (
     ProgramCredentials,
     Programs,
     ProgramsTable,
-    default_program,
     populate_programs,
 )
-from winterdrp.pipelines.summer.models._raw import Raw, RawTable
-from winterdrp.pipelines.summer.models._subdets import (
-    Subdets,
-    SubdetsTable,
-    populate_subdets,
-)
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.sqldatabase.basemodel import BaseTable
-from winterdrp.processors.sqldatabase.postgres import PostgresAdmin
-from winterdrp.processors.sqldatabase.postgres_utils import (
+from winterdrp.pipelines.winter.models._raw import Raw, RawTable
+from winterdrp.pipelines.winter.models._subdets import Subdets, SubdetsTable
+from winterdrp.pipelines.winter.models.basemodel import WinterBase
+from winterdrp.processors.database.postgres import (
     ADMIN_PASSWORD,
     ADMIN_USER,
     DB_PASSWORD,
     DB_USER,
+    PostgresAdmin,
 )
+from winterdrp.processors.sqldatabase.basemodel import BaseTable
 from winterdrp.utils.sql import get_engine
 
 
@@ -78,9 +72,9 @@ def setup_database(base: Union[DeclarativeBase, BaseTable]):
 
 
 if DB_USER is not None:
-    setup_database(SummerBase)
+    setup_database(base=WinterBase)
+
     populate_fields()
     populate_itid()
     populate_filters()
     populate_programs()
-    populate_subdets()

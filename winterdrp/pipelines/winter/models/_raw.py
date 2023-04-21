@@ -5,15 +5,15 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import VARCHAR, Column, Double, ForeignKey, Integer, Sequence
+from sqlalchemy import VARCHAR, Column, Double, ForeignKey, Integer, Sequence  # event,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from winterdrp.pipelines.summer.models._exposures import Exposures
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
+from winterdrp.pipelines.winter.models._exposures import Exposures
+from winterdrp.pipelines.winter.models.basemodel import WinterBase
 from winterdrp.processors.sqldatabase.basemodel import BaseDB
 
 
-class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
+class RawTable(WinterBase):  # pylint: disable=too-few-public-methods
     """
     Raw table in database
     """
@@ -22,13 +22,9 @@ class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
     __table_args__ = {"extend_existing": True}
 
     urawid = Column(
-        Integer,
-        Sequence(start=1, name="raw_urawid_seq"),
-        autoincrement=True,
-        unique=True,
+        Integer, Sequence(start=1, name="raw_urawid_seq"), autoincrement=True
     )
-    rawid = Column(Double, primary_key=True, autoincrement=False)
-    proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
+    rawid = Column(Double, primary_key=True, unique=True, autoincrement=False)
 
     uexpid: Mapped[int] = mapped_column(ForeignKey("exposures.uexpid"))
     exposure_ids: Mapped["ExposuresTable"] = relationship(back_populates="raw")
@@ -40,6 +36,8 @@ class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
 
     procstatus = Column(Integer, default=0)
 
+    proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
+
 
 class Raw(BaseDB):
     """
@@ -48,6 +46,12 @@ class Raw(BaseDB):
 
     sql_model: ClassVar = RawTable
 
+    urawid = Column(
+        Integer,
+        Sequence(start=1, name="raw_urawid_seq"),
+        autoincrement=True,
+        unique=True,
+    )
     rawid: int = Field(ge=0)
     uexpid: int = Field(ge=0)
     qid: int = Field(ge=0)
