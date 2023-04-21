@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS diff (
     diffid BIGINT PRIMARY KEY,
-    procid BIGINT,
+    rawid BIGINT,
     uexpid BIGINT,
     rawpath VARCHAR(255),
     savepath VARCHAR(255),
@@ -25,6 +25,6 @@ CREATE TABLE IF NOT EXISTS diff (
             FOREIGN KEY(uexpid)
                 REFERENCES exposures(uexpid),
     CONSTRAINT fk_procid
-            FOREIGN KEY(procid)
-                REFERENCES proc(procid)
+            FOREIGN KEY(rawid)
+                REFERENCES proc(rawid)
 );
