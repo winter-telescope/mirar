@@ -445,12 +445,12 @@ class ZOGY(ZOGYPrepare):
             noise = np.sqrt(
                 np.nansum(np.square(diff_psf_data) * np.square(diff_rms_median))
             ) / np.nansum(np.square(diff_psf_data))
-            # image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
-            #     image[self.sci_zp_header_key]
-            # )
-            # image["SCORMEAN"] = scorr_mean
-            # image["SCORMED"] = scorr_median
-            # image["SCORSTD"] = scorr_std
+            image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
+                image[self.sci_zp_header_key]
+            )
+            image["SCORMEAN"] = scorr_mean
+            image["SCORMED"] = scorr_median
+            image["SCORSTD"] = scorr_std
 
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
 
