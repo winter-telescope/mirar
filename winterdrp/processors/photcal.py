@@ -15,13 +15,14 @@ from astropy.stats import sigma_clip, sigma_clipped_stats
 from winterdrp.catalog.base_catalog import BaseCatalog
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ProcessorError
-from winterdrp.paths import copy_temp_file, get_output_dir
+from winterdrp.paths import copy_temp_file, get_output_dir, get_output_path
 from winterdrp.processors.astromatic.sextractor.sextractor import (
     SEXTRACTOR_HEADER_KEY,
     Sextractor,
     sextractor_checkimg_map,
 )
 from winterdrp.processors.base_processor import BaseImageProcessor, PrerequisiteError
+from winterdrp.processors.candidates.utils.regions_writer import write_regions_file
 from winterdrp.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,8 @@ class PhotCalibrator(BaseImageProcessor):
         y_upper_limit: float = 2800,
         fwhm_threshold_arcsec: float = 4.0,
         num_matches_threshold: int = 5,
+        write_regions: bool = False,
+        cache: bool = False,
     ):
         super().__init__()
         self.redo = redo  # What is this for?
@@ -86,11 +89,13 @@ class PhotCalibrator(BaseImageProcessor):
         self.x_upper_limit = x_upper_limit
         self.y_lower_limit = y_lower_limit
         self.y_upper_limit = y_upper_limit
+        self.cache = cache
 
         # Why is this here not in catalog?
         self.fwhm_threshold_arcsec = fwhm_threshold_arcsec
 
         self.num_matches_threshold = num_matches_threshold
+        self.write_regions = write_regions
 
     def __str__(self) -> str:
         return "Processor to perform photometric calibration."
@@ -98,12 +103,18 @@ class PhotCalibrator(BaseImageProcessor):
     def get_phot_output_dir(self):
         """
         Return the
-
         :return:
         """
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
-    def calculate_zeropoint(self, ref_cat_path: str, img_cat_path: str) -> list[dict]:
+    def calculate_zeropoint(self, ref_cat_path: Path, img_cat_path: Path) -> list[dict]:
+        """
+        Function to calculate zero point from two catalogs
+        Args:
+            ref_cat_path: Path to reference ldac catalog
+            img_cat_path: Path to image ldac catalog
+        Returns:
+        """
         ref_cat = get_table_from_ldac(ref_cat_path)
         img_cat = get_table_from_ldac(img_cat_path)
 
@@ -142,6 +153,35 @@ class PhotCalibrator(BaseImageProcessor):
         logger.info(
             f"Cross-matched {len(matched_img_cat)} sources from catalog to the image."
         )
+
+        if self.write_regions:
+            ref_regions_path = get_output_path(
+                base_name="ref.reg",
+                dir_root=self.temp_output_sub_dir,
+                sub_dir=self.night_sub_dir,
+            )
+            cleaned_img_regions_path = get_output_path(
+                base_name="cleaned_img.reg",
+                dir_root=self.temp_output_sub_dir,
+                sub_dir=self.night_sub_dir,
+            )
+
+            write_regions_file(
+                regions_path=ref_regions_path,
+                x_coords=ref_coords.ra.deg,
+                y_coords=ref_coords.dec.deg,
+                system="wcs",
+                region_radius=2.0 / 3600,
+            )
+
+            write_regions_file(
+                regions_path=cleaned_img_regions_path,
+                x_coords=clean_img_coords.ra.deg,
+                y_coords=clean_img_coords.dec.deg,
+                system="wcs",
+                region_radius=2.0 / 3600,
+            )
+
         if len(matched_img_cat) < self.num_matches_threshold:
             err = (
                 "Not enough cross-matched sources "
@@ -224,6 +264,7 @@ class PhotCalibrator(BaseImageProcessor):
                 output_dir=phot_output_dir, file_path=image[SEXTRACTOR_HEADER_KEY]
             )
 
+            temp_files = [temp_cat_path]
             fwhm_med, _, fwhm_std, med_fwhm_pix, _, _ = self.get_fwhm(temp_cat_path)
             image["FWHM_MED"] = fwhm_med
             image["FWHM_STD"] = fwhm_std
@@ -257,11 +298,24 @@ class PhotCalibrator(BaseImageProcessor):
             for ind, diam in enumerate(aperture_diameters):
                 image[f"MAGLIM_{int(diam)}"] = limmags[ind]
             image["MAGLIM"] = limmags[-1]
+
+            if not self.cache:
+                for temp_file in temp_files:
+                    temp_file.unlink()
+                    logger.debug(f"Deleted temporary file {temp_file}")
+
         return batch
 
     @staticmethod
     def get_fwhm(img_cat_path):
+        """
+        Calculate median FWHM from a ldac path
+        Args:
+            img_cat_path:
+        Returns:
+        """
         imcat = get_table_from_ldac(img_cat_path)
+        # TODO: de-hardcode
         nemask = (
             (imcat["X_IMAGE"] > 50)
             & (imcat["X_IMAGE"] < 2000)
@@ -284,6 +338,14 @@ class PhotCalibrator(BaseImageProcessor):
         zeropoint: float | list[float],
         aperture_radius_pixels: float | list[float],
     ) -> float:
+        """
+        Function to calculate limiting magnitude
+        Args:
+            bkg_rms_image_path:
+            zeropoint:
+            aperture_radius_pixels:
+        Returns:
+        """
         if isinstance(zeropoint, float):
             zeropoint = [zeropoint]
         if isinstance(aperture_radius_pixels, float):
@@ -337,6 +399,10 @@ class PhotCalibrator(BaseImageProcessor):
                 raise PrerequisiteError(err)
 
     def get_sextractor_apertures(self) -> list[float]:
+        """
+        Function to extract sextractor aperture sizes from config file
+        Returns:
+        """
         sextractor_config_path = self.get_sextractor_module().config
 
         with open(sextractor_config_path, "rb") as sextractor_config_file:
