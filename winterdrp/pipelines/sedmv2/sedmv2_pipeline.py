@@ -15,6 +15,8 @@ from winterdrp.pipelines.sedmv2.blocks import (
     process,
     process_stellar,
     process_transient,
+    imsub,
+    load_proc
 )
 from winterdrp.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
 from winterdrp.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
@@ -36,7 +38,8 @@ class SEDMv2Pipeline(Pipeline):
     all_pipeline_configurations = {
         "default": load_raw + cal_hunter + process,
         "default_stellar": load_raw + cal_hunter + process_stellar,  # +image_photometry
-        "default_transient": load_raw + cal_hunter + process_transient,  # +imsub,
+        "default_transient": load_raw + cal_hunter + process_transient, # +imsub,
+        "imsub": load_proc + imsub
     }
 
     @staticmethod

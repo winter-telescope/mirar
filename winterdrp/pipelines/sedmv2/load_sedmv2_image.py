@@ -86,6 +86,67 @@ def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
     return data[0].data, data[0].header  # pylint: disable=no-member
 
 
+def load_proc_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+    """
+    Function to load a raw SEDMv2 image
+
+    :param path:- path of file
+    :return: data and header of image
+    """
+
+    with fits.open(path) as data:
+        header = data[0].header  # pylint: disable=no-member
+
+        if "PREPTAG" not in header.keys():
+            if "IMGTYPE" in header.keys():
+                path_new = prepare_science(path)
+            else:  # IMGTYPE not in cal; may change w updated cal files
+                path_new = prepare_cal(path)
+            data = fits.open(path_new)
+            header = data[0].header  # pylint: disable=no-member
+
+        header["TARGET"] = header["OBSTYPE"].lower()
+        data[0].data = data[0].data * 1.0  # pylint: disable=no-member
+        header.append(("GAIN", 1.0, "Gain in electrons / ADU"), end=True)
+
+        # positions
+        header["RA"] = header["RAD"]
+        header["DEC"] = header["DECD"]
+        header["TELRA"] = header["TELRAD"]
+        header["TELDEC"] = header["TELDECD"]
+
+        # keys, IDs
+        base_name = os.path.basename(path)
+        header[BASE_NAME_KEY] = base_name
+        header[LATEST_SAVE_KEY] = path
+        header[RAW_IMG_KEY] = path
+        header[PROC_HISTORY_KEY] = ""
+        header[PROC_FAIL_KEY] = ""
+        pipeline_version = __version__
+        pipeline_version_padded_str = "".join(
+            [x.rjust(2, "0") for x in pipeline_version.split(".")]
+        )
+        header["PROCID"] = int(str(header["EXPID"]) + str(pipeline_version_padded_str))
+        header["OBSID"] = 0
+        header["PROGID"] = int(3)  # sedmv2's ID
+        header["FIELDID"] = 999999999
+        header["COADDS"] = 1
+        header["BZERO"] = 0
+
+        header["UTC"] = "20221223_00:00:00"
+        header["UTCTIME"] = header["UTC"]
+        header["TIMEUTC"] = header["UTCTIME"]
+        header["OBSDATE"] = int(header["UTC"].split("_")[0])
+        header["NIGHT"] = int(Time(header["DATE"], format="isot").jd) - int(
+            Time("2018-01-01", format="iso").jd
+        )  # integer value, night 1, night 2...
+        header["EXPMJD"] = header["OBSDATE"]
+
+        image_data = data[0].data
+        image_data[image_data == 0] = np.nan
+    return image_data, data[0].header  # pylint: disable=no-member
+
+
 def prepare_science(filepath: str) -> str:
     """
     Additional steps to get sedmv2 science files into working order

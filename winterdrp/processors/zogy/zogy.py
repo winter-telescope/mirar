@@ -270,6 +270,7 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_catalog_path = image["SRCCAT"]  # convert to key
             sci_mask_path = image[LATEST_WEIGHT_SAVE_KEY]
 
+            logger.debug(f"{self.get_path(sci_mask_path)}")
             ref_weight_data = self.open_fits(self.get_path(ref_mask_path))
             sci_weight_data = self.open_fits(self.get_path(sci_mask_path))
 
@@ -291,6 +292,8 @@ class ZOGYPrepare(BaseImageProcessor):
             scorr_weight_path = sci_img_path.replace(".fits", ".scorr.weight.fits")
             self.save_fits(scorr_weight_img, path=self.get_path(scorr_weight_path))
 
+            logger.info(f"{sci_weight_data.get_data()}")
+
             ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(
                 ref_catalog_path, sci_catalog_path
             )
@@ -298,7 +301,6 @@ class ZOGYPrepare(BaseImageProcessor):
             # Scale reference image
             ref_data *= flux_scale
             ref_img.set_data(ref_data)
-
             ref_unscaled_zp = ref_img["ZP"]
             ref_img["ZP"] = float(ref_img["ZP"]) + 2.5 * np.log10(flux_scale)
 
@@ -443,12 +445,12 @@ class ZOGY(ZOGYPrepare):
             noise = np.sqrt(
                 np.nansum(np.square(diff_psf_data) * np.square(diff_rms_median))
             ) / np.nansum(np.square(diff_psf_data))
-            image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
-                image[self.sci_zp_header_key]
-            )
-            image["SCORMEAN"] = scorr_mean
-            image["SCORMED"] = scorr_median
-            image["SCORSTD"] = scorr_std
+            # image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
+            #     image[self.sci_zp_header_key]
+            # )
+            # image["SCORMEAN"] = scorr_mean
+            # image["SCORMED"] = scorr_median
+            # image["SCORSTD"] = scorr_std
 
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
 

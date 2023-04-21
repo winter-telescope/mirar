@@ -125,6 +125,7 @@ def sedmv2_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
         gain=gain,
         output_sub_dir=output_sub_dir,
         cache=True,
+        write_regions_bool=True,
         **sextractor_photometry_config,
     )
 
