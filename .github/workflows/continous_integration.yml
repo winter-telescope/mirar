@@ -67,7 +67,6 @@ jobs:
           echo `psfex --version`
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
-          poetry config installer.modern-installation false
           poetry install
 
       # Set up database
