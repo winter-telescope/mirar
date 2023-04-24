@@ -47,7 +47,7 @@ pylint-pydantic = "^0.1.6"
 
 
 [tool.poetry.group.docs.dependencies]
-sphinx = "^6.1.3"
+sphinx = "^6.2.0"
 
 [tool.coverage.run]
 source = ["winterdrp"]
