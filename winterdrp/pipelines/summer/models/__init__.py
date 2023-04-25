@@ -5,40 +5,40 @@ from typing import Union
 
 from sqlalchemy.orm import DeclarativeBase
 
-from winterdrp.pipelines.summer.models._exposures import Exposures, ExposuresTable
+from winterdrp.pipelines.summer.models._exposures import Exposure, ExposuresTable
 from winterdrp.pipelines.summer.models._fields import (
-    Fields,
+    FieldEntry,
     FieldsTable,
     populate_fields,
 )
 from winterdrp.pipelines.summer.models._filters import (
-    Filters,
+    Filter,
     FiltersTable,
     populate_filters,
 )
-from winterdrp.pipelines.summer.models._imgType import (
+from winterdrp.pipelines.summer.models._img_type import (
     ALL_ITID,
-    ImgTypes,
+    ImgType,
     ImgTypesTable,
     populate_itid,
 )
-from winterdrp.pipelines.summer.models._nights import Nights, NightsTable
+from winterdrp.pipelines.summer.models._nights import Night, NightsTable
 from winterdrp.pipelines.summer.models._proc import Proc, ProcTable
 from winterdrp.pipelines.summer.models._programs import (
+    Program,
     ProgramCredentials,
-    Programs,
     ProgramsTable,
     default_program,
     populate_programs,
 )
 from winterdrp.pipelines.summer.models._raw import Raw, RawTable
 from winterdrp.pipelines.summer.models._subdets import (
-    Subdets,
+    SubDet,
     SubdetsTable,
     populate_subdets,
 )
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.sqldatabase.basemodel import BaseTable
+from winterdrp.pipelines.summer.models.base_model import SummerBase
+from winterdrp.processors.sqldatabase.base_model import BaseTable
 from winterdrp.processors.sqldatabase.postgres import PostgresAdmin
 from winterdrp.processors.sqldatabase.postgres_utils import (
     ADMIN_PASSWORD,

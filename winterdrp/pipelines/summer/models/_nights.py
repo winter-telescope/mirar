@@ -7,8 +7,8 @@ from typing import ClassVar
 from sqlalchemy import DATE, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB, date_field
+from winterdrp.pipelines.summer.models.base_model import SummerBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB, date_field
 
 
 class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods
@@ -24,7 +24,7 @@ class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods
     exposures: Mapped["ExposuresTable"] = relationship(back_populates="night")
 
 
-class Nights(BaseDB):
+class Night(BaseDB):
     """
     A pydantic model for a nights database entry
     """

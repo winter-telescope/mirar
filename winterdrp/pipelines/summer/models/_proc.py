@@ -5,20 +5,12 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import (  # event,
-    REAL,
-    VARCHAR,
-    Column,
-    Double,
-    ForeignKey,
-    Integer,
-    Sequence,
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import REAL, VARCHAR, Column, ForeignKey, Integer, Sequence  # event,
+from sqlalchemy.orm import Mapped, relationship
 
 from winterdrp.pipelines.summer.models._raw import Raw
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB, dec_field, ra_field
+from winterdrp.pipelines.summer.models.base_model import SummerBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB, dec_field, ra_field
 
 
 class ProcTable(SummerBase):  # pylint: disable=too-few-public-methods

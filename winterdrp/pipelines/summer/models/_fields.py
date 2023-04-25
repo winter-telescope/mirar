@@ -11,8 +11,8 @@ from sqlalchemy import REAL, Column, Insert, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.sqldatabase.basemodel import (
+from winterdrp.pipelines.summer.models.base_model import SummerBase
+from winterdrp.processors.sqldatabase.base_model import (
     BaseDB,
     _exists,
     dec_field,
@@ -42,7 +42,7 @@ class FieldsTable(SummerBase):  # pylint: disable=too-few-public-methods
 fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD, exclude={-99})
 
 
-class Fields(BaseDB):
+class FieldEntry(BaseDB):
     """
     A pydantic model for a fields database entry
     """
@@ -85,7 +85,7 @@ def populate_fields(url=_SUMMER_FIELDS_URL):
         full_res["gall"] = full_res["Gal_Long"]
         full_res["galb"] = full_res["Gal_Lat"]
 
-        keys = list(Fields.__fields__)
+        keys = list(FieldEntry.__fields__)
 
         idx = list(range(0, len(full_res), chunk)) + [len(full_res)]
 

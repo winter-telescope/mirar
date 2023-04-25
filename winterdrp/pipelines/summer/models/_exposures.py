@@ -21,11 +21,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from winterdrp.pipelines.summer.models._fields import FieldsTable, fieldid_field
 from winterdrp.pipelines.summer.models._filters import FiltersTable, fid_field
-from winterdrp.pipelines.summer.models._imgType import ImgTypesTable
-from winterdrp.pipelines.summer.models._nights import Nights, NightsTable
+from winterdrp.pipelines.summer.models._img_type import ImgTypesTable
+from winterdrp.pipelines.summer.models._nights import Night, NightsTable
 from winterdrp.pipelines.summer.models._programs import ProgramsTable, default_program
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.sqldatabase.basemodel import (
+from winterdrp.pipelines.summer.models.base_model import SummerBase
+from winterdrp.processors.sqldatabase.base_model import (
     BaseDB,
     alt_field,
     az_field,
@@ -65,7 +65,7 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
     itid: Mapped[int] = mapped_column(ForeignKey("imgTypes.itid"))
     img_type: Mapped["ImgTypesTable"] = relationship(back_populates="exposures")
 
-    puID: Mapped[int] = mapped_column(ForeignKey("programs.puid"))
+    puid: Mapped[int] = mapped_column(ForeignKey("programs.puid"))
     program_uid: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
 
     timeutc = Column(DateTime(timezone=True))
@@ -114,7 +114,7 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
 default_unknown_field = Field(default=-999)
 
 
-class Exposures(BaseDB):
+class Exposure(BaseDB):
     """
     A pydantic model for a raw database entry
     """
@@ -160,7 +160,7 @@ class Exposures(BaseDB):
 
         :return: None
         """
-        night = Nights(nightdate=self.nightdate)
+        night = Night(nightdate=self.nightdate)
         if not night.exists():
             night.insert_entry()
 
