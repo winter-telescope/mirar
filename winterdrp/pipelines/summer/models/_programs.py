@@ -13,6 +13,7 @@ from winterdrp.processors.sqldatabase.base_model import BaseDB, date_field
 from winterdrp.utils.security import generate_key
 
 _LEN_PROG_KEY = 60
+DEFAULT_MAX_PRIORITY = 100.0
 
 
 class ProgramsTable(SummerBase):  # pylint: disable=too-few-public-methods
@@ -32,7 +33,7 @@ class ProgramsTable(SummerBase):  # pylint: disable=too-few-public-methods
     enddate = Column(DATE)  # End time of program
     hours_allocated = Column(REAL)  # Total hours allocated
     hours_remaining = Column(REAL)  # Total hours remaining
-    basepriority = Column(REAL, default=0)  # Base priority
+    maxpriority = Column(REAL, default=DEFAULT_MAX_PRIORITY)  # Base priority
 
     progtitle = Column(VARCHAR(20), nullable=True)  # Optional 20 char descr. of title
 
@@ -65,8 +66,10 @@ class Program(BaseDB, ProgramCredentials):
     enddate: date = date_field
     hours_allocated: float = Field(ge=0.0)
     hours_remaining: float = Field(ge=0.0)
-    basepriority: float = Field(
-        ge=1.0, default=1.0, description="Scaling factor to determine max priority"
+    maxpriority: float = Field(
+        ge=DEFAULT_MAX_PRIORITY,
+        default=DEFAULT_MAX_PRIORITY,
+        description="Max priority",
     )
     progtitle: str = Field(min_length=1, example="A program title")
 
@@ -116,7 +119,7 @@ default_program = Program(
     enddate=date(3001, 1, 1),
     hours_allocated=0,
     hours_remaining=0,
-    basepriority=1.0,
+    maxpriority=DEFAULT_MAX_PRIORITY,
 )
 
 
