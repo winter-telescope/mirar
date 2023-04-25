@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from winterdrp.data import DataBlock
 from winterdrp.errors import ProcessorError
 from winterdrp.processors.database.constraints import DBQueryConstraints
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 from winterdrp.processors.sqldatabase.postgres_utils import (
     ADMIN_PASSWORD,
     ADMIN_USER,

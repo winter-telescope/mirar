@@ -7,8 +7,8 @@ from pydantic import Field
 from sqlalchemy import Column, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB, _exists
+from winterdrp.pipelines.summer.models.base_model import SummerBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB, _exists
 from winterdrp.utils.sql import get_engine
 
 DEFAULT_FIELD = 999999999
@@ -32,7 +32,7 @@ class SubdetsTable(SummerBase):  # pylint: disable=too-few-public-methods
     raw: Mapped["RawTable"] = relationship(back_populates="subdets")
 
 
-class Subdets(BaseDB):
+class SubDet(BaseDB):
     """
     A pydantic model for a fields database entry
     """
@@ -57,7 +57,7 @@ def populate_subdets(ndetectors: int = 1, nxtot: int = 1, nytot: int = 1):
         for ndetector in range(ndetectors):
             for nx in range(nxtot):
                 for ny in range(nytot):
-                    new = Subdets(
+                    new = SubDet(
                         detectorID=ndetector,
                         nx=nx + 1,
                         ny=ny + 1,

@@ -32,7 +32,7 @@ from winterdrp.pipelines.summer.load_summer_image import (
     load_proc_summer_image,
     load_raw_summer_image,
 )
-from winterdrp.pipelines.summer.models import Exposures, Proc, Raw
+from winterdrp.pipelines.summer.models import Exposure, Proc, Raw
 from winterdrp.processors import BiasCalibrator, FlatCalibrator
 from winterdrp.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from winterdrp.processors.autoastrometry import AutoAstrometry
@@ -126,7 +126,7 @@ load_processed = [
 export_raw = [
     # ImageSelector(("BASENAME", "SUMMER_20220402_214324_Camera0.fits")),
     DatabaseImageExporter(
-        db_table=Exposures,
+        db_table=Exposure,
         duplicate_protocol="replace",
         q3c_bool=False,
     ),

@@ -146,8 +146,8 @@ class BaseDB(PydanticBase):
         returning_keys = self.get_sequence_keys()
 
         update_dict = {}
-        for x in range(len(update_keys)):
-            update_dict[update_keys[x].key] = update_vals[x]
+        for x, key in enumerate(update_keys):
+            update_dict[key.key] = update_vals[x]
 
         logger.debug(update_dict)
         stmt = (

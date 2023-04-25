@@ -7,7 +7,7 @@ from typing import Type
 
 from winterdrp.paths import max_n_cpu
 from winterdrp.processors.base_processor import BaseProcessor
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 from winterdrp.processors.sqldatabase.postgres import (
     POSTGRES_DUPLICATE_PROTOCOLS,
     PostgresAdmin,

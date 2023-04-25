@@ -7,8 +7,8 @@ from pydantic import Field
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.summer.models.basemodel import SummerBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.pipelines.summer.models.base_model import SummerBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 
 ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "NULL"]
 DEFAULT_ITID = 5
@@ -28,7 +28,7 @@ class ImgTypesTable(SummerBase):  # pylint: disable=too-few-public-methods
     exposures: Mapped["ExposuresTable"] = relationship(back_populates="img_type")
 
 
-class ImgTypes(BaseDB):
+class ImgType(BaseDB):
     """
     A pydantic model for a ITID database entry
     """
@@ -53,6 +53,6 @@ def populate_itid():
     :return: None
     """
     for i, img_type in enumerate(ALL_ITID):
-        itid = ImgTypes(itid=i + 1, imgtype=img_type)
+        itid = ImgType(itid=i + 1, imgtype=img_type)
         if not itid.exists():
             itid.insert_entry()
