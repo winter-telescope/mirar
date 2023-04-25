@@ -126,7 +126,7 @@ class Exposure(BaseDB):
     nightdate: date = Field()  # FIXME : why different to obsdate?
     fieldid: int = fieldid_field
     itid: int = Field(ge=0)
-    puID: int = Field(ge=0)
+    puid: int = Field(ge=0)
 
     timeutc: datetime = Field()
     AExpTime: float = Field(ge=0)
@@ -164,15 +164,15 @@ class Exposure(BaseDB):
         if not night.exists():
             night.insert_entry()
 
-        logger.debug(f"puid: {self.puID}")
-        if not ProgramsTable().exists(values=self.puID, keys="puid"):
+        logger.debug(f"puid: {self.puid}")
+        if not ProgramsTable().exists(values=self.puid, keys="puid"):
             default_puid = ProgramsTable().select_query(
                 compare_values=default_program.progname,
                 compare_keys="progname",
                 select_keys="puid",
             )[0][0]
             logger.debug(f"Found progid {default_puid}")
-            self.puID = default_puid
+            self.puid = default_puid
 
         return self._insert_entry()
 
