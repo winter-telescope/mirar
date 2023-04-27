@@ -17,11 +17,31 @@ Installing the package
 You next need to install the package itself. The code is built using python.
 We suggest creating a dedicated `conda <https://www.anaconda.com/products/distribution>`_ environment (), but you could also use a virtual environment.
 
+Creating a conda environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In most cases, you can do the following:
+
 .. code-block:: bash
 
-    conda create -n winter_env python=3.10
+    conda create -n winter_env python=3.11
     conda activate winter_env
     pip install --upgrade pip
+
+However, if you are using a new Mac with an arm chip, you might run into trouble.
+Instead, we suggest:
+
+.. code-block:: bash
+
+    conda create -n winter_env
+    conda activate winter_env
+    conda config --env --set subdir osx-64
+    conda install python=3.11
+    conda activate winter_env
+    pip install --upgrade pip
+
+Installing python dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Next you need to actually install winterdrp. We use `poetry <https://python-poetry.org/>`_ to manage dependencies:
 
