@@ -41,7 +41,7 @@ types-requests = "^2.28.11.15"
 types-toml = "^0.10.8.6"
 pandas-stubs = "^2.0.0.230412"
 autopep8 = "^2.0.2"
-sqlalchemy = "^2.0.4"
+sqlalchemy = "^2.0.12"
 pydantic = "^1.10.5"
 pylint-pydantic = "^0.1.6"
 
