@@ -6,7 +6,9 @@ import os
 from pathlib import Path
 
 import astropy
+import astropy.units as u
 import numpy as np
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
 
@@ -51,6 +53,14 @@ def load_raw_wirc_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Hea
 
         header[PROC_HISTORY_KEY] = ""
         header[PROC_FAIL_KEY] = ""
+
+        try:
+            crd = SkyCoord(header["RA"], header["DEC"], unit=(u.hour, u.deg))
+            header["CRVAL1"] = crd.ra.deg
+            header["CRVAL2"] = crd.dec.deg
+        except KeyError:
+            header["CRVAL1"] = 0
+            header["CRVAL2"] = 0
 
         filter_dict = {"J": 1, "H": 2, "Ks": 3}
 
