@@ -2,6 +2,7 @@
 Module containing standard processing blocks for WIRC
 """
 from winterdrp.catalog.kowalski import PS1, TMASS
+from winterdrp.paths import BASE_NAME_KEY
 from winterdrp.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
@@ -63,6 +64,7 @@ load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
 reduce = [
     CSVLog(
         export_keys=[
+            BASE_NAME_KEY,
             "OBJECT",
             "FILTER",
             "UTSHUT",
@@ -70,21 +72,26 @@ reduce = [
             "COADDS",
             "OBSTYPE",
             "OBSCLASS",
+            "CRVAL1",
+            "CRVAL2",
         ]
     ),
     MaskPixels(mask_path=wirc_mask_path),
-    ImageSelector(("exptime", "45.0")),
+    # ImageSelector(("exptime", "45.0")),
     DarkCalibrator(),
     ImageDebatcher(),
     ImageSelector(("obsclass", "science")),
     ImageBatcher(split_key="filter"),
     SkyFlatCalibrator(),
     NightSkyMedianCalibrator(),
+    ImageDebatcher(),
+    ImageBatcher(split_key=["filter", "object"]),
     AutoAstrometry(catalog="tmc"),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Scamp(
         ref_catalog_generator=wirc_astrometric_catalog_generator,
         scamp_config_path=scamp_fp_path,
+        timeout=120,
     ),
     Swarp(swarp_config_path=swarp_sp_path),
     Sextractor(output_sub_dir="final_sextractor", **sextractor_astrometry_config),

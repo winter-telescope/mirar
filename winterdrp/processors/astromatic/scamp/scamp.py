@@ -36,6 +36,7 @@ def run_scamp(
     scamp_config_path: str | Path,
     ast_ref_cat_path: str | Path,
     output_dir: str | Path,
+    timeout: float = 60.0,
 ):
     """
     Function to run scamp.
@@ -44,6 +45,7 @@ def run_scamp(
     can output FLXSCALE != 1 in the output header. This can cause incosistencies down
     the line, e.g. with Swarp.
     Args:
+        timeout: seconds to wait before giving up on scamp
         scamp_list_path:
         scamp_config_path:
         ast_ref_cat_path:
@@ -59,7 +61,7 @@ def run_scamp(
         f"-VERBOSE_TYPE QUIET -SOLVE_PHOTOM N"
     )
 
-    execute(scamp_cmd, output_dir=output_dir, timeout=60.0)
+    execute(scamp_cmd, output_dir=output_dir, timeout=timeout)
 
 
 class Scamp(BaseImageProcessor):
@@ -75,12 +77,14 @@ class Scamp(BaseImageProcessor):
         scamp_config_path: str,
         temp_output_sub_dir: str = "scamp",
         cache: bool = False,
+        timeout: float = 60.0,
     ):
         super().__init__()
         self.scamp_config = scamp_config_path
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
         self.cache = cache
+        self.timeout = timeout
 
     def __str__(self) -> str:
         """
@@ -141,6 +145,7 @@ class Scamp(BaseImageProcessor):
             scamp_config_path=self.scamp_config,
             ast_ref_cat_path=cat_path,
             output_dir=scamp_output_dir,
+            timeout=self.timeout,
         )
 
         if not self.cache:
