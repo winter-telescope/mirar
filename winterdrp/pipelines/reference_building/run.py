@@ -1,5 +1,6 @@
 import logging
 import sys
+from pathlib import Path
 
 import astropy.units as u
 import numpy as np
@@ -70,9 +71,9 @@ def dummy_image_generator(
 
 
 if __name__ == "__main__":
-    winter_fields = pd.read_csv(
-        "~/winter/gwemopt_sims/input/WINTER_fields.txt", delim_whitespace=True
-    )
+    fields_file_dir = Path(__file__).parent.joinpath("files")
+    fields_file = fields_file_dir.joinpath("WINTER_fields.txt")
+    winter_fields = pd.read_csv(fields_file, delim_whitespace=True)
 
     winter_northern_fields = winter_fields[
         (winter_fields["Dec"] > -40) & (winter_fields["Dec"] < 60)
