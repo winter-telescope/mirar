@@ -3,7 +3,7 @@ Module for querying reference images from the UKIRT survey
 """
 import logging
 from collections.abc import Callable
-from typing import Tuple, Type
+from typing import Type
 
 import astropy.units as u
 import numpy as np
@@ -32,7 +32,7 @@ from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.base_processor import ImageHandler
 from winterdrp.processors.candidates.utils import get_image_center_wcs_coords
 from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 from winterdrp.references.base_reference_generator import BaseReferenceGenerator
 
 logger = logging.getLogger(__name__)
@@ -250,11 +250,6 @@ def check_query_exists_locally(query_ra, query_dec, db_table):
     Returns:
 
     """
-    # table = db_table(query_ra=query_ra,
-    #                  query_dec=query_dec,
-    #                  savepath=' ',
-    #                  query_url=' ')
-    # exists = table.exists()
     results = db_table.sql_model().select_query(
         select_keys="savepath",
         compare_values=[query_ra, query_dec],
@@ -437,6 +432,9 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                     )
                     if len(imgpath) > 0:
                         url = imgpath[0]
+                        # TODO: Decide whether we should make an entry in the database
+                        # Probably not, otherwise there will be multiple entries per
+                        # image.
 
             if "http" in url:
                 obj = FileContainer(
@@ -480,7 +478,6 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                         query_ra=ra,
                         query_dec=dec,
                         savepath=savepath.as_posix(),
-                        query_url=url,
                         ukirt_filename=ukirt_filename,
                         multiframe_id=multiframeid,
                         extension_id=extension_id,
@@ -511,8 +508,12 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
             ukirt_images.append(ukirt_image)
 
+        # Only keep unique images at the end of image collection
         ukirt_images = np.array(ukirt_images)
-        # TODO : Figure out how to stack references (they need to be stacked,
+        ukirt_image_names = [x[BASE_NAME_KEY] for x in ukirt_images]
+        _, unique_image_indexes = np.unique(ukirt_image_names, return_index=True)
+        ukirt_images = ukirt_images[unique_image_indexes]
+
         mag_zps = np.array(
             [
                 x["MAGZPT"]
@@ -529,6 +530,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         logger.debug(magerr_zps)
         logger.debug(median_mag_zp)
         logger.debug(scaling_factors)
+
         zpmask = np.abs(mag_zps - median_mag_zp) < 0.5
 
         ukirt_images = ukirt_images[zpmask]
@@ -542,8 +544,9 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             center_dec=dec_cent,
             include_scamp=False,
             combine=True,
-            x_imgpixsize=25 * 60 / 0.40,
-            y_imgpixsize=25 * 60 / 0.40,
+            calculate_dims_in_swarp=True,
+            # x_imgpixsize=25 * 60 / 0.40,
+            # y_imgpixsize=25 * 60 / 0.40,
         )
         resampler.set_night(night_sub_dir=self.night_sub_dir)
         resampled_batch = resampler.apply(ukirt_image_batch)
