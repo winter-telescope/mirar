@@ -1,3 +1,6 @@
+"""
+Module to run the IR reference building pipeline on WINTER images
+"""
 import logging
 import sys
 from pathlib import Path
@@ -12,14 +15,32 @@ from winterdrp.pipelines.reference_building.ir_refbuild_pipeline import (
     IRRefBuildPipeline,
 )
 
+winter_fields_file_dir = Path(__file__).parent.joinpath("files")
+winter_fields_file = winter_fields_file_dir.joinpath("WINTER_fields.txt")
+winter_subfields_file = winter_fields_file_dir.joinpath("WINTER_subfields.txt")
 
-def dummy_image_generator(
+
+def dummy_split_image_batch_generator(
     cent_ra, cent_dec, fieldid, nx=3, ny=4, full_ra_size_deg=1, full_dec_size_deg=1.2
 ) -> ImageBatch:
+    """
+    Make a dummy image batch by splitting an image with the specified dimensions
+    Args:
+        cent_ra: Center RA of the parent image
+        cent_dec: Center Dec of the parent image
+        fieldid: field ID
+        nx: Number of subimages in the x direction
+        ny: Number of subimages in the y direction
+        full_ra_size_deg: RA-Size of parent image in degrees
+        full_dec_size_deg: Dec-Size of parent image in degrees
+
+    Returns:
+
+    """
     subimg_half_ra_deg = full_ra_size_deg / (2 * nx)
     subimg_half_dec_deg = full_dec_size_deg / (2 * ny)
 
-    split_ras, split_decs, all_images = [], [], []
+    all_images = []
     for iind, i in enumerate(np.arange(-nx + 1, nx + 1, 2)):
         for jind, j in enumerate(np.arange(-ny + 1, ny + 1, 2)):
             ra = cent_ra + subimg_half_ra_deg * i / np.cos(cent_dec * np.pi / 180)
@@ -71,16 +92,29 @@ def write_subfields_file(
     nx=3,
     ny=4,
 ):
+    """
+    Write a subfields file for the specified fields file
+    Args:
+        fields_filename:
+        subfields_filename:
+        full_ra_size_deg: RA-Size of the field in degrees
+        full_dec_size_deg: Dec-Size of the field in degrees
+        nx: Number of sub-fields in the x direction
+        ny: Number of sub-fields in the y direction
+
+    Returns:
+
+    """
     winter_fields = pd.read_csv(fields_filename, delim_whitespace=True)
     subimg_half_ra_deg = full_ra_size_deg / (2 * nx)
     subimg_half_dec_deg = full_dec_size_deg / (2 * ny)
 
     with open(subfields_filename, "w") as f:
         f.write(
-            f"FieldID, SubdetID, RA_cent, Dec_cent, RA0_0, Dec0_0, "
-            f"RA0_1, Dec0_1, RA1_0, Dec1_0, RA1_1, Dec1_1\n"
+            "FieldID, SubdetID, RA_cent, Dec_cent, RA0_0, Dec0_0, "
+            "RA0_1, Dec0_1, RA1_0, Dec1_0, RA1_1, Dec1_1\n"
         )
-    for ind, row in winter_fields.iterrows():
+    for _, row in winter_fields.iterrows():
         fieldid = row["ID"]
         cent_ra = row["RA"]
         cent_dec = row["Dec"]
@@ -104,18 +138,13 @@ def write_subfields_file(
                 dec1_0 = dec + half_delta_dec
                 dec1_1 = dec + half_delta_dec
 
-                with open(winter_subfields_file, "a") as f:
+                with open(subfields_filename, "a") as f:
                     f.write(
                         f"{int(fieldid)}, {subdetid}, "
                         f"{ra}, {dec}, "
                         f"{ra0_0}, {dec0_0}, {ra0_1}, {dec0_1}, "
                         f"{ra1_0}, {dec1_0}, {ra1_1}, {dec1_1}\n"
                     )
-
-
-winter_fields_file_dir = Path(__file__).parent.joinpath("files")
-winter_fields_file = winter_fields_file_dir.joinpath("WINTER_fields.txt")
-winter_subfields_file = winter_fields_file_dir.joinpath("WINTER_subfields.txt")
 
 
 def run_winter_reference_build_pipeline(
@@ -125,6 +154,18 @@ def run_winter_reference_build_pipeline(
     full_ra_size_deg=1,
     full_dec_size_deg=1.2,
 ):
+    """
+    Run the reference build pipeline on the winter fields
+    Args:
+        winter_fields:
+        nx:
+        ny:
+        full_ra_size_deg:
+        full_dec_size_deg:
+
+    Returns:
+
+    """
     if not winter_subfields_file.exists():
         logger.info(f"Writing subfields file to {winter_subfields_file}")
         write_subfields_file(winter_fields_file, winter_subfields_file)
@@ -136,13 +177,13 @@ def run_winter_reference_build_pipeline(
     pipeline = IRRefBuildPipeline(night="references", selected_configurations="default")
 
     res, errorstack = [], []
-    for ind, row in winter_northern_fields.iterrows():
+    for ind, _ in winter_northern_fields.iterrows():
         cent_ra, cent_dec = (
             winter_northern_fields.loc[ind]["RA"],
             winter_northern_fields.loc[ind]["Dec"],
         )
 
-        split_image_batch = dummy_image_generator(
+        split_image_batch = dummy_split_image_batch_generator(
             cent_ra=cent_ra,
             cent_dec=cent_dec,
             fieldid=winter_northern_fields.loc[ind]["ID"],

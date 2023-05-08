@@ -30,7 +30,10 @@ from winterdrp.paths import (
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.base_processor import ImageHandler
-from winterdrp.processors.candidates.utils import get_image_center_wcs_coords
+from winterdrp.processors.candidates.utils import (
+    get_corners_ra_dec_from_header,
+    get_image_center_wcs_coords,
+)
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.sqldatabase.base_model import BaseDB
 from winterdrp.references.base_reference_generator import BaseReferenceGenerator
@@ -95,43 +98,6 @@ def get_query_coordinates_from_header(
     ra_list, dec_list = wcs.all_pix2world(xcrd_list, ycrd_list, 1)
     ra_list[ra_list < 0] = ra_list[ra_list < 0] + 360
     return ra_list, dec_list
-
-
-def get_centre_ra_dec_from_header(header: fits.Header) -> (float, float):
-    """
-    Function to get center RA/Dec of the image from the header
-    Args:
-        header:
-
-    Returns:
-
-    """
-    nx, ny = header["NAXIS1"], header["NAXIS2"]
-
-    wcs = WCS(header)
-
-    ra_cent, dec_cent = wcs.all_pix2world(nx / 2, ny / 2, 1)
-
-    return ra_cent, dec_cent
-
-
-def get_corners_ra_dec_from_header(header: fits.Header) -> list[tuple[float, float]]:
-    """
-    Function to get corner RA/Dec of the image from the header
-    Args:
-        header:
-
-    Returns:
-
-    """
-    nx, ny = header["NAXIS1"], header["NAXIS2"]
-    image_crds = [(0, 0), (nx, 0), (0, ny), (nx, ny)]
-    wcs_crds = []
-    for image_crd in image_crds:
-        ra_deg, dec_deg = WCS(header).all_pix2world([image_crd[0]], [image_crd[1]], 1)
-        wcs_crds.append((ra_deg[0], dec_deg[0]))
-
-    return wcs_crds
 
 
 def get_image_dims_from_header(header: fits.Header) -> (Quantity, Quantity):
@@ -221,6 +187,13 @@ def make_image_from_hdulist(
 
 
 def get_ukirt_file_identifiers_from_url(url: str) -> list:
+    """
+    Function to get the UKIRT file identifiers from the URL
+    Args:
+        url:
+    Returns:
+
+    """
     ukirt_filename = url.split("?")[1].split("&")[0].split("=")[1]
     multiframeid = url.split("&")[1].split("=")[1]
     extension_id = url.split("&")[2].split("=")[1]
@@ -241,7 +214,8 @@ def get_ukirt_file_identifiers_from_url(url: str) -> list:
 
 def check_query_exists_locally(query_ra, query_dec, db_table):
     """
-    Function to check if component images exist locally
+    Function to check if component images exist locally based on the query_ra
+    and query_dec
     Args:
         query_ra:
         query_dec:
@@ -267,6 +241,20 @@ def check_query_exists_locally(query_ra, query_dec, db_table):
 def check_multiframe_exists_locally(
     db_table, multiframe_id, extension_id, lx, hx, ly, hy
 ):
+    """
+    Function to query database to check if a multiframe exists locally
+    Args:
+        db_table:
+        multiframe_id:
+        extension_id:
+        lx:
+        hx:
+        ly:
+        hy:
+
+    Returns:
+
+    """
     results = db_table.sql_model().select_query(
         select_keys=["savepath"],
         compare_values=[multiframe_id, extension_id, lx, hx, ly, hy],
@@ -330,10 +318,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         self.component_image_dir = component_image_dir
         self.night_sub_dir = night_sub_dir
 
-    def get_reference(self, image: Image, **kwargs) -> tuple[PrimaryHDU, PrimaryHDU]:
+    def get_reference(self, image: Image) -> tuple[PrimaryHDU, PrimaryHDU]:
         header = image.get_header()
-        # ra_cent, dec_cent = get_centre_ra_dec_from_header(header)
-        # image_x_size, image_y_size = get_image_dims_from_header(header)
 
         query_ra_list, query_dec_list = get_query_coordinates_from_header(
             header, numpoints=self.num_query_points
@@ -344,13 +330,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
         ukirt_query = UkidssClass()
 
-        # image_width = np.min([15 * u.arcmin, image_x_size.to(u.arcmin)])
-        # image_height = np.min([90 * u.arcmin, image_y_size.to(u.arcmin)])
-        # search_radius = np.max(
-        #     [image_x_size.to(u.arcmin), image_y_size.to(u.arcmin), ukirt_image_height]
-        # )
-
-        ra_cent, dec_cent = get_centre_ra_dec_from_header(header)
+        ra_cent, dec_cent = get_image_center_wcs_coords(image, origin=1)
         logger.debug(f"Center RA: {ra_cent} Dec: {dec_cent}")
         ukirt_surveys = find_ukirt_surveys(ra_cent, dec_cent, self.filter_name)
         if len(ukirt_surveys) == 0:
@@ -464,8 +444,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                 )
 
                 if self.check_local_database:
-                    ra_cent, dec_cent = get_centre_ra_dec_from_header(
-                        ukirt_image.header
+                    ra_cent, dec_cent = get_image_center_wcs_coords(
+                        ukirt_image, origin=1
                     )
                     (
                         (ra0_0, dec0_0),
@@ -552,7 +532,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         resampled_batch = resampler.apply(ukirt_image_batch)
 
         resampled_image = resampled_batch[0]
-        ra_cent, dec_cent = get_image_center_wcs_coords(image=resampled_image)
+        ra_cent, dec_cent = get_image_center_wcs_coords(image=resampled_image, origin=1)
 
         resampled_image["RA_CENT"] = ra_cent
         resampled_image["DEC_CENT"] = dec_cent
@@ -582,7 +562,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         reference_weight_hdu.header = reference_weight_header
         reference_weight_hdu.data = reference_weight_data
 
-        ra_cent, dec_cent = get_image_center_wcs_coords(image=photcaled_image)
+        ra_cent, dec_cent = get_image_center_wcs_coords(image=photcaled_image, origin=1)
         (
             (ra0_0, dec0_0),
             (ra0_1, dec0_1),
@@ -602,12 +582,3 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         reference_hdu.header["DEC1_1"] = dec1_1
 
         return reference_hdu, reference_weight_hdu
-        # #  then re-phot-caled)
-        # if np.logical_and(self.stack_multiple_images, len(ukirt_images) > 1):
-        #     # stack if multiple images are returned
-        #     raise NotImplementedError
-        #
-        # if (len(ukirt_image_urls) == 1) | self.stack_multiple_images:
-        #     pass
-        #
-        # return ukirt_image_hdulists[0]

@@ -1,19 +1,20 @@
+"""
+Module with pipeline for building reference images in the IR from WFAU
+"""
 import logging
 import os
-from typing import Callable
 
 from winterdrp.catalog import Gaia2Mass
-from winterdrp.data import Image, ImageBatch
+from winterdrp.data import Image
 from winterdrp.paths import get_output_dir
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.pipelines.reference_building.db_models import RefComponents, RefStacks
 from winterdrp.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
-from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.processors.photcal import PhotCalibrator
+from winterdrp.processors.reference import GetReferenceImage
 from winterdrp.processors.utils import ImageDebatcher, ImageSaver
-from winterdrp.references import BaseReferenceGenerator
 from winterdrp.references.ukirt import UKIRTRef
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,14 @@ swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 
 
 def winter_reference_generator(image: Image):
+    """
+    Generates a reference image for the winter data
+    Args:
+        image: Image
+
+    Returns:
+
+    """
     filtername = image["FILTER"]
     # TODO check if exists in DB
     # TODO if in_ukirt and in_vista, different processing
@@ -102,6 +111,15 @@ def winter_reference_phot_calibrator(image: Image, **kwargs) -> PhotCalibrator:
 
 
 def ref_sextractor(image: Image):
+    """
+    Generates a sextractor instance for reference images to get photometry
+    Args:
+        image:
+
+    Returns:
+
+    """
+    logger.debug(image)
     return Sextractor(
         output_sub_dir="phot",
         **sextractor_astrometry_config,
@@ -111,6 +129,15 @@ def ref_sextractor(image: Image):
 
 
 def ref_phot_calibrator(image: Image):
+    """
+    Generates a photcalibrator instance for reference images to get photometry
+    Args:
+        image:
+
+    Returns:
+
+    """
+    logger.debug(image)
     return PhotCalibrator(
         ref_catalog_generator=wirc_photometric_catalog_generator,
         write_regions=True,
@@ -118,49 +145,11 @@ def ref_phot_calibrator(image: Image):
     )
 
 
-class GetReferenceImage(BaseImageProcessor):
-    base_key = "refimg_returner"
-
-    def __init__(
-        self,
-        ref_image_generator: Callable[..., BaseReferenceGenerator],
-        output_sub_dir: str = "ref",
-    ):
-        super().__init__()
-        self.ref_image_generator = ref_image_generator
-        self.output_sub_dir = output_sub_dir
-
-    def _apply_to_images(
-        self,
-        batch: ImageBatch,
-    ) -> ImageBatch:
-        ref_batch = ImageBatch()
-        for image in batch:
-            logger.info(
-                f"Output directory for reference building is " f"{self.night_sub_dir}"
-            )
-            ref_generator = self.ref_image_generator(image)
-
-            output_sub_dir = get_output_dir(
-                dir_root=self.output_sub_dir, sub_dir=self.night_sub_dir
-            )
-            if not output_sub_dir.exists():
-                output_sub_dir.mkdir(parents=True, exist_ok=True)
-
-            logger.info(f"Output directory for reference building is {output_sub_dir}")
-            ref_image_path = ref_generator.write_reference(
-                image,
-                output_dir=output_sub_dir.as_posix(),
-            )
-
-            ref_image = self.open_fits(ref_image_path)
-
-            ref_batch.append(ref_image)
-
-        return ref_batch
-
-
 class IRRefBuildPipeline(Pipeline):
+    """
+    Pipeline for building reference images in the IR from WFAU
+    """
+
     name = "ir_reference_building"
 
     refbuild = [
@@ -172,3 +161,14 @@ class IRRefBuildPipeline(Pipeline):
     ]
 
     all_pipeline_configurations = {"default": refbuild}
+
+    gain = 1.0
+    non_linear_level = 65535
+
+    @staticmethod
+    def _load_raw_image(path: str):
+        pass
+
+    @staticmethod
+    def download_raw_images_for_night(night: str):
+        pass
