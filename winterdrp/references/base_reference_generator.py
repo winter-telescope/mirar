@@ -17,7 +17,7 @@ from winterdrp.paths import (
     LATEST_WEIGHT_SAVE_KEY,
     PROC_HISTORY_KEY,
 )
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
 
 logger = logging.getLogger(__name__)
