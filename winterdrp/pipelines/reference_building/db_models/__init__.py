@@ -21,7 +21,7 @@ from winterdrp.processors.database.postgres import (
     DB_USER,
     PostgresAdmin,
 )
-from winterdrp.processors.sqldatabase.basemodel import BaseTable
+from winterdrp.processors.sqldatabase.base_model import BaseTable
 from winterdrp.utils.sql import get_engine
 
 

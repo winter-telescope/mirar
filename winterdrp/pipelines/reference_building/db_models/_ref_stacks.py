@@ -12,7 +12,7 @@ from winterdrp.pipelines.reference_building.db_models.basemodel import (
     dec_field,
     ra_field,
 )
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 
 
 class RefStacksTable(RefBase):
@@ -35,8 +35,6 @@ class RefStacksTable(RefBase):
     dec1_1 = Column(Float)
     fieldid = Column(Integer, nullable=True, default=None)
     subdetid = Column(Integer, nullable=True, default=None)
-
-    stackcomponents = relationship("RefStackComponentsTable", back_populates="stacks")
 
     savepath = Column(VARCHAR(255))
 

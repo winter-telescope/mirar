@@ -12,7 +12,7 @@ from winterdrp.pipelines.reference_building.db_models.basemodel import (
     dec_field,
     ra_field,
 )
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 
 
 class RefComponentsTable(RefBase):
@@ -43,12 +43,7 @@ class RefComponentsTable(RefBase):
     ra_cent = Column(Float)
     dec_cent = Column(Float)
     savepath = Column(VARCHAR(255))
-    query_url = Column(VARCHAR(255))
     ukirt_filename = Column(VARCHAR(255))
-
-    stackcomponents = relationship(
-        "RefStackComponentsTable", back_populates="components"
-    )
 
 
 class RefComponents(BaseDB):
@@ -61,7 +56,6 @@ class RefComponents(BaseDB):
     query_ra: float = ra_field
     query_dec: float = dec_field
     savepath: str = Field(min_length=1)
-    query_url: str = Field(min_length=1)
     multiframe_id: int = Field(ge=0)
     extension_id: int = Field(ge=0)
     lx: int = Field(ge=0)
