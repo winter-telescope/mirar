@@ -2,27 +2,20 @@ import logging
 import sys
 from pathlib import Path
 
-import astropy.units as u
 import numpy as np
 import pandas as pd
-from astropy.io import ascii, fits
+from astropy.io import fits
 
 from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.paths import BASE_NAME_KEY, core_fields
 from winterdrp.pipelines.reference_building.ir_refbuild_pipeline import (
     IRRefBuildPipeline,
 )
-from winterdrp.references.ukirt import get_query_coordinates_from_header
 
 
 def dummy_image_generator(
     cent_ra, cent_dec, fieldid, nx=3, ny=4, full_ra_size_deg=1, full_dec_size_deg=1.2
 ) -> ImageBatch:
-    # winter_northern_fields = winter_fields[winter_fields['Dec'] > -30]
-    # ind = 0
-    # cent_ra, cent_dec = winter_northern_fields.loc[ind]['RA'], \
-    #           winter_northern_fields.loc[ind]['Dec']
-
     subimg_half_ra_deg = full_ra_size_deg / (2 * nx)
     subimg_half_dec_deg = full_dec_size_deg / (2 * ny)
 
@@ -70,16 +63,80 @@ def dummy_image_generator(
     return image_batch
 
 
+def write_subfields_file(
+    fields_filename,
+    subfields_filename,
+    full_ra_size_deg=1,
+    full_dec_size_deg=1.2,
+    nx=3,
+    ny=4,
+):
+    winter_fields = pd.read_csv(fields_filename, delim_whitespace=True)
+    subimg_half_ra_deg = full_ra_size_deg / (2 * nx)
+    subimg_half_dec_deg = full_dec_size_deg / (2 * ny)
+
+    with open(subfields_filename, "w") as f:
+        f.write(
+            f"FieldID, SubdetID, RA_cent, Dec_cent, RA0_0, Dec0_0, "
+            f"RA0_1, Dec0_1, RA1_0, Dec1_0, RA1_1, Dec1_1\n"
+        )
+    for ind, row in winter_fields.iterrows():
+        fieldid = row["ID"]
+        cent_ra = row["RA"]
+        cent_dec = row["Dec"]
+        for iind, i in enumerate(np.arange(-nx + 1, nx + 1, 2)):
+            for jind, j in enumerate(np.arange(-ny + 1, ny + 1, 2)):
+                subdetid = int(iind * len(np.arange(-ny + 1, ny + 1, 2)) + jind)
+                ra = cent_ra + subimg_half_ra_deg * i / np.cos(cent_dec * np.pi / 180)
+                if ra < 0:
+                    ra += 360
+                dec = cent_dec + subimg_half_dec_deg * j
+
+                half_delta_ra = subimg_half_ra_deg / np.cos(cent_dec * np.pi / 180)
+                half_delta_dec = subimg_half_dec_deg
+
+                ra0_0 = ra - half_delta_ra
+                ra1_0 = ra - half_delta_ra
+                ra0_1 = ra + half_delta_ra
+                ra1_1 = ra + half_delta_ra
+                dec0_0 = dec - half_delta_dec
+                dec0_1 = dec - half_delta_dec
+                dec1_0 = dec + half_delta_dec
+                dec1_1 = dec + half_delta_dec
+
+                with open(subfields_file, "a") as f:
+                    f.write(
+                        f"{int(fieldid)}, {subdetid}, "
+                        f"{ra}, {dec}, "
+                        f"{ra0_0}, {dec0_0}, {ra0_1}, {dec0_1}, "
+                        f"{ra1_0}, {dec1_0}, {ra1_1}, {dec1_1}\n"
+                    )
+
+
 if __name__ == "__main__":
     fields_file_dir = Path(__file__).parent.joinpath("files")
     fields_file = fields_file_dir.joinpath("WINTER_fields.txt")
+    subfields_file = fields_file_dir.joinpath("WINTER_subfields.txt")
     winter_fields = pd.read_csv(fields_file, delim_whitespace=True)
+
+    logger = logging.getLogger("winterdrp")
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter(
+        "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+
+    if not subfields_file.exists():
+        logger.info(f"Writing subfields file to {subfields_file}")
+        write_subfields_file(fields_file, subfields_file)
 
     winter_northern_fields = winter_fields[
         (winter_fields["Dec"] > -40) & (winter_fields["Dec"] < 60)
     ].reset_index(drop=True)
 
-    ind = 0
+    ind = 3000
 
     cent_ra, cent_dec = (
         winter_northern_fields.loc[ind]["RA"],
@@ -92,24 +149,11 @@ if __name__ == "__main__":
         fieldid=winter_northern_fields.loc[ind]["ID"],
     )
 
-    for image in split_image_batch:
-        print(get_query_coordinates_from_header(image.header, 4))
-
     pipeline = IRRefBuildPipeline(night="references", selected_configurations="default")
 
-    log = logging.getLogger("winterdrp")
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(
-        "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
-    )
-    handler.setFormatter(formatter)
-    log.addHandler(handler)
-    log.setLevel(logging.DEBUG)
-
-    dataset = Dataset(split_image_batch)
-    log.info(f"split image batch: {dataset}")
+    dataset = Dataset([ImageBatch(x) for x in split_image_batch])
 
     res, errorstack = pipeline.reduce_images(
-        dataset=Dataset(split_image_batch),
+        dataset=dataset,
         catch_all_errors=True,
     )
