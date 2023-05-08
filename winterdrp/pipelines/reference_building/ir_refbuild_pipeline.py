@@ -2,21 +2,17 @@ import logging
 import os
 from typing import Callable
 
-import pandas as pd
-
 from winterdrp.catalog import Gaia2Mass
 from winterdrp.data import Image, ImageBatch
 from winterdrp.paths import get_output_dir
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.pipelines.reference_building.db_models import RefComponents, RefStacks
-from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.base_processor import BaseImageProcessor
 from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
-from winterdrp.processors.utils import ImageDebatcher, ImageLoader, ImageSaver
+from winterdrp.processors.utils import ImageDebatcher, ImageSaver
 from winterdrp.references import BaseReferenceGenerator
 from winterdrp.references.ukirt import UKIRTRef
 
@@ -43,7 +39,7 @@ def winter_reference_generator(image: Image):
         swarp_resampler=winter_reference_image_resampler,
         sextractor_generator=ref_sextractor,
         phot_calibrator_generator=winter_reference_phot_calibrator,
-        num_query_points=4,
+        num_query_points=16,
         components_table=RefComponents,
         write_to_db=True,
         write_db_table=RefStacks,
@@ -89,13 +85,20 @@ def winter_reference_phot_calibrator(image: Image, **kwargs) -> PhotCalibrator:
     :param kwargs: kwargs
     :return: Swarp processor
     """
+    x_lower_limit = 0
+    y_lower_limit = 0
+    x_upper_limit = image.header["NAXIS2"]
+    y_upper_limit = image.header["NAXIS1"]
+
     return PhotCalibrator(
-        ref_catalog_generator=wirc_photometric_catalog_generator, **kwargs
+        ref_catalog_generator=wirc_photometric_catalog_generator,
+        x_lower_limit=x_lower_limit,
+        x_upper_limit=x_upper_limit,
+        y_lower_limit=y_lower_limit,
+        y_upper_limit=y_upper_limit,
+        write_regions=True,
+        **kwargs,
     )
-
-
-class MakeDummyImages(BaseImageProcessor):
-    pass
 
 
 def ref_sextractor(image: Image):
@@ -111,7 +114,6 @@ def ref_phot_calibrator(image: Image):
     return PhotCalibrator(
         ref_catalog_generator=wirc_photometric_catalog_generator,
         write_regions=True,
-        x_lower_limit=0,
         fwhm_threshold_arcsec=3,
     )
 
@@ -162,17 +164,11 @@ class IRRefBuildPipeline(Pipeline):
     name = "ir_reference_building"
 
     refbuild = [
-        # ImageLoader(load_image=load_raw_wirc_image),
         ImageDebatcher(),
         GetReferenceImage(
             ref_image_generator=winter_reference_generator,
         ),
         ImageSaver(output_dir_name="stacked_ref"),
-        # DatabaseImageExporter(
-        #     db_table=RefStacks,
-        #     duplicate_protocol="replace",
-        #     q3c_bool=False,
-        # ),
     ]
 
     all_pipeline_configurations = {"default": refbuild}
