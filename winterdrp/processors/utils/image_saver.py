@@ -63,7 +63,8 @@ class ImageSaver(BaseImageProcessor):
                             sub_dir=self.night_sub_dir,
                             output_dir=self.output_dir,
                         )
-                        shutil.copy(existing_weightpath, mask_path)
+                        if existing_weightpath != mask_path:
+                            shutil.copy(existing_weightpath, mask_path)
 
                 if not weight_image_found:
                     mask_path = self.save_weight_image(image, img_path=path)
