@@ -104,7 +104,7 @@ def write_subfields_file(
                 dec1_0 = dec + half_delta_dec
                 dec1_1 = dec + half_delta_dec
 
-                with open(subfields_file, "a") as f:
+                with open(winter_subfields_file, "a") as f:
                     f.write(
                         f"{int(fieldid)}, {subdetid}, "
                         f"{ra}, {dec}, "
@@ -113,30 +113,27 @@ def write_subfields_file(
                     )
 
 
-if __name__ == "__main__":
-    fields_file_dir = Path(__file__).parent.joinpath("files")
-    fields_file = fields_file_dir.joinpath("WINTER_fields.txt")
-    subfields_file = fields_file_dir.joinpath("WINTER_subfields.txt")
-    winter_fields = pd.read_csv(fields_file, delim_whitespace=True)
+winter_fields_file_dir = Path(__file__).parent.joinpath("files")
+winter_fields_file = winter_fields_file_dir.joinpath("WINTER_fields.txt")
+winter_subfields_file = winter_fields_file_dir.joinpath("WINTER_subfields.txt")
 
-    logger = logging.getLogger("winterdrp")
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(
-        "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
-    )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
 
-    if not subfields_file.exists():
-        logger.info(f"Writing subfields file to {subfields_file}")
-        write_subfields_file(fields_file, subfields_file)
+def run_winter_reference_build_pipeline(
+    winter_fields: pd.DataFrame,
+    nx: int = 3,
+    ny: int = 4,
+    full_ra_size_deg=1,
+    full_dec_size_deg=1.2,
+):
+    if not winter_subfields_file.exists():
+        logger.info(f"Writing subfields file to {winter_subfields_file}")
+        write_subfields_file(winter_fields_file, winter_subfields_file)
 
     winter_northern_fields = winter_fields[
         (winter_fields["Dec"] > -40) & (winter_fields["Dec"] < 60)
     ].reset_index(drop=True)
 
-    ind = 3000
+    ind = 0
 
     cent_ra, cent_dec = (
         winter_northern_fields.loc[ind]["RA"],
@@ -147,6 +144,10 @@ if __name__ == "__main__":
         cent_ra=cent_ra,
         cent_dec=cent_dec,
         fieldid=winter_northern_fields.loc[ind]["ID"],
+        nx=nx,
+        ny=ny,
+        full_ra_size_deg=full_ra_size_deg,
+        full_dec_size_deg=full_dec_size_deg,
     )
 
     pipeline = IRRefBuildPipeline(night="references", selected_configurations="default")
@@ -157,3 +158,20 @@ if __name__ == "__main__":
         dataset=dataset,
         catch_all_errors=True,
     )
+
+    return res, errorstack
+
+
+if __name__ == "__main__":
+    winter_fields = pd.read_csv(winter_fields_file, delim_whitespace=True)
+
+    logger = logging.getLogger("winterdrp")
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter(
+        "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+
+    run_winter_reference_build_pipeline(winter_fields)
