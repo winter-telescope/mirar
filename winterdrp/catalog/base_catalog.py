@@ -9,6 +9,7 @@ import astropy.table
 
 from winterdrp.data import Image
 from winterdrp.paths import BASE_NAME_KEY
+from winterdrp.processors.candidates.utils import get_image_center_wcs_coords
 from winterdrp.utils.ldac_tools import save_table_as_ldac
 
 logger = logging.getLogger(__name__)
@@ -64,8 +65,8 @@ class BaseCatalog(ABCatalog, ABC):
         :param output_dir: output directory for catalog
         :return: path of catalog
         """
-        ra_deg = image["CRVAL1"]
-        dec_deg = image["CRVAL2"]
+
+        ra_deg, dec_deg = get_image_center_wcs_coords(image, origin=1)
 
         base_name = Path(image[BASE_NAME_KEY]).with_suffix(".ldac").name
 
