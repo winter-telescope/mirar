@@ -5,6 +5,7 @@ from typing import ClassVar
 
 from pydantic import Field
 from sqlalchemy import VARCHAR, Column, Float, Integer
+from sqlalchemy.orm import relationship
 
 from winterdrp.pipelines.reference_building.db_models.basemodel import (
     RefBase,
@@ -24,6 +25,19 @@ class RefStacksTable(RefBase):
     stackid = Column(Integer, primary_key=True)
     ra_cent = Column(Float)
     dec_cent = Column(Float)
+    ra0_0 = Column(Float)
+    dec0_0 = Column(Float)
+    ra0_1 = Column(Float)
+    dec0_1 = Column(Float)
+    ra1_0 = Column(Float)
+    dec1_0 = Column(Float)
+    ra1_1 = Column(Float)
+    dec1_1 = Column(Float)
+    fieldid = Column(Integer, nullable=True, default=None)
+    subdetid = Column(Integer, nullable=True, default=None)
+
+    stackcomponents = relationship("RefStackComponentsTable", back_populates="stacks")
+
     savepath = Column(VARCHAR(255))
 
 
@@ -36,6 +50,17 @@ class RefStacks(BaseDB):
 
     ra_cent: float = ra_field
     dec_cent: float = dec_field
+    ra0_0: float = ra_field
+    dec0_0: float = dec_field
+    ra0_1: float = ra_field
+    dec0_1: float = dec_field
+    ra1_0: float = ra_field
+    dec1_0: float = dec_field
+    ra1_1: float = ra_field
+    dec1_1: float = dec_field
+
+    fieldid: int = Field(ge=0, default=None, nullable=True)
+    subdetid: int = Field(ge=0, default=None, nullable=True)
     savepath: str = Field(min_length=1)
 
     def exists(self) -> bool:
@@ -49,4 +74,4 @@ class RefStacks(BaseDB):
         )
 
     def insert_entry(self, returning_keys=None):
-        return self._insert_entry(returning_keys=returning_keys)
+        return self._insert_entry(returning_key_names=returning_keys)
