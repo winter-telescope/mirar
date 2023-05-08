@@ -133,31 +133,31 @@ def run_winter_reference_build_pipeline(
         (winter_fields["Dec"] > -40) & (winter_fields["Dec"] < 60)
     ].reset_index(drop=True)
 
-    ind = 0
-
-    cent_ra, cent_dec = (
-        winter_northern_fields.loc[ind]["RA"],
-        winter_northern_fields.loc[ind]["Dec"],
-    )
-
-    split_image_batch = dummy_image_generator(
-        cent_ra=cent_ra,
-        cent_dec=cent_dec,
-        fieldid=winter_northern_fields.loc[ind]["ID"],
-        nx=nx,
-        ny=ny,
-        full_ra_size_deg=full_ra_size_deg,
-        full_dec_size_deg=full_dec_size_deg,
-    )
-
     pipeline = IRRefBuildPipeline(night="references", selected_configurations="default")
 
-    dataset = Dataset([ImageBatch(x) for x in split_image_batch])
+    res, errorstack = [], []
+    for ind, row in winter_northern_fields.iterrows():
+        cent_ra, cent_dec = (
+            winter_northern_fields.loc[ind]["RA"],
+            winter_northern_fields.loc[ind]["Dec"],
+        )
 
-    res, errorstack = pipeline.reduce_images(
-        dataset=dataset,
-        catch_all_errors=True,
-    )
+        split_image_batch = dummy_image_generator(
+            cent_ra=cent_ra,
+            cent_dec=cent_dec,
+            fieldid=winter_northern_fields.loc[ind]["ID"],
+            nx=nx,
+            ny=ny,
+            full_ra_size_deg=full_ra_size_deg,
+            full_dec_size_deg=full_dec_size_deg,
+        )
+
+        dataset = Dataset([ImageBatch(x) for x in split_image_batch])
+
+        res, errorstack = pipeline.reduce_images(
+            dataset=dataset,
+            catch_all_errors=True,
+        )
 
     return res, errorstack
 
