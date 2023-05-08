@@ -3,12 +3,13 @@ Module for querying reference images from the UKIRT survey
 """
 import logging
 from collections.abc import Callable
-from typing import Type
+from typing import Tuple, Type
 
 import astropy.units as u
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
+from astropy.io.fits import PrimaryHDU
 from astropy.units import Quantity
 from astropy.wcs import WCS
 from astroquery.ukidss import UkidssClass
@@ -18,7 +19,14 @@ from survey_coverage.surveys import MOCSurvey
 
 from winterdrp.data import Image, ImageBatch
 from winterdrp.errors import ProcessorError
-from winterdrp.paths import BASE_NAME_KEY, COADD_KEY, core_fields, get_output_path
+from winterdrp.io import open_fits
+from winterdrp.paths import (
+    BASE_NAME_KEY,
+    COADD_KEY,
+    LATEST_WEIGHT_SAVE_KEY,
+    core_fields,
+    get_output_path,
+)
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.base_processor import ImageHandler
@@ -107,6 +115,25 @@ def get_centre_ra_dec_from_header(header: fits.Header) -> (float, float):
     return ra_cent, dec_cent
 
 
+def get_corners_ra_dec_from_header(header: fits.Header) -> list[tuple[float, float]]:
+    """
+    Function to get corner RA/Dec of the image from the header
+    Args:
+        header:
+
+    Returns:
+
+    """
+    nx, ny = header["NAXIS1"], header["NAXIS2"]
+    image_crds = [(0, 0), (nx, 0), (0, ny), (nx, ny)]
+    wcs_crds = []
+    for image_crd in image_crds:
+        ra_deg, dec_deg = WCS(header).all_pix2world([image_crd[0]], [image_crd[1]], 1)
+        wcs_crds.append((ra_deg[0], dec_deg[0]))
+
+    return wcs_crds
+
+
 def get_image_dims_from_header(header: fits.Header) -> (Quantity, Quantity):
     """
     Get image dimensions from the header
@@ -193,6 +220,72 @@ def make_image_from_hdulist(
     return image
 
 
+def get_ukirt_file_identifiers_from_url(url: str) -> list:
+    ukirt_filename = url.split("?")[1].split("&")[0].split("=")[1]
+    multiframeid = url.split("&")[1].split("=")[1]
+    extension_id = url.split("&")[2].split("=")[1]
+    lx = url.split("&")[3].split("=")[1]
+    hx = url.split("&")[4].split("=")[1]
+    ly = url.split("&")[5].split("=")[1]
+    hy = url.split("&")[6].split("=")[1]
+    return [
+        ukirt_filename,
+        int(multiframeid),
+        int(extension_id),
+        int(lx),
+        int(hx),
+        int(ly),
+        int(hy),
+    ]
+
+
+def check_query_exists_locally(query_ra, query_dec, db_table):
+    """
+    Function to check if component images exist locally
+    Args:
+        query_ra:
+        query_dec:
+        db_table:
+
+    Returns:
+
+    """
+    # table = db_table(query_ra=query_ra,
+    #                  query_dec=query_dec,
+    #                  savepath=' ',
+    #                  query_url=' ')
+    # exists = table.exists()
+    results = db_table.sql_model().select_query(
+        select_keys="savepath",
+        compare_values=[query_ra, query_dec],
+        compare_keys=["query_ra", "query_dec"],
+        comparators=["__eq__", "__eq__"],
+    )
+    logger.debug(results)
+    if len(results) == 0:
+        savepaths = []
+    else:
+        savepaths = [x[0] for x in results]
+    return savepaths
+
+
+def check_multiframe_exists_locally(
+    db_table, multiframe_id, extension_id, lx, hx, ly, hy
+):
+    results = db_table.sql_model().select_query(
+        select_keys=["savepath"],
+        compare_values=[multiframe_id, extension_id, lx, hx, ly, hy],
+        compare_keys=["multiframe_id", "extension_id", "lx", "hx", "ly", "hy"],
+        comparators=["__eq__", "__eq__", "__eq__", "__eq__", "__eq__", "__eq__"],
+    )
+    logger.debug(results)
+    if len(results) == 0:
+        savepaths = []
+    else:
+        savepaths = [x[0] for x in results]
+    return savepaths
+
+
 class UKIRTRef(BaseReferenceGenerator, ImageHandler):
     """
     UKIRT Ref generator
@@ -212,6 +305,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         write_to_db: bool = True,
         components_table: Type[BaseDB] = None,
         write_db_table: Type[BaseDB] = None,
+        component_image_dir: str = None,
+        night_sub_dir: str = None,
     ):
         super().__init__(
             filter_name=filter_name, write_to_db=write_to_db, db_table=write_db_table
@@ -237,36 +332,10 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             )
             raise UKIRTRefError(err)
 
-    def check_ref_images_exist_locally(self, query_ra, query_dec, db_table):
-        """
-        Function to check if component images exist locally
-        Args:
-            query_ra:
-            query_dec:
-            db_table:
+        self.component_image_dir = component_image_dir
+        self.night_sub_dir = night_sub_dir
 
-        Returns:
-
-        """
-        # table = db_table(query_ra=query_ra,
-        #                  query_dec=query_dec,
-        #                  savepath=' ',
-        #                  query_url=' ')
-        # exists = table.exists()
-        results = db_table.sql_model().select_query(
-            select_keys="savepath",
-            compare_values=[query_ra, query_dec],
-            compare_keys=["query_ra", "query_dec"],
-            comparators=["__eq__", "__eq__"],
-        )
-        logger.debug(results)
-        if len(results) == 0:
-            savepaths = []
-        else:
-            savepaths = [x[0] for x in results]
-        return savepaths
-
-    def get_reference(self, image: Image) -> fits.PrimaryHDU:
+    def get_reference(self, image: Image, **kwargs) -> tuple[PrimaryHDU, PrimaryHDU]:
         header = image.get_header()
         # ra_cent, dec_cent = get_centre_ra_dec_from_header(header)
         # image_x_size, image_y_size = get_image_dims_from_header(header)
@@ -298,6 +367,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         ukirt_surveys = ukirt_surveys[np.argsort(lim_mags)[::-1]]
         logger.debug(f"Surveys are {[x.survey_name for x in ukirt_surveys]}")
         ukirt_image_urls, ukirt_query_ras, ukirt_query_decs = [], [], []
+
         for survey in ukirt_surveys:
             ukirt_query.database = survey.wfau_dbname
             # url_list = ukirt_query.get_image_list(query_crds,
@@ -311,7 +381,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                 # Need to add a cache and check there.
                 url = []
                 if self.check_local_database:
-                    url = self.check_ref_images_exist_locally(
+                    url = check_query_exists_locally(
                         query_ra=crd.ra.deg,
                         query_dec=crd.dec.deg,
                         db_table=self.components_table,
@@ -346,6 +416,29 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         ukirt_images = []
         for url, ra, dec in zip(ukirt_image_urls, ukirt_query_ras, ukirt_query_decs):
             if "http" in url:
+                if self.check_local_database:
+                    (
+                        ukirt_filename,
+                        multiframe_id,
+                        extension_id,
+                        lx,
+                        hx,
+                        ly,
+                        hy,
+                    ) = get_ukirt_file_identifiers_from_url(url)
+                    imgpath = check_multiframe_exists_locally(
+                        db_table=self.components_table,
+                        multiframe_id=multiframe_id,
+                        extension_id=extension_id,
+                        lx=lx,
+                        hx=hx,
+                        ly=ly,
+                        hy=hy,
+                    )
+                    if len(imgpath) > 0:
+                        url = imgpath[0]
+
+            if "http" in url:
                 obj = FileContainer(
                     url,
                     encoding="binary",
@@ -353,30 +446,63 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                     show_progress=True,
                 )
                 ukirt_img_hdulist = obj.get_fits()
+                (
+                    ukirt_filename,
+                    multiframeid,
+                    extension_id,
+                    lx,
+                    hx,
+                    ly,
+                    hy,
+                ) = get_ukirt_file_identifiers_from_url(url)
                 # UKIRT ref images are stored as multiHDU files, need to combine the
                 # hdus so no info from the headers is lost.
                 ukirt_image = make_image_from_hdulist(
                     ukirt_img_hdulist,
-                    basename=f"{url.split('/')[-1].split('&')[0].split('.')[0]}"
-                    f".fits",
+                    basename=f"{multiframeid}_{extension_id}_{lx}_{hx}_{ly}_{hy}.fits",
                 )
                 savepath = get_output_path(
-                    ukirt_image[BASE_NAME_KEY],
-                    dir_root="mock/ref",
-                    sub_dir="ir_refbuild",
+                    ukirt_image[BASE_NAME_KEY], dir_root=self.component_image_dir
                 )
 
                 if self.check_local_database:
+                    ra_cent, dec_cent = get_centre_ra_dec_from_header(
+                        ukirt_image.header
+                    )
+                    (
+                        (ra0_0, dec0_0),
+                        (ra0_1, dec0_1),
+                        (ra1_0, dec1_0),
+                        (ra1_1, dec1_1),
+                    ) = get_corners_ra_dec_from_header(ukirt_image.header)
+
                     new = self.components_table(
                         query_ra=ra,
                         query_dec=dec,
                         savepath=savepath.as_posix(),
                         query_url=url,
+                        ukirt_filename=ukirt_filename,
+                        multiframe_id=multiframeid,
+                        extension_id=extension_id,
+                        lx=lx,
+                        ly=ly,
+                        hx=hx,
+                        hy=hy,
+                        ra0_0=ra0_0,
+                        ra0_1=ra0_1,
+                        ra1_0=ra1_0,
+                        ra1_1=ra1_1,
+                        dec0_0=dec0_0,
+                        dec0_1=dec0_1,
+                        dec1_0=dec1_0,
+                        dec1_1=dec1_1,
+                        ra_cent=ra_cent,
+                        dec_cent=dec_cent,
                     )
                     ret = new.insert_entry()
-                ukirt_image[ret[0][0]] = ret[1][0]
-                self.save_fits(ukirt_image, savepath)
 
+                    ukirt_image[ret[0][0]] = ret[1][0]
+                self.save_fits(ukirt_image, savepath)
             else:
                 ukirt_hdulist = fits.open(url, ignore_missing_simple=True)
                 ukirt_image = Image(
@@ -419,7 +545,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             x_imgpixsize=25 * 60 / 0.40,
             y_imgpixsize=25 * 60 / 0.40,
         )
-        resampler.set_night(night_sub_dir="ir_refbuild/mock")
+        resampler.set_night(night_sub_dir=self.night_sub_dir)
         resampled_batch = resampler.apply(ukirt_image_batch)
 
         resampled_image = resampled_batch[0]
@@ -428,12 +554,19 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         resampled_image["RA_CENT"] = ra_cent
         resampled_image["DEC_CENT"] = dec_cent
 
+        compids = [str(x.header["compid"]) for x in ukirt_images]
+        resampled_image["COMPIDS"] = ",".join(compids)
+
         ref_sextractor = self.sextractor_generator(resampled_image)
-        ref_sextractor.set_night(night_sub_dir="ir_refbuild/mock")
+        ref_sextractor.set_night(night_sub_dir=self.night_sub_dir)
         resampled_batch = ref_sextractor.apply(resampled_batch)
+        reference_weight_path = resampled_batch[0].header[LATEST_WEIGHT_SAVE_KEY]
+        reference_weight_data, reference_weight_header = open_fits(
+            reference_weight_path
+        )
 
         phot_calibrator = self.phot_calibrator_generator(resampled_batch[0])
-        phot_calibrator.set_night(night_sub_dir="ir_refbuild/mock")
+        phot_calibrator.set_night(night_sub_dir=self.night_sub_dir)
         phot_calibrator.set_preceding_steps([ref_sextractor])
         photcaled_batch = phot_calibrator.apply(resampled_batch)
 
@@ -442,7 +575,30 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         reference_hdu.header = photcaled_image.get_header()
         reference_hdu.data = photcaled_image.get_data()
 
-        return reference_hdu
+        reference_weight_hdu = fits.PrimaryHDU()
+        reference_weight_hdu.header = reference_weight_header
+        reference_weight_hdu.data = reference_weight_data
+
+        ra_cent, dec_cent = get_image_center_wcs_coords(image=photcaled_image)
+        (
+            (ra0_0, dec0_0),
+            (ra0_1, dec0_1),
+            (ra1_0, dec1_0),
+            (ra1_1, dec1_1),
+        ) = get_corners_ra_dec_from_header(reference_hdu.header)
+
+        reference_hdu.header["RA_CENT"] = ra_cent
+        reference_hdu.header["DEC_CENT"] = dec_cent
+        reference_hdu.header["RA0_0"] = ra0_0
+        reference_hdu.header["RA0_1"] = ra0_1
+        reference_hdu.header["RA1_0"] = ra1_0
+        reference_hdu.header["RA1_1"] = ra1_1
+        reference_hdu.header["DEC0_0"] = dec0_0
+        reference_hdu.header["DEC0_1"] = dec0_1
+        reference_hdu.header["DEC1_0"] = dec1_0
+        reference_hdu.header["DEC1_1"] = dec1_1
+
+        return reference_hdu, reference_weight_hdu
         # #  then re-phot-caled)
         # if np.logical_and(self.stack_multiple_images, len(ukirt_images) > 1):
         #     # stack if multiple images are returned

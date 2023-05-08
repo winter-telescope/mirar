@@ -24,7 +24,7 @@ class SDSSRef(BaseReferenceGenerator):
 
     abbreviation = "sdss_ref_lookup"
 
-    def get_reference(self, image: Image) -> fits.PrimaryHDU:
+    def get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
         header = image.get_header()
 
         nx, ny = header["NAXIS1"], header["NAXIS2"]
@@ -65,4 +65,4 @@ class SDSSRef(BaseReferenceGenerator):
         ref_hdu.header["ZP"] = 2.5 * 9  # Unit of the image is nanomaggie
         del ref_hdu.header["HISTORY"]
 
-        return ref_hdu
+        return ref_hdu, None

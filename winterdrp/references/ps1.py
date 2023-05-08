@@ -80,7 +80,7 @@ class PS1Ref(BaseReferenceGenerator):
             url.append(full_url)
         return url
 
-    def get_reference(self, image: Image) -> fits.PrimaryHDU:
+    def get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
         header = image.get_header()
 
         nx, ny = header["NAXIS1"], header["NAXIS2"]
@@ -112,4 +112,4 @@ class PS1Ref(BaseReferenceGenerator):
         ref_hdu.header["GAIN"] = ref_hdu.header["CELL.GAIN"]
         ref_hdu.header["ZP"] = ref_hdu.header["FPA.ZP"]
         del ref_hdu.header["HISTORY"]
-        return ref_hdu
+        return ref_hdu, None

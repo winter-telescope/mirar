@@ -27,7 +27,7 @@ class WIRCRef(BaseReferenceGenerator):
         self.object_name = object_name
         self.images_directory_path = images_directory_path
 
-    def get_reference(self, image: Image) -> fits.PrimaryHDU:
+    def get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
         full_imagelist = np.array(
             glob(
                 f"{self.images_directory_path}/{self.object_name}/"
@@ -55,4 +55,4 @@ class WIRCRef(BaseReferenceGenerator):
         with fits.open(ref_image) as hdul:
             ref_hdu = hdul[0].copy()
         ref_hdu.header["ZP"] = ref_hdu.header["TMC_ZP"]  # pylint: disable=no-member
-        return ref_hdu
+        return ref_hdu, None
