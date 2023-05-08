@@ -32,6 +32,12 @@ def winter_reference_generator(image: Image):
     filtername = image["FILTER"]
     # TODO check if exists in DB
     # TODO if in_ukirt and in_vista, different processing
+    components_image_dir = get_output_dir(
+        dir_root="components", sub_dir="ir_reference_building" "/references"
+    )
+    if not components_image_dir.exists():
+        components_image_dir.mkdir(parents=True)
+
     return UKIRTRef(
         filter_name=filtername,
         swarp_resampler=winter_reference_image_resampler,
@@ -41,6 +47,8 @@ def winter_reference_generator(image: Image):
         components_table=RefComponents,
         write_to_db=True,
         write_db_table=RefStacks,
+        component_image_dir=components_image_dir.as_posix(),
+        night_sub_dir="ir_reference_building/references",
     )
 
 
@@ -53,7 +61,7 @@ def winter_reference_image_resampler(**kwargs) -> Swarp:
     """
     logger.info(kwargs)
     return Swarp(
-        swarp_config_path=swarp_config_path, subtract_bkg=True, cache=True, **kwargs
+        swarp_config_path=swarp_config_path, subtract_bkg=True, cache=False, **kwargs
     )
 
 
@@ -95,7 +103,7 @@ def ref_sextractor(image: Image):
         output_sub_dir="phot",
         **sextractor_astrometry_config,
         write_regions_bool=True,
-        cache=True
+        cache=False,
     )
 
 
@@ -114,9 +122,11 @@ class GetReferenceImage(BaseImageProcessor):
     def __init__(
         self,
         ref_image_generator: Callable[..., BaseReferenceGenerator],
+        output_sub_dir: str = "ref",
     ):
         super().__init__()
         self.ref_image_generator = ref_image_generator
+        self.output_sub_dir = output_sub_dir
 
     def _apply_to_images(
         self,
@@ -124,12 +134,21 @@ class GetReferenceImage(BaseImageProcessor):
     ) -> ImageBatch:
         ref_batch = ImageBatch()
         for image in batch:
+            logger.info(
+                f"Output directory for reference building is " f"{self.night_sub_dir}"
+            )
             ref_generator = self.ref_image_generator(image)
+
+            output_sub_dir = get_output_dir(
+                dir_root=self.output_sub_dir, sub_dir=self.night_sub_dir
+            )
+            if not output_sub_dir.exists():
+                output_sub_dir.mkdir(parents=True, exist_ok=True)
+
+            logger.info(f"Output directory for reference building is {output_sub_dir}")
             ref_image_path = ref_generator.write_reference(
                 image,
-                output_dir=get_output_dir(
-                    dir_root="mock/stacked_ref", sub_dir="ir_refbuild"
-                ).as_posix(),
+                output_dir=output_sub_dir.as_posix(),
             )
 
             ref_image = self.open_fits(ref_image_path)
@@ -140,7 +159,7 @@ class GetReferenceImage(BaseImageProcessor):
 
 
 class IRRefBuildPipeline(Pipeline):
-    name = "ir_refbuild"
+    name = "ir_reference_building"
 
     refbuild = [
         # ImageLoader(load_image=load_raw_wirc_image),
@@ -148,18 +167,6 @@ class IRRefBuildPipeline(Pipeline):
         GetReferenceImage(
             ref_image_generator=winter_reference_generator,
         ),
-        # Sextractor(
-        #     output_sub_dir="phot",
-        #     **sextractor_astrometry_config,
-        #     write_regions_bool=True,
-        #     cache=True
-        # ),
-        # PhotCalibrator(
-        #     ref_catalog_generator=wirc_photometric_catalog_generator,
-        #     write_regions=True,
-        #     x_lower_limit=0,
-        #     fwhm_threshold_arcsec=3,
-        # ),
         ImageSaver(output_dir_name="stacked_ref"),
         # DatabaseImageExporter(
         #     db_table=RefStacks,

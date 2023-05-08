@@ -58,7 +58,7 @@ def dummy_image_generator(
 
             hdu.header["FIELDID"] = int(fieldid)
             subdet = int(iind * len(np.arange(-ny + 1, ny + 1, 2)) + jind)
-            hdu.header["SUBDET"] = subdet
+            hdu.header["SUBDETID"] = subdet
             hdu.header[BASE_NAME_KEY] = f"field{fieldid}_subdet{subdet}.fits"
 
             image = Image(header=hdu.header, data=data)
@@ -95,9 +95,7 @@ if __name__ == "__main__":
     for image in split_image_batch:
         print(get_query_coordinates_from_header(image.header, 4))
 
-    pipeline = IRRefBuildPipeline(
-        night="ir_refbuild", selected_configurations="default"
-    )
+    pipeline = IRRefBuildPipeline(night="references", selected_configurations="default")
 
     log = logging.getLogger("winterdrp")
     handler = logging.StreamHandler(sys.stdout)
@@ -108,7 +106,10 @@ if __name__ == "__main__":
     log.addHandler(handler)
     log.setLevel(logging.DEBUG)
 
+    dataset = Dataset(split_image_batch)
+    log.info(f"split image batch: {dataset}")
+
     res, errorstack = pipeline.reduce_images(
-        dataset=Dataset([[ImageBatch(x)] for x in split_image_batch][0]),
+        dataset=Dataset(split_image_batch),
         catch_all_errors=True,
     )
