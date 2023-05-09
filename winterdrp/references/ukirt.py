@@ -330,11 +330,12 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
         ukirt_query = UkidssClass()
 
-        ra_cent, dec_cent = get_image_center_wcs_coords(image, origin=1)
-        print(f"Center RA calculated : {ra_cent} Dec: {dec_cent}")
+        query_ra_cent, query_dec_cent = get_image_center_wcs_coords(image, origin=1)
+        print(f"Center RA calculated : {query_ra_cent} Dec: {query_dec_cent}")
         print(f"With origin=0: {get_image_center_wcs_coords(image, origin=0)}")
-        logger.debug(f"Center RA: {ra_cent} Dec: {dec_cent}")
-        ukirt_surveys = find_ukirt_surveys(ra_cent, dec_cent, self.filter_name)
+        logger.debug(f"Center RA: {query_ra_cent} Dec: {query_dec_cent}")
+        ukirt_surveys = find_ukirt_surveys(query_ra_cent, query_dec_cent,
+                                           self.filter_name)
         if len(ukirt_surveys) == 0:
             err = "Coordinates not in UKIRT surveys"
             raise NotinUKIRTError(err)
@@ -446,7 +447,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                 )
 
                 if self.check_local_database:
-                    ra_cent, dec_cent = get_image_center_wcs_coords(
+                    comp_ra_cent, comp_dec_cent = get_image_center_wcs_coords(
                         ukirt_image, origin=1
                     )
                     (
@@ -475,8 +476,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                         dec0_1=dec0_1,
                         dec1_0=dec1_0,
                         dec1_1=dec1_1,
-                        ra_cent=ra_cent,
-                        dec_cent=dec_cent,
+                        ra_cent=comp_ra_cent,
+                        dec_cent=comp_dec_cent,
                     )
                     ret = new.insert_entry()
 
@@ -523,23 +524,24 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
         ukirt_image_batch = ImageBatch(list(ukirt_images))
         resampler = self.swarp_resampler(
-            center_ra=ra_cent,
-            center_dec=dec_cent,
+            center_ra=query_ra_cent,
+            center_dec=query_dec_cent,
             include_scamp=False,
             combine=True,
             calculate_dims_in_swarp=True,
             # x_imgpixsize=25 * 60 / 0.40,
             # y_imgpixsize=25 * 60 / 0.40,
         )
-        print(ra_cent, dec_cent)
+        print(query_ra_cent, query_dec_cent)
         resampler.set_night(night_sub_dir=self.night_sub_dir)
         resampled_batch = resampler.apply(ukirt_image_batch)
 
         resampled_image = resampled_batch[0]
-        ra_cent, dec_cent = get_image_center_wcs_coords(image=resampled_image, origin=1)
-        print(f"Resampled image center: {ra_cent}, {dec_cent}")
-        resampled_image["RA_CENT"] = ra_cent
-        resampled_image["DEC_CENT"] = dec_cent
+        resamp_ra_cent, resamp_dec_cent = \
+            get_image_center_wcs_coords(image=resampled_image, origin=1)
+        print(f"Resampled image center: {resamp_ra_cent}, {resamp_dec_cent}")
+        resampled_image["RA_CENT"] = resamp_ra_cent
+        resampled_image["DEC_CENT"] = resamp_dec_cent
 
         compids = [str(x.header["compid"]) for x in ukirt_images]
         resampled_image["COMPIDS"] = ",".join(compids)
