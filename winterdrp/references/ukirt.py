@@ -331,11 +331,10 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         ukirt_query = UkidssClass()
 
         query_ra_cent, query_dec_cent = get_image_center_wcs_coords(image, origin=1)
-        print(f"Center RA calculated : {query_ra_cent} Dec: {query_dec_cent}")
-        print(f"With origin=0: {get_image_center_wcs_coords(image, origin=0)}")
         logger.debug(f"Center RA: {query_ra_cent} Dec: {query_dec_cent}")
-        ukirt_surveys = find_ukirt_surveys(query_ra_cent, query_dec_cent,
-                                           self.filter_name)
+        ukirt_surveys = find_ukirt_surveys(
+            query_ra_cent, query_dec_cent, self.filter_name
+        )
         if len(ukirt_surveys) == 0:
             err = "Coordinates not in UKIRT surveys"
             raise NotinUKIRTError(err)
@@ -513,8 +512,6 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         logger.debug(magerr_zps)
         logger.debug(median_mag_zp)
         logger.debug(scaling_factors)
-        print(mag_zps)
-        print(magerr_zps)
         zpmask = np.abs(mag_zps - median_mag_zp) < 0.5
 
         ukirt_images = ukirt_images[zpmask]
@@ -532,14 +529,14 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             # x_imgpixsize=25 * 60 / 0.40,
             # y_imgpixsize=25 * 60 / 0.40,
         )
-        print(query_ra_cent, query_dec_cent)
         resampler.set_night(night_sub_dir=self.night_sub_dir)
         resampled_batch = resampler.apply(ukirt_image_batch)
 
         resampled_image = resampled_batch[0]
-        resamp_ra_cent, resamp_dec_cent = \
-            get_image_center_wcs_coords(image=resampled_image, origin=1)
-        print(f"Resampled image center: {resamp_ra_cent}, {resamp_dec_cent}")
+        resamp_ra_cent, resamp_dec_cent = get_image_center_wcs_coords(
+            image=resampled_image, origin=1
+        )
+
         resampled_image["RA_CENT"] = resamp_ra_cent
         resampled_image["DEC_CENT"] = resamp_dec_cent
 

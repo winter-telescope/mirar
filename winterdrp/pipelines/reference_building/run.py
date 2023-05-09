@@ -183,7 +183,6 @@ def run_winter_reference_build_pipeline(
             winter_northern_fields.loc[ind]["RA"],
             winter_northern_fields.loc[ind]["Dec"],
         )
-        print(cent_ra, cent_dec)
         split_image_batch = dummy_split_image_batch_generator(
             cent_ra=cent_ra,
             cent_dec=cent_dec,

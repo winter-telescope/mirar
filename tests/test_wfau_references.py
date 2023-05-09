@@ -77,7 +77,6 @@ class TestIRReferencePipeline(BaseTestCase):
         selected_winter_field = winter_fields[
             winter_fields["ID"] == TEST_WINTER_FIELD_ID
         ].reset_index(drop=True)
-        print(selected_winter_field)
         res, _ = run_winter_reference_build_pipeline(
             winter_fields=selected_winter_field,
             nx=1,
@@ -89,7 +88,6 @@ class TestIRReferencePipeline(BaseTestCase):
         self.assertEqual(len(res[0]), 1)
 
         header = res[0][0].get_header()
-        print(header)
         for key, value in expected_header.items():
             if isinstance(value, float):
                 self.assertAlmostEqual(value, header[key], places=2)
