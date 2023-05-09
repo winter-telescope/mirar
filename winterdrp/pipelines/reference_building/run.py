@@ -15,6 +15,7 @@ from winterdrp.pipelines.reference_building.ir_refbuild_pipeline import (
     IRRefBuildPipeline,
 )
 
+logger = logging.getLogger(__name__)
 winter_fields_file_dir = Path(__file__).parent.joinpath("files")
 winter_fields_file = winter_fields_file_dir.joinpath("WINTER_fields.txt")
 winter_subfields_file = winter_fields_file_dir.joinpath("WINTER_subfields.txt")
