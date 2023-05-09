@@ -76,7 +76,8 @@ class TestIRReferencePipeline(BaseTestCase):
 
         selected_winter_field = winter_fields[
             winter_fields["ID"] == TEST_WINTER_FIELD_ID
-        ]
+        ].reset_index(drop=True)
+
         res, _ = run_winter_reference_build_pipeline(
             winter_fields=selected_winter_field,
             nx=1,
