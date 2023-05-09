@@ -205,3 +205,45 @@ class Reference(BaseImageProcessor):
 
             new_batch.append(resampled_sci_image)
         return new_batch
+
+
+class GetReferenceImage(BaseImageProcessor):
+    base_key = "refimg_returner"
+
+    def __init__(
+        self,
+        ref_image_generator: Callable[..., BaseReferenceGenerator],
+        output_sub_dir: str = "ref",
+    ):
+        super().__init__()
+        self.ref_image_generator = ref_image_generator
+        self.output_sub_dir = output_sub_dir
+
+    def _apply_to_images(
+        self,
+        batch: ImageBatch,
+    ) -> ImageBatch:
+        ref_batch = ImageBatch()
+        for image in batch:
+            logger.info(
+                f"Output directory for reference building is " f"{self.night_sub_dir}"
+            )
+            ref_generator = self.ref_image_generator(image)
+
+            output_sub_dir = get_output_dir(
+                dir_root=self.output_sub_dir, sub_dir=self.night_sub_dir
+            )
+            if not output_sub_dir.exists():
+                output_sub_dir.mkdir(parents=True, exist_ok=True)
+
+            logger.info(f"Output directory for reference building is {output_sub_dir}")
+            ref_image_path = ref_generator.write_reference(
+                image,
+                output_dir=output_sub_dir.as_posix(),
+            )
+
+            ref_image = self.open_fits(ref_image_path)
+
+            ref_batch.append(ref_image)
+
+        return ref_batch

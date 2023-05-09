@@ -5,6 +5,7 @@ Functions to convert FITS files or astropy Tables to FITS_LDAC files and
 vice versa.
 """
 import tempfile
+from pathlib import Path
 
 import astropy.io
 import numpy as np
@@ -85,7 +86,7 @@ def save_table_as_ldac(tbl: astropy.table.Table, file_path: str, **kwargs):
     hdulist.writeto(file_path, **kwargs)
 
 
-def get_table_from_ldac(file_path: str, frame: int = 1) -> astropy.table.Table:
+def get_table_from_ldac(file_path: str | Path, frame: int = 1) -> astropy.table.Table:
     """
     Load an astropy table from a fits_ldac by frame (Since the ldac format has column
     info for odd tables, giving it twce as many tables as a regular fits BinTableHDU,

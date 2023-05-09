@@ -226,6 +226,7 @@ class BaseTable:
             If not specified, defaults to '__eq__
         Returns:
         """
+
         if compare_keys is None:
             compare_keys = [self.get_primary_key()]
         else:
@@ -284,6 +285,7 @@ class BaseTable:
             compare_keys: Keys to compare. If None, defaults to primary key
             comparators: Comparators : '__eq__', '__gt__', '__lt__', etc.
             If None, defaults to '__eq__
+
         Returns:
             result of select query
         """
@@ -306,6 +308,7 @@ class BaseTable:
         Args:
             values: = Value to match
             keys: str = column name
+
         Returns:
             boolean
         """

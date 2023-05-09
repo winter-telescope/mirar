@@ -156,7 +156,6 @@ class BasePhotometryProcessor(BaseProcessor, ImageHandler):
         raise NotImplementedError
 
     def get_temp_image_unc_imagenames(self, image: Image) -> (str, str):
-        print(f"AA {self.photometry_out_temp_dir}")
         self.photometry_out_temp_dir.mkdir(parents=True, exist_ok=True)
 
         image_basename = image.header[BASE_NAME_KEY]
@@ -246,7 +245,6 @@ class BaseCandidatePhotometry(BasePhotometryProcessor, BaseDataframeProcessor):
         self.psf_file_key = psf_file_colname
         self.xpos_key = x_colname
         self.ypos_key = y_colname
-        print(self.night)
 
     def get_image_filenames(self, row):
         imagename = row[self.image_key]

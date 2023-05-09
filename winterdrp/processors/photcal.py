@@ -133,6 +133,11 @@ class PhotCalibrator(BaseImageProcessor):
             & (img_cat["Y_IMAGE"] < self.y_upper_limit)
         )
 
+        img_coords = SkyCoord(
+            ra=img_cat["ALPHAWIN_J2000"],
+            dec=img_cat["DELTAWIN_J2000"],
+            unit=(u.deg, u.deg),
+        )
         clean_img_cat = img_cat[clean_mask]
         logger.debug(f"Found {len(clean_img_cat)} clean sources in image.")
         clean_img_coords = SkyCoord(
@@ -165,6 +170,11 @@ class PhotCalibrator(BaseImageProcessor):
                 dir_root=self.temp_output_sub_dir,
                 sub_dir=self.night_sub_dir,
             )
+            img_regions_path = get_output_path(
+                base_name="img.reg",
+                dir_root=self.temp_output_sub_dir,
+                sub_dir=self.night_sub_dir,
+            )
 
             write_regions_file(
                 regions_path=ref_regions_path,
@@ -173,11 +183,17 @@ class PhotCalibrator(BaseImageProcessor):
                 system="wcs",
                 region_radius=2.0 / 3600,
             )
-
             write_regions_file(
                 regions_path=cleaned_img_regions_path,
                 x_coords=clean_img_coords.ra.deg,
                 y_coords=clean_img_coords.dec.deg,
+                system="wcs",
+                region_radius=2.0 / 3600,
+            )
+            write_regions_file(
+                regions_path=img_regions_path,
+                x_coords=img_coords.ra.deg,
+                y_coords=img_coords.dec.deg,
                 system="wcs",
                 region_radius=2.0 / 3600,
             )
@@ -312,6 +328,7 @@ class PhotCalibrator(BaseImageProcessor):
         Calculate median FWHM from a ldac path
         Args:
             img_cat_path:
+
         Returns:
         """
         imcat = get_table_from_ldac(img_cat_path)

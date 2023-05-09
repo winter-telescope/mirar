@@ -39,4 +39,4 @@ Alternatively, you can check via the code:
 
     >>> from winterdrp.pipelines import Pipeline
     >>> print([x for x in Pipeline.pipelines.keys()])
-    ['sedmv2', 'summer', 'wirc']
+    ['wirc', 'ir_reference_building', 'sedmv2', 'summer']

@@ -33,19 +33,31 @@ expected_zp = {
     "ZP_8.0_nstars": 30,
 }
 
-test_config_name = "test"
-
 pipeline = get_pipeline(
     instrument="summer", selected_configurations=["test"], night="20220402"
 )
 
 
 class TestSummerPipeline(BaseTestCase):
+    """
+    Module for testing summer pipeline
+    """
+
     def setUp(self):
+        """
+        Function to set up test
+        Returns:
+
+        """
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
     def test_pipeline(self):
+        """
+        Test summer pipeline
+        Returns:
+
+        """
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)

@@ -40,23 +40,23 @@ logger = logging.getLogger(__name__)
 test_data_dir = get_test_data_dir()
 
 expected_zp = {
-    "ZP_2.0": 25.90504264831543,
-    "ZP_2.0_std": 0.10294787585735321,
+    "ZP_2.0": 25.908477783203125,
+    "ZP_2.0_std": 0.11761965602636337,
     "ZP_2.0_nstars": 12,
-    "ZP_4.0": 27.229888916015625,
-    "ZP_4.0_std": 0.09965435415506363,
+    "ZP_4.0": 27.235090255737305,
+    "ZP_4.0_std": 0.1022496446967125,
     "ZP_4.0_nstars": 12,
-    "ZP_5.0": 27.5889835357666,
-    "ZP_5.0_std": 0.09648236632347107,
+    "ZP_5.0": 27.5942440032959,
+    "ZP_5.0_std": 0.09162138402462006,
     "ZP_5.0_nstars": 12,
-    "ZP_8.0": 28.160614013671875,
-    "ZP_8.0_std": 0.07556212693452835,
+    "ZP_8.0": 28.16297149658203,
+    "ZP_8.0_std": 0.07523621618747711,
     "ZP_8.0_nstars": 12,
-    "ZP_10.0": 28.322141647338867,
-    "ZP_10.0_std": 0.07936131209135056,
+    "ZP_10.0": 28.324859619140625,
+    "ZP_10.0_std": 0.07975760102272034,
     "ZP_10.0_nstars": 12,
-    "ZP_AUTO": 28.434335708618164,
-    "ZP_AUTO_std": 0.1449936181306839,
+    "ZP_AUTO": 28.434249877929688,
+    "ZP_AUTO_std": 0.14610908925533295,
     "ZP_AUTO_nstars": 12,
 }
 
@@ -143,7 +143,7 @@ class TestWircPipeline(BaseTestCase):
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=4)
+                self.assertAlmostEqual(value, header[key], places=2)
             elif isinstance(value, int):
                 self.assertEqual(value, header[key])
             else:

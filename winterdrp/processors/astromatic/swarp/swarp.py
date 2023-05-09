@@ -126,7 +126,7 @@ def run_swarp(
         swarp_command = swarp_command[:-1]
 
     if np.logical_and(center_ra is not None, center_dec is not None):
-        swarp_command += f" -CENTER {center_ra},{center_dec}"
+        swarp_command += f" -CENTER_TYPE MANUAL -CENTER {center_ra},{center_dec}"
 
     if x_imgpixsize is not None:
         swarp_command += f" -IMAGE_SIZE {x_imgpixsize}"
@@ -310,25 +310,19 @@ class Swarp(BaseImageProcessor):
             swarp_weight_list_path, "w", encoding="utf8"
         ) as weight_list:
             for image in batch:
-                pixscale_to_use = None
-                x_imgpixsize_to_use = None
-                y_imgpixsize_to_use = None
-                center_ra_to_use = None
-                center_dec_to_use = None
+                pixscale_to_use = self.pixscale
+                x_imgpixsize_to_use = self.x_imgpixsize
+                y_imgpixsize_to_use = self.y_imgpixsize
+                center_ra_to_use = self.center_ra
+                center_dec_to_use = self.center_dec
 
-                if not (
+                if (
                     (self.pixscale is None)
                     | (self.x_imgpixsize is None)
                     | (self.y_imgpixsize is None)
                     | (self.center_ra is None)
                     | (self.center_dec is None)
                 ):
-                    pixscale_to_use = self.pixscale
-                    x_imgpixsize_to_use = self.x_imgpixsize
-                    y_imgpixsize_to_use = self.y_imgpixsize
-                    center_ra_to_use = self.center_ra
-                    center_dec_to_use = self.center_dec
-                else:
                     wcs = WCS(image.get_header())
 
                     cd11 = image["CD1_1"]
@@ -464,15 +458,16 @@ class Swarp(BaseImageProcessor):
                     logger.debug(key)
                     new_image[key] = batch[0][key]
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
+
+        new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
+        new_image[BASE_NAME_KEY] = output_image_path.name
+        new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.as_posix()
         self.save_fits(new_image, output_image_path)
+        logger.info(f"Saved resampled image to {output_image_path.name}")
 
         if not self.cache:
             for temp_file in temp_files:
                 temp_file.unlink()
                 logger.debug(f"Deleted temporary file {temp_file}")
 
-        new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
-        new_image[BASE_NAME_KEY] = output_image_path.name
-        new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.name
-        logger.info(f"Saved resampled image to {output_image_path.name}")
         return ImageBatch([new_image])

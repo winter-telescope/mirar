@@ -19,6 +19,7 @@ ephem = "^4.1.3"
 fastavro = "^1.7.4"
 jupyter = "^1.0.0"
 matplotlib = "^3.7.1"
+mocpy = "^0.12.0"
 lacosmic = "^1.0.0"
 numpy = "~1.24.3"
 pandas = "^2.0.1"
@@ -44,7 +45,7 @@ autopep8 = "^2.0.2"
 sqlalchemy = "^2.0.12"
 pydantic = "^1.10.5"
 pylint-pydantic = "^0.1.6"
-
+survey-coverage = {git = "https://github.com/virajkaram/survey_coverage.git"}
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.0.0"

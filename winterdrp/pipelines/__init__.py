@@ -2,6 +2,9 @@ import logging
 
 from winterdrp.errors import ProcessorError
 from winterdrp.pipelines.base_pipeline import Pipeline
+from winterdrp.pipelines.reference_building.ir_refbuild_pipeline import (
+    IRRefBuildPipeline,
+)
 from winterdrp.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
 from winterdrp.pipelines.summer.summer_pipeline import SummerPipeline
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline

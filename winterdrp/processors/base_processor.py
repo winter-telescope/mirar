@@ -5,6 +5,7 @@ import datetime
 import getpass
 import hashlib
 import logging
+import shutil
 import socket
 import threading
 from abc import ABC
@@ -312,12 +313,25 @@ class ImageHandler:
         :param img_path: Path of parent image
         :return: Path of weight image
         """
-        data = image.get_data()
-        mask = (~np.isnan(data)).astype(float)
         weight_path = get_weight_path(img_path)
         header = image.get_header()
-        header[LATEST_WEIGHT_SAVE_KEY] = str(weight_path)
-        self.save_fits(Image(mask, header), weight_path)
+
+        weight_found = False
+        if LATEST_WEIGHT_SAVE_KEY in header.keys():
+            existing_weightpath = Path(image[LATEST_WEIGHT_SAVE_KEY])
+            logger.info(f"WGHTPATH {existing_weightpath}")
+            if existing_weightpath.exists():
+                logger.info(f"Found {existing_weightpath}")
+                shutil.copy(existing_weightpath, weight_path)
+                weight_found = True
+
+        if not weight_found:
+            data = image.get_data()
+            mask = (~np.isnan(data)).astype(float)
+
+            header[LATEST_WEIGHT_SAVE_KEY] = str(weight_path)
+            self.save_fits(Image(mask, header), weight_path)
+
         return weight_path
 
     @staticmethod
