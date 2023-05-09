@@ -331,6 +331,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         ukirt_query = UkidssClass()
 
         ra_cent, dec_cent = get_image_center_wcs_coords(image, origin=1)
+        print(f"Center RA calculated : {ra_cent} Dec: {dec_cent}")
+        print(f"With origin=0: {get_image_center_wcs_coords(image, origin=0)}")
         logger.debug(f"Center RA: {ra_cent} Dec: {dec_cent}")
         ukirt_surveys = find_ukirt_surveys(ra_cent, dec_cent, self.filter_name)
         if len(ukirt_surveys) == 0:
