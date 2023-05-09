@@ -89,7 +89,7 @@ class TestIRReferencePipeline(BaseTestCase):
         self.assertEqual(len(res[0]), 1)
 
         header = res[0][0].get_header()
-
+        print(header)
         for key, value in expected_header.items():
             if isinstance(value, float):
                 self.assertAlmostEqual(value, header[key], places=2)
