@@ -94,7 +94,7 @@ jobs:
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}
           KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
         run: |
-          TESTDATA_CHECK="True" poetry run coverage run -m unittest tests/test_wfau_references.py
+          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
 
       - name: Run Coveralls
         if: ${{ success() }}
