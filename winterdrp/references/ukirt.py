@@ -510,7 +510,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         logger.debug(magerr_zps)
         logger.debug(median_mag_zp)
         logger.debug(scaling_factors)
-
+        print(mag_zps)
+        print(magerr_zps)
         zpmask = np.abs(mag_zps - median_mag_zp) < 0.5
 
         ukirt_images = ukirt_images[zpmask]
@@ -528,12 +529,13 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             # x_imgpixsize=25 * 60 / 0.40,
             # y_imgpixsize=25 * 60 / 0.40,
         )
+        print(ra_cent, dec_cent)
         resampler.set_night(night_sub_dir=self.night_sub_dir)
         resampled_batch = resampler.apply(ukirt_image_batch)
 
         resampled_image = resampled_batch[0]
         ra_cent, dec_cent = get_image_center_wcs_coords(image=resampled_image, origin=1)
-
+        print(f"Resampled image center: {ra_cent}, {dec_cent}")
         resampled_image["RA_CENT"] = ra_cent
         resampled_image["DEC_CENT"] = dec_cent
 
