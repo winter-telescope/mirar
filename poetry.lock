@@ -5170,7 +5170,7 @@ pure-eval = "*"
 tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
-name = "survey_coverage"
+name = "survey-coverage"
 version = "0.0.0"
 description = ""
 category = "main"
@@ -5191,7 +5191,7 @@ pandas = "*"
 type = "git"
 url = "https://github.com/virajkaram/survey_coverage.git"
 reference = "HEAD"
-resolved_reference = "ac896380a3641b9a46f613d2a70f1701467b24f7"
+resolved_reference = "3adcb447d465a759f377f296ab4794fc9222f550"
 
 [[package]]
 name = "terminado"
