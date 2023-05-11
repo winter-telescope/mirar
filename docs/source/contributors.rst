@@ -1,4 +1,4 @@
-Contributers
+Contributors
 ============
 
 winterdrp was created by `Robert Stein <https://robertdstein.github.io/>`_ and
@@ -7,6 +7,8 @@ winterdrp was created by `Robert Stein <https://robertdstein.github.io/>`_ and
 Other people who contributed to the code include:
 
 * Sulekha Kishore
+* Saarah Hall
+* Benjamin Roulston
 
 We also made great use of existing software:
 
@@ -14,3 +16,4 @@ We also made great use of existing software:
 * `scamp <https://www.astromatic.net/software/scamp//>`_
 * `swarp <https://www.astromatic.net/software/swarp/>`_
 * `psfex <https://www.astromatic.net/software/psfex/>`_
+* `astrometry.net <https://nova.astrometry.net/>`_

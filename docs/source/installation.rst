@@ -80,7 +80,23 @@ Dependencies include:
 * `scamp <https://www.astromatic.net/software/scamp/>`_
 * `swarp <https://www.astromatic.net/software/swarp/>`_
 * `psfex <https://www.astromatic.net/software/psfex/>`_
+* `astrometry.net <https://nova.astrometry.net/>`_
 * `postgreSQL <https://www.postgresql.org/download/>`_
+
+To run astrometry solutions with Astrometry.net (the default for SEDMv2), you'll need to download Astrometry.net
+locally, as outlined `here <http://astrometry.net/use.html>`_. Once you have a local version, there should be an
+astrometry-net folder somewhere on your machine. If you used Homebrew, it should be here:
+
+.. code-block:: bash
+
+    /opt/homebrew/Cellar/astrometry-net/
+Then, make sure to also grab index files from
+`this directory <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_ and save them under
+
+.. code-block:: bash
+
+    .../astrometry-net/<version>/data
+
 
 PostgreSQL is relatively straightforward to install via the `official website <https://www.postgresql.org/download/>`_.
 The other packages might be more complicated, and will depend on your platform.
