@@ -6,7 +6,7 @@ import logging
 import pandas as pd
 
 from winterdrp.pipelines import get_pipeline
-from winterdrp.pipelines.reference_building.run import (
+from winterdrp.pipelines.winter.build_references import (
     run_winter_reference_build_pipeline,
     winter_fields_file,
 )
