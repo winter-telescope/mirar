@@ -220,9 +220,10 @@ class ImageBatch(DataBatch):
     A subclass of :class:`~winterdrp.data.base_data.DataBatch`,
     which contains :class:`~winterdrp.data.image_data.Image` objects
 
-    To batch, de-batch, and select objects within batches, see the
-    ImageBatcher, ImageDebatcher, and ImageSelector classes in
-    `~winterdrp.processors.utils.image_selector`.
+    To batch, de-batch, and select objects within batches, see
+    :class:`~winterdrp.processors.utils.image_selector.ImageBatcher`,
+    :class:`~winterdrp.processors.utils.image_selector.ImageDebatcher`, and
+    :class:`~winterdrp.processors.utils.image_selector.ImageSelector`.
     """
 
     data_type = Image
