@@ -387,6 +387,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         logger.debug(f"Surveys are {[x.survey_name for x in ukirt_surveys]}")
         ukirt_image_urls, ukirt_query_ras, ukirt_query_decs = [], [], []
 
+        needs_db_entry = False
         for survey in ukirt_surveys:
             ukirt_query.database = survey.wfau_dbname
             # url_list = ukirt_query.get_image_list(query_crds,
@@ -437,6 +438,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
         ukirt_images = []
         for url, ra, dec in zip(ukirt_image_urls, ukirt_query_ras, ukirt_query_decs):
+            needs_db_entry = "http" in url
             if "http" in url:
                 if self.check_local_database:
                     (
@@ -492,7 +494,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                     )
                     ukirt_db_batch = dbexporter.apply(ImageBatch([ukirt_image]))
                     ukirt_image = ukirt_db_batch[0]
-                    # ukirt_image[ret[0][0]] = ret[1][0]
+
                 self.save_fits(ukirt_image, savepath)
             else:
                 with fits.open(url, ignore_missing_simple=True) as ukirt_hdulist:
@@ -528,8 +530,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
         ukirt_images = ukirt_images[zpmask]
         scaling_factors = scaling_factors[zpmask]
-        for ind, image in enumerate(ukirt_images):
-            image["FLXSCALE"] = scaling_factors[ind]
+        for ind, image_to_resamp in enumerate(ukirt_images):
+            image_to_resamp["FLXSCALE"] = scaling_factors[ind]
 
         ukirt_image_batch = ImageBatch(list(ukirt_images))
         resampler = self.swarp_resampler(
@@ -590,9 +592,9 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             #     if key not in image.header:
             #         image.header[key] = 0
             stackid = (
-                f"{image.header['FIELDID'].ljust(5, '0')}"
-                f"{image.header['SUBDETID'].ljust(2, '0')}"
-                f"{winter_filters_map[image.header['FILTER']]}"
+                f"{str(image.header['FIELDID']).ljust(5, '0')}"
+                f"{str(image.header['SUBDETID']).ljust(2, '0')}"
+                f"{str(winter_filters_map[image.header['FILTER']])}"
             )
             reference_hdu.header["STACKID"] = int(stackid)
         reference_hdu.header["RA_CENT"] = ra_cent
