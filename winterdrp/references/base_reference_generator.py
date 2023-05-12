@@ -14,6 +14,7 @@ from winterdrp.io import save_hdu_as_fits
 from winterdrp.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
+    LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     PROC_HISTORY_KEY,
 )
@@ -100,6 +101,7 @@ class BaseReferenceGenerator:
 
         logger.info(f"Saving reference image to {output_path}")
         ref_hdu.header[BASE_NAME_KEY] = os.path.basename(output_path)
+        ref_hdu.header[LATEST_SAVE_KEY] = output_path.as_posix()
         ref_hdu.data[ref_hdu.data == 0] = np.nan  # pylint: disable=no-member
 
         if ref_weight_hdu is not None:
@@ -109,6 +111,8 @@ class BaseReferenceGenerator:
             )
             output_weight_path.unlink(missing_ok=True)
             ref_weight_hdu.header[BASE_NAME_KEY] = os.path.basename(output_weight_path)
+            ref_weight_hdu.header[LATEST_SAVE_KEY] = output_weight_path.as_posix()
+
             save_hdu_as_fits(ref_weight_hdu, output_weight_path)
             ref_hdu.header[LATEST_WEIGHT_SAVE_KEY] = output_weight_path.as_posix()
 
