@@ -8,10 +8,10 @@ from sqlalchemy.orm import DeclarativeBase
 
 from winterdrp.processors.sqldatabase.base_model import BaseTable
 
-db_name = "ref"
+db_name = "winter"
 
 
-class RefBase(DeclarativeBase, BaseTable):
+class WinterBase(DeclarativeBase, BaseTable):
     """
     Parent class for summer database
     """

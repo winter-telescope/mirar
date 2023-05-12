@@ -9,6 +9,7 @@ from winterdrp.data import Image
 from winterdrp.paths import get_output_dir
 from winterdrp.pipelines.base_pipeline import Pipeline
 from winterdrp.pipelines.reference_building.db_models import RefComponents, RefStacks
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 from winterdrp.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
@@ -16,45 +17,64 @@ from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.reference import GetReferenceImage
 from winterdrp.processors.utils import ImageDebatcher, ImageSaver
 from winterdrp.references.ukirt import UKIRTRef
+from winterdrp.references.local import RefFromPath
+from typing import Type
 
 logger = logging.getLogger(__name__)
 
 refbuild_dir = os.path.dirname(__file__)
 
-astromatic_config_dir = os.path.join(refbuild_dir, "config/")
+astromatic_config_dir = os.path.join(refbuild_dir, "../reference_building/config/")
 swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 
 
-def winter_reference_generator(image: Image):
+def winter_reference_generator(image: Image,
+                               db_table: Type[BaseDB] = RefStacks):
     """
     Generates a reference image for the winter data
     Args:
+        db_table: Database table to search for existing image
         image: Image
 
     Returns:
 
     """
-    filtername = image["FILTER"]
-    # TODO check if exists in DB
-    # TODO if in_ukirt and in_vista, different processing
     components_image_dir = get_output_dir(
         dir_root="components", sub_dir="ir_reference_building" "/references"
     )
     if not components_image_dir.exists():
         components_image_dir.mkdir(parents=True)
 
-    return UKIRTRef(
-        filter_name=filtername,
-        swarp_resampler=winter_reference_image_resampler,
-        sextractor_generator=ref_sextractor,
-        phot_calibrator_generator=winter_reference_phot_calibrator,
-        num_query_points=16,
-        components_table=RefComponents,
-        write_to_db=True,
-        write_db_table=RefStacks,
-        component_image_dir=components_image_dir.as_posix(),
-        night_sub_dir="ir_reference_building/references",
+    filtername = image["FILTER"]
+    # TODO if in_ukirt and in_vista, different processing
+    fieldid = int(image["FIELDID"])
+    subdetid = int(image["SUBDETID"])
+    logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
+    db_results = db_table.sql_model().select_query(
+        select_keys=["savepath"],
+        compare_keys=["fieldid", "subdetid"],
+        compare_values=[fieldid, subdetid],
+        comparators=["__eq__", "__eq__"],
     )
+
+    if len(db_results) > 0:
+        savepaths = [x[0] for x in db_results]
+        if os.path.exists(savepaths[0]):
+            logger.info(f"Found reference image in database: {savepaths[0]}")
+            return RefFromPath(path=savepaths[0], filter_name=filtername)
+
+    return UKIRTRef(
+            filter_name=filtername,
+            swarp_resampler=winter_reference_image_resampler,
+            sextractor_generator=ref_sextractor,
+            phot_calibrator_generator=winter_reference_phot_calibrator,
+            num_query_points=16,
+            components_table=RefComponents,
+            write_to_db=True,
+            write_db_table=RefStacks,
+            component_image_dir=components_image_dir.as_posix(),
+            night_sub_dir="ir_reference_building/references",
+        )
 
 
 def winter_reference_image_resampler(**kwargs) -> Swarp:
@@ -157,7 +177,7 @@ class IRRefBuildPipeline(Pipeline):
         GetReferenceImage(
             ref_image_generator=winter_reference_generator,
         ),
-        ImageSaver(output_dir_name="stacked_ref"),
+        ImageSaver(output_dir_name="stacked_ref")
     ]
 
     all_pipeline_configurations = {"default": refbuild}

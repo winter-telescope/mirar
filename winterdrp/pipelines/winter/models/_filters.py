@@ -7,10 +7,10 @@ from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.pipelines.winter.constants import winter_filters_map
+from winterdrp.pipelines.winter.models.base_model import WinterBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 
-winter_filters_map = {"Y": 1, "J": 2, "Hs": 3, "dark": 4}
 fid_field: int = Field(ge=0)
 
 

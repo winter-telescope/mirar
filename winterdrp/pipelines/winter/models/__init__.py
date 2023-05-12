@@ -23,6 +23,7 @@ from winterdrp.pipelines.winter.models._imgType import (
     populate_itid,
 )
 from winterdrp.pipelines.winter.models._nights import Nights, NightsTable
+from winterdrp.pipelines.winter.models._proc import Proc, ProcTable
 from winterdrp.pipelines.winter.models._programs import (
     ProgramCredentials,
     Programs,
@@ -30,8 +31,13 @@ from winterdrp.pipelines.winter.models._programs import (
     populate_programs,
 )
 from winterdrp.pipelines.winter.models._raw import Raw, RawTable
+from winterdrp.pipelines.winter.models._ref_components import (
+    RefComponents,
+    RefComponentsTable,
+)
+from winterdrp.pipelines.winter.models._ref_stacks import RefStacks, RefStacksTable
 from winterdrp.pipelines.winter.models._subdets import Subdets, SubdetsTable
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
+from winterdrp.pipelines.winter.models.base_model import WinterBase
 from winterdrp.processors.database.postgres import (
     ADMIN_PASSWORD,
     ADMIN_USER,
@@ -39,7 +45,7 @@ from winterdrp.processors.database.postgres import (
     DB_USER,
     PostgresAdmin,
 )
-from winterdrp.processors.sqldatabase.basemodel import BaseTable
+from winterdrp.processors.sqldatabase.base_model import BaseTable
 from winterdrp.utils.sql import get_engine
 
 

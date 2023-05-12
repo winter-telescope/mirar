@@ -11,8 +11,8 @@ from astropy.io import fits
 
 from winterdrp.data import Dataset, Image, ImageBatch
 from winterdrp.paths import BASE_NAME_KEY, core_fields
-from winterdrp.pipelines.reference_building.ir_refbuild_pipeline import (
-    IRRefBuildPipeline,
+from winterdrp.pipelines.winter.winter_pipeline import (
+    WINTERPipeline,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,7 @@ def dummy_split_image_batch_generator(
             image = Image(header=hdu.header, data=data)
 
             all_images.append(image)
+            del hdu
 
     image_batch = ImageBatch(all_images)
 
@@ -175,7 +176,7 @@ def run_winter_reference_build_pipeline(
         (winter_fields["Dec"] > -40) & (winter_fields["Dec"] < 60)
     ].reset_index(drop=True)
 
-    pipeline = IRRefBuildPipeline(night="references", selected_configurations="default")
+    pipeline = WINTERPipeline(night="references", selected_configurations="refbuild")
 
     res, errorstack = [], []
     for ind, _ in winter_northern_fields.iterrows():

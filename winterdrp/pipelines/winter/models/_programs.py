@@ -10,8 +10,8 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB, date_field
+from winterdrp.pipelines.winter.models.base_model import WinterBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB, date_field
 from winterdrp.utils.security import generate_key
 
 _LEN_PROG_KEY = 20
