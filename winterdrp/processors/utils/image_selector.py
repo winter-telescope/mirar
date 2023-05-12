@@ -178,11 +178,7 @@ class ImageDebatcher(BaseImageProcessor):
     Processor to group all incoming :class:`~winterdrp.data.image_data.ImageBatch`
     objects into a single batch.
     This is helpful if you've already batched at an earlier stage in your workflow, and
-    you want to start over and batch by a different split key. For example:
-        ImageBatcher(split_key=A)
-        ...
-        ImageDebatcher()
-        ImageBatcher(split_key=B)
+    you want to start over and batch by a different split key.
     """
 
     base_key = "debatch"
