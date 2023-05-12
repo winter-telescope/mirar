@@ -41,6 +41,7 @@ class RefStacks(BaseDB):
 
     sql_model: ClassVar = RefStacksTable
 
+    stackid: int = Field(ge=0)
     ra_cent: float = ra_field
     dec_cent: float = dec_field
     ra0_0: float = ra_field
