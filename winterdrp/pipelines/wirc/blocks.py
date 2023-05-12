@@ -47,7 +47,7 @@ from winterdrp.processors.photometry.psf_photometry import (
     CandidatePSFPhotometry,
     ImagePSFPhotometry,
 )
-from winterdrp.processors.reference import Reference
+from winterdrp.processors.reference import ProcessReference
 from winterdrp.processors.sky import NightSkyMedianCalibrator
 from winterdrp.processors.utils import ImageLoader, ImageSaver
 from winterdrp.processors.utils.image_selector import (
@@ -93,7 +93,7 @@ reduce = [
 ]
 
 reference = [
-    Reference(
+    ProcessReference(
         ref_image_generator=wirc_reference_image_generator,
         swarp_resampler=wirc_reference_image_resampler,
         sextractor=wirc_reference_sextractor,
