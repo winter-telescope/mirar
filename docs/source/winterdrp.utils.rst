@@ -41,10 +41,26 @@ winterdrp.utils.pipeline\_visualisation module
    :undoc-members:
    :show-inheritance:
 
+winterdrp.utils.security module
+-------------------------------
+
+.. automodule:: winterdrp.utils.security
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 winterdrp.utils.send\_email module
 ----------------------------------
 
 .. automodule:: winterdrp.utils.send_email
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+winterdrp.utils.sql module
+--------------------------
+
+.. automodule:: winterdrp.utils.sql
    :members:
    :undoc-members:
    :show-inheritance:
