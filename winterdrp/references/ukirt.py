@@ -23,10 +23,12 @@ from winterdrp.io import open_fits
 from winterdrp.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
+    LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     core_fields,
     get_output_path,
 )
+from winterdrp.pipelines.winter.models._filters import winter_filters_map
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
 from winterdrp.processors.base_processor import ImageHandler
@@ -36,6 +38,7 @@ from winterdrp.processors.candidates.utils import (
 )
 from winterdrp.processors.photcal import PhotCalibrator
 from winterdrp.processors.sqldatabase.base_model import BaseDB
+from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from winterdrp.references.base_reference_generator import BaseReferenceGenerator
 
 logger = logging.getLogger(__name__)
@@ -157,25 +160,37 @@ def combine_headers(primary_header, header_to_append):
 
 
 def make_image_from_hdulist(
-    ukirt_hdulist: [fits.hdu.image.PrimaryHDU, fits.hdu.image.ImageHDU], basename
+    ukirt_hdulist: [fits.hdu.image.PrimaryHDU, fits.hdu.image.ImageHDU],
+    url: str,
 ) -> Image:
     """
     Function to convert a ukirt image with two headers to a single header image
     Args:
         ukirt_hdulist:
-        basename:
-
+        url:
     Returns:
 
     """
     assert len(ukirt_hdulist) == 2
     # combined_header = ukirt_hdulist[1].header.copy()
 
+    (
+        ukirt_filename,
+        multiframeid,
+        extension_id,
+        lx,
+        hx,
+        ly,
+        hy,
+    ) = get_ukirt_file_identifiers_from_url(url)
+    basename = f"{multiframeid}_{extension_id}_{lx}_{hx}_{ly}_{hy}.fits"
+
     combined_header = combine_headers(
         primary_header=ukirt_hdulist[1].header,
         header_to_append=ukirt_hdulist[0].header,
     )
     combined_header["EXPTIME"] = combined_header["EXP_TIME"]
+
     combined_header[BASE_NAME_KEY] = basename
     combined_header[COADD_KEY] = 1
     for key in core_fields:
@@ -183,6 +198,33 @@ def make_image_from_hdulist(
             combined_header[key] = ""
     data = ukirt_hdulist[1].data
     image = Image(header=combined_header, data=data)
+
+    comp_ra_cent, comp_dec_cent = get_image_center_wcs_coords(image, origin=1)
+    (
+        (ra0_0, dec0_0),
+        (ra0_1, dec0_1),
+        (ra1_0, dec1_0),
+        (ra1_1, dec1_1),
+    ) = get_corners_ra_dec_from_header(image.header)
+    image.header["RA_CENT"] = comp_ra_cent
+    image.header["DEC_CENT"] = comp_dec_cent
+    image.header["RA0_0"] = ra0_0
+    image.header["DEC0_0"] = dec0_0
+    image.header["RA0_1"] = ra0_1
+    image.header["DEC0_1"] = dec0_1
+    image.header["RA1_0"] = ra1_0
+    image.header["DEC1_0"] = dec1_0
+    image.header["RA1_1"] = ra1_1
+    image.header["DEC1_1"] = dec1_1
+    image.header["MULTIFRAME_ID"] = multiframeid
+    image.header["EXTENSION_ID"] = extension_id
+    image.header["LX"] = lx
+    image.header["HX"] = hx
+    image.header["LY"] = ly
+    image.header["HY"] = hy
+
+    image.header["UKIRPATH"] = ukirt_filename
+
     return image
 
 
@@ -379,7 +421,10 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             ukirt_query_ras += ukirt_qra_list
             ukirt_query_decs += ukirt_qdec_list
 
-        logger.debug(f"UKIRT image url list {ukirt_image_urls}")
+        logger.debug(
+            f"UKIRT image url length {len(ukirt_image_urls)}. "
+            f"List {ukirt_image_urls}"
+        )
 
         if len(ukirt_image_urls) == 0:
             err = "No image found at the given coordinates in the UKIRT database"
@@ -426,67 +471,34 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                     show_progress=True,
                 )
                 ukirt_img_hdulist = obj.get_fits()
-                (
-                    ukirt_filename,
-                    multiframeid,
-                    extension_id,
-                    lx,
-                    hx,
-                    ly,
-                    hy,
-                ) = get_ukirt_file_identifiers_from_url(url)
+
                 # UKIRT ref images are stored as multiHDU files, need to combine the
                 # hdus so no info from the headers is lost.
                 ukirt_image = make_image_from_hdulist(
                     ukirt_img_hdulist,
-                    basename=f"{multiframeid}_{extension_id}_{lx}_{hx}_{ly}_{hy}.fits",
+                    url=url,
                 )
                 savepath = get_output_path(
                     ukirt_image[BASE_NAME_KEY], dir_root=self.component_image_dir
                 )
-
+                ukirt_image["QUERY_RA"] = ra
+                ukirt_image["QUERY_DEC"] = dec
+                ukirt_image[LATEST_SAVE_KEY] = savepath.as_posix()
                 if self.check_local_database:
-                    comp_ra_cent, comp_dec_cent = get_image_center_wcs_coords(
-                        ukirt_image, origin=1
+                    dbexporter = DatabaseImageExporter(
+                        db_table=self.components_table,
+                        duplicate_protocol=self.duplicate_protocol,
+                        q3c_bool=self.q3c_bool,
                     )
-                    (
-                        (ra0_0, dec0_0),
-                        (ra0_1, dec0_1),
-                        (ra1_0, dec1_0),
-                        (ra1_1, dec1_1),
-                    ) = get_corners_ra_dec_from_header(ukirt_image.header)
-
-                    new = self.components_table(
-                        query_ra=ra,
-                        query_dec=dec,
-                        savepath=savepath.as_posix(),
-                        ukirt_filename=ukirt_filename,
-                        multiframe_id=multiframeid,
-                        extension_id=extension_id,
-                        lx=lx,
-                        ly=ly,
-                        hx=hx,
-                        hy=hy,
-                        ra0_0=ra0_0,
-                        ra0_1=ra0_1,
-                        ra1_0=ra1_0,
-                        ra1_1=ra1_1,
-                        dec0_0=dec0_0,
-                        dec0_1=dec0_1,
-                        dec1_0=dec1_0,
-                        dec1_1=dec1_1,
-                        ra_cent=comp_ra_cent,
-                        dec_cent=comp_dec_cent,
-                    )
-                    ret = new.insert_entry()
-
-                    ukirt_image[ret[0][0]] = ret[1][0]
+                    ukirt_db_batch = dbexporter.apply(ImageBatch([ukirt_image]))
+                    ukirt_image = ukirt_db_batch[0]
+                    # ukirt_image[ret[0][0]] = ret[1][0]
                 self.save_fits(ukirt_image, savepath)
             else:
-                ukirt_hdulist = fits.open(url, ignore_missing_simple=True)
-                ukirt_image = Image(
-                    header=ukirt_hdulist[0].header, data=ukirt_hdulist[0].data
-                )
+                with fits.open(url, ignore_missing_simple=True) as ukirt_hdulist:
+                    ukirt_image = Image(
+                        header=ukirt_hdulist[0].header, data=ukirt_hdulist[0].data
+                    )
 
             ukirt_images.append(ukirt_image)
 
@@ -573,6 +585,16 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             (ra1_1, dec1_1),
         ) = get_corners_ra_dec_from_header(reference_hdu.header)
 
+        if self.write_to_db:
+            # for key in ["FIELDID", "SUBDETID"]:
+            #     if key not in image.header:
+            #         image.header[key] = 0
+            stackid = (
+                f"{image.header['FIELDID'].ljust(5, '0')}"
+                f"{image.header['SUBDETID'].ljust(2, '0')}"
+                f"{winter_filters_map[image.header['FILTER']]}"
+            )
+            reference_hdu.header["STACKID"] = int(stackid)
         reference_hdu.header["RA_CENT"] = ra_cent
         reference_hdu.header["DEC_CENT"] = dec_cent
         reference_hdu.header["RA0_0"] = ra0_0
