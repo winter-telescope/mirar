@@ -178,12 +178,15 @@ def make_image_from_hdulist(
         ukirt_filename,
         multiframeid,
         extension_id,
-        lx,
-        hx,
-        ly,
-        hy,
+        frame_lx,
+        frame_hx,
+        frame_ly,
+        frame_hy,
     ) = get_ukirt_file_identifiers_from_url(url)
-    basename = f"{multiframeid}_{extension_id}_{lx}_{hx}_{ly}_{hy}.fits"
+    basename = (
+        f"{multiframeid}_{extension_id}_{frame_lx}_"
+        f"{frame_hx}_{frame_ly}_{frame_hy}.fits"
+    )
 
     combined_header = combine_headers(
         primary_header=ukirt_hdulist[1].header,
@@ -218,10 +221,10 @@ def make_image_from_hdulist(
     image.header["DEC1_1"] = dec1_1
     image.header["MULTIFRAME_ID"] = multiframeid
     image.header["EXTENSION_ID"] = extension_id
-    image.header["LX"] = lx
-    image.header["HX"] = hx
-    image.header["LY"] = ly
-    image.header["HY"] = hy
+    image.header["LX"] = frame_lx
+    image.header["HX"] = frame_hx
+    image.header["LY"] = frame_ly
+    image.header["HY"] = frame_hy
 
     image.header["UKIRPATH"] = ukirt_filename
 
@@ -239,22 +242,22 @@ def get_ukirt_file_identifiers_from_url(url: str) -> list:
     ukirt_filename = url.split("?")[1].split("&")[0].split("=")[1]
     multiframeid = url.split("&")[1].split("=")[1]
     extension_id = url.split("&")[2].split("=")[1]
-    lx = url.split("&")[3].split("=")[1]
-    hx = url.split("&")[4].split("=")[1]
-    ly = url.split("&")[5].split("=")[1]
-    hy = url.split("&")[6].split("=")[1]
+    frame_lx = url.split("&")[3].split("=")[1]
+    frame_hx = url.split("&")[4].split("=")[1]
+    frame_ly = url.split("&")[5].split("=")[1]
+    frame_hy = url.split("&")[6].split("=")[1]
     return [
         ukirt_filename,
         int(multiframeid),
         int(extension_id),
-        int(lx),
-        int(hx),
-        int(ly),
-        int(hy),
+        int(frame_lx),
+        int(frame_hx),
+        int(frame_ly),
+        int(frame_hy),
     ]
 
 
-def check_query_exists_locally(query_ra, query_dec, db_table):
+def check_query_exists_locally(query_ra, query_dec, query_table, components_table):
     """
     Function to check if component images exist locally based on the query_ra
     and query_dec
@@ -266,22 +269,33 @@ def check_query_exists_locally(query_ra, query_dec, db_table):
     Returns:
 
     """
-    results = db_table.sql_model().select_query(
-        select_keys="savepath",
+    results = query_table.sql_model().select_query(
+        select_keys="compid",
         compare_values=[query_ra, query_dec],
         compare_keys=["query_ra", "query_dec"],
         comparators=["__eq__", "__eq__"],
     )
     logger.debug(results)
-    if len(results) == 0:
+    savepaths = []
+    # TODO - run a joint query to get the savepaths
+    if len(results) > 0:
         savepaths = []
-    else:
-        savepaths = [x[0] for x in results]
+        compids = [x[0] for x in results]
+        for compid in compids:
+            comp_results = components_table.sql_model().select_query(
+                select_keys="savepath",
+                compare_values=[compid],
+                compare_keys=["compid"],
+                comparators=["__eq__"],
+            )
+            if len(comp_results) == 0:
+                raise ValueError(f"Component {compid} not found in database")
+            savepaths.append(comp_results[0][0])
     return savepaths
 
 
 def check_multiframe_exists_locally(
-    db_table, multiframe_id, extension_id, lx, hx, ly, hy
+    db_table, multiframe_id, extension_id, frame_lx, frame_hx, frame_ly, frame_hy
 ):
     """
     Function to query database to check if a multiframe exists locally
@@ -289,17 +303,24 @@ def check_multiframe_exists_locally(
         db_table:
         multiframe_id:
         extension_id:
-        lx:
-        hx:
-        ly:
-        hy:
+        frame_lx:
+        frame_hx:
+        frame_ly:
+        frame_hy:
 
     Returns:
 
     """
     results = db_table.sql_model().select_query(
         select_keys=["savepath"],
-        compare_values=[multiframe_id, extension_id, lx, hx, ly, hy],
+        compare_values=[
+            multiframe_id,
+            extension_id,
+            frame_lx,
+            frame_hx,
+            frame_ly,
+            frame_hy,
+        ],
         compare_keys=["multiframe_id", "extension_id", "lx", "hx", "ly", "hy"],
         comparators=["__eq__", "__eq__", "__eq__", "__eq__", "__eq__", "__eq__"],
     )
@@ -328,6 +349,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         phot_calibrator_generator: Callable[..., PhotCalibrator] = None,
         check_local_database: bool = True,
         write_to_db: bool = True,
+        query_table: Type[BaseDB] = None,
         components_table: Type[BaseDB] = None,
         write_db_table: Type[BaseDB] = None,
         component_image_dir: str = None,
@@ -350,6 +372,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
         self.check_local_database = check_local_database
         self.components_table = components_table
+        self.query_table = query_table
         if np.logical_and(self.check_local_database, self.components_table is None):
             err = (
                 "You have requested checking locally, but no database "
@@ -385,9 +408,13 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         lim_mags = [x.lim_mag for x in ukirt_surveys]
         ukirt_surveys = ukirt_surveys[np.argsort(lim_mags)[::-1]]
         logger.debug(f"Surveys are {[x.survey_name for x in ukirt_surveys]}")
-        ukirt_image_urls, ukirt_query_ras, ukirt_query_decs = [], [], []
+        (
+            ukirt_image_urls,
+            ukirt_query_ras,
+            ukirt_query_decs,
+            ukirt_query_exists_locally_list,
+        ) = ([], [], [], [])
 
-        needs_db_entry = False
         for survey in ukirt_surveys:
             ukirt_query.database = survey.wfau_dbname
             # url_list = ukirt_query.get_image_list(query_crds,
@@ -396,16 +423,24 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             #                                       )
             # This seems to pull multiextension images, which we don't really want.
             # url_list = ukirt_query.get_image_list(center_crds, radius=search_radius)
-            url_list, ukirt_qra_list, ukirt_qdec_list = [], [], []
+            url_list, ukirt_qra_list, ukirt_qdec_list, query_exists_list = (
+                [],
+                [],
+                [],
+                [],
+            )
             for crd in query_crds:
                 # Need to add a cache and check there.
-                url = []
+                url, query_exists = [], False
                 if self.check_local_database:
                     url = check_query_exists_locally(
                         query_ra=crd.ra.deg,
                         query_dec=crd.dec.deg,
-                        db_table=self.components_table,
+                        query_table=self.query_table,
+                        components_table=self.components_table,
                     )
+                    logger.debug(f"Found {len(url)} images locally.")
+                    query_exists = len(url) > 0
 
                 if len(url) == 0:
                     url = ukirt_query.get_image_list(
@@ -413,14 +448,18 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                         image_width=ukirt_image_width,
                         image_height=ukirt_image_height,
                     )
+
+                qexists_list = [query_exists] * len(url)
                 ra_list, dec_list = [crd.ra.deg] * len(url), [crd.dec.deg] * len(url)
                 url_list += url
                 ukirt_qra_list += ra_list
                 ukirt_qdec_list += dec_list
+                query_exists_list += qexists_list
 
             ukirt_image_urls += url_list
             ukirt_query_ras += ukirt_qra_list
             ukirt_query_decs += ukirt_qdec_list
+            ukirt_query_exists_locally_list += query_exists_list
 
         logger.debug(
             f"UKIRT image url length {len(ukirt_image_urls)}. "
@@ -437,27 +476,31 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             ukirt_image_urls = [ukirt_image_urls[0]]
 
         ukirt_images = []
-        for url, ra, dec in zip(ukirt_image_urls, ukirt_query_ras, ukirt_query_decs):
-            needs_db_entry = "http" in url
+        for url, ra, dec, qexists in zip(
+            ukirt_image_urls,
+            ukirt_query_ras,
+            ukirt_query_decs,
+            ukirt_query_exists_locally_list,
+        ):
             if "http" in url:
                 if self.check_local_database:
                     (
-                        ukirt_filename,
+                        _,
                         multiframe_id,
                         extension_id,
-                        lx,
-                        hx,
-                        ly,
-                        hy,
+                        frame_lx,
+                        frame_hx,
+                        frame_ly,
+                        frame_hy,
                     ) = get_ukirt_file_identifiers_from_url(url)
                     imgpath = check_multiframe_exists_locally(
                         db_table=self.components_table,
                         multiframe_id=multiframe_id,
                         extension_id=extension_id,
-                        lx=lx,
-                        hx=hx,
-                        ly=ly,
-                        hy=hy,
+                        frame_lx=frame_lx,
+                        frame_hx=frame_hx,
+                        frame_ly=frame_ly,
+                        frame_hy=frame_hy,
                     )
                     if len(imgpath) > 0:
                         url = imgpath[0]
@@ -497,10 +540,17 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
                 self.save_fits(ukirt_image, savepath)
             else:
+                logger.debug(f"Reading image from {url}")
                 with fits.open(url, ignore_missing_simple=True) as ukirt_hdulist:
                     ukirt_image = Image(
                         header=ukirt_hdulist[0].header, data=ukirt_hdulist[0].data
                     )
+
+            if self.check_local_database & ~qexists:
+                new = self.query_table(
+                    query_ra=ra, query_dec=dec, compid=ukirt_image["COMPID"]
+                )
+                new.insert_entry()
 
             ukirt_images.append(ukirt_image)
 
@@ -580,6 +630,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         reference_weight_hdu.data = reference_weight_data
 
         ra_cent, dec_cent = get_image_center_wcs_coords(image=photcaled_image, origin=1)
+
         (
             (ra0_0, dec0_0),
             (ra0_1, dec0_1),
