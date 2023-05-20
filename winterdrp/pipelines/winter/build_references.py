@@ -1,6 +1,7 @@
 """
 Module to run the IR reference building pipeline on WINTER images
 """
+import argparse
 import logging
 import sys
 from pathlib import Path
@@ -10,10 +11,10 @@ import pandas as pd
 from astropy.io import fits
 
 from winterdrp.data import Dataset, Image, ImageBatch
-from winterdrp.paths import BASE_NAME_KEY, core_fields
-from winterdrp.pipelines.winter.winter_pipeline import (
-    WINTERPipeline,
-)
+from winterdrp.data.utils import plot_fits_image
+from winterdrp.paths import BASE_NAME_KEY, core_fields, get_output_dir
+from winterdrp.pipelines.winter.winter_pipeline import WINTERPipeline
+from winterdrp.processors.candidates.utils import get_corners_ra_dec_from_header
 
 logger = logging.getLogger(__name__)
 winter_fields_file_dir = Path(__file__).parent.joinpath("files")
@@ -194,12 +195,32 @@ def run_winter_reference_build_pipeline(
             full_dec_size_deg=full_dec_size_deg,
         )
 
+        subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
         dataset = Dataset([ImageBatch(x) for x in split_image_batch])
 
         res, errorstack = pipeline.reduce_images(
             dataset=dataset,
             catch_all_errors=True,
         )
+
+        if len(errorstack.failed_images) < len(split_image_batch):
+            plots_dir = get_output_dir(
+                dir_root="plots",
+                sub_dir="winter/references",
+            )
+            if not plots_dir.exists():
+                plots_dir.mkdir(parents=True)
+
+            for res_image in res[0]:
+                subdet_id = np.where(subdetids == int(res_image.header["SUBDETID"]))[0][
+                    0
+                ]
+                split_image = split_image_batch[subdet_id]
+                corner_wcs_coords = get_corners_ra_dec_from_header(split_image.header)
+                logger.debug(corner_wcs_coords)
+                plot_fits_image(
+                    res_image, savedir=plots_dir, regions_wcs_coords=corner_wcs_coords
+                )
 
     return res, errorstack
 
@@ -215,5 +236,14 @@ if __name__ == "__main__":
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-fieldid", type=int, default=None)
+    args = parser.parse_args()
+
+    if args.fieldid is not None:
+        winter_fields = winter_fields[winter_fields["ID"] == args.fieldid].reset_index(
+            drop=True
+        )
 
     run_winter_reference_build_pipeline(winter_fields)
