@@ -1,3 +1,6 @@
+"""
+Module with generators for WINTER pipeline
+"""
 import logging
 import os
 from typing import Type
@@ -5,7 +8,7 @@ from typing import Type
 from winterdrp.catalog import Gaia2Mass
 from winterdrp.data import Image
 from winterdrp.paths import get_output_dir
-from winterdrp.pipelines.winter.models import RefComponents, RefStacks
+from winterdrp.pipelines.winter.models import RefComponents, RefQueries, RefStacks
 from winterdrp.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from winterdrp.processors.astromatic.sextractor.sextractor import Sextractor
 from winterdrp.processors.astromatic.swarp.swarp import Swarp
@@ -59,7 +62,8 @@ def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks)
         swarp_resampler=winter_reference_image_resampler,
         sextractor_generator=ref_sextractor,
         phot_calibrator_generator=winter_reference_phot_calibrator,
-        num_query_points=16,
+        num_query_points=9,
+        query_table=RefQueries,
         components_table=RefComponents,
         write_to_db=True,
         write_db_table=RefStacks,
