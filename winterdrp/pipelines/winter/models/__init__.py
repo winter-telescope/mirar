@@ -35,6 +35,7 @@ from winterdrp.pipelines.winter.models._ref_components import (
     RefComponents,
     RefComponentsTable,
 )
+from winterdrp.pipelines.winter.models._ref_queries import RefQueries, RefQueriesTable
 from winterdrp.pipelines.winter.models._ref_stacks import RefStacks, RefStacksTable
 from winterdrp.pipelines.winter.models._subdets import Subdets, SubdetsTable
 from winterdrp.pipelines.winter.models.base_model import WinterBase

@@ -5,6 +5,7 @@ from typing import ClassVar
 
 from pydantic import Field
 from sqlalchemy import VARCHAR, Column, Double, Float, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from winterdrp.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
 from winterdrp.processors.sqldatabase.base_model import BaseDB
@@ -18,6 +19,7 @@ class RefComponentsTable(WinterBase):
     __tablename__ = "refcomponents"
 
     compid = Column(Integer, primary_key=True)
+    queries: Mapped["RefQueriesTable"] = relationship(back_populates="components")
     query_ra = Column(Float)
     query_dec = Column(Float)
 
