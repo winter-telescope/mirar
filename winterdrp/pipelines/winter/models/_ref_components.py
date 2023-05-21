@@ -4,18 +4,14 @@ Module to make reference components table
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import VARCHAR, Column, Float, Integer
-from sqlalchemy.orm import relationship
+from sqlalchemy import VARCHAR, Column, Double, Float, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from winterdrp.pipelines.reference_building.db_models.basemodel import (
-    RefBase,
-    dec_field,
-    ra_field,
-)
+from winterdrp.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
 from winterdrp.processors.sqldatabase.base_model import BaseDB
 
 
-class RefComponentsTable(RefBase):
+class RefComponentsTable(WinterBase):
     """
     Table for individual reference images
     """
@@ -23,10 +19,11 @@ class RefComponentsTable(RefBase):
     __tablename__ = "refcomponents"
 
     compid = Column(Integer, primary_key=True)
+    queries: Mapped["RefQueriesTable"] = relationship(back_populates="components")
     query_ra = Column(Float)
     query_dec = Column(Float)
 
-    multiframe_id = Column(Integer)
+    multiframe_id = Column(Double)
     extension_id = Column(Integer)
     lx = Column(Integer)
     ly = Column(Integer)
@@ -43,7 +40,8 @@ class RefComponentsTable(RefBase):
     ra_cent = Column(Float)
     dec_cent = Column(Float)
     savepath = Column(VARCHAR(255))
-    ukirt_filename = Column(VARCHAR(255))
+    ukirpath = Column(VARCHAR(255))
+    filter = Column(VARCHAR(10))
 
 
 class RefComponents(BaseDB):
@@ -72,7 +70,8 @@ class RefComponents(BaseDB):
     dec1_1: float = dec_field
     ra_cent: float = ra_field
     dec_cent: float = dec_field
-    ukirt_filename: str = Field(min_length=1)
+    ukirpath: str = Field(min_length=1)
+    filter: str = Field(min_length=1)
 
     def exists(self) -> bool:
         """

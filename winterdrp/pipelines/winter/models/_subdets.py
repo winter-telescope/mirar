@@ -7,8 +7,8 @@ from pydantic import Field
 from sqlalchemy import Column, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB, _exists
+from winterdrp.pipelines.winter.models.base_model import WinterBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB, _exists
 from winterdrp.utils.sql import get_engine
 
 DEFAULT_FIELD = 999999999

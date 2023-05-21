@@ -4,25 +4,20 @@ Module to make reference stacks table
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import VARCHAR, Column, Float, Integer
-from sqlalchemy.orm import relationship
+from sqlalchemy import VARCHAR, Column, Double, Float, Integer
 
-from winterdrp.pipelines.reference_building.db_models.basemodel import (
-    RefBase,
-    dec_field,
-    ra_field,
-)
+from winterdrp.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
 from winterdrp.processors.sqldatabase.base_model import BaseDB
 
 
-class RefStacksTable(RefBase):
+class RefStacksTable(WinterBase):
     """
     Table to store Reference Stacks
     """
 
     __tablename__ = "refstacks"
 
-    stackid = Column(Integer, primary_key=True)
+    stackid = Column(Double, primary_key=True, autoincrement=False)
     ra_cent = Column(Float)
     dec_cent = Column(Float)
     ra0_0 = Column(Float)
@@ -35,7 +30,7 @@ class RefStacksTable(RefBase):
     dec1_1 = Column(Float)
     fieldid = Column(Integer, nullable=True, default=None)
     subdetid = Column(Integer, nullable=True, default=None)
-
+    filter = Column(VARCHAR(10))
     savepath = Column(VARCHAR(255))
 
 
@@ -46,6 +41,7 @@ class RefStacks(BaseDB):
 
     sql_model: ClassVar = RefStacksTable
 
+    stackid: int = Field(ge=0)
     ra_cent: float = ra_field
     dec_cent: float = dec_field
     ra0_0: float = ra_field
@@ -56,6 +52,7 @@ class RefStacks(BaseDB):
     dec1_0: float = dec_field
     ra1_1: float = ra_field
     dec1_1: float = dec_field
+    filter: str = Field(min_length=1)
 
     fieldid: int = Field(ge=0, default=None, nullable=True)
     subdetid: int = Field(ge=0, default=None, nullable=True)

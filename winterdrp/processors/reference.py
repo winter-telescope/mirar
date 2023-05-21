@@ -24,7 +24,7 @@ from winterdrp.references.base_reference_generator import BaseReferenceGenerator
 logger = logging.getLogger(__name__)
 
 
-class Reference(BaseImageProcessor):
+class ProcessReference(BaseImageProcessor):
     base_key = "REFPREP"
 
     def __init__(

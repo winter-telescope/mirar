@@ -11,8 +11,8 @@ from sqlalchemy import REAL, Column, Insert, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
-from winterdrp.processors.sqldatabase.basemodel import (
+from winterdrp.pipelines.winter.models.base_model import WinterBase
+from winterdrp.processors.sqldatabase.base_model import (
     BaseDB,
     _exists,
     dec_field,

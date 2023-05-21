@@ -1,6 +1,7 @@
 """
 Module to run the IR reference building pipeline on WINTER images
 """
+import argparse
 import logging
 import sys
 from pathlib import Path
@@ -10,10 +11,10 @@ import pandas as pd
 from astropy.io import fits
 
 from winterdrp.data import Dataset, Image, ImageBatch
-from winterdrp.paths import BASE_NAME_KEY, core_fields
-from winterdrp.pipelines.reference_building.ir_refbuild_pipeline import (
-    IRRefBuildPipeline,
-)
+from winterdrp.data.utils import plot_fits_image
+from winterdrp.paths import BASE_NAME_KEY, core_fields, get_output_dir
+from winterdrp.pipelines.winter.winter_pipeline import WINTERPipeline
+from winterdrp.processors.candidates.utils import get_corners_ra_dec_from_header
 
 logger = logging.getLogger(__name__)
 winter_fields_file_dir = Path(__file__).parent.joinpath("files")
@@ -22,7 +23,13 @@ winter_subfields_file = winter_fields_file_dir.joinpath("WINTER_subfields.txt")
 
 
 def dummy_split_image_batch_generator(
-    cent_ra, cent_dec, fieldid, nx=3, ny=4, full_ra_size_deg=1, full_dec_size_deg=1.2
+    cent_ra: float,
+    cent_dec: float,
+    fieldid: int,
+    nx: int = 3,
+    ny: int = 4,
+    full_ra_size_deg: float = 1.0,
+    full_dec_size_deg: float = 1.2,
 ) -> ImageBatch:
     """
     Make a dummy image batch by splitting an image with the specified dimensions
@@ -79,6 +86,7 @@ def dummy_split_image_batch_generator(
             image = Image(header=hdu.header, data=data)
 
             all_images.append(image)
+            del hdu
 
     image_batch = ImageBatch(all_images)
 
@@ -152,18 +160,19 @@ def run_winter_reference_build_pipeline(
     winter_fields: pd.DataFrame,
     nx: int = 3,
     ny: int = 4,
-    full_ra_size_deg=1,
-    full_dec_size_deg=1.2,
+    full_ra_size_deg: float = 1.0,
+    full_dec_size_deg: float = 1.2,
+    only_this_subdet_id: int = None,
 ):
     """
     Run the reference build pipeline on the winter fields
     Args:
-        winter_fields:
-        nx:
-        ny:
-        full_ra_size_deg:
-        full_dec_size_deg:
-
+        winter_fields: Winter fields dataframe
+        nx: Number of sub-fields in the x direction
+        ny: Number of sub-fields in the y direction
+        full_ra_size_deg: Full right ascension size of the field in degrees
+        full_dec_size_deg: Full declination size of the field in degrees
+        only_this_subdet_id: Run only for this subdetid (for debugging)
     Returns:
 
     """
@@ -175,7 +184,7 @@ def run_winter_reference_build_pipeline(
         (winter_fields["Dec"] > -40) & (winter_fields["Dec"] < 60)
     ].reset_index(drop=True)
 
-    pipeline = IRRefBuildPipeline(night="references", selected_configurations="default")
+    pipeline = WINTERPipeline(night="references", selected_configurations="refbuild")
 
     res, errorstack = [], []
     for ind, _ in winter_northern_fields.iterrows():
@@ -184,14 +193,21 @@ def run_winter_reference_build_pipeline(
             winter_northern_fields.loc[ind]["Dec"],
         )
         split_image_batch = dummy_split_image_batch_generator(
-            cent_ra=cent_ra,
-            cent_dec=cent_dec,
-            fieldid=winter_northern_fields.loc[ind]["ID"],
+            cent_ra=float(cent_ra),
+            cent_dec=float(cent_dec),
+            fieldid=int(winter_northern_fields.loc[ind]["ID"]),
             nx=nx,
             ny=ny,
             full_ra_size_deg=full_ra_size_deg,
             full_dec_size_deg=full_dec_size_deg,
         )
+
+        subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
+        if only_this_subdet_id is not None:
+            split_image_batch = [
+                split_image_batch[np.where(subdetids == only_this_subdet_id)[0][0]]
+            ]
+        subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
 
         dataset = Dataset([ImageBatch(x) for x in split_image_batch])
 
@@ -199,6 +215,25 @@ def run_winter_reference_build_pipeline(
             dataset=dataset,
             catch_all_errors=True,
         )
+
+        if len(errorstack.failed_images) < len(split_image_batch):
+            plots_dir = get_output_dir(
+                dir_root="plots",
+                sub_dir="winter/references",
+            )
+            if not plots_dir.exists():
+                plots_dir.mkdir(parents=True)
+
+            for res_image in res[0]:
+                subdet_id = np.where(subdetids == int(res_image.header["SUBDETID"]))[0][
+                    0
+                ]
+                split_image = split_image_batch[subdet_id]
+                corner_wcs_coords = get_corners_ra_dec_from_header(split_image.header)
+                logger.debug(corner_wcs_coords)
+                plot_fits_image(
+                    res_image, savedir=plots_dir, regions_wcs_coords=corner_wcs_coords
+                )
 
     return res, errorstack
 
@@ -215,4 +250,16 @@ if __name__ == "__main__":
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 
-    run_winter_reference_build_pipeline(winter_fields)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-fieldid", type=int, default=None)
+    parser.add_argument("-subdetid", type=int, default=None)
+    args = parser.parse_args()
+
+    if args.fieldid is not None:
+        winter_fields = winter_fields[winter_fields["ID"] == args.fieldid].reset_index(
+            drop=True
+        )
+
+    run_winter_reference_build_pipeline(
+        winter_fields, only_this_subdet_id=args.subdetid
+    )

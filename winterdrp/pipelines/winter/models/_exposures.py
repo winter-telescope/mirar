@@ -22,8 +22,8 @@ from winterdrp.pipelines.winter.models._filters import FiltersTable, fid_field
 from winterdrp.pipelines.winter.models._imgType import ImgTypesTable
 from winterdrp.pipelines.winter.models._nights import Nights, NightsTable
 from winterdrp.pipelines.winter.models._programs import ProgramsTable, default_program
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
-from winterdrp.processors.sqldatabase.basemodel import (
+from winterdrp.pipelines.winter.models.base_model import WinterBase
+from winterdrp.processors.sqldatabase.base_model import (
     BaseDB,
     alt_field,
     az_field,
@@ -45,6 +45,7 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     uexpid = Column(
         Integer,
         Sequence(name="exposures_uexpid_seq", start=1, increment=1),
+        unique=True,
         autoincrement=True,
     )
     expid = Column(Double, primary_key=True, unique=True, autoincrement=False)
@@ -62,7 +63,7 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     itid: Mapped[int] = mapped_column(ForeignKey("imgTypes.itid"))
     img_type: Mapped["ImgTypesTable"] = relationship(back_populates="exposures")
 
-    puID: Mapped[int] = mapped_column(ForeignKey("programs.puid"))
+    puid: Mapped[int] = mapped_column(ForeignKey("programs.puid"))
     program_uid: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
 
     timeutc = Column(DateTime(timezone=True))
