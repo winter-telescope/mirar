@@ -9,8 +9,8 @@ from sqlalchemy import VARCHAR, Column, Double, ForeignKey, Integer, Sequence  #
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from winterdrp.pipelines.winter.models._exposures import Exposures
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB
+from winterdrp.pipelines.winter.models.base_model import WinterBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB
 
 
 class RawTable(WinterBase):  # pylint: disable=too-few-public-methods
@@ -46,12 +46,6 @@ class Raw(BaseDB):
 
     sql_model: ClassVar = RawTable
 
-    urawid = Column(
-        Integer,
-        Sequence(start=1, name="raw_urawid_seq"),
-        autoincrement=True,
-        unique=True,
-    )
     rawid: int = Field(ge=0)
     uexpid: int = Field(ge=0)
     qid: int = Field(ge=0)

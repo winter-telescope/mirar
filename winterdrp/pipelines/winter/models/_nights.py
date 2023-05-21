@@ -7,8 +7,8 @@ from typing import ClassVar
 from sqlalchemy import DATE, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB, date_field
+from winterdrp.pipelines.winter.models.base_model import WinterBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB, date_field
 
 
 class NightsTable(WinterBase):  # pylint: disable=too-few-public-methods

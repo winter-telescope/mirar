@@ -17,7 +17,7 @@ from winterdrp.pipelines.wirc.generator import (
 )
 from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
-from winterdrp.processors.reference import Reference
+from winterdrp.processors.reference import ProcessReference
 from winterdrp.processors.utils.image_loader import ImageLoader
 from winterdrp.processors.utils.image_saver import ImageSaver
 from winterdrp.references import WIRCRef
@@ -71,7 +71,7 @@ test_imsub_configuration = (
             input_sub_dir="stack",
             load_image=load_raw_wirc_image,
         ),
-        Reference(
+        ProcessReference(
             ref_image_generator=reference_image_test_generator,
             swarp_resampler=wirc_reference_image_resampler,
             sextractor=wirc_reference_sextractor,

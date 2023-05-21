@@ -14,11 +14,11 @@ from sqlalchemy import (  # event,
     Integer,
     Sequence,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, relationship
 
 from winterdrp.pipelines.winter.models._raw import Raw
-from winterdrp.pipelines.winter.models.basemodel import WinterBase
-from winterdrp.processors.sqldatabase.basemodel import BaseDB, dec_field, ra_field
+from winterdrp.pipelines.winter.models.base_model import WinterBase
+from winterdrp.processors.sqldatabase.base_model import BaseDB, dec_field, ra_field
 
 
 class ProcTable(WinterBase):  # pylint: disable=too-few-public-methods
