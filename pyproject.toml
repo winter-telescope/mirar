@@ -48,7 +48,7 @@ pylint-pydantic = "^0.1.6"
 survey-coverage = {git = "https://github.com/virajkaram/survey_coverage.git"}
 
 [tool.poetry.group.docs.dependencies]
-sphinx = "^7.0.0"
+sphinx = "^7.0.1"
 
 [tool.coverage.run]
 source = ["winterdrp"]
