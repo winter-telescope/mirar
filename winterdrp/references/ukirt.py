@@ -643,8 +643,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             #     if key not in image.header:
             #         image.header[key] = 0
             stackid = (
-                f"{str(image.header['FIELDID']).ljust(5, '0')}"
-                f"{str(image.header['SUBDETID']).ljust(2, '0')}"
+                f"{str(image.header['FIELDID']).rjust(5, '0')}"
+                f"{str(image.header['SUBDETID']).rjust(2, '0')}"
                 f"{str(winter_filters_map[image.header['FILTER']])}"
             )
             reference_hdu.header["STACKID"] = int(stackid)
