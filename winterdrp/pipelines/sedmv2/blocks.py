@@ -36,7 +36,7 @@ from winterdrp.processors.photometry.psf_photometry import (
     CandidatePSFPhotometry,
     ImagePSFPhotometry,
 )
-from winterdrp.processors.reference import Reference
+from winterdrp.processors.reference import ProcessReference
 from winterdrp.processors.utils import (
     ImageBatcher,
     ImageLoader,
@@ -185,7 +185,7 @@ process_transient = parse_transient + reduce + resample_transient + calibrate
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", "SCIENCE")),
-    Reference(
+    ProcessReference(
         ref_image_generator=sedmv2_reference_image_generator,
         ref_psfex=sedmv2_reference_psfex,
         sextractor=sedmv2_reference_sextractor,

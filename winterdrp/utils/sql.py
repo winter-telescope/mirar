@@ -48,5 +48,9 @@ def create_q3c_extension(
     )
 
     if conn is None:
-        conn = get_engine().connect()
-    conn.execute(trig_ddl)
+        with get_engine().connect() as conn:
+            conn.execute(trig_ddl)
+            conn.commit()
+    else:
+        conn.execute(trig_ddl)
+        conn.commit()

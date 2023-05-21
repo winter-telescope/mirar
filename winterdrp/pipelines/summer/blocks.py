@@ -50,7 +50,7 @@ from winterdrp.processors.photometry.aperture_photometry import (
     CandidateAperturePhotometry,
 )
 from winterdrp.processors.photometry.psf_photometry import CandidatePSFPhotometry
-from winterdrp.processors.reference import Reference
+from winterdrp.processors.reference import ProcessReference
 from winterdrp.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from winterdrp.processors.utils import (
     ImageBatcher,
@@ -215,7 +215,7 @@ process_raw = [
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", "SCIENCE")),
-    Reference(
+    ProcessReference(
         ref_image_generator=summer_reference_image_generator,
         ref_psfex=summer_reference_psfex,
         sextractor=summer_reference_sextractor,
