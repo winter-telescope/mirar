@@ -398,8 +398,6 @@ class Swarp(BaseImageProcessor):
             x_imgpixsize_to_use = None
             y_imgpixsize_to_use = None
 
-        logger.debug(f"{self.center_ra}, {center_ra_to_use}")
-
         output_image_weight_path = output_image_path.with_suffix(".weight.fits")
 
         run_swarp(
@@ -449,7 +447,10 @@ class Swarp(BaseImageProcessor):
         # Add missing keywords that are common in all input images to the
         # header of resampled image, and save again
         # Omit any astrometric keywords
+        logger.debug([x for x in batch[0].keys()])
         for key in batch[0].keys():
+            if np.any([key not in x.keys() for x in batch]):
+                continue
             if np.logical_and(
                 np.sum([x[key] == batch[0][key] for x in batch]) == len(batch),
                 key.strip() not in all_astrometric_keywords,
