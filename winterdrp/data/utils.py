@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import List, Tuple
 
+import matplotlib
 import matplotlib.pyplot as plt
 from astropy.stats import sigma_clipped_stats
 from astropy.wcs import WCS
@@ -12,6 +13,7 @@ from astropy.wcs import WCS
 from winterdrp.data.image_data import Image
 from winterdrp.paths import BASE_NAME_KEY
 
+matplotlib.use("Agg")
 logger = logging.getLogger(__name__)
 
 
