@@ -447,7 +447,7 @@ class Swarp(BaseImageProcessor):
         # Add missing keywords that are common in all input images to the
         # header of resampled image, and save again
         # Omit any astrometric keywords
-        logger.debug([x for x in batch[0].keys()])
+
         for key in batch[0].keys():
             if np.any([key not in x.keys() for x in batch]):
                 continue
@@ -456,7 +456,6 @@ class Swarp(BaseImageProcessor):
                 key.strip() not in all_astrometric_keywords,
             ):
                 if key not in new_image.keys():
-                    logger.debug(key)
                     new_image[key] = batch[0][key]
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
 
