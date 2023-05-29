@@ -43,7 +43,7 @@ types-toml = "^0.10.8.6"
 pandas-stubs = "^2.0.1.230501"
 autopep8 = "^2.0.2"
 sqlalchemy = "^2.0.15"
-pydantic = "^1.10.5"
+pydantic = "^1.10.8"
 pylint-pydantic = "^0.1.6"
 survey-coverage = {git = "https://github.com/virajkaram/survey_coverage.git"}
 
