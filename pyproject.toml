@@ -22,7 +22,7 @@ matplotlib = "^3.7.1"
 mocpy = "^0.12.0"
 lacosmic = "^1.0.0"
 numpy = "~1.24.3"
-pandas = "^2.0.1"
+pandas = "^2.0.2"
 penquins = "^2.2.0"
 photutils = "^1.8.0"
 psycopg = {extras = ["binary"], version = "^3.1.9"}
