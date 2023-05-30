@@ -4,7 +4,7 @@ Module to make reference components table
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import Column, Float, ForeignKey, Integer
+from sqlalchemy import VARCHAR, Column, Float, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from winterdrp.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
@@ -21,6 +21,7 @@ class RefQueriesTable(WinterBase):
     queryid = Column(Integer, primary_key=True)
     query_ra = Column(Float)
     query_dec = Column(Float)
+    query_filt = Column(VARCHAR(10))
     compid: Mapped[int] = mapped_column(ForeignKey("refcomponents.compid"))
     components: Mapped["RefComponentsTable"] = relationship(back_populates="queries")
 
@@ -34,6 +35,7 @@ class RefQueries(BaseDB):
 
     query_ra: float = ra_field
     query_dec: float = dec_field
+    query_filt: str = Field(min_length=1)
     compid: int = Field(ge=0)
 
     def exists(self) -> bool:
@@ -43,5 +45,6 @@ class RefQueries(BaseDB):
         :return: bool
         """
         return self.sql_model().exists(
-            values=[self.query_ra, self.query_dec], keys=["query_ra", "query_dec"]
+            values=[self.query_ra, self.query_dec, self.query_filt],
+            keys=["query_ra", "query_dec", "query_filt"],
         )

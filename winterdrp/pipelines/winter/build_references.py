@@ -216,6 +216,12 @@ def run_winter_reference_build_pipeline(
             catch_all_errors=True,
         )
 
+        if len(res) == 0:
+            logger.error(
+                f"Something went wrong for field {ind}, " f"returned res with len 0"
+            )
+            continue
+
         if len(errorstack.failed_images) < len(split_image_batch):
             plots_dir = get_output_dir(
                 dir_root="plots",
@@ -230,10 +236,16 @@ def run_winter_reference_build_pipeline(
                 ]
                 split_image = split_image_batch[subdet_id]
                 corner_wcs_coords = get_corners_ra_dec_from_header(split_image.header)
-                logger.debug(corner_wcs_coords)
-                plot_fits_image(
-                    res_image, savedir=plots_dir, regions_wcs_coords=corner_wcs_coords
+
+                plot_savepath = plots_dir / res_image.header[BASE_NAME_KEY].replace(
+                    ".fits", ".png"
                 )
+                if not plot_savepath.exists():
+                    plot_fits_image(
+                        res_image,
+                        savedir=plots_dir,
+                        regions_wcs_coords=corner_wcs_coords,
+                    )
 
     return res, errorstack
 
@@ -244,7 +256,7 @@ if __name__ == "__main__":
     logger = logging.getLogger("winterdrp")
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(
-        "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
+        "%(asctime)s %(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
     )
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -253,6 +265,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-fieldid", type=int, default=None)
     parser.add_argument("-subdetid", type=int, default=None)
+
     args = parser.parse_args()
 
     if args.fieldid is not None:
@@ -261,5 +274,6 @@ if __name__ == "__main__":
         )
 
     run_winter_reference_build_pipeline(
-        winter_fields, only_this_subdet_id=args.subdetid
+        winter_fields,
+        only_this_subdet_id=args.subdetid,
     )

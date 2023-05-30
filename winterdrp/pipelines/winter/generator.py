@@ -68,7 +68,7 @@ def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks)
         write_to_db=True,
         write_db_table=RefStacks,
         component_image_dir=components_image_dir.as_posix(),
-        night_sub_dir="ir_reference_building/references",
+        night_sub_dir="winter/references",
     )
 
 

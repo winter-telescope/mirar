@@ -257,7 +257,9 @@ def get_ukirt_file_identifiers_from_url(url: str) -> list:
     ]
 
 
-def check_query_exists_locally(query_ra, query_dec, query_table, components_table):
+def check_query_exists_locally(
+    query_ra, query_dec, query_filt, query_table, components_table
+):
     """
     Function to check if component images exist locally based on the query_ra
     and query_dec
@@ -271,9 +273,9 @@ def check_query_exists_locally(query_ra, query_dec, query_table, components_tabl
     """
     results = query_table.sql_model().select_query(
         select_keys="compid",
-        compare_values=[query_ra, query_dec],
-        compare_keys=["query_ra", "query_dec"],
-        comparators=["__eq__", "__eq__"],
+        compare_values=[query_ra, query_dec, query_filt],
+        compare_keys=["query_ra", "query_dec", "query_filt"],
+        comparators=["__eq__", "__eq__", "__eq__"],
     )
     logger.debug(results)
     savepaths = []
@@ -436,6 +438,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                     url = check_query_exists_locally(
                         query_ra=crd.ra.deg,
                         query_dec=crd.dec.deg,
+                        query_filt=self.filter_name,
                         query_table=self.query_table,
                         components_table=self.components_table,
                     )
@@ -447,6 +450,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                         crd,
                         image_width=ukirt_image_width,
                         image_height=ukirt_image_height,
+                        waveband=self.filter_name,
                     )
 
                 qexists_list = [query_exists] * len(url)
@@ -548,7 +552,10 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
             if self.check_local_database & ~qexists:
                 new = self.query_table(
-                    query_ra=ra, query_dec=dec, compid=ukirt_image["COMPID"]
+                    query_ra=ra,
+                    query_dec=dec,
+                    query_filt=self.filter_name,
+                    compid=ukirt_image["COMPID"],
                 )
                 new.insert_entry()
 
