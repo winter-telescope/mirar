@@ -270,6 +270,7 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_catalog_path = image["SRCCAT"]  # convert to key
             sci_mask_path = image[LATEST_WEIGHT_SAVE_KEY]
 
+            logger.debug(f"{self.get_path(sci_mask_path)}")
             ref_weight_data = self.open_fits(self.get_path(ref_mask_path))
             sci_weight_data = self.open_fits(self.get_path(sci_mask_path))
 
@@ -291,6 +292,8 @@ class ZOGYPrepare(BaseImageProcessor):
             scorr_weight_path = sci_img_path.replace(".fits", ".scorr.weight.fits")
             self.save_fits(scorr_weight_img, path=self.get_path(scorr_weight_path))
 
+            logger.info(f"{sci_weight_data.get_data()}")
+
             ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(
                 ref_catalog_path, sci_catalog_path
             )
@@ -298,7 +301,6 @@ class ZOGYPrepare(BaseImageProcessor):
             # Scale reference image
             ref_data *= flux_scale
             ref_img.set_data(ref_data)
-
             ref_unscaled_zp = ref_img["ZP"]
             ref_img["ZP"] = float(ref_img["ZP"]) + 2.5 * np.log10(flux_scale)
 
@@ -328,6 +330,14 @@ class ZOGYPrepare(BaseImageProcessor):
             # Calculate uncertainty images
             sci_rms_image = self.get_rms_image(image, sci_rms)
             ref_rms_image = self.get_rms_image(ref_img, ref_rms)
+
+            sci_rms_data = sci_rms_image.get_data()
+            sci_rms_data[image_mask] = 0
+            sci_rms_image.set_data(sci_rms_data)
+
+            ref_rms_data = ref_rms_image.get_data()
+            ref_rms_data[image_mask] = 0
+            ref_rms_image.set_data(ref_rms_data)
 
             sci_rms_path = sci_img_path + ".unc"
             ref_rms_path = ref_img_path + ".unc"
