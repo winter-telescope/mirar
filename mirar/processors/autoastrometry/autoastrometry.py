@@ -13,7 +13,7 @@ on deprecated pyfits and making it compatible
 with astropy headers and python 3.6 (June 11, 2018)
 
 Modified/dissected by Robert Stein (rdstein@caltech.edu) in 2021/2022
-for incorporation into winterdrp
+for incorporation into mirar
 Also converted to python 3.10
 """
 

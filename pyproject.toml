@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "winterdrp"
+name = "mirar"
 version = "0.7.1"
 description = "Modular open-source astronomy image reduction framework"
 authors = ["Robert Stein <rdstein@caltech.edu>", "Viraj Karambelkar <viraj@astro.caltech.edu>"]

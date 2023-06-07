@@ -1,13 +1,13 @@
 """
-Module containing the base of the :class:`~winterdrp.pipelines.base_pipeline.Pipeline`
+Module containing the base of the :class:`~mirar.pipelines.base_pipeline.Pipeline`
  class.
 
-Each :class:`~winterdrp.pipelines.base_pipeline.Pipeline` will have several
+Each :class:`~mirar.pipelines.base_pipeline.Pipeline` will have several
 `configurations`. A configuration corresponds to a list of
-:class:`~winterdrp.processors.BaseProcessor` objects.
+:class:`~mirar.processors.BaseProcessor` objects.
 
 The pipeline will process data using a chosen list of these individual
-:class:`~winterdrp.processors.BaseProcessor` objects.
+:class:`~mirar.processors.BaseProcessor` objects.
 """
 import copy
 import logging
@@ -35,7 +35,7 @@ class Pipeline:
      * a name (the name of the instrument
      * pipeline configurations
      * gain
-     * a :func:`~winterdrp.pipelines.base_pipeline.Pipeline._load_raw_image` function
+     * a :func:`~mirar.pipelines.base_pipeline.Pipeline._load_raw_image` function
      to load raw images and modify the headers etc as required
     """
 
@@ -47,7 +47,7 @@ class Pipeline:
     def name(self):
         """
         Unique name of pipeline , used to call it from the command via
-        :func:`~winterdrp.pipelines.get_pipeline`.
+        :func:`~mirar.pipelines.get_pipeline`.
         Should be the name of the instrument.
         """
         raise NotImplementedError()
@@ -117,7 +117,7 @@ class Pipeline:
     def load_raw_image(self, path: str) -> Image:
         """
         Function to load in a raw image and create an
-        :class:`~winterdrp.data.image_data.Image` object which
+        :class:`~mirar.data.image_data.Image` object which
         can then be processed further
 
         :param path: path of raw image
@@ -131,7 +131,7 @@ class Pipeline:
         Function to load in a raw image and ensure it has
          the correct format for the code.
         This function, unlike
-        :func:`~winterdrp.pipelines.base_pipeline.Pipeline._load_raw_image`
+        :func:`~mirar.pipelines.base_pipeline.Pipeline._load_raw_image`
         is not protected.
 
         :param path: path of raw image
@@ -278,7 +278,7 @@ class Pipeline:
     ) -> list[BaseProcessor]:
         """
         Generate a postprocessing/cleanup processor sequence,
-        Used by  :class:`~winterdrp.monitor.base_monitor.Monitor` class
+        Used by  :class:`~mirar.monitor.base_monitor.Monitor` class
         for realtime processing.
         The first step is to update the header of images
         with any saved errors in errorstack.

@@ -251,9 +251,9 @@ def aper_photometry(
 def get_rms_image(image: Image) -> Image:
     """Get an RMS image from a regular image
 
-    :param image: An :class:`~winterdrp.data.image_data.Image`
+    :param image: An :class:`~mirar.data.image_data.Image`
     :param rms: rms of the image
-    :return: An RMS :class:`~winterdrp.data.image_data.Image`
+    :return: An RMS :class:`~mirar.data.image_data.Image`
     """
     image_data = image.get_data()
     image_data = image_data[np.invert(np.isnan(image_data))]

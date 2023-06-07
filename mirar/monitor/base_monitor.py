@@ -1,5 +1,5 @@
 """
-Script containing the :class:`~winterdrp.monitor.base_monitor.Monitor` class,
+Script containing the :class:`~mirar.monitor.base_monitor.Monitor` class,
 used for processing data in real time.
 """
 import copy
@@ -280,7 +280,7 @@ class Monitor:
         except OSError:
             pass
 
-        log = logging.getLogger("winterdrp")
+        log = logging.getLogger("mirar")
 
         handler = logging.FileHandler(log_output_path)
         # handler = logging.StreamHandler(sys.stdout)

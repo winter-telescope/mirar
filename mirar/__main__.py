@@ -1,8 +1,8 @@
 """
-Main executable for winterdrp. You can execute the code from the terminal like:
+Main executable for mirar. You can execute the code from the terminal like:
 
 .. codeblock:: bash
-    python -m winterdrp -args...
+    python -m mirar -args...
 """
 import argparse
 import logging
@@ -123,7 +123,7 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
     else:
         # Set up logging
 
-        log = logging.getLogger("winterdrp")
+        log = logging.getLogger("mirar")
 
         if args.logfile is None:
             handler = logging.StreamHandler(sys.stdout)
@@ -175,4 +175,4 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             output_path=pipe.get_error_output_path(), verbose=True
         )
 
-        logger.info("End of winterdrp execution")
+        logger.info("End of mirar execution")

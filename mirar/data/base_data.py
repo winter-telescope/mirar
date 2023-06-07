@@ -1,18 +1,18 @@
 """
 This contains the base data classes for the :module:`wintedrp.processors`.
 
-The smallest unit is a :class:`~winterdrp.data.base_data.DataBlock` object,
+The smallest unit is a :class:`~mirar.data.base_data.DataBlock` object,
 corresponding to a single image.
-These :class:`~winterdrp.data.base_data.DataBlock` objects are grouped into
-:class:`~winterdrp.data.base_data.DataBatch` objects.
+These :class:`~mirar.data.base_data.DataBlock` objects are grouped into
+:class:`~mirar.data.base_data.DataBatch` objects.
 Each :class:`~wintedrp.processors.BaseProcessor` will operate on a individual
-:class:`~winterdrp.data.base_data.DataBatch` object.
+:class:`~mirar.data.base_data.DataBatch` object.
 
-The :class:`~winterdrp.data.base_data.DataBatch` objects are stored within a larger
-:class:`~winterdrp.data.base_data.DataSet` object.
+The :class:`~mirar.data.base_data.DataBatch` objects are stored within a larger
+:class:`~mirar.data.base_data.DataSet` object.
 A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
-:class:`~winterdrp.data.base_data.DataBatch` in a
-:class:`~winterdrp.data.base_data.Dataset`.
+:class:`~mirar.data.base_data.DataBatch` in a
+:class:`~mirar.data.base_data.Dataset`.
 """
 import logging
 from pathlib import Path
@@ -37,7 +37,7 @@ class DataBlock:
         raise NotImplementedError
 
     def get_name(self) -> str:
-        """Function to retrieve the :variable:`winterdrp.paths.BASE_NAME_KEY`
+        """Function to retrieve the :variable:`mirar.paths.BASE_NAME_KEY`
         of the parent image
 
         :return: Base name of parent image
@@ -165,8 +165,8 @@ class PseudoList:
 class DataBatch(PseudoList):
     """
     Base class for a collection of individual
-    :class:`~winterdrp.data.base_data.DataBlock` objects.
-    Each :class:`~winterdrp.data.base_data.DataBatch` will be operated on
+    :class:`~mirar.data.base_data.DataBlock` objects.
+    Each :class:`~mirar.data.base_data.DataBatch` will be operated on
     by a :class:`~wintedrp.processors.BaseProcessor`
     """
 
@@ -178,10 +178,10 @@ class DataBatch(PseudoList):
         super().__init__(data_list=batch)
 
     def get_batch(self) -> list[DataBlock]:
-        """Returns the :class:`~winterdrp.data.base_data.DataBlock`
+        """Returns the :class:`~mirar.data.base_data.DataBlock`
         items within the batch
 
-        :return: list of :class:`~winterdrp.data.base_data.DataBlock` objects
+        :return: list of :class:`~mirar.data.base_data.DataBlock` objects
         """
         return self.get_data_list()
 
@@ -205,17 +205,17 @@ class DataBatch(PseudoList):
 class Dataset(PseudoList):
     """
     Base class for a collection of individual
-    :class:`~winterdrp.data.base_data.DataBatch` objects.
+    :class:`~mirar.data.base_data.DataBatch` objects.
     A :class:`~wintedrp.processors.BaseProcessor` will iterate over these.
     """
 
     data_type = DataBatch
 
     def get_batches(self):
-        """Returns the :class:`~winterdrp.data.base_data.DataBatch`
+        """Returns the :class:`~mirar.data.base_data.DataBatch`
         items within the batch
 
-        :return: list of :class:`~winterdrp.data.base_data.DataBatch` objects
+        :return: list of :class:`~mirar.data.base_data.DataBatch` objects
         """
         return self.get_data_list()
 

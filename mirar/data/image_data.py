@@ -1,9 +1,9 @@
 """
 Module to specify the input data classes for
-:class:`winterdrp.processors.base_processor.ImageHandler`
+:class:`mirar.processors.base_processor.ImageHandler`
 
 The basic idea of the code is to pass
-:class:`~winterdrp.data.base_data.DataBlock` objects
+:class:`~mirar.data.base_data.DataBlock` objects
 through a series of :class:`~wintedrp.processors.BaseProcessor` objects.
 Since a given image can easily be ~10-100Mb, and there may be several hundred raw images
 from a typical survey in a given night, the total data volume for these processors
@@ -73,12 +73,12 @@ logger = logging.getLogger(__name__)
 
 class Image(DataBlock):
     """
-    A subclass of :class:`~winterdrp.data.base_data.DataBlock`,
+    A subclass of :class:`~mirar.data.base_data.DataBlock`,
     containing an image and header.
 
     This class serves as input for
-    :class:`~winterdrp.processors.base_processor.BaseImageProcessor` and
-    :class:`~winterdrp.processors.base_processor.BaseCandidateGenerator` processors.
+    :class:`~mirar.processors.base_processor.BaseImageProcessor` and
+    :class:`~mirar.processors.base_processor.BaseCandidateGenerator` processors.
     """
 
     cache_files = []
@@ -217,13 +217,13 @@ class Image(DataBlock):
 
 class ImageBatch(DataBatch):
     """
-    A subclass of :class:`~winterdrp.data.base_data.DataBatch`,
-    which contains :class:`~winterdrp.data.image_data.Image` objects
+    A subclass of :class:`~mirar.data.base_data.DataBatch`,
+    which contains :class:`~mirar.data.image_data.Image` objects
 
     To batch, de-batch, and select objects within batches, see
-    :class:`~winterdrp.processors.utils.image_selector.ImageBatcher`,
-    :class:`~winterdrp.processors.utils.image_selector.ImageDebatcher`, and
-    :class:`~winterdrp.processors.utils.image_selector.ImageSelector`.
+    :class:`~mirar.processors.utils.image_selector.ImageBatcher`,
+    :class:`~mirar.processors.utils.image_selector.ImageDebatcher`, and
+    :class:`~mirar.processors.utils.image_selector.ImageSelector`.
     """
 
     data_type = Image
@@ -235,9 +235,9 @@ class ImageBatch(DataBatch):
         self._append(item)
 
     def get_batch(self) -> list[Image]:
-        """Returns the :class:`~winterdrp.data.image_data.ImageBatch`
+        """Returns the :class:`~mirar.data.image_data.ImageBatch`
         items within the batch
 
-        :return: list of :class:`~winterdrp.data.image_data.Image` objects
+        :return: list of :class:`~mirar.data.image_data.Image` objects
         """
         return self.get_data_list()

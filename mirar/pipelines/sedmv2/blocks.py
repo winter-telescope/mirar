@@ -1,8 +1,8 @@
 """
 Script containing the various
-:class:`~winterdrp.processors.base_processor.BaseProcessor`
+:class:`~mirar.processors.base_processor.BaseProcessor`
 lists which are used to build configurations for the
-:class:`~winterdrp.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
+:class:`~mirar.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
 from mirar.paths import BASE_NAME_KEY, core_fields
 from mirar.pipelines.sedmv2.config import (

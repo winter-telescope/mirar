@@ -1,5 +1,5 @@
 """
-Script for testing the error handling in ..module::winterdrp.errors
+Script for testing the error handling in ..module::mirar.errors
 """
 import logging
 
@@ -15,7 +15,7 @@ pipeline = get_pipeline(
 )
 
 expected_error = {
-    "processor_name": "winterdrp.processors.utils.image_loader",
+    "processor_name": "mirar.processors.utils.image_loader",
     "contents": [],
     "known_error_bool": True,
     "non_critical_bool": False,
@@ -24,7 +24,7 @@ expected_error = {
 
 class TestErrors(BaseTestCase):
 
-    """Class for testing errors in ..module::winterdrp.errors"""
+    """Class for testing errors in ..module::mirar.errors"""
 
     def setUp(self):
         self.logger = logging.getLogger(__name__)

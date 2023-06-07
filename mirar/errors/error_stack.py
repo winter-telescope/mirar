@@ -1,8 +1,8 @@
 """
 Module for ErrorStack objects.
 
-A :class:`~winterdrp.errors.error_stack.ErrorStack` object will contain a list of
-:class:`~winterdrp.errors.error_report.ErrorReport` objects, and can correspond to
+A :class:`~mirar.errors.error_stack.ErrorStack` object will contain a list of
+:class:`~mirar.errors.error_report.ErrorReport` objects, and can correspond to
  multiple errors raised by the code.
 """
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ErrorStack:
     """
     Container class to hold multiple
-    :class:`~winterdrp.errors.error_report.ErrorReport` objects
+    :class:`~mirar.errors.error_report.ErrorReport` objects
     """
 
     def __init__(self, reports: Optional[list[ErrorReport]] = None):

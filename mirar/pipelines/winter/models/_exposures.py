@@ -31,7 +31,7 @@ from mirar.processors.sqldatabase.base_model import (
     ra_field,
 )
 
-# from winterdrp.utils.sql import create_q3c_extension
+# from mirar.utils.sql import create_q3c_extension
 
 
 class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods

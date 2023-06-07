@@ -1,6 +1,6 @@
 """
 Module to run
-:func:`~winterdrp.processors.astromatic.sextractor.sourceextractor.run_sextractor_single
+:func:`~mirar.processors.astromatic.sextractor.sourceextractor.run_sextractor_single
  as a processor.
 """
 

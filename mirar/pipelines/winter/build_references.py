@@ -253,7 +253,7 @@ def run_winter_reference_build_pipeline(
 if __name__ == "__main__":
     winter_fields = pd.read_csv(winter_fields_file, delim_whitespace=True)
 
-    logger = logging.getLogger("winterdrp")
+    logger = logging.getLogger("mirar")
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(
         "%(asctime)s %(name)s [l %(lineno)d] - %(levelname)s - %(message)s"

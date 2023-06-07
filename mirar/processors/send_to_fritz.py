@@ -78,7 +78,7 @@ class SendToFritz(BaseDataframeProcessor):
         self.session = requests.Session()
         self.session_headers = {
             "Authorization": f"token {self._get_fritz_token()}",
-            "User-Agent": "winterdrp",
+            "User-Agent": "mirar",
         }
 
         retries = Retry(

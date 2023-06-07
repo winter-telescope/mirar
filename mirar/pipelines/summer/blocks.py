@@ -1,8 +1,8 @@
 """
 Script containing the various
-:class:`~winterdrp.processors.base_processor.BaseProcessor`
+:class:`~mirar.processors.base_processor.BaseProcessor`
 lists which are used to build configurations for the
-:class:`~winterdrp.pipelines.summer.summer_pipeline.SummerPipeline`.
+:class:`~mirar.pipelines.summer.summer_pipeline.SummerPipeline`.
 """
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import BASE_NAME_KEY, GAIN_KEY, core_fields

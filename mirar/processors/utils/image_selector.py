@@ -90,8 +90,8 @@ def split_images_into_batches(
     images: ImageBatch, split_key: str | list[str]
 ) -> Dataset:
     """
-    Function to split a single :class:`~winterdrp.data.image_data.ImageBatch` object
-    into multiple :class:`~winterdrp.data.base_data.DataBatch` objects.
+    Function to split a single :class:`~mirar.data.image_data.ImageBatch` object
+    into multiple :class:`~mirar.data.base_data.DataBatch` objects.
     Each new batch will have the same value of <split_key>.
     Returns a dataset containing the new batches
 
@@ -125,8 +125,8 @@ def split_images_into_batches(
 
 class ImageBatcher(BaseImageProcessor):
     """
-    Module to split :class:`~winterdrp.data.image_data.ImageBatch` object
-    into multiple :class:`~winterdrp.data.base_data.DataBatch` objects.
+    Module to split :class:`~mirar.data.image_data.ImageBatch` object
+    into multiple :class:`~mirar.data.base_data.DataBatch` objects.
 
     Images are batched using the `split_key` argument. For example,
     you can batch by filter, like this:
@@ -175,7 +175,7 @@ class ImageBatcher(BaseImageProcessor):
 
 class ImageDebatcher(BaseImageProcessor):
     """
-    Processor to group all incoming :class:`~winterdrp.data.image_data.ImageBatch`
+    Processor to group all incoming :class:`~mirar.data.image_data.ImageBatch`
     objects into a single batch.
     This is helpful if you've already batched at an earlier stage in your workflow, and
     you want to start over and batch by a different split key.

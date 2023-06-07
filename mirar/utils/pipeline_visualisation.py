@@ -1,6 +1,6 @@
 """
 Module for generating visualisations of
-:class:`~winterdrp.pipeline.base_pipeline.Pipeline` objects.
+:class:`~mirar.pipeline.base_pipeline.Pipeline` objects.
 """
 import logging
 from datetime import datetime

@@ -1,11 +1,11 @@
 """
 Script to run ZOGY.
 
-This is performed by the :class:`winterdrp.processors.zogy.zogy.ZOGY`
+This is performed by the :class:`mirar.processors.zogy.zogy.ZOGY`
 processor. This processor requires several header keys to be present.
 
 In most cases, a processor chain will first require
-:class:`winterdrp.processors.zogy.zogy.ZOGYPrepare`
+:class:`mirar.processors.zogy.zogy.ZOGYPrepare`
 in order to set these relevant header paths.
 """
 import logging
@@ -109,9 +109,9 @@ class ZOGYPrepare(BaseImageProcessor):
     save the catalogue and then add relevant info to the header.
 
     After processing by this class, an
-     :class:`~winterdrp.data.image_data.Image`
+     :class:`~mirar.data.image_data.Image`
      can then by processed by an
-    :class:`winterdrp.processors.zogy.zogy.ZOGY` object.
+    :class:`mirar.processors.zogy.zogy.ZOGY` object.
     """
 
     base_key = "ZOGYPREP"
@@ -244,9 +244,9 @@ class ZOGYPrepare(BaseImageProcessor):
     def get_rms_image(image: Image, rms: float) -> Image:
         """Get an RMS image from a regular image
 
-        :param image: An :class:`~winterdrp.data.image_data.Image`
+        :param image: An :class:`~mirar.data.image_data.Image`
         :param rms: rms of the image
-        :return: An RMS :class:`~winterdrp.data.image_data.Image`
+        :return: An RMS :class:`~mirar.data.image_data.Image`
         """
         gain = image["GAIN"]
         poisson_noise = np.copy(image.get_data()) / gain
@@ -356,9 +356,9 @@ class ZOGYPrepare(BaseImageProcessor):
 
 class ZOGY(ZOGYPrepare):
     """
-    :class:`winterdrp.processors.base_processor.BaseProcessor` class to run
+    :class:`mirar.processors.base_processor.BaseProcessor` class to run
     the ZOGY algorithm using the
-    :func:winterdrp.processors.zogy.pyzogy.pyzogy` function.
+    :func:mirar.processors.zogy.pyzogy.pyzogy` function.
     """
 
     base_key = "ZOGY"

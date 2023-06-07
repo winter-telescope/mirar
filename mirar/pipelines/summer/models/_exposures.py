@@ -1,7 +1,7 @@
 """
 Models for the 'exposures' table
 """
-# from winterdrp.utils.sql import create_q3c_extension
+# from mirar.utils.sql import create_q3c_extension
 import logging
 from datetime import date, datetime
 from typing import ClassVar

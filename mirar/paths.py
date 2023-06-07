@@ -145,7 +145,7 @@ def get_untemp_path(temp_path: Path | str) -> Path:
     """
     Converts a temporary path to a regular path.
 
-    Essentially undoes ..:func:`winterdrp.path.get_temp_path`
+    Essentially undoes ..:func:`mirar.path.get_temp_path`
 
     :param temp_path: temporary file path
     :return: normal file path

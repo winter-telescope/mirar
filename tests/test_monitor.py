@@ -1,4 +1,4 @@
-"""Test suite for ..module::winterdrp.monitor module"""
+"""Test suite for ..module::mirar.monitor module"""
 import logging
 
 from mirar.downloader.get_test_data import get_test_data_dir
@@ -19,7 +19,7 @@ summer_cal_requirements = [
 
 
 class TestMonitor(BaseTestCase):
-    """Class for testing ..module::winterdrp.monitor"""
+    """Class for testing ..module::mirar.monitor"""
 
     def setUp(self):
         self.logger = logging.getLogger(__name__)

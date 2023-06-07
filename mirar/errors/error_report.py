@@ -1,7 +1,7 @@
 """
 Module for ErrorReport objects.
 
-An :class:`~winterdrp.errors.error_report.ErrorReport` object summarises a single error
+An :class:`~mirar.errors.error_report.ErrorReport` object summarises a single error
 raised by the code.
 """
 import logging
@@ -38,7 +38,7 @@ class ErrorReport:
         """
         return (
             f"This error {['was not', 'was'][self.known_error_bool]} "
-            f"a known error raised by winterdrp."
+            f"a known error raised by mirar."
         )
 
     def generate_log_message(self) -> str:

@@ -212,7 +212,7 @@ class BaseProcessor:
     def apply(self, batch: DataBatch):
         """
         Function applying the processor to a
-        :class:`~winterdrp.data.base_data.DataBatch`.
+        :class:`~mirar.data.base_data.DataBatch`.
         Also updates the processing history.
 
         :param batch: input data batch
@@ -224,7 +224,7 @@ class BaseProcessor:
 
     def _apply(self, batch: DataBatch) -> DataBatch:
         """
-        Core function to update the :class:`~winterdrp.data.base_data.DataBatch`
+        Core function to update the :class:`~mirar.data.base_data.DataBatch`
 
         :param batch: Input data batch
         :return: updated data batch
@@ -237,8 +237,8 @@ class BaseProcessor:
     ) -> DataBatch:
         """
         Function to update the processing history of each
-        :class:`~winterdrp.data.base_data.DataBlock` object in a
-        :class:`~winterdrp.data.base_data.DataBatch`.
+        :class:`~mirar.data.base_data.DataBlock` object in a
+        :class:`~mirar.data.base_data.DataBatch`.
 
         :param batch: Input data batch
         :return: Updated data batch
