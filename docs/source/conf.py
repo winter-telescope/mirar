@@ -5,7 +5,7 @@ from mirar.paths import PACKAGE_NAME, __version__
 
 # -- Project information
 
-project = __package__
+project = PACKAGE_NAME
 copyright = "2022, Robert Stein"
 author = "Robert Stein"
 
