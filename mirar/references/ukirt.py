@@ -14,8 +14,8 @@ from astropy.units import Quantity
 from astropy.wcs import WCS
 from astroquery.ukidss import UkidssClass
 from astroquery.utils.commons import FileContainer
-from survey_coverage import get_known_ukirt_surveys
-from survey_coverage.surveys import MOCSurvey
+from astrosurveyutils import get_known_ukirt_surveys
+from astrosurveyutils.surveys import MOCSurvey
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ProcessorError
