@@ -5,6 +5,8 @@ import logging
 import os
 from typing import Type
 
+import numpy as np
+
 from mirar.catalog import Gaia2Mass
 from mirar.data import Image
 from mirar.paths import get_output_dir
@@ -93,10 +95,13 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     :return: catalogue
     """
     filter_name = image["FILTER"]
+    search_radius_arcmin = (
+        np.max([image["NAXIS1"], image["NAXIS2"]]) * np.abs(image["CD1_1"]) * 60
+    )
     return Gaia2Mass(
         min_mag=10,
         max_mag=20,
-        search_radius_arcmin=10,
+        search_radius_arcmin=search_radius_arcmin,
         filter_name=filter_name,
         snr_threshold=20,
     )
@@ -111,8 +116,8 @@ def winter_reference_phot_calibrator(image: Image, **kwargs) -> PhotCalibrator:
     """
     x_lower_limit = 0
     y_lower_limit = 0
-    x_upper_limit = image.header["NAXIS2"]
-    y_upper_limit = image.header["NAXIS1"]
+    x_upper_limit = image.header["NAXIS1"]
+    y_upper_limit = image.header["NAXIS2"]
 
     return PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,

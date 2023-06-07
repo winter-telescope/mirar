@@ -28,7 +28,7 @@ from mirar.paths import (
     core_fields,
     get_output_path,
 )
-from mirar.pipelines.winter.models._filters import winter_filters_map
+from mirar.pipelines.winter.constants import winter_filters_map
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.base_processor import ImageHandler
