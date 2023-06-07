@@ -497,6 +497,26 @@ docs = ["scipy", "sphinx-astropy (>=1.5)"]
 test = ["flask", "jinja2", "matplotlib", "pytest-astropy", "pytest-dependency"]
 
 [[package]]
+name = "astrosurveyutils"
+version = "0.0.1"
+description = "Astronomical survey utilities"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "astrosurveyutils-0.0.1-py3-none-any.whl", hash = "sha256:ca5234d8fb66f592e07565645daba70befb9d7ed605e93baf0bf60bb2a94b22a"},
+    {file = "astrosurveyutils-0.0.1.tar.gz", hash = "sha256:f1490f25ff6e33cdcc6612d290c4eb079fb6a6f6560cda5075b9551ced9b812e"},
+]
+
+[package.dependencies]
+astropy = "*"
+jupyter = "*"
+matplotlib = "*"
+mocpy = "0.12.0"
+numpy = "*"
+pandas = "*"
+
+[[package]]
 name = "asttokens"
 version = "2.2.1"
 description = "Annotate AST trees with source code positions"
@@ -5166,30 +5186,6 @@ pure-eval = "*"
 tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
-name = "survey_coverage"
-version = "0.0.0"
-description = ""
-category = "main"
-optional = false
-python-versions = ">=3.7"
-files = []
-develop = false
-
-[package.dependencies]
-astropy = "*"
-jupyter = "*"
-matplotlib = "*"
-mocpy = "0.12.0"
-numpy = "*"
-pandas = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/virajkaram/survey_coverage.git"
-reference = "HEAD"
-resolved_reference = "3adcb447d465a759f377f296ab4794fc9222f550"
-
-[[package]]
 name = "terminado"
 version = "0.17.1"
 description = "Tornado websocket backend for the Xterm.js Javascript terminal emulator library."
@@ -5775,4 +5771,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.12"
-content-hash = "ab2424c7de4310ce3558d030d879d041e2118bdcd0bbe526407bda5e278a8152"
+content-hash = "6ed1e073b375272c70a470bf7705837cb12265246c2c2b29e1b409b068209d3c"
