@@ -28,7 +28,6 @@ Instead, we suggest:
     conda activate mirar
     conda config --env --set subdir osx-64
     conda install python=3.11
-    conda activate mirar
     pip install --upgrade pip
 
 Option 1: Installing via pip
