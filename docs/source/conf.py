@@ -1,10 +1,11 @@
-from mirar.paths import __version__, package_name
+# pylint: disable=all
+from mirar.paths import PACKAGE_NAME, __version__
 
 # Configuration file for the Sphinx documentation builder.
 
 # -- Project information
 
-project = package_name
+project = __package__
 copyright = "2022, Robert Stein"
 author = "Robert Stein"
 
