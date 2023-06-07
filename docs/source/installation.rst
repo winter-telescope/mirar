@@ -54,6 +54,7 @@ You can alternatively grab the latest version of the code from github:
 .. code-block:: bash
 
     git clone git@github.com:winter-telescope/mirar.git
+    cd mirar
 
 This method is recommended if you want to contribute to the code.
 
@@ -65,7 +66,7 @@ Next you need to actually install mirar. We use `poetry <https://python-poetry.o
 .. code-block:: bash
 
     pip install poetry
-    poetry install mirar
+    poetry install
 
 Lastly, you need to install the `pre-commit hooks <https://pre-commit.com/>`_ (see :doc:`contributing-guide` for more info about what these do):
 
