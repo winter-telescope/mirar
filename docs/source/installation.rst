@@ -15,8 +15,8 @@ In most cases, you can do the following:
 
 .. code-block:: bash
 
-    conda create -n winter_env python=3.11
-    conda activate winter_env
+    conda create -n mirar python=3.11
+    conda activate mirar
     pip install --upgrade pip
 
 However, if you are using a new Mac with an arm chip, you might run into trouble.
@@ -24,11 +24,11 @@ Instead, we suggest:
 
 .. code-block:: bash
 
-    conda create -n winter_env
-    conda activate winter_env
+    conda create -n mirar
+    conda activate mirar
     conda config --env --set subdir osx-64
     conda install python=3.11
-    conda activate winter_env
+    conda activate mirar
     pip install --upgrade pip
 
 Option 1: Installing via pip
