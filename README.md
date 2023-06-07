@@ -1,4 +1,7 @@
-# mirar
+
+![alt text](./docs/MIRAR_logo.png?raw=true)
+
+# Modular Image Reduction and Analysis Resource (MIRAR)
 
 [![CI](https://github.com/winter-telescope/mirar/actions/workflows/continous_integration.yml/badge.svg)](https://github.com/winter-telescope/mirar/actions/workflows/continous_integration.yml)
 [![Coverage Status](https://coveralls.io/repos/github/winter-telescope/mirar/badge.svg?branch=main)](https://coveralls.io/github/winter-telescope/mirar?branch=main)
