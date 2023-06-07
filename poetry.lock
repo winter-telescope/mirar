@@ -454,6 +454,58 @@ test = ["pytest (>=7.0)", "pytest-astropy (>=0.10)", "pytest-astropy-header (>=0
 test-all = ["coverage[toml]", "ipython (>=4.2)", "objgraph", "pytest (>=7.0)", "pytest-astropy (>=0.10)", "pytest-astropy-header (>=0.2.1)", "pytest-doctestplus (>=0.12)", "pytest-xdist", "sgp4 (>=2.3)", "skyfield (>=1.20)", "timezonefinder"]
 
 [[package]]
+name = "astropy-healpix"
+version = "0.7"
+description = "BSD-licensed HEALPix for Astropy"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "astropy_healpix-0.7-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0544cfafc25c820e3840bbce2243b57cff896b9c3b132e8502c44e9f6f0050b9"},
+    {file = "astropy_healpix-0.7-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:9cacc676823c0307213d391bad2742851fa2cbd2905bd8e92a0b47aa2eec0e95"},
+    {file = "astropy_healpix-0.7-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3af22f0bf79a242d92a3aef945486ebc65bd2caba08797a9cf776132c1a86f17"},
+    {file = "astropy_healpix-0.7-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:041c64923d548ef26bd56bf65ee46eaf709b8884ab3144c774cf83d4b3f72355"},
+    {file = "astropy_healpix-0.7-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b4c378498831ee1ca26f3add5bffc79d48e6aa66834bb1f8d2791f01f7cd1717"},
+    {file = "astropy_healpix-0.7-cp310-cp310-win32.whl", hash = "sha256:d805d813f02f81ef943fe2ae133c6385cdf2b9b44eeb9d765080ac24fa71562f"},
+    {file = "astropy_healpix-0.7-cp310-cp310-win_amd64.whl", hash = "sha256:af9459d2dbd2a6b35f5b8a77a3736bf83c9ec087fac563cfa7a6cacebf13fb50"},
+    {file = "astropy_healpix-0.7-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:7231f3f2e229e9f00b8a041b7a79c9dc6b52ca9be9c802a6a32a30e2511f1b00"},
+    {file = "astropy_healpix-0.7-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b792a9f9a7fd1622201ea46a202b9972d8bad0505494753c1ee87c79bde16a61"},
+    {file = "astropy_healpix-0.7-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e14f7504b54e8fd22f2fd77593a8ff15d77fd6996f235c972c9c40a02d8c5b3b"},
+    {file = "astropy_healpix-0.7-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0d83b668ee3e242de9c8e3276c1fbcb5294fed66a0813087223805a42b9d84b1"},
+    {file = "astropy_healpix-0.7-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:fd6d7d8ca85d28ac1cc1729b5732b4149ce1665edbad98765e53bcdd7ffdd84d"},
+    {file = "astropy_healpix-0.7-cp311-cp311-win32.whl", hash = "sha256:7d3cf82acf1c32635eb799c7a5c558c01004bb00cc4deace40b01dd72c97b527"},
+    {file = "astropy_healpix-0.7-cp311-cp311-win_amd64.whl", hash = "sha256:1c888144c0ea212b748c74c1d07ec0b6d0f4a1744afd01cfc9768d06bd9157af"},
+    {file = "astropy_healpix-0.7-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:7c31ec1bab19a3b3b5879594afe0882474a94ee448f90a39499ac2d328c88b21"},
+    {file = "astropy_healpix-0.7-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9ed1380909f75248ee94119da532181b1b90e7f0cf10abfd75d34a798f54ac40"},
+    {file = "astropy_healpix-0.7-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:44a0c40fc3cdf856cd760231b3fcef3859766452123d06533d19466d2fab5456"},
+    {file = "astropy_healpix-0.7-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:26f5e4cea51621ebb8af9f1d3abc04e9b93b6ef1eb3b1ee2325f05bc6aeb812e"},
+    {file = "astropy_healpix-0.7-cp37-cp37m-win32.whl", hash = "sha256:3888439b9947d4a3be938910df4f02c295d8851501194a7124009b4abb857a3a"},
+    {file = "astropy_healpix-0.7-cp37-cp37m-win_amd64.whl", hash = "sha256:46808d3a119a83c5b9631794abe025695d22f7c7c053d630e8389be659a5a571"},
+    {file = "astropy_healpix-0.7-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:9b1d95798e32ed2a4f19d0f28ef1352ee908b8d15f5bbe8514956f20390ff239"},
+    {file = "astropy_healpix-0.7-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:20cce8a8d4e03ea9bfe0c930d2ef90dec1e9ac3743e1ceb3b17208fe1ecfb13b"},
+    {file = "astropy_healpix-0.7-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9808130551076ee354fb5335b1c07c052280938080246387fc9b32ad559feb82"},
+    {file = "astropy_healpix-0.7-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:54764635402e6d803e6246f93be3c367444663121f8444eda67abaf3641fe796"},
+    {file = "astropy_healpix-0.7-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:54e2a116f749d908c9947e4dc20b0030f757d034af9fc35bae75408efa92d1ce"},
+    {file = "astropy_healpix-0.7-cp38-cp38-win32.whl", hash = "sha256:0af2c00c37d8081e1785ac6510804ca56b56bb7ed533d3ab41b4d43d984c17ea"},
+    {file = "astropy_healpix-0.7-cp38-cp38-win_amd64.whl", hash = "sha256:69762def503d5e3594d10344a8f899d3389be3539cd23a5c7c63d5ec5526d6ce"},
+    {file = "astropy_healpix-0.7-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:ef6604a74cea96a09f7767065ae91b00e381d9d4c89d3a6251d566f867cf9abc"},
+    {file = "astropy_healpix-0.7-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:3863d96e9dcaf0caee14888ad16e3be3be9da9a54f78357938e75bae86667fb1"},
+    {file = "astropy_healpix-0.7-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:da9b89e6875b80e07e7f35420ff2a7a26ec159ec1472c078b2f7fbdde2a52e90"},
+    {file = "astropy_healpix-0.7-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1269e7f220598c59730df486aafb7e2af8af4ccfe7f95bdf6fdc0ac6c2cd06ca"},
+    {file = "astropy_healpix-0.7-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:47a09a5709eafb6d6080095a9146a7a1b34ddd9913112ca706f6625ad9b9ef5a"},
+    {file = "astropy_healpix-0.7-cp39-cp39-win32.whl", hash = "sha256:43685af3238c74e70b3d255156f86d120843fe257901363c16a2dca0a1d795e8"},
+    {file = "astropy_healpix-0.7-cp39-cp39-win_amd64.whl", hash = "sha256:e7538804c601d0df064a2e30f076f4f00229d6d925f8c8fac34dba6ab1249eab"},
+    {file = "astropy_healpix-0.7.tar.gz", hash = "sha256:88c384eb4322997a58de8938e91ac9ff90f6a2b6cb2ae23e2169c7405add3ad8"},
+]
+
+[package.dependencies]
+astropy = ">=3"
+numpy = "*"
+
+[package.extras]
+docs = ["matplotlib", "sphinx-astropy"]
+test = ["hypothesis", "pytest-astropy"]
+
+[[package]]
 name = "astroquery"
 version = "0.4.6"
 description = "Functions and classes to access online astronomical data resources"
@@ -1913,6 +1965,32 @@ files = [
 
 [package.dependencies]
 numpy = ">=1.14.5"
+
+[[package]]
+name = "healpy"
+version = "1.16.2"
+description = "Healpix tools package for Python"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "healpy-1.16.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f5262965e477d1380c5d006379c137c2c49e142719d9c6df7cdb59b7bf3b5b8e"},
+    {file = "healpy-1.16.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e86b360be6c941305ed1cc3f95611fa0601cd6499e58d2dd1412ab313b60011a"},
+    {file = "healpy-1.16.2-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:3a933010d0f6042da938084494575daadcfda7bdd27454fd0036a4f4fd9411bc"},
+    {file = "healpy-1.16.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7955343606655f0219738f411aba9b4b8355386613c40ce9a77dfeb68ab6baf8"},
+    {file = "healpy-1.16.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:1b661db2050cef679d3cdaeac838557f7d19b9bb0696c1aa75f1cf3f7fe0c778"},
+    {file = "healpy-1.16.2-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e500902fd118507b4bb8be581e8afc5a5bc6451bb2cd04b74bb5d74ba620ea12"},
+    {file = "healpy-1.16.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:31ca2dd5f40af7742b9850ed3cd976d7e382168b852a7e4e2c60cd3d6f435b07"},
+    {file = "healpy-1.16.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:71b30644a40871b185c4ce3514de8ca418e1f0991f304dea6c8530105f4cdb83"},
+    {file = "healpy-1.16.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:7efaac3cf8b885a66a4709cdc378dc9a97cb37c12c8d2eb490bf056fb81ea2b6"},
+    {file = "healpy-1.16.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d0d22943e65e98d3f177538e7bf4633a7acc11c590c64bfffc7fc35f3eb9c021"},
+    {file = "healpy-1.16.2.tar.gz", hash = "sha256:b7b9433152ff297f88fc5cc1277402a3346ff833e0fb7e026330dfac454de480"},
+]
+
+[package.dependencies]
+astropy = "*"
+matplotlib = "*"
+numpy = ">=1.13"
+scipy = "*"
 
 [[package]]
 name = "html5lib"
@@ -3420,16 +3498,19 @@ files = [
 
 [[package]]
 name = "penquins"
-version = "2.2.0"
+version = "2.3.1"
 description = "A python client for Kowalski"
 optional = false
 python-versions = "*"
 files = [
-    {file = "penquins-2.2.0-py3-none-any.whl", hash = "sha256:bbf22b4761c9d0ecd2a4dac519a841b0c0e45eb39c0af0085b4e7780e6edc856"},
-    {file = "penquins-2.2.0.tar.gz", hash = "sha256:14d49af54c34e87a33fb715c1aeb321c40964bf62b86b6cfee2158ee447d5f35"},
+    {file = "penquins-2.3.1.tar.gz", hash = "sha256:97d1d105b4e78dedbf0366d9254adec437e722190596507798c51186caaa70b9"},
 ]
 
 [package.dependencies]
+astropy = ">=5.2.1"
+astropy-healpix = ">=0.7"
+healpy = ">=1.16.0"
+mocpy = ">=0.11.0"
 pymongo = ">=3.10.1"
 pytest = ">=5.3.1"
 requests = ">=2.25.0"
@@ -3853,47 +3934,47 @@ files = [
 
 [[package]]
 name = "pydantic"
-version = "1.10.8"
+version = "1.10.9"
 description = "Data validation and settings management using python type hints"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pydantic-1.10.8-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:1243d28e9b05003a89d72e7915fdb26ffd1d39bdd39b00b7dbe4afae4b557f9d"},
-    {file = "pydantic-1.10.8-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:c0ab53b609c11dfc0c060d94335993cc2b95b2150e25583bec37a49b2d6c6c3f"},
-    {file = "pydantic-1.10.8-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f9613fadad06b4f3bc5db2653ce2f22e0de84a7c6c293909b48f6ed37b83c61f"},
-    {file = "pydantic-1.10.8-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:df7800cb1984d8f6e249351139667a8c50a379009271ee6236138a22a0c0f319"},
-    {file = "pydantic-1.10.8-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:0c6fafa0965b539d7aab0a673a046466d23b86e4b0e8019d25fd53f4df62c277"},
-    {file = "pydantic-1.10.8-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:e82d4566fcd527eae8b244fa952d99f2ca3172b7e97add0b43e2d97ee77f81ab"},
-    {file = "pydantic-1.10.8-cp310-cp310-win_amd64.whl", hash = "sha256:ab523c31e22943713d80d8d342d23b6f6ac4b792a1e54064a8d0cf78fd64e800"},
-    {file = "pydantic-1.10.8-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:666bdf6066bf6dbc107b30d034615d2627e2121506c555f73f90b54a463d1f33"},
-    {file = "pydantic-1.10.8-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:35db5301b82e8661fa9c505c800d0990bc14e9f36f98932bb1d248c0ac5cada5"},
-    {file = "pydantic-1.10.8-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f90c1e29f447557e9e26afb1c4dbf8768a10cc676e3781b6a577841ade126b85"},
-    {file = "pydantic-1.10.8-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:93e766b4a8226e0708ef243e843105bf124e21331694367f95f4e3b4a92bbb3f"},
-    {file = "pydantic-1.10.8-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:88f195f582851e8db960b4a94c3e3ad25692c1c1539e2552f3df7a9e972ef60e"},
-    {file = "pydantic-1.10.8-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:34d327c81e68a1ecb52fe9c8d50c8a9b3e90d3c8ad991bfc8f953fb477d42fb4"},
-    {file = "pydantic-1.10.8-cp311-cp311-win_amd64.whl", hash = "sha256:d532bf00f381bd6bc62cabc7d1372096b75a33bc197a312b03f5838b4fb84edd"},
-    {file = "pydantic-1.10.8-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:7d5b8641c24886d764a74ec541d2fc2c7fb19f6da2a4001e6d580ba4a38f7878"},
-    {file = "pydantic-1.10.8-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7b1f6cb446470b7ddf86c2e57cd119a24959af2b01e552f60705910663af09a4"},
-    {file = "pydantic-1.10.8-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c33b60054b2136aef8cf190cd4c52a3daa20b2263917c49adad20eaf381e823b"},
-    {file = "pydantic-1.10.8-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:1952526ba40b220b912cdc43c1c32bcf4a58e3f192fa313ee665916b26befb68"},
-    {file = "pydantic-1.10.8-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:bb14388ec45a7a0dc429e87def6396f9e73c8c77818c927b6a60706603d5f2ea"},
-    {file = "pydantic-1.10.8-cp37-cp37m-win_amd64.whl", hash = "sha256:16f8c3e33af1e9bb16c7a91fc7d5fa9fe27298e9f299cff6cb744d89d573d62c"},
-    {file = "pydantic-1.10.8-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:1ced8375969673929809d7f36ad322934c35de4af3b5e5b09ec967c21f9f7887"},
-    {file = "pydantic-1.10.8-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:93e6bcfccbd831894a6a434b0aeb1947f9e70b7468f274154d03d71fabb1d7c6"},
-    {file = "pydantic-1.10.8-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:191ba419b605f897ede9892f6c56fb182f40a15d309ef0142212200a10af4c18"},
-    {file = "pydantic-1.10.8-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:052d8654cb65174d6f9490cc9b9a200083a82cf5c3c5d3985db765757eb3b375"},
-    {file = "pydantic-1.10.8-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:ceb6a23bf1ba4b837d0cfe378329ad3f351b5897c8d4914ce95b85fba96da5a1"},
-    {file = "pydantic-1.10.8-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:6f2e754d5566f050954727c77f094e01793bcb5725b663bf628fa6743a5a9108"},
-    {file = "pydantic-1.10.8-cp38-cp38-win_amd64.whl", hash = "sha256:6a82d6cda82258efca32b40040228ecf43a548671cb174a1e81477195ed3ed56"},
-    {file = "pydantic-1.10.8-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:3e59417ba8a17265e632af99cc5f35ec309de5980c440c255ab1ca3ae96a3e0e"},
-    {file = "pydantic-1.10.8-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:84d80219c3f8d4cad44575e18404099c76851bc924ce5ab1c4c8bb5e2a2227d0"},
-    {file = "pydantic-1.10.8-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2e4148e635994d57d834be1182a44bdb07dd867fa3c2d1b37002000646cc5459"},
-    {file = "pydantic-1.10.8-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:12f7b0bf8553e310e530e9f3a2f5734c68699f42218bf3568ef49cd9b0e44df4"},
-    {file = "pydantic-1.10.8-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:42aa0c4b5c3025483240a25b09f3c09a189481ddda2ea3a831a9d25f444e03c1"},
-    {file = "pydantic-1.10.8-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:17aef11cc1b997f9d574b91909fed40761e13fac438d72b81f902226a69dac01"},
-    {file = "pydantic-1.10.8-cp39-cp39-win_amd64.whl", hash = "sha256:66a703d1983c675a6e0fed8953b0971c44dba48a929a2000a493c3772eb61a5a"},
-    {file = "pydantic-1.10.8-py3-none-any.whl", hash = "sha256:7456eb22ed9aaa24ff3e7b4757da20d9e5ce2a81018c1b3ebd81a0b88a18f3b2"},
-    {file = "pydantic-1.10.8.tar.gz", hash = "sha256:1410275520dfa70effadf4c21811d755e7ef9bb1f1d077a21958153a92c8d9ca"},
+    {file = "pydantic-1.10.9-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e692dec4a40bfb40ca530e07805b1208c1de071a18d26af4a2a0d79015b352ca"},
+    {file = "pydantic-1.10.9-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:3c52eb595db83e189419bf337b59154bdcca642ee4b2a09e5d7797e41ace783f"},
+    {file = "pydantic-1.10.9-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:939328fd539b8d0edf244327398a667b6b140afd3bf7e347cf9813c736211896"},
+    {file = "pydantic-1.10.9-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b48d3d634bca23b172f47f2335c617d3fcb4b3ba18481c96b7943a4c634f5c8d"},
+    {file = "pydantic-1.10.9-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:f0b7628fb8efe60fe66fd4adadd7ad2304014770cdc1f4934db41fe46cc8825f"},
+    {file = "pydantic-1.10.9-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:e1aa5c2410769ca28aa9a7841b80d9d9a1c5f223928ca8bec7e7c9a34d26b1d4"},
+    {file = "pydantic-1.10.9-cp310-cp310-win_amd64.whl", hash = "sha256:eec39224b2b2e861259d6f3c8b6290d4e0fbdce147adb797484a42278a1a486f"},
+    {file = "pydantic-1.10.9-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:d111a21bbbfd85c17248130deac02bbd9b5e20b303338e0dbe0faa78330e37e0"},
+    {file = "pydantic-1.10.9-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:2e9aec8627a1a6823fc62fb96480abe3eb10168fd0d859ee3d3b395105ae19a7"},
+    {file = "pydantic-1.10.9-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:07293ab08e7b4d3c9d7de4949a0ea571f11e4557d19ea24dd3ae0c524c0c334d"},
+    {file = "pydantic-1.10.9-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7ee829b86ce984261d99ff2fd6e88f2230068d96c2a582f29583ed602ef3fc2c"},
+    {file = "pydantic-1.10.9-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:4b466a23009ff5cdd7076eb56aca537c745ca491293cc38e72bf1e0e00de5b91"},
+    {file = "pydantic-1.10.9-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:7847ca62e581e6088d9000f3c497267868ca2fa89432714e21a4fb33a04d52e8"},
+    {file = "pydantic-1.10.9-cp311-cp311-win_amd64.whl", hash = "sha256:7845b31959468bc5b78d7b95ec52fe5be32b55d0d09983a877cca6aedc51068f"},
+    {file = "pydantic-1.10.9-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:517a681919bf880ce1dac7e5bc0c3af1e58ba118fd774da2ffcd93c5f96eaece"},
+    {file = "pydantic-1.10.9-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:67195274fd27780f15c4c372f4ba9a5c02dad6d50647b917b6a92bf00b3d301a"},
+    {file = "pydantic-1.10.9-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2196c06484da2b3fded1ab6dbe182bdabeb09f6318b7fdc412609ee2b564c49a"},
+    {file = "pydantic-1.10.9-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:6257bb45ad78abacda13f15bde5886efd6bf549dd71085e64b8dcf9919c38b60"},
+    {file = "pydantic-1.10.9-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:3283b574b01e8dbc982080d8287c968489d25329a463b29a90d4157de4f2baaf"},
+    {file = "pydantic-1.10.9-cp37-cp37m-win_amd64.whl", hash = "sha256:5f8bbaf4013b9a50e8100333cc4e3fa2f81214033e05ac5aa44fa24a98670a29"},
+    {file = "pydantic-1.10.9-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:b9cd67fb763248cbe38f0593cd8611bfe4b8ad82acb3bdf2b0898c23415a1f82"},
+    {file = "pydantic-1.10.9-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:f50e1764ce9353be67267e7fd0da08349397c7db17a562ad036aa7c8f4adfdb6"},
+    {file = "pydantic-1.10.9-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:73ef93e5e1d3c8e83f1ff2e7fdd026d9e063c7e089394869a6e2985696693766"},
+    {file = "pydantic-1.10.9-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:128d9453d92e6e81e881dd7e2484e08d8b164da5507f62d06ceecf84bf2e21d3"},
+    {file = "pydantic-1.10.9-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:ad428e92ab68798d9326bb3e5515bc927444a3d71a93b4a2ca02a8a5d795c572"},
+    {file = "pydantic-1.10.9-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:fab81a92f42d6d525dd47ced310b0c3e10c416bbfae5d59523e63ea22f82b31e"},
+    {file = "pydantic-1.10.9-cp38-cp38-win_amd64.whl", hash = "sha256:963671eda0b6ba6926d8fc759e3e10335e1dc1b71ff2a43ed2efd6996634dafb"},
+    {file = "pydantic-1.10.9-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:970b1bdc6243ef663ba5c7e36ac9ab1f2bfecb8ad297c9824b542d41a750b298"},
+    {file = "pydantic-1.10.9-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:7e1d5290044f620f80cf1c969c542a5468f3656de47b41aa78100c5baa2b8276"},
+    {file = "pydantic-1.10.9-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:83fcff3c7df7adff880622a98022626f4f6dbce6639a88a15a3ce0f96466cb60"},
+    {file = "pydantic-1.10.9-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:0da48717dc9495d3a8f215e0d012599db6b8092db02acac5e0d58a65248ec5bc"},
+    {file = "pydantic-1.10.9-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:0a2aabdc73c2a5960e87c3ffebca6ccde88665616d1fd6d3db3178ef427b267a"},
+    {file = "pydantic-1.10.9-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:9863b9420d99dfa9c064042304868e8ba08e89081428a1c471858aa2af6f57c4"},
+    {file = "pydantic-1.10.9-cp39-cp39-win_amd64.whl", hash = "sha256:e7c9900b43ac14110efa977be3da28931ffc74c27e96ee89fbcaaf0b0fe338e1"},
+    {file = "pydantic-1.10.9-py3-none-any.whl", hash = "sha256:6cafde02f6699ce4ff643417d1a9223716ec25e228ddc3b436fe7e2d25a1f305"},
+    {file = "pydantic-1.10.9.tar.gz", hash = "sha256:95c70da2cd3b6ddf3b9645ecaa8d98f3d80c606624b6d245558d202cd23ea3be"},
 ]
 
 [package.dependencies]
