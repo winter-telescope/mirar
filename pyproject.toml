@@ -5,6 +5,7 @@ description = "Modular open-source astronomy image reduction framework"
 authors = ["Robert Stein <rdstein@caltech.edu>", "Viraj Karambelkar <viraj@astro.caltech.edu>"]
 license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/winter-telescope/mirar"
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<3.12"
