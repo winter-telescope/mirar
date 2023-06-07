@@ -46,7 +46,11 @@ class ProgramCredentials(BaseModel):
     """
 
     progname: str = Field(min_length=8, max_length=8, example="2020A000")
-    prog_key: str = Field(min_length=_LEN_PROG_KEY, max_length=_LEN_PROG_KEY)
+    prog_key: str = Field(
+        min_length=_LEN_PROG_KEY,
+        max_length=_LEN_PROG_KEY,
+        description="The auto-generated program hash key",
+    )
 
 
 class Program(BaseDB, ProgramCredentials):
@@ -56,10 +60,6 @@ class Program(BaseDB, ProgramCredentials):
 
     sql_model: ClassVar = ProgramsTable
     progid: int = Field(default=1)
-    progname: str = Field(min_length=1, example="2020A000")
-    prog_key: str = Field(
-        min_length=1, description="The auto-generated program hash key"
-    )
     pi_name: str = Field(min_length=1, example="Hubble")
     pi_email: str = Field(min_length=1, example="someone@institute.com")
     startdate: date = date_field
