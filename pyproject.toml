@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "mirar"
-version = "0.7.1"
-description = "Modular open-source astronomy image reduction framework"
+version = "0.8.0"
+description = "Modular Image Reduction and Analysis Resource (MIRAR)"
 authors = ["Robert Stein <rdstein@caltech.edu>", "Viraj Karambelkar <viraj@astro.caltech.edu>"]
 license = "MIT"
 readme = "README.md"
@@ -46,7 +46,7 @@ autopep8 = "^2.0.2"
 sqlalchemy = "^2.0.15"
 pydantic = "^1.10.8"
 pylint-pydantic = "^0.1.6"
-survey-coverage = {git = "https://github.com/virajkaram/survey_coverage.git"}
+astrosurveyutils = "^0.0.1"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.0.1"

@@ -1,7 +1,7 @@
 Contributors
 ============
 
-winterdrp was created by `Robert Stein <https://robertdstein.github.io/>`_ and
+mirar was created by `Robert Stein <https://robertdstein.github.io/>`_ and
 `Viraj Karambelkar <https://github.com/virajkaram>`_. However, we didn't do it alone.
 
 Other people who contributed to the code include:
@@ -9,6 +9,8 @@ Other people who contributed to the code include:
 * Sulekha Kishore
 * Saarah Hall
 * Benjamin Roulston
+
+We especially thank Saarah for her suggestion of the code name, and Ben for creating the logo.
 
 We also made great use of existing software:
 

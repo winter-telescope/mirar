@@ -12,7 +12,7 @@ from typing import Optional
 import numpy as np
 
 from mirar.errors.error_report import ErrorReport
-from mirar.paths import __version__, package_name
+from mirar.paths import PACKAGE_NAME, __version__
 
 logger = logging.getLogger(__name__)
 
@@ -72,11 +72,11 @@ class ErrorStack:
 
         summary = (
             f"Error report summarising {len(self.reports)} errors. \n"
-            f"Code version: {package_name}=={__version__} \n \n"
+            f"Code version: {PACKAGE_NAME}=={__version__} \n \n"
             f"{int(len(is_known_error) - np.sum(is_known_error))}/{len(is_known_error)}"
-            f" errors were errors not raised by {package_name}. \n"
+            f" errors were errors not raised by {PACKAGE_NAME}. \n"
             f"The remaining {int(np.sum(is_known_error))}/{len(is_known_error)} "
-            f"errors were known errors raised by {package_name}. \n"
+            f"errors were known errors raised by {PACKAGE_NAME}. \n"
             f"An additional {len(self.noncritical_reports)} non-critical "
             f"errors were raised. \n"
         )

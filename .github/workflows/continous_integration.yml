@@ -102,28 +102,14 @@ jobs:
           poetry run coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Echo tag name
-#        run: echo "Tag is ${{ github.ref }}, Deploy is ${{ startsWith(github.ref, 'refs/tags/') && matrix.python-version == 3.9}}"
-#
-#      - name: Install pypa/build
-#        run: >-
-#          python -m
-#          pip install
-#          build
-#          --user
-#
-#      - name: Build a binary wheel and a source tarball
-#        run: >-
-#          python -m
-#          build
-#          --sdist
-#          --wheel
-#          --outdir dist/
-#          .
-#
-#      - name: Publish distribution 📦 to PyPI
-#        if: ${{ startsWith(github.ref, 'refs/tags/') && success() && matrix.python-version == 3.9}}
-#        uses: pypa/gh-action-pypi-publish@master
-#        with:
-#          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Echo tag name
+        run: echo "Tag is ${{ github.ref }}, Tagged is ${{ startsWith(github.ref, 'refs/tags/')}}, Python Check is ${{matrix.python-version == 3.10}},  Deploy is ${{ startsWith(github.ref, 'refs/tags/') && matrix.python-version == 3.10}}"
+
+      # Build a tarball and push to Pypi if tagged with new version
+      - name: Build and publish
+        if: ${{ startsWith(github.ref, 'refs/tags/') && success() && matrix.python-version == 3.11}}
+        run: |
+          poetry publish -n --build
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}

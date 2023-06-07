@@ -1,31 +1,22 @@
 Installation
 ============
 
-Downloading
------------
-
-To use mirar, first you need to clone it:
-
-.. code-block:: bash
-
-    git clone git@github.com:winter-telescope/mirar.git
-
 
 Installing the package
 ----------------------
 
-You next need to install the package itself. The code is built using python.
-We suggest creating a dedicated `conda <https://www.anaconda.com/products/distribution>`_ environment (), but you could also use a virtual environment.
+You need to install the package itself. The code is built using python.
+We suggest creating a dedicated `conda <https://www.anaconda.com/products/distribution>`_ environment, but you could also use a virtual environment.
 
-Creating a conda environment
+Prerequisite: Creating a conda environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In most cases, you can do the following:
 
 .. code-block:: bash
 
-    conda create -n winter_env python=3.11
-    conda activate winter_env
+    conda create -n mirar python=3.11
+    conda activate mirar
     pip install --upgrade pip
 
 However, if you are using a new Mac with an arm chip, you might run into trouble.
@@ -33,12 +24,39 @@ Instead, we suggest:
 
 .. code-block:: bash
 
-    conda create -n winter_env
-    conda activate winter_env
+    conda create -n mirar
+    conda activate mirar
     conda config --env --set subdir osx-64
     conda install python=3.11
-    conda activate winter_env
     pip install --upgrade pip
+
+Option 1: Installing via pip
+----------------------------
+
+The easiest way to install mirar is via pip:
+
+.. code-block:: bash
+
+    pip install mirar
+
+This will install the latest version of mirar from `PyPI <https://pypi.org/project/mirar/>`_.
+
+This method is recommended if you just want to use mirar without making changes.
+
+Option 2: Installing via git
+----------------------------
+
+Downloading
+^^^^^^^^^^^
+
+You can alternatively grab the latest version of the code from github:
+
+.. code-block:: bash
+
+    git clone git@github.com:winter-telescope/mirar.git
+    cd mirar
+
+This method is recommended if you want to contribute to the code.
 
 Installing python dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -48,7 +66,7 @@ Next you need to actually install mirar. We use `poetry <https://python-poetry.o
 .. code-block:: bash
 
     pip install poetry
-    poetry install mirar
+    poetry install
 
 Lastly, you need to install the `pre-commit hooks <https://pre-commit.com/>`_ (see :doc:`contributing-guide` for more info about what these do):
 
@@ -63,11 +81,8 @@ Now you should have installed mirar. You can check it worked by opening up pytho
     python
 
 .. doctest::
-
-    >>> from mirar.paths import package_name
-        >>> print(f"This is the {package_name} package")
-        This is the mirar package
-    >>> print(f"This is the {package_name} package")
+    >>> from mirar.paths import PACKAGE_NAME
+    >>> print(f"This is the {PACKAGE_NAME} package")
     This is the mirar package
 
 Non-python dependencies
@@ -98,7 +113,6 @@ Then, make sure to also grab index files from
 .. code-block:: bash
 
     .../astrometry-net/<version>/data
-
 
 PostgreSQL is relatively straightforward to install via the `official website <https://www.postgresql.org/download/>`_.
 The other packages might be more complicated, and will depend on your platform.

@@ -4,23 +4,17 @@ Central module hosting all shared paths/directory conventions/keys/variables
 import logging
 import os
 import shutil
+from importlib import metadata
 from pathlib import Path
-
-import toml
 
 logger = logging.getLogger(__name__)
 
-winter_code_dir = Path(__file__).parent.parent.resolve()
+base_code_dir = Path(__file__).parent.parent.resolve()
 
-toml_path = winter_code_dir.joinpath("pyproject.toml")
+PACKAGE_NAME = "mirar"
+__version__ = metadata.version(__package__)
 
-with open(toml_path.as_posix(), "r", encoding="UTF-8") as f:
-    toml_info = toml.loads(f.read())
-
-package_name = toml_info["tool"]["poetry"]["name"]
-__version__ = toml_info["tool"]["poetry"]["version"]
-
-doc_dir = winter_code_dir.joinpath("docs/")
+doc_dir = base_code_dir.joinpath("docs/")
 
 _n_cpu = os.cpu_count()
 if _n_cpu is None:
@@ -61,7 +55,7 @@ else:
     base_output_dir = Path(_base_output_dir)
 
 # Set up special directories
-TEMP_DIR = base_output_dir.joinpath(f"{package_name}_temp")
+TEMP_DIR = base_output_dir.joinpath(f"{PACKAGE_NAME}_temp")
 TEMP_DIR.mkdir(exist_ok=True)
 
 RAW_IMG_SUB_DIR = "raw"
