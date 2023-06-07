@@ -5452,13 +5452,13 @@ files = [
 
 [[package]]
 name = "wintertoo"
-version = "0.3.3"
+version = "0.3.4"
 description = ""
 optional = false
 python-versions = ">=3.9.0,<3.12"
 files = [
-    {file = "wintertoo-0.3.3-py3-none-any.whl", hash = "sha256:854d48621645902c43666401086374050e437b8bc1182b9d6d8acc2d2aad60e5"},
-    {file = "wintertoo-0.3.3.tar.gz", hash = "sha256:696d5d6db903018f6e1749d0ea75764117e4281e596e7610df476d4925766bc2"},
+    {file = "wintertoo-0.3.4-py3-none-any.whl", hash = "sha256:cefc1cf704fb9a2d8558e1575cce4ec322541e63a499b7c253d91f6a638af431"},
+    {file = "wintertoo-0.3.4.tar.gz", hash = "sha256:d26907e78420bcc65843d0afbf74287e3bd0bce9f5d145907e5f48269817aaaf"},
 ]
 
 [package.dependencies]
@@ -5668,4 +5668,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.12"
-content-hash = "7a74d39fb0a99d250b09b2fb3de0a49201c88796a0ee85d4f00eff7687a90636"
+content-hash = "106a2aa86db024991f3eebe6cb79fe91824d8d7ec4abb1c57d46daf8089438ef"

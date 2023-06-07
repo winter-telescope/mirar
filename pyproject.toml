@@ -47,7 +47,7 @@ sqlalchemy = "^2.0.15"
 pydantic = "^1.10.8"
 pylint-pydantic = "^0.1.6"
 astrosurveyutils = "^0.0.1"
-wintertoo = "^0.3.3"
+wintertoo = "0.3.4"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.0.1"
