@@ -124,6 +124,16 @@ class ImagePSFPhotometry(BaseImagePhotometry):
 
     base_key = "PSFPHOTIM"
 
+    def __init__(
+        self,
+        *args,
+        zp_colname: str = ZP_KEY,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+
+        self.zp_colname = zp_colname
+
     def get_psf_filename(self, image: Image):
         """
         Function to get PSF file name of an image
@@ -152,7 +162,7 @@ class ImagePSFPhotometry(BaseImagePhotometry):
 
             image[PSF_FLUX_KEY] = flux
             image[PSF_FLUXUNC_KEY] = fluxunc
-            image[MAG_PSF_KEY] = -2.5 * np.log10(flux) + float(image[ZP_KEY])
+            image[MAG_PSF_KEY] = -2.5 * np.log10(flux) + float(image[self.zp_colname])
             image[MAGERR_PSF_KEY] = 1.086 * fluxunc / flux
 
         if self.photometry_out_temp_dir is not None:
