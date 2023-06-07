@@ -81,11 +81,8 @@ Now you should have installed mirar. You can check it worked by opening up pytho
     python
 
 .. doctest::
-
-    >>> from mirar.paths import package_name
-        >>> print(f"This is the {package_name} package")
-        This is the mirar package
-    >>> print(f"This is the {package_name} package")
+    >>> from mirar.paths import PACKAGE_NAME
+    >>> print(f"This is the {PACKAGE_NAME} package")
     This is the mirar package
 
 Non-python dependencies

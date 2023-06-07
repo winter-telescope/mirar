@@ -5,20 +5,20 @@ import logging
 import os
 from pathlib import Path
 
-from mirar.paths import package_name, winter_code_dir
+from mirar.paths import PACKAGE_NAME, base_code_dir
 
 logger = logging.getLogger(__name__)
 
 TEST_DATA_URL = "git@github.com:winter-telescope/wirc_starterpack.git"
 
-test_data_dir = winter_code_dir.parent.joinpath(
+test_data_dir = base_code_dir.parent.joinpath(
     os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
 
 
 TEST_DATA_TAG = "v0.1.4"
 
-COMPLETED_CHECK_BOOL = f"{package_name}_testdata_check"
+COMPLETED_CHECK_BOOL = f"{PACKAGE_NAME}_testdata_check"
 NEED_TEST_DATA = "TESTDATA_CHECK"
 
 

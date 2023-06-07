@@ -25,12 +25,12 @@ from mirar.io import check_file_is_complete
 from mirar.paths import (
     MONITOR_EMAIL_KEY,
     MONITOR_RECIPIENT_KEY,
+    PACKAGE_NAME,
     RAW_IMG_SUB_DIR,
     __version__,
     base_raw_dir,
     get_output_path,
     max_n_cpu,
-    package_name,
     raw_img_dir,
 )
 from mirar.pipelines import get_pipeline
@@ -81,7 +81,7 @@ class Monitor:
         raw_dir: str = RAW_IMG_SUB_DIR,
         base_raw_img_dir: Path = base_raw_dir,
     ):
-        logger.info(f"Software version: {package_name}=={__version__}")
+        logger.info(f"Software version: {PACKAGE_NAME}=={__version__}")
 
         self.errorstack = ErrorStack()
         self.night = night

@@ -14,15 +14,14 @@ from astropy.time import Time
 
 from mirar.data import cache
 from mirar.monitor.base_monitor import Monitor
-from mirar.paths import RAW_IMG_SUB_DIR, TEMP_DIR, package_name
+from mirar.paths import PACKAGE_NAME, RAW_IMG_SUB_DIR, TEMP_DIR
 from mirar.pipelines import Pipeline, get_pipeline
 from mirar.processors.utils import ImageLoader
 
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(
-    description=f"{package_name}: An automated image reduction pipeline, "
-    f"developed for WINTER"
+    description=f"{PACKAGE_NAME}: Modular Image Reduction and Analysis Resource"
 )
 
 ln = Time.now() - 1.0 * u.day

@@ -28,12 +28,12 @@ from mirar.paths import (
     CAL_OUTPUT_SUB_DIR,
     LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
+    PACKAGE_NAME,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
     get_output_path,
     get_weight_path,
     max_n_cpu,
-    package_name,
 )
 
 logger = logging.getLogger(__name__)
@@ -248,7 +248,7 @@ class BaseProcessor:
             data_block["REDUCER"] = getpass.getuser()
             data_block["REDMACH"] = socket.gethostname()
             data_block["REDTIME"] = str(datetime.datetime.now())
-            data_block["REDSOFT"] = package_name
+            data_block["REDSOFT"] = PACKAGE_NAME
             batch[i] = data_block
         return batch
 
