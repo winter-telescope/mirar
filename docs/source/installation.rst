@@ -1,23 +1,14 @@
 Installation
 ============
 
-Downloading
------------
-
-To use mirar, first you need to clone it:
-
-.. code-block:: bash
-
-    git clone git@github.com:winter-telescope/mirar.git
-
 
 Installing the package
 ----------------------
 
-You next need to install the package itself. The code is built using python.
-We suggest creating a dedicated `conda <https://www.anaconda.com/products/distribution>`_ environment (), but you could also use a virtual environment.
+You need to install the package itself. The code is built using python.
+We suggest creating a dedicated `conda <https://www.anaconda.com/products/distribution>`_ environment, but you could also use a virtual environment.
 
-Creating a conda environment
+Prerequisite: Creating a conda environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In most cases, you can do the following:
@@ -39,6 +30,33 @@ Instead, we suggest:
     conda install python=3.11
     conda activate winter_env
     pip install --upgrade pip
+
+Option 1: Installing via pip
+----------------------------
+
+The easiest way to install mirar is via pip:
+
+.. code-block:: bash
+
+    pip install mirar
+
+This will install the latest version of mirar from `PyPI <https://pypi.org/project/mirar/>`_.
+
+This method is recommended if you just want to use mirar without making changes.
+
+Option 2: Installing via git
+----------------------------
+
+Downloading
+^^^^^^^^^^^
+
+You can alternatively grab the latest version of the code from github:
+
+.. code-block:: bash
+
+    git clone git@github.com:winter-telescope/mirar.git
+
+This method is recommended if you want to contribute to the code.
 
 Installing python dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -98,7 +116,6 @@ Then, make sure to also grab index files from
 .. code-block:: bash
 
     .../astrometry-net/<version>/data
-
 
 PostgreSQL is relatively straightforward to install via the `official website <https://www.postgresql.org/download/>`_.
 The other packages might be more complicated, and will depend on your platform.
