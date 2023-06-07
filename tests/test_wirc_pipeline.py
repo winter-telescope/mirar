@@ -4,36 +4,36 @@ Module to test WIRC pipeline
 import logging
 import os
 
-from winterdrp.data import Dataset, ImageBatch
-from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.pipelines.wirc.generator import (
+from mirar.data import Dataset, ImageBatch
+from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
 )
-from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
-from winterdrp.pipelines.wirc.wirc_files import (
+from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from mirar.pipelines.wirc.wirc_files import (
     scamp_fp_path,
     sextractor_astrometry_config,
     swarp_sp_path,
     wirc_mask_path,
 )
-from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
-from winterdrp.processors.astromatic import Scamp, Sextractor, Swarp
-from winterdrp.processors.autoastrometry import AutoAstrometry
-from winterdrp.processors.csvlog import CSVLog
-from winterdrp.processors.dark import MasterDarkCalibrator
-from winterdrp.processors.flat import MasterFlatCalibrator
-from winterdrp.processors.mask import MaskPixels
-from winterdrp.processors.photcal import PhotCalibrator
-from winterdrp.processors.sky import MasterSkyCalibrator
-from winterdrp.processors.utils import ImageSaver
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_selector import (
+from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
+from mirar.processors.astromatic import Scamp, Sextractor, Swarp
+from mirar.processors.autoastrometry import AutoAstrometry
+from mirar.processors.csvlog import CSVLog
+from mirar.processors.dark import MasterDarkCalibrator
+from mirar.processors.flat import MasterFlatCalibrator
+from mirar.processors.mask import MaskPixels
+from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.sky import MasterSkyCalibrator
+from mirar.processors.utils import ImageSaver
+from mirar.processors.utils.image_loader import ImageLoader
+from mirar.processors.utils.image_selector import (
     ImageBatcher,
     ImageDebatcher,
     ImageSelector,
 )
-from winterdrp.testing import BaseTestCase
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 

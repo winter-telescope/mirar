@@ -3,21 +3,21 @@ Tests forced photometry with a WIRC image
 """
 import logging
 
-from winterdrp.data import Dataset, ImageBatch
-from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.io import open_fits
-from winterdrp.paths import LATEST_SAVE_KEY, get_output_path
-from winterdrp.pipelines.wirc.blocks import (
+from mirar.data import Dataset, ImageBatch
+from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.io import open_fits
+from mirar.paths import LATEST_SAVE_KEY, get_output_path
+from mirar.pipelines.wirc.blocks import (
     candidate_photometry,
     export_candidates_from_header,
     image_photometry,
 )
-from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
-from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
-from winterdrp.processors.utils.header_annotate import HeaderEditor
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_saver import ImageSaver
-from winterdrp.testing import BaseTestCase
+from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
+from mirar.processors.utils.header_annotate import HeaderEditor
+from mirar.processors.utils.image_loader import ImageLoader
+from mirar.processors.utils.image_saver import ImageSaver
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 

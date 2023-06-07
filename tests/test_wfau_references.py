@@ -5,12 +5,12 @@ import logging
 
 import pandas as pd
 
-from winterdrp.pipelines import get_pipeline
-from winterdrp.pipelines.winter.build_references import (
+from mirar.pipelines import get_pipeline
+from mirar.pipelines.winter.build_references import (
     run_winter_reference_build_pipeline,
     winter_fields_file,
 )
-from winterdrp.testing import BaseTestCase
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,10 @@
 """Test suite for ..module::winterdrp.monitor module"""
 import logging
 
-from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.monitor.base_monitor import Monitor
-from winterdrp.processors.utils.cal_hunter import CalRequirement
-from winterdrp.testing import BaseTestCase
+from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.monitor.base_monitor import Monitor
+from mirar.processors.utils.cal_hunter import CalRequirement
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 

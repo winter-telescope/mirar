@@ -3,9 +3,9 @@ Module to test summer image subtraction pipeline
 """
 import logging
 
-from winterdrp.data import Dataset, ImageBatch
-from winterdrp.pipelines.summer.summer_pipeline import SummerPipeline
-from winterdrp.testing import BaseTestCase
+from mirar.data import Dataset, ImageBatch
+from mirar.pipelines.summer.summer_pipeline import SummerPipeline
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 

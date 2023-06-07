@@ -1,1 +1,0 @@
-from winterdrp.pipelines.winter.winter_pipeline import WINTERPipeline
