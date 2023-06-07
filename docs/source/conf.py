@@ -1,4 +1,4 @@
-from winterdrp.paths import __version__, package_name
+from mirar.paths import __version__, package_name
 
 # Configuration file for the Sphinx documentation builder.
 

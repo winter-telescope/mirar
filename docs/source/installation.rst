@@ -4,11 +4,11 @@ Installation
 Downloading
 -----------
 
-To use winterdrp, first you need to clone it:
+To use mirar, first you need to clone it:
 
 .. code-block:: bash
 
-    git clone git@github.com:winter-telescope/winterdrp.git
+    git clone git@github.com:winter-telescope/mirar.git
 
 
 Installing the package
@@ -43,12 +43,12 @@ Instead, we suggest:
 Installing python dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Next you need to actually install winterdrp. We use `poetry <https://python-poetry.org/>`_ to manage dependencies:
+Next you need to actually install mirar. We use `poetry <https://python-poetry.org/>`_ to manage dependencies:
 
 .. code-block:: bash
 
     pip install poetry
-    poetry install winterdrp
+    poetry install mirar
 
 Lastly, you need to install the `pre-commit hooks <https://pre-commit.com/>`_ (see :doc:`contributing-guide` for more info about what these do):
 
@@ -56,7 +56,7 @@ Lastly, you need to install the `pre-commit hooks <https://pre-commit.com/>`_ (s
 
     pre-commit install
 
-Now you should have installed winterdrp. You can check it worked by opening up python and trying to import it:
+Now you should have installed mirar. You can check it worked by opening up python and trying to import it:
 
 .. code-block:: bash
 
@@ -64,15 +64,17 @@ Now you should have installed winterdrp. You can check it worked by opening up p
 
 .. doctest::
 
-    >>> from winterdrp.paths import package_name
+    >>> from mirar.paths import package_name
+        >>> print(f"This is the {package_name} package")
+        This is the mirar package
     >>> print(f"This is the {package_name} package")
-    This is the winterdrp package
+    This is the mirar package
 
 Non-python dependencies
 -----------------------
 
 Finally you meed to install any optional dependencies that you might want to use.
-We again recommend using conda. Whether you need these dependencies depends on your intended usage of winterdrp.
+We again recommend using conda. Whether you need these dependencies depends on your intended usage of mirar.
 
 Dependencies include:
 
@@ -113,7 +115,7 @@ You can use apt-get if you are running :
     sudo ln -s /usr/bin/source-extractor /usr/bin/sex
     sudo ln -s /usr/bin/SWarp /usr/bin/swarp
 
-The latter two lines are to ensure that source-extractor/swarp can be called from the command line in the way expected by winterdrp.
+The latter two lines are to ensure that source-extractor/swarp can be called from the command line in the way expected by mirar.
 
 astromatic software with conda (Linux, Mac or Windows)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

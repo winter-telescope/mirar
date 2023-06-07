@@ -1,8 +1,8 @@
 import logging
 import unittest
 
-from winterdrp.testing import BaseTestCase
-from winterdrp.utils.pipeline_visualisation import iterate_flowify
+from mirar.testing import BaseTestCase
+from mirar.utils.pipeline_visualisation import iterate_flowify
 
 logger = logging.getLogger(__name__)
 

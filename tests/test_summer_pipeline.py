@@ -3,9 +3,9 @@ Tests for summer reduction
 """
 import logging
 
-from winterdrp.data import Dataset, ImageBatch
-from winterdrp.pipelines import get_pipeline
-from winterdrp.testing import BaseTestCase
+from mirar.data import Dataset, ImageBatch
+from mirar.pipelines import get_pipeline
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 

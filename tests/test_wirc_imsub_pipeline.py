@@ -5,23 +5,23 @@ import logging
 
 from astropy.io import fits
 
-from winterdrp.data import Dataset, ImageBatch
-from winterdrp.downloader.get_test_data import get_test_data_dir
-from winterdrp.io import open_fits
-from winterdrp.paths import get_output_path
-from winterdrp.pipelines.wirc.blocks import candidates, subtract
-from winterdrp.pipelines.wirc.generator import (
+from mirar.data import Dataset, ImageBatch
+from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.io import open_fits
+from mirar.paths import get_output_path
+from mirar.pipelines.wirc.blocks import candidates, subtract
+from mirar.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
     wirc_reference_sextractor,
 )
-from winterdrp.pipelines.wirc.load_wirc_image import load_raw_wirc_image
-from winterdrp.pipelines.wirc.wirc_pipeline import WircPipeline
-from winterdrp.processors.reference import ProcessReference
-from winterdrp.processors.utils.image_loader import ImageLoader
-from winterdrp.processors.utils.image_saver import ImageSaver
-from winterdrp.references import WIRCRef
-from winterdrp.testing import BaseTestCase
+from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
+from mirar.processors.reference import ProcessReference
+from mirar.processors.utils.image_loader import ImageLoader
+from mirar.processors.utils.image_saver import ImageSaver
+from mirar.references import WIRCRef
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 

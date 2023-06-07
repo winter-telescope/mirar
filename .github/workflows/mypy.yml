@@ -26,4 +26,4 @@ jobs:
           poetry install
       - name: Analysing the code with mypy
         run: |
-           poetry run mypy winterdrp --ignore-missing-imports
+           poetry run mypy mirar --ignore-missing-imports

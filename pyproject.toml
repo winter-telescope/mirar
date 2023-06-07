@@ -1,10 +1,11 @@
 [tool.poetry]
-name = "winterdrp"
+name = "mirar"
 version = "0.7.1"
 description = "Modular open-source astronomy image reduction framework"
 authors = ["Robert Stein <rdstein@caltech.edu>", "Viraj Karambelkar <viraj@astro.caltech.edu>"]
 license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/winter-telescope/mirar"
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<3.12"
@@ -51,9 +52,9 @@ survey-coverage = {git = "https://github.com/virajkaram/survey_coverage.git"}
 sphinx = "^7.0.1"
 
 [tool.coverage.run]
-source = ["winterdrp"]
+source = ["mirar"]
 concurrency = ["thread"]
-omit = ["winterdrp/__main__.py", "winterdrp/processors/send_to_fritz.py"]
+omit = ["mirar/__main__.py", "mirar/processors/send_to_fritz.py"]
 
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
