@@ -22,6 +22,7 @@ winter_subfields_file = get_output_dir(
     dir_root="cache",
     sub_dir="winter",
 ).joinpath("WINTER_subfields.txt")
+winter_subfields_file.parent.mkdir(parents=True, exist_ok=True)
 
 
 def dummy_split_image_batch_generator(
@@ -97,10 +98,10 @@ def dummy_split_image_batch_generator(
 
 def write_subfields_file(
     subfields_filename: Path,
-    full_ra_size_deg=1,
-    full_dec_size_deg=1.2,
-    nx=3,
-    ny=4,
+    full_ra_size_deg: float = 1.0,
+    full_dec_size_deg: float = 1.2,
+    nx: int = 3,
+    ny: int = 4,
 ):
     """
     Write a subfields file for the specified fields file
@@ -112,7 +113,7 @@ def write_subfields_file(
         ny: Number of sub-fields in the y direction
 
     Returns:
-
+        None
     """
     subimg_half_ra_deg = full_ra_size_deg / (2 * nx)
     subimg_half_dec_deg = full_dec_size_deg / (2 * ny)
@@ -160,7 +161,8 @@ def run_winter_reference_build_pipeline(
     ny: int = 4,
     full_ra_size_deg: float = 1.0,
     full_dec_size_deg: float = 1.2,
-    only_this_subdet_id: int = None,
+    field_id: int | None = None,
+    subdet_id: int | None = None,
 ):
     """
     Run the reference build pipeline on the winter fields
@@ -169,7 +171,8 @@ def run_winter_reference_build_pipeline(
         ny: Number of sub-fields in the y direction
         full_ra_size_deg: Full right ascension size of the field in degrees
         full_dec_size_deg: Full declination size of the field in degrees
-        only_this_subdet_id: Run only for this subdetid (for debugging)
+        field_id: Run only for this fieldid (for debugging)
+        subdet_id: Run only for this subdetid (for debugging)
     Returns:
 
     """
@@ -180,6 +183,11 @@ def run_winter_reference_build_pipeline(
     winter_northern_fields = winter_fields[
         (winter_fields["Dec"] > -40) & (winter_fields["Dec"] < 60)
     ].reset_index(drop=True)
+
+    if field_id is not None:
+        winter_northern_fields = winter_northern_fields[
+            winter_northern_fields["ID"] == field_id
+        ].reset_index(drop=True)
 
     pipeline = WINTERPipeline(night="references", selected_configurations="refbuild")
 
@@ -200,9 +208,9 @@ def run_winter_reference_build_pipeline(
         )
 
         subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
-        if only_this_subdet_id is not None:
+        if subdet_id is not None:
             split_image_batch = [
-                split_image_batch[np.where(subdetids == only_this_subdet_id)[0][0]]
+                split_image_batch[np.where(subdetids == subdet_id)[0][0]]
             ]
         subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
 
@@ -263,12 +271,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.fieldid is not None:
-        winter_fields = winter_fields[winter_fields["ID"] == args.fieldid].reset_index(
-            drop=True
-        )
-
     run_winter_reference_build_pipeline(
-        winter_fields,
-        only_this_subdet_id=args.subdetid,
+        field_id=args.fieldid,
+        subdet_id=args.subdetid,
     )
