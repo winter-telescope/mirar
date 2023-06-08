@@ -20,7 +20,7 @@ class AutoAstrometry(BaseImageProcessor):
     def __init__(
         self,
         temp_output_sub_dir: str = "autoastrometry",
-        write_crosscheck_files: bool = False,
+        write_crosscheck_files: bool = True,
         catalog: Optional[str] = None,
         pixel_scale: Optional[float] = None,
         inv: bool = False,
