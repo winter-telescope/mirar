@@ -24,7 +24,7 @@ def wirc_astrometric_catalog_generator(_) -> Gaia2Mass:
 
     :return: catalogue
     """
-    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30)
+    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=10)
 
 
 def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
@@ -36,7 +36,7 @@ def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     """
     filter_name = image["FILTER"]
     return Gaia2Mass(
-        min_mag=10, max_mag=20, search_radius_arcmin=30, filter_name=filter_name
+        min_mag=10, max_mag=20, search_radius_arcmin=10, filter_name=filter_name
     )
 
 
