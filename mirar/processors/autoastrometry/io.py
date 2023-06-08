@@ -349,7 +349,7 @@ def write_region_file(
             out.write("image\n")
             for i, src in enumerate(src_list):
                 out.write(
-                    f"point({src.ra_deg:.3f},{src.dec_deg:.3f}) "
+                    f"point({src.x:.3f},{src.y:.3f}) "
                     f"# point=boxcircle text={{{i + 1}}}\n"
                 )
 
