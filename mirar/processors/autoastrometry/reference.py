@@ -334,7 +334,7 @@ def get_ref_sources_from_catalog(
                 f"scat?catalog={trycat}&ra={center_ra}"
                 f"&dec={center_dec}&system=J2000&rad=-90"
             )
-
+            logger.debug(f"Trying {testqueryurl}")
             with urllib.request.urlopen(testqueryurl, timeout=30) as check:
                 checklines = check.readlines()
             logger.debug(f"Found {len(checklines)}")
