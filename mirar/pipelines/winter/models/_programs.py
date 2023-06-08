@@ -12,7 +12,7 @@ from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.processors.sqldatabase.base_model import BaseDB, date_field
 from mirar.utils.security import generate_key
 
-_LEN_PROG_KEY = 60
+LEN_PROG_KEY = 60
 DEFAULT_MAX_PRIORITY = 100.0
 
 
@@ -26,7 +26,7 @@ class ProgramsTable(WinterBase):  # pylint: disable=too-few-public-methods
     puid = Column(Integer, primary_key=True)  # Serial key for counting programs
     progid = Column(Integer)  # identifier for program? 0/1/2/3
     progname = Column(CHAR(8), unique=True)  # e.g. 2022A000
-    prog_key = Column(CHAR(_LEN_PROG_KEY), unique=True)  # unique hash key for program
+    prog_key = Column(CHAR(LEN_PROG_KEY), unique=True)  # unique hash key for program
     pi_name = Column(VARCHAR(20))  # PI Name
     pi_email = Column(VARCHAR(70))  # PI email
     startdate = Column(DATE)  # Start time of program
@@ -47,8 +47,8 @@ class ProgramCredentials(BaseModel):
 
     progname: str = Field(min_length=8, max_length=8, example="2020A000")
     prog_key: str = Field(
-        min_length=_LEN_PROG_KEY,
-        max_length=_LEN_PROG_KEY,
+        min_length=LEN_PROG_KEY,
+        max_length=LEN_PROG_KEY,
         description="The auto-generated program hash key",
     )
 
@@ -111,7 +111,7 @@ class Program(BaseDB, ProgramCredentials):
 default_program = Program(
     progid=1,
     progname="2001A000",
-    prog_key=generate_key(_LEN_PROG_KEY),
+    prog_key=generate_key(LEN_PROG_KEY),
     pi_name="HAL",
     pi_email="winter@miaow.com",
     progtitle="Auto-pilot",

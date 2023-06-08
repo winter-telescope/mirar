@@ -25,6 +25,8 @@ from mirar.pipelines.summer.models._img_type import (
 from mirar.pipelines.summer.models._nights import Night, NightsTable
 from mirar.pipelines.summer.models._proc import Proc, ProcTable
 from mirar.pipelines.summer.models._programs import (
+    DEFAULT_MAX_PRIORITY,
+    LEN_PROG_KEY,
     Program,
     ProgramCredentials,
     ProgramsTable,
