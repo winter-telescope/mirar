@@ -116,7 +116,8 @@ class BaseKowalskiXMatch(BaseXMatchCatalog, ABC):
         }
         logger.debug(f"Kowalski is {self.kowalski}")
         response = self.kowalski.query(query=query)
-        data = response.get("data")
+        data = response.get("default").get("data")
+
         return data[self.catalog_name]
 
     def query(self, coords) -> dict:
