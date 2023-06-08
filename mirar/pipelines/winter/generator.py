@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 winter_dir = os.path.dirname(__file__)
 astromatic_config_dir = os.path.join(winter_dir, "config/")
 swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+winter_mask_path = os.path.join(winter_dir, "winter_mask.fits")
 
 
 def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks):
