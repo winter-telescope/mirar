@@ -3,18 +3,23 @@ Module relating to `swarp <https://www.astromatic.net/software/swarp`_
 """
 import logging
 import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
+import astropy
 import numpy as np
 from astropy.wcs import WCS
 
-from mirar.data import ImageBatch
+from mirar.data import Image, ImageBatch
 from mirar.errors import ProcessorError
+from mirar.io import open_fits
 from mirar.paths import (
     BASE_NAME_KEY,
+    LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     RAW_IMG_KEY,
+    STACKED_COMPONENT_IMAGES_KEY,
     SWARP_FLUX_SCALING_KEY,
     all_astrometric_keywords,
     copy_temp_file,
@@ -180,18 +185,23 @@ class Swarp(BaseImageProcessor):
             temp_output_sub_dir: str
                 output sub-directory
             pixscale: float
-                Pixel scale in degrees
+                Pixel scale in degrees. If None, set as median of the pixel scales
+                 of input images.
             x_imgpixsize: float
-                X-dimension in pixels
+                X-dimension in pixels. If None, set as max x-size of input images. If
+                you want a stacked image covering all input images, set
+                calculate_dims_in_swarp to True instead.
             y_imgpixsize: float
-                Y-dimension in pixels
+                Y-dimension in pixels. If None, set as max y-size of input images.
             propogate_headerlist: list
                 List of header keywords to propagate. Recommended to leave None, the
                 processor will take care of it.
             center_ra: float
-                Desired central RA of output image
+                Desired central RA of output image. If None, set as the median of the
+                input images.
             center_dec:
-                Desired central Dec of output image
+                Desired central Dec of output image. If None, set as the median of the
+                input images.
             gain: float
                 Gain
             include_scamp: bool
@@ -460,6 +470,9 @@ class Swarp(BaseImageProcessor):
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
+        new_image[STACKED_COMPONENT_IMAGES_KEY] = ",".join(
+            [x[LATEST_SAVE_KEY] for x in batch]
+        )
         new_image[BASE_NAME_KEY] = output_image_path.name
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.as_posix()
         self.save_fits(new_image, output_image_path)
@@ -471,3 +484,51 @@ class Swarp(BaseImageProcessor):
                 logger.debug(f"Deleted temporary file {temp_file}")
 
         return ImageBatch([new_image])
+
+
+class GetSwarpComponentImages(BaseImageProcessor):
+    base_key = "swarp_component_images"
+
+    def __init__(
+        self,
+        load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
+        header_key=STACKED_COMPONENT_IMAGES_KEY,
+        copy_header_keys: str | list[str] = None,
+    ):
+        super().__init__()
+        self.load_image = load_image
+        self.header_key = header_key
+        self.copy_header_keys = copy_header_keys
+        if isinstance(copy_header_keys, str):
+            self.copy_header_keys = [copy_header_keys]
+
+    def _apply_to_images(
+        self,
+        batch: ImageBatch,
+    ) -> ImageBatch:
+        if len(batch) > 1:
+            raise NotImplementedError(
+                "GetSwarpComponentImages only works on a batch containing a "
+                "single images. Consider adding an ImageDebatcher before "
+                "this processor."
+            )
+        component_batch = ImageBatch()
+        image = batch[0]
+        component_images_list = image[self.header_key].split(",")
+
+        for component_image_path in component_images_list:
+            if not Path(component_image_path).exists():
+                raise FileNotFoundError(
+                    f"Component image {component_image_path} not found. "
+                    f"Are you sure it was saved using ImageSaver to this path just "
+                    f"before the Swarp processor that stacked it?"
+                )
+            component_data, component_header = self.load_image(component_image_path)
+            component_image = Image(component_data, component_header)
+            if self.copy_header_keys is not None:
+                for key in self.copy_header_keys:
+                    if key in image.keys():
+                        component_image[key] = image[key]
+            component_batch.append(component_image)
+        logger.info(f"Loaded {len(component_batch)} component images")
+        return component_batch
