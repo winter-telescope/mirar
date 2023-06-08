@@ -26,7 +26,7 @@ from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.anet import AstrometryNet
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.csvlog import CSVLog
-from mirar.processors.mask import MaskPixels
+from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import (
     CandidateAperturePhotometry,
@@ -79,7 +79,7 @@ build_log = [  # pylint: disable=duplicate-code
 ]  # pylint: disable=duplicate-code
 
 reduce = [
-    MaskPixels(mask_path=sedmv2_mask_path),
+    MaskPixelsFromPath(mask_path=sedmv2_mask_path),
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),

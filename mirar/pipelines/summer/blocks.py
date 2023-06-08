@@ -44,7 +44,7 @@ from mirar.processors.database.database_exporter import (
     DatabaseImageExporter as PSQLDatabaseImageExporter,
 )
 from mirar.processors.database.database_modifier import ModifyImageDatabaseSeq
-from mirar.processors.mask import MaskPixels
+from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
@@ -123,7 +123,7 @@ export_raw = [
         duplicate_protocol="replace",
         q3c_bool=False,
     ),
-    MaskPixels(mask_path=summer_mask_path),
+    MaskPixelsFromPath(mask_path=summer_mask_path),
     DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
 ]
@@ -133,7 +133,7 @@ cal_hunter = [
 ]
 
 test_cr = [
-    MaskPixels(mask_path=summer_mask_path),
+    MaskPixelsFromPath(mask_path=summer_mask_path),
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
