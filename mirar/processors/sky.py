@@ -6,6 +6,7 @@ import logging
 import numpy as np
 
 from mirar.data import ImageBatch
+from mirar.paths import SATURATE_KEY
 from mirar.processors.base_processor import ProcessorPremadeCache
 from mirar.processors.flat import SkyFlatCalibrator
 
@@ -40,6 +41,9 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
             header.append(
                 ("SKMEDSUB", subtract_median, "Median sky level subtracted"), end=True
             )
+            if SATURATE_KEY in image.header:
+                # image[SATURATE_KEY] -= subtract_median
+                image[SATURATE_KEY] = 25000
 
             image.set_data(data)
             image.set_header(header)

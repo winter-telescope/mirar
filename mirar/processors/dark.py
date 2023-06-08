@@ -8,6 +8,7 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
+from mirar.paths import SATURATE_KEY
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -60,6 +61,10 @@ class DarkCalibrator(ProcessorWithCache):
             data = data - (master_dark.get_data() * image["EXPTIME"])
             image.set_data(data)
 
+            if SATURATE_KEY in image.header:
+                image[SATURATE_KEY] -= (
+                    np.nanmedian(master_dark.get_data()) * image["EXPTIME"]
+                )
         return batch
 
     def make_image(
