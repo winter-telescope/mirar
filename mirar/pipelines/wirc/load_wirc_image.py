@@ -16,9 +16,12 @@ from mirar.paths import (
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    SATURATE_KEY,
 )
 
 logger = logging.getLogger(__name__)
+
+wirc_nonlinear_level = 30000
 
 
 def load_raw_wirc_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
@@ -34,17 +37,23 @@ def load_raw_wirc_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Hea
         header = img[0].header
         # pylint: enable=E1101
         header["FILTER"] = header["AFT"].split("__")[0]
-
+        header["DETCOADD"] = header["COADDS"]
+        if SATURATE_KEY not in header:
+            header[SATURATE_KEY] = wirc_nonlinear_level * header["DETCOADD"]
         if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
             header["OBSTYPE"] = "calibration"
 
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
 
         header[BASE_NAME_KEY] = os.path.basename(path)
-        header[RAW_IMG_KEY] = path
+        if RAW_IMG_KEY not in header.keys():
+            header[RAW_IMG_KEY] = path
         header["TARGET"] = header["OBJECT"].lower()
-        header["UTCTIME"] = header["UTSHUT"]
-        header["MJD-OBS"] = Time(header["UTSHUT"]).mjd
+        if "MJD-OBS" in header.keys():
+            header["UTCTIME"] = Time(header["MJD-OBS"], format="mjd").isot
+        else:
+            header["UTCTIME"] = header["UTSHUT"]
+            header["MJD-OBS"] = Time(header["UTSHUT"]).mjd
         if COADD_KEY not in header.keys():
             logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
             header[COADD_KEY] = 1

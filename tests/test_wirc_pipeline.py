@@ -23,7 +23,7 @@ from mirar.processors.autoastrometry import AutoAstrometry
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import MasterDarkCalibrator
 from mirar.processors.flat import MasterFlatCalibrator
-from mirar.processors.mask import MaskPixels
+from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.sky import MasterSkyCalibrator
 from mirar.processors.utils import ImageSaver
@@ -88,7 +88,7 @@ test_configuration = [
             "OBSCLASS",
         ],
     ),
-    MaskPixels(mask_path=wirc_mask_path),
+    MaskPixelsFromPath(mask_path=wirc_mask_path),
     ImageSelector(("exptime", "45.0")),
     MasterDarkCalibrator(get_cal_path("dark")),
     ImageDebatcher(),
