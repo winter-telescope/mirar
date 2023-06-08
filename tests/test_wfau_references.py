@@ -3,13 +3,8 @@ Tests for getting and making WFAU reference images
 """
 import logging
 
-import pandas as pd
-
 from mirar.pipelines import get_pipeline
-from mirar.pipelines.winter.build_references import (
-    run_winter_reference_build_pipeline,
-    winter_fields_file,
-)
+from mirar.pipelines.winter.build_references import run_winter_reference_build_pipeline
 from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -72,13 +67,9 @@ class TestIRReferencePipeline(BaseTestCase):
 
         """
         self.logger.info("\n\n Testing WINTER reference building pipeline \n\n")
-        winter_fields = pd.read_csv(winter_fields_file, delim_whitespace=True)
 
-        selected_winter_field = winter_fields[
-            winter_fields["ID"] == TEST_WINTER_FIELD_ID
-        ].reset_index(drop=True)
         res, _ = run_winter_reference_build_pipeline(
-            winter_fields=selected_winter_field, only_this_subdet_id=0
+            subdet_id=0, field_id=TEST_WINTER_FIELD_ID
         )
 
         self.assertEqual(len(res[0]), 1)
@@ -98,11 +89,8 @@ class TestIRReferencePipeline(BaseTestCase):
 if __name__ == "__main__":
     print("Calculating WFAU reference image dictionary")
 
-    winter_fields = pd.read_csv(winter_fields_file, delim_whitespace=True)
-
-    selected_winter_field = winter_fields[winter_fields["ID"] == TEST_WINTER_FIELD_ID]
     new_res, new_errorstack = run_winter_reference_build_pipeline(
-        winter_fields=selected_winter_field, only_this_subdet_id=0
+        field_id=TEST_WINTER_FIELD_ID, subdet_id=0
     )
 
     header = new_res[0][0].get_header()

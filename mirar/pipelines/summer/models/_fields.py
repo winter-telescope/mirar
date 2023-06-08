@@ -2,14 +2,13 @@
 Models for the 'field' table
 """
 import time
-import urllib.request
 from typing import ClassVar
 
-import pandas as pd
 from pydantic import Field
 from sqlalchemy import REAL, Column, Insert, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
+from wintertoo.data import summer_fields
 
 from mirar.pipelines.summer.models.base_model import SummerBase
 from mirar.processors.sqldatabase.base_model import BaseDB, _exists, dec_field, ra_field
@@ -52,42 +51,32 @@ class FieldEntry(BaseDB):
     # Need to fix formatting of fields file in wintertoo before including these.
 
 
-_SUMMER_FIELDS_URL = (
-    "https://github.com/winter-telescope/wintertoo/raw/"
-    "main/wintertoo/data/summer_fields.txt"
-)
-
-
-def populate_fields(url=_SUMMER_FIELDS_URL):
+def populate_fields():
     """
-    Downloads a field grid (text file) and imports it in chunks into the database
+    Populates the fields table in the database
 
-    :param url: url of grid
     :return: None
     """
 
     engine = get_engine(db_name=FieldsTable.db_name)
     if not _exists(Select(FieldsTable), engine=engine):
-        with urllib.request.urlopen(url) as url_s:
-            full_res = pd.read_csv(url_s, sep=r"\s+")
-
         chunk = 10000
 
-        full_res["fieldid"] = full_res["ID"]
-        full_res["ra"] = full_res["RA"]
-        full_res["dec"] = full_res["Dec"]
-        full_res["ebv"] = full_res["Ebv"]
-        full_res["gall"] = full_res["Gal_Long"]
-        full_res["galb"] = full_res["Gal_Lat"]
+        summer_fields["fieldid"] = summer_fields["ID"]
+        summer_fields["ra"] = summer_fields["RA"]
+        summer_fields["dec"] = summer_fields["Dec"]
+        summer_fields["ebv"] = summer_fields["Ebv"]
+        summer_fields["gall"] = summer_fields["Gal_Long"]
+        summer_fields["galb"] = summer_fields["Gal_Lat"]
 
         keys = list(FieldEntry.__fields__)
 
-        idx = list(range(0, len(full_res), chunk)) + [len(full_res)]
+        idx = list(range(0, len(summer_fields), chunk)) + [len(summer_fields)]
 
         for k, i in tqdm(enumerate(idx[:-1]), total=len(idx) - 1):
             j = idx[k + 1]
 
-            res = full_res[i:j]
+            res = summer_fields[i:j]
 
             stmt = Insert(FieldsTable).values(
                 res[keys].to_dict(orient="records"),

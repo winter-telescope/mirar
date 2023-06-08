@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from astropy.io import fits
+from wintertoo.data import winter_fields
 
 from mirar.data import Dataset, Image, ImageBatch
 from mirar.data.utils import plot_fits_image
@@ -17,9 +17,12 @@ from mirar.pipelines.winter.winter_pipeline import WINTERPipeline
 from mirar.processors.candidates.utils import get_corners_ra_dec_from_header
 
 logger = logging.getLogger(__name__)
-winter_fields_file_dir = Path(__file__).parent.joinpath("files")
-winter_fields_file = winter_fields_file_dir.joinpath("WINTER_fields.txt")
-winter_subfields_file = winter_fields_file_dir.joinpath("WINTER_subfields.txt")
+
+winter_subfields_file = get_output_dir(
+    dir_root="cache",
+    sub_dir="winter",
+).joinpath("WINTER_subfields.txt")
+winter_subfields_file.parent.mkdir(parents=True, exist_ok=True)
 
 
 def dummy_split_image_batch_generator(
@@ -94,32 +97,29 @@ def dummy_split_image_batch_generator(
 
 
 def write_subfields_file(
-    fields_filename,
-    subfields_filename,
-    full_ra_size_deg=1,
-    full_dec_size_deg=1.2,
-    nx=3,
-    ny=4,
+    subfields_filename: Path,
+    full_ra_size_deg: float = 1.0,
+    full_dec_size_deg: float = 1.2,
+    nx: int = 3,
+    ny: int = 4,
 ):
     """
     Write a subfields file for the specified fields file
     Args:
-        fields_filename:
-        subfields_filename:
+        subfields_filename: Path to the subfields file
         full_ra_size_deg: RA-Size of the field in degrees
         full_dec_size_deg: Dec-Size of the field in degrees
         nx: Number of sub-fields in the x direction
         ny: Number of sub-fields in the y direction
 
     Returns:
-
+        None
     """
-    winter_fields = pd.read_csv(fields_filename, delim_whitespace=True)
     subimg_half_ra_deg = full_ra_size_deg / (2 * nx)
     subimg_half_dec_deg = full_dec_size_deg / (2 * ny)
 
-    with open(subfields_filename, "w") as f:
-        f.write(
+    with open(subfields_filename, "w", encoding="utf8") as subfield_f:
+        subfield_f.write(
             "FieldID, SubdetID, RA_cent, Dec_cent, RA0_0, Dec0_0, "
             "RA0_1, Dec0_1, RA1_0, Dec1_0, RA1_1, Dec1_1\n"
         )
@@ -147,8 +147,8 @@ def write_subfields_file(
                 dec1_0 = dec + half_delta_dec
                 dec1_1 = dec + half_delta_dec
 
-                with open(subfields_filename, "a") as f:
-                    f.write(
+                with open(subfields_filename, "a", encoding="utf8") as subfield_f:
+                    subfield_f.write(
                         f"{int(fieldid)}, {subdetid}, "
                         f"{ra}, {dec}, "
                         f"{ra0_0}, {dec0_0}, {ra0_1}, {dec0_1}, "
@@ -157,32 +157,37 @@ def write_subfields_file(
 
 
 def run_winter_reference_build_pipeline(
-    winter_fields: pd.DataFrame,
     nx: int = 3,
     ny: int = 4,
     full_ra_size_deg: float = 1.0,
     full_dec_size_deg: float = 1.2,
-    only_this_subdet_id: int = None,
+    field_id: int | None = None,
+    subdet_id: int | None = None,
 ):
     """
     Run the reference build pipeline on the winter fields
     Args:
-        winter_fields: Winter fields dataframe
         nx: Number of sub-fields in the x direction
         ny: Number of sub-fields in the y direction
         full_ra_size_deg: Full right ascension size of the field in degrees
         full_dec_size_deg: Full declination size of the field in degrees
-        only_this_subdet_id: Run only for this subdetid (for debugging)
+        field_id: Run only for this fieldid (for debugging)
+        subdet_id: Run only for this subdetid (for debugging)
     Returns:
 
     """
     if not winter_subfields_file.exists():
         logger.info(f"Writing subfields file to {winter_subfields_file}")
-        write_subfields_file(winter_fields_file, winter_subfields_file)
+        write_subfields_file(winter_subfields_file)
 
     winter_northern_fields = winter_fields[
         (winter_fields["Dec"] > -40) & (winter_fields["Dec"] < 60)
     ].reset_index(drop=True)
+
+    if field_id is not None:
+        winter_northern_fields = winter_northern_fields[
+            winter_northern_fields["ID"] == field_id
+        ].reset_index(drop=True)
 
     pipeline = WINTERPipeline(night="references", selected_configurations="refbuild")
 
@@ -203,9 +208,9 @@ def run_winter_reference_build_pipeline(
         )
 
         subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
-        if only_this_subdet_id is not None:
+        if subdet_id is not None:
             split_image_batch = [
-                split_image_batch[np.where(subdetids == only_this_subdet_id)[0][0]]
+                split_image_batch[np.where(subdetids == subdet_id)[0][0]]
             ]
         subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
 
@@ -251,8 +256,6 @@ def run_winter_reference_build_pipeline(
 
 
 if __name__ == "__main__":
-    winter_fields = pd.read_csv(winter_fields_file, delim_whitespace=True)
-
     logger = logging.getLogger("mirar")
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(
@@ -268,12 +271,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.fieldid is not None:
-        winter_fields = winter_fields[winter_fields["ID"] == args.fieldid].reset_index(
-            drop=True
-        )
-
     run_winter_reference_build_pipeline(
-        winter_fields,
-        only_this_subdet_id=args.subdetid,
+        field_id=args.fieldid,
+        subdet_id=args.subdetid,
     )

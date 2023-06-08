@@ -10,6 +10,7 @@ from pydantic import Field
 from sqlalchemy import REAL, Column, Insert, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
+from wintertoo.data import winter_fields
 
 from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.processors.sqldatabase.base_model import BaseDB, _exists, dec_field, ra_field
@@ -52,42 +53,32 @@ class Fields(BaseDB):
     # Need to fix formatting of fields file in wintertoo before including these.
 
 
-_WINTER_FIELDS_URL = (
-    "https://github.com/winter-telescope/wintertoo/raw/"
-    "main/wintertoo/data/WINTER_fields.txt"
-)
-
-
-def populate_fields(url=_WINTER_FIELDS_URL):
+def populate_fields():
     """
     Downloads a field grid (text file) and imports it in chunks into the database
 
-    :param url: url of grid
     :return: None
     """
 
     engine = get_engine(db_name=FieldsTable.db_name)
     if not _exists(Select(FieldsTable), engine=engine):
-        with urllib.request.urlopen(url) as url_s:
-            full_res = pd.read_csv(url_s, sep=r"\s+")
-
         chunk = 10000
 
-        full_res["fieldid"] = full_res["ID"]
-        full_res["ra"] = full_res["RA"]
-        full_res["dec"] = full_res["Dec"]
-        full_res["ebv"] = full_res["Ebv"]
-        full_res["gall"] = full_res["Gal_Long"]
-        full_res["galb"] = full_res["Gal_Lat"]
+        winter_fields["fieldid"] = winter_fields["ID"]
+        winter_fields["ra"] = winter_fields["RA"]
+        winter_fields["dec"] = winter_fields["Dec"]
+        winter_fields["ebv"] = winter_fields["Ebv"]
+        winter_fields["gall"] = winter_fields["Gal_Long"]
+        winter_fields["galb"] = winter_fields["Gal_Lat"]
 
         keys = list(Fields.__fields__)
 
-        idx = list(range(0, len(full_res), chunk)) + [len(full_res)]
+        idx = list(range(0, len(winter_fields), chunk)) + [len(winter_fields)]
 
         for k, i in tqdm(enumerate(idx[:-1]), total=len(idx) - 1):
             j = idx[k + 1]
 
-            res = full_res[i:j]
+            res = winter_fields[i:j]
 
             stmt = Insert(FieldsTable).values(
                 res[keys].to_dict(orient="records"),
