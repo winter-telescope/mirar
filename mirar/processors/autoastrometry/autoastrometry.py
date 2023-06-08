@@ -32,7 +32,6 @@ from mirar.processors.astromatic.sextractor.settings import (
     write_config_file,
     write_param_file,
 )
-from mirar.processors.astromatic.sextractor.sourceextractor import default_saturation
 from mirar.processors.autoastrometry.crossmatch import (
     crosscheck_source_lists,
     distance_match,
@@ -44,9 +43,9 @@ from mirar.processors.autoastrometry.detect import (
 )
 from mirar.processors.autoastrometry.errors import (
     AstrometryCrossmatchError,
+    AstrometryReferenceError,
     AstrometrySourceError,
     AstrometryURLError,
-    AstrometryReferenceError
 )
 from mirar.processors.autoastrometry.io import (
     export_src_lists,
@@ -246,8 +245,12 @@ def autoastrometry(
             center_dec=center_dec,
             box_size_arcsec=box_size_arcsec,
         )
-    except (TimeoutError, AstrometryURLError, AstrometrySourceError,
-            AstrometryReferenceError):
+    except (
+        TimeoutError,
+        AstrometryURLError,
+        AstrometrySourceError,
+        AstrometryReferenceError,
+    ):
         ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog_astroquery(
             catalog=catalog,
             center_ra=center_ra,
