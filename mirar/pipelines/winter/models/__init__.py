@@ -21,8 +21,8 @@ from mirar.pipelines.winter.models._imgType import (
 from mirar.pipelines.winter.models._nights import Nights, NightsTable
 from mirar.pipelines.winter.models._proc import Proc, ProcTable
 from mirar.pipelines.winter.models._programs import (
+    Program,
     ProgramCredentials,
-    Programs,
     ProgramsTable,
     populate_programs,
 )
