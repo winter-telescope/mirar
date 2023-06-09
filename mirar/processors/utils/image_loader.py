@@ -13,7 +13,7 @@ import numpy as np
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
 from mirar.io import open_fits
-from mirar.paths import RAW_IMG_SUB_DIR, base_raw_dir, core_fields
+from mirar.paths import RAW_IMG_KEY, RAW_IMG_SUB_DIR, base_raw_dir, core_fields
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -110,3 +110,43 @@ def unzip(zipped_list: list[str]) -> list[str]:
         os.rename(file, unzipped_list[i])
 
     return unzipped_list
+
+
+class LoadImageFromHeader(BaseImageProcessor):
+    """
+    Class to load images from header information
+    """
+
+    base_key = "load_from_header"
+
+    def __init__(
+        self,
+        header_key: str = RAW_IMG_KEY,
+        copy_header_keys: str | list[str] = None,
+        load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
+    ):
+        super().__init__()
+        self.header_key = header_key
+        self.copy_header_keys = copy_header_keys
+        self.load_image = load_image
+        if isinstance(self.copy_header_keys, str):
+            self.copy_header_keys = [self.copy_header_keys]
+
+    def __str__(self):
+        return f"Processor to load images from header key {self.header_key}"
+
+    def _apply_to_images(
+        self,
+        batch: ImageBatch,
+    ) -> ImageBatch:
+        new_batch = ImageBatch()
+        for image in batch:
+            new_image_file = image.header[self.header_key]
+            new_image_data, new_header = self.load_image(new_image_file)
+            new_image = Image(new_image_data, new_header)
+            if self.copy_header_keys is not None:
+                for key in self.copy_header_keys:
+                    new_image.header[key] = image.header[key]
+            new_batch.append(new_image)
+
+        return new_batch
