@@ -26,7 +26,7 @@ class Gaia2Mass(BaseCatalog):
         self,
         *args,
         filter_name: str = "j",
-        ph_qual_cut: bool = False,
+        ph_qual_cut: bool = True,
         snr_threshold: float = 5,
         trim: bool = False,
         image_catalog_path: Optional[str] = None,
@@ -66,7 +66,7 @@ class Gaia2Mass(BaseCatalog):
         )
 
         if self.ph_qual_cut:
-            cmd += "AND tmass.ph_qual='AAA';"
+            cmd += " AND tmass.ph_qual='AAA';"
         else:
             cmd += ";"
 
