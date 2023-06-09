@@ -2,10 +2,11 @@
 Module containing standard processing blocks for WIRC
 """
 from mirar.catalog.kowalski import PS1, TMASS
-from mirar.paths import CSV_MASK_KEY, RAW_IMG_KEY, SATURATE_KEY
+from mirar.paths import FITS_MASK_KEY, LATEST_SAVE_KEY, RAW_IMG_KEY, SATURATE_KEY
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
+    wirc_photometric_img_catalog_purifier,
     wirc_reference_image_generator,
     wirc_reference_image_resampler,
     wirc_reference_psfex,
@@ -18,6 +19,7 @@ from mirar.pipelines.wirc.wirc_files import (
     scamp_fp_path,
     sextractor_astrometry_config,
     sextractor_candidate_config,
+    sextractor_photometry_config,
     sextractor_reference_config,
     swarp_sp_path,
     wirc_candidate_schema_path,
@@ -26,9 +28,11 @@ from mirar.pipelines.wirc.wirc_files import (
 from mirar.processors.alerts import AvroPacketMaker, SendToFritz
 from mirar.processors.astromatic import Scamp, Sextractor, Swarp
 from mirar.processors.astromatic.psfex import PSFex
+from mirar.processors.astromatic.scamp.scamp import scamp_header_key
 from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkimg_map
 from mirar.processors.astromatic.swarp.swarp import GetSwarpComponentImages
-from mirar.processors.autoastrometry import AutoAstrometry
+from mirar.processors.astrometry.autoastrometry import AutoAstrometry
+from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.candidates.candidate_detector import DetectCandidates
 from mirar.processors.candidates.candidate_extractor import (
     ForcedPhotometryCandidateTable,
@@ -57,67 +61,43 @@ from mirar.processors.photometry.psf_photometry import (
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
-from mirar.processors.utils import ImageLoader, ImageSaver
-from mirar.processors.utils.image_selector import (
+from mirar.processors.utils import (
+    HeaderAnnotator,
     ImageBatcher,
     ImageDebatcher,
+    ImageLoader,
+    ImageSaver,
     ImageSelector,
 )
+from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
-# load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
-load_raw = [ImageLoader(input_sub_dir="firstpassstack", load_image=load_raw_wirc_image)]
+load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
+# load_raw = [ImageLoader(input_sub_dir="firstpassstack",
+# load_image=load_raw_wirc_image)]
 
 reduce = [
-    # CSVLog(
-    #     export_keys=[
-    #         "OBJECT",
-    #         "FILTER",
-    #         "UTSHUT",
-    #         "EXPTIME",
-    #         "COADDS",
-    #         "OBSTYPE",
-    #         "OBSCLASS",
-    #     ]
-    # ),
-    # MaskPixelsFromPath(mask_path=wirc_mask_path),
-    # ImageSelector(("exptime", "45.0")),
-    # DarkCalibrator(),
-    # ImageDebatcher(),
-    # ImageSelector(("obsclass", "science")),
-    # ImageSelector(("object", "ZTF18aavqmki")),
-    # ImageBatcher(split_key=["filter", "object"]),
-    # SkyFlatCalibrator(),
-    # NightSkyMedianCalibrator(),
-    # AutoAstrometry(catalog="tmc"),
-    # Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
-    # ImageSaver(output_dir_name="firstpass"),
-    # Scamp(
-    #     ref_catalog_generator=wirc_astrometric_catalog_generator,
-    #     scamp_config_path=scamp_fp_path,
-    # ),
-    # Swarp(swarp_config_path=swarp_sp_path,
-    #       calculate_dims_in_swarp=True),
-    # ImageSaver(output_dir_name="firstpassstack"),
-    Sextractor(
-        output_sub_dir="firstpasssextractor",
-        **sextractor_astrometry_config,
-        checkimage_type="SEGMENTATION",
-        cache=True,
+    CSVLog(
+        export_keys=[
+            "OBJECT",
+            "FILTER",
+            "UTSHUT",
+            "EXPTIME",
+            "COADDS",
+            "OBSTYPE",
+            "OBSCLASS",
+        ]
     ),
-    MaskPixelsFromPath(mask_path_key=sextractor_checkimg_map["SEGMENTATION"]),
-    ImageSaver(output_dir_name="mask1", write_mask=True),
-    MaskAboveThreshold(threshold_key=SATURATE_KEY),
-    ImageSaver(output_dir_name="mask2", write_mask=True),
-    WriteMaskedCoordsToFile(output_dir="mask"),
-    GetSwarpComponentImages(
-        header_key=RAW_IMG_KEY,
-        load_image=load_raw_wirc_image,
-        copy_header_keys=CSV_MASK_KEY,
-    ),
-    MaskPixelsFromWCS(),
-    ImageSaver(output_dir_name="firstpassmasked", write_mask=True),
+    MaskPixelsFromPath(mask_path=wirc_mask_path),
+    ImageSelector(("exptime", "45.0")),
+    DarkCalibrator(),
+    ImageSaver(output_dir_name="darkcal"),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageDebatcher(),
+    ImageSelector(("obsclass", "science")),
+    ImageSelector(("object", "SN2018hna")),
+    ImageBatcher(split_key=["filter", "object"]),
     SkyFlatCalibrator(),
     NightSkyMedianCalibrator(),
     AutoAstrometry(catalog="tmc"),
@@ -125,10 +105,55 @@ reduce = [
     Scamp(
         ref_catalog_generator=wirc_astrometric_catalog_generator,
         scamp_config_path=scamp_fp_path,
+        cache=True,
     ),
+    ImageSaver(output_dir_name="firstpass"),
     Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
-    Sextractor(output_sub_dir="final_sextractor", **sextractor_astrometry_config),
-    PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
+    ImageSaver(output_dir_name="firstpassstack"),
+    # ImageSelector(("BASENAME", "image0125.fits_stack.fits")),
+    Sextractor(
+        output_sub_dir="firstpasssextractor",
+        **sextractor_astrometry_config,
+        checkimage_type="SEGMENTATION",
+        cache=True,
+    ),
+    MaskPixelsFromPath(
+        mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
+        write_masked_pixels_to_file=True,
+        output_dir="mask1",
+    ),
+    ImageSaver(output_dir_name="mask1", write_mask=True),
+    MaskAboveThreshold(
+        threshold_key=SATURATE_KEY, write_masked_pixels_to_file=True, output_dir="mask2"
+    ),
+    ImageSaver(output_dir_name="mask2", write_mask=True),
+    WriteMaskedCoordsToFile(output_dir="mask_stack"),
+    GetSwarpComponentImages(
+        load_image=load_raw_wirc_image,
+        copy_header_keys=FITS_MASK_KEY,
+    ),
+    LoadImageFromHeader(
+        header_key=RAW_IMG_KEY,
+        copy_header_keys=[scamp_header_key, FITS_MASK_KEY],
+        load_image=load_raw_wirc_image,
+    ),
+    AstrometryFromFile(astrometry_file_key=scamp_header_key),
+    ImageSaver(output_dir_name="firstpassastrom", write_mask=True),
+    MaskPixelsFromWCS(
+        write_masked_pixels_to_file=True,
+        output_dir="mask_secondpass",
+        only_write_mask=True,
+    ),
+    ImageSaver(output_dir_name="firstpassmasked", write_mask=True),
+    SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY),
+    NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
+    Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
+    Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
+    Sextractor(output_sub_dir="final_sextractor", **sextractor_photometry_config),
+    PhotCalibrator(
+        ref_catalog_generator=wirc_photometric_catalog_generator,
+        image_photometric_catalog_purifier=wirc_photometric_img_catalog_purifier,
+    ),
     ImageSaver(output_dir_name="final"),
 ]
 
