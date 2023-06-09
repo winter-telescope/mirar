@@ -19,7 +19,7 @@ from mirar.pipelines.wirc.wirc_files import (
 )
 from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
 from mirar.processors.astromatic import Scamp, Sextractor, Swarp
-from mirar.processors.autoastrometry import AutoAstrometry
+from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import MasterDarkCalibrator
 from mirar.processors.flat import MasterFlatCalibrator
