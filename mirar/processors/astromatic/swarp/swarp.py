@@ -279,6 +279,7 @@ class Swarp(BaseImageProcessor):
         )
         logger.debug(f"Writing file list to {swarp_image_list_path}")
 
+        component_images_list = [x[LATEST_SAVE_KEY] for x in batch]
         temp_files = [swarp_image_list_path, swarp_weight_list_path]
 
         # If swarp is run with combine -N option,
@@ -470,9 +471,7 @@ class Swarp(BaseImageProcessor):
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
-        new_image[STACKED_COMPONENT_IMAGES_KEY] = ",".join(
-            [x[LATEST_SAVE_KEY] for x in batch]
-        )
+        new_image[STACKED_COMPONENT_IMAGES_KEY] = ",".join(component_images_list)
         new_image[BASE_NAME_KEY] = output_image_path.name
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.as_posix()
         self.save_fits(new_image, output_image_path)
@@ -487,6 +486,10 @@ class Swarp(BaseImageProcessor):
 
 
 class GetSwarpComponentImages(BaseImageProcessor):
+    """
+    Get the component images used to make a swarp stack
+    """
+
     base_key = "swarp_component_images"
 
     def __init__(
