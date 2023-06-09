@@ -17,6 +17,13 @@ sextractor_astrometry_config = {
     "starnnw_path": wirc_file_dir.joinpath("default.nnw"),
 }
 
+sextractor_photometry_config = {
+    "config_path": wirc_file_dir.joinpath("matchcat.sex"),
+    "filter_path": wirc_file_dir.joinpath("default.conv"),
+    "parameter_path": wirc_file_dir.joinpath("astrom.param"),
+    "starnnw_path": wirc_file_dir.joinpath("default.nnw"),
+}
+
 scamp_fp_path = wirc_file_dir.joinpath("scamp_fp.conf")
 
 swarp_sp_path = wirc_file_dir.joinpath("second_pass.swarp")
