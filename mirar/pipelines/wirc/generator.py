@@ -18,6 +18,24 @@ from mirar.references.wirc import WIRCRef
 logger = logging.getLogger(__name__)
 
 
+def wirc_photometric_img_catalog_purifier(catalog, image):
+    """
+    Function to purify the photometric catalog
+
+    :return: purified catalog
+    """
+    clean_mask = (
+        (catalog["FLAGS"] == 0)
+        & (catalog["FWHM_WORLD"] < 4.0 / 3600.0)
+        & (catalog["X_IMAGE"] > 200)
+        & (catalog["X_IMAGE"] < 1800)
+        & (catalog["Y_IMAGE"] > 200)
+        & (catalog["Y_IMAGE"] < 1800)
+    )
+
+    return catalog[clean_mask]
+
+
 def wirc_astrometric_catalog_generator(_) -> Gaia2Mass:
     """
     Function to crossmatch WIRC to GAIA/2mass for astrometry
@@ -36,7 +54,10 @@ def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     """
     filter_name = image["FILTER"]
     return Gaia2Mass(
-        min_mag=10, max_mag=20, search_radius_arcmin=10, filter_name=filter_name
+        min_mag=10,
+        max_mag=20,
+        search_radius_arcmin=10,
+        filter_name=filter_name,
     )
 
 
