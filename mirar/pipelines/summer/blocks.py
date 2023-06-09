@@ -35,7 +35,7 @@ from mirar.pipelines.summer.load_summer_image import (
 from mirar.pipelines.summer.models import Exposure, Proc, Raw
 from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
-from mirar.processors.autoastrometry import AutoAstrometry
+from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.candidates.candidate_detector import DetectCandidates
 from mirar.processors.candidates.utils import DataframeWriter, RegionsWriter
 from mirar.processors.cosmic_rays import LACosmicCleaner

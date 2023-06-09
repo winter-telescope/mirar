@@ -23,8 +23,8 @@ from mirar.pipelines.sedmv2.generator import (
 )
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
 from mirar.processors import BiasCalibrator, FlatCalibrator
-from mirar.processors.anet import AstrometryNet
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
+from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
