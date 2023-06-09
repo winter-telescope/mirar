@@ -5,12 +5,13 @@ import logging
 import os.path
 import sys
 from collections.abc import Callable
-from astropy.io import fits
+
 import numpy as np
+from astropy.io import fits
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.paths import FLAT_FRAME_KEY, LATEST_SAVE_KEY, BASE_NAME_KEY
+from mirar.paths import BASE_NAME_KEY, FLAT_FRAME_KEY, LATEST_SAVE_KEY
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -101,8 +102,10 @@ class FlatCalibrator(ProcessorWithCache):
 
             if self.flat_mask_key is not None:
                 if self.flat_mask_key not in img.header.keys():
-                    err = f"Image {img} does not have a mask with key " \
-                          f"{self.flat_mask_key}"
+                    err = (
+                        f"Image {img} does not have a mask with key "
+                        f"{self.flat_mask_key}"
+                    )
                     logger.error(err)
                     raise KeyError(err)
 
@@ -114,9 +117,11 @@ class FlatCalibrator(ProcessorWithCache):
                     raise FileNotFoundError(err)
                 with fits.open(mask_file) as mask_img:
                     mask = mask_img[0].data
-                    mask = (mask > 0)
-                    logger.info(f"Masking {np.sum(mask)} pixels in flat "
-                                f"{img[BASE_NAME_KEY]}")
+                    mask = mask > 0
+                    logger.info(
+                        f"Masking {np.sum(mask)} pixels in flat "
+                        f"{img[BASE_NAME_KEY]}"
+                    )
                     data[mask] = np.nan
 
             median = np.nanmedian(
@@ -136,8 +141,12 @@ class SkyFlatCalibrator(FlatCalibrator):
     """
 
     def __init__(self, flat_mask_key=None, *args, **kwargs):
-        super().__init__(*args, **kwargs, select_flat_images=self.select_sky_flat,
-                         flat_mask_key=flat_mask_key)
+        super().__init__(
+            *args,
+            **kwargs,
+            select_flat_images=self.select_sky_flat,
+            flat_mask_key=flat_mask_key,
+        )
 
     @staticmethod
     def select_sky_flat(
