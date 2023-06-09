@@ -37,7 +37,8 @@ def load_raw_wirc_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Hea
         header = img[0].header
         # pylint: enable=E1101
         header["FILTER"] = header["AFT"].split("__")[0]
-        header["DETCOADD"] = header["COADDS"]
+        if "COADDS" in header.keys():
+            header["DETCOADD"] = header["COADDS"]
         if SATURATE_KEY not in header:
             header[SATURATE_KEY] = wirc_nonlinear_level * header["DETCOADD"]
         if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
