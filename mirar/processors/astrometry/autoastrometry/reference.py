@@ -12,12 +12,12 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 
-from mirar.processors.autoastrometry.errors import (
+from mirar.processors.astrometry.autoastrometry.errors import (
     AstrometryReferenceError,
     AstrometryURLError,
 )
-from mirar.processors.autoastrometry.sources import BaseSource, compare_mag
-from mirar.processors.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
+from mirar.processors.astrometry.autoastrometry.sources import BaseSource, compare_mag
+from mirar.processors.astrometry.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
 
 logger = logging.getLogger(__name__)
 

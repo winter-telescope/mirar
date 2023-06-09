@@ -10,7 +10,7 @@ from astropy.io import fits
 
 from mirar.data import ImageBatch
 from mirar.paths import BASE_NAME_KEY, get_output_dir, get_temp_path
-from mirar.processors.anet.anet import run_astrometry_net_single
+from mirar.processors.astrometry.anet.anet import run_astrometry_net_single
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)

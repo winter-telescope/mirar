@@ -16,9 +16,12 @@ from mirar.processors.astromatic.sextractor.sourceextractor import (
     default_saturation,
     run_sextractor_single,
 )
-from mirar.processors.autoastrometry.errors import AstrometrySourceError
-from mirar.processors.autoastrometry.sources import SextractorSource, compare_mag
-from mirar.processors.autoastrometry.utils import median, mode
+from mirar.processors.astrometry.autoastrometry.errors import AstrometrySourceError
+from mirar.processors.astrometry.autoastrometry.sources import (
+    SextractorSource,
+    compare_mag,
+)
+from mirar.processors.astrometry.autoastrometry.utils import median, mode
 
 logger = logging.getLogger(__name__)
 

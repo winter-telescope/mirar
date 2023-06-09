@@ -10,8 +10,11 @@ import ephem
 import numpy as np
 from astropy.io import fits
 
-from mirar.processors.autoastrometry.sources import BaseSource, SextractorSource
-from mirar.processors.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
+from mirar.processors.astrometry.autoastrometry.sources import (
+    BaseSource,
+    SextractorSource,
+)
+from mirar.processors.astrometry.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
 
 logger = logging.getLogger(__name__)
 
