@@ -5,12 +5,12 @@ import logging
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
 from astropy.wcs import WCS
 
-from mirar.data import ImageBatch
-from mirar.paths import BASE_NAME_KEY, CSV_MASK_KEY, get_output_dir
+from mirar.data import Image, ImageBatch
+from mirar.paths import BASE_NAME_KEY, FITS_MASK_KEY, get_output_dir
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -28,10 +28,12 @@ class BaseMask(BaseImageProcessor):
         self,
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
+        only_write_mask: bool = False,
     ):
         super().__init__()
         self.write_masked_pixels_to_file = write_masked_pixels_to_file
         self.output_dir = output_dir
+        self.only_write_mask = only_write_mask
 
     def get_mask(self, image) -> np.ndarray:
         """
@@ -46,28 +48,23 @@ class BaseMask(BaseImageProcessor):
         for image in batch:
             data = image.get_data()
             mask = self.get_mask(image)
-            data[mask] = MASK_VALUE
+
+            if not self.only_write_mask:
+                data[mask] = MASK_VALUE
+                image.set_data(data)
+
             logger.info(f"Masked {np.sum(mask)} pixels in {image[BASE_NAME_KEY]}")
-            image.set_data(data)
 
             if self.write_masked_pixels_to_file:
-                wcs = WCS(image.get_header())
-                masked_pixels_indices = np.where(mask)
-                masked_pixels_wcs = wcs.pixel_to_world(
-                    masked_pixels_indices[1], masked_pixels_indices[0]
-                )
                 mask_directory = get_output_dir(self.output_dir, self.night_sub_dir)
                 if not mask_directory.exists():
                     mask_directory.mkdir(parents=True)
-                mask_file_path = (
-                    mask_directory / f"{image[BASE_NAME_KEY]}" f"_masked_pixels_wcs.csv"
-                )
-                with open(mask_file_path, "w") as f:
-                    f.write("ra,dec\n")
-                    for ra, dec in zip(masked_pixels_wcs.ra, masked_pixels_wcs.dec):
-                        f.write(f"{ra.deg},{dec.deg}\n")
+                mask_file_path = mask_directory / f"{image[BASE_NAME_KEY]}_mask.fits"
 
-                image[CSV_MASK_KEY] = mask_file_path.as_posix()
+                mask_image = Image(data=mask.astype(int), header=image.get_header())
+                self.save_fits(mask_image, mask_file_path)
+
+                image[FITS_MASK_KEY] = mask_file_path.as_posix()
         return batch
 
 
@@ -84,10 +81,12 @@ class MaskPixelsFromPath(BaseMask):
         mask_path_key: str = None,
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
+        only_write_mask: bool = False,
     ):
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
             output_dir=output_dir,
+            only_write_mask=only_write_mask,
         )
         self.mask = None
         self.mask_path = mask_path
@@ -129,6 +128,7 @@ class MaskAboveThreshold(BaseMask):
         threshold_key: str = None,
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
+        only_write_mask: bool = False,
     ):
         """
         :param threshold: threshold to mask above
@@ -137,6 +137,7 @@ class MaskAboveThreshold(BaseMask):
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
             output_dir=output_dir,
+            only_write_mask=only_write_mask,
         )
         self.threshold = threshold
         self.threshold_key = threshold_key
@@ -173,13 +174,15 @@ class MaskPixelsFromWCS(BaseMask):
         self,
         mask_pixels_ra: float | list[float] = None,
         mask_pixels_dec: float | list[float] = None,
-        mask_file_key: str = CSV_MASK_KEY,
+        mask_file_key: str = FITS_MASK_KEY,
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
+        only_write_mask: bool = False,
     ):
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
             output_dir=output_dir,
+            only_write_mask=only_write_mask,
         )
         self.mask_pixels_ra = mask_pixels_ra
         self.mask_pixels_dec = mask_pixels_dec
@@ -200,13 +203,19 @@ class MaskPixelsFromWCS(BaseMask):
         wcs = WCS(image.get_header())
         if self.mask_file_key is not None:
             mask_file_path = image.get_header()[self.mask_file_key]
-            mask_pixels = pd.read_csv(mask_file_path)
-            mask_pixels_ra = mask_pixels["ra"].to_numpy()
-            mask_pixels_dec = mask_pixels["dec"].to_numpy()
+            with fits.open(mask_file_path) as mask_image:
+                mask = mask_image[0].data
+                mask_wcs = WCS(mask_image[0].header)
+
+            masked_pixel_x, masked_pixel_y = np.where(mask)
+            mask_pixel_coords = mask_wcs.pixel_to_world(masked_pixel_y, masked_pixel_x)
+            mask_pixels_ra = mask_pixel_coords.ra.deg
+            mask_pixels_dec = mask_pixel_coords.dec.deg
         else:
             mask_pixels_ra = self.mask_pixels_ra
             mask_pixels_dec = self.mask_pixels_dec
         logger.debug(f"Masking {mask_pixels_ra} ras and {mask_pixels_dec} decs")
+
         mask_pixel_coords = SkyCoord(mask_pixels_ra, mask_pixels_dec, unit="deg")
         mask_pixels_x, mask_pixels_y = wcs.world_to_pixel(mask_pixel_coords)
         mask_pixels_x = mask_pixels_x.astype(int)
@@ -228,8 +237,12 @@ class WriteMaskedCoordsToFile(BaseMask):
 
     base_key = "writemaskedcoords"
 
-    def __init__(self, output_dir: str | Path = "mask"):
-        super().__init__(write_masked_pixels_to_file=True, output_dir=output_dir)
+    def __init__(self, output_dir: str | Path = "mask", only_write_mask: bool = False):
+        super().__init__(
+            write_masked_pixels_to_file=True,
+            output_dir=output_dir,
+            only_write_mask=only_write_mask,
+        )
 
     def get_mask(self, image) -> np.ndarray:
         mask = np.zeros(image.get_data().shape, dtype=bool)
