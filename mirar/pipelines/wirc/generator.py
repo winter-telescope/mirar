@@ -24,7 +24,7 @@ def wirc_photometric_img_catalog_purifier(catalog, image):
 
     :return: purified catalog
     """
-    edge_width_pixels = 300
+    edge_width_pixels = 200
     fwhm_threshold_arcsec = 4.0
 
     x_lower_limit = edge_width_pixels
