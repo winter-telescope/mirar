@@ -77,7 +77,7 @@ load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
 # load_raw = [ImageLoader(input_sub_dir="firstpassstack",
 # load_image=load_raw_wirc_image)]
 
-reduce = [
+log = [
     CSVLog(
         export_keys=[
             "OBJECT",
@@ -88,15 +88,19 @@ reduce = [
             "OBSTYPE",
             "OBSCLASS",
         ]
-    ),
-    MaskPixelsFromPath(mask_path=wirc_mask_path),
-    ImageSelector(("exptime", "45.0")),
-    DarkCalibrator(),
+    )
+]
+
+masking = [MaskPixelsFromPath(mask_path=wirc_mask_path)]
+
+dark_calibration = [ImageSelector(("exptime", "45.0")), DarkCalibrator()]
+
+reduction = [
     ImageSaver(output_dir_name="darkcal"),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageDebatcher(),
     ImageSelector(("obsclass", "science")),
-    ImageSelector(("object", "SN2018hna")),
+    ImageSelector(("object", "ZTF18aavqmki")),
     ImageBatcher(split_key=["filter", "object"]),
     SkyFlatCalibrator(),
     NightSkyMedianCalibrator(),
@@ -153,9 +157,12 @@ reduce = [
     PhotCalibrator(
         ref_catalog_generator=wirc_photometric_catalog_generator,
         image_photometric_catalog_purifier=wirc_photometric_img_catalog_purifier,
+        write_regions=True,
     ),
     ImageSaver(output_dir_name="final"),
 ]
+
+reduce = log + masking + dark_calibration + reduction
 
 reference = [
     ProcessReference(
