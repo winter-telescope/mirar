@@ -57,7 +57,7 @@ class Gaia2Mass(BaseCatalog):
         if self.acceptable_ph_quals[self.filter_name.lower()] is None:
             self.acceptable_ph_quals[self.filter_name.lower()] = ["A"]
 
-        for filt in self.acceptable_ph_quals.keys():
+        for filt in self.acceptable_ph_quals:
             if self.acceptable_ph_quals[filt] is None:
                 self.acceptable_ph_quals[filt] = ["A", "B", "C"]
 
