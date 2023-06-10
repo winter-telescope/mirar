@@ -100,7 +100,7 @@ reduction = [
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageDebatcher(),
     ImageSelector(("obsclass", "science")),
-    ImageSelector(("object", "ZTF18aavqmki")),
+    # ImageSelector(("object", "ZTF18aavqmki")),
     ImageBatcher(split_key=["filter", "object"]),
     SkyFlatCalibrator(),
     NightSkyMedianCalibrator(),
