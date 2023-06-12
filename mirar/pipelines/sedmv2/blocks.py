@@ -134,22 +134,28 @@ process = reduce + resample + calibrate
 
 parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 
-process_stellar = parse_stellar + process
+# process_stellar = parse_stellar + process
+process_stellar = process
 
 image_photometry = [  # imported from wirc/blocks.py
-    ImageSelector(("SOURCE", "stellar")),
+    # ImageSelector(("SOURCE", "stellar")),
     ImageAperturePhotometry(
         aper_diameters=[16],
         bkg_in_diameters=[25],
         bkg_out_diameters=[40],
         col_suffix_list=[""],
         phot_cutout_size=100,
-        target_ra_key="TARGRA",
-        target_dec_key="TARGDEC",
+        target_ra_key="OBJRAD",
+        target_dec_key="OBJDECD",
+        zp_colname="ZP_AUTO",
     ),
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
     PSFex(config_path=psfex_config_path, output_sub_dir="photometry", norm_fits=True),
-    ImagePSFPhotometry(target_ra_key="TARGRA", target_dec_key="TARGDEC"),
+    ImagePSFPhotometry(
+        target_ra_key="OBJRAD",
+        target_dec_key="OBJDECD",
+        zp_colname="ZP_AUTO",
+    ),
     ImageSaver(output_dir_name="photometry"),
 ]
 
