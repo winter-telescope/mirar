@@ -55,7 +55,7 @@ sphinx = "^7.0.1"
 [tool.coverage.run]
 source = ["mirar"]
 concurrency = ["thread"]
-omit = ["mirar/__main__.py", "mirar/processors/send_to_fritz.py"]
+omit = ["mirar/__main__.py"]
 
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
