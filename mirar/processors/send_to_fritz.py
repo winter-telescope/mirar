@@ -25,6 +25,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
 from mirar.data import SourceBatch
+from mirar.paths import PACKAGE_NAME, __version__
 from mirar.processors.base_processor import BaseDataframeProcessor
 
 logger = logging.getLogger(__name__)
@@ -248,7 +249,7 @@ class SendToFritz(BaseDataframeProcessor):
             "filter_ids": [self.filter_id],
             "passing_alert_id": self.filter_id,
             "passed_at": Time(datetime.utcnow()).isot,
-            "origin": "WINTERdrp",
+            "origin": f"{PACKAGE_NAME}:{__version__}",
         }
 
         logger.debug(

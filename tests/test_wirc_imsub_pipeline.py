@@ -31,6 +31,10 @@ ref_img_directory = test_data_dir.joinpath("wirc/ref")
 
 NIGHT_NAME = "20210330"
 
+logging.basicConfig(
+    level=logging.DEBUG, format="%(name)s %(levelname)s %(message)s"
+)  # FIXME: remove
+
 
 def reference_image_test_generator(
     header: fits.header,

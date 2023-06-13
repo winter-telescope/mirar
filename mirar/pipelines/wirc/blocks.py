@@ -48,6 +48,7 @@ from mirar.processors.photometry.psf_photometry import (
     ImagePSFPhotometry,
 )
 from mirar.processors.reference import ProcessReference
+from mirar.processors.send_to_fritz import SendToFritz
 from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.utils import ImageLoader, ImageSaver
 from mirar.processors.utils.image_selector import (
@@ -142,7 +143,7 @@ candidate_photometry = [
 ]
 
 detect_candidates = [
-    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config)
+    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
 ]
 
 process_candidates = [
@@ -178,7 +179,10 @@ process_candidates = [
         schema_path=wirc_candidate_schema_path,
     ),
     DatabaseDataframeExporter(
-        db_name="wirc", db_table="candidates", schema_path=wirc_candidate_schema_path
+        db_name="wirc",
+        db_table="candidates",
+        schema_path=wirc_candidate_schema_path,
+        duplicate_protocol="replace",
     ),
     DataframeWriter(output_dir_name="dbop"),
     # EdgeCandidatesMask(edge_boundary_size=100)
@@ -188,8 +192,15 @@ process_candidates = [
 package_candidates = [
     AvroPacketMaker(
         output_sub_dir="avro", base_name="WNTR", broadcast=False, save_local=True
-    )
-    # SendToFritz(update_thumbnails = True)
+    ),
+    SendToFritz(
+        base_name="WIRCTEST",
+        group_ids=[1431],
+        filter_id=1,
+        instrument_id=5,
+        stream_id=1005,
+        update_thumbnails=False,
+    ),
 ]
 
 candidates = detect_candidates + process_candidates + package_candidates
