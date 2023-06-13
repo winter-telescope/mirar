@@ -199,7 +199,7 @@ package_candidates = [
         filter_id=1,
         instrument_id=5,
         stream_id=1005,
-        update_thumbnails=False,
+        update_thumbnails=True,
     ),
 ]
 

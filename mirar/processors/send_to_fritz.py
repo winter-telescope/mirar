@@ -8,6 +8,7 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Mapping, Optional
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -27,6 +28,8 @@ from requests.packages.urllib3.util.retry import Retry
 from mirar.data import SourceBatch
 from mirar.paths import PACKAGE_NAME, __version__
 from mirar.processors.base_processor import BaseDataframeProcessor
+
+matplotlib.use("agg")
 
 logger = logging.getLogger(__name__)
 
@@ -721,7 +724,7 @@ class SendToFritz(BaseDataframeProcessor):
 
                     for existing_gid in existing_group_ids:
                         if existing_gid in self.group_ids:
-                            self.alert_post_source(alert, str(existing_gid))
+                            self.alert_post_source(alert, [existing_gid])
                 else:
                     logger.error(
                         f"Failed to get source groups info on {alert['objectId']}"
