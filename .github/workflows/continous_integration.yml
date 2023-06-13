@@ -78,6 +78,8 @@ jobs:
 
       # First make sure the doc tests are up to date
       - name: Run doc tests
+        env: |
+          FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
         run: |
           poetry run make -C docs/ doctest
 
