@@ -1,3 +1,6 @@
+"""
+Module for sending candidates to Fritz.
+"""
 import base64
 import gzip
 import io
@@ -40,6 +43,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
     """
     HTTP adapter that sets a default timeout for all requests.
     """
+
     def __init__(self, *args, **kwargs):
         self.timeout = DEFAULT_TIMEOUT
         if "timeout" in kwargs:
@@ -66,6 +70,10 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 class SendToFritz(BaseDataframeProcessor):
+    """
+    Processor for sending candidates to Fritz.
+    """
+
     base_key = "fritzsender"
 
     def __init__(
@@ -181,36 +189,38 @@ class SendToFritz(BaseDataframeProcessor):
         return authid_fritz
 
     @staticmethod
-    def read_input_df(df: pd.DataFrame):
+    def read_input_df(candidate_df: pd.DataFrame):
         """Takes a DataFrame, which has multiple candidate
         and creates list of dictionaries, each dictionary
         representing a single candidate.
 
         Args:
-            df (pandas.core.frame.DataFrame): dataframe of all candidates.
+            candidate_df (pandas.core.frame.DataFrame): dataframe of all candidates.
 
         Returns:
             (list[dict]): list of dictionaries, each a candidate.
         """
         all_candidates = []
 
-        for i in range(0, len(df)):
+        for i in range(0, len(candidate_df)):
             candidate = {}
-            for key in df.keys():
+            for key in candidate_df.keys():
                 try:
-                    if isinstance(df.iloc[i].get(key), (list, str)):
-                        candidate[key] = df.iloc[i].get(key)
+                    if isinstance(candidate_df.iloc[i].get(key), (list, str)):
+                        candidate[key] = candidate_df.iloc[i].get(key)
                     else:
                         # change to native python type
-                        candidate[key] = df.iloc[i].get(key).item()
+                        candidate[key] = candidate_df.iloc[i].get(key).item()
                 except AttributeError:  # for IOBytes objs
-                    candidate[key] = df.iloc[i].get(key).getvalue()
+                    candidate[key] = candidate_df.iloc[i].get(key).getvalue()
 
             all_candidates.append(candidate)
 
         return all_candidates
 
-    def api(self, method: str, endpoint: str, data: Optional[Mapping] = None) -> requests.Response:
+    def api(
+        self, method: str, endpoint: str, data: Optional[Mapping] = None
+    ) -> requests.Response:
         """Make an API call to a SkyPortal instance
 
         headers = {'Authorization': f'token {self.token}'}
@@ -340,22 +350,22 @@ class SendToFritz(BaseDataframeProcessor):
             with fits.open(
                 io.BytesIO(cutout.read()), ignore_missing_simple=True
             ) as hdu:
-                image_data = hdu[0].data
+                image_data = hdu[0].data  # pylint: disable=no-member
 
         buff = io.BytesIO()
         plt.close("all")
         fig = plt.figure()
         fig.set_size_inches(4, 4, forward=False)
-        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-        ax.set_axis_off()
-        fig.add_axes(ax)
+        ax_1 = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+        ax_1.set_axis_off()
+        fig.add_axes(ax_1)
 
         # replace nans with median:
         img = np.array(image_data)
         # replace dubiously large values
-        xl = np.greater(np.abs(img), 1e20, where=~np.isnan(img))
-        if img[xl].any():
-            img[xl] = np.nan
+        xl_mask = np.greater(np.abs(img), 1e20, where=~np.isnan(img))
+        if img[xl_mask].any():
+            img[xl_mask] = np.nan
         if np.isnan(img).any():
             median = float(np.nanmean(img.flatten()))
             img = np.nan_to_num(img, nan=median)
@@ -371,7 +381,7 @@ class SendToFritz(BaseDataframeProcessor):
             lower_percentile=1, upper_percentile=100
         )
         vmin, vmax = normalizer.get_limits(img_norm)
-        ax.imshow(img_norm, cmap="bone", origin="lower", vmin=vmin, vmax=vmax)
+        ax_1.imshow(img_norm, cmap="bone", origin="lower", vmin=vmin, vmax=vmax)
         plt.savefig(buff, dpi=42)
 
         buff.seek(0)
@@ -792,9 +802,15 @@ class SendToFritz(BaseDataframeProcessor):
 
         logger.debug(f'SendToFritz Manager complete for {alert["objectId"]}')
 
-    def make_alert(self, cand_table):
+    def make_alert(self, candidate_df: pd.DataFrame):
+        """
+        Function to make an alert from a single row of a pandas DataFrame
+
+        :param candidate_df: Candidate DataFrame
+        :return: None
+        """
         t_0 = time.time()
-        all_cands = self.read_input_df(cand_table)
+        all_cands = self.read_input_df(candidate_df)
         num_cands = len(all_cands)
 
         for cand in all_cands:

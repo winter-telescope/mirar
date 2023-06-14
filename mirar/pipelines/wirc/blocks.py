@@ -22,7 +22,7 @@ from mirar.pipelines.wirc.wirc_files import (
     wirc_candidate_schema_path,
     wirc_mask_path,
 )
-from mirar.processors.alert_packets.avro_alert import AvroPacketMaker
+from mirar.processors.alerts import AvroPacketMaker, SendToFritz
 from mirar.processors.astromatic import Scamp, Sextractor, Swarp
 from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.autoastrometry import AutoAstrometry
@@ -48,7 +48,6 @@ from mirar.processors.photometry.psf_photometry import (
     ImagePSFPhotometry,
 )
 from mirar.processors.reference import ProcessReference
-from mirar.processors.send_to_fritz import SendToFritz
 from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.utils import ImageLoader, ImageSaver
 from mirar.processors.utils.image_selector import (

@@ -386,12 +386,10 @@ class AvroPacketMaker(BaseDataframeProcessor):
             # cand_id = cand["candid"] # save candid of avro packet to open
 
         t1 = time.time()
-        logger.info("###########################################")
         logger.info(f"Took {(t1 - t0):.2f} seconds to process {num_cands} candidates.")
         logger.info(
             f"{successes} of {num_cands} successfully {self._success_message()}."
         )
-        logger.info("###########################################")
 
         # ########## Testing avro packet creation script ##########
         # # Read data from an avro file
