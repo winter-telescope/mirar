@@ -23,7 +23,7 @@ from astropy.visualization import (
     LogStretch,
 )
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util import Retry
 
 from mirar.data import SourceBatch
 from mirar.paths import PACKAGE_NAME, __version__
@@ -37,6 +37,9 @@ DEFAULT_TIMEOUT = 5  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
+    """
+    HTTP adapter that sets a default timeout for all requests.
+    """
     def __init__(self, *args, **kwargs):
         self.timeout = DEFAULT_TIMEOUT
         if "timeout" in kwargs:
@@ -45,6 +48,14 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         super().__init__(*args, **kwargs)
 
     def send(self, request, *args, **kwargs):
+        """
+        Send a request with a default timeout.
+
+        :param request: request to send
+        :param args: args to pass to super().send
+        :param kwargs: kwargs to pass to super().send
+        :return: response from request
+        """
         try:
             timeout = kwargs.get("timeout")
             if timeout is None:
@@ -61,7 +72,7 @@ class SendToFritz(BaseDataframeProcessor):
         self,
         base_name: str,
         group_ids: list[int],
-        filter_id: int,
+        fritz_filter_id: int,
         instrument_id: int,
         stream_id: int,
         update_thumbnails: bool = True,
@@ -70,16 +81,24 @@ class SendToFritz(BaseDataframeProcessor):
         super().__init__()
         self.token = None
         self.group_ids = group_ids
-        self.base_name = base_name
-        self.filter_id = filter_id
+        self.fritz_filter_id = fritz_filter_id
         self.instrument_id = instrument_id
         self.origin = base_name  # used for sending updates to Fritz
         self.stream_id = stream_id
         self.protocol = protocol
         self.update_thumbnails = update_thumbnails
 
+        self._session = None
+        self.session_headers = None
+
+    def set_up_session(self):
+        """
+        Set up a session for sending requests to Fritz.
+
+        :return: None
+        """
         # session to talk to SkyPortal/Fritz
-        self.session = requests.Session()
+        self._session = requests.Session()
         self.session_headers = {
             "Authorization": f"token {self._get_fritz_token()}",
             "User-Agent": "mirar",
@@ -92,11 +111,28 @@ class SendToFritz(BaseDataframeProcessor):
             method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH"],
         )
         adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
-        self.session.mount("https://", adapter)
-        self.session.mount("http://", adapter)
+        self._session.mount("https://", adapter)
+        self._session.mount("http://", adapter)
+
+    def get_session(self) -> requests.Session:
+        """
+        Wrapper for getting the session.
+        If the session is not set up, it will be set up.
+
+        :return: Session
+        """
+        if self._session is None:
+            self.set_up_session()
+
+        return self._session
 
     @staticmethod
     def _get_fritz_token():
+        """
+        Get Fritz token from environment variable.
+
+        :return: Fritz token
+        """
         token_fritz = os.getenv("FRITZ_TOKEN")
 
         if token_fritz is None:
@@ -114,6 +150,12 @@ class SendToFritz(BaseDataframeProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
+        """
+        Apply the processor to a batch of candidates.
+
+        :param batch: SourceBatch to process
+        :return: SourceBatch after processing
+        """
         for source_table in batch:
             candidate_table = source_table.get_data()
             self.make_alert(candidate_table)
@@ -121,8 +163,11 @@ class SendToFritz(BaseDataframeProcessor):
 
     @staticmethod
     def _get_author_id():
-        """Fritz author id is used in update calls.
-        Can be found"""
+        """
+        Fritz author id is used in update calls. Can be found
+
+        :return: Fritz author id
+        """
         authid_fritz = os.getenv("FRITZ_AUTHID")
 
         if authid_fritz is None:
@@ -165,25 +210,28 @@ class SendToFritz(BaseDataframeProcessor):
 
         return all_candidates
 
-    def api(self, method: str, endpoint: str, data: Optional[Mapping] = None):
+    def api(self, method: str, endpoint: str, data: Optional[Mapping] = None) -> requests.Response:
         """Make an API call to a SkyPortal instance
 
         headers = {'Authorization': f'token {self.token}'}
         response = requests.request(method, endpoint, json_dict=data, headers=headers)
 
-        :param method:
-        :param endpoint:
-        :param data:
-        :return:
+        :param method: HTTP method
+        :param endpoint: API endpoint
+        :param data: JSON data to send
+        :return: response from API call
         """
         method = method.lower()
+
+        session = self.get_session()
+
         methods = {
-            "head": self.session.head,
-            "get": self.session.get,
-            "post": self.session.post,
-            "put": self.session.put,
-            "patch": self.session.patch,
-            "delete": self.session.delete,
+            "head": session.head,
+            "get": session.get,
+            "post": session.post,
+            "put": session.put,
+            "patch": session.patch,
+            "delete": session.delete,
         }
 
         if endpoint is None:
@@ -211,6 +259,7 @@ class SendToFritz(BaseDataframeProcessor):
 
         :param alert: dict of source info
         :param group_ids: list of group_ids to post source to, defaults to None
+        :return: None
         """
         if group_ids is None:
             group_ids = self.group_ids
@@ -243,14 +292,17 @@ class SendToFritz(BaseDataframeProcessor):
     def alert_post_candidate(self, alert):
         """
         Post a candidate on SkyPortal. Creates new candidate(s) (one per filter)
+
+        :param alert: dict of alert info
+        :return: None
         """
 
         data = {
             "id": alert["objectId"],
             "ra": alert["ra"],
             "dec": alert["dec"],
-            "filter_ids": [self.filter_id],
-            "passing_alert_id": self.filter_id,
+            "filter_ids": [self.fritz_filter_id],
+            "passing_alert_id": self.fritz_filter_id,
             "passed_at": Time(datetime.utcnow()).isot,
             "origin": f"{PACKAGE_NAME}:{__version__}",
         }
