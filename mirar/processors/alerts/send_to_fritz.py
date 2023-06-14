@@ -1,3 +1,6 @@
+"""
+Module for sending candidates to Fritz.
+"""
 import base64
 import gzip
 import io
@@ -8,6 +11,7 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Mapping, Optional
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -22,10 +26,13 @@ from astropy.visualization import (
     LogStretch,
 )
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util import Retry
 
 from mirar.data import SourceBatch
+from mirar.paths import PACKAGE_NAME, __version__
 from mirar.processors.base_processor import BaseDataframeProcessor
+
+matplotlib.use("agg")
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +40,10 @@ DEFAULT_TIMEOUT = 5  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
+    """
+    HTTP adapter that sets a default timeout for all requests.
+    """
+
     def __init__(self, *args, **kwargs):
         self.timeout = DEFAULT_TIMEOUT
         if "timeout" in kwargs:
@@ -41,6 +52,14 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         super().__init__(*args, **kwargs)
 
     def send(self, request, *args, **kwargs):
+        """
+        Send a request with a default timeout.
+
+        :param request: request to send
+        :param args: args to pass to super().send
+        :param kwargs: kwargs to pass to super().send
+        :return: response from request
+        """
         try:
             timeout = kwargs.get("timeout")
             if timeout is None:
@@ -51,13 +70,17 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 class SendToFritz(BaseDataframeProcessor):
+    """
+    Processor for sending candidates to Fritz.
+    """
+
     base_key = "fritzsender"
 
     def __init__(
         self,
         base_name: str,
         group_ids: list[int],
-        filter_id: int,
+        fritz_filter_id: int,
         instrument_id: int,
         stream_id: int,
         update_thumbnails: bool = True,
@@ -66,16 +89,24 @@ class SendToFritz(BaseDataframeProcessor):
         super().__init__()
         self.token = None
         self.group_ids = group_ids
-        self.base_name = base_name
-        self.filter_id = filter_id
+        self.fritz_filter_id = fritz_filter_id
         self.instrument_id = instrument_id
         self.origin = base_name  # used for sending updates to Fritz
         self.stream_id = stream_id
         self.protocol = protocol
         self.update_thumbnails = update_thumbnails
 
+        self._session = None
+        self.session_headers = None
+
+    def set_up_session(self):
+        """
+        Set up a session for sending requests to Fritz.
+
+        :return: None
+        """
         # session to talk to SkyPortal/Fritz
-        self.session = requests.Session()
+        self._session = requests.Session()
         self.session_headers = {
             "Authorization": f"token {self._get_fritz_token()}",
             "User-Agent": "mirar",
@@ -88,11 +119,28 @@ class SendToFritz(BaseDataframeProcessor):
             method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH"],
         )
         adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
-        self.session.mount("https://", adapter)
-        self.session.mount("http://", adapter)
+        self._session.mount("https://", adapter)
+        self._session.mount("http://", adapter)
+
+    def get_session(self) -> requests.Session:
+        """
+        Wrapper for getting the session.
+        If the session is not set up, it will be set up.
+
+        :return: Session
+        """
+        if self._session is None:
+            self.set_up_session()
+
+        return self._session
 
     @staticmethod
     def _get_fritz_token():
+        """
+        Get Fritz token from environment variable.
+
+        :return: Fritz token
+        """
         token_fritz = os.getenv("FRITZ_TOKEN")
 
         if token_fritz is None:
@@ -110,6 +158,12 @@ class SendToFritz(BaseDataframeProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
+        """
+        Apply the processor to a batch of candidates.
+
+        :param batch: SourceBatch to process
+        :return: SourceBatch after processing
+        """
         for source_table in batch:
             candidate_table = source_table.get_data()
             self.make_alert(candidate_table)
@@ -117,8 +171,11 @@ class SendToFritz(BaseDataframeProcessor):
 
     @staticmethod
     def _get_author_id():
-        """Fritz author id is used in update calls.
-        Can be found"""
+        """
+        Fritz author id is used in update calls. Can be found
+
+        :return: Fritz author id
+        """
         authid_fritz = os.getenv("FRITZ_AUTHID")
 
         if authid_fritz is None:
@@ -132,54 +189,59 @@ class SendToFritz(BaseDataframeProcessor):
         return authid_fritz
 
     @staticmethod
-    def read_input_df(df: pd.DataFrame):
+    def read_input_df(candidate_df: pd.DataFrame):
         """Takes a DataFrame, which has multiple candidate
         and creates list of dictionaries, each dictionary
         representing a single candidate.
 
         Args:
-            df (pandas.core.frame.DataFrame): dataframe of all candidates.
+            candidate_df (pandas.core.frame.DataFrame): dataframe of all candidates.
 
         Returns:
             (list[dict]): list of dictionaries, each a candidate.
         """
         all_candidates = []
 
-        for i in range(0, len(df)):
+        for i in range(0, len(candidate_df)):
             candidate = {}
-            for key in df.keys():
+            for key in candidate_df.keys():
                 try:
-                    if isinstance(df.iloc[i].get(key), (list, str)):
-                        candidate[key] = df.iloc[i].get(key)
+                    if isinstance(candidate_df.iloc[i].get(key), (list, str)):
+                        candidate[key] = candidate_df.iloc[i].get(key)
                     else:
                         # change to native python type
-                        candidate[key] = df.iloc[i].get(key).item()
+                        candidate[key] = candidate_df.iloc[i].get(key).item()
                 except AttributeError:  # for IOBytes objs
-                    candidate[key] = df.iloc[i].get(key).getvalue()
+                    candidate[key] = candidate_df.iloc[i].get(key).getvalue()
 
             all_candidates.append(candidate)
 
         return all_candidates
 
-    def api(self, method: str, endpoint: str, data: Optional[Mapping] = None):
+    def api(
+        self, method: str, endpoint: str, data: Optional[Mapping] = None
+    ) -> requests.Response:
         """Make an API call to a SkyPortal instance
 
         headers = {'Authorization': f'token {self.token}'}
         response = requests.request(method, endpoint, json_dict=data, headers=headers)
 
-        :param method:
-        :param endpoint:
-        :param data:
-        :return:
+        :param method: HTTP method
+        :param endpoint: API endpoint
+        :param data: JSON data to send
+        :return: response from API call
         """
         method = method.lower()
+
+        session = self.get_session()
+
         methods = {
-            "head": self.session.head,
-            "get": self.session.get,
-            "post": self.session.post,
-            "put": self.session.put,
-            "patch": self.session.patch,
-            "delete": self.session.delete,
+            "head": session.head,
+            "get": session.get,
+            "post": session.post,
+            "put": session.put,
+            "patch": session.patch,
+            "delete": session.delete,
         }
 
         if endpoint is None:
@@ -207,6 +269,7 @@ class SendToFritz(BaseDataframeProcessor):
 
         :param alert: dict of source info
         :param group_ids: list of group_ids to post source to, defaults to None
+        :return: None
         """
         if group_ids is None:
             group_ids = self.group_ids
@@ -239,16 +302,19 @@ class SendToFritz(BaseDataframeProcessor):
     def alert_post_candidate(self, alert):
         """
         Post a candidate on SkyPortal. Creates new candidate(s) (one per filter)
+
+        :param alert: dict of alert info
+        :return: None
         """
 
         data = {
             "id": alert["objectId"],
             "ra": alert["ra"],
             "dec": alert["dec"],
-            "filter_ids": [self.filter_id],
-            "passing_alert_id": self.filter_id,
+            "filter_ids": [self.fritz_filter_id],
+            "passing_alert_id": self.fritz_filter_id,
             "passed_at": Time(datetime.utcnow()).isot,
-            "origin": "WINTERdrp",
+            "origin": f"{PACKAGE_NAME}:{__version__}",
         }
 
         logger.debug(
@@ -284,22 +350,22 @@ class SendToFritz(BaseDataframeProcessor):
             with fits.open(
                 io.BytesIO(cutout.read()), ignore_missing_simple=True
             ) as hdu:
-                image_data = hdu[0].data
+                image_data = hdu[0].data  # pylint: disable=no-member
 
         buff = io.BytesIO()
         plt.close("all")
         fig = plt.figure()
         fig.set_size_inches(4, 4, forward=False)
-        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-        ax.set_axis_off()
-        fig.add_axes(ax)
+        ax_1 = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+        ax_1.set_axis_off()
+        fig.add_axes(ax_1)
 
         # replace nans with median:
         img = np.array(image_data)
         # replace dubiously large values
-        xl = np.greater(np.abs(img), 1e20, where=~np.isnan(img))
-        if img[xl].any():
-            img[xl] = np.nan
+        xl_mask = np.greater(np.abs(img), 1e20, where=~np.isnan(img))
+        if img[xl_mask].any():
+            img[xl_mask] = np.nan
         if np.isnan(img).any():
             median = float(np.nanmean(img.flatten()))
             img = np.nan_to_num(img, nan=median)
@@ -315,7 +381,7 @@ class SendToFritz(BaseDataframeProcessor):
             lower_percentile=1, upper_percentile=100
         )
         vmin, vmax = normalizer.get_limits(img_norm)
-        ax.imshow(img_norm, cmap="bone", origin="lower", vmin=vmin, vmax=vmax)
+        ax_1.imshow(img_norm, cmap="bone", origin="lower", vmin=vmin, vmax=vmax)
         plt.savefig(buff, dpi=42)
 
         buff.seek(0)
@@ -720,7 +786,7 @@ class SendToFritz(BaseDataframeProcessor):
 
                     for existing_gid in existing_group_ids:
                         if existing_gid in self.group_ids:
-                            self.alert_post_source(alert, str(existing_gid))
+                            self.alert_post_source(alert, [existing_gid])
                 else:
                     logger.error(
                         f"Failed to get source groups info on {alert['objectId']}"
@@ -736,9 +802,15 @@ class SendToFritz(BaseDataframeProcessor):
 
         logger.debug(f'SendToFritz Manager complete for {alert["objectId"]}')
 
-    def make_alert(self, cand_table):
+    def make_alert(self, candidate_df: pd.DataFrame):
+        """
+        Function to make an alert from a single row of a pandas DataFrame
+
+        :param candidate_df: Candidate DataFrame
+        :return: None
+        """
         t_0 = time.time()
-        all_cands = self.read_input_df(cand_table)
+        all_cands = self.read_input_df(candidate_df)
         num_cands = len(all_cands)
 
         for cand in all_cands:

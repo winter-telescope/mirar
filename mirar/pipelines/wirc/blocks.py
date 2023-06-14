@@ -22,7 +22,7 @@ from mirar.pipelines.wirc.wirc_files import (
     wirc_candidate_schema_path,
     wirc_mask_path,
 )
-from mirar.processors.alert_packets.avro_alert import AvroPacketMaker
+from mirar.processors.alerts import AvroPacketMaker, SendToFritz
 from mirar.processors.astromatic import Scamp, Sextractor, Swarp
 from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.autoastrometry import AutoAstrometry
@@ -142,7 +142,7 @@ candidate_photometry = [
 ]
 
 detect_candidates = [
-    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config)
+    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
 ]
 
 process_candidates = [
@@ -178,7 +178,10 @@ process_candidates = [
         schema_path=wirc_candidate_schema_path,
     ),
     DatabaseDataframeExporter(
-        db_name="wirc", db_table="candidates", schema_path=wirc_candidate_schema_path
+        db_name="wirc",
+        db_table="candidates",
+        schema_path=wirc_candidate_schema_path,
+        duplicate_protocol="replace",
     ),
     DataframeWriter(output_dir_name="dbop"),
     # EdgeCandidatesMask(edge_boundary_size=100)
@@ -188,8 +191,15 @@ process_candidates = [
 package_candidates = [
     AvroPacketMaker(
         output_sub_dir="avro", base_name="WNTR", broadcast=False, save_local=True
-    )
-    # SendToFritz(update_thumbnails = True)
+    ),
+    SendToFritz(
+        base_name="WIRCTEST",
+        group_ids=[1431],
+        fritz_filter_id=74,
+        instrument_id=5,
+        stream_id=1005,
+        update_thumbnails=True,
+    ),
 ]
 
 candidates = detect_candidates + process_candidates + package_candidates
