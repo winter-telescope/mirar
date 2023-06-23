@@ -39,6 +39,7 @@ from mirar.processors.photometry.psf_photometry import (
 from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
     ImageBatcher,
+    ImageDebatcher,
     ImageLoader,
     ImageSaver,
     ImageSelector,
@@ -78,6 +79,7 @@ build_log = [  # pylint: disable=duplicate-code
 ]  # pylint: disable=duplicate-code
 
 reduce = [
+    MaskPixels(mask_path=sedmv2_mask_path),
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
@@ -92,7 +94,7 @@ reduce = [
         downsample=2,
         timeout=900,
     ),
-    MaskPixels(mask_path=sedmv2_mask_path),
+    ImageSaver(output_dir_name="masked", write_mask=True),
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
@@ -176,17 +178,22 @@ candidate_photometry = [  # imported from wirc/blocks.py
 parse_transient = [ImageSelector(("SOURCE", ["transient", "None"]))]
 
 resample_transient = [
+    ImageDebatcher(),
+    ImageBatcher(split_key="origname"),  # reaches for files coming from the same MEF
     Swarp(
+        cache=True,
         swarp_config_path=swarp_config_path,
         include_scamp=False,
         combine=True,
+        calculate_dims_in_swarp=True,
     ),
     ImageSaver(
         output_dir_name="resampled", write_mask=True
     ),  # pylint: disable=duplicate-code
 ]
 
-process_transient = parse_transient + reduce + resample_transient + calibrate
+# process_transient = parse_transient + reduce + resample_transient + calibrate
+process_transient = reduce + resample_transient + calibrate
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
