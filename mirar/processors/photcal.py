@@ -107,7 +107,9 @@ class PhotCalibrator(BaseImageProcessor):
         """
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
-    def calculate_zeropoint(self, ref_cat_path: Path, img_cat_path: Path) -> list[dict]:
+    def calculate_zeropoint(
+        self, ref_cat_path: Path, img_cat_path: Path, img_filt
+    ) -> list[dict]:
         """
         Function to calculate zero point from two catalogs
         Args:
@@ -115,13 +117,22 @@ class PhotCalibrator(BaseImageProcessor):
             img_cat_path: Path to image ldac catalog
         Returns:
         """
-        ref_cat = get_table_from_ldac(ref_cat_path)
+        ref_cat_with_flagged = get_table_from_ldac(ref_cat_path)
         img_cat = get_table_from_ldac(img_cat_path)
 
-        if len(ref_cat) == 0:
+        if len(ref_cat_with_flagged) == 0:
             err = "No sources found in reference catalog"
             logger.error(err)
             raise PhotometryReferenceError(err)
+
+        if str(ref_cat_path).split(".")[-2] == "ps1":
+            # this reference catalog is from ps1
+            # remove sources with SATURATED flag
+            ref_cat = self.remove_sat_ps1(ref_cat_with_flagged, img_filt)
+
+        else:
+            # reference not ps1, no flags to check
+            ref_cat = ref_cat_with_flagged
 
         ref_coords = SkyCoord(ra=ref_cat["ra"], dec=ref_cat["dec"], unit=(u.deg, u.deg))
         clean_mask = (
@@ -285,8 +296,9 @@ class PhotCalibrator(BaseImageProcessor):
             image["FWHM_MED"] = fwhm_med
             image["FWHM_STD"] = fwhm_std
 
-            zp_dicts = self.calculate_zeropoint(ref_cat_path, temp_cat_path)
-
+            zp_dicts = self.calculate_zeropoint(
+                ref_cat_path, temp_cat_path, image.header["FILTER"]
+            )
             aperture_diameters = []
             zp_values = []
             for zpvals in zp_dicts:
@@ -440,3 +452,18 @@ class PhotCalibrator(BaseImageProcessor):
         line = aperture_lines[0].replace("PHOT_APERTURES", " ").split("#")[0]
 
         return [float(x) for x in line.split(",") if x not in [""]]
+
+    def remove_sat_ps1(self, catalog, filt: str):
+        """
+        remove ps1 sources flagged as "SATURATED"
+        """
+        logger.info(f"original ps1 table length: {len(catalog)}")
+        logger.info("removing ps1 sources with SATURATED flag...")
+        sat_flag = 4096  # SATURATED value
+        column = catalog[str(filt) + "Flags"]
+        check = (column & sat_flag) / sat_flag
+        # check != 0 means this flag is there
+        # check == 0 means this flag is not there
+        clean_cat = catalog[np.where(check == 0)[0]]
+        logger.info(f"found {len(clean_cat)} columns without this flag \n")
+        return clean_cat
