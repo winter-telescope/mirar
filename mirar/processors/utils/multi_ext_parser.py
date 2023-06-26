@@ -32,11 +32,13 @@ class MultiExtParser(BaseImageProcessor):
         input_sub_dir: str = RAW_IMG_SUB_DIR,
         input_img_dir: str = base_raw_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
+        skip_first: bool = False,
     ):
         super().__init__()
         self.input_sub_dir = input_sub_dir
         self.input_img_dir = input_img_dir
         self.load_image = load_image
+        self.skip_first = skip_first
 
     def __str__(self):
         return (
@@ -63,7 +65,12 @@ class MultiExtParser(BaseImageProcessor):
             # zip hdr0's values and comments
             zipped = list(zip(hdr0.values(), hdr0.comments))
             # combining main header (hdr0) with extension header
-            for ext in range(1, num_ext):
+            if self.skip_first:
+                start = 2
+                logger.info("Ignoring first extension frame")
+            else:
+                start = 1
+            for ext in range(start, num_ext):
                 data = hdu[ext].data
                 hdrext = hdu[ext].header
 

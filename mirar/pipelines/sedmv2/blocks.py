@@ -54,7 +54,7 @@ from mirar.processors.zogy.zogy import (
 )
 
 load_raw = [
-    MultiExtParser(input_sub_dir="raw/mef/"),
+    MultiExtParser(input_sub_dir="raw/mef/", skip_first=True),
     ImageLoader(load_image=load_raw_sedmv2_image),
 ]
 
