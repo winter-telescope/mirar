@@ -83,12 +83,18 @@ class DarkCalibrator(ProcessorWithCache):
 
         darks = np.zeros((nx, ny, n_frames))
 
+        individual_dark_exptimes = []
         for i, img in enumerate(images):
             dark_exptime = img["EXPTIME"]
             darks[:, :, i] = img.get_data() / dark_exptime
+            individual_dark_exptimes.append(str(dark_exptime))
 
         logger.info(f"Median combining {n_frames} darks")
-        master_dark = Image(np.nanmedian(darks, axis=2), header=images[0].get_header())
+        master_dark_header = images[0].get_header()
+        master_dark_header["EXPTIME"] = 1.0
+        master_dark_header["NCOMBINE"] = n_frames
+        master_dark_header["INDIVEXP"] = ",".join(individual_dark_exptimes)
+        master_dark = Image(np.nanmedian(darks, axis=2), header=master_dark_header)
 
         return master_dark
 
