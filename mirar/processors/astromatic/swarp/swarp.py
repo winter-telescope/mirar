@@ -54,6 +54,7 @@ def run_swarp(
     subtract_bkg: bool = False,
     flux_scaling_keyword: str = None,
     cache: bool = False,
+    center_type: str = None
 ):
     """
     Wrapper to resample and stack images with swarp
@@ -133,6 +134,9 @@ def run_swarp(
     if np.logical_and(center_ra is not None, center_dec is not None):
         swarp_command += f" -CENTER_TYPE MANUAL -CENTER {center_ra},{center_dec}"
 
+    else:
+        swarp_command += f" -CENTER_TYPE {center_type}"
+
     if x_imgpixsize is not None:
         swarp_command += f" -IMAGE_SIZE {x_imgpixsize}"
         if y_imgpixsize is not None:
@@ -167,6 +171,7 @@ class Swarp(BaseImageProcessor):
         x_imgpixsize: Optional[float] = None,
         y_imgpixsize: Optional[float] = None,
         propogate_headerlist: Optional[list] = None,
+        center_type: Optional[str] = None,
         center_ra: Optional[float] = None,
         center_dec: Optional[float] = None,
         gain: Optional[float] = None,
@@ -251,6 +256,9 @@ class Swarp(BaseImageProcessor):
         self.subtract_bkg = subtract_bkg
         self.flux_scaling_factor = flux_scaling_factor
         self.calculate_dims_in_swarp = calculate_dims_in_swarp
+        self.center_type = center_type
+        if self.center_type is not None:
+            assert self.center_type in ['MOST', 'ALL', 'MANUAL']
 
     def __str__(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
@@ -409,6 +417,13 @@ class Swarp(BaseImageProcessor):
             x_imgpixsize_to_use = None
             y_imgpixsize_to_use = None
 
+        if self.center_type is None:
+            self.center_type = 'MANUAL'
+
+        if self.center_type != 'MANUAL':
+            center_dec_to_use = None
+            center_ra_to_use = None
+
         output_image_weight_path = output_image_path.with_suffix(".weight.fits")
 
         run_swarp(
@@ -421,6 +436,7 @@ class Swarp(BaseImageProcessor):
             x_imgpixsize=x_imgpixsize_to_use,
             y_imgpixsize=y_imgpixsize_to_use,
             propogate_headerlist=self.propogate_headerlist,
+            center_type=self.center_type,
             center_ra=center_ra_to_use,
             center_dec=center_dec_to_use,
             combine=self.combine,
@@ -467,7 +483,10 @@ class Swarp(BaseImageProcessor):
                 key.strip() not in all_astrometric_keywords,
             ):
                 if key not in new_image.keys():
-                    new_image[key] = batch[0][key]
+                    try:
+                        new_image[key] = batch[0][key]
+                    except ValueError:
+                        continue
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
