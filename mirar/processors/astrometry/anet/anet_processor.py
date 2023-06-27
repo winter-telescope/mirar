@@ -9,12 +9,16 @@ from typing import Optional
 from astropy.io import fits
 
 from mirar.data import ImageBatch
-from mirar.paths import BASE_NAME_KEY, get_output_dir, get_temp_path
+from mirar.paths import (
+    BASE_NAME_KEY,
+    LATEST_WEIGHT_SAVE_KEY,
+    get_output_dir,
+    get_temp_path,
+)
 from mirar.processors.astrometry.anet.anet import run_astrometry_net_single
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
-
 
 ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
 
@@ -27,12 +31,21 @@ class AstrometryNet(BaseImageProcessor):
     def __init__(
         self,
         output_sub_dir: str,  # = "a-net"
-        scale_bounds: Optional[tuple | list] = None,  # limits on scale (lower, upper)
+        scale_bounds: Optional[tuple | list] = None,
+        # limits on scale (lower, upper)
         scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
         downsample: Optional[float | int] = None,
         timeout: Optional[
             float
         ] = ASTROMETRY_TIMEOUT,  # astrometry cmd execute timeout, in seconds
+        use_sextractor: bool = False,
+        sextractor_path: str = "sex",
+        search_radius_deg: float = 5.0,
+        parity: str = None,
+        sextractor_config_path: str = None,
+        x_image_key: str = "X_IMAGE",
+        y_image_key: str = "Y_IMAGE",
+        sort_key_name: str = "FLUX_AUTO",
     ):
         super().__init__()
 
@@ -41,6 +54,16 @@ class AstrometryNet(BaseImageProcessor):
         self.scale_units = scale_units
         self.downsample = downsample
         self.timeout = timeout
+        self.use_sextractor = use_sextractor
+        self.sextractor_path = sextractor_path
+        self.search_radius_deg = search_radius_deg
+        self.parity = parity
+
+        self.x_image_key = x_image_key
+        self.y_image_key = y_image_key
+        self.sort_key_name = sort_key_name
+
+        self.sextractor_config_path = sextractor_config_path
 
     def __str__(self) -> str:
         return "Processor to perform astrometric calibration via astrometry.net."
@@ -67,6 +90,13 @@ class AstrometryNet(BaseImageProcessor):
                 self.save_fits(image, temp_path)
 
             temp_files = [temp_path]
+            sextractor_path = None
+            if self.use_sextractor:
+                weight_image = image[LATEST_WEIGHT_SAVE_KEY]
+                sextractor_path = (
+                    f"{self.sextractor_path} -WEIGHT_TYPE MAP_WEIGHT"
+                    + f" -WEIGHT_IMAGE {weight_image}"
+                )
 
             run_astrometry_net_single(
                 img=temp_path,
@@ -75,6 +105,14 @@ class AstrometryNet(BaseImageProcessor):
                 scale_units=self.scale_units,
                 downsample=self.downsample,
                 timeout=self.timeout,
+                use_sextractor=self.use_sextractor,
+                sextractor_path=sextractor_path,
+                sextractor_config_path=self.sextractor_config_path,
+                search_radius_deg=self.search_radius_deg,
+                parity=self.parity,
+                x_image_key=self.x_image_key,
+                y_image_key=self.y_image_key,
+                sort_key_name=self.sort_key_name,
             )
 
             newname = anet_out_dir.joinpath(Path(str(temp_path).split("temp_")[1]))
