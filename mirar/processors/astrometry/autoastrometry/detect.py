@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from astropy.io import fits
+
+from mirar.paths import SEXTRACTOR_HEADER_KEY
 from mirar.processors.astromatic.sextractor.settings import (
     default_config_path,
     default_conv_path,
@@ -22,6 +25,7 @@ from mirar.processors.astrometry.autoastrometry.sources import (
     compare_mag,
 )
 from mirar.processors.astrometry.autoastrometry.utils import median, mode
+from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
@@ -71,16 +75,28 @@ def get_img_src_list(
     except FileNotFoundError:
         pass
 
-    run_sextractor_single(
-        img=img_path,
-        output_dir=os.path.dirname(output_catalog),
-        config=config_path,
-        saturation=saturation,
-        catalog_name=output_catalog,
-        parameters_name=default_param_path,
-        filter_name=default_conv_path,
-        starnnw_name=default_starnnw_path,
-    )
+    sextractor_catalog_path = fits.getval(img_path, SEXTRACTOR_HEADER_KEY)
+    if sextractor_catalog_path is not None:
+        logger.info("Using existing sextractor catalog")
+        output_catalog = sextractor_catalog_path
+        output_catalog_table = get_table_from_ldac(output_catalog)
+        output_catalog_table.write(
+            output_catalog.replace(".cat", ".ascii.cat"),
+            format="ascii.ecsv",
+            overwrite=True,
+        )
+        output_catalog = output_catalog.replace(".cat", ".ascii.cat")
+    else:
+        run_sextractor_single(
+            img=img_path,
+            output_dir=os.path.dirname(output_catalog),
+            config=config_path,
+            saturation=saturation,
+            catalog_name=output_catalog,
+            parameters_name=default_param_path,
+            filter_name=default_conv_path,
+            starnnw_name=default_starnnw_path,
+        )
 
     # Read in the sextractor catalog
     with open(output_catalog, "rb") as cat:
@@ -107,6 +123,10 @@ def get_img_src_list(
 
     for line in catlines:
         if line[0] == "#":
+            continue
+
+        # TODO : make more generic to skip column names
+        if line[0] == "X":
             continue
 
         src = SextractorSource(line)  # process the line into an object
