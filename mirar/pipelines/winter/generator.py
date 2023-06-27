@@ -24,6 +24,7 @@ winter_dir = os.path.dirname(__file__)
 astromatic_config_dir = os.path.join(winter_dir, "config/")
 swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 winter_mask_path = os.path.join(winter_dir, "winter_mask.fits")
+scamp_config_path = os.path.join(winter_dir, "scamp.conf")
 
 
 def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks):
@@ -115,17 +116,13 @@ def winter_reference_phot_calibrator(image: Image, **kwargs) -> PhotCalibrator:
     :param kwargs: kwargs
     :return: Swarp processor
     """
-    x_lower_limit = 0
-    y_lower_limit = 0
-    x_upper_limit = image.header["NAXIS1"]
-    y_upper_limit = image.header["NAXIS2"]
+    # x_lower_limit = 0
+    # y_lower_limit = 0
+    # x_upper_limit = image.header["NAXIS1"]
+    # y_upper_limit = image.header["NAXIS2"]
 
     return PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
-        x_lower_limit=x_lower_limit,
-        x_upper_limit=x_upper_limit,
-        y_lower_limit=y_lower_limit,
-        y_upper_limit=y_upper_limit,
         write_regions=True,
         **kwargs,
     )
@@ -162,5 +159,14 @@ def ref_phot_calibrator(image: Image):
     return PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
         write_regions=True,
-        fwhm_threshold_arcsec=3,
+        # fwhm_threshold_arcsec=3,
     )
+
+
+def winter_astrometric_catalog_generator(_) -> Gaia2Mass:
+    """
+    Function to crossmatch WIRC to GAIA/2mass for astrometry
+
+    :return: catalogue
+    """
+    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=15)
