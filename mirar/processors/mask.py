@@ -47,6 +47,7 @@ class BaseMask(BaseImageProcessor):
     ) -> ImageBatch:
         for image in batch:
             data = image.get_data()
+            logger.debug(f"Masking {image[BASE_NAME_KEY]}")
             mask = self.get_mask(image)
 
             if not self.only_write_mask:
@@ -105,11 +106,12 @@ class MaskPixelsFromPath(BaseMask):
 
         :return: mask
         """
-        if self.mask is None:
-            if self.mask_path is not None:
-                self.mask = self.open_fits(self.mask_path)
-            elif self.mask_path_key is not None:
-                self.mask = self.open_fits(image[self.mask_path_key])
+        # if self.mask is None: # why is this needed?
+        if self.mask_path is not None:
+            self.mask = self.open_fits(self.mask_path)
+        elif self.mask_path_key is not None:
+            logger.debug(f"Loading mask from {image[self.mask_path_key]}")
+            self.mask = self.open_fits(image[self.mask_path_key])
         mask = self.mask.get_data()
         mask = mask != 0
         return mask
