@@ -87,6 +87,8 @@ class FlatCalibrator(ProcessorWithCache):
     ) -> Image:
         images = self.select_cache_images(images)
 
+        logger.debug(f"Found {len(images)} suitable flats in batch")
+
         n_frames = len(images)
         if n_frames == 0:
             err = f"Found {n_frames} suitable flats in batch"
@@ -130,6 +132,7 @@ class FlatCalibrator(ProcessorWithCache):
             flats[:, :, i] = data / median
 
         logger.info(f"Median combining {n_frames} flats")
+
         master_flat = np.nanmedian(flats, axis=2)
 
         return Image(master_flat, header=images[0].get_header())
