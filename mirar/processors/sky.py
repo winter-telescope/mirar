@@ -29,7 +29,9 @@ class NightSkyMedianCalibrator(SkyFlatCalibrator):
         mask = master_sky.get_data() <= self.flat_nan_threshold
 
         if np.sum(mask) > 0:
-            master_sky[mask] = np.nan
+            data = master_sky.get_data()
+            data[mask] = np.nan
+            master_sky.set_data(data)
 
         for image in batch:
             data = image.get_data()
