@@ -156,11 +156,13 @@ class Sextractor(BaseImageProcessor):
                 sextractor_out_dir, image[BASE_NAME_KEY].replace(".fits", ".cat")
             )
 
-            _, self.checkimage_name = parse_checkimage(
-                checkimage_name=self.checkimage_name,
+            _, checkimage_name = parse_checkimage(
+                checkimage_name=None,
                 checkimage_type=self.checkimage_type,
                 image=os.path.join(sextractor_out_dir, image[BASE_NAME_KEY]),
             )
+
+            logger.debug(f"Sextractor checkimage name is {checkimage_name}")
 
             output_cat, checkimage_name = run_sextractor_single(
                 img=temp_path,
@@ -172,7 +174,7 @@ class Sextractor(BaseImageProcessor):
                 saturation=self.saturation,
                 weight_image=mask_path,
                 verbose_type=self.verbose_type,
-                checkimage_name=self.checkimage_name,
+                checkimage_name=checkimage_name,
                 checkimage_type=self.checkimage_type,
                 gain=self.gain,
                 catalog_name=output_cat,
