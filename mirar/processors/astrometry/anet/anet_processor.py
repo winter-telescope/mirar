@@ -9,6 +9,7 @@ from typing import Optional
 from astropy.io import fits
 
 from mirar.data import ImageBatch
+from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
@@ -21,6 +22,12 @@ from mirar.processors.base_processor import BaseImageProcessor
 logger = logging.getLogger(__name__)
 
 ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
+
+
+class AstrometryNetError(ProcessorError):
+    """
+    Class for errors in astrometry.net
+    """
 
 
 class AstrometryNet(BaseImageProcessor):
@@ -46,6 +53,7 @@ class AstrometryNet(BaseImageProcessor):
         x_image_key: str = "X_IMAGE",
         y_image_key: str = "Y_IMAGE",
         sort_key_name: str = "FLUX_AUTO",
+        use_weight: bool = True,
     ):
         """
         :param output_sub_dir: subdirectory to output astrometry.net results
@@ -79,7 +87,7 @@ class AstrometryNet(BaseImageProcessor):
         self.x_image_key = x_image_key
         self.y_image_key = y_image_key
         self.sort_key_name = sort_key_name
-
+        self.use_weight = use_weight
         self.sextractor_config_path = sextractor_config_path
 
     def __str__(self) -> str:
@@ -107,8 +115,8 @@ class AstrometryNet(BaseImageProcessor):
                 self.save_fits(image, temp_path)
 
             temp_files = [temp_path]
-            sextractor_path = None
-            if self.use_sextractor:
+            sextractor_path = f"{self.sextractor_path}"
+            if self.use_sextractor & self.use_weight:
                 weight_image = image[LATEST_WEIGHT_SAVE_KEY]
                 sextractor_path = (
                     f"{self.sextractor_path} -WEIGHT_TYPE MAP_WEIGHT"
@@ -133,6 +141,11 @@ class AstrometryNet(BaseImageProcessor):
             )
 
             newname = anet_out_dir.joinpath(Path(str(temp_path).split("temp_")[1]))
+            if not newname.exists():
+                raise AstrometryNetError(
+                    f"AstrometryNet did not run successfully - no output "
+                    f"file {newname} found."
+                )
             solved = fits.open(newname)
             hdr = solved[0].header  # pylint: disable=no-member
 
