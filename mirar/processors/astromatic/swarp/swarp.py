@@ -54,7 +54,7 @@ def run_swarp(
     subtract_bkg: bool = False,
     flux_scaling_keyword: str = None,
     cache: bool = False,
-    center_type: str = None
+    center_type: str = None,
 ):
     """
     Wrapper to resample and stack images with swarp
@@ -258,7 +258,7 @@ class Swarp(BaseImageProcessor):
         self.calculate_dims_in_swarp = calculate_dims_in_swarp
         self.center_type = center_type
         if self.center_type is not None:
-            assert self.center_type in ['MOST', 'ALL', 'MANUAL']
+            assert self.center_type in ["MOST", "ALL", "MANUAL"]
 
     def __str__(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
@@ -418,9 +418,9 @@ class Swarp(BaseImageProcessor):
             y_imgpixsize_to_use = None
 
         if self.center_type is None:
-            self.center_type = 'MANUAL'
+            self.center_type = "MANUAL"
 
-        if self.center_type != 'MANUAL':
+        if self.center_type != "MANUAL":
             center_dec_to_use = None
             center_ra_to_use = None
 
