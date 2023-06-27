@@ -305,19 +305,22 @@ class ImageHandler:
         logger.info(f"Saving to {path}")
         save_to_path(data, header, path)
 
-    def save_weight_image(self, image: Image, img_path: Path) -> Path:
+    def save_weight_image(
+        self, image: Image, img_path: Path, use_existing: bool = True
+    ) -> Path:
         """
         Saves a weight image
 
         :param image: Weight image
         :param img_path: Path of parent image
+        :param use_existing: If True, will use existing weight image if it exists
         :return: Path of weight image
         """
         weight_path = get_weight_path(img_path)
         header = image.get_header()
 
         weight_found = False
-        if LATEST_WEIGHT_SAVE_KEY in header.keys():
+        if use_existing & (LATEST_WEIGHT_SAVE_KEY in header.keys()):
             existing_weightpath = Path(image[LATEST_WEIGHT_SAVE_KEY])
             logger.info(f"WGHTPATH {existing_weightpath}")
             if existing_weightpath.exists():
