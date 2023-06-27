@@ -47,6 +47,23 @@ class AstrometryNet(BaseImageProcessor):
         y_image_key: str = "Y_IMAGE",
         sort_key_name: str = "FLUX_AUTO",
     ):
+        """
+        :param output_sub_dir: subdirectory to output astrometry.net results
+        :param scale_bounds: limits on scale (lower, upper)
+        :param scale_units: scale units ('degw', 'amw')
+        :param downsample: downsample by factor of __
+        :param timeout: astrometry cmd execute timeout, in seconds
+        :param use_sextractor: use sextractor to find sources
+        :param sextractor_path: path to sextractor executable (e.g. sex)
+        :param search_radius_deg: search radius in degrees
+        :param parity: parity of the image, if known (e.g. "odd" or "even")
+        :param sextractor_config_path: path to sextractor config file, NOTE that you
+        cannot specify other config files (param, conv, nnw, etc.)to astrometry-net.
+        Make sure to set the config file to use the correct filter, etc.
+        :param x_image_key: key for x-image coordinate in sextractor catalog
+        :param y_image_key: key for y-image coordinate in sextractor catalog
+        :param sort_key_name: key for sorting sextractor catalog
+        """
         super().__init__()
 
         self.output_sub_dir = output_sub_dir
