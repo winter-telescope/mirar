@@ -99,7 +99,7 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     filter_name = image["FILTER"]
     search_radius_arcmin = (
         np.max([image["NAXIS1"], image["NAXIS2"]]) * np.abs(image["CD1_1"]) * 60
-    )
+    ) / 2
     return Gaia2Mass(
         min_mag=10,
         max_mag=20,
