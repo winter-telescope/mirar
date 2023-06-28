@@ -3,6 +3,7 @@ Script to fix headers of images based on a log file
 """
 import argparse
 
+import numpy as np
 import pandas as pd
 from astropy.io import fits
 
@@ -24,8 +25,11 @@ def fix_headers(logfile, night, keyword_list, sub_dir="raw"):
         img_hdulist = fits.open(image_filename, "update")
         img_header = img_hdulist[0].header
         for key in keyword_list:
-            print(key)
-            img_header[key] = obslog.loc[ind][key]
+            if obslog.loc[ind][key] is np.nan:
+                img_header[key] = ""
+            else:
+                img_header[key] = obslog.loc[ind][key]
+
         img_hdulist.close()
 
 
@@ -39,4 +43,4 @@ if __name__ == "__main__":
     parser.add_argument("-k", "--keywords", type=str, nargs="+")
     args = parser.parse_args()
 
-    fix_headers(args.logfile, args.night, args.sub_dir, args.keywords)
+    fix_headers(args.logfile, args.night, args.keywords, args.sub_dir)
