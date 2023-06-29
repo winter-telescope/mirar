@@ -75,7 +75,11 @@ def get_img_src_list(
     except FileNotFoundError:
         pass
 
-    sextractor_catalog_path = fits.getval(img_path, SEXTRACTOR_HEADER_KEY)
+    header = fits.getheader(img_path)
+    sextractor_catalog_path = None
+    if SEXTRACTOR_HEADER_KEY in header.keys():
+        sextractor_catalog_path = fits.getval(img_path, SEXTRACTOR_HEADER_KEY)
+
     if sextractor_catalog_path is not None:
         logger.info("Using existing sextractor catalog")
         output_catalog = sextractor_catalog_path
