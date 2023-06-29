@@ -621,7 +621,7 @@ def run_autoastrometry_single(
 
         write_param_file()
 
-    write_config_file(saturation=saturation)
+    write_config_file()
     logger.debug(f"Outfile is {outfile}")
     fit_info = autoastrometry(
         filename=img_path,

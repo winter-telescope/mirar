@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
-default_saturation = None
+default_saturation = 10000000000.0
 default_config_path = os.path.join(astromatic_config_dir, "astrom.sex")
 default_param_path = os.path.join(astromatic_config_dir, "astrom.param")
 default_filter_name = os.path.join(astromatic_config_dir, "default.conv")

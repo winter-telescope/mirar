@@ -46,7 +46,7 @@ def write_config_file(
     param_path: str = default_param_path,
     conv_path: str = default_conv_path,
     config_path: str = default_config_path,
-    saturation: float = 55000.0,
+    saturation_key: str = "SATURATE",
 ):
     """
     Write a default configuration file for sextractor
@@ -123,8 +123,7 @@ MEMORY_BUFSIZE   1024           # number of lines in buffer
 VERBOSE_TYPE     QUIET          # can be QUIET, NORMAL or FULL
 WRITE_XML        N              # Write XML file (Y/N)?
 XML_NAME         sex.xml        # Filename for XML output
-SATUR_KEY        SATURATE       # keyword for saturation level (in ADUs)
-SATUR_LEVEL      {saturation}        # level (in ADUs) at which arises saturation
+SATUR_KEY        {saturation_key}       # keyword for saturation level (in ADUs)
 """
     with open(config_path, "w") as pf:
         pf.write(configs)
