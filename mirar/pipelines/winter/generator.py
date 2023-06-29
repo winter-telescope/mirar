@@ -100,7 +100,7 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     filter_name = image["FILTER"]
     search_radius_arcmin = (
         np.max([image["NAXIS1"], image["NAXIS2"]]) * np.abs(image["CD1_1"]) * 60
-    ) / 2
+    ) / 2.0
     return Gaia2Mass(
         min_mag=10,
         max_mag=20,
@@ -114,7 +114,7 @@ def winter_ref_photometric_img_catalog_purifier(catalog: Table, image: Image) ->
     """
     Default function to purify the photometric image catalog
     """
-    edge_width_pixels = 0
+    edge_width_pixels = 100
     fwhm_threshold_arcsec = 4.0
     x_lower_limit = edge_width_pixels
     x_upper_limit = image.get_data().shape[1] - edge_width_pixels
