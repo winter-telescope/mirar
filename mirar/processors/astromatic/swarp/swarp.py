@@ -320,6 +320,11 @@ class Swarp(BaseImageProcessor):
             )
         logger.debug(f"Saving to {output_image_path}")
 
+        try:
+            component_images_list = [x[LATEST_SAVE_KEY] for x in batch]
+        except KeyError:
+            component_images_list = None
+
         all_pixscales = []
         all_imgpixsizes = []
         all_ras = []
@@ -491,11 +496,8 @@ class Swarp(BaseImageProcessor):
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
 
-        try:
-            component_images_list = [x[LATEST_SAVE_KEY] for x in batch]
+        if component_images_list is not None:
             new_image[STACKED_COMPONENT_IMAGES_KEY] = ",".join(component_images_list)
-        except KeyError:
-            pass
 
         new_image[BASE_NAME_KEY] = output_image_path.name
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.as_posix()
