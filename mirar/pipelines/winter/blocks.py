@@ -3,7 +3,7 @@ Module for WINTER data reduction
 """
 from mirar.paths import FITS_MASK_KEY
 from mirar.pipelines.winter.config import (
-    sextractor_astrometry_config,
+    sextractor_anet_config,
     sextractor_autoastrometry_config,
     sextractor_photometry_config,
     swarp_config_path,
@@ -78,9 +78,7 @@ load = [
 ]
 
 load_all_boards = [
-    ImageLoader(
-        input_sub_dir="raw_split", load_image=load_raw_winter_image
-    ),
+    ImageLoader(input_sub_dir="raw_split", load_image=load_raw_winter_image),
     ImageSelector(("OBSTYPE", ["FOCUS", "DARK", "FLAT", "SCIENCE"])),
 ]
 
@@ -116,57 +114,57 @@ load_multiboard_stack = [
 ]
 # ImageBatcher("COADDS")]
 log = (
-        split
-        + load
-        + [
-            CSVLog(
-                export_keys=[
-                    "FILTER",
-                    "UTCTIME",
-                    "EXPTIME",
-                    "OBSTYPE",
-                    "UNIQTYPE",
-                    "BOARD_ID",
-                    "OBSCLASS",
-                    "TARGET",
-                    "FILTER",
-                    "BASENAME",
-                    "TARGNAME",
-                    "RADEG",
-                    "DECDEG",
-                    "MEDCOUNT",
-                    "STDDEV",
-                    "T_ROIC",
-                ]
-            )
-        ]
+    split
+    + load
+    + [
+        CSVLog(
+            export_keys=[
+                "FILTER",
+                "UTCTIME",
+                "EXPTIME",
+                "OBSTYPE",
+                "UNIQTYPE",
+                "BOARD_ID",
+                "OBSCLASS",
+                "TARGET",
+                "FILTER",
+                "BASENAME",
+                "TARGNAME",
+                "RADEG",
+                "DECDEG",
+                "MEDCOUNT",
+                "STDDEV",
+                "T_ROIC",
+            ]
+        )
+    ]
 )
 
 log_all_boards = (
-        split_all_boards
-        + load_all_boards
-        + [
-            CSVLog(
-                export_keys=[
-                    "FILTER",
-                    "UTCTIME",
-                    "EXPTIME",
-                    "OBSTYPE",
-                    "UNIQTYPE",
-                    "BOARD_ID",
-                    "OBSCLASS",
-                    "TARGET",
-                    "FILTER",
-                    "BASENAME",
-                    "TARGNAME",
-                    "RADEG",
-                    "DECDEG",
-                    "MEDCOUNT",
-                    "STDDEV",
-                    "T_ROIC",
-                ]
-            )
-        ]
+    split_all_boards
+    + load_all_boards
+    + [
+        CSVLog(
+            export_keys=[
+                "FILTER",
+                "UTCTIME",
+                "EXPTIME",
+                "OBSTYPE",
+                "UNIQTYPE",
+                "BOARD_ID",
+                "OBSCLASS",
+                "TARGET",
+                "FILTER",
+                "BASENAME",
+                "TARGNAME",
+                "RADEG",
+                "DECDEG",
+                "MEDCOUNT",
+                "STDDEV",
+                "T_ROIC",
+            ]
+        )
+    ]
 )
 
 dark_cal = [
@@ -275,6 +273,7 @@ process_proc = [
 
 process_proc_all_boards = [
     ImageDebatcher(),
+    ImageBatcher(["UTCTIME", "BOARD_ID"]),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[25, 40],
@@ -282,8 +281,8 @@ process_proc_all_boards = [
         use_sextractor=True,
         parity="neg",
         search_radius_deg=1.0,
-        # sextractor_config_path=sextractor_autoastrometry_config[
-        #     'config_path'],
+        sextractor_config_path=sextractor_anet_config[
+            'config_path'],
         use_weight=False,
     ),
     ImageSaver(output_dir_name=f"anet", use_existing_weight=False),
@@ -300,6 +299,7 @@ process_proc_all_boards = [
     ),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME"]),
+    # ImageSaver(output_dir_name="pre-swarp"),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -367,8 +367,8 @@ photcal = [
         cache=True,
     ),
     # ImageSaver(output_dir_name=f"phot_{board_id}_{target_name}")
-    ImageSaver(output_dir_name=f"phot_{target_name}")
-    ]
+    ImageSaver(output_dir_name=f"phot_{target_name}"),
+]
 
 photcal_indiv = [
     ImageSelector(("BOARD_ID", board_id)),
@@ -385,7 +385,8 @@ photcal_indiv = [
         write_regions=True,
         cache=True,
     ),
-    ImageSaver(output_dir_name=f"phot_{board_id}_{target_name}")]
+    ImageSaver(output_dir_name=f"phot_{board_id}_{target_name}"),
+]
 
 stack_multiboard = [
     Swarp(
@@ -413,5 +414,6 @@ commissioning_noise = load_anet + process_noise
 commissioning_photcal = load_multiboard_stack + photcal
 commissioning_photcal_indiv = load_anet + photcal_indiv
 full_commissioning = log + process + process_proc  # + stack_proc
-full_commissioning_all_boards = log_all_boards + dark_cal_all_boards + flat_cal_all_boards + \
-                                process_proc_all_boards
+full_commissioning_all_boards = (
+    log_all_boards + dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards
+)
