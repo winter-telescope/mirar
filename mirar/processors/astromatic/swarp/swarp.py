@@ -7,8 +7,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
-import astropy
 import numpy as np
+from astropy.io.fits import Header
 from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch
@@ -28,6 +28,7 @@ from mirar.paths import (
 )
 from mirar.processors.astromatic.scamp.scamp import scamp_header_key
 from mirar.processors.base_processor import BaseImageProcessor
+from mirar.processors.utils.image_saver import ImageSaver
 from mirar.utils import execute
 
 logger = logging.getLogger(__name__)
@@ -287,7 +288,6 @@ class Swarp(BaseImageProcessor):
         )
         logger.debug(f"Writing file list to {swarp_image_list_path}")
 
-        component_images_list = [x[LATEST_SAVE_KEY] for x in batch]
         temp_files = [swarp_image_list_path, swarp_weight_list_path]
 
         # If swarp is run with combine -N option,
@@ -490,7 +490,13 @@ class Swarp(BaseImageProcessor):
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
-        new_image[STACKED_COMPONENT_IMAGES_KEY] = ",".join(component_images_list)
+
+        try:
+            component_images_list = [x[LATEST_SAVE_KEY] for x in batch]
+            new_image[STACKED_COMPONENT_IMAGES_KEY] = ",".join(component_images_list)
+        except KeyError:
+            pass
+
         new_image[BASE_NAME_KEY] = output_image_path.name
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.as_posix()
         self.save_fits(new_image, output_image_path)
@@ -513,16 +519,17 @@ class GetSwarpComponentImages(BaseImageProcessor):
 
     def __init__(
         self,
-        load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
+        load_image: Callable[[str], [np.ndarray, Header]] = open_fits,
         header_key=STACKED_COMPONENT_IMAGES_KEY,
         copy_header_keys: str | list[str] = None,
     ):
         super().__init__()
         self.load_image = load_image
         self.header_key = header_key
-        self.copy_header_keys = copy_header_keys
+
         if isinstance(copy_header_keys, str):
-            self.copy_header_keys = [copy_header_keys]
+            copy_header_keys = [copy_header_keys]
+        self.copy_header_keys = copy_header_keys
 
     def _apply_to_images(
         self,
@@ -554,3 +561,28 @@ class GetSwarpComponentImages(BaseImageProcessor):
             component_batch.append(component_image)
         logger.info(f"Loaded {len(component_batch)} component images")
         return component_batch
+
+    def check_prerequisites(
+        self,
+    ):
+        mask = np.array([isinstance(x, Swarp) for x in self.preceding_steps])
+        if np.sum(mask) == 0:
+            err = (
+                f"{self.__module__} requires {Swarp} as a prerequisite. "
+                f"However, the following steps were found: {self.preceding_steps}."
+            )
+            logger.error(err)
+            raise ValueError(err)
+
+        index = np.argmax(mask)
+
+        preceding_step = self.preceding_steps[index - 1]
+
+        if not isinstance(preceding_step, ImageSaver):
+            err = (
+                f"{self.__module__} requires an {ImageSaver} to be used to save the "
+                f"component images immediately before {Swarp} is run. "
+                f"However, the following steps were found: {self.preceding_steps}."
+            )
+            logger.error(err)
+            raise ValueError(err)
