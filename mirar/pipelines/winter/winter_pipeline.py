@@ -11,15 +11,15 @@ from mirar.pipelines.winter.blocks import (
     commissioning_flat,
     commissioning_multiboard_stack,
     commissioning_noise,
+    commissioning_photcal,
+    commissioning_photcal_indiv,
     commissioning_proc,
     commissioning_reduce,
     commissioning_stack,
     full_commissioning,
+    full_commissioning_all_boards,
     log,
     refbuild,
-    commissioning_photcal,
-    commissioning_photcal_indiv,
-    full_commissioning_all_boards
 )
 from mirar.pipelines.winter.config import PIPELINE_NAME
 
@@ -47,7 +47,7 @@ class WINTERPipeline(Pipeline):
         "commissioning_noise": commissioning_noise,
         "commissioning_photcal": commissioning_photcal,
         "commissioning_photcal_indiv": commissioning_photcal_indiv,
-        "full_commissioning_all_boards": full_commissioning_all_boards
+        "full_commissioning_all_boards": full_commissioning_all_boards,
     }
 
     gain = 1.0
