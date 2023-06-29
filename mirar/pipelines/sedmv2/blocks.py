@@ -144,19 +144,20 @@ parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 process_stellar = process
 
 image_photometry = [  # imported from wirc/blocks.py
-    # ImageSelector(("SOURCE", "stellar")),
+    # ImageSelector(("OBSTYPE", "SCIENCE")),
+    ImageDebatcher(),
     ImageAperturePhotometry(
-        aper_diameters=[16],
-        bkg_in_diameters=[25],
-        bkg_out_diameters=[40],
-        col_suffix_list=[""],
+        aper_diameters=[8, 16],
+        bkg_in_diameters=[20, 25],
+        bkg_out_diameters=[30, 40],
+        col_suffix_list=None,  # [""],
         phot_cutout_size=100,
         target_ra_key="OBJRAD",
         target_dec_key="OBJDECD",
         zp_colname="ZP_AUTO",
     ),
-    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
-    PSFex(config_path=psfex_config_path, output_sub_dir="photometry", norm_fits=True),
+    Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
+    PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),
     ImagePSFPhotometry(
         target_ra_key="OBJRAD",
         target_dec_key="OBJDECD",
