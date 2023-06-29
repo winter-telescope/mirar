@@ -281,8 +281,7 @@ process_proc_all_boards = [
         use_sextractor=True,
         parity="neg",
         search_radius_deg=1.0,
-        sextractor_config_path=sextractor_anet_config[
-            'config_path'],
+        sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=False,
     ),
     ImageSaver(output_dir_name=f"anet", use_existing_weight=False),
