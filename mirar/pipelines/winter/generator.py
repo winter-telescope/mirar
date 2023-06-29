@@ -6,6 +6,7 @@ import os
 from typing import Type
 
 import numpy as np
+from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
 from mirar.data import Image
@@ -109,6 +110,29 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     )
 
 
+def winter_ref_photometric_img_catalog_purifier(catalog: Table, image: Image) -> Table:
+    """
+    Default function to purify the photometric image catalog
+    """
+    edge_width_pixels = 0
+    fwhm_threshold_arcsec = 4.0
+    x_lower_limit = edge_width_pixels
+    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
+    y_lower_limit = edge_width_pixels
+    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
+
+    clean_mask = (
+        (catalog["FLAGS"] == 0)
+        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
+        & (catalog["X_IMAGE"] > x_lower_limit)
+        & (catalog["X_IMAGE"] < x_upper_limit)
+        & (catalog["Y_IMAGE"] > y_lower_limit)
+        & (catalog["Y_IMAGE"] < y_upper_limit)
+    )
+
+    return catalog[clean_mask]
+
+
 def winter_reference_phot_calibrator(image: Image, **kwargs) -> PhotCalibrator:
     """
     Generates a resampler for reference images
@@ -124,6 +148,7 @@ def winter_reference_phot_calibrator(image: Image, **kwargs) -> PhotCalibrator:
     return PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
         write_regions=True,
+        image_photometric_catalog_purifier=winter_ref_photometric_img_catalog_purifier,
         **kwargs,
     )
 
@@ -143,23 +168,6 @@ def ref_sextractor(image: Image):
         **sextractor_astrometry_config,
         write_regions_bool=True,
         cache=False,
-    )
-
-
-def ref_phot_calibrator(image: Image):
-    """
-    Generates a photcalibrator instance for reference images to get photometry
-    Args:
-        image:
-
-    Returns:
-
-    """
-    logger.debug(image)
-    return PhotCalibrator(
-        ref_catalog_generator=winter_photometric_catalog_generator,
-        write_regions=True,
-        # fwhm_threshold_arcsec=3,
     )
 
 

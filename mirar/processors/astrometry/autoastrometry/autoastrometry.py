@@ -32,6 +32,7 @@ from mirar.processors.astromatic.sextractor.settings import (
     write_config_file,
     write_param_file,
 )
+from mirar.processors.astromatic.sextractor.sourceextractor import default_saturation
 from mirar.processors.astrometry.autoastrometry.crossmatch import (
     crosscheck_source_lists,
     distance_match,
@@ -84,11 +85,11 @@ def autoastrometry(
     outfile: str = "",
     output_dir: str = base_output_dir,
     temp_file: Optional[str] = None,
-    saturation: float = None,
+    saturation: float = default_saturation,
     no_rot: bool = False,
     min_fwhm: float = DEFAULT_MIN_FWHM,
     max_fwhm: float = DEFAULT_MAX_FWHM,
-    write_crosscheck_files: bool = True,
+    write_crosscheck_files: bool = False,
 ):
     """
 
@@ -556,7 +557,7 @@ def run_autoastrometry_single(
     overwrite: bool = False,
     outfile: Optional[str] = None,
     output_dir: str = base_output_dir,
-    saturation: float = None,
+    saturation: float = default_saturation,
     no_rot: bool = False,
     write_crosscheck_files: bool = False,
 ):
@@ -667,7 +668,7 @@ def run_autoastrometry_batch(
     overwrite: bool = False,
     outfile: Optional[str] = None,
     output_dir: str = base_output_dir,
-    saturation: float = None,
+    saturation: float = default_saturation,
     no_rot: bool = False,
     write_crosscheck_files: bool = False,
 ):
