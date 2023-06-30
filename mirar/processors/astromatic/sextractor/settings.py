@@ -24,8 +24,8 @@ MAGERR_AUTO
 ELLIPTICITY
 FWHM_IMAGE
 FLAGS"""
-    with open(param_path, "w") as pf:
-        pf.write(params)
+    with open(param_path, "w", encoding="utf8") as param_f:
+        param_f.write(params)
 
 
 def write_conv_file(conv_path: str = default_conv_path):
@@ -38,8 +38,8 @@ def write_conv_file(conv_path: str = default_conv_path):
 2 4 2
 1 2 1
 """
-    with open(conv_path, "w") as cf:
-        cf.write(convol)
+    with open(conv_path, "w", encoding="utf8") as conv_f:
+        conv_f.write(convol)
 
 
 def write_config_file(
@@ -125,5 +125,5 @@ WRITE_XML        N              # Write XML file (Y/N)?
 XML_NAME         sex.xml        # Filename for XML output
 SATUR_KEY        {saturation_key}       # keyword for saturation level (in ADUs)
 """
-    with open(config_path, "w") as pf:
-        pf.write(configs)
+    with open(config_path, "w", encoding="utf8") as conf_f:
+        conf_f.write(configs)

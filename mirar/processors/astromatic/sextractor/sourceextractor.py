@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
-default_saturation = 10000000000.0
+DEFAULT_SATURATION = 10000000000.0
 default_config_path = os.path.join(astromatic_config_dir, "astrom.sex")
 default_param_path = os.path.join(astromatic_config_dir, "astrom.param")
 default_filter_name = os.path.join(astromatic_config_dir, "default.conv")
@@ -30,7 +30,7 @@ class SextractorError(ExecutionError):
 
 # Either run sextractor locally or on docker
 
-local_sextractor = True
+LOCAL_SEXTRACTOR = True
 
 
 # Functions to parse commands and generate appropriate sextractor files
@@ -132,7 +132,7 @@ def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
 def run_sextractor_single(
     img: str,
     output_dir: str,
-    catalog_name: Optional[str] = None,
+    catalog_name: Optional[Path] = None,
     config: str = default_config_path,
     parameters_name: str = default_param_path,
     filter_name: str = default_filter_name,
@@ -205,10 +205,11 @@ def run_sextractor_single(
 
     if mag_zp is not None:
         cmd += f" -MAG_ZEROPOINT {mag_zp}"
+
     try:
         execute(cmd, output_dir)
-    except ExecutionError as e:
-        raise SextractorError(e)
+    except ExecutionError as exc:
+        raise SextractorError(exc) from exc
 
     if write_regions:
         output_catalog = get_table_from_ldac(catalog_name)
