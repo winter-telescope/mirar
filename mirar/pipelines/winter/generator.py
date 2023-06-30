@@ -84,7 +84,7 @@ def winter_reference_image_resampler(**kwargs) -> Swarp:
     :param kwargs: kwargs
     :return: Swarp processor
     """
-    logger.info(kwargs)
+    logger.debug(kwargs)
     return Swarp(
         swarp_config_path=swarp_config_path, subtract_bkg=True, cache=False, **kwargs
     )

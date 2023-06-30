@@ -21,11 +21,10 @@ def run_swarp(
     propogate_headerlist: list[str] | None = None,
     center_ra: float | None = None,
     center_dec: float | None = None,
-    combine: bool = True,
     gain: float | None = None,
     subtract_bkg: bool = False,
     flux_scaling_keyword: str = None,
-    cache: bool = False,
+    cache: bool = True,
     center_type: str = None,
 ):
     """
@@ -81,10 +80,8 @@ def run_swarp(
         swarp_command += "-SUBTRACT_BACK Y "
     else:
         swarp_command += "-SUBTRACT_BACK N "
-    if combine:
-        swarp_command += "-COMBINE Y -COMBINE_TYPE MEDIAN "
-    else:
-        swarp_command += "-COMBINE N "
+
+    swarp_command += "-COMBINE Y -COMBINE_TYPE MEDIAN "
 
     if weight_list_path is not None:
         swarp_command += f" -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE @{weight_list_path} "

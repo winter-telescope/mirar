@@ -3,12 +3,12 @@ Module relating to `swarp <https://www.astromatic.net/software/swarp`_
 """
 import logging
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 from astropy.wcs import WCS
 
-from mirar.data import ImageBatch
+from typing import Literal
+from mirar.data import ImageBatch, Image
 from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -42,22 +42,21 @@ class Swarp(BaseImageProcessor):
 
     def __init__(
         self,
-        swarp_config_path: str,
+        swarp_config_path: str | Path,
         temp_output_sub_dir: str = "swarp",
-        pixscale: Optional[float] = None,
-        x_imgpixsize: Optional[float] = None,
-        y_imgpixsize: Optional[float] = None,
-        propogate_headerlist: Optional[list] = None,
-        center_type: Optional[str] = None,
-        center_ra: Optional[float] = None,
-        center_dec: Optional[float] = None,
-        gain: Optional[float] = None,
+        pixscale: float | None = None,
+        x_imgpixsize: float | None = None,
+        y_imgpixsize: float | None = None,
+        propogate_headerlist: list[str] | None = None,
+        center_type: Literal["MOST", "ALL", "MANUAL"] = "MANUAL",
+        center_ra: float | None = None,
+        center_dec: float | None = None,
+        gain: float | None = None,
         include_scamp: bool = True,
-        combine: bool = True,
         cache: bool = False,
         subtract_bkg: bool = False,
-        flux_scaling_factor: float = None,
-        calculate_dims_in_swarp: bool = False,
+        flux_scaling_factor: float | None = None,
+        calculate_dims_in_swarp: bool = False
     ):
         """
 
@@ -118,7 +117,8 @@ class Swarp(BaseImageProcessor):
                 all of them.
         """
         super().__init__()
-        self.swarp_config = swarp_config_path
+        self.swarp_config_path = Path(swarp_config_path)
+        assert self.swarp_config_path.exists(), f"Swarp config path {self.swarp_config_path} does not exist."
         self.temp_output_sub_dir = temp_output_sub_dir
         self.pixscale = pixscale
         self.propogate_headerlist = propogate_headerlist
@@ -127,15 +127,12 @@ class Swarp(BaseImageProcessor):
         self.x_imgpixsize = x_imgpixsize
         self.y_imgpixsize = y_imgpixsize
         self.include_scamp = include_scamp
-        self.combine = combine
         self.cache = cache
         self.gain = gain
         self.subtract_bkg = subtract_bkg
         self.flux_scaling_factor = flux_scaling_factor
         self.calculate_dims_in_swarp = calculate_dims_in_swarp
         self.center_type = center_type
-        if self.center_type is not None:
-            assert self.center_type in ["MOST", "ALL", "MANUAL"]
 
     def __str__(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
@@ -168,31 +165,10 @@ class Swarp(BaseImageProcessor):
         # If swarp is run with combine -N option,
         # it just sets the output name as inpname+.resamp.fits
 
-        if self.combine:
-            output_image_path = swarp_output_dir.joinpath(
-                Path(batch[0][BASE_NAME_KEY]).name + "_stack.fits",
-            )
-        else:
-            if len(batch) > 1:
-                err = (
-                    f"Attempting to run Swarp with batch-size of length "
-                    f"{len(batch)} but with combine=False. Either set combine=True"
-                    f", or DeBatch the images"
-                )
-                logger.error(err)
-                raise SwarpError(err)
+        output_image_path = swarp_output_dir.joinpath(
+            Path(batch[0][BASE_NAME_KEY]).name + "_stack.fits",
+        )
 
-            logger.warning(
-                "You are choosing to run Swarp without combining the image. "
-                "This causes swarp to output an intermediate image, "
-                "with possibly incorrect FLXSCALE values. Please consider "
-                "running with combine=True, it almost always gives the same "
-                "result as running it without, but will have consistent "
-                "headers."
-            )
-            output_image_path = swarp_output_dir.joinpath(
-                Path(batch[0][BASE_NAME_KEY]).with_suffix(".resamp.fits").name,
-            )
         logger.debug(f"Saving to {output_image_path}")
 
         try:
@@ -205,41 +181,27 @@ class Swarp(BaseImageProcessor):
         all_ras = []
         all_decs = []
 
+        pixscale_to_use = self.pixscale
+        x_imgpixsize_to_use = self.x_imgpixsize
+        y_imgpixsize_to_use = self.y_imgpixsize
+        center_ra_to_use = self.center_ra
+        center_dec_to_use = self.center_dec
+
+        missing_scale_bool = (
+            (pixscale_to_use is None)
+            | (x_imgpixsize_to_use is None)
+            | (y_imgpixsize_to_use is None)
+            | (center_ra_to_use is None)
+            | (center_ra_to_use is None)
+        )
+
         with open(swarp_image_list_path, "w", encoding="utf8") as img_list, open(
             swarp_weight_list_path, "w", encoding="utf8"
         ) as weight_list:
             for image in batch:
-                pixscale_to_use = self.pixscale
-                x_imgpixsize_to_use = self.x_imgpixsize
-                y_imgpixsize_to_use = self.y_imgpixsize
-                center_ra_to_use = self.center_ra
-                center_dec_to_use = self.center_dec
 
-                if (
-                    (self.pixscale is None)
-                    | (self.x_imgpixsize is None)
-                    | (self.y_imgpixsize is None)
-                    | (self.center_ra is None)
-                    | (self.center_dec is None)
-                ):
-                    wcs = WCS(image.get_header())
-
-                    cd11 = image["CD1_1"]
-                    cd21 = image["CD2_1"]
-
-                    nxpix = image["NAXIS1"]
-                    nypix = image["NAXIS2"]
-
-                    image_x_cen = nxpix / 2
-                    image_y_cen = nypix / 2
-
-                    [ra, dec] = wcs.all_pix2world(image_x_cen, image_y_cen, 1)
-
-                    xscale = np.sqrt(cd11**2 + cd21**2)
-
-                    pixscale = xscale * 3600
-                    imgpixsize = max(nxpix, nypix)
-
+                if missing_scale_bool:
+                    ra, dec, pixscale, imgpixsize = self.get_image_scale(image)
                     all_pixscales.append(pixscale)
                     all_imgpixsizes.append(imgpixsize)
                     all_ras.append(ra)
@@ -263,6 +225,7 @@ class Swarp(BaseImageProcessor):
                         f"Please use only one."
                     )
                     raise SwarpError(err)
+
                 if SWARP_FLUX_SCALING_KEY not in image.header.keys():
                     if self.flux_scaling_factor is None:
                         image[SWARP_FLUX_SCALING_KEY] = 1
@@ -279,6 +242,7 @@ class Swarp(BaseImageProcessor):
                 weight_list.write(f"{temp_mask_path}\n")
 
                 temp_files += [temp_img_path, temp_mask_path]
+
                 if self.include_scamp:
                     temp_files += [temp_head_path]
 
@@ -297,9 +261,6 @@ class Swarp(BaseImageProcessor):
             x_imgpixsize_to_use = None
             y_imgpixsize_to_use = None
 
-        if self.center_type is None:
-            self.center_type = "MANUAL"
-
         if self.center_type != "MANUAL":
             center_dec_to_use = None
             center_ra_to_use = None
@@ -308,7 +269,7 @@ class Swarp(BaseImageProcessor):
 
         run_swarp(
             stack_list_path=swarp_image_list_path,
-            swarp_config_path=self.swarp_config,
+            swarp_config_path=self.swarp_config_path,
             out_path=output_image_path,
             weight_list_path=swarp_weight_list_path,
             weight_out_path=output_image_weight_path,
@@ -319,36 +280,11 @@ class Swarp(BaseImageProcessor):
             center_type=self.center_type,
             center_ra=center_ra_to_use,
             center_dec=center_dec_to_use,
-            combine=self.combine,
             gain=self.gain,
             subtract_bkg=self.subtract_bkg,
             flux_scaling_keyword=SWARP_FLUX_SCALING_KEY,
             cache=self.cache,
         )
-
-        # Check if output image exists if combine is no.
-        # This is the intermediate image that swarp makes
-        # Hopefully this is obsolete now and noone uses this
-        if not self.combine:
-            temp_output_image_path = get_temp_path(
-                swarp_output_dir,
-                output_image_path.name,
-            )
-
-            temp_output_image_weight_path = temp_output_image_path.with_suffix(
-                ".weight.fits"
-            )
-
-            if temp_output_image_path.exists():
-                temp_output_image_path.rename(output_image_path)
-                temp_output_image_weight_path.rename(output_image_weight_path)
-            else:
-                err = (
-                    f"Swarp seems to have misbehaved, "
-                    f"and not made the correct output file {temp_output_image_path}"
-                )
-                logger.error(err)
-                raise SwarpError(err)
 
         new_image = self.open_fits(output_image_path)
         # Add missing keywords that are common in all input images to the
@@ -379,9 +315,38 @@ class Swarp(BaseImageProcessor):
         self.save_fits(new_image, output_image_path)
         logger.info(f"Saved resampled image to {output_image_path.name}")
 
-        if not self.cache:
+        if self.cache:
             for temp_file in temp_files:
                 temp_file.unlink()
                 logger.debug(f"Deleted temporary file {temp_file}")
 
         return ImageBatch([new_image])
+
+    @staticmethod
+    def get_image_scale(image: Image) -> tuple[float, float, float, float]:
+        """
+        Function to get the image scale from the image header
+
+        :param image: Image to get the scale from
+        :return: RA, Dec, pixel scale, image pixel size
+        """
+
+        wcs = WCS(image.get_header())
+
+        cd11 = image["CD1_1"]
+        cd21 = image["CD2_1"]
+
+        nxpix = image["NAXIS1"]
+        nypix = image["NAXIS2"]
+
+        image_x_cen = nxpix / 2
+        image_y_cen = nypix / 2
+
+        [ra, dec] = wcs.all_pix2world(image_x_cen, image_y_cen, 1)
+
+        xscale = np.sqrt(cd11 ** 2 + cd21 ** 2)
+
+        pixscale = xscale * 3600
+        imgpixsize = max(nxpix, nypix)
+
+        return ra, dec, pixscale, imgpixsize
