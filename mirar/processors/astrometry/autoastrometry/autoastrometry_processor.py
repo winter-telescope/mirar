@@ -6,7 +6,9 @@ from typing import Optional
 
 from mirar.data import ImageBatch
 from mirar.paths import BASE_NAME_KEY, get_output_dir
-from mirar.processors.autoastrometry.autoastrometry import run_autoastrometry_single
+from mirar.processors.astrometry.autoastrometry.autoastrometry import (
+    run_autoastrometry_single,
+)
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)

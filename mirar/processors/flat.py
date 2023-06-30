@@ -2,14 +2,16 @@
 Module containing processors for flat calibration
 """
 import logging
+import os.path
 import sys
 from collections.abc import Callable
 
 import numpy as np
+from astropy.io import fits
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.paths import FLAT_FRAME_KEY, LATEST_SAVE_KEY
+from mirar.paths import BASE_NAME_KEY, FLAT_FRAME_KEY, LATEST_SAVE_KEY
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -44,6 +46,7 @@ class FlatCalibrator(ProcessorWithCache):
         y_max: int = sys.maxsize,
         flat_nan_threshold: float = 0.0,
         select_flat_images: Callable[[ImageBatch], ImageBatch] = default_select_flat,
+        flat_mask_key: str = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -53,6 +56,7 @@ class FlatCalibrator(ProcessorWithCache):
         self.y_max = y_max
         self.flat_nan_threshold = flat_nan_threshold
         self.select_cache_images = select_flat_images
+        self.flat_mask_key = flat_mask_key
 
     def __str__(self) -> str:
         return "Creates a flat image, divides other images by this image."
@@ -83,6 +87,8 @@ class FlatCalibrator(ProcessorWithCache):
     ) -> Image:
         images = self.select_cache_images(images)
 
+        logger.debug(f"Found {len(images)} suitable flats in batch")
+
         n_frames = len(images)
         if n_frames == 0:
             err = f"Found {n_frames} suitable flats in batch"
@@ -94,12 +100,39 @@ class FlatCalibrator(ProcessorWithCache):
         flats = np.zeros((nx, ny, n_frames))
 
         for i, img in enumerate(images):
+            data = img.get_data()
+
+            if self.flat_mask_key is not None:
+                if self.flat_mask_key not in img.header.keys():
+                    err = (
+                        f"Image {img} does not have a mask with key "
+                        f"{self.flat_mask_key}"
+                    )
+                    logger.error(err)
+                    raise KeyError(err)
+
+                mask_file = img[self.flat_mask_key]
+                logger.info(f"Masking flat {img[BASE_NAME_KEY]} with mask {mask_file}")
+                if not os.path.exists(mask_file):
+                    err = f"Mask file {mask_file} does not exist"
+                    logger.error(err)
+                    raise FileNotFoundError(err)
+                with fits.open(mask_file) as mask_img:
+                    mask = mask_img[0].data
+                    mask = mask > 0
+                    logger.info(
+                        f"Masking {np.sum(mask)} pixels in flat "
+                        f"{img[BASE_NAME_KEY]}"
+                    )
+                    data[mask] = np.nan
+
             median = np.nanmedian(
-                img.get_data()[self.x_min : self.x_max, self.y_min : self.y_max]
+                data[self.x_min : self.x_max, self.y_min : self.y_max]
             )
-            flats[:, :, i] = img.get_data() / median
+            flats[:, :, i] = data / median
 
         logger.info(f"Median combining {n_frames} flats")
+
         master_flat = np.nanmedian(flats, axis=2)
 
         return Image(master_flat, header=images[0].get_header())
@@ -110,8 +143,13 @@ class SkyFlatCalibrator(FlatCalibrator):
     Processor to do flat calibration using sky flats
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, select_flat_images=self.select_sky_flat)
+    def __init__(self, flat_mask_key=None, *args, **kwargs):
+        super().__init__(
+            *args,
+            **kwargs,
+            select_flat_images=self.select_sky_flat,
+            flat_mask_key=flat_mask_key,
+        )
 
     @staticmethod
     def select_sky_flat(

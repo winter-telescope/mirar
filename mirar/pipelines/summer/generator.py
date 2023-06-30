@@ -4,6 +4,8 @@ for SUMMER
 """
 import logging
 
+from astropy.table import Table
+
 from mirar.catalog import BaseCatalog, Gaia2Mass
 from mirar.catalog.vizier import PS1, SkyMapper
 from mirar.catalog.vizier.sdss import SDSS, NotInSDSSError, in_sdss
@@ -36,8 +38,32 @@ def summer_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
         trim=True,
         image_catalog_path=temp_cat_path,
         filter_name="j",
+        acceptable_j_ph_quals=["A", "B", "C"],
     )
     return cat
+
+
+def summer_photometric_img_catalog_purifier(catalog: Table, image: Image) -> Table:
+    """
+    Default function to purify the photometric image catalog
+    """
+    edge_width_pixels = 100
+    fwhm_threshold_arcsec = 4.0
+    x_lower_limit = edge_width_pixels
+    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
+    y_lower_limit = edge_width_pixels
+    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
+
+    clean_mask = (
+        (catalog["FLAGS"] == 0)
+        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
+        & (catalog["X_IMAGE"] > x_lower_limit)
+        & (catalog["X_IMAGE"] < x_upper_limit)
+        & (catalog["Y_IMAGE"] > y_lower_limit)
+        & (catalog["Y_IMAGE"] < y_upper_limit)
+    )
+
+    return catalog[clean_mask]
 
 
 def summer_photometric_catalog_generator(image: Image) -> BaseCatalog:

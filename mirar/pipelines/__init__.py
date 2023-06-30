@@ -1,3 +1,6 @@
+"""
+Central location for all pipelines. This is where you should add new pipelines.
+"""
 import logging
 
 from mirar.errors import ProcessorError
@@ -14,19 +17,30 @@ logger = logging.getLogger(__name__)
 
 
 class PipelineConfigError(ProcessorError, KeyError):
-    pass
+    """
+    Error raised when a pipeline is not found
+    """
 
 
-def get_pipeline(instrument, selected_configurations=None, *args, **kwargs):
+def get_pipeline(instrument, selected_configurations=None, *args, **kwargs) -> Pipeline:
+    """
+    Function to get pipeline
+
+    :param instrument: Name of instrument
+    :param selected_configurations: Configurations to use
+    :param args: args
+    :param kwargs: kwargs
+    :return: pipeline
+    """
     try:
         pipeline = Pipeline.pipelines[instrument.lower()]
         logger.info(f"Found {instrument} pipeline")
-    except KeyError:
+    except KeyError as exc:
         err = (
             f"Unrecognised pipeline {instrument}. "
             f"Available pipelines are: {Pipeline.pipelines.keys()}"
         )
         logger.error(err)
-        raise PipelineConfigError(err)
+        raise PipelineConfigError(err) from exc
 
     return pipeline(selected_configurations=selected_configurations, *args, **kwargs)

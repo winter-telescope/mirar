@@ -6,33 +6,12 @@ import os
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
-from mirar.pipelines.wirc.generator import (
-    wirc_astrometric_catalog_generator,
-    wirc_photometric_catalog_generator,
-)
+from mirar.pipelines.wirc.blocks import log, masking, reduction
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
-from mirar.pipelines.wirc.wirc_files import (
-    scamp_fp_path,
-    sextractor_astrometry_config,
-    swarp_sp_path,
-    wirc_mask_path,
-)
 from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
-from mirar.processors.astromatic import Scamp, Sextractor, Swarp
-from mirar.processors.autoastrometry import AutoAstrometry
-from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import MasterDarkCalibrator
-from mirar.processors.flat import MasterFlatCalibrator
-from mirar.processors.mask import MaskPixels
-from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.sky import MasterSkyCalibrator
-from mirar.processors.utils import ImageSaver
 from mirar.processors.utils.image_loader import ImageLoader
-from mirar.processors.utils.image_selector import (
-    ImageBatcher,
-    ImageDebatcher,
-    ImageSelector,
-)
+from mirar.processors.utils.image_selector import ImageSelector
 from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -40,23 +19,20 @@ logger = logging.getLogger(__name__)
 test_data_dir = get_test_data_dir()
 
 expected_zp = {
-    "ZP_2.0": 25.908477783203125,
-    "ZP_2.0_std": 0.11761965602636337,
-    "ZP_2.0_nstars": 12,
-    "ZP_4.0": 27.235090255737305,
-    "ZP_4.0_std": 0.1022496446967125,
-    "ZP_4.0_nstars": 12,
-    "ZP_5.0": 27.5942440032959,
-    "ZP_5.0_std": 0.09162138402462006,
-    "ZP_5.0_nstars": 12,
-    "ZP_8.0": 28.16297149658203,
-    "ZP_8.0_std": 0.07523621618747711,
-    "ZP_8.0_nstars": 12,
-    "ZP_10.0": 28.324859619140625,
-    "ZP_10.0_std": 0.07975760102272034,
-    "ZP_10.0_nstars": 12,
-    "ZP_AUTO": 28.434249877929688,
-    "ZP_AUTO_std": 0.14610908925533295,
+    "ZP_6.0": 27.760366439819336,
+    "ZP_6.0_std": 0.2747618854045868,
+    "ZP_6.0_nstars": 13,
+    "ZP_10.0": 28.341157913208008,
+    "ZP_10.0_std": 0.09141725301742554,
+    "ZP_10.0_nstars": 11,
+    "ZP_14.0": 28.417837142944336,
+    "ZP_14.0_std": 0.13541148602962494,
+    "ZP_14.0_nstars": 13,
+    "ZP_18.0": 28.475311279296875,
+    "ZP_18.0_std": 0.10811392217874527,
+    "ZP_18.0_nstars": 13,
+    "ZP_AUTO": 28.48914909362793,
+    "ZP_AUTO_std": 0.09673704952001572,
     "ZP_AUTO_nstars": 12,
 }
 
@@ -73,41 +49,19 @@ def get_cal_path(name: str) -> str:
     return os.path.join(test_data_dir, f"wirc/cals/test_{name}.fits")
 
 
-test_configuration = [
-    ImageLoader(
-        input_img_dir=test_data_dir, input_sub_dir="raw", load_image=load_raw_wirc_image
-    ),
-    CSVLog(
-        export_keys=[
-            "OBJECT",
-            "FILTER",
-            "UTSHUT",
-            "EXPTIME",
-            "COADDS",
-            "OBSTYPE",
-            "OBSCLASS",
-        ],
-    ),
-    MaskPixels(mask_path=wirc_mask_path),
-    ImageSelector(("exptime", "45.0")),
-    MasterDarkCalibrator(get_cal_path("dark")),
-    ImageDebatcher(),
-    ImageSelector(("obsclass", "science")),
-    ImageBatcher(split_key="filter"),
-    MasterFlatCalibrator(get_cal_path("flat")),
-    MasterSkyCalibrator(get_cal_path("sky")),
-    ImageSelector(("object", "ZTF21aagppzg"), ("filter", "J")),
-    AutoAstrometry(catalog="tmc"),
-    Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
-    Scamp(
-        ref_catalog_generator=wirc_astrometric_catalog_generator,
-        scamp_config_path=scamp_fp_path,
-    ),
-    Swarp(swarp_config_path=swarp_sp_path),
-    Sextractor(output_sub_dir="final_sextractor", **sextractor_astrometry_config),
-    PhotCalibrator(ref_catalog_generator=wirc_photometric_catalog_generator),
-    ImageSaver(output_dir_name="final"),
-]
+test_configuration = (
+    [
+        ImageLoader(
+            input_img_dir=test_data_dir,
+            input_sub_dir="raw",
+            load_image=load_raw_wirc_image,
+        ),
+    ]
+    + log
+    + masking
+    + [ImageSelector(("exptime", "45.0")), MasterDarkCalibrator(get_cal_path("dark"))]
+    + reduction
+)
 
 pipeline = WircPipeline(night="20210330", selected_configurations="test")
 pipeline.add_configuration(configuration_name="test", configuration=test_configuration)

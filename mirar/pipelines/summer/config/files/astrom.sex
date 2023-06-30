@@ -58,7 +58,6 @@ PHOT_PETROPARAMS 1.0,2.0                        # MAG_PETRO parameters: <Petrosi
                                 # <min_radius>
  
 SATUR_KEY        SATURATE       # keyword for saturation level (in ADUs)
-SATUR_LEVEL      60000        # level (in ADUs) at which arises saturation
  
 MAG_ZEROPOINT    0            # magnitude zero-point
 MAG_GAMMA        4.0            # gamma of emulsion (for photographic scans)

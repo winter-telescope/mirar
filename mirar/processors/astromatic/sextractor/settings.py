@@ -12,6 +12,9 @@ default_starnnw_path = os.path.join(astromatic_config_dir, "default.nnw")
 
 
 def write_param_file(param_path: str = default_param_path):
+    """
+    Write a default parameter file for sextractor
+    """
     params = """X_IMAGE
 Y_IMAGE
 ALPHA_J2000
@@ -26,6 +29,9 @@ FLAGS"""
 
 
 def write_conv_file(conv_path: str = default_conv_path):
+    """
+    Write a default convolution file for sextractor
+    """
     convol = """CONV NORM
 # 3x3 ``all-ground'' convolution mask with FWHM = 2 pixels.
 1 2 1
@@ -40,13 +46,16 @@ def write_config_file(
     param_path: str = default_param_path,
     conv_path: str = default_conv_path,
     config_path: str = default_config_path,
-    saturation: float = 55000.0,
+    saturation_key: str = "SATURATE",
 ):
+    """
+    Write a default configuration file for sextractor
+    """
     configs = f"""
 #-------------------------------- Catalog ------------------------------------
 
 CATALOG_NAME     temp.cat       # name of the output catalog
-CATALOG_TYPE     ASCII_HEAD     # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
+CATALOG_TYPE     ASCII_HEAD      # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
                                 # ASCII_VOTABLE, FITS_1.0 or FITS_LDAC
 PARAMETERS_NAME  {param_path}     # name of the file containing catalog contents
 
@@ -114,7 +123,7 @@ MEMORY_BUFSIZE   1024           # number of lines in buffer
 VERBOSE_TYPE     QUIET          # can be QUIET, NORMAL or FULL
 WRITE_XML        N              # Write XML file (Y/N)?
 XML_NAME         sex.xml        # Filename for XML output
-SATUR_LEVEL      {saturation}        # level (in ADUs) at which arises saturation
+SATUR_KEY        {saturation_key}       # keyword for saturation level (in ADUs)
 """
     with open(config_path, "w") as pf:
         pf.write(configs)

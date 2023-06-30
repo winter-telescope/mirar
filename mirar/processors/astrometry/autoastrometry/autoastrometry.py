@@ -33,30 +33,32 @@ from mirar.processors.astromatic.sextractor.settings import (
     write_param_file,
 )
 from mirar.processors.astromatic.sextractor.sourceextractor import default_saturation
-from mirar.processors.autoastrometry.crossmatch import (
+from mirar.processors.astrometry.autoastrometry.crossmatch import (
     crosscheck_source_lists,
     distance_match,
 )
-from mirar.processors.autoastrometry.detect import (
+from mirar.processors.astrometry.autoastrometry.detect import (
     DEFAULT_MAX_FWHM,
     DEFAULT_MIN_FWHM,
     get_img_src_list,
 )
-from mirar.processors.autoastrometry.errors import (
+from mirar.processors.astrometry.autoastrometry.errors import (
     AstrometryCrossmatchError,
+    AstrometryReferenceError,
     AstrometrySourceError,
+    AstrometryURLError,
 )
-from mirar.processors.autoastrometry.io import (
+from mirar.processors.astrometry.autoastrometry.io import (
     export_src_lists,
     parse_header,
     write_region_file,
     write_text_file,
 )
-from mirar.processors.autoastrometry.reference import (
+from mirar.processors.astrometry.autoastrometry.reference import (
     get_ref_sources_from_catalog,
     get_ref_sources_from_catalog_astroquery,
 )
-from mirar.processors.autoastrometry.utils import median, stdev
+from mirar.processors.astrometry.autoastrometry.utils import median, stdev
 
 logger = logging.getLogger(__name__)
 
@@ -244,7 +246,12 @@ def autoastrometry(
             center_dec=center_dec,
             box_size_arcsec=box_size_arcsec,
         )
-    except TimeoutError:
+    except (
+        TimeoutError,
+        AstrometryURLError,
+        AstrometrySourceError,
+        AstrometryReferenceError,
+    ):
         ref_src_list, n_ref, ref_density = get_ref_sources_from_catalog_astroquery(
             catalog=catalog,
             center_ra=center_ra,
@@ -614,7 +621,7 @@ def run_autoastrometry_single(
 
         write_param_file()
 
-    write_config_file(saturation=saturation)
+    write_config_file()
     logger.debug(f"Outfile is {outfile}")
     fit_info = autoastrometry(
         filename=img_path,

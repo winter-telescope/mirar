@@ -10,8 +10,11 @@ import ephem
 import numpy as np
 from astropy.io import fits
 
-from mirar.processors.autoastrometry.sources import BaseSource, SextractorSource
-from mirar.processors.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
+from mirar.processors.astrometry.autoastrometry.sources import (
+    BaseSource,
+    SextractorSource,
+)
+from mirar.processors.astrometry.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
 
 logger = logging.getLogger(__name__)
 
@@ -349,7 +352,7 @@ def write_region_file(
             out.write("image\n")
             for i, src in enumerate(src_list):
                 out.write(
-                    f"point({src.ra_deg:.3f},{src.dec_deg:.3f}) "
+                    f"point({src.x:.3f},{src.y:.3f}) "
                     f"# point=boxcircle text={{{i + 1}}}\n"
                 )
 

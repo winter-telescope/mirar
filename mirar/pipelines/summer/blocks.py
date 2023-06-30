@@ -23,6 +23,7 @@ from mirar.pipelines.summer.config import (
 from mirar.pipelines.summer.generator import (
     summer_astrometric_catalog_generator,
     summer_photometric_catalog_generator,
+    summer_photometric_img_catalog_purifier,
     summer_reference_image_generator,
     summer_reference_image_resampler,
     summer_reference_psfex,
@@ -35,7 +36,7 @@ from mirar.pipelines.summer.load_summer_image import (
 from mirar.pipelines.summer.models import Exposure, Proc, Raw
 from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
-from mirar.processors.autoastrometry import AutoAstrometry
+from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.candidates.candidate_detector import DetectCandidates
 from mirar.processors.candidates.utils import DataframeWriter, RegionsWriter
 from mirar.processors.cosmic_rays import LACosmicCleaner
@@ -44,7 +45,7 @@ from mirar.processors.database.database_exporter import (
     DatabaseImageExporter as PSQLDatabaseImageExporter,
 )
 from mirar.processors.database.database_modifier import ModifyImageDatabaseSeq
-from mirar.processors.mask import MaskPixels
+from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
@@ -123,7 +124,7 @@ export_raw = [
         duplicate_protocol="replace",
         q3c_bool=False,
     ),
-    MaskPixels(mask_path=summer_mask_path),
+    MaskPixelsFromPath(mask_path=summer_mask_path),
     DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
     ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
 ]
@@ -133,7 +134,7 @@ cal_hunter = [
 ]
 
 test_cr = [
-    MaskPixels(mask_path=summer_mask_path),
+    MaskPixelsFromPath(mask_path=summer_mask_path),
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
@@ -179,7 +180,10 @@ process_raw = [
         checkimage_type="BACKGROUND_RMS",
         **sextractor_photometry_config
     ),
-    PhotCalibrator(ref_catalog_generator=summer_photometric_catalog_generator),
+    PhotCalibrator(
+        ref_catalog_generator=summer_photometric_catalog_generator,
+        image_photometric_catalog_purifier=summer_photometric_img_catalog_purifier,
+    ),
     ImageSaver(
         output_dir_name="processed",
         # TODO: work out why this was ever here...

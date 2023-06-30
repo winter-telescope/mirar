@@ -10,27 +10,30 @@ from mirar.testing import BaseTestCase
 logger = logging.getLogger(__name__)
 
 expected_zp = {
-    "ZP_2.0": 24.379148900858567,
-    "ZP_2.0_std": 0.07320184249312667,
+    "ZP_2.0": 24.376073571395878,
+    "ZP_2.0_std": 0.07935580417736623,
     "ZP_2.0_nstars": 30,
-    "ZP_3.0": 25.072568754704793,
-    "ZP_3.0_std": 0.06529106709538676,
+    "ZP_3.0": 25.075430540593466,
+    "ZP_3.0_std": 0.06447897389004999,
     "ZP_3.0_nstars": 30,
-    "ZP_4.0": 25.449809682718914,
-    "ZP_4.0_std": 0.06168474184669056,
+    "ZP_4.0": 25.449352268727623,
+    "ZP_4.0_std": 0.061933883191802645,
     "ZP_4.0_nstars": 30,
-    "ZP_5.0": 25.66054034665426,
-    "ZP_5.0_std": 0.06357885150281098,
+    "ZP_5.0": 25.662642403793335,
+    "ZP_5.0_std": 0.06341347711205561,
     "ZP_5.0_nstars": 30,
-    "ZP_6.0": 25.779508960596722,
-    "ZP_6.0_std": 0.06472718057714481,
+    "ZP_6.0": 25.781888934326172,
+    "ZP_6.0_std": 0.0643293713949796,
     "ZP_6.0_nstars": 30,
-    "ZP_7.0": 25.851914108149213,
-    "ZP_7.0_std": 0.06594640100455139,
+    "ZP_7.0": 25.854481351725262,
+    "ZP_7.0_std": 0.06547451826311122,
     "ZP_7.0_nstars": 30,
-    "ZP_8.0": 25.89904772872925,
-    "ZP_8.0_std": 0.06650479236590319,
+    "ZP_8.0": 25.902204645029705,
+    "ZP_8.0_std": 0.06612088851303272,
     "ZP_8.0_nstars": 30,
+    "ZP_AUTO": 25.96681058044434,
+    "ZP_AUTO_std": 0.07490968980093107,
+    "ZP_AUTO_nstars": 30,
 }
 
 pipeline = get_pipeline(
@@ -83,3 +86,12 @@ if __name__ == "__main__":
     new_res, new_errorstack = pipeline.reduce_images(
         dataset=Dataset(ImageBatch()), catch_all_errors=False
     )
+
+    new_header = new_res[0][0].get_header()
+
+    new_exp = "expected_zp = { \n"
+    for header_key in new_header.keys():
+        if "ZP_" in header_key:
+            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
+    new_exp += "}"
+    print(new_exp)

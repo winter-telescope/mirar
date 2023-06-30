@@ -42,6 +42,14 @@ def run_astrometry_net_single(
     scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
     downsample: Optional[float | int] = None,  # downsample by factor of __
     timeout: Optional[float] = None,  # astrometry cmd execute timeout, in seconds
+    use_sextractor: bool = False,
+    sextractor_path: str = "sex",
+    search_radius_deg: float = 5,
+    parity: str = None,
+    sextractor_config_path: str = None,
+    x_image_key: str = "X_IMAGE",
+    y_image_key: str = "Y_IMAGE",
+    sort_key_name: str = "FLUX_AUTO",
 ):
     """
     function to run astrometry.net locally on one image, with options to adjust settings
@@ -74,8 +82,20 @@ def run_astrometry_net_single(
     # cmd with a ra, dec first guess (speeds up solution)
     header = fits.open(img)[0].header  # pylint: disable=no-member
     ra_req, dec_req = header["RA"], header["DEC"]  # requested ra, dec
+    if use_sextractor:
+        cmd += f"--use-source-extractor --source-extractor-path '{sextractor_path}' "
+
+    if sextractor_config_path is not None:
+        cmd += f"--source-extractor-config {sextractor_config_path} "
+
+    cmd += f"-X {x_image_key} -Y {y_image_key} -s {sort_key_name} "
+
+    if parity is not None:
+        assert parity in ["pos", "neg"]
+        cmd += f"--parity {parity} "
+
     cmd_loc = (
-        cmd + f"--ra {ra_req}, --dec {dec_req} --radius 5 "
+        cmd + f"--ra {ra_req}, --dec {dec_req} --radius {search_radius_deg} "
     )  # radius takes on units of ra, dec
 
     try:

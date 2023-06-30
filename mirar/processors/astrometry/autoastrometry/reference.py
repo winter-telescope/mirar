@@ -12,12 +12,12 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 
-from mirar.processors.autoastrometry.errors import (
+from mirar.processors.astrometry.autoastrometry.errors import (
     AstrometryReferenceError,
     AstrometryURLError,
 )
-from mirar.processors.autoastrometry.sources import BaseSource, compare_mag
-from mirar.processors.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
+from mirar.processors.astrometry.autoastrometry.sources import BaseSource, compare_mag
+from mirar.processors.astrometry.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
 
 logger = logging.getLogger(__name__)
 
@@ -334,7 +334,7 @@ def get_ref_sources_from_catalog(
                 f"scat?catalog={trycat}&ra={center_ra}"
                 f"&dec={center_dec}&system=J2000&rad=-90"
             )
-
+            logger.debug(f"Trying {testqueryurl}")
             with urllib.request.urlopen(testqueryurl, timeout=30) as check:
                 checklines = check.readlines()
             logger.debug(f"Found {len(checklines)}")

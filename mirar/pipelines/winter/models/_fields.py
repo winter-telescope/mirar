@@ -2,10 +2,8 @@
 Models for the 'fields' table
 """
 import time
-import urllib.request
 from typing import ClassVar
 
-import pandas as pd
 from pydantic import Field
 from sqlalchemy import REAL, Column, Insert, Integer, Select
 from sqlalchemy.orm import Mapped, relationship

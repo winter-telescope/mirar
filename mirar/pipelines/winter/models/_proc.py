@@ -5,15 +5,7 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import (  # event,
-    REAL,
-    VARCHAR,
-    Column,
-    Double,
-    ForeignKey,
-    Integer,
-    Sequence,
-)
+from sqlalchemy import REAL, VARCHAR, Column, ForeignKey, Integer, Sequence  # event,
 from sqlalchemy.orm import Mapped, relationship
 
 from mirar.pipelines.winter.models._raw import Raw
