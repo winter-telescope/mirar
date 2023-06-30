@@ -158,7 +158,6 @@ class Swarp(BaseImageProcessor):
         swarp_image_list_path = swarp_output_dir.joinpath(
             Path(batch[0][BASE_NAME_KEY]).name + "_swarp_img_list.txt",
         )
-
         swarp_weight_list_path = swarp_output_dir.joinpath(
             Path(batch[0][BASE_NAME_KEY]).name + "_swarp_weight_list.txt",
         )
