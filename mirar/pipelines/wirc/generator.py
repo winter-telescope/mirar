@@ -18,13 +18,39 @@ from mirar.references.wirc import WIRCRef
 logger = logging.getLogger(__name__)
 
 
+def wirc_photometric_img_catalog_purifier(catalog, image):
+    """
+    Function to purify the photometric catalog
+
+    :return: purified catalog
+    """
+    edge_width_pixels = 100
+    fwhm_threshold_arcsec = 4.0
+
+    x_lower_limit = edge_width_pixels
+    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
+    y_lower_limit = edge_width_pixels
+    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
+
+    clean_mask = (
+        (catalog["FLAGS"] == 0)
+        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
+        & (catalog["X_IMAGE"] > x_lower_limit)
+        & (catalog["X_IMAGE"] < x_upper_limit)
+        & (catalog["Y_IMAGE"] > y_lower_limit)
+        & (catalog["Y_IMAGE"] < y_upper_limit)
+    )
+
+    return catalog[clean_mask]
+
+
 def wirc_astrometric_catalog_generator(_) -> Gaia2Mass:
     """
     Function to crossmatch WIRC to GAIA/2mass for astrometry
 
     :return: catalogue
     """
-    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=30)
+    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=10)
 
 
 def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
@@ -36,7 +62,12 @@ def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     """
     filter_name = image["FILTER"]
     return Gaia2Mass(
-        min_mag=10, max_mag=20, search_radius_arcmin=30, filter_name=filter_name
+        min_mag=10,
+        max_mag=20,
+        search_radius_arcmin=10,
+        filter_name=filter_name,
+        acceptable_h_ph_quals=["A"],
+        acceptable_k_ph_quals=["A"],
     )
 
 

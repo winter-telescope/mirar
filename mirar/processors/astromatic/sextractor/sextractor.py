@@ -18,7 +18,6 @@ from mirar.paths import (
     get_temp_path,
 )
 from mirar.processors.astromatic.sextractor.sourceextractor import (
-    default_saturation,
     parse_checkimage,
     run_sextractor_single,
 )
@@ -35,6 +34,7 @@ sextractor_checkimg_map = {
     "BACKGROUND_RMS": "BKGRMS",
     "MINIBACKGROUND": "MINIBKG",
     "MINIBACK_RMS": "MINIBGRM",
+    "SEGMENTATION": "SEGMAP",
 }
 
 
@@ -53,7 +53,7 @@ class Sextractor(BaseImageProcessor):
         parameter_path: str,
         filter_path: str,
         starnnw_path: str,
-        saturation: float = default_saturation,
+        saturation: float = None,
         verbose_type: str = "QUIET",
         checkimage_name: Optional[str | list] = None,
         checkimage_type: Optional[str | list] = None,
@@ -63,6 +63,24 @@ class Sextractor(BaseImageProcessor):
         mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
     ):
+        """
+        :param output_sub_dir: subdirectory to output sextractor files
+        :param config_path: path to sextractor config file
+        :param parameter_path: path to sextractor parameter file
+        :param filter_path: path to sextractor filter file
+        :param starnnw_path: path to sextractor starnnw file
+        :param saturation: saturation level for sextractor. Leave to None if not known,
+        no saturation will be applied
+        :param verbose_type: verbose type for sextractor
+        :param checkimage_type: type of checkimage to output
+        :param checkimage_name: name of checkimage to output. Leave to None to use
+        pipeline defaults in sextractor_checkimage_map for output name (recommended).
+        :param gain: gain for sextractor. Leave to None if not known.
+        :param dual: whether to run sextractor in dual mode
+        :param cache: whether to cache sextractor output
+        :param mag_zp: magnitude zero point for sextractor. Leave to None if not known.
+        :param write_regions_bool: whether to write regions file for ds9
+        """
         # pylint: disable=too-many-arguments
         super().__init__()
         self.output_sub_dir = output_sub_dir
@@ -87,7 +105,7 @@ class Sextractor(BaseImageProcessor):
             f"and save detected sources to the '{self.output_sub_dir}' directory."
         )
 
-    def get_sextractor_output_dir(self) -> str:
+    def get_sextractor_output_dir(self) -> Path:
         """
         Get the directory to output
 
@@ -138,11 +156,13 @@ class Sextractor(BaseImageProcessor):
                 sextractor_out_dir, image[BASE_NAME_KEY].replace(".fits", ".cat")
             )
 
-            _, self.checkimage_name = parse_checkimage(
-                checkimage_name=self.checkimage_name,
+            _, checkimage_name = parse_checkimage(
+                checkimage_name=None,
                 checkimage_type=self.checkimage_type,
                 image=os.path.join(sextractor_out_dir, image[BASE_NAME_KEY]),
             )
+
+            logger.debug(f"Sextractor checkimage name is {checkimage_name}")
 
             output_cat, checkimage_name = run_sextractor_single(
                 img=temp_path,
@@ -154,7 +174,7 @@ class Sextractor(BaseImageProcessor):
                 saturation=self.saturation,
                 weight_image=mask_path,
                 verbose_type=self.verbose_type,
-                checkimage_name=self.checkimage_name,
+                checkimage_name=checkimage_name,
                 checkimage_type=self.checkimage_type,
                 gain=self.gain,
                 catalog_name=output_cat,

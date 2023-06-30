@@ -11,11 +11,12 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.stats import sigma_clip, sigma_clipped_stats
+from astropy.table import Table
 
 from mirar.catalog.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
 from mirar.errors import ProcessorError
-from mirar.paths import copy_temp_file, get_output_dir, get_output_path
+from mirar.paths import BASE_NAME_KEY, copy_temp_file, get_output_dir, get_output_path
 from mirar.processors.astromatic.sextractor.sextractor import (
     SEXTRACTOR_HEADER_KEY,
     Sextractor,
@@ -60,6 +61,29 @@ class PhotometryCalculationError(PhotometryError):
     """Error related to the photometric calibration"""
 
 
+def default_photometric_img_catalog_purifier(catalog: Table, image: Image) -> Table:
+    """
+    Default function to purify the photometric image catalog
+    """
+    edge_width_pixels = 100
+    fwhm_threshold_arcsec = 4.0
+    x_lower_limit = edge_width_pixels
+    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
+    y_lower_limit = edge_width_pixels
+    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
+
+    clean_mask = (
+        (catalog["FLAGS"] == 0)
+        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
+        & (catalog["X_IMAGE"] > x_lower_limit)
+        & (catalog["X_IMAGE"] < x_upper_limit)
+        & (catalog["Y_IMAGE"] > y_lower_limit)
+        & (catalog["Y_IMAGE"] < y_upper_limit)
+    )
+
+    return catalog[clean_mask]
+
+
 class PhotCalibrator(BaseImageProcessor):
     """
     Photometric calibrator processor
@@ -72,11 +96,9 @@ class PhotCalibrator(BaseImageProcessor):
         ref_catalog_generator: Callable[[Image], BaseCatalog],
         temp_output_sub_dir: str = "phot",
         redo: bool = True,
-        x_lower_limit: float = 100,
-        x_upper_limit: float = 2800,  # Are these floats or ints?
-        y_lower_limit: float = 100,
-        y_upper_limit: float = 2800,
-        fwhm_threshold_arcsec: float = 4.0,
+        image_photometric_catalog_purifier: Callable[
+            [Table, Image], Table
+        ] = default_photometric_img_catalog_purifier,
         num_matches_threshold: int = 5,
         write_regions: bool = False,
         cache: bool = False,
@@ -85,14 +107,8 @@ class PhotCalibrator(BaseImageProcessor):
         self.redo = redo  # What is this for?
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
-        self.x_lower_limit = x_lower_limit
-        self.x_upper_limit = x_upper_limit
-        self.y_lower_limit = y_lower_limit
-        self.y_upper_limit = y_upper_limit
+        self.image_photometric_catalog_purifier = image_photometric_catalog_purifier
         self.cache = cache
-
-        # Why is this here not in catalog?
-        self.fwhm_threshold_arcsec = fwhm_threshold_arcsec
 
         self.num_matches_threshold = num_matches_threshold
         self.write_regions = write_regions
@@ -108,59 +124,24 @@ class PhotCalibrator(BaseImageProcessor):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
     def calculate_zeropoint(
-        self, ref_cat_path: Path, img_cat_path: Path, img_filt
+        self,
+        ref_cat: Table,
+        clean_img_cat: Table,
     ) -> list[dict]:
         """
         Function to calculate zero point from two catalogs
         Args:
-            ref_cat_path: Path to reference ldac catalog
-            img_cat_path: Path to image ldac catalog
+            ref_cat: Reference catalog table
+            clean_img_cat: Catalog of sources from image to xmatch with ref_cat
         Returns:
         """
-        ref_cat_with_flagged = get_table_from_ldac(ref_cat_path)
-        img_cat = get_table_from_ldac(img_cat_path)
-
-        if len(ref_cat_with_flagged) == 0:
-            err = "No sources found in reference catalog"
-            logger.error(err)
-            raise PhotometryReferenceError(err)
-
-        if str(ref_cat_path).split(".")[-2] == "ps1":
-            # this reference catalog is from ps1
-            # remove sources with SATURATED flag
-            ref_cat = self.remove_sat_ps1(ref_cat_with_flagged, img_filt)
-
-        else:
-            # reference not ps1, no flags to check
-            ref_cat = ref_cat_with_flagged
-
         ref_coords = SkyCoord(ra=ref_cat["ra"], dec=ref_cat["dec"], unit=(u.deg, u.deg))
-        clean_mask = (
-            (img_cat["FLAGS"] == 0)
-            & (img_cat["FWHM_WORLD"] < self.fwhm_threshold_arcsec / 3600.0)
-            & (img_cat["X_IMAGE"] > self.x_lower_limit)
-            & (img_cat["X_IMAGE"] < self.x_upper_limit)
-            & (img_cat["Y_IMAGE"] > self.y_lower_limit)
-            & (img_cat["Y_IMAGE"] < self.y_upper_limit)
-        )
 
-        img_coords = SkyCoord(
-            ra=img_cat["ALPHAWIN_J2000"],
-            dec=img_cat["DELTAWIN_J2000"],
-            unit=(u.deg, u.deg),
-        )
-        clean_img_cat = img_cat[clean_mask]
-        logger.debug(f"Found {len(clean_img_cat)} clean sources in image.")
         clean_img_coords = SkyCoord(
             ra=clean_img_cat["ALPHAWIN_J2000"],
             dec=clean_img_cat["DELTAWIN_J2000"],
             unit=(u.deg, u.deg),
         )
-
-        if len(clean_img_coords) == 0:
-            err = "No clean sources found in image"
-            logger.error(err)
-            raise PhotometrySourceError(err)
 
         idx, d2d, _ = ref_coords.match_to_catalog_sky(clean_img_coords)
         match_mask = d2d < 1.0 * u.arcsec
@@ -169,45 +150,6 @@ class PhotCalibrator(BaseImageProcessor):
         logger.info(
             f"Cross-matched {len(matched_img_cat)} sources from catalog to the image."
         )
-
-        if self.write_regions:
-            ref_regions_path = get_output_path(
-                base_name="ref.reg",
-                dir_root=self.temp_output_sub_dir,
-                sub_dir=self.night_sub_dir,
-            )
-            cleaned_img_regions_path = get_output_path(
-                base_name="cleaned_img.reg",
-                dir_root=self.temp_output_sub_dir,
-                sub_dir=self.night_sub_dir,
-            )
-            img_regions_path = get_output_path(
-                base_name="img.reg",
-                dir_root=self.temp_output_sub_dir,
-                sub_dir=self.night_sub_dir,
-            )
-
-            write_regions_file(
-                regions_path=ref_regions_path,
-                x_coords=ref_coords.ra.deg,
-                y_coords=ref_coords.dec.deg,
-                system="wcs",
-                region_radius=2.0 / 3600,
-            )
-            write_regions_file(
-                regions_path=cleaned_img_regions_path,
-                x_coords=clean_img_coords.ra.deg,
-                y_coords=clean_img_coords.dec.deg,
-                system="wcs",
-                region_radius=2.0 / 3600,
-            )
-            write_regions_file(
-                regions_path=img_regions_path,
-                x_coords=img_coords.ra.deg,
-                y_coords=img_coords.dec.deg,
-                system="wcs",
-                region_radius=2.0 / 3600,
-            )
 
         if len(matched_img_cat) < self.num_matches_threshold:
             err = (
@@ -296,9 +238,79 @@ class PhotCalibrator(BaseImageProcessor):
             image["FWHM_MED"] = fwhm_med
             image["FWHM_STD"] = fwhm_std
 
-            zp_dicts = self.calculate_zeropoint(
-                ref_cat_path, temp_cat_path, image.header["FILTER"]
-            )
+            ref_cat = get_table_from_ldac(ref_cat_path)
+            img_cat = get_table_from_ldac(temp_cat_path)
+
+            if len(ref_cat) == 0:
+                err = "No sources found in reference catalog"
+                logger.error(err)
+                raise PhotometryReferenceError(err)
+
+            clean_img_cat = self.image_photometric_catalog_purifier(img_cat, image)
+            logger.debug(f"Found {len(clean_img_cat)} clean sources in image.")
+
+            if len(clean_img_cat) == 0:
+                err = "No clean sources found in image"
+                logger.error(err)
+                raise PhotometrySourceError(err)
+
+            if self.write_regions:
+                ref_coords = SkyCoord(
+                    ra=ref_cat["ra"], dec=ref_cat["dec"], unit=(u.deg, u.deg)
+                )
+
+                img_coords = SkyCoord(
+                    ra=img_cat["ALPHAWIN_J2000"],
+                    dec=img_cat["DELTAWIN_J2000"],
+                    unit=(u.deg, u.deg),
+                )
+
+                clean_img_coords = SkyCoord(
+                    ra=clean_img_cat["ALPHAWIN_J2000"],
+                    dec=clean_img_cat["DELTAWIN_J2000"],
+                    unit=(u.deg, u.deg),
+                )
+
+                ref_regions_path = get_output_path(
+                    base_name=image.header[BASE_NAME_KEY] + "ref.reg",
+                    dir_root=self.temp_output_sub_dir,
+                    sub_dir=self.night_sub_dir,
+                )
+                cleaned_img_regions_path = get_output_path(
+                    base_name=image.header[BASE_NAME_KEY] + "cleaned_img.reg",
+                    dir_root=self.temp_output_sub_dir,
+                    sub_dir=self.night_sub_dir,
+                )
+                img_regions_path = get_output_path(
+                    base_name=image.header[BASE_NAME_KEY] + "img.reg",
+                    dir_root=self.temp_output_sub_dir,
+                    sub_dir=self.night_sub_dir,
+                )
+
+                write_regions_file(
+                    regions_path=ref_regions_path,
+                    x_coords=ref_coords.ra.deg,
+                    y_coords=ref_coords.dec.deg,
+                    system="wcs",
+                    region_radius=2.0 / 3600,
+                )
+                write_regions_file(
+                    regions_path=cleaned_img_regions_path,
+                    x_coords=clean_img_coords.ra.deg,
+                    y_coords=clean_img_coords.dec.deg,
+                    system="wcs",
+                    region_radius=2.0 / 3600,
+                )
+                write_regions_file(
+                    regions_path=img_regions_path,
+                    x_coords=img_coords.ra.deg,
+                    y_coords=img_coords.dec.deg,
+                    system="wcs",
+                    region_radius=2.0 / 3600,
+                )
+
+            zp_dicts = self.calculate_zeropoint(ref_cat, clean_img_cat)
+
             aperture_diameters = []
             zp_values = []
             for zpvals in zp_dicts:
@@ -314,7 +326,8 @@ class PhotCalibrator(BaseImageProcessor):
             aperture_diameters.append(med_fwhm_pix)
             zp_values.append(image["ZP_AUTO"])
 
-            if sextractor_checkimg_map["BACKGROUND_RMS"] in image:
+            if sextractor_checkimg_map["BACKGROUND_RMS"] in image.header.keys():
+                logger.info("Calculating limiting magnitudes from background RMS file")
                 limmags = self.get_maglim(
                     image[sextractor_checkimg_map["BACKGROUND_RMS"]],
                     zp_values,
@@ -389,6 +402,9 @@ class PhotCalibrator(BaseImageProcessor):
         return maglim
 
     def get_sextractor_module(self) -> Sextractor:
+        """
+        Get the Sextractor module from the preceding steps
+        """
         mask = [isinstance(x, Sextractor) for x in self.preceding_steps]
         return np.array(self.preceding_steps)[mask][-1]
 
@@ -452,18 +468,3 @@ class PhotCalibrator(BaseImageProcessor):
         line = aperture_lines[0].replace("PHOT_APERTURES", " ").split("#")[0]
 
         return [float(x) for x in line.split(",") if x not in [""]]
-
-    def remove_sat_ps1(self, catalog, filt: str):
-        """
-        remove ps1 sources flagged as "SATURATED"
-        """
-        logger.info(f"original ps1 table length: {len(catalog)}")
-        logger.info("removing ps1 sources with SATURATED flag...")
-        sat_flag = 4096  # SATURATED value
-        column = catalog[str(filt) + "Flags"]
-        check = (column & sat_flag) / sat_flag
-        # check != 0 means this flag is there
-        # check == 0 means this flag is not there
-        clean_cat = catalog[np.where(check == 0)[0]]
-        logger.info(f"found {len(clean_cat)} columns without this flag \n")
-        return clean_cat

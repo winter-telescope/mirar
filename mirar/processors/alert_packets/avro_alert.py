@@ -14,7 +14,6 @@ import avro.schema
 import avro.tool
 import confluent_kafka
 import fastavro
-import pandas as pd
 
 from mirar.data import SourceBatch
 from mirar.paths import get_output_dir
@@ -58,30 +57,30 @@ class AvroPacketMaker(BaseDataframeProcessor):
         return batch
 
     @staticmethod
-    def read_input_df(candidate_df: pd.DataFrame):
+    def read_input_df(df):
         """Takes a DataFrame, which has multiple candidate
         and creates list of dictionaries, each dictionary
         representing a single candidate.
 
         Args:
-            candidate_df (pandas.core.frame.DataFrame): dataframe of all candidates.
+            df (pandas.core.frame.DataFrame): dataframe of all candidates.
 
         Returns:
             (list[dict]): list of dictionaries, each a candidate.
         """
         all_candidates = []
 
-        for i in range(0, len(candidate_df)):
+        for i in range(0, len(df)):
             candidate = {}
-            for key in candidate_df.keys():
+            for key in df.keys():
                 try:
-                    if isinstance(candidate_df.iloc[i].get(key), (str, list)):
-                        candidate[key] = candidate_df.iloc[i].get(key)
+                    if isinstance(df.iloc[i].get(key), (str, list)):
+                        candidate[key] = df.iloc[i].get(key)
                     else:
                         # change to native python type
-                        candidate[key] = candidate_df.iloc[i].get(key).item()
+                        candidate[key] = df.iloc[i].get(key).item()
                 except AttributeError:  # for IOBytes objs
-                    candidate[key] = candidate_df.iloc[i].get(key).getvalue()
+                    candidate[key] = df.iloc[i].get(key).getvalue()
             all_candidates.append(candidate)
 
         return all_candidates
@@ -98,8 +97,8 @@ class AvroPacketMaker(BaseDataframeProcessor):
         """
         known_schemas = avro.schema.Names()  # avro.schema.Names object
 
-        for schema_f in schema_files:
-            schema = self.load_single_avsc(schema_f, known_schemas)
+        for s in schema_files:
+            schema = self.load_single_avsc(s, known_schemas)
 
         # using schema.to_json() doesn't fully propagate the nested schemas
         # work around as below
@@ -239,8 +238,9 @@ class AvroPacketMaker(BaseDataframeProcessor):
             self._save_local(cand["candid"], [packet], schema)
             # logger.info(f"Saved candid {cand['candid']}: {cand['objectId']}")
             return 1
-        except Exception as exc:
-            logger.error(f"Could not save candid {cand['candid']}: {exc}")
+        except Exception as e:
+            logger.info(f"{e}")
+            logger.info(f"Could not save candid {cand['candid']}")
             return -1
 
     @staticmethod
@@ -340,19 +340,17 @@ class AvroPacketMaker(BaseDataframeProcessor):
             message += "broadcasted"
         return message
 
-    def make_alert(self, candidate_df: pd.DataFrame):
+    def make_alert(self, df):
         """Top level method to make avro alert.
 
         Args:
-            candidate_df (pandas.core.DataFrame): dataframe of candidates.
+            df (pandas.core.DataFrame): dataframe of candidates.
         """
-        t_start = time.time()
+        t0 = time.time()
 
-        logger.info(
-            f"Avro Packet Maker: parsing {len(candidate_df)} candidates from dataframe"
-        )
+        logger.info(f"Avro Packet Maker: parsing {len(df)} candidates from dataframe")
         # Read dataframe into dictionary of candidates
-        all_cands = self.read_input_df(candidate_df)
+        all_cands = self.read_input_df(df)
 
         num_cands = len(all_cands)  # total candidates to process
         successes = 0  # successful kafka producing of a candidate
@@ -387,8 +385,37 @@ class AvroPacketMaker(BaseDataframeProcessor):
             # used for testing script below for checking/opening avro packets
             # cand_id = cand["candid"] # save candid of avro packet to open
 
-        t_end = time.time()
+        t1 = time.time()
+        logger.info("###########################################")
+        logger.info(f"Took {(t1 - t0):.2f} seconds to process {num_cands} candidates.")
         logger.info(
-            f"Took {(t_end - t_start):.2f} seconds to process {num_cands} candidates. "
             f"{successes} of {num_cands} successfully {self._success_message()}."
         )
+        logger.info("###########################################")
+
+        # ########## Testing avro packet creation script ##########
+        # # Read data from an avro file
+        # last_file = str(cand_id) + '.avro'
+        # last_packet_path = os.path.join(self.get_sub_output_dir(), last_file)
+        # with open(last_packet_path, 'rb') as f:
+        #     reader = DataFileReader(f, DatumReader())
+        #     metadata = copy.deepcopy(reader.meta)
+        #     schema_from_file = json_dict.loads(metadata['avro.schema'])
+        #     cand_data = [field_data for field_data in reader]
+        #     reader.close()
+
+        # cand_data is a list with the first item as the nested
+        # dictionary of the avro schema
+        # length of cand_data: 1
+        # 0-index item: dictionary, length 9, keys:
+        # ['schemavsn', 'publisher', 'objectId', 'candid', 'candidate',
+        # 'prv_candidates', 'cutoutScience', 'cutoutTemplate', 'cutoutDifference'])]
+
+        # cand_dict = cand_data[0]
+        # single_cand = cand_dict['candidate']
+        # jd_val = single_cand['jd']
+
+        # logger.info(f'Schema that we parsed:\n {schema}')
+        # logger.info(f'Schema from candidate .avro file:\n {schema_from_file}')
+        # logger.info(f'Candidate:\n {cand_data}')
+        # logger.info(f'type{type(cand_data)}')

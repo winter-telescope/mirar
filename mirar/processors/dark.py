@@ -8,6 +8,7 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
+from mirar.paths import SATURATE_KEY
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -60,6 +61,10 @@ class DarkCalibrator(ProcessorWithCache):
             data = data - (master_dark.get_data() * image["EXPTIME"])
             image.set_data(data)
 
+            if SATURATE_KEY in image.header:
+                image[SATURATE_KEY] -= (
+                    np.nanmedian(master_dark.get_data()) * image["EXPTIME"]
+                )
         return batch
 
     def make_image(
@@ -78,12 +83,18 @@ class DarkCalibrator(ProcessorWithCache):
 
         darks = np.zeros((nx, ny, n_frames))
 
+        individual_dark_exptimes = []
         for i, img in enumerate(images):
             dark_exptime = img["EXPTIME"]
             darks[:, :, i] = img.get_data() / dark_exptime
+            individual_dark_exptimes.append(str(dark_exptime))
 
         logger.info(f"Median combining {n_frames} darks")
-        master_dark = Image(np.nanmedian(darks, axis=2), header=images[0].get_header())
+        master_dark_header = images[0].get_header()
+        master_dark_header["EXPTIME"] = 1.0
+        master_dark_header["NCOMBINE"] = n_frames
+        master_dark_header["INDIVEXP"] = ",".join(individual_dark_exptimes)
+        master_dark = Image(np.nanmedian(darks, axis=2), header=master_dark_header)
 
         return master_dark
 

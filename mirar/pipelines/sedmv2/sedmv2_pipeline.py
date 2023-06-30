@@ -11,7 +11,6 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.sedmv2.blocks import (
     cal_hunter,
-    image_photometry,
     load_raw,
     process,
     process_stellar,
@@ -36,7 +35,7 @@ class SEDMv2Pipeline(Pipeline):
     default_cal_requirements = sedmv2_cal_requirements
     all_pipeline_configurations = {
         "default": load_raw + cal_hunter + process,
-        "default_stellar": load_raw + cal_hunter + process_stellar + image_photometry,
+        "default_stellar": load_raw + cal_hunter + process_stellar,  # +image_photometry
         "default_transient": load_raw + cal_hunter + process_transient,  # +imsub,
     }
 

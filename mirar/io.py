@@ -11,6 +11,8 @@ import numpy as np
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 
+from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY
+
 
 def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU:
     """
@@ -69,6 +71,12 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
         hdu = img.pop(0)
         data = hdu.data
         header = hdu.header
+
+        if BASE_NAME_KEY not in header:
+            header[BASE_NAME_KEY] = Path(path).name
+
+        if RAW_IMG_KEY not in header.keys():
+            header[RAW_IMG_KEY] = path
 
     return data, header
 

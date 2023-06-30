@@ -7,13 +7,15 @@ from pathlib import Path
 from typing import Optional
 
 from mirar.processors.astromatic.config import astromatic_config_dir
+from mirar.processors.candidates.utils.regions_writer import write_regions_file
 from mirar.utils import ExecutionError, execute
+from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
 # sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
-default_saturation = 1.0e10
+default_saturation = 10000000000.0
 default_config_path = os.path.join(astromatic_config_dir, "astrom.sex")
 default_param_path = os.path.join(astromatic_config_dir, "astrom.param")
 default_filter_name = os.path.join(astromatic_config_dir, "default.conv")
@@ -79,8 +81,8 @@ def parse_checkimage(
                 )
                 logger.error(err)
                 raise ValueError(err)
-            else:
-                cmd += f"-CHECKIMAGE_NAME {','.join(checkimage_name)}"
+
+            cmd += f"-CHECKIMAGE_NAME {','.join(checkimage_name)}"
 
         else:
             if image is not None:
@@ -135,20 +137,21 @@ def run_sextractor_single(
     parameters_name: str = default_param_path,
     filter_name: str = default_filter_name,
     starnnw_name: str = default_starnnw_path,
-    saturation: float = default_saturation,
+    saturation: float = None,
     weight_image: Optional[str] = None,
     verbose_type: str = "QUIET",
     checkimage_name: Optional[str | list] = None,
     checkimage_type: Optional[str | list] = None,
     gain: Optional[float] = None,
     mag_zp: Optional[float] = None,
+    write_regions: bool = False,
 ):
     """
     Function to run sextractor in single mode
     Args:
-        img:
-        output_dir:
-        catalog_name:
+        img: The image to run sextractor on
+        output_dir: The directory to output the catalog to
+        catalog_name: The name of the catalog to output.
         config:
         parameters_name:
         filter_name:
@@ -158,9 +161,9 @@ def run_sextractor_single(
         verbose_type:
         checkimage_name:
         checkimage_type:
-        gain:
-        mag_zp:
-
+        gain: The gain to use for the catalog
+        mag_zp: The magnitude zero point to use for the catalog
+        write_regions: Whether to write ds9 regions for the objects in the catalog
     Returns:
 
     """
@@ -207,6 +210,21 @@ def run_sextractor_single(
     except ExecutionError as e:
         raise SextractorError(e)
 
+    if write_regions:
+        output_catalog = get_table_from_ldac(catalog_name)
+
+        x_coords = output_catalog["X_IMAGE"]
+        y_coords = output_catalog["Y_IMAGE"]
+
+        regions_path = catalog_name.as_posix() + ".reg"
+
+        write_regions_file(
+            regions_path=regions_path,
+            x_coords=x_coords,
+            y_coords=y_coords,
+            system="image",
+            region_radius=5,
+        )
     return catalog_name, checkimage_name
 
 
@@ -219,7 +237,7 @@ def run_sextractor_dual(
     parameters_name: str = default_param_path,
     filter_name: str = default_filter_name,
     starnnw_name: str = default_starnnw_path,
-    saturation: float = default_saturation,
+    saturation: float = None,
     weight_image: Optional[str] = None,
     verbose_type: str = "QUIET",
     checkimage_name: Optional[str | list] = None,
@@ -274,6 +292,9 @@ def run_sextractor_dual(
 
     if starnnw_name is not None:
         cmd += f"-STARNNW_NAME {starnnw_name} "
+
+    if mag_zp is not None:
+        cmd += f" -MAG_ZEROPOINT {mag_zp}"
 
     checkimage_cmd, checkimage_name = parse_checkimage(
         checkimage_type=checkimage_type,

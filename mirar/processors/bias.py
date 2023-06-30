@@ -8,7 +8,7 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.paths import BIAS_FRAME_KEY, LATEST_SAVE_KEY
+from mirar.paths import BIAS_FRAME_KEY, LATEST_SAVE_KEY, SATURATE_KEY
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -57,7 +57,8 @@ class BiasCalibrator(ProcessorWithCache):
             data = data - master_bias.get_data()
             image.set_data(data)
             image[BIAS_FRAME_KEY] = master_bias[LATEST_SAVE_KEY]
-
+            if SATURATE_KEY in image.header:
+                image[SATURATE_KEY] -= np.nanmedian(master_bias.get_data())
         return batch
 
     def make_image(

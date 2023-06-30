@@ -8,7 +8,7 @@ from typing import Optional
 
 import numpy as np
 
-from mirar.processors.autoastrometry.sources import (
+from mirar.processors.astrometry.autoastrometry.sources import (
     BaseSource,
     SextractorSource,
     distance,
@@ -16,7 +16,7 @@ from mirar.processors.autoastrometry.sources import (
     position_angle,
     quickdistance,
 )
-from mirar.processors.autoastrometry.utils import median, mode, stdev, unique
+from mirar.processors.astrometry.autoastrometry.utils import median, mode, stdev, unique
 
 logger = logging.getLogger(__name__)
 

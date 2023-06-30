@@ -23,10 +23,10 @@ from mirar.pipelines.sedmv2.generator import (
 )
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
 from mirar.processors import BiasCalibrator, FlatCalibrator
-from mirar.processors.anet import AstrometryNet
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
+from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.csvlog import CSVLog
-from mirar.processors.mask import MaskPixels
+from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import (
     CandidateAperturePhotometry,
@@ -39,7 +39,6 @@ from mirar.processors.photometry.psf_photometry import (
 from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
     ImageBatcher,
-    ImageDebatcher,
     ImageLoader,
     ImageSaver,
     ImageSelector,
@@ -54,7 +53,7 @@ from mirar.processors.zogy.zogy import (
 )
 
 load_raw = [
-    MultiExtParser(input_sub_dir="raw/mef/", skip_first=True),
+    MultiExtParser(input_sub_dir="raw/mef/"),
     ImageLoader(load_image=load_raw_sedmv2_image),
 ]
 
@@ -79,7 +78,6 @@ build_log = [  # pylint: disable=duplicate-code
 ]  # pylint: disable=duplicate-code
 
 reduce = [
-    MaskPixels(mask_path=sedmv2_mask_path),
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
     ImageBatcher(split_key="filter"),
@@ -94,7 +92,7 @@ reduce = [
         downsample=2,
         timeout=900,
     ),
-    ImageSaver(output_dir_name="masked", write_mask=True),
+    MaskPixelsFromPath(mask_path=sedmv2_mask_path),
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
@@ -136,28 +134,22 @@ process = reduce + resample + calibrate
 
 parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 
-# process_stellar = parse_stellar + process
-process_stellar = process
+process_stellar = parse_stellar + process
 
 image_photometry = [  # imported from wirc/blocks.py
-    # ImageSelector(("SOURCE", "stellar")),
+    ImageSelector(("SOURCE", "stellar")),
     ImageAperturePhotometry(
         aper_diameters=[16],
         bkg_in_diameters=[25],
         bkg_out_diameters=[40],
         col_suffix_list=[""],
         phot_cutout_size=100,
-        target_ra_key="OBJRAD",
-        target_dec_key="OBJDECD",
-        zp_colname="ZP_AUTO",
+        target_ra_key="TARGRA",
+        target_dec_key="TARGDEC",
     ),
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
     PSFex(config_path=psfex_config_path, output_sub_dir="photometry", norm_fits=True),
-    ImagePSFPhotometry(
-        target_ra_key="OBJRAD",
-        target_dec_key="OBJDECD",
-        zp_colname="ZP_AUTO",
-    ),
+    ImagePSFPhotometry(target_ra_key="TARGRA", target_dec_key="TARGDEC"),
     ImageSaver(output_dir_name="photometry"),
 ]
 
@@ -178,22 +170,17 @@ candidate_photometry = [  # imported from wirc/blocks.py
 parse_transient = [ImageSelector(("SOURCE", ["transient", "None"]))]
 
 resample_transient = [
-    ImageDebatcher(),
-    ImageBatcher(split_key="origname"),  # reaches for files coming from the same MEF
     Swarp(
-        cache=True,
         swarp_config_path=swarp_config_path,
         include_scamp=False,
         combine=True,
-        calculate_dims_in_swarp=True,
     ),
     ImageSaver(
         output_dir_name="resampled", write_mask=True
     ),  # pylint: disable=duplicate-code
 ]
 
-# process_transient = parse_transient + reduce + resample_transient + calibrate
-process_transient = reduce + resample_transient + calibrate
+process_transient = parse_transient + reduce + resample_transient + calibrate
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),

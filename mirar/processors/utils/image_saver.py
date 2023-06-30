@@ -1,6 +1,7 @@
 """
 Module for saving images
 """
+import logging
 import shutil
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from mirar.paths import (
     get_output_path,
 )
 from mirar.processors.base_processor import BaseImageProcessor
+
+logger = logging.getLogger(__name__)
 
 
 class ImageSaver(BaseImageProcessor):
@@ -27,11 +30,13 @@ class ImageSaver(BaseImageProcessor):
         output_dir_name: str,
         write_mask: bool = True,
         output_dir: str | Path = base_output_dir,
+        use_existing_weight: bool = True,
     ):
         super().__init__()
         self.output_dir_name = output_dir_name
         self.write_mask = write_mask
         self.output_dir = Path(output_dir)
+        self.use_existing_weight = use_existing_weight
 
     def __str__(self):
         return f"Processor to save images to the '{self.output_dir_name}' subdirectory"
@@ -53,7 +58,10 @@ class ImageSaver(BaseImageProcessor):
             image[LATEST_SAVE_KEY] = str(path)
             if self.write_mask:
                 weight_image_found, mask_path = False, ""
-                if LATEST_WEIGHT_SAVE_KEY in image.header.keys():
+                if self.use_existing_weight & (
+                    LATEST_WEIGHT_SAVE_KEY in image.header.keys()
+                ):
+                    logger.debug(f"Searching for existing weight image")
                     existing_weightpath = Path(image[LATEST_WEIGHT_SAVE_KEY])
                     if existing_weightpath.exists():
                         weight_image_found = True
@@ -67,7 +75,9 @@ class ImageSaver(BaseImageProcessor):
                             shutil.copy(existing_weightpath, mask_path)
 
                 if not weight_image_found:
-                    mask_path = self.save_weight_image(image, img_path=path)
+                    mask_path = self.save_weight_image(
+                        image, img_path=path, use_existing=self.use_existing_weight
+                    )
                 image[LATEST_WEIGHT_SAVE_KEY] = str(mask_path)
             self.save_fits(image, path)
 

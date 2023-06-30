@@ -50,9 +50,6 @@ def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["TELRA"] = header["TELRAD"]
         header["TELDEC"] = header["TELDECD"]
 
-        if header["GAIN"] == 0.0:
-            header["GAIN"] = 1.0
-
         # filters
         header["FILTERID"] = header["FILTER"].split(" ")[1][0]
         header["FILTER"] = header["FILTERID"]
@@ -104,10 +101,6 @@ def prepare_science(filepath: str) -> str:
         hdr["OBSTYPE"] = "SCIENCE"
         hdr["OBSCLASS"] = "science"
         hdr["PREPTAG"] = 0  # label files that have already run through this function
-
-        # print("changing OBJ coord in header for GW Lib!!!")
-        # hdr["OBJRAD"] = 229.9802519789
-        # hdr["OBJDECD"] = -25.0067323323
 
         # discern transient vs. stellar based on filename
         if "ZTF2" in filepath:

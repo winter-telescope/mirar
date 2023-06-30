@@ -22,14 +22,14 @@ jupyter = "^1.0.0"
 matplotlib = "^3.7.1"
 mocpy = "^0.12.0"
 lacosmic = "^1.0.0"
-numpy = ">=1.24.3,<1.26.0"
+numpy = "~1.24.3"
 pandas = "^2.0.2"
 penquins = "^2.3.1"
 photutils = "^1.8.0"
 psycopg = {extras = ["binary"], version = "^3.1.9"}
 pydl = {version = "^1.0.0rc1", allow-prereleases = true}
 pyFFTW = "^0.13.1"
-setuptools = ">=67.8,<69.0"
+setuptools = "^67.8.0"
 watchdog = "^3.0.0"
 wget = "^3.2"
 toml = "^0.10.2"
@@ -47,8 +47,7 @@ sqlalchemy = "^2.0.15"
 pydantic = "^1.10.8"
 pylint-pydantic = "^0.1.6"
 astrosurveyutils = "^0.0.1"
-wintertoo = "^0.3.9"
-urllib3 = "^1.26.16"
+wintertoo = "^0.3.5"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.0.1"
@@ -56,7 +55,7 @@ sphinx = "^7.0.1"
 [tool.coverage.run]
 source = ["mirar"]
 concurrency = ["thread"]
-omit = ["mirar/__main__.py"]
+omit = ["mirar/__main__.py", "mirar/processors/send_to_fritz.py"]
 
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration

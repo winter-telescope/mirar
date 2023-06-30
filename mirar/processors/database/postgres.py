@@ -239,25 +239,14 @@ class PostgresUser:
                             if column not in primary_key:
                                 update_colnames.append(column)
 
-                        if len(serial_keys) == 0:
-                            self.modify_db_entry(
-                                db_constraints=db_constraints,
-                                value_dict=value_dict,
-                                db_alter_columns=update_colnames,
-                                db_table=db_table,
-                                db_name=db_name,
-                                return_columns=primary_key,
-                            )
-
-                        else:
-                            serial_key_values = self.modify_db_entry(
-                                db_constraints=db_constraints,
-                                value_dict=value_dict,
-                                db_alter_columns=update_colnames,
-                                db_table=db_table,
-                                db_name=db_name,
-                                return_columns=primary_key,
-                            )
+                        serial_key_values = self.modify_db_entry(
+                            db_constraints=db_constraints,
+                            value_dict=value_dict,
+                            db_alter_columns=update_colnames,
+                            db_table=db_table,
+                            db_name=db_name,
+                            return_columns=serial_keys,
+                        )
 
         return serial_keys, serial_key_values
 
@@ -275,7 +264,6 @@ class PostgresUser:
 
         :param db_name: name of db
         :param db_table: Name of table
-        :param db_constraints: constraints to query db
         :param value_dict: dict-like object to provide updated values
         :param db_alter_columns: columns to alter in db
         :param return_columns: columns to return
@@ -300,7 +288,7 @@ class PostgresUser:
             db_alter_values = [str(value_dict[c]) for c in db_alter_columns]
 
             alter_values_txt = [
-                f'"{db_alter_columns[ind]}"=' + f"'{db_alter_values[ind]}'"
+                f"{db_alter_columns[ind]}='{db_alter_values[ind]}'"
                 for ind in range(len(db_alter_columns))
             ]
 
@@ -312,7 +300,6 @@ class PostgresUser:
             if len(return_columns) > 0:
                 logger.debug(return_columns)
                 sql_query += f""" RETURNING {', '.join(return_columns)}"""
-
             sql_query += ";"
             query_output = self.execute_query(sql_query, db_name)
 

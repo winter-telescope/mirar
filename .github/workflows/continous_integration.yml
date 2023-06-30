@@ -93,7 +93,6 @@ jobs:
           WATCHDOG_EMAIL_PASSWORD: ${{ secrets.WATCHDOG_EMAIL_PASSWORD }}
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}
           KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
-          FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
         run: |
           TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
 

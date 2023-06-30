@@ -30,12 +30,12 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
 
     def __init__(
         self,
-        *args,
         aper_diameters: float | list[float] = 10.0,
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
         zp_colname: str = ZP_KEY,
         col_suffix_list: str | list[str] = None,
+        *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -97,12 +97,11 @@ class ImageAperturePhotometry(BaseImagePhotometry):
 
     def __init__(
         self,
-        *args,
         aper_diameters: float | list[float] = 10.0,
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
-        zp_colname: str = ZP_KEY,
         col_suffix_list: Optional[list[str]] = None,
+        *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -115,8 +114,6 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         self.col_suffix_list = col_suffix_list
         if self.col_suffix_list is None:
             self.col_suffix_list = self.aperture_photometer.aper_diameters
-
-        self.zp_colname = zp_colname
 
     def _apply_to_images(
         self,
@@ -134,9 +131,7 @@ class ImageAperturePhotometry(BaseImagePhotometry):
                 suffix = self.col_suffix_list[ind]
                 image[f"fluxap{suffix}"] = flux
                 image[f"fluxunc{suffix}"] = fluxunc
-                image[f"magap{suffix}"] = float(
-                    image[self.zp_colname]
-                ) - 2.5 * np.log10(flux)
+                image[f"magap{suffix}"] = float(image[ZP_KEY]) - 2.5 * np.log10(flux)
                 image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
 
         if self.photometry_out_temp_dir is not None:

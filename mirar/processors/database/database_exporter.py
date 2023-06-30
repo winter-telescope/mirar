@@ -60,14 +60,16 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
                     candidate_row.to_dict(),
                     db_name=self.db_name,
                     db_table=self.db_table,
-                    duplicate_protocol=self.duplicate_protocol,
                 )
                 for ind, key in enumerate(primary_keys):
                     if key not in primary_key_dict:
                         primary_key_dict[key] = [primary_key_values[ind]]
                     else:
                         primary_key_dict[key].append(primary_key_values[ind])
+                    # candidate_row[key] = primary_key_values[ind]
 
+                # new_table = pd.concat([new_table,candidate_row])
+                # new_table.append(candidate_row, ignore_index=True)
             for key, val in primary_key_dict.items():
                 candidate_table[key] = val
 
