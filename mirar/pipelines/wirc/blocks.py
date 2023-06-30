@@ -26,11 +26,11 @@ from mirar.pipelines.wirc.wirc_files import (
     wirc_mask_path,
 )
 from mirar.processors.alerts import AvroPacketMaker, SendToFritz
-from mirar.processors.astromatic import Scamp, Sextractor, Swarp
+from mirar.processors.astromatic import Scamp, Sextractor
 from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.astromatic.scamp.scamp import scamp_header_key
 from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkimg_map
-from mirar.processors.astromatic.swarp.swarp import GetSwarpComponentImages
+from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages, Swarp
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.candidates.candidate_detector import DetectCandidates
@@ -132,7 +132,7 @@ reduction = [
     ),
     ImageSaver(output_dir_name="mask2", write_mask=True),
     WriteMaskedCoordsToFile(output_dir="mask_stack"),
-    GetSwarpComponentImages(
+    ReloadSwarpComponentImages(
         load_image=load_raw_wirc_image,
         copy_header_keys=FITS_MASK_KEY,
     ),
