@@ -16,7 +16,7 @@ class WinterBase(DeclarativeBase, BaseTable):
     Parent class for summer database
     """
 
-    DB_NAME = DB_NAME
+    db_name = DB_NAME
 
 
 ra_field: float = Field(title="RA (degrees)", ge=0.0, le=360.0)
