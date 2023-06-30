@@ -547,7 +547,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                 logger.debug(f"Reading image from {url}")
                 with fits.open(url, ignore_missing_simple=True) as ukirt_hdulist:
                     ukirt_image = Image(
-                        header=ukirt_hdulist[0].header, data=ukirt_hdulist[0].data
+                        header=ukirt_hdulist[0].header,  # pylint: disable=no-member
+                        data=ukirt_hdulist[0].data,  # pylint: disable=no-member
                     )
 
             if self.check_local_database & ~qexists:

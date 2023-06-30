@@ -5,7 +5,7 @@ from typing import ClassVar
 
 from pydantic import Field
 from sqlalchemy import VARCHAR, Column, Double, Float, Integer
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, relationship
 
 from mirar.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
 from mirar.processors.sqldatabase.base_model import BaseDB

@@ -8,7 +8,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 from mirar.processors.sqldatabase.base_model import BaseTable
 
-db_name = "winter"
+DB_NAME = "winter"
 
 
 class WinterBase(DeclarativeBase, BaseTable):
@@ -16,7 +16,7 @@ class WinterBase(DeclarativeBase, BaseTable):
     Parent class for summer database
     """
 
-    db_name = db_name
+    DB_NAME = DB_NAME
 
 
 ra_field: float = Field(title="RA (degrees)", ge=0.0, le=360.0)
