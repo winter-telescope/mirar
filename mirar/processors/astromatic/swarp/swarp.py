@@ -3,12 +3,12 @@ Module relating to `swarp <https://www.astromatic.net/software/swarp`_
 """
 import logging
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 from astropy.wcs import WCS
 
-from typing import Literal
-from mirar.data import ImageBatch, Image
+from mirar.data import Image, ImageBatch
 from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -56,7 +56,7 @@ class Swarp(BaseImageProcessor):
         cache: bool = False,
         subtract_bkg: bool = False,
         flux_scaling_factor: float | None = None,
-        calculate_dims_in_swarp: bool = False
+        calculate_dims_in_swarp: bool = False,
     ):
         """
 
@@ -87,13 +87,6 @@ class Swarp(BaseImageProcessor):
                 Gain
             include_scamp: bool
                 Whether to include scamp results or not?
-            combine: bool
-                Combine and coadd all images? For reasons internal to Swarp, it is
-                strongly advised to always set this to True (even if you are running
-                Swarp on only one image). The processor will raise an
-                error if you try running it on a Batch with multiple images by
-                setting combine to False. If you want to resample multiple images,
-                just DeBatch them and run Swarp separately.
             cache: bool
                 Save temporary files?
             subtract_bkg:
@@ -118,7 +111,9 @@ class Swarp(BaseImageProcessor):
         """
         super().__init__()
         self.swarp_config_path = Path(swarp_config_path)
-        assert self.swarp_config_path.exists(), f"Swarp config path {self.swarp_config_path} does not exist."
+        assert (
+            self.swarp_config_path.exists()
+        ), f"Swarp config path {self.swarp_config_path} does not exist."
         self.temp_output_sub_dir = temp_output_sub_dir
         self.pixscale = pixscale
         self.propogate_headerlist = propogate_headerlist
@@ -162,19 +157,11 @@ class Swarp(BaseImageProcessor):
 
         temp_files = [swarp_image_list_path, swarp_weight_list_path]
 
-        # If swarp is run with combine -N option,
-        # it just sets the output name as inpname+.resamp.fits
-
         output_image_path = swarp_output_dir.joinpath(
             Path(batch[0][BASE_NAME_KEY]).name + "_stack.fits",
         )
 
         logger.debug(f"Saving to {output_image_path}")
-
-        try:
-            component_images_list = [x[LATEST_SAVE_KEY] for x in batch]
-        except KeyError:
-            component_images_list = None
 
         all_pixscales = []
         all_imgpixsizes = []
@@ -199,7 +186,6 @@ class Swarp(BaseImageProcessor):
             swarp_weight_list_path, "w", encoding="utf8"
         ) as weight_list:
             for image in batch:
-
                 if missing_scale_bool:
                     ra, dec, pixscale, imgpixsize = self.get_image_scale(image)
                     all_pixscales.append(pixscale)
@@ -286,6 +272,29 @@ class Swarp(BaseImageProcessor):
             cache=self.cache,
         )
 
+        new_image = self.load_swarp_output(
+            output_image_path, output_image_weight_path, batch
+        )
+
+        if not self.cache:
+            for temp_file in temp_files:
+                temp_file.unlink()
+                logger.debug(f"Deleted temporary file {temp_file}")
+
+        return ImageBatch([new_image])
+
+    def load_swarp_output(
+        self, output_image_path: Path, output_image_weight_path: Path, batch: ImageBatch
+    ) -> Image:
+        """
+        Function to load the output of SWarp into an Image object,
+        and transfer header information from the input ImageBatch
+
+        :param output_image_path: Swarp output image path
+        :param output_image_weight_path: Swarp output weight image path
+        :param batch: batch of component images
+        :return: Updated Image object
+        """
         new_image = self.open_fits(output_image_path)
         # Add missing keywords that are common in all input images to the
         # header of resampled image, and save again
@@ -307,20 +316,15 @@ class Swarp(BaseImageProcessor):
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
 
-        if component_images_list is not None:
+        try:
+            component_images_list = [x[LATEST_SAVE_KEY] for x in batch]
             new_image[STACKED_COMPONENT_IMAGES_KEY] = ",".join(component_images_list)
+        except KeyError:
+            pass
 
         new_image[BASE_NAME_KEY] = output_image_path.name
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.as_posix()
-        self.save_fits(new_image, output_image_path)
-        logger.info(f"Saved resampled image to {output_image_path.name}")
-
-        if self.cache:
-            for temp_file in temp_files:
-                temp_file.unlink()
-                logger.debug(f"Deleted temporary file {temp_file}")
-
-        return ImageBatch([new_image])
+        return new_image
 
     @staticmethod
     def get_image_scale(image: Image) -> tuple[float, float, float, float]:
@@ -344,7 +348,7 @@ class Swarp(BaseImageProcessor):
 
         [ra, dec] = wcs.all_pix2world(image_x_cen, image_y_cen, 1)
 
-        xscale = np.sqrt(cd11 ** 2 + cd21 ** 2)
+        xscale = np.sqrt(cd11**2 + cd21**2)
 
         pixscale = xscale * 3600
         imgpixsize = max(nxpix, nypix)
