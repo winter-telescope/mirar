@@ -34,4 +34,4 @@ sextractor_autoastrometry_config = {
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
-swarp_config_path = winter_file_dir.joinpath("swarp.config")
+swarp_config_path = winter_file_dir.joinpath("config.swarp")

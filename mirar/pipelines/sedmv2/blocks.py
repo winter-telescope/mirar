@@ -107,7 +107,6 @@ resample = [
     Swarp(
         swarp_config_path=swarp_config_path,
         include_scamp=False,
-        combine=False,
         calculate_dims_in_swarp=True,
     ),
     ImageSaver(
@@ -184,7 +183,6 @@ resample_transient = [
         cache=True,
         swarp_config_path=swarp_config_path,
         include_scamp=False,
-        combine=True,
         calculate_dims_in_swarp=True,
     ),
     ImageSaver(
