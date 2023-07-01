@@ -2,6 +2,7 @@
 Module relating to `swarp <https://www.astromatic.net/software/swarp`_
 """
 import logging
+from copy import deepcopy
 from pathlib import Path
 from typing import Literal
 
@@ -185,7 +186,8 @@ class Swarp(BaseImageProcessor):
         with open(swarp_image_list_path, "w", encoding="utf8") as img_list, open(
             swarp_weight_list_path, "w", encoding="utf8"
         ) as weight_list:
-            for image in batch:
+            for _image in batch:
+                image = deepcopy(_image)
                 if missing_scale_bool:
                     ra, dec, pixscale, imgpixsize = self.get_image_scale(image)
                     all_pixscales.append(pixscale)
