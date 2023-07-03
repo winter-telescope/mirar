@@ -244,7 +244,10 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         for image in batch:
             ref_cat, _, cleaned_img_cat = self.setup_catalogs(image)
 
-            _, _, _, med_fwhm_pix, _, _ = get_fwhm(cleaned_img_cat)
+            fwhm_med, _, fwhm_std, med_fwhm_pix, _, _ = get_fwhm(cleaned_img_cat)
+            image["FWHM_MED"] = fwhm_med
+            image["FWHM_STD"] = fwhm_std
+            image["FWHM_PIX"] = med_fwhm_pix
 
             if len(ref_cat) == 0:
                 err = "No sources found in reference catalog"
