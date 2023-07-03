@@ -19,6 +19,7 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.references.local import RefFromPath
 from mirar.references.ukirt import UKIRTRef
+
 # from mirar.catalog.base_catalog import CatalogFromFile
 
 logger = logging.getLogger(__name__)
@@ -99,9 +100,9 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     :return: catalogue
     """
     filter_name = image["FILTER"]
-    search_radius_arcmin = (np.max([image["NAXIS1"], image["NAXIS2"]]) * np.abs(
-                               image["CD1_1"]) * 60
-                           ) / 2.0
+    search_radius_arcmin = (
+        np.max([image["NAXIS1"], image["NAXIS2"]]) * np.abs(image["CD1_1"]) * 60
+    ) / 2.0
 
     # #TODO Remove this make more generic if needed
     # catalog_path = '/Users/viraj/winter_data/winter/20230629/phot/' \
@@ -130,12 +131,12 @@ def winter_ref_photometric_img_catalog_purifier(catalog: Table, image: Image) ->
     y_upper_limit = image.get_data().shape[0] - edge_width_pixels
 
     clean_mask = (
-            (catalog["FLAGS"] == 0)
-            & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
-            & (catalog["X_IMAGE"] > x_lower_limit)
-            & (catalog["X_IMAGE"] < x_upper_limit)
-            & (catalog["Y_IMAGE"] > y_lower_limit)
-            & (catalog["Y_IMAGE"] < y_upper_limit)
+        (catalog["FLAGS"] == 0)
+        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
+        & (catalog["X_IMAGE"] > x_lower_limit)
+        & (catalog["X_IMAGE"] < x_upper_limit)
+        & (catalog["Y_IMAGE"] > y_lower_limit)
+        & (catalog["Y_IMAGE"] < y_upper_limit)
     )
 
     return catalog[clean_mask]
