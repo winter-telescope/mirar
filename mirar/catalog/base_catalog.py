@@ -146,6 +146,7 @@ class CatalogFromFile(BaseCatalog):
     """
     Local catalog from file
     """
+
     abbreviation = "local"
 
     def __init__(self, catalog_path: str = None, *args, **kwargs):
