@@ -9,7 +9,7 @@ You need to install the package itself. The code is built using python.
 We suggest creating a dedicated `conda <https://www.anaconda.com/products/distribution>`_ environment, but you could also use a virtual environment.
 
 Prerequisite: Creating a conda environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In most cases, you can do the following:
 
@@ -81,6 +81,7 @@ Now you should have installed mirar. You can check it worked by opening up pytho
     python
 
 .. doctest::
+
     >>> from mirar.paths import PACKAGE_NAME
     >>> print(f"This is the {PACKAGE_NAME} package")
     This is the mirar package
@@ -115,6 +116,7 @@ astrometry-net folder somewhere on your machine. If you used Homebrew, it should
 .. code-block:: bash
 
     /opt/homebrew/Cellar/astrometry-net/
+
 Then, make sure to also grab index files from
 `this directory <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_ and save them under
 
