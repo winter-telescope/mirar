@@ -103,6 +103,7 @@ class VizierCatalog(BaseCatalog, ABC):
                 f"{len(table)} matches found in the given radius in {self.abbreviation}"
             )
             table.meta["description"] = ""
+            table = self.filter_catalog(table)
         return table
 
     @staticmethod
