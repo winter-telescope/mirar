@@ -20,12 +20,14 @@ from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.references.local import RefFromPath
 from mirar.references.ukirt import UKIRTRef
 
+# from mirar.catalog.base_catalog import CatalogFromFile
+
 logger = logging.getLogger(__name__)
 winter_dir = os.path.dirname(__file__)
 astromatic_config_dir = os.path.join(winter_dir, "config/")
 swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 winter_mask_path = os.path.join(winter_dir, "winter_mask.fits")
-scamp_config_path = os.path.join(winter_dir, "scamp.conf")
+scamp_config_path = os.path.join(winter_dir, "config/files/scamp.conf")
 
 
 def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks):
@@ -101,6 +103,13 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     search_radius_arcmin = (
         np.max([image["NAXIS1"], image["NAXIS2"]]) * np.abs(image["CD1_1"]) * 60
     ) / 2.0
+
+    # #TODO Remove this make more generic if needed
+    # catalog_path = '/Users/viraj/winter_data/winter/20230629/phot/' \
+    #                'WINTERcamera_20230630-060524-235_mef_4.tmass.cat'
+    # if os.path.exists(catalog_path):
+    #     return CatalogFromFile(catalog_path=catalog_path)
+
     return Gaia2Mass(
         min_mag=10,
         max_mag=20,

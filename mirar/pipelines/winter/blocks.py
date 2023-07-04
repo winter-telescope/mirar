@@ -26,6 +26,7 @@ from mirar.processors.astromatic.sextractor.sextractor import (
 )
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
+from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.mask import MaskPixelsFromPath, WriteMaskedCoordsToFile
@@ -50,7 +51,7 @@ refbuild = [
 ]
 
 BOARD_ID = 4
-TARGET_NAME = "EMGW_gal1"
+TARGET_NAME = "m39"
 split = [
     MultiExtParser(
         input_sub_dir="raw/",
@@ -240,9 +241,8 @@ process_proc = [
         use_sextractor=True,
         parity="neg",
         search_radius_deg=1.0,
-        # sextractor_config_path=sextractor_autoastrometry_config[
-        #     'config_path'],
-        use_weight=False,
+        sextractor_config_path=sextractor_autoastrometry_config["config_path"],
+        use_weight=True,
     ),
     ImageSaver(output_dir_name=f"anet_{BOARD_ID}", use_existing_weight=False),
     Sextractor(
@@ -359,6 +359,11 @@ photcal = [
     PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
         temp_output_sub_dir=f"phot_{BOARD_ID}_{TARGET_NAME}",
+        write_regions=True,
+        cache=True,
+    ),
+    AstrometryStatsWriter(
+        ref_catalog_generator=winter_photometric_catalog_generator,
         write_regions=True,
         cache=True,
     ),

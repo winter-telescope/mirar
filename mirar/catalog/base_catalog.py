@@ -10,7 +10,7 @@ import astropy.table
 from mirar.data import Image
 from mirar.paths import BASE_NAME_KEY
 from mirar.processors.candidates.utils import get_image_center_wcs_coords
-from mirar.utils.ldac_tools import save_table_as_ldac
+from mirar.utils.ldac_tools import get_table_from_ldac, save_table_as_ldac
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,8 @@ class BaseCatalog(ABCatalog, ABC):
         :param output_dir: output directory for catalog
         :return: path of catalog
         """
-
+        if isinstance(output_dir, str):
+            output_dir = Path(output_dir)
         ra_deg, dec_deg = get_image_center_wcs_coords(image, origin=1)
 
         base_name = Path(image[BASE_NAME_KEY]).with_suffix(".ldac").name
@@ -107,6 +108,9 @@ class BaseXMatchCatalog(ABCatalog, ABC):
 
     @property
     def projection(self):
+        """
+        projection for kowalski xmatch
+        """
         raise NotImplementedError
 
     @property
@@ -136,3 +140,26 @@ class BaseXMatchCatalog(ABCatalog, ABC):
         :return: crossmatch
         """
         raise NotImplementedError
+
+
+class CatalogFromFile(BaseCatalog):
+    """
+    Local catalog from file
+    """
+
+    abbreviation = "local"
+
+    def __init__(self, catalog_path: str = None, *args, **kwargs):
+        super().__init__(
+            min_mag=0,
+            max_mag=99,
+            filter_name="None",
+            search_radius_arcmin=0,
+            *args,
+            **kwargs,
+        )
+        self.catalog_path = catalog_path
+
+    def get_catalog(self, ra_deg: float, dec_deg: float) -> astropy.table.Table:
+        catalog = get_table_from_ldac(self.catalog_path)
+        return catalog
