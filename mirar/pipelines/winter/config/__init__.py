@@ -1,3 +1,6 @@
+"""
+This file contains the configuration for the winter pipeline.
+"""
 from pathlib import Path
 
 PIPELINE_NAME = "winter"

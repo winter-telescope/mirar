@@ -59,7 +59,7 @@ def run_scamp(
         f"-VERBOSE_TYPE QUIET -SOLVE_PHOTOM N"
     )
 
-    execute(scamp_cmd, output_dir=output_dir, timeout=60.0)
+    execute(scamp_cmd, output_dir=output_dir, timeout=300.0)
 
 
 class Scamp(BaseImageProcessor):
