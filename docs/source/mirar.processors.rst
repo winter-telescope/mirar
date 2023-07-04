@@ -12,9 +12,9 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   mirar.processors.anet
+   mirar.processors.alerts
    mirar.processors.astromatic
-   mirar.processors.autoastrometry
+   mirar.processors.astrometry
    mirar.processors.candidates
    mirar.processors.database
    mirar.processors.sqldatabase
@@ -22,6 +22,14 @@ Subpackages
 
 Submodules
 ----------
+
+mirar.processors.base\_catalog\_xmatch\_processor module
+--------------------------------------------------------
+
+.. automodule:: mirar.processors.base_catalog_xmatch_processor
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 mirar.processors.base\_processor module
 ---------------------------------------
@@ -91,14 +99,6 @@ mirar.processors.reference module
 ---------------------------------
 
 .. automodule:: mirar.processors.reference
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mirar.processors.send\_to\_fritz module
----------------------------------------
-
-.. automodule:: mirar.processors.send_to_fritz
    :members:
    :undoc-members:
    :show-inheritance:

@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   mirar.pipelines.winter.config
    mirar.pipelines.winter.models
 
 Submodules
@@ -41,10 +42,26 @@ mirar.pipelines.winter.constants module
    :undoc-members:
    :show-inheritance:
 
+mirar.pipelines.winter.fix\_headers module
+------------------------------------------
+
+.. automodule:: mirar.pipelines.winter.fix_headers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mirar.pipelines.winter.generator module
 ---------------------------------------
 
 .. automodule:: mirar.pipelines.winter.generator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mirar.pipelines.winter.load\_winter\_image module
+-------------------------------------------------
+
+.. automodule:: mirar.pipelines.winter.load_winter_image
    :members:
    :undoc-members:
    :show-inheritance:
