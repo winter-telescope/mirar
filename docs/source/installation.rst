@@ -100,6 +100,14 @@ Dependencies include:
 * `astrometry.net <https://nova.astrometry.net/>`_
 * `postgreSQL <https://www.postgresql.org/download/>`_
 
+PostgreSQL is relatively straightforward to install via the `official website <https://www.postgresql.org/download/>`_.
+The other packages might be more complicated, and will depend on your platform.
+
+In general, you can install these packages in any way you like. We provide you with a few tips below, but if the packages are already available on your system, you should not need to install them again.
+
+Astrometry.net
+^^^^^^^^^^^^^^
+
 To run astrometry solutions with Astrometry.net (the default for SEDMv2), you'll need to download Astrometry.net
 locally, as outlined `here <http://astrometry.net/use.html>`_. Once you have a local version, there should be an
 astrometry-net folder somewhere on your machine. If you used Homebrew, it should be here:
@@ -114,13 +122,10 @@ Then, make sure to also grab index files from
 
     .../astrometry-net/<version>/data
 
-PostgreSQL is relatively straightforward to install via the `official website <https://www.postgresql.org/download/>`_.
-The other packages might be more complicated, and will depend on your platform.
-
 astromatic software with apt-get (Linux only)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can use apt-get if you are running :
+You can use apt-get if you are running Debian-based Linux:
 
 .. code-block:: bash
 
