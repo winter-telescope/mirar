@@ -4,7 +4,7 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~mirar.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
-from mirar.paths import BASE_NAME_KEY, core_fields
+from mirar.paths import BASE_NAME_KEY, base_raw_dir, core_fields
 from mirar.pipelines.sedmv2.config import (
     psfex_config_path,
     sedmv2_cal_requirements,
@@ -54,7 +54,13 @@ from mirar.processors.zogy.zogy import (
 )
 
 load_raw = [
-    MultiExtParser(input_sub_dir="raw/mef/", skip_first=True),
+    MultiExtParser(
+        input_img_dir=base_raw_dir,
+        input_sub_dir="raw/mef/",
+        output_img_dir=base_raw_dir,
+        output_sub_dir="raw/",
+        skip_first=True,
+    ),
     ImageLoader(load_image=load_raw_sedmv2_image),
 ]
 
