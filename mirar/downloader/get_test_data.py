@@ -9,14 +9,14 @@ from mirar.paths import PACKAGE_NAME, base_code_dir
 
 logger = logging.getLogger(__name__)
 
-TEST_DATA_URL = "git@github.com:winter-telescope/wirc_starterpack.git"
+TEST_DATA_URL = "git@github.com:winter-telescope/mirar_starterpack.git"
 
 test_data_dir = base_code_dir.parent.joinpath(
     os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
 
 
-TEST_DATA_TAG = "v0.1.4"
+TEST_DATA_TAG = "v0.1.6"
 
 COMPLETED_CHECK_BOOL = f"{PACKAGE_NAME}_testdata_check"
 NEED_TEST_DATA = "TESTDATA_CHECK"
