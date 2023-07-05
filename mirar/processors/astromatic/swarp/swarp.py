@@ -50,7 +50,6 @@ def run_swarp(
     propogate_headerlist: Optional[list] = None,
     center_ra: Optional[float] = None,
     center_dec: Optional[float] = None,
-    combine: bool = True,
     gain: Optional[float] = None,
     subtract_bkg: bool = False,
     flux_scaling_keyword: str = None,
@@ -110,10 +109,8 @@ def run_swarp(
         swarp_command += "-SUBTRACT_BACK Y "
     else:
         swarp_command += "-SUBTRACT_BACK N "
-    if combine:
-        swarp_command += "-COMBINE Y -COMBINE_TYPE MEDIAN "
-    else:
-        swarp_command += "-COMBINE N "
+
+    swarp_command += "-COMBINE Y -COMBINE_TYPE MEDIAN "
 
     if weight_list_path is not None:
         swarp_command += f" -WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE @{weight_list_path} "
@@ -177,7 +174,6 @@ class Swarp(BaseImageProcessor):
         center_dec: Optional[float] = None,
         gain: Optional[float] = None,
         include_scamp: bool = True,
-        combine: bool = True,
         cache: bool = False,
         subtract_bkg: bool = False,
         flux_scaling_factor: float = None,
@@ -251,7 +247,6 @@ class Swarp(BaseImageProcessor):
         self.x_imgpixsize = x_imgpixsize
         self.y_imgpixsize = y_imgpixsize
         self.include_scamp = include_scamp
-        self.combine = combine
         self.cache = cache
         self.gain = gain
         self.subtract_bkg = subtract_bkg
@@ -293,31 +288,10 @@ class Swarp(BaseImageProcessor):
         # If swarp is run with combine -N option,
         # it just sets the output name as inpname+.resamp.fits
 
-        if self.combine:
-            output_image_path = swarp_output_dir.joinpath(
-                Path(batch[0][BASE_NAME_KEY]).name + "_stack.fits",
-            )
-        else:
-            if len(batch) > 1:
-                err = (
-                    f"Attempting to run Swarp with batch-size of length "
-                    f"{len(batch)} but with combine=False. Either set combine=True"
-                    f", or DeBatch the images"
-                )
-                logger.error(err)
-                raise SwarpError(err)
+        output_image_path = swarp_output_dir.joinpath(
+            Path(batch[0][BASE_NAME_KEY]).name + "_stack.fits",
+        )
 
-            logger.warning(
-                "You are choosing to run Swarp without combining the image. "
-                "This causes swarp to output an intermediate image, "
-                "with possibly incorrect FLXSCALE values. Please consider "
-                "running with combine=True, it almost always gives the same "
-                "result as running it without, but will have consistent "
-                "headers."
-            )
-            output_image_path = swarp_output_dir.joinpath(
-                Path(batch[0][BASE_NAME_KEY]).with_suffix(".resamp.fits").name,
-            )
         logger.debug(f"Saving to {output_image_path}")
 
         try:
@@ -444,36 +418,11 @@ class Swarp(BaseImageProcessor):
             center_type=self.center_type,
             center_ra=center_ra_to_use,
             center_dec=center_dec_to_use,
-            combine=self.combine,
             gain=self.gain,
             subtract_bkg=self.subtract_bkg,
             flux_scaling_keyword=SWARP_FLUX_SCALING_KEY,
             cache=self.cache,
         )
-
-        # Check if output image exists if combine is no.
-        # This is the intermediate image that swarp makes
-        # Hopefully this is obsolete now and noone uses this
-        if not self.combine:
-            temp_output_image_path = get_temp_path(
-                swarp_output_dir,
-                output_image_path.name,
-            )
-
-            temp_output_image_weight_path = temp_output_image_path.with_suffix(
-                ".weight.fits"
-            )
-
-            if temp_output_image_path.exists():
-                temp_output_image_path.rename(output_image_path)
-                temp_output_image_weight_path.rename(output_image_weight_path)
-            else:
-                err = (
-                    f"Swarp seems to have misbehaved, "
-                    f"and not made the correct output file {temp_output_image_path}"
-                )
-                logger.error(err)
-                raise SwarpError(err)
 
         new_image = self.open_fits(output_image_path)
         # Add missing keywords that are common in all input images to the

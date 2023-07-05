@@ -127,7 +127,6 @@ class ProcessReference(BaseImageProcessor):
                 propogate_headerlist=propogate_headerlist,
                 temp_output_sub_dir=self.temp_output_subtract_dir,
                 include_scamp=False,
-                combine=False,
                 gain=ref_gain,
                 subtract_bkg=True,
             )
@@ -161,7 +160,6 @@ class ProcessReference(BaseImageProcessor):
                 propogate_headerlist=propogate_headerlist,
                 temp_output_sub_dir=self.temp_output_subtract_dir,
                 include_scamp=False,
-                combine=False,
                 gain=sci_gain,
                 subtract_bkg=True,
             )
