@@ -387,6 +387,38 @@ stack_multiboard = [
 # commissioning = \
 #     log + process_proc
 
+select_subset = [
+    ImageSelector(
+        ("EXPTIME", 120.0), ("FILTER", ["dark", "J"]), ("BOARD_ID", BOARD_ID)
+    ),
+    ImageSaver(output_dir_name="raw_subset"),
+]
+
+log_subset = [
+    ImageLoader(input_sub_dir="raw_subset", load_image=load_raw_winter_image),
+    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    CSVLog(
+        export_keys=[
+            "FILTER",
+            "UTCTIME",
+            "EXPTIME",
+            "OBSTYPE",
+            "UNIQTYPE",
+            "BOARD_ID",
+            "OBSCLASS",
+            "TARGET",
+            "FILTER",
+            "BASENAME",
+            "TARGNAME",
+            "RADEG",
+            "DECDEG",
+            "MEDCOUNT",
+            "STDDEV",
+            "T_ROIC",
+        ]
+    ),
+]
+
 commissioning = log + process
 
 commissioning_dark = log + dark_cal
@@ -398,14 +430,17 @@ commissioning_multiboard_stack = load_multiboard_stack + stack_multiboard
 commissioning_noise = load_anet + process_noise
 commissioning_photcal = load_multiboard_stack + photcal
 commissioning_photcal_indiv = load_anet + photcal_indiv
-full_commissioning = log + process + process_proc  # + stack_proc
+
+debug_subset = log + select_subset
+
+full_commissioning = log_subset + process + process_proc  # + stack_proc
 full_commissioning_all_boards = (
-    log_all_boards + dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards
+    log_subset + dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards
 )
 # commissioning_split = load_all_boards + split_images + process + \
 # process_proc_all_boards + photcal
 commissioning_split = (
-    log_all_boards
+    log_subset
     + split_images
     + dark_cal_all_boards
     + flat_cal_all_boards
