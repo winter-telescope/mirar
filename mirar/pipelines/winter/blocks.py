@@ -33,6 +33,7 @@ from mirar.processors.mask import MaskPixelsFromPath, WriteMaskedCoordsToFile
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.reference import GetReferenceImage
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
+from mirar.processors.split import SplitImage
 from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
@@ -73,6 +74,12 @@ load = [
         input_sub_dir=f"raw_split_{BOARD_ID}", load_image=load_raw_winter_image
     ),
     ImageSelector(("OBSTYPE", ["FOCUS", "DARK", "FLAT", "SCIENCE"])),
+]
+
+split_images = [
+    ImageDebatcher(),
+    SplitImage(n_x=1, n_y=2),
+    ImageSaver(output_dir_name="split"),
 ]
 
 load_all_boards = [
@@ -167,7 +174,7 @@ log_all_boards = (
 
 dark_cal = [
     ImageSelector(("BOARD_ID", f"{BOARD_ID}")),
-    ImageBatcher(["BOARD_ID", "EXPTIME"]),
+    ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
     WriteMaskedCoordsToFile(output_dir="mask_raw"),
     DarkCalibrator(cache_sub_dir=f"calibration_{BOARD_ID}"),
     ImageSaver(output_dir_name=f"darkcal_{BOARD_ID}"),
@@ -175,7 +182,7 @@ dark_cal = [
 ]
 
 dark_cal_all_boards = [
-    ImageBatcher(["BOARD_ID", "EXPTIME"]),
+    ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
     WriteMaskedCoordsToFile(output_dir="mask_raw"),
     DarkCalibrator(cache_sub_dir="calibration"),
     ImageSaver(output_dir_name="darkcal"),
@@ -190,40 +197,18 @@ flat_cal = [
     #                cache_sub_dir=f"calibration_{board_id}"
     #                ),
     ImageSelector(("OBSTYPE", ["SCIENCE"]), ("TARGNAME", f"{TARGET_NAME}")),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "EXPTIME"]),
+    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir=f"skycals_{BOARD_ID}"),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name=f"skyflatcal_{BOARD_ID}"),
-    # ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    # Sextractor(**sextractor_astrometry_config,
-    #            write_regions_bool=True,
-    #            output_sub_dir="sextractor",
-    #            cache=True),
-    # ImageSelector(("TARGNAME", [""])),
-    # ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "EXPTIME"]),
     NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
     ImageSaver(output_dir_name=f"skysub_{BOARD_ID}"),
-    # Sextractor(**sextractor_astrometry_config,
-    #            write_regions_bool=True,
-    #            output_sub_dir="sextractor",
-    #            cache=True),
-    # AutoAstrometry(catalog="tmc", pixel_scale=1.0, pa=0, inv=True,
-    #                write_crosscheck_files=True),
-    # ImageSaver(output_dir_name="skysub"),
-    # Sextractor(**sextractor_astrometry_config,
-    #            write_regions_bool=True,
-    #            output_sub_dir="sextractor"),
-    # MultiExtParser(input_sub_dir="raw/mef/"),
-    # SplitImage(),
-    # MaskPixelsFromPath(mask_path=winter_mask_path),
-    # DarkCalibrator(),
-    # SkyFlatCalibrator(),
-    # NightSkyMedianCalibrator(),
 ]
 
 flat_cal_all_boards = [
-    ImageSelector(("OBSTYPE", ["SCIENCE"]), ("TARGNAME", f"{TARGET_NAME}")),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "EXPTIME"]),
+    # ImageSelector(("OBSTYPE", ["SCIENCE"]), ("TARGNAME", f"{TARGET_NAME}")),
+    ImageSelector(("OBSTYPE", ["SCIENCE"])),
+    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir="skycals"),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name="skyflatcal"),
@@ -270,16 +255,16 @@ process_proc = [
 
 process_proc_all_boards = [
     ImageDebatcher(),
-    ImageBatcher(["UTCTIME", "BOARD_ID"]),
+    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     AstrometryNet(
         output_sub_dir="anet",
-        scale_bounds=[25, 40],
+        scale_bounds=[10, 20],
         scale_units="amw",
         use_sextractor=True,
         parity="neg",
         search_radius_deg=1.0,
         sextractor_config_path=sextractor_anet_config["config_path"],
-        use_weight=False,
+        use_weight=True,
     ),
     ImageSaver(output_dir_name="anet", use_existing_weight=False),
     Sextractor(
@@ -287,15 +272,14 @@ process_proc_all_boards = [
         write_regions_bool=True,
         output_sub_dir="scamp",
     ),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
     Scamp(
         temp_output_sub_dir="scamp",
         ref_catalog_generator=winter_astrometric_catalog_generator,
         scamp_config_path=scamp_config_path,
         cache=False,
     ),
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME"]),
-    # ImageSaver(output_dir_name="pre-swarp"),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -303,7 +287,7 @@ process_proc_all_boards = [
         subtract_bkg=False,
         cache=False,
         center_type="ALL",
-        temp_output_sub_dir=f"stack_all_{TARGET_NAME}",
+        temp_output_sub_dir="stack_all",
     ),
 ]
 
@@ -350,15 +334,15 @@ stack_proc = [
 photcal = [
     # ImageSelector(("BOARD_ID", board_id)),
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID"]),
+    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
     Sextractor(
         **sextractor_photometry_config,
-        output_sub_dir=f"phot_{BOARD_ID}_{TARGET_NAME}",
+        output_sub_dir="phot",
         checkimage_type="BACKGROUND_RMS",
     ),
     PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
-        temp_output_sub_dir=f"phot_{BOARD_ID}_{TARGET_NAME}",
+        temp_output_sub_dir="phot",
         write_regions=True,
         cache=True,
     ),
@@ -368,7 +352,7 @@ photcal = [
         cache=True,
     ),
     # ImageSaver(output_dir_name=f"phot_{board_id}_{target_name}")
-    ImageSaver(output_dir_name=f"phot_{TARGET_NAME}"),
+    ImageSaver(output_dir_name="photcal"),
 ]
 
 photcal_indiv = [
@@ -417,4 +401,14 @@ commissioning_photcal_indiv = load_anet + photcal_indiv
 full_commissioning = log + process + process_proc  # + stack_proc
 full_commissioning_all_boards = (
     log_all_boards + dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards
+)
+# commissioning_split = load_all_boards + split_images + process + \
+# process_proc_all_boards + photcal
+commissioning_split = (
+    log_all_boards
+    + split_images
+    + dark_cal_all_boards
+    + flat_cal_all_boards
+    + process_proc_all_boards
+    + photcal
 )

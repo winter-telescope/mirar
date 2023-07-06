@@ -36,6 +36,7 @@ def run_scamp(
     scamp_config_path: str | Path,
     ast_ref_cat_path: str | Path,
     output_dir: str | Path,
+    timeout_seconds: float = 60.0,
 ):
     """
     Function to run scamp.
@@ -59,7 +60,7 @@ def run_scamp(
         f"-VERBOSE_TYPE QUIET -SOLVE_PHOTOM N"
     )
 
-    execute(scamp_cmd, output_dir=output_dir, timeout=300.0)
+    execute(scamp_cmd, output_dir=output_dir, timeout=np.max([60.0, timeout_seconds]))
 
 
 class Scamp(BaseImageProcessor):
@@ -135,12 +136,13 @@ class Scamp(BaseImageProcessor):
 
                 out_path = Path(os.path.splitext(temp_cat_path)[0]).with_suffix(".head")
                 out_files.append(out_path)
-
+        num_files = len(batch)
         run_scamp(
             scamp_list_path=scamp_image_list_path,
             scamp_config_path=self.scamp_config,
             ast_ref_cat_path=cat_path,
             output_dir=scamp_output_dir,
+            timeout_seconds=30.0 * num_files,
         )
 
         if not self.cache:
