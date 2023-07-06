@@ -9,7 +9,7 @@ You need to install the package itself. The code is built using python.
 We suggest creating a dedicated `conda <https://www.anaconda.com/products/distribution>`_ environment, but you could also use a virtual environment.
 
 Prerequisite: Creating a conda environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In most cases, you can do the following:
 
@@ -81,6 +81,7 @@ Now you should have installed mirar. You can check it worked by opening up pytho
     python
 
 .. doctest::
+
     >>> from mirar.paths import PACKAGE_NAME
     >>> print(f"This is the {PACKAGE_NAME} package")
     This is the mirar package
@@ -100,6 +101,14 @@ Dependencies include:
 * `astrometry.net <https://nova.astrometry.net/>`_
 * `postgreSQL <https://www.postgresql.org/download/>`_
 
+PostgreSQL is relatively straightforward to install via the `official website <https://www.postgresql.org/download/>`_.
+The other packages might be more complicated, and will depend on your platform.
+
+In general, you can install these packages in any way you like. We provide you with a few tips below, but if the packages are already available on your system, you should not need to install them again.
+
+Astrometry.net
+^^^^^^^^^^^^^^
+
 To run astrometry solutions with Astrometry.net (the default for SEDMv2), you'll need to download Astrometry.net
 locally, as outlined `here <http://astrometry.net/use.html>`_. Once you have a local version, there should be an
 astrometry-net folder somewhere on your machine. If you used Homebrew, it should be here:
@@ -107,6 +116,7 @@ astrometry-net folder somewhere on your machine. If you used Homebrew, it should
 .. code-block:: bash
 
     /opt/homebrew/Cellar/astrometry-net/
+
 Then, make sure to also grab index files from
 `this directory <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_ and save them under
 
@@ -114,13 +124,10 @@ Then, make sure to also grab index files from
 
     .../astrometry-net/<version>/data
 
-PostgreSQL is relatively straightforward to install via the `official website <https://www.postgresql.org/download/>`_.
-The other packages might be more complicated, and will depend on your platform.
-
 astromatic software with apt-get (Linux only)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can use apt-get if you are running :
+You can use apt-get if you are running Debian-based Linux:
 
 .. code-block:: bash
 

@@ -20,6 +20,8 @@ class RefFromPath(BaseReferenceGenerator):
     Get locally saved ref from path
     """
 
+    abbreviation = "local"
+
     def __init__(
         self,
         path: str,

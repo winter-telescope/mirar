@@ -60,6 +60,12 @@ class VizierCatalog(BaseCatalog, ABC):
         """
         return f"e_{self.get_mag_key()}"
 
+    def filter_catalog(self, table: astropy.table.Table) -> astropy.table.Table:
+        """
+        Filters catalog to include a subset of sources, if required
+        """
+        return table
+
     def get_catalog(self, ra_deg: float, dec_deg: float) -> astropy.table.Table:
         logger.info(
             f"Querying {self.abbreviation} catalog around RA {ra_deg:.4f}, "
@@ -97,6 +103,7 @@ class VizierCatalog(BaseCatalog, ABC):
                 f"{len(table)} matches found in the given radius in {self.abbreviation}"
             )
             table.meta["description"] = ""
+            table = self.filter_catalog(table)
         return table
 
     @staticmethod

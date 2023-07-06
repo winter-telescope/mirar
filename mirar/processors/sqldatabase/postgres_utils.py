@@ -1,3 +1,6 @@
+"""
+Module for postgres utilities
+"""
 import logging
 import os
 
