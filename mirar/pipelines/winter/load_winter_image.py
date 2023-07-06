@@ -54,12 +54,6 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
 
         header["UNIQTYPE"] = f"{header['OBSTYPE']}_{header['BOARD_ID']}"
 
-        # if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
-        #     header["OBSTYPE"] = "calibration"
-
-        # if '065456' in path or '064257' in path:
-        # if '073730' in path or '075817' in path or '080024' in path:
-        # if '_082' in path:
         basename = os.path.basename(path)
         timestamp = basename.split(".fits")[0].split("_")[1]
         date = timestamp.split("-")[0]
@@ -75,24 +69,18 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
         logger.info(header["UTCTIME"])
         header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
 
-        # if '085739' in path or '-09' in path:
-        # if Time("2023-06-13T09:12:01") >= Time(header["UTCTIME"]) \
-        #         >= Time("2023-06-13T08:57:39"):
-        # if header['TARGNAME'] == 'm16':
-        #     header["OBSTYPE"] = "SCIENCE"
-        #     header['TARGNAME'] = 'INTERESTING'
-        # elif header["OBSTYPE"] != "DARK":
-        #     header["OBSTYPE"] = "OTHER"
         header["OBSCLASS"] = ["science", "calibration"][
             header["OBSTYPE"] in ["DARK", "FLAT"]
         ]
-        # if header["OBSTYPE"] == "TEST" and ("_mef" not in path):
-        #     header["OBSTYPE"] = "FLAT"
+
         header["EXPTIME"] = np.rint(header["EXPTIME"])
         header[BASE_NAME_KEY] = os.path.basename(path)
         if RAW_IMG_KEY not in header.keys():
             header[RAW_IMG_KEY] = path
         header["TARGET"] = header["OBSTYPE"].lower()
+
+        if header["TARGNAME"] == "":
+            header["TARGNAME"] = f"field_{header['FIELDID']}"
 
         if (header["FILTERID"] == "dark") & (header["OBSTYPE"] != "BIAS"):
             header["OBSTYPE"] = "DARK"
@@ -102,14 +90,6 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
             header["OBSTYPE"] = "WEIGHT"
         header["RA"] = header["RADEG"]
         header["DEC"] = header["DECDEG"]
-        # elif '053618' in path:
-        #     header["FILTER"] = "Hs"
-        # elif '053936' in path:
-        #     header['FILTER'] = 'Y'
-        # elif Time(header["UTCTIME"]) >= Time("2023-06-10T06:50:29"):
-        #     header["FILTER"] = "Hs"
-        # else:
-        #     header["FILTER"] = "J"
 
         if COADD_KEY not in header.keys():
             logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
@@ -133,18 +113,13 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
             header["CTYPE1"] = "RA---TAN"
         if "CTYPE2" not in header:
             header["CTYPE2"] = "DEC--TAN"
-        # if 'RADEG' in header.keys():
-        #     header['CRVAL1'] = header['RADEG']
-        # if 'DECDEG' in header.keys():
-        #     header['CRVAL2'] = header['DECDEG']
+
         data = data.astype(float)
-        # data[data > 40000.0] = np.nan
-        # data[:, :250] = np.nan
-        # data[:, 1800:] = np.nan
-        # data[:20, :] = np.nan
-        # data[1060:, :] = np.nan
 
         header["FILTER"] = header["FILTERID"]
+        if header["FILTER"] == "Hs":
+            header["FILTER"] = "H"
+
         if "DATASEC" in header.keys():
             data = mask_datasec(data, header)
             del header["DATASEC"]
