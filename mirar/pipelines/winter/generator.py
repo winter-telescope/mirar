@@ -9,6 +9,7 @@ import numpy as np
 from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
+from mirar.catalog.vizier import PS1
 from mirar.data import Image
 from mirar.paths import get_output_dir
 from mirar.pipelines.winter.models import RefComponents, RefQueries, RefStacks
@@ -90,7 +91,7 @@ def winter_reference_image_resampler(**kwargs) -> Swarp:
     )
 
 
-def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass:
+def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
     """
     Function to crossmatch WIRC to GAIA/2mass for photometry
 
@@ -101,13 +102,22 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     search_radius_arcmin = (
         np.max([image["NAXIS1"], image["NAXIS2"]]) * np.abs(image["CD1_1"]) * 60
     ) / 2.0
-    return Gaia2Mass(
-        min_mag=10,
-        max_mag=20,
-        search_radius_arcmin=search_radius_arcmin,
-        filter_name=filter_name,
-        snr_threshold=20,
-    )
+    if filter_name in ["J", "H"]:
+        return Gaia2Mass(
+            min_mag=10,
+            max_mag=20,
+            search_radius_arcmin=search_radius_arcmin,
+            filter_name=filter_name,
+            snr_threshold=20,
+        )
+
+    if filter_name in ["Y"]:
+        return PS1(
+            min_mag=10,
+            max_mag=20,
+            search_radius_arcmin=search_radius_arcmin,
+            filter_name=filter_name,
+        )
 
 
 def winter_ref_photometric_img_catalog_purifier(catalog: Table, image: Image) -> Table:
