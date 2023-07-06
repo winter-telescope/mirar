@@ -12,7 +12,7 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.io import open_fits
+from mirar.io import check_file_is_complete, open_fits
 from mirar.paths import RAW_IMG_KEY, RAW_IMG_SUB_DIR, base_raw_dir, core_fields
 from mirar.processors.base_processor import BaseImageProcessor
 
@@ -76,9 +76,9 @@ def load_from_dir(
     """
     Function to load all images in a directory
 
-    :param input_dir:
-    :param open_f:
-    :return:
+    :param input_dir: Input directory
+    :param open_f: Function to open images
+    :return: ImageBatch object
     """
 
     img_list = sorted(glob(f"{input_dir}/*.fits"))
@@ -98,13 +98,22 @@ def load_from_dir(
     images = ImageBatch()
 
     for path in img_list:
-        image = open_f(path)
-        images.append(image)
+        if check_file_is_complete(path):
+            image = open_f(path)
+            images.append(image)
+        else:
+            logger.warning(f"File {path} is not complete. Skipping!")
 
     return images
 
 
 def unzip(zipped_list: list[str]) -> list[str]:
+    """
+    Function to unzip a list of files?
+
+    :param zipped_list: List of zipped files
+    :return: List of renamed files
+    """
     unzipped_list = [file.split(".fz")[0] for file in zipped_list]
     for i, file in enumerate(zipped_list):
         os.rename(file, unzipped_list[i])
