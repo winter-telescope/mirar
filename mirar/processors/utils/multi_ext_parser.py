@@ -133,10 +133,16 @@ class MultiExtParser(BaseImageProcessor):
                     output_dir=self.output_img_dir,
                 )
 
-                astropy.io.fits.writeto(
-                    splitfile_path, hdu[ext].data, hdrext, overwrite=True
-                )  # pylint: disable=no-member
-                new_paths.append(splitfile_path)
+                try:
+                    astropy.io.fits.writeto(
+                        splitfile_path, hdu[ext].data, hdrext, overwrite=True
+                    )  # pylint: disable=no-member
+                    new_paths.append(splitfile_path)
+                except TypeError:
+                    logger.error(
+                        f"Failed to write {splitfile_path} to file. "
+                        f"This image is likely corrupted."
+                    )
 
         return new_paths
 
