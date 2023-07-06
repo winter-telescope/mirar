@@ -106,12 +106,12 @@ class SplitImage(BaseImageProcessor):
         all_new_batches = []
 
         for batch in dataset:
-            new_batches = [[] for _ in range(self.n_x * self.n_y)]
+            new_images = [[] for _ in range(self.n_x * self.n_y)]
 
             for image in batch:
                 idx = image[SUB_ID_KEY]
-                new_batches[idx] += [image]
+                new_images[idx] += [image]
 
-            all_new_batches += new_batches
-
+            all_new_batches += new_images
+        all_new_batches = [ImageBatch(x) for x in all_new_batches]
         return Dataset(all_new_batches)
