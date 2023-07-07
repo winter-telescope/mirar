@@ -13,7 +13,10 @@ from mirar.catalog.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
 from mirar.errors import ProcessorError
 from mirar.paths import get_output_dir
-from mirar.processors.base_catalog_xmatch_processor import BaseProcessorWithCrossMatch
+from mirar.processors.base_catalog_xmatch_processor import (
+    BaseProcessorWithCrossMatch,
+    default_image_sextractor_catalog_purifier,
+)
 
 
 class AstrometryValidateCrossmatchError(ProcessorError):
@@ -52,29 +55,6 @@ def get_fwhm(cleaned_img_cat: Table):
     return med_fwhm, mean_fwhm, std_fwhm, med_fwhm_pix, mean_fwhm_pix, std_fwhm_pix
 
 
-def default_sextractor_catalog_purifier(catalog: Table, image: Image) -> Table:
-    """
-    Default function to purify the photometric image catalog
-    """
-    edge_width_pixels = 100
-    fwhm_threshold_arcsec = 4.0
-    x_lower_limit = edge_width_pixels
-    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
-    y_lower_limit = edge_width_pixels
-    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
-
-    clean_mask = (
-        (catalog["FLAGS"] == 0)
-        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
-        & (catalog["X_IMAGE"] > x_lower_limit)
-        & (catalog["X_IMAGE"] < x_upper_limit)
-        & (catalog["Y_IMAGE"] > y_lower_limit)
-        & (catalog["Y_IMAGE"] < y_upper_limit)
-    )
-
-    return catalog[clean_mask]
-
-
 class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
     """
     Processor to calculate astrometry statistics
@@ -86,7 +66,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
         temp_output_sub_dir: str = "astrstat",
         image_catalog_purifier: Callable[
             [Table, Image], Table
-        ] = default_sextractor_catalog_purifier,
+        ] = default_image_sextractor_catalog_purifier,
         crossmatch_radius_arcsec: float = 3.0,
         write_regions: bool = False,
         cache: bool = False,
