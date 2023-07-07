@@ -127,7 +127,7 @@ reduction = [
         write_masked_pixels_to_file=True,
         output_dir="mask1",
     ),
-    ImageSaver(output_dir_name="mask1", write_mask=False),
+    ImageSaver(output_dir_name="mask1", write_mask=True),
     MaskAboveThreshold(
         threshold_key=SATURATE_KEY, write_masked_pixels_to_file=True, output_dir="mask2"
     ),
@@ -139,7 +139,7 @@ reduction = [
     ),
     LoadImageFromHeader(
         header_key=RAW_IMG_KEY,
-        copy_header_keys=[FITS_MASK_KEY, scamp_header_key],
+        copy_header_keys=[scamp_header_key, FITS_MASK_KEY],
         load_image=load_raw_wirc_image,
     ),
     AstrometryFromFile(astrometry_file_key=scamp_header_key),
