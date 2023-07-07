@@ -12,6 +12,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.generator import (
     scamp_config_path,
     winter_astrometric_catalog_generator,
+    winter_astrostat_catalog_purifier,
     winter_photometric_catalog_generator,
     winter_reference_generator,
 )
@@ -52,7 +53,7 @@ refbuild = [
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
-BOARD_ID = 4
+BOARD_ID = 2
 TARGET_NAME = "m39"
 split = [
     MultiExtParser(
@@ -229,6 +230,7 @@ process_proc = [
         search_radius_deg=1.0,
         sextractor_config_path=sextractor_autoastrometry_config["config_path"],
         use_weight=True,
+        timeout=30,
     ),
     ImageSaver(output_dir_name=f"anet_{BOARD_ID}"),
     Sextractor(
@@ -261,7 +263,7 @@ process_proc_all_boards = [
     ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
-        scale_bounds=[10, 20],
+        scale_bounds=[15, 23],
         scale_units="amw",
         use_sextractor=True,
         parity="neg",
@@ -275,18 +277,31 @@ process_proc_all_boards = [
         write_regions_bool=True,
         output_sub_dir="scamp",
     ),
+    AstrometryStatsWriter(
+        ref_catalog_generator=winter_photometric_catalog_generator,
+        image_catalog_purifier=winter_astrostat_catalog_purifier,
+        write_regions=True,
+        cache=True,
+        crossmatch_radius_arcsec=5.0,
+    ),
+    ImageSaver(output_dir_name="anet", use_existing_weight=False),
+    # Sextractor(
+    #     **sextractor_autoastrometry_config,
+    #     write_regions_bool=True,
+    #     output_sub_dir="scamp",
+    # ),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
-    Scamp(
-        temp_output_sub_dir="scamp",
-        ref_catalog_generator=winter_astrometric_catalog_generator,
-        scamp_config_path=scamp_config_path,
-        cache=False,
-    ),
+    # Scamp(
+    #     temp_output_sub_dir="scamp",
+    #     ref_catalog_generator=winter_astrometric_catalog_generator,
+    #     scamp_config_path=scamp_config_path,
+    #     cache=False,
+    # ),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
-        include_scamp=True,
+        include_scamp=False,
         subtract_bkg=False,
         cache=False,
         center_type="ALL",
@@ -478,8 +493,15 @@ full_commissioning = load_unpacked + process + process_proc  # + stack_proc
 full_commissioning_all_boards = (
     load_unpacked + dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards
 )
-# commissioning_split = load_all_boards + split_images + process + \
-# process_proc_all_boards + photcal
+commissioning_split_single_board = (
+    log
+    + split_images
+    + dark_cal_all_boards
+    + flat_cal_all_boards
+    + process_proc_all_boards
+    + photcal
+)
+
 commissioning_split = (
     load_unpacked
     + split_images
