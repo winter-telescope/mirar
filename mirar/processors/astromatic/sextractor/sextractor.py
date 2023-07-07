@@ -146,23 +146,9 @@ class Sextractor(BaseImageProcessor):
                     weight_path = temp_weight_path
                     temp_files.append(Path(weight_path))
 
-            # elif LATEST_MASK_KEY in image.keys():
-            #     image_weight_path = os.path.join(
-            #         sextractor_out_dir, image[LATEST_MASK_KEY]
-            #     )
-            #     temp_weight_path = get_temp_path(
-            #         sextractor_out_dir, image[LATEST_MASK_KEY]
-            #     )
-            #     if os.path.exists(image_weight_path):
-            #         shutil.copyfile(image_weight_path, temp_weight_path)
-            #         weight_path = temp_weight_path
-            #         temp_files.append(Path(weight_path))
-
             if weight_path is None:
                 weight_path = self.save_mask_image(image, temp_path)
                 temp_files.append(Path(weight_path))
-
-            print(f"Weight path: {weight_path}")
 
             output_cat = os.path.join(
                 sextractor_out_dir, image[BASE_NAME_KEY].replace(".fits", ".cat")

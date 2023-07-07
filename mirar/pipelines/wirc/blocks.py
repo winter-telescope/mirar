@@ -154,9 +154,7 @@ reduction = [
     NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
-    Sextractor(
-        output_sub_dir="final_sextractor", cache=True, **sextractor_photometry_config
-    ),
+    Sextractor(output_sub_dir="final_sextractor", **sextractor_photometry_config),
     PhotCalibrator(
         ref_catalog_generator=wirc_photometric_catalog_generator,
         image_photometric_catalog_purifier=wirc_photometric_img_catalog_purifier,

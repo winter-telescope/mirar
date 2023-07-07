@@ -5,7 +5,6 @@ import datetime
 import getpass
 import hashlib
 import logging
-import shutil
 import socket
 import threading
 from abc import ABC
@@ -318,22 +317,6 @@ class ImageHandler:
 
         mask = image.get_mask()
         self.save_fits(Image(mask.astype(float), header), mask_path)
-
-        # mask_found = False
-        # if use_existing & (LATEST_MASK_KEY in header.keys()):
-        #     existing_mask_path = Path(image[LATEST_MASK_KEY])
-        #     logger.debug(f"{LATEST_MASK_KEY} {existing_mask_path}")
-        #     if existing_mask_path.exists():
-        #         logger.info(f"Found {existing_mask_path}")
-        #         shutil.copy(existing_mask_path, mask_path)
-        #         mask_found = True
-        #
-        # if not mask_found:
-        #     data = image.get_data()
-        #     mask = (~np.isnan(data)).astype(float)
-        #
-        #     header[LATEST_MASK_KEY] = str(mask_path)
-        #     self.save_fits(Image(mask, header), mask_path)
 
         return mask_path
 

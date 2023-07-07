@@ -53,7 +53,7 @@ class BaseMask(BaseImageProcessor):
                 data[pixels_to_mask] = MASK_VALUE
                 image.set_data(data)
 
-            logger.warning(
+            logger.info(
                 f"Masked {np.sum(pixels_to_mask)}/{pixels_to_mask.size} pixels in {image[BASE_NAME_KEY]}"
             )
 
@@ -78,7 +78,9 @@ class BaseMask(BaseImageProcessor):
 
 class MaskPixelsFromPath(BaseMask):
     """
-    Processor to apply bias calibration
+    Processor to apply a mask to images using another `mask image'.
+    Following the general mirar convention, every zero pixel in the
+    mask image will be masked in the science image.
     """
 
     base_key = "maskfrompath"
@@ -96,7 +98,6 @@ class MaskPixelsFromPath(BaseMask):
             output_dir=output_dir,
             only_write_mask=only_write_mask,
         )
-        self.mask = None
         self.mask_path = mask_path
         self.mask_path_key = mask_path_key
         if mask_path is None and mask_path_key is None:
@@ -117,7 +118,7 @@ class MaskPixelsFromPath(BaseMask):
         if self.mask_path is not None:
             mask_img = self.open_fits(self.mask_path)
         elif self.mask_path_key is not None:
-            logger.info(f"Loading mask from {image[self.mask_path_key]}")
+            logger.debug(f"Loading mask from {image[self.mask_path_key]}")
             mask_img = self.open_fits(image[self.mask_path_key])
         else:
             raise ValueError("Must specify either mask_path or mask_path_key")
@@ -127,9 +128,19 @@ class MaskPixelsFromPath(BaseMask):
 
 
 class MaskPixelsFromPathInverted(MaskPixelsFromPath):
+    """
+    Processor to apply a mask to images using another `mask image'.
+    In contrast to the general mirar convention, every non-zero pixel in the
+    mask image will be masked in the science image.
+    """
+
+    base_key = "maskfrompathinverted"
+
     def get_mask(self, image) -> np.ndarray:
         """
-        Mask pixels which are non-zero in the mask file
+        Mask pixels which are non-zero in the mask file.
+        This is the inverse of MaskPixelsFromPath,
+        which masks pixels which are zero in the mask file.
 
         :param image: image to mask
         :return: Boolean mask
@@ -227,8 +238,8 @@ class MaskPixelsFromWCS(BaseMask):
         if self.mask_file_key is not None:
             mask_file_path = image.get_header()[self.mask_file_key]
             with fits.open(mask_file_path) as mask_image:
-                pixels_to_keep = mask_image[0].data
-                mask_wcs = WCS(mask_image[0].header)
+                pixels_to_keep = mask_image[0].data  # pylint: disable=no-member
+                mask_wcs = WCS(mask_image[0].header)  # pylint: disable=no-member
 
             masked_pixel_x, masked_pixel_y = np.where(pixels_to_keep == 0.0)
 

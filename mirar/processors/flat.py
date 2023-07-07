@@ -7,7 +7,6 @@ import sys
 from collections.abc import Callable
 
 import numpy as np
-from astropy.io import fits
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
@@ -122,7 +121,7 @@ class FlatCalibrator(ProcessorWithCache):
                 pixels_to_keep = mask_img.get_data().astype(bool)
                 mask = ~pixels_to_keep
                 logger.info(
-                    f"Masking {np.sum(mask)} pixels in flat " f"{img[BASE_NAME_KEY]}"
+                    f"Masking {np.sum(mask)} pixels in flat {img[BASE_NAME_KEY]}"
                 )
                 data[mask] = np.nan
 
