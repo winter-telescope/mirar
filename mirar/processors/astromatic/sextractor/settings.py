@@ -2,6 +2,7 @@
 Module with sextractor utilities
 """
 import os
+from pathlib import Path
 
 from mirar.processors.astromatic.config import astromatic_config_dir
 
@@ -11,21 +12,67 @@ default_config_path = os.path.join(astromatic_config_dir, "sex.config")
 default_starnnw_path = os.path.join(astromatic_config_dir, "default.nnw")
 
 
-def write_param_file(param_path: str = default_param_path):
+def parse_sextractor_config(config_file: str | Path):
+    """
+    Parse a sextractor config file into a dictionary
+    param config_file: path to sextractor config file
+    """
+    with open(config_file, "r") as f:
+        data = f.readlines()
+
+    keys, values = [], []
+    config_dict = {}
+    for row in data:
+        if row == "\n":
+            continue
+        if row[0] == "#":
+            continue
+        key = row.split(" ")[0]
+        if key == "":
+            continue
+        keys.append(key.split("\t")[0])
+        for val in row.split(" ")[1:]:
+            if val != "":
+                if val == "#":
+                    val = ""
+                values.append(val)
+                config_dict[key] = val.split("\t")[0]
+                break
+    return config_dict
+
+
+def write_sextractor_config_to_file(config_dict: dict, config_filename: str | Path):
+    """
+    Write a sextractor config file from a dictionary
+    param config_dict: dictionary of sextractor config parameters
+    param config_filename: path to write config file
+    """
+    with open(config_filename, "w") as f:
+        for key in config_dict:
+            f.write(f"{key.ljust(20, ' ')}   {config_dict[key]} \n")
+
+
+def write_param_file(param_path: str = default_param_path, params: list = None):
     """
     Write a default parameter file for sextractor
+    param param_path: path to write parameter file
+    param params: list of parameters to write. If None, will write default.
     """
-    params = """X_IMAGE
-Y_IMAGE
-ALPHA_J2000
-DELTA_J2000
-MAG_AUTO
-MAGERR_AUTO
-ELLIPTICITY
-FWHM_IMAGE
-FLAGS"""
+    if params is None:
+        params = [
+            "X_IMAGE",
+            "Y_IMAGE",
+            "ALPHA_J2000",
+            "DELTA_J2000",
+            "MAG_AUTO",
+            "MAGERR_AUTO",
+            "ELLIPTICITY",
+            "FWHM_IMAGE",
+            "FLAGS",
+        ]
     with open(param_path, "w", encoding="utf8") as param_f:
-        param_f.write(params)
+        for param in params:
+            param_f.write(f"{param}\n")
 
 
 def write_conv_file(conv_path: str = default_conv_path):
