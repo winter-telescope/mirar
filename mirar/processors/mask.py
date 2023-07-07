@@ -61,9 +61,16 @@ class BaseMask(BaseImageProcessor):
                 mask_directory = get_output_dir(self.output_dir, self.night_sub_dir)
                 if not mask_directory.exists():
                     mask_directory.mkdir(parents=True)
-                base_file_path = mask_directory / f"{image[BASE_NAME_KEY]}.fits"
+                mask_file_path = mask_directory.joinpath(
+                    image[BASE_NAME_KEY]
+                ).with_suffix(".mask.fits")
 
-                mask_file_path = self.save_mask_image(image, base_file_path)
+                mask_data = np.ones_like(data)
+                mask_data[pixels_to_mask] = 0.0
+
+                mask_image = Image(data=mask_data, header=image.get_header())
+
+                self.save_fits(mask_image, mask_file_path)
                 image[FITS_MASK_KEY] = mask_file_path.as_posix()
 
         return batch
@@ -110,7 +117,7 @@ class MaskPixelsFromPath(BaseMask):
         if self.mask_path is not None:
             mask_img = self.open_fits(self.mask_path)
         elif self.mask_path_key is not None:
-            logger.debug(f"Loading mask from {image[self.mask_path_key]}")
+            logger.info(f"Loading mask from {image[self.mask_path_key]}")
             mask_img = self.open_fits(image[self.mask_path_key])
         else:
             raise ValueError("Must specify either mask_path or mask_path_key")
@@ -220,31 +227,37 @@ class MaskPixelsFromWCS(BaseMask):
         if self.mask_file_key is not None:
             mask_file_path = image.get_header()[self.mask_file_key]
             with fits.open(mask_file_path) as mask_image:
-                pixels_to_mask = mask_image[0].data
+                pixels_to_keep = mask_image[0].data
                 mask_wcs = WCS(mask_image[0].header)
 
-            masked_pixel_x, masked_pixel_y = np.where(pixels_to_mask)
+            masked_pixel_x, masked_pixel_y = np.where(pixels_to_keep == 0.0)
+
             mask_pixel_coords = mask_wcs.pixel_to_world(masked_pixel_y, masked_pixel_x)
             mask_pixels_ra = mask_pixel_coords.ra.deg
             mask_pixels_dec = mask_pixel_coords.dec.deg
+
         else:
             mask_pixels_ra = self.mask_pixels_ra
             mask_pixels_dec = self.mask_pixels_dec
+
         logger.debug(f"Masking {mask_pixels_ra} ras and {mask_pixels_dec} decs")
 
         mask_pixel_coords = SkyCoord(mask_pixels_ra, mask_pixels_dec, unit="deg")
         mask_pixels_x, mask_pixels_y = wcs.world_to_pixel(mask_pixel_coords)
         mask_pixels_x = mask_pixels_x.astype(int)
         mask_pixels_y = mask_pixels_y.astype(int)
-        pixels_to_mask = np.zeros(image.get_data().shape, dtype=bool)
+
+        pixels_to_keep = np.ones(image.get_data().shape, dtype=bool)
+
         mask_in_image = np.logical_and(
-            mask_pixels_x >= 0, mask_pixels_x < pixels_to_mask.shape[1]
-        ) & np.logical_and(mask_pixels_y >= 0, mask_pixels_y < pixels_to_mask.shape[0])
+            mask_pixels_x > 0.0, mask_pixels_x < pixels_to_keep.shape[1]
+        ) & np.logical_and(mask_pixels_y > 0.0, mask_pixels_y < pixels_to_keep.shape[0])
         mask_pixels_x = mask_pixels_x[mask_in_image]
         mask_pixels_y = mask_pixels_y[mask_in_image]
-        pixels_to_mask[mask_pixels_y, mask_pixels_x] = True
 
-        return ~pixels_to_mask
+        pixels_to_keep[mask_pixels_y, mask_pixels_x] = False
+
+        return ~pixels_to_keep
 
 
 class WriteMaskedCoordsToFile(BaseMask):

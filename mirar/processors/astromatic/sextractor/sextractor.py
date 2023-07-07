@@ -162,6 +162,8 @@ class Sextractor(BaseImageProcessor):
                 weight_path = self.save_mask_image(image, temp_path)
                 temp_files.append(Path(weight_path))
 
+            print(f"Weight path: {weight_path}")
+
             output_cat = os.path.join(
                 sextractor_out_dir, image[BASE_NAME_KEY].replace(".fits", ".cat")
             )
