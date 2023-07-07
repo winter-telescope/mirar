@@ -8,7 +8,7 @@ import numpy as np
 
 from mirar.data import ImageBatch
 from mirar.errors import NoncriticalProcessingError
-from mirar.paths import EXPTIME_KEY, LATEST_WEIGHT_SAVE_KEY
+from mirar.paths import EXPTIME_KEY
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -86,37 +86,32 @@ class LACosmicCleaner(BaseImageProcessor):
             raise CRCleanError(err)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+
+        logger.info(f"Running cosmic ray cleaner on {len(batch)} images")
+
         for image in batch:
             run_crclean = True
             if self.min_exptime is not None:
                 if image.header[EXPTIME_KEY] < self.min_exptime:
                     run_crclean = False
-                    logger.info(
+                    logger.warning(
                         "Exposure time is smaller than minimum specified, skipping "
                         "cosmic ray cleaner."
                     )
 
             if run_crclean:
-                logger.info("Running LACosmic")
-                if LATEST_WEIGHT_SAVE_KEY in image.header.keys():
-                    maskpath = image.header[LATEST_WEIGHT_SAVE_KEY]
-                    mask_image = self.open_fits(maskpath)
-                    mask_data = ~np.array(mask_image.get_data(), dtype=bool)
-                else:
-                    logger.warning(
-                        "No mask path provided in image header. Masking only nans in "
-                        "the image, assuming any other masking has been done"
-                        " in ImageLoader."
-                    )
-                    mask_data = (np.isnan(image.get_data())).astype(bool)
-                logger.debug(f"Mask data is : {~mask_data}")
+                logger.debug("Running LACosmic")
+
+                mask_data = ~image.get_mask().astype(bool)
+
+                logger.debug(f"Mask data is : {mask_data}")
                 effective_gain, readnoise = self.effective_gain, self.readnoise
                 if effective_gain is None:
                     effective_gain = image.header[self.effective_gain_key]
 
                 if readnoise is None:
                     readnoise = image.header[self.readnoise_key]
-                logger.info("Cleaning cosmic rays")
+                logger.debug("Cleaning cosmic rays")
                 cleaned_data, _ = lacosmic.lacosmic(
                     image.get_data(),
                     contrast=self.contrast,
@@ -130,7 +125,7 @@ class LACosmicCleaner(BaseImageProcessor):
                     maxiter=self.maxiter,
                     border_mode=self.border_mode,
                 )
-                logger.info("LACosmic finished cleaning")
+                logger.debug("LACosmic finished cleaning")
                 image.set_data(cleaned_data)
 
         return batch

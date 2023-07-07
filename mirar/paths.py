@@ -124,6 +124,18 @@ def get_weight_path(
     return Path(img_path).with_suffix(".weight.fits")
 
 
+def get_mask_path(
+    img_path: str | Path,
+) -> Path:
+    """
+    Returns a mask image path
+
+    :param img_path: parent image
+    :return: custom path for weight image
+    """
+    return Path(img_path).with_suffix(".mask.fits")
+
+
 def get_temp_path(output_dir: Path, file_path: Path | str) -> Path:
     """
     Gets a temporary path, in output dir, with name of file_path

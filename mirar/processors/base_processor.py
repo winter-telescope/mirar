@@ -27,12 +27,11 @@ from mirar.paths import (
     BASE_NAME_KEY,
     CAL_OUTPUT_SUB_DIR,
     LATEST_SAVE_KEY,
-    LATEST_WEIGHT_SAVE_KEY,
     PACKAGE_NAME,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
     get_output_path,
-    get_weight_path,
+    get_mask_path,
     max_n_cpu,
 )
 
@@ -305,37 +304,40 @@ class ImageHandler:
         logger.info(f"Saving to {path}")
         save_to_path(data, header, path)
 
-    def save_weight_image(
-        self, image: Image, img_path: Path, use_existing: bool = True
+    def save_mask_image(
+        self, image: Image, img_path: Path
     ) -> Path:
         """
-        Saves a weight image
+        Saves a mask image, following the astromatic software convention of
+        masked value = 0. and non-masked value = 1.
 
-        :param image: Weight image
+        :param image: Science image
         :param img_path: Path of parent image
-        :param use_existing: If True, will use existing weight image if it exists
-        :return: Path of weight image
+        :return: Path of mask image
         """
-        weight_path = get_weight_path(img_path)
+        mask_path = get_mask_path(img_path)
         header = image.get_header()
 
-        weight_found = False
-        if use_existing & (LATEST_WEIGHT_SAVE_KEY in header.keys()):
-            existing_weightpath = Path(image[LATEST_WEIGHT_SAVE_KEY])
-            logger.info(f"WGHTPATH {existing_weightpath}")
-            if existing_weightpath.exists():
-                logger.info(f"Found {existing_weightpath}")
-                shutil.copy(existing_weightpath, weight_path)
-                weight_found = True
+        mask = image.get_mask()
+        self.save_fits(Image(mask.astype(float), header), mask_path)
 
-        if not weight_found:
-            data = image.get_data()
-            mask = (~np.isnan(data)).astype(float)
+        # mask_found = False
+        # if use_existing & (LATEST_MASK_KEY in header.keys()):
+        #     existing_mask_path = Path(image[LATEST_MASK_KEY])
+        #     logger.debug(f"{LATEST_MASK_KEY} {existing_mask_path}")
+        #     if existing_mask_path.exists():
+        #         logger.info(f"Found {existing_mask_path}")
+        #         shutil.copy(existing_mask_path, mask_path)
+        #         mask_found = True
+        #
+        # if not mask_found:
+        #     data = image.get_data()
+        #     mask = (~np.isnan(data)).astype(float)
+        #
+        #     header[LATEST_MASK_KEY] = str(mask_path)
+        #     self.save_fits(Image(mask, header), mask_path)
 
-            header[LATEST_WEIGHT_SAVE_KEY] = str(weight_path)
-            self.save_fits(Image(mask, header), weight_path)
-
-        return weight_path
+        return mask_path
 
     @staticmethod
     def get_hash(image_batch: ImageBatch):

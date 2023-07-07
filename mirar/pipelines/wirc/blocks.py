@@ -2,7 +2,7 @@
 Module containing standard processing blocks for WIRC
 """
 from mirar.catalog.kowalski import PS1, TMASS
-from mirar.paths import FITS_MASK_KEY, LATEST_SAVE_KEY, RAW_IMG_KEY, SATURATE_KEY
+from mirar.paths import LATEST_SAVE_KEY, RAW_IMG_KEY, SATURATE_KEY, FITS_MASK_KEY
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
@@ -47,6 +47,7 @@ from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import (
     MaskAboveThreshold,
     MaskPixelsFromPath,
+    MaskPixelsFromPathInverted,
     MaskPixelsFromWCS,
     WriteMaskedCoordsToFile,
 )
@@ -121,7 +122,7 @@ reduction = [
         checkimage_type="SEGMENTATION",
         cache=True,
     ),
-    MaskPixelsFromPath(
+    MaskPixelsFromPathInverted(
         mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
         write_masked_pixels_to_file=True,
         output_dir="mask1",
@@ -138,7 +139,7 @@ reduction = [
     ),
     LoadImageFromHeader(
         header_key=RAW_IMG_KEY,
-        copy_header_keys=[scamp_header_key, FITS_MASK_KEY],
+        copy_header_keys=[FITS_MASK_KEY, scamp_header_key],
         load_image=load_raw_wirc_image,
     ),
     AstrometryFromFile(astrometry_file_key=scamp_header_key),

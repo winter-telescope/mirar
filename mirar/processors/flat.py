@@ -118,8 +118,8 @@ class FlatCalibrator(ProcessorWithCache):
                     logger.error(err)
                     raise FileNotFoundError(err)
                 with fits.open(mask_file) as mask_img:
-                    mask = mask_img[0].data
-                    mask = mask > 0
+                    mask = ~(mask_img[0].data.astype(bool))
+                    # mask = mask > 0
                     logger.info(
                         f"Masking {np.sum(mask)} pixels in flat "
                         f"{img[BASE_NAME_KEY]}"
@@ -127,7 +127,7 @@ class FlatCalibrator(ProcessorWithCache):
                     data[mask] = np.nan
 
             median = np.nanmedian(
-                data[self.x_min : self.x_max, self.y_min : self.y_max]
+                data[self.x_min:self.x_max, self.y_min:self.y_max]
             )
             flats[:, :, i] = data / median
 

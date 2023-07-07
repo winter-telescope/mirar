@@ -274,7 +274,7 @@ class Swarp(BaseImageProcessor):
 
                 self.save_fits(image, temp_img_path)
 
-                temp_mask_path = self.save_weight_image(image, temp_img_path)
+                temp_mask_path = self.save_mask_image(image, temp_img_path)
 
                 img_list.write(f"{temp_img_path}\n")
                 weight_list.write(f"{temp_mask_path}\n")
@@ -352,10 +352,17 @@ class Swarp(BaseImageProcessor):
                 raise SwarpError(err)
 
         new_image = self.open_fits(output_image_path)
+
+        # Swarp sets pixels with no data to 0, which is not ideal
+        weight_data = self.open_fits(output_image_weight_path).get_data()
+        mask = weight_data == 0
+        img_data = new_image.get_data()
+        img_data[mask] = np.nan
+        new_image.set_data(img_data)
+
         # Add missing keywords that are common in all input images to the
         # header of resampled image, and save again
         # Omit any astrometric keywords
-
         for key in batch[0].keys():
             if np.any([key not in x.keys() for x in batch]):
                 continue

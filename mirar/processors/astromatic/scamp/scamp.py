@@ -130,7 +130,7 @@ class Scamp(BaseImageProcessor):
 
                 temp_img_path = get_temp_path(scamp_output_dir, image[BASE_NAME_KEY])
                 self.save_fits(image, temp_img_path)
-                temp_mask_path = self.save_weight_image(image, temp_img_path)
+                temp_mask_path = self.save_mask_image(image, temp_img_path)
                 f.write(f"{temp_cat_path}\n")
                 temp_files += [temp_cat_path, temp_img_path, temp_mask_path]
 
