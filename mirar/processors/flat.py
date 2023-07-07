@@ -127,7 +127,7 @@ class FlatCalibrator(ProcessorWithCache):
                     data[mask] = np.nan
 
             median = np.nanmedian(
-                data[self.x_min:self.x_max, self.y_min:self.y_max]
+                data[self.x_min : self.x_max, self.y_min : self.y_max]
             )
             flats[:, :, i] = data / median
 

@@ -86,7 +86,6 @@ class LACosmicCleaner(BaseImageProcessor):
             raise CRCleanError(err)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-
         logger.info(f"Running cosmic ray cleaner on {len(batch)} images")
 
         for image in batch:

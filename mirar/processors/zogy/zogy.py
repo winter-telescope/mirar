@@ -32,7 +32,6 @@ from mirar.paths import (
     REF_PSF_KEY,
     UNC_IMG_KEY,
     get_output_dir,
-    LATEST_WEIGHT_SAVE_KEY
 )
 from mirar.processors.base_processor import BaseImageProcessor
 from mirar.processors.candidates.utils.regions_writer import write_regions_file

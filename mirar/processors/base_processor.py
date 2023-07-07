@@ -30,8 +30,8 @@ from mirar.paths import (
     PACKAGE_NAME,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
-    get_output_path,
     get_mask_path,
+    get_output_path,
     max_n_cpu,
 )
 
@@ -304,9 +304,7 @@ class ImageHandler:
         logger.info(f"Saving to {path}")
         save_to_path(data, header, path)
 
-    def save_mask_image(
-        self, image: Image, img_path: Path
-    ) -> Path:
+    def save_mask_image(self, image: Image, img_path: Path) -> Path:
         """
         Saves a mask image, following the astromatic software convention of
         masked value = 0. and non-masked value = 1.

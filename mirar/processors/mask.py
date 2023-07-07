@@ -53,7 +53,9 @@ class BaseMask(BaseImageProcessor):
                 data[pixels_to_mask] = MASK_VALUE
                 image.set_data(data)
 
-            logger.warning(f"Masked {np.sum(pixels_to_mask)}/{pixels_to_mask.size} pixels in {image[BASE_NAME_KEY]}")
+            logger.warning(
+                f"Masked {np.sum(pixels_to_mask)}/{pixels_to_mask.size} pixels in {image[BASE_NAME_KEY]}"
+            )
 
             if self.write_masked_pixels_to_file:
                 mask_directory = get_output_dir(self.output_dir, self.night_sub_dir)
@@ -118,7 +120,6 @@ class MaskPixelsFromPath(BaseMask):
 
 
 class MaskPixelsFromPathInverted(MaskPixelsFromPath):
-
     def get_mask(self, image) -> np.ndarray:
         """
         Mask pixels which are non-zero in the mask file

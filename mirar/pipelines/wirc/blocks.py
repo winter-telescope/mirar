@@ -2,7 +2,7 @@
 Module containing standard processing blocks for WIRC
 """
 from mirar.catalog.kowalski import PS1, TMASS
-from mirar.paths import LATEST_SAVE_KEY, RAW_IMG_KEY, SATURATE_KEY, FITS_MASK_KEY
+from mirar.paths import FITS_MASK_KEY, LATEST_SAVE_KEY, RAW_IMG_KEY, SATURATE_KEY
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,

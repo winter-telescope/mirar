@@ -6,12 +6,7 @@ import shutil
 from pathlib import Path
 
 from mirar.data import ImageBatch
-from mirar.paths import (
-    BASE_NAME_KEY,
-    LATEST_SAVE_KEY,
-    base_output_dir,
-    get_output_path,
-)
+from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, base_output_dir, get_output_path
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
