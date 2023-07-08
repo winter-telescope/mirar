@@ -7,7 +7,6 @@ import sys
 from collections.abc import Callable
 
 import numpy as np
-from astropy.io import fits
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
@@ -117,14 +116,14 @@ class FlatCalibrator(ProcessorWithCache):
                     err = f"Mask file {mask_file} does not exist"
                     logger.error(err)
                     raise FileNotFoundError(err)
-                with fits.open(mask_file) as mask_img:
-                    mask = mask_img[0].data
-                    mask = mask > 0
-                    logger.info(
-                        f"Masking {np.sum(mask)} pixels in flat "
-                        f"{img[BASE_NAME_KEY]}"
-                    )
-                    data[mask] = np.nan
+
+                mask_img = self.open_fits(mask_file)
+                pixels_to_keep = mask_img.get_data().astype(bool)
+                mask = ~pixels_to_keep
+                logger.info(
+                    f"Masking {np.sum(mask)} pixels in flat {img[BASE_NAME_KEY]}"
+                )
+                data[mask] = np.nan
 
             median = np.nanmedian(
                 data[self.x_min : self.x_max, self.y_min : self.y_max]

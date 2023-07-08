@@ -229,7 +229,7 @@ process_proc = [
         sextractor_config_path=sextractor_autoastrometry_config["config_path"],
         use_weight=True,
     ),
-    ImageSaver(output_dir_name=f"anet_{BOARD_ID}", use_existing_weight=False),
+    ImageSaver(output_dir_name=f"anet_{BOARD_ID}"),
     Sextractor(
         **sextractor_autoastrometry_config,
         write_regions_bool=True,
@@ -266,7 +266,7 @@ process_proc_all_boards = [
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
     ),
-    ImageSaver(output_dir_name="anet", use_existing_weight=False),
+    ImageSaver(output_dir_name="anet"),
     Sextractor(
         **sextractor_autoastrometry_config,
         write_regions_bool=True,

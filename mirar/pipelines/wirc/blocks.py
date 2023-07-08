@@ -47,6 +47,7 @@ from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import (
     MaskAboveThreshold,
     MaskPixelsFromPath,
+    MaskPixelsFromPathInverted,
     MaskPixelsFromWCS,
     WriteMaskedCoordsToFile,
 )
@@ -121,7 +122,7 @@ reduction = [
         checkimage_type="SEGMENTATION",
         cache=True,
     ),
-    MaskPixelsFromPath(
+    MaskPixelsFromPathInverted(
         mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
         write_masked_pixels_to_file=True,
         output_dir="mask1",

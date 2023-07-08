@@ -264,14 +264,14 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_img = self.open_fits(self.get_path(ref_img_path))
 
             ref_catalog_path = ref_img["SRCCAT"]  # convert to key
-            ref_mask_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
+            ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
             # change in Swarp too, also fix (get_mask/write_mask)?
 
             sci_catalog_path = image["SRCCAT"]  # convert to key
-            sci_mask_path = image[LATEST_WEIGHT_SAVE_KEY]
+            sci_weight_path = image[LATEST_WEIGHT_SAVE_KEY]
 
-            ref_weight_data = self.open_fits(self.get_path(ref_mask_path))
-            sci_weight_data = self.open_fits(self.get_path(sci_mask_path))
+            ref_weight_data = self.open_fits(self.get_path(ref_weight_path))
+            sci_weight_data = self.open_fits(self.get_path(sci_weight_path))
 
             image_mask = (sci_weight_data.get_data() == 0.0) | (
                 ref_weight_data.get_data() == 0.0

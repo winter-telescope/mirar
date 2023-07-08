@@ -256,7 +256,7 @@ class Pipeline:
             processors = self.set_configuration(configuration)
 
             for i, processor in enumerate(processors):
-                logger.debug(
+                logger.info(
                     f"Applying '{processor.__class__} to {len(dataset)} batches"
                     f"(Step {i + 1}/{len(processors)})"
                 )

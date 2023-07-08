@@ -150,6 +150,15 @@ class Image(DataBlock):
 
         return self.get_ram_data()
 
+    def get_mask(self) -> np.ndarray:
+        """
+        Get the mask data for an image. 0 is masked, 1 is unmasked.
+
+        :return: mask data (numpy array)
+        """
+        img_data = self.get_data()
+        return ~np.isnan(img_data)
+
     def get_cache_data(self) -> np.ndarray:
         """
         Get the image data from cache

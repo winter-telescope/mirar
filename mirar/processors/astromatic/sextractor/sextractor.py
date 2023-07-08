@@ -132,25 +132,23 @@ class Sextractor(BaseImageProcessor):
 
             temp_files = [temp_path]
 
-            mask_path = None
+            weight_path = None
 
             if LATEST_WEIGHT_SAVE_KEY in image.keys():
-                image_mask_path = os.path.join(
+                image_weight_path = os.path.join(
                     sextractor_out_dir, image[LATEST_WEIGHT_SAVE_KEY]
                 )
-                temp_mask_path = get_temp_path(
+                temp_weight_path = get_temp_path(
                     sextractor_out_dir, image[LATEST_WEIGHT_SAVE_KEY]
                 )
-                if os.path.exists(image_mask_path):
-                    shutil.copyfile(image_mask_path, temp_mask_path)
-                    mask_path = temp_mask_path
-                    temp_files.append(Path(mask_path))
-                else:
-                    mask_path = None
+                if os.path.exists(image_weight_path):
+                    shutil.copyfile(image_weight_path, temp_weight_path)
+                    weight_path = temp_weight_path
+                    temp_files.append(Path(weight_path))
 
-            if mask_path is None:
-                mask_path = self.save_weight_image(image, temp_path)
-                temp_files.append(Path(mask_path))
+            if weight_path is None:
+                weight_path = self.save_mask_image(image, temp_path)
+                temp_files.append(Path(weight_path))
 
             output_cat = os.path.join(
                 sextractor_out_dir, image[BASE_NAME_KEY].replace(".fits", ".cat")
@@ -172,7 +170,7 @@ class Sextractor(BaseImageProcessor):
                 filter_name=self.filter_name,
                 starnnw_name=self.starnnw_name,
                 saturation=self.saturation,
-                weight_image=mask_path,
+                weight_image=weight_path,
                 verbose_type=self.verbose_type,
                 checkimage_name=checkimage_name,
                 checkimage_type=self.checkimage_type,
@@ -184,7 +182,7 @@ class Sextractor(BaseImageProcessor):
             if not self.cache:
                 for temp_file in temp_files:
                     os.remove(temp_file)
-                    logger.info(f"Deleted temporary file {temp_file}")
+                    logger.debug(f"Deleted temporary file {temp_file}")
 
             if self.write_regions:
                 output_catalog = get_table_from_ldac(output_cat)
