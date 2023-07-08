@@ -37,7 +37,7 @@ class ImageLoader(BaseImageProcessor):
 
     def __str__(self):
         return (
-            f"Processor to load images from the {self.input_sub_dir} subdirectory "
+            f"Processor to load images from the '{self.input_sub_dir}' subdirectory "
             f"using the '{self.load_image.__name__}' function"
         )
 

@@ -19,7 +19,7 @@ class ParsingError(KeyError, ProcessorError):
 def select_from_images(
     batch: ImageBatch,
     key: str = "target",
-    target_values: str | list[str] = "science",
+    target_values: str | list[str | float | int] = "science",
 ) -> ImageBatch:
     """
     Returns a subset of images in a batch with have values of <key> equal to
@@ -144,7 +144,7 @@ class ImageBatcher(BaseImageProcessor):
 
     def __init__(self, split_key: str | list[str]):
         super().__init__()
-        self.split_key = split_key
+        self.split_key = sorted(split_key)
 
     def __str__(self) -> str:
         if isinstance(self.split_key, list):

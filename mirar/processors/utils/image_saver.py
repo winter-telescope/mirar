@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 
 from mirar.data import ImageBatch
-from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, base_output_dir, get_output_path
+from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, base_output_dir, get_output_dir
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class ImageSaver(BaseImageProcessor):
     def __init__(
         self,
         output_dir_name: str,
-        write_mask: bool = True,
+        write_mask: bool = False,
         output_dir: str | Path = base_output_dir,
     ):
         super().__init__()
@@ -36,16 +36,16 @@ class ImageSaver(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
+        output_dir = get_output_dir(
+            dir_root=self.output_dir_name,
+            sub_dir=self.night_sub_dir,
+            output_dir=self.output_dir,
+        )
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+
         for image in batch:
-            path = get_output_path(
-                image[BASE_NAME_KEY],
-                dir_root=self.output_dir_name,
-                sub_dir=self.night_sub_dir,
-                output_dir=self.output_dir,
-            )
-
-            path.parent.mkdir(parents=True, exist_ok=True)
-
+            path = output_dir.joinpath(image[BASE_NAME_KEY])
             image[LATEST_SAVE_KEY] = str(path)
 
             if self.write_mask:
