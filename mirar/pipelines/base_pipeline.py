@@ -267,6 +267,14 @@ class Pipeline:
                 if np.logical_and(not catch_all_errors, len(err_stack.reports) > 0):
                     raise err_stack.reports[0].error
 
+                if len(dataset) == 0:
+                    logger.error(
+                        f"No images left in dataset. "
+                        f"Terminating early, after step {i + 1}/{len(processors)} "
+                        f"({processor.__class__})."
+                    )
+                    break
+
         err_stack.summarise_error_stack(output_path=output_error_path)
         return dataset, err_stack
 
