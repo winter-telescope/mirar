@@ -2,7 +2,7 @@
 Module for WINTER data reduction
 """
 from mirar.io import open_fits
-from mirar.paths import BASE_NAME_KEY, FITS_MASK_KEY
+from mirar.paths import FITS_MASK_KEY
 from mirar.pipelines.winter.config import (
     sextractor_anet_config,
     sextractor_autoastrometry_config,
@@ -284,7 +284,7 @@ process_proc_all_boards = [
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
-    ImageSaver(output_dir_name="anet", use_existing_weight=False),
+    ImageSaver(output_dir_name="anet"),
     # Sextractor(
     #     **sextractor_autoastrometry_config,
     #     write_regions_bool=True,
