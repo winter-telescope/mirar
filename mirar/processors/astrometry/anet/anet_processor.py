@@ -42,9 +42,7 @@ class AstrometryNet(BaseImageProcessor):
         # limits on scale (lower, upper)
         scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
         downsample: Optional[float | int] = None,
-        timeout: Optional[
-            float
-        ] = ASTROMETRY_TIMEOUT,  # astrometry cmd execute timeout, in seconds
+        timeout: float = ASTROMETRY_TIMEOUT,  # astrometry cmd execute timeout, in seconds
         use_sextractor: bool = False,
         sextractor_path: str = "sex",
         search_radius_deg: float = 5.0,
@@ -104,27 +102,36 @@ class AstrometryNet(BaseImageProcessor):
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         anet_out_dir = self.get_anet_output_dir()
         cache = False
+
         try:
             os.makedirs(anet_out_dir)
         except OSError:
             pass
 
         for i, image in enumerate(batch):
-            temp_path = get_temp_path(anet_out_dir, image[BASE_NAME_KEY])
-            if not os.path.exists(temp_path):
-                self.save_fits(image, temp_path)
+            base_name = Path(image[BASE_NAME_KEY])
+            new_img_path = anet_out_dir.joinpath(base_name)
 
-            temp_files = [temp_path]
+            temp_path = get_temp_path(anet_out_dir, base_name)
+            self.save_fits(image, temp_path)
+
+            temp_files = [temp_path, new_img_path]
             sextractor_path = f"{self.sextractor_path}"
             if self.use_sextractor & self.use_weight:
-                weight_image = image[LATEST_WEIGHT_SAVE_KEY]
+                if LATEST_WEIGHT_SAVE_KEY in image:
+                    weight_path = image[LATEST_WEIGHT_SAVE_KEY]
+
+                else:
+                    weight_path = self.save_mask_image(image, temp_path)
+                    temp_files.append(Path(weight_path))
+
                 sextractor_path = (
                     f"{self.sextractor_path} -WEIGHT_TYPE MAP_WEIGHT"
-                    + f" -WEIGHT_IMAGE {weight_image}"
+                    + f" -WEIGHT_IMAGE {weight_path}"
                 )
 
             run_astrometry_net_single(
-                img=temp_path,
+                img_path=temp_path,
                 output_dir=anet_out_dir,
                 scale_bounds=self.scale_bounds,
                 scale_units=self.scale_units,
@@ -140,28 +147,29 @@ class AstrometryNet(BaseImageProcessor):
                 sort_key_name=self.sort_key_name,
             )
 
-            newname = anet_out_dir.joinpath(Path(str(temp_path).split("temp_")[1]))
-            if not newname.exists():
+            if not new_img_path.exists():
                 raise AstrometryNetError(
                     f"AstrometryNet did not run successfully - no output "
-                    f"file {newname} found."
+                    f"file {new_img_path} found."
                 )
-            solved = fits.open(newname)
+            solved = fits.open(new_img_path)
             hdr = solved[0].header  # pylint: disable=no-member
 
             del hdr["HISTORY"]
 
             fits.writeto(  # pylint: disable=no-member
-                newname,
+                new_img_path,
                 fits.open(temp_files[0])[0].data,  # pylint: disable=no-member
                 hdr,
                 overwrite=True,
             )  # pylint: disable=no-member
-            batch[i] = self.open_fits(newname)  # pylint: disable=no-member
+            batch[i] = self.open_fits(new_img_path)  # pylint: disable=no-member
+
+            # Clean up!
 
             if not cache:
                 for temp_file in temp_files:
-                    os.remove(temp_file)
-                    logger.info(f"Deleted temporary file {temp_file}")
+                    temp_file.unlink(missing_ok=True)
+                    logger.debug(f"Deleted temporary file {temp_file}")
 
         return batch

@@ -46,7 +46,7 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
     :param path: path of file
     :return: data and header of image
     """
-    logger.info(f"Loading {path}")
+    logger.debug(f"Loading {path}")
     with fits.open(path) as img:
         # pylint: disable=E1101
         data = img[0].data
@@ -66,7 +66,7 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
         header["UTCTIME"] = (
             f"{date[:4]}-{date[4:6]}-{date[6:]}T" f"{time[:2]}:{time[2:4]}:{time[4:]}"
         )
-        logger.info(header["UTCTIME"])
+        logger.debug(header["UTCTIME"])
         header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
 
         header["OBSCLASS"] = ["science", "calibration"][
@@ -179,7 +179,7 @@ def load_proc_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.
     """
     Load proc image
     """
-    logger.info(f"Loading {path}")
+    logger.debug(f"Loading {path}")
     with fits.open(path) as img:
         data = img[0].data
         header = img[0].header
