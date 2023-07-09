@@ -22,7 +22,7 @@ from mirar.paths import (
     get_output_dir,
     get_temp_path,
 )
-from mirar.processors.astromatic.scamp.scamp import scamp_header_key
+from mirar.processors.astromatic.scamp.scamp import SCAMP_HEADER_KEY
 from mirar.processors.astromatic.swarp.swarp_wrapper import run_swarp
 from mirar.processors.base_processor import BaseImageProcessor
 
@@ -251,7 +251,7 @@ class Swarp(BaseImageProcessor):
                 if self.include_scamp:
                     temp_head_path = copy_temp_file(
                         output_dir=swarp_output_dir,
-                        file_path=Path(image[scamp_header_key]),
+                        file_path=Path(image[SCAMP_HEADER_KEY]),
                     )
 
                 if np.logical_and(

@@ -28,7 +28,7 @@ from mirar.pipelines.wirc.wirc_files import (
 from mirar.processors.alerts import AvroPacketMaker, SendToFritz
 from mirar.processors.astromatic import Scamp, Sextractor, Swarp
 from mirar.processors.astromatic.psfex import PSFex
-from mirar.processors.astromatic.scamp.scamp import scamp_header_key
+from mirar.processors.astromatic.scamp.scamp import SCAMP_HEADER_KEY
 from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkimg_map
 from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
@@ -139,10 +139,10 @@ reduction = [
     ),
     LoadImageFromHeader(
         header_key=RAW_IMG_KEY,
-        copy_header_keys=[scamp_header_key, FITS_MASK_KEY],
+        copy_header_keys=[SCAMP_HEADER_KEY, FITS_MASK_KEY],
         load_image=load_raw_wirc_image,
     ),
-    AstrometryFromFile(astrometry_file_key=scamp_header_key),
+    AstrometryFromFile(astrometry_file_key=SCAMP_HEADER_KEY),
     ImageSaver(output_dir_name="firstpassastrom", write_mask=True),
     MaskPixelsFromWCS(
         write_masked_pixels_to_file=True,

@@ -3,11 +3,13 @@ Module for running photometric calibration
 """
 import logging
 import os
+import warnings
 from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
 from astropy.io import fits
+from astropy.io.fits.verify import VerifyWarning
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
 
@@ -142,7 +144,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             image_cat=clean_img_cat,
             crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
         )
-        logger.info(
+        logger.debug(
             f"Cross-matched {len(matched_img_cat)} sources from catalog to the image."
         )
 
@@ -247,31 +249,37 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
 
             aperture_diameters = []
             zp_values = []
-            for zpvals in zp_dicts:
-                image[f"ZP_{zpvals['diameter']}"] = zpvals["zp_mean"]
-                image[f"ZP_{zpvals['diameter']}_std"] = zpvals["zp_std"]
-                image[f"ZP_{zpvals['diameter']}_nstars"] = zpvals["nstars"]
-                try:
-                    aperture_diameters.append(float(zpvals["diameter"]))
-                    zp_values.append(zpvals["zp_mean"])
-                except ValueError:
-                    continue
 
-            aperture_diameters.append(med_fwhm_pix)
-            zp_values.append(image["ZP_AUTO"])
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter("ignore", category=VerifyWarning)
 
-            if sextractor_checkimg_map["BACKGROUND_RMS"] in image.header.keys():
-                logger.info("Calculating limiting magnitudes from background RMS file")
-                limmags = get_maglim(
-                    image[sextractor_checkimg_map["BACKGROUND_RMS"]],
-                    zp_values,
-                    np.array(aperture_diameters) / 2.0,
-                )
-            else:
-                limmags = [-99] * len(aperture_diameters)
+                for zpvals in zp_dicts:
+                    image[f"ZP_{zpvals['diameter']}"] = zpvals["zp_mean"]
+                    image[f"ZP_{zpvals['diameter']}_std"] = zpvals["zp_std"]
+                    image[f"ZP_{zpvals['diameter']}_nstars"] = zpvals["nstars"]
+                    try:
+                        aperture_diameters.append(float(zpvals["diameter"]))
+                        zp_values.append(zpvals["zp_mean"])
+                    except ValueError:
+                        continue
 
-            for ind, diam in enumerate(aperture_diameters):
-                image[f"MAGLIM_{int(diam)}"] = limmags[ind]
-            image["MAGLIM"] = limmags[-1]
+                aperture_diameters.append(med_fwhm_pix)
+                zp_values.append(image["ZP_AUTO"])
+
+                if sextractor_checkimg_map["BACKGROUND_RMS"] in image.header.keys():
+                    logger.debug(
+                        "Calculating limiting magnitudes from background RMS file"
+                    )
+                    limmags = get_maglim(
+                        image[sextractor_checkimg_map["BACKGROUND_RMS"]],
+                        zp_values,
+                        np.array(aperture_diameters) / 2.0,
+                    )
+                else:
+                    limmags = [-99] * len(aperture_diameters)
+
+                for ind, diam in enumerate(aperture_diameters):
+                    image[f"MAGLIM_{int(diam)}"] = limmags[ind]
+                image["MAGLIM"] = limmags[-1]
 
         return batch
