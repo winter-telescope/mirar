@@ -116,7 +116,7 @@ class Scamp(BaseImageProcessor):
             Path(batch[0][BASE_NAME_KEY]).name + "_scamp_list.txt",
         )
 
-        logger.info(f"Writing file list to {scamp_image_list_path}")
+        logger.debug(f"Writing file list to {scamp_image_list_path}")
 
         temp_files = [scamp_image_list_path]
 

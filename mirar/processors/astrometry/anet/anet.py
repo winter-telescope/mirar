@@ -36,7 +36,7 @@ def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
 
 
 def run_astrometry_net_single(
-    img: str | Path,
+    img_path: str | Path,
     output_dir: str | Path,
     scale_bounds: Optional[tuple | list] = None,  # limits on scale (lower, upper)
     scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
@@ -56,12 +56,12 @@ def run_astrometry_net_single(
     default: solve-field <img> -D <output_dir> -N <newname> -O
     """
     # name for new file if a-net solves (otherwise a-net writes to '<img>.new')
-    newname = output_dir.joinpath(Path(str(img).split("temp_")[1]))
-    basename = (str(img).split("temp_")[1]).split(".fits")[0]
+    newname = output_dir.joinpath(Path(str(img_path).split("temp_")[1]))
+    basename = (str(img_path).split("temp_")[1]).split(".fits")[0]
 
     # run a-net (solve-field)
     cmd = (
-        f"solve-field {img} "
+        f"solve-field {img_path} "
         f"--dir {output_dir} "
         f"--new-fits {newname} "
         f"--overwrite "
@@ -80,7 +80,7 @@ def run_astrometry_net_single(
         cmd += f"--downsample {downsample} "
 
     # cmd with a ra, dec first guess (speeds up solution)
-    header = fits.open(img)[0].header  # pylint: disable=no-member
+    header = fits.open(img_path)[0].header  # pylint: disable=no-member
     ra_req, dec_req = header["RA"], header["DEC"]  # requested ra, dec
     if use_sextractor:
         cmd += f"--use-source-extractor --source-extractor-path '{sextractor_path}' "
@@ -95,27 +95,35 @@ def run_astrometry_net_single(
         cmd += f"--parity {parity} "
 
     cmd_loc = (
-        cmd + f"--ra {ra_req}, --dec {dec_req} --radius {search_radius_deg} "
+        cmd + f"--ra {ra_req} --dec {dec_req} --radius {search_radius_deg} "
     )  # radius takes on units of ra, dec
 
     try:
+        logger.debug(
+            f"Running a-net with ra,dec guess and timeout {timeout}. \n"
+            f"A-net command:\n {cmd_loc}"
+        )
+
         if timeout is not None:
             execute(cmd_loc, output_dir, timeout=timeout)
         else:
             execute(cmd_loc, output_dir)
 
-        if os.path.isfile(img):
-            logger.info(f"Ran a-net with ra,dec guess. \n A-net command: {cmd_loc}")
-        else:
-            if timeout is not None:
-                execute(cmd_loc, output_dir, timeout=timeout)
-            else:
-                execute(cmd_loc, output_dir)
+        if not os.path.isfile(img_path):
+            logger.debug(
+                f"First attempt failed. "
+                f"Rerunning a-net without ra,dec guess.\n"
+                f"A-net command:\n {cmd}"
+            )
 
-            if os.path.isfile(img):
-                logger.info(f"Ran a-net without ra,dec guess. \n A-net command: {cmd}")
+            if timeout is not None:
+                execute(cmd, output_dir, timeout=timeout)
+            else:
+                execute(cmd, output_dir)
+
+            if not os.path.isfile(img_path):
+                logger.debug("Second attempt failed.")
     except ExecutionError as err:
         raise AstrometryNetError(err) from err
 
-    return img
-    # return newname
+    return img_path

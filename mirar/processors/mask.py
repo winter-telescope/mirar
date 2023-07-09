@@ -53,7 +53,7 @@ class BaseMask(BaseImageProcessor):
                 data[pixels_to_mask] = MASK_VALUE
                 image.set_data(data)
 
-            logger.info(
+            logger.debug(
                 f"Masked {np.sum(pixels_to_mask)}/{pixels_to_mask.size} pixels in {image[BASE_NAME_KEY]}"
             )
 

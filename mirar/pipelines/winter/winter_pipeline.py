@@ -21,6 +21,8 @@ from mirar.pipelines.winter.blocks import (
     full_commissioning_all_boards,
     log,
     refbuild,
+    unpack_all,
+    unpack_subset,
 )
 from mirar.pipelines.winter.config import PIPELINE_NAME
 
@@ -50,6 +52,8 @@ class WINTERPipeline(Pipeline):
         "commissioning_photcal_indiv": commissioning_photcal_indiv,
         "full_commissioning_all_boards": full_commissioning_all_boards,
         "commissioning_split": commissioning_split,
+        "unpack_subset": unpack_subset,
+        "unpack_all": unpack_all,
     }
 
     gain = 1.0

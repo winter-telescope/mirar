@@ -111,7 +111,7 @@ class FlatCalibrator(ProcessorWithCache):
                     raise KeyError(err)
 
                 mask_file = img[self.flat_mask_key]
-                logger.info(f"Masking flat {img[BASE_NAME_KEY]} with mask {mask_file}")
+                logger.debug(f"Masking flat {img[BASE_NAME_KEY]} with mask {mask_file}")
                 if not os.path.exists(mask_file):
                     err = f"Mask file {mask_file} does not exist"
                     logger.error(err)
@@ -120,7 +120,7 @@ class FlatCalibrator(ProcessorWithCache):
                 mask_img = self.open_fits(mask_file)
                 pixels_to_keep = mask_img.get_data().astype(bool)
                 mask = ~pixels_to_keep
-                logger.info(
+                logger.debug(
                     f"Masking {np.sum(mask)} pixels in flat {img[BASE_NAME_KEY]}"
                 )
                 data[mask] = np.nan
@@ -130,7 +130,7 @@ class FlatCalibrator(ProcessorWithCache):
             )
             flats[:, :, i] = data / median
 
-        logger.info(f"Median combining {n_frames} flats")
+        logger.debug(f"Median combining {n_frames} flats")
 
         master_flat = np.nanmedian(flats, axis=2)
 

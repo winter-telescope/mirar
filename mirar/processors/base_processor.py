@@ -300,7 +300,7 @@ class ImageHandler:
         header = image.get_header()
         if header is not None:
             header[LATEST_SAVE_KEY] = path
-        logger.info(f"Saving to {path}")
+        logger.debug(f"Saving to {path}")
         save_to_path(data, header, path)
 
     def save_mask_image(self, image: Image, img_path: Path) -> Path:

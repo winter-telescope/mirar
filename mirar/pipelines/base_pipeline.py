@@ -257,15 +257,24 @@ class Pipeline:
 
             for i, processor in enumerate(processors):
                 logger.info(
-                    f"Applying '{processor.__class__} to {len(dataset)} batches"
+                    f"Applying '{processor.__class__} to {len(dataset)} batches "
                     f"(Step {i + 1}/{len(processors)})"
                 )
+                logger.info(f"[{str(processor)}]")
 
                 dataset, new_err_stack = processor.base_apply(dataset)
                 err_stack += new_err_stack
 
                 if np.logical_and(not catch_all_errors, len(err_stack.reports) > 0):
                     raise err_stack.reports[0].error
+
+                if len(dataset) == 0:
+                    logger.error(
+                        f"No images left in dataset. "
+                        f"Terminating early, after step {i + 1}/{len(processors)} "
+                        f"({processor.__class__.__name__})."
+                    )
+                    break
 
         err_stack.summarise_error_stack(output_path=output_error_path)
         return dataset, err_stack

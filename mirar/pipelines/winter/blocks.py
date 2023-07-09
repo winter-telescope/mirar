@@ -1,7 +1,8 @@
 """
 Module for WINTER data reduction
 """
-from mirar.paths import FITS_MASK_KEY
+from mirar.io import open_fits
+from mirar.paths import BASE_NAME_KEY, FITS_MASK_KEY
 from mirar.pipelines.winter.config import (
     sextractor_anet_config,
     sextractor_autoastrometry_config,
@@ -89,22 +90,22 @@ load_all_boards = [
 
 load_proc = [
     ImageLoader(input_sub_dir=f"skysub_{BOARD_ID}", load_image=load_raw_winter_image),
-    ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
+    # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
 ]
 
 load_dark = [
     ImageLoader(input_sub_dir=f"darkcal_{BOARD_ID}", load_image=load_raw_winter_image),
-    ImageSelector(("TARGNAME", f"{TARGET_NAME}")),
+    # ImageSelector(("TARGNAME", f"{TARGET_NAME}")),
 ]
 
 load_anet = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
-    ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
+    # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
 ]
 
 load_stack = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
-    ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
+    # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
     ImageBatcher("EXPTIME"),
 ]
 
@@ -113,7 +114,7 @@ load_multiboard_stack = [
         input_sub_dir=f"stack_all_{TARGET_NAME}", load_image=load_stacked_winter_image
     ),
     ImageSelector(
-        ("TARGNAME", f"{TARGET_NAME}"),
+        # ("TARGNAME", f"{TARGET_NAME}"),
         ("OBSTYPE", "SCIENCE"),
     ),
 ]
@@ -208,7 +209,7 @@ flat_cal = [
 flat_cal_all_boards = [
     # ImageSelector(("OBSTYPE", ["SCIENCE"]), ("TARGNAME", f"{TARGET_NAME}")),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "EXPTIME", "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir="skycals"),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name="skyflatcal"),
@@ -256,6 +257,8 @@ process_proc = [
 process_proc_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
+    ImageSelector(("FIELDID", "2789")),
+    ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[10, 20],
@@ -266,7 +269,7 @@ process_proc_all_boards = [
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
     ),
-    ImageSaver(output_dir_name="anet"),
+    ImageSaver(output_dir_name="post_anet"),
     Sextractor(
         **sextractor_autoastrometry_config,
         write_regions_bool=True,
@@ -289,6 +292,7 @@ process_proc_all_boards = [
         center_type="ALL",
         temp_output_sub_dir="stack_all",
     ),
+    ImageSaver(output_dir_name="stack"),
 ]
 
 process_noise = [
@@ -387,6 +391,13 @@ stack_multiboard = [
 # commissioning = \
 #     log + process_proc
 
+select_subset = [
+    ImageSelector(
+        ("EXPTIME", 120.0), ("FILTER", ["dark", "J"]), ("BOARD_ID", BOARD_ID)
+    ),
+    ImageSaver(output_dir_name="raw_subset"),
+]
+
 commissioning = log + process
 
 commissioning_dark = log + dark_cal
@@ -398,14 +409,79 @@ commissioning_multiboard_stack = load_multiboard_stack + stack_multiboard
 commissioning_noise = load_anet + process_noise
 commissioning_photcal = load_multiboard_stack + photcal
 commissioning_photcal_indiv = load_anet + photcal_indiv
-full_commissioning = log + process + process_proc  # + stack_proc
+
+extract_subset = [
+    MultiExtParser(
+        input_sub_dir="raw/",
+        extension_num_header_key="BOARD_ID",
+        output_sub_dir=f"raw_board_{BOARD_ID}",
+        only_extract_num=BOARD_ID,
+    ),
+    ImageLoader(
+        input_sub_dir=f"raw_board_{BOARD_ID}", load_image=load_raw_winter_image
+    ),
+    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    ImageSelector(
+        ("EXPTIME", 120.0), ("FILTER", ["dark", "J"]), ("BOARD_ID", BOARD_ID)
+    ),
+]
+
+extract_all = [
+    MultiExtParser(
+        input_sub_dir="raw/",
+        extension_num_header_key="BOARD_ID",
+        output_sub_dir="raw_split",
+    ),
+    ImageLoader(input_sub_dir="raw_split", load_image=load_raw_winter_image),
+]
+
+split_indiv = [
+    SplitImage(n_x=1, n_y=2),
+    ImageDebatcher(),
+]
+
+select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
+
+make_log_and_save = [
+    CSVLog(
+        export_keys=[
+            "SUBCOORD",
+            "FILTER",
+            "UTCTIME",
+            "EXPTIME",
+            "OBSTYPE",
+            "UNIQTYPE",
+            "BOARD_ID",
+            "OBSCLASS",
+            "TARGET",
+            "FILTER",
+            "BASENAME",
+            "TARGNAME",
+            "RADEG",
+            "DECDEG",
+            "MEDCOUNT",
+            "STDDEV",
+            "T_ROIC",
+        ]
+    ),
+    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
+]
+
+unpack_subset = extract_subset + split_indiv + select_split_subset + make_log_and_save
+unpack_all = extract_all + split_indiv + make_log_and_save
+
+load_unpacked = [
+    ImageLoader(input_sub_dir="raw_unpacked", load_image=open_fits),
+]
+
+full_commissioning = load_unpacked + process + process_proc  # + stack_proc
 full_commissioning_all_boards = (
-    log_all_boards + dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards
+    load_unpacked + dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards
 )
 # commissioning_split = load_all_boards + split_images + process + \
 # process_proc_all_boards + photcal
 commissioning_split = (
-    log_all_boards
+    load_unpacked
     + split_images
     + dark_cal_all_boards
     + flat_cal_all_boards
