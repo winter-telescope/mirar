@@ -16,6 +16,9 @@ from mirar.pipelines.winter.models import RefComponents, RefQueries, RefStacks
 from mirar.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
+from mirar.processors.base_catalog_xmatch_processor import (
+    default_image_sextractor_catalog_purifier,
+)
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.references.local import RefFromPath
@@ -93,6 +96,16 @@ def winter_reference_image_resampler(**kwargs) -> Swarp:
     )
 
 
+def winter_astrostat_catalog_purifier(catalog: Table, image: Image) -> Table:
+    """
+    Default function to purify the photometric image catalog
+    """
+
+    return default_image_sextractor_catalog_purifier(
+        catalog, image, edge_width_pixels=0, fwhm_threshold_arcsec=20.0
+    )
+
+
 def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
     """
     Function to crossmatch WIRC to GAIA/2mass for photometry
@@ -102,7 +115,9 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
     """
     filter_name = image["FILTER"]
     search_radius_arcmin = (
-        np.max([image["NAXIS1"], image["NAXIS2"]]) * np.abs(image["CD1_1"]) * 60
+        np.max([image["NAXIS1"], image["NAXIS2"]])
+        * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
+        * 60
     ) / 2.0
 
     if filter_name in ["J", "H"]:
@@ -119,7 +134,7 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
             min_mag=10,
             max_mag=20,
             search_radius_arcmin=search_radius_arcmin,
-            filter_name=filter_name,
+            filter_name=filter_name.lower(),
         )
 
 
@@ -127,23 +142,10 @@ def winter_ref_photometric_img_catalog_purifier(catalog: Table, image: Image) ->
     """
     Default function to purify the photometric image catalog
     """
-    edge_width_pixels = 100
-    fwhm_threshold_arcsec = 4.0
-    x_lower_limit = edge_width_pixels
-    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
-    y_lower_limit = edge_width_pixels
-    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
 
-    clean_mask = (
-        (catalog["FLAGS"] == 0)
-        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
-        & (catalog["X_IMAGE"] > x_lower_limit)
-        & (catalog["X_IMAGE"] < x_upper_limit)
-        & (catalog["Y_IMAGE"] > y_lower_limit)
-        & (catalog["Y_IMAGE"] < y_upper_limit)
+    return default_image_sextractor_catalog_purifier(
+        catalog, image, edge_width_pixels=100, fwhm_threshold_arcsec=4.0
     )
-
-    return catalog[clean_mask]
 
 
 def winter_reference_phot_calibrator(image: Image, **kwargs) -> PhotCalibrator:

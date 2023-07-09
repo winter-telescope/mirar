@@ -3,6 +3,7 @@ Module for validating astrometric solutions
 """
 import logging
 from collections.abc import Callable
+from pathlib import Path
 
 import numpy as np
 from astropy.stats import sigma_clipped_stats
@@ -10,7 +11,19 @@ from astropy.table import Table
 
 from mirar.catalog.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
-from mirar.processors.base_catalog_xmatch_processor import BaseProcessorWithCrossMatch
+from mirar.errors import ProcessorError
+from mirar.paths import get_output_dir
+from mirar.processors.base_catalog_xmatch_processor import (
+    BaseProcessorWithCrossMatch,
+    default_image_sextractor_catalog_purifier,
+)
+
+
+class AstrometryValidateCrossmatchError(ProcessorError):
+    """
+    Class for errors in AstrometryValidate
+    """
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,29 +55,6 @@ def get_fwhm(cleaned_img_cat: Table):
     return med_fwhm, mean_fwhm, std_fwhm, med_fwhm_pix, mean_fwhm_pix, std_fwhm_pix
 
 
-def default_sextractor_catalog_purifier(catalog: Table, image: Image) -> Table:
-    """
-    Default function to purify the photometric image catalog
-    """
-    edge_width_pixels = 100
-    fwhm_threshold_arcsec = 4.0
-    x_lower_limit = edge_width_pixels
-    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
-    y_lower_limit = edge_width_pixels
-    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
-
-    clean_mask = (
-        (catalog["FLAGS"] == 0)
-        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
-        & (catalog["X_IMAGE"] > x_lower_limit)
-        & (catalog["X_IMAGE"] < x_upper_limit)
-        & (catalog["Y_IMAGE"] > y_lower_limit)
-        & (catalog["Y_IMAGE"] < y_upper_limit)
-    )
-
-    return catalog[clean_mask]
-
-
 class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
     """
     Processor to calculate astrometry statistics
@@ -73,10 +63,10 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
     def __init__(
         self,
         ref_catalog_generator: Callable[[Image], BaseCatalog],
-        temp_output_sub_dir: str = "phot",
-        image_photometric_catalog_purifier: Callable[
+        temp_output_sub_dir: str = "astrstat",
+        image_catalog_purifier: Callable[
             [Table, Image], Table
-        ] = default_sextractor_catalog_purifier,
+        ] = default_image_sextractor_catalog_purifier,
         crossmatch_radius_arcsec: float = 3.0,
         write_regions: bool = False,
         cache: bool = False,
@@ -85,7 +75,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
             ref_catalog_generator=ref_catalog_generator,
             temp_output_sub_dir=temp_output_sub_dir,
             crossmatch_radius_arcsec=crossmatch_radius_arcsec,
-            sextractor_catalog_purifier=image_photometric_catalog_purifier,
+            sextractor_catalog_purifier=image_catalog_purifier,
             write_regions=write_regions,
             cache=cache,
             required_parameters=REQUIRED_PARAMETERS,
@@ -95,9 +85,29 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
+        output_dir = get_output_dir(
+            dir_root=self.temp_output_sub_dir, sub_dir=self.night_sub_dir
+        )
+        if not Path(output_dir).exists():
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+
         for image in batch:
             ref_cat, _, cleaned_img_cat = self.setup_catalogs(image)
-            fwhm_med, _, fwhm_std, med_fwhm_pix, _, _ = get_fwhm(cleaned_img_cat)
+            if len(cleaned_img_cat) == 0:
+                warn = "No sources found after cleaning catalog"
+                logger.warning(warn)
+                fwhm_med, fwhm_std, med_fwhm_pix = -999, -999, -999
+            else:
+                fwhm_med, _, fwhm_std, med_fwhm_pix, _, _ = get_fwhm(cleaned_img_cat)
+
+                if np.isnan(fwhm_med):
+                    fwhm_med = -999
+                if np.isnan(fwhm_std):
+                    fwhm_std = -999
+                if np.isnan(med_fwhm_pix):
+                    med_fwhm_pix = -999
+
+            logger.debug(f"FWHM_MED: {fwhm_med}, {len(cleaned_img_cat)}")
             image["FWHM_MED"] = fwhm_med
             image["FWHM_STD"] = fwhm_std
             image["FWHM_PIX"] = med_fwhm_pix
@@ -108,9 +118,12 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
                 crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
             )
 
-            image.header["ASTUNC"] = np.nanmedian(d2d.value)
-            image.header["ASTFIELD"] = np.arctan(
-                image.header["CD1_2"] / image.header["CD1_1"]
-            ) * (180 / np.pi)
-
+            if len(d2d) > 0:
+                image.header["ASTUNC"] = np.nanmedian(d2d.value)
+                image.header["ASTFIELD"] = np.arctan(
+                    image.header["CD1_2"] / image.header["CD1_1"]
+                ) * (180 / np.pi)
+            else:
+                image.header["ASTUNC"] = -999
+                image.header["ASTFIELD"] = -999
         return batch

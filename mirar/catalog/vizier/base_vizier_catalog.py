@@ -11,6 +11,14 @@ from astropy.table import Table
 from astroquery.vizier import Vizier
 
 from mirar.catalog.base_catalog import BaseCatalog
+from mirar.errors import ProcessorError
+
+
+class VizierError(ProcessorError):
+    """
+    Class for errors in Vizier catalog
+    """
+
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +104,14 @@ class VizierCatalog(BaseCatalog, ABC):
 
         else:
             table = query[0]
+            logger.debug(f"Table columns are: {table.colnames}")
+            if self.get_mag_key() not in table.colnames:
+                err = (
+                    f"Magnitude column {self.get_mag_key()} not found in table."
+                    f"Available options are : {table.colnames}"
+                )
+                raise VizierError(err)
+
             table["ra"] = table[self.ra_key]
             table["dec"] = table[self.dec_key]
             table["magnitude"] = table[self.get_mag_key()]

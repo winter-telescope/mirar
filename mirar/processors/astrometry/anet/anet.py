@@ -49,7 +49,7 @@ def run_astrometry_net_single(
     sextractor_config_path: str = None,
     x_image_key: str = "X_IMAGE",
     y_image_key: str = "Y_IMAGE",
-    sort_key_name: str = "FLUX_AUTO",
+    sort_key_name: str = "MAG_AUTO",
 ):
     """
     function to run astrometry.net locally on one image, with options to adjust settings
@@ -88,7 +88,7 @@ def run_astrometry_net_single(
     if sextractor_config_path is not None:
         cmd += f"--source-extractor-config {sextractor_config_path} "
 
-    cmd += f"-X {x_image_key} -Y {y_image_key} -s {sort_key_name} "
+    cmd += f"-X {x_image_key} -Y {y_image_key} -s {sort_key_name} --sort-ascending "
 
     if parity is not None:
         assert parity in ["pos", "neg"]

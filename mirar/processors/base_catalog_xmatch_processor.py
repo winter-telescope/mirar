@@ -22,6 +22,32 @@ from mirar.processors.candidates.utils.regions_writer import write_regions_file
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 
+def default_image_sextractor_catalog_purifier(
+    catalog: Table,
+    image: Image,
+    edge_width_pixels: float = 100.0,
+    fwhm_threshold_arcsec: float = 4.0,
+) -> Table:
+    """
+    Default function to purify the photometric image catalog
+    """
+    x_lower_limit = edge_width_pixels
+    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
+    y_lower_limit = edge_width_pixels
+    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
+
+    clean_mask = (
+        (catalog["FLAGS"] == 0)
+        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
+        & (catalog["X_IMAGE"] > x_lower_limit)
+        & (catalog["X_IMAGE"] < x_upper_limit)
+        & (catalog["Y_IMAGE"] > y_lower_limit)
+        & (catalog["Y_IMAGE"] < y_upper_limit)
+    )
+
+    return catalog[clean_mask]
+
+
 class BaseProcessorWithCrossMatch(BaseImageProcessor):
     """
     Photometric calibrator processor
@@ -97,11 +123,15 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
             unit=(u.deg, u.deg),
         )
 
+        logger.debug(
+            f"Cross-matching catalog to the image with radius "
+            f"{crossmatch_radius_arcsec} arcsec."
+        )
         idx, d2d, _ = ref_coords.match_to_catalog_sky(img_coords)
         match_mask = d2d < crossmatch_radius_arcsec * u.arcsec
         matched_ref_cat = ref_cat[match_mask]
         matched_img_cat = image_cat[idx[match_mask]]
-        logger.info(
+        logger.debug(
             f"Cross-matched {len(matched_img_cat)} sources from catalog to the image."
         )
 

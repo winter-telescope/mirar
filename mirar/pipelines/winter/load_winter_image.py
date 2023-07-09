@@ -49,7 +49,7 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
     logger.debug(f"Loading {path}")
     with fits.open(path) as img:
         # pylint: disable=E1101
-        data = img[0].data
+        data = img[0].data  # pylint: disable=no-member
         header = img[0].header
 
         header["UNIQTYPE"] = f"{header['OBSTYPE']}_{header['BOARD_ID']}"
@@ -136,7 +136,7 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
             pass
 
         if header["BOARD_ID"] == 2:
-            data[1085:, :] = np.nan
+            data[1060:, :] = np.nan
             data[:, 1970:] = np.nan
             data[:55, :] = np.nan
             data[:, :20] = np.nan
@@ -181,8 +181,8 @@ def load_proc_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.
     """
     logger.debug(f"Loading {path}")
     with fits.open(path) as img:
-        data = img[0].data
-        header = img[0].header
+        data = img[0].data  # pylint: disable=no-member
+        header = img[0].header  # pylint: disable=no-member
         if "weight" in path:
             header["OBSTYPE"] = "weight"
 
@@ -199,8 +199,8 @@ def load_stacked_winter_image(
     """
     logger.info(f"Loading {path}")
     with fits.open(path) as img:
-        data = img[0].data
-        header = img[0].header
+        data = img[0].data  # pylint: disable=no-member
+        header = img[0].header  # pylint: disable=no-member
         if "weight" in path:
             header["OBSTYPE"] = "weight"
 

@@ -17,7 +17,10 @@ from mirar.errors import ProcessorError
 from mirar.paths import get_output_dir
 from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkimg_map
 from mirar.processors.astrometry.validate import get_fwhm
-from mirar.processors.base_catalog_xmatch_processor import BaseProcessorWithCrossMatch
+from mirar.processors.base_catalog_xmatch_processor import (
+    BaseProcessorWithCrossMatch,
+    default_image_sextractor_catalog_purifier,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,29 +55,6 @@ class PhotometryCrossMatchError(PhotometryError):
 
 class PhotometryCalculationError(PhotometryError):
     """Error related to the photometric calibration"""
-
-
-def default_photometric_img_catalog_purifier(catalog: Table, image: Image) -> Table:
-    """
-    Default function to purify the photometric image catalog
-    """
-    edge_width_pixels = 100
-    fwhm_threshold_arcsec = 4.0
-    x_lower_limit = edge_width_pixels
-    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
-    y_lower_limit = edge_width_pixels
-    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
-
-    clean_mask = (
-        (catalog["FLAGS"] == 0)
-        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
-        & (catalog["X_IMAGE"] > x_lower_limit)
-        & (catalog["X_IMAGE"] < x_upper_limit)
-        & (catalog["Y_IMAGE"] > y_lower_limit)
-        & (catalog["Y_IMAGE"] < y_upper_limit)
-    )
-
-    return catalog[clean_mask]
 
 
 def get_maglim(
@@ -117,7 +97,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         temp_output_sub_dir: str = "phot",
         image_photometric_catalog_purifier: Callable[
             [Table, Image], Table
-        ] = default_photometric_img_catalog_purifier,
+        ] = default_image_sextractor_catalog_purifier,
         num_matches_threshold: int = 5,
         crossmatch_radius_arcsec: float = 1.0,
         write_regions: bool = False,
