@@ -259,7 +259,8 @@ process_proc = [
 process_proc_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
-    ImageSelector(("FIELDID", "2789")),
+    ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
+    # ImageSelector(("FIELDID", "2789")),
     ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
@@ -504,7 +505,15 @@ commissioning_split_single_board = (
 
 commissioning_split = (
     load_unpacked
-    + split_images
+    + dark_cal_all_boards
+    + flat_cal_all_boards
+    + process_proc_all_boards
+    + photcal
+)
+# commissioning_split = load_all_boards + split_images + process + \
+# process_proc_all_boards + photcal
+commissioning_split = (
+    load_unpacked
     + dark_cal_all_boards
     + flat_cal_all_boards
     + process_proc_all_boards
