@@ -189,6 +189,9 @@ class ImageDebatcher(BaseImageProcessor):
     ) -> ImageBatch:
         return batch
 
+    def __str__(self) -> str:
+        return "Processor to combine all images into a single ImageBatch"
+
     def update_dataset(self, dataset: Dataset) -> Dataset:
         combo_batch = ImageBatch()
 
