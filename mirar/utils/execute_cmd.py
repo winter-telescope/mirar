@@ -3,7 +3,6 @@ Module for executing bash commands
 """
 import logging
 import os
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -26,7 +25,7 @@ class ExecutionError(Exception):
 DEFAULT_TIMEOUT = 300.0
 
 
-def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT):
+def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
     """
     Function to run on local machine using subprocess, with error handling.
 
@@ -38,7 +37,6 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT)
     cmd: A string containing the command you want to use to run sextractor.
     An example would be:
         cmd = '/usr/bin/source-extractor image0001.fits -c sex.config'
-    output_dir: A local directory to save the output files to.
     timeout: Time to timeout in seconds
 
     Returns
@@ -47,15 +45,7 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT)
     """
 
     try:
-        # See what files are in the directory beforehand
-
-        ignore_files = (
-            subprocess.run("ls", check=True, capture_output=True)
-            .stdout.decode()
-            .split("\n")
-        )
-
-        # Run sextractor
+        # Run command
 
         rval = subprocess.run(
             cmd, check=True, capture_output=True, shell=True, timeout=timeout
@@ -66,41 +56,6 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT)
         if rval.stdout.decode() != "":
             msg += f"Found the following output: {rval.stdout.decode()}"
         logger.debug(msg)
-
-        try:
-            os.makedirs(output_dir)
-        except OSError:
-            pass
-
-        # Move new files to output dir
-
-        new_files = [
-            x
-            for x in subprocess.run("ls", check=True, capture_output=True)
-            .stdout.decode()
-            .split("\n")
-            if x not in ignore_files
-        ]
-
-        current_dir = (
-            subprocess.run("pwd", check=True, capture_output=True)
-            .stdout.decode()
-            .strip()
-        )
-
-        if len(new_files) > 0:
-            logger.debug(
-                f"The following new files were created in the current directory: "
-                f"{new_files}"
-            )
-
-        for file in new_files:
-            current_path = os.path.join(current_dir, file)
-            output_path = os.path.join(output_dir, file)
-
-            logger.info(f"File saved to {output_path}")
-
-            shutil.move(current_path, output_path)
 
     except subprocess.CalledProcessError as err:
         msg = (
@@ -285,7 +240,7 @@ def execute(
     Generically execute a command either via bash or a docker container
 
     :param cmd: command
-    :param output_dir: output directory for command
+    :param output_dir: output directory for docker
     :param local: boolean whether use local or docker
     :param timeout: timeout for local execution
     :return: None
@@ -294,6 +249,6 @@ def execute(
         f"Using '{['docker', 'local'][local]}' " f" installation to run `{cmd}`"
     )
     if local:
-        run_local(cmd, output_dir=output_dir, timeout=timeout)
+        run_local(cmd, timeout=timeout)
     else:
         run_docker(cmd, output_dir=output_dir)
