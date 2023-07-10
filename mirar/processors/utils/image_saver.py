@@ -49,7 +49,7 @@ class ImageSaver(BaseImageProcessor):
         for image in batch:
             path = output_dir.joinpath(image[BASE_NAME_KEY])
             image[LATEST_SAVE_KEY] = str(path)
-            image["DATE"] = Time.now()
+            image["DATE"] = Time.now().isot
 
             if self.write_mask:
                 self.save_mask_image(image, img_path=path)
