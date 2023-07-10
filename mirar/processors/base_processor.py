@@ -15,14 +15,22 @@ from threading import Thread
 import numpy as np
 from tqdm.auto import tqdm
 
-from mirar.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
+from mirar.data import (
+    DataBatch,
+    Dataset,
+    Image,
+    ImageBatch,
+    MEFImage,
+    MEFImageBatch,
+    SourceBatch,
+)
 from mirar.errors import (
     ErrorReport,
     ErrorStack,
     NoncriticalProcessingError,
     ProcessorError,
 )
-from mirar.io import check_image_has_core_fields, open_fits, save_to_path
+from mirar.io import check_image_has_core_fields, open_fits, open_mef_fits, save_mef_to_path, save_to_path
 from mirar.paths import (
     BASE_NAME_KEY,
     CAL_OUTPUT_SUB_DIR,
@@ -356,6 +364,52 @@ class ImageHandler:
         return hashlib.sha1(key.encode()).hexdigest()
 
 
+class MEFImageHandler:
+    """
+    Base class for handling images
+    """
+
+    @staticmethod
+    def open_fits(path: str | Path) -> MEFImage:
+        """
+        Opens a MEF fits file, and returns an Image object
+
+        :param path: Path of image
+        :return: Image object
+        """
+        path = str(path)
+        primary_header, ext_datalist, ext_headerlist = open_mef_fits(path)
+        if RAW_IMG_KEY not in primary_header:
+            primary_header[RAW_IMG_KEY] = path
+        if BASE_NAME_KEY not in primary_header:
+            primary_header[BASE_NAME_KEY] = Path(path).name
+        return MEFImage(
+            primary_header=primary_header,
+            ext_data_list=ext_datalist,
+            ext_header_list=ext_headerlist,
+        )
+
+    @staticmethod
+    def save_fits(
+        mef_image: MEFImage,
+        path: str | Path,
+    ):
+        """
+        Save a MEFImage to path
+
+        :param image: MEFImage to save
+        :param path: path
+        :return: None
+        """
+        path = str(path)
+        data_list = mef_image.ext_data_list
+        header_list = mef_image.ext_header_list
+        primary_header = mef_image.primary_header
+        primary_header[LATEST_SAVE_KEY] = path
+        logger.debug(f"Saving to {path}")
+        save_mef_to_path(data_list, header_list, primary_header, path)
+
+
 class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
     """
     Base processor handling images in/images out
@@ -367,6 +421,21 @@ class BaseImageProcessor(BaseProcessor, ImageHandler, ABC):
     def _apply_to_images(
         self,
         batch: ImageBatch,
+    ) -> ImageBatch:
+        raise NotImplementedError
+
+
+class BaseMEFImageProcessor(BaseProcessor, MEFImageHandler, ABC):
+    """
+    Base processor handling images in/images out
+    """
+
+    def _apply(self, batch: MEFImageBatch) -> MEFImageBatch:
+        return self._apply_to_images(batch)
+
+    def _apply_to_images(
+        self,
+        batch: MEFImageBatch,
     ) -> ImageBatch:
         raise NotImplementedError
 
