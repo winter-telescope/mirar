@@ -267,7 +267,6 @@ process_proc_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
-    # # ImageSelector(("FIELDID", "2789")),
     ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
