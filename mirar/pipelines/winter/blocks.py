@@ -25,8 +25,12 @@ from mirar.pipelines.winter.load_winter_image import (
     load_proc_winter_image,
     load_raw_winter_image,
     load_stacked_winter_image,
+    load_winter_mef_image,
 )
 from mirar.processors.astromatic import PSFex, Scamp
+
+from mirar.pipelines.winter.models import Exposures, Proc, Raw
+from mirar.processors.astromatic import Scamp
 from mirar.processors.astromatic.sextractor.sextractor import (
     Sextractor,
     sextractor_checkimg_map,
@@ -41,6 +45,8 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
 from mirar.processors.split import SUB_ID_KEY, SplitImage
+from mirar.processors.split import SplitImage
+from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from mirar.processors.utils import (
     HeaderAnnotator,
     ImageBatcher,
@@ -48,9 +54,11 @@ from mirar.processors.utils import (
     ImageLoader,
     ImageSaver,
     ImageSelector,
+    MEFImageLoader,
 )
 from mirar.processors.utils.multi_ext_parser import MultiExtParser
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
+from mirar.processors.utils.multi_ext_parser import MEFImageSplitter, MultiExtParser
 
 refbuild = [
     ImageDebatcher(),
@@ -85,6 +93,10 @@ load = [
     ImageSelector(("OBSTYPE", ["FOCUS", "DARK", "FLAT", "SCIENCE"])),
 ]
 
+export_raw = [
+    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False)
+]
+
 split_images = [
     ImageDebatcher(),
     SplitImage(n_x=1, n_y=2),
@@ -115,6 +127,13 @@ load_stack = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
     # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
     ImageBatcher("EXPTIME"),
+]
+
+export_exposures = [
+    MEFImageLoader(input_sub_dir="raw", load_image=load_winter_mef_image),
+    DatabaseImageExporter(db_table=Exposures, duplicate_protocol="ignore"),
+    MEFImageSplitter(extension_num_header_key="BOARD_ID"),
+    ImageSaver(output_dir_name="unpacked"),
 ]
 
 load_multiboard_stack = [
@@ -261,6 +280,10 @@ process_proc = [
         center_type="ALL",
         temp_output_sub_dir=f"stack_all_{TARGET_NAME}",
     ),
+]
+
+export_proc = [
+    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False)
 ]
 
 process_proc_all_boards = [
@@ -545,4 +568,10 @@ commissioning_split = (
     + photcal
 )
 
+<<<<<<< HEAD
 reduce = unpack_all + full_commissioning_proc
+=======
+export_db = export_exposures
+# commissioning_split = load_all_boards + split_images + process + \
+# process_proc_all_boards + photcal
+>>>>>>> c03f7c3d (blocks for exporting to exposures database)
