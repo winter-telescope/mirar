@@ -164,6 +164,7 @@ def run_winter_reference_build_pipeline(
     full_dec_size_deg: float = 1.2,
     field_id: int | None = None,
     subdet_id: int | None = None,
+    catch_all_errors: bool = True,
 ):
     """
     Run the reference build pipeline on the winter fields
@@ -174,6 +175,7 @@ def run_winter_reference_build_pipeline(
         full_dec_size_deg: Full declination size of the field in degrees
         field_id: Run only for this fieldid (for debugging)
         subdet_id: Run only for this subdetid (for debugging)
+        catch_all_errors: Catch all errors and continue
     Returns:
 
     """
@@ -219,7 +221,7 @@ def run_winter_reference_build_pipeline(
 
         res, errorstack = pipeline.reduce_images(
             dataset=dataset,
-            catch_all_errors=True,
+            catch_all_errors=catch_all_errors,
         )
 
         if len(res) == 0:
