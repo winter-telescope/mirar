@@ -81,7 +81,7 @@ class RegionsWriter(BaseDataframeProcessor):
                     output_dir=self.output_dir,
                 )
 
-                regions_path.mkdir(parents=True, exist_ok=True)
+                regions_path.parent.mkdir(parents=True, exist_ok=True)
 
                 if regions_path not in started_regions_paths:
                     logger.debug(f"Writing regions path to {regions_path}")
