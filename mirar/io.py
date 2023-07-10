@@ -38,7 +38,7 @@ def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU
 
 def save_hdu_as_fits(hdu: fits.PrimaryHDU, path: str | Path, overwrite: bool = True):
     """
-    Wrapper hunction to save an astropy hdu to file
+    Wrapper function to save an astropy hdu to file
 
     :param hdu: hdu to save
     :param path: path to save
@@ -78,6 +78,7 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     """
     with fits.open(path) as img:
         hdu = img.pop(0)
+        hdu.verify("silentfix+ignore")
         data = hdu.data
         header = hdu.header
 
@@ -131,7 +132,7 @@ def check_image_has_core_fields(img: Image):
         if key not in img.keys():
             err = (
                 f"New image is missing the core field {key}. "
-                f"Available fields are {[x for x in img.keys()]}."
+                f"Available fields are {list(img.keys())}."
             )
             logger.error(err)
             raise MissingCoreFieldError(err)

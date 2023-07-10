@@ -58,7 +58,7 @@ def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks)
     logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
     db_results = db_table.sql_model().select_query(
         select_keys=["savepath"],
-        compare_keys=["fieldid", "subdetid"],
+        compare_keys=["fieldid", SUB_ID_KEY.lower()],
         compare_values=[fieldid, subdetid],
         comparators=["__eq__", "__eq__"],
     )

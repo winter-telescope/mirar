@@ -15,6 +15,7 @@ from mirar.data.utils import plot_fits_image
 from mirar.paths import BASE_NAME_KEY, core_fields, get_output_dir
 from mirar.pipelines.winter.winter_pipeline import WINTERPipeline
 from mirar.processors.candidates.utils import get_corners_ra_dec_from_header
+from mirar.processors.split import SUB_ID_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ def dummy_split_image_batch_generator(
 
             hdu.header["FIELDID"] = int(fieldid)
             subdet = int(iind * len(np.arange(-ny + 1, ny + 1, 2)) + jind)
-            hdu.header["SUBDETID"] = subdet
+            hdu.header[SUB_ID_KEY] = subdet
             hdu.header[BASE_NAME_KEY] = f"field{fieldid}_subdet{subdet}.fits"
 
             image = Image(header=hdu.header, data=data)
@@ -207,12 +208,12 @@ def run_winter_reference_build_pipeline(
             full_dec_size_deg=full_dec_size_deg,
         )
 
-        subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
+        subdetids = np.array([x.header[SUB_ID_KEY] for x in split_image_batch])
         if subdet_id is not None:
             split_image_batch = [
                 split_image_batch[np.where(subdetids == subdet_id)[0][0]]
             ]
-        subdetids = np.array([x.header["SUBDETID"] for x in split_image_batch])
+        subdetids = np.array([x.header[SUB_ID_KEY] for x in split_image_batch])
 
         dataset = Dataset([ImageBatch(x) for x in split_image_batch])
 
@@ -236,7 +237,7 @@ def run_winter_reference_build_pipeline(
                 plots_dir.mkdir(parents=True)
 
             for res_image in res[0]:
-                subdet_id = np.where(subdetids == int(res_image.header["SUBDETID"]))[0][
+                subdet_id = np.where(subdetids == int(res_image.header[SUB_ID_KEY]))[0][
                     0
                 ]
                 split_image = split_image_batch[subdet_id]
