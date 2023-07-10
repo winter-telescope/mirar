@@ -6,6 +6,7 @@ import os
 from collections.abc import Callable
 from glob import glob
 from pathlib import Path
+from typing import Type
 
 import astropy.io.fits
 import numpy as np
@@ -21,6 +22,16 @@ from mirar.io import (
 )
 from mirar.paths import RAW_IMG_KEY, RAW_IMG_SUB_DIR, base_raw_dir
 from mirar.processors.base_processor import BaseImageProcessor
+from mirar.data import BaseImageBatch, BaseImageData, Image, ImageBatch, MEFImageBatch
+from mirar.data.image_data import MEFImage
+from mirar.errors import ImageNotFoundError
+from mirar.io import check_file_is_complete, open_fits, open_mef_fits
+from mirar.paths import RAW_IMG_KEY, RAW_IMG_SUB_DIR, base_raw_dir, core_fields
+from mirar.processors.base_processor import (
+    BaseImageProcessor,
+    BaseMEFImageProcessor,
+    BaseProcessor,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +39,47 @@ logger = logging.getLogger(__name__)
 class BadImageError(ProcessorError):
     """Exception for bad images"""
 
+class BaseImageLoader(BaseProcessor):
+    """Base class for image loaders."""
 
-class ImageLoader(BaseImageProcessor):
+    @property
+    def image_type(self) -> Type[BaseImageData]:
+        """
+        Type of image to load
+        """
+        raise NotImplementedError
+
+    def __init__(
+        self,
+        input_sub_dir: str = RAW_IMG_SUB_DIR,
+        input_img_dir: str = base_raw_dir,
+    ):
+        super().__init__()
+        self.input_sub_dir = input_sub_dir
+        self.input_img_dir = input_img_dir
+
+    def open_raw_image(self, path: str) -> BaseImageData:
+        """
+        Function to open a raw image
+        """
+        raise NotImplementedError
+
+    def _apply_to_images(self, batch: BaseImageBatch) -> BaseImageBatch:
+        input_dir = os.path.join(
+            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
+        )
+
+        return load_from_dir(
+            input_dir, open_f=self.open_raw_image, dtype=self.image_type
+        )
+
+
+class ImageLoader(BaseImageLoader, BaseImageProcessor):
     """Processor to load raw images."""
 
     base_key = "load"
+
+    image_type = Image
 
     def __init__(
         self,
@@ -40,10 +87,8 @@ class ImageLoader(BaseImageProcessor):
         input_img_dir: str = base_raw_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
     ):
-        super().__init__()
-        self.input_sub_dir = input_sub_dir
+        super().__init__(input_sub_dir, input_img_dir)
         self.load_image = load_image
-        self.input_img_dir = input_img_dir
 
     def __str__(self):
         return (
@@ -69,17 +114,10 @@ class ImageLoader(BaseImageProcessor):
 
         return new_img
 
-    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-        input_dir = os.path.join(
-            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
-        )
-
-        return load_from_dir(input_dir, open_f=self.open_raw_image)
-
 
 def load_from_dir(
-    input_dir: str | Path, open_f: Callable[[str | Path], Image]
-) -> ImageBatch:
+    input_dir: str | Path, open_f: Callable[[str | Path], BaseImageData], dtype: type
+) -> BaseImageBatch:
     """
     Function to load all images in a directory
 
@@ -102,8 +140,12 @@ def load_from_dir(
         logger.error(err)
         raise ImageNotFoundError(err)
 
-    images = ImageBatch()
 
+    if dtype == Image:
+        images = ImageBatch()
+    elif dtype == MEFImage:
+        images = MEFImageBatch()
+    logger.debug(f"Dtype is {dtype}")
     for path in tqdm(img_list):
         if check_file_is_complete(path):
             image = open_f(path)
@@ -172,3 +214,48 @@ class LoadImageFromHeader(BaseImageProcessor):
             new_batch.append(new_image)
 
         return new_batch
+
+
+class MEFImageLoader(BaseImageLoader, BaseMEFImageProcessor):
+    """Processor to load MEF images."""
+
+    base_key = "load_mef"
+    image_type = MEFImage
+
+    def __init__(
+        self,
+        input_sub_dir: str = RAW_IMG_SUB_DIR,
+        input_img_dir: str = base_raw_dir,
+        load_image: Callable[
+            [str],
+            [astropy.io.fits.Header, list[np.ndarray], list[astropy.io.fits.Header]],
+        ] = open_mef_fits,
+    ):
+        super().__init__(input_sub_dir, input_img_dir)
+        self.load_image = load_image
+
+    def open_raw_image(self, path: str | Path) -> MEFImage:
+        """
+        Function to open a raw image as an Image object
+
+        :param path: path of raw image
+        :return: Image object
+        """
+        primary_header, data_list, header_list = self.load_image(path)
+
+        for key in core_fields:
+            if key not in primary_header.keys():
+                err = (
+                    f"Essential key {key} not found in header. "
+                    f"Please add this field first. Available fields are: "
+                    f"{list(primary_header.keys())}"
+                )
+                logger.error(err)
+                raise KeyError(err)
+
+        data_list = [x.astype(np.float64) for x in data_list]
+        return MEFImage(
+            primary_header=primary_header,
+            ext_data_list=data_list,
+            ext_header_list=header_list,
+        )
