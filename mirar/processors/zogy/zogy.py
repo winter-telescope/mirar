@@ -444,9 +444,9 @@ class ZOGY(ZOGYPrepare):
             image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
                 image[self.sci_zp_header_key]
             )
-            # image["SCORMEAN"] = scorr_mean FIXME
-            # image["SCORMED"] = scorr_median
-            # image["SCORSTD"] = scorr_std
+            image["SCORMEAN"] = scorr_mean
+            image["SCORMED"] = scorr_median
+            image["SCORSTD"] = scorr_std
 
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
 

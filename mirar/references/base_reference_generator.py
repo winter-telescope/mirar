@@ -8,20 +8,34 @@ from typing import Type
 
 import numpy as np
 from astropy.io import fits
+from astropy.time import Time
 
 from mirar.data import Image, ImageBatch
-from mirar.io import save_hdu_as_fits
+from mirar.errors import ProcessorError
+from mirar.io import (
+    MissingCoreFieldError,
+    check_image_has_core_fields,
+    save_hdu_as_fits,
+)
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
     LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
+    OBSCLASS_KEY,
+    PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
+    RAW_IMG_KEY,
+    TARGET_KEY,
 )
 from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 
 logger = logging.getLogger(__name__)
+
+
+class ReferenceGenerationError(ProcessorError):
+    """Error for reference generation"""
 
 
 class BaseReferenceGenerator:
@@ -102,6 +116,18 @@ class BaseReferenceGenerator:
         logger.debug(f"Saving reference image to {output_path}")
         ref_hdu.header[BASE_NAME_KEY] = os.path.basename(output_path)
         ref_hdu.header[LATEST_SAVE_KEY] = output_path.as_posix()
+        ref_hdu.header[RAW_IMG_KEY] = image[BASE_NAME_KEY]
+        ref_hdu.header[OBSCLASS_KEY] = "REF"
+        ref_hdu.header[TARGET_KEY] = image[TARGET_KEY]
+        ref_hdu.header[PROC_FAIL_KEY] = False
+
+        if ("MJD-OBS" in ref_hdu.header.keys()) & (
+            "DATE-OBS" not in ref_hdu.header.keys()
+        ):
+            ref_hdu.header["DATE-OBS"] = Time(
+                ref_hdu.header["MJD-OBS"], format="mjd"
+            ).isot
+
         ref_hdu.data[ref_hdu.data == 0] = np.nan  # pylint: disable=no-member
 
         if ref_weight_hdu is not None:
@@ -115,6 +141,12 @@ class BaseReferenceGenerator:
 
             save_hdu_as_fits(ref_weight_hdu, output_weight_path)
             ref_hdu.header[LATEST_WEIGHT_SAVE_KEY] = output_weight_path.as_posix()
+
+        # Reference images should have all the core fields
+        try:
+            check_image_has_core_fields(Image(header=ref_hdu.header, data=ref_hdu.data))
+        except MissingCoreFieldError as err:
+            raise ReferenceGenerationError from err
 
         save_hdu_as_fits(ref_hdu, output_path)
 

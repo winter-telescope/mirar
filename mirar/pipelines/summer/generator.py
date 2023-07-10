@@ -116,7 +116,7 @@ def summer_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     :return: Reference image generator
     """
     filter_name = image["FILTER"]
-    logger.info(f"Filter is {filter_name}")
+    logger.debug(f"Filter is {filter_name}")
 
     if filter_name in ["u", "U"]:
         if in_sdss(image["RA"], image["DEC"]):

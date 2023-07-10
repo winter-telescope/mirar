@@ -4,6 +4,7 @@ Python script containing all IO functions.
 All opening/writing of fits files should run via this script.
 """
 
+import logging
 import warnings
 from pathlib import Path
 
@@ -11,7 +12,14 @@ import numpy as np
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 
-from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY
+from mirar.data import Image
+from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY, core_fields
+
+logger = logging.getLogger(__name__)
+
+
+class MissingCoreFieldError(KeyError):
+    """Base class for missing core field errors"""
 
 
 def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU:
@@ -110,3 +118,20 @@ def check_file_is_complete(path: str) -> bool:
             pass
 
     return check
+
+
+def check_image_has_core_fields(img: Image):
+    """
+    Function to ensure that an image has all the core fields
+
+    :param img: Image object to check
+    :return: None
+    """
+    for key in core_fields:
+        if key not in img.keys():
+            err = (
+                f"New image is missing the core field {key}. "
+                f"Available fields are {[x for x in img.keys()]}."
+            )
+            logger.error(err)
+            raise MissingCoreFieldError(err)

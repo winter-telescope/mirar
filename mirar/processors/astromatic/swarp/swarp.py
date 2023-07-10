@@ -10,6 +10,7 @@ from astropy.wcs import WCS
 
 from mirar.data import ImageBatch
 from mirar.errors import ProcessorError
+from mirar.io import MissingCoreFieldError, check_image_has_core_fields
 from mirar.paths import (
     BASE_NAME_KEY,
     EXPTIME_KEY,
@@ -21,7 +22,6 @@ from mirar.paths import (
     TIME_KEY,
     all_astrometric_keywords,
     copy_temp_file,
-    core_fields,
     get_output_dir,
     get_temp_path,
 )
@@ -391,14 +391,11 @@ class Swarp(BaseImageProcessor):
         new_image[BASE_NAME_KEY] = output_image_path.name
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.as_posix()
 
-        for key in core_fields:
-            if key not in new_image.keys():
-                err = (
-                    f"New image is missing the core field {key}. "
-                    f"Available fields are {new_image.keys()}."
-                )
-                logger.error(err)
-                raise SwarpError(err)
+        # Reference images should have all the core fields
+        try:
+            check_image_has_core_fields(new_image)
+        except MissingCoreFieldError as err:
+            raise SwarpError from err
 
         if not self.cache:
             for temp_file in temp_files:

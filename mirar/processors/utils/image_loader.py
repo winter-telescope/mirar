@@ -11,12 +11,21 @@ import astropy.io.fits
 import numpy as np
 
 from mirar.data import Image, ImageBatch
-from mirar.errors import ImageNotFoundError
-from mirar.io import check_file_is_complete, open_fits
-from mirar.paths import RAW_IMG_KEY, RAW_IMG_SUB_DIR, base_raw_dir, core_fields
+from mirar.errors import ImageNotFoundError, ProcessorError
+from mirar.io import (
+    MissingCoreFieldError,
+    check_file_is_complete,
+    check_image_has_core_fields,
+    open_fits,
+)
+from mirar.paths import RAW_IMG_KEY, RAW_IMG_SUB_DIR, base_raw_dir
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
+
+
+class BadImageError(ProcessorError):
+    """Exception for bad images"""
 
 
 class ImageLoader(BaseImageProcessor):
@@ -50,17 +59,14 @@ class ImageLoader(BaseImageProcessor):
         """
         data, header = self.load_image(path)
 
-        for key in core_fields:
-            if key not in header.keys():
-                err = (
-                    f"Essential key {key} not found in header. "
-                    f"Please add this field first. Available fields are: "
-                    f"{list(header.keys())}"
-                )
-                logger.error(err)
-                raise KeyError(err)
+        new_img = Image(data.astype(np.float64), header)
 
-        return Image(data.astype(np.float64), header)
+        try:
+            check_image_has_core_fields(new_img)
+        except MissingCoreFieldError as err:
+            raise BadImageError from err
+
+        return new_img
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         input_dir = os.path.join(
@@ -156,6 +162,12 @@ class LoadImageFromHeader(BaseImageProcessor):
             if self.copy_header_keys is not None:
                 for key in self.copy_header_keys:
                     new_image.header[key] = image.header[key]
+
+            try:
+                check_image_has_core_fields(new_image)
+            except MissingCoreFieldError as err:
+                raise BadImageError from err
+
             new_batch.append(new_image)
 
         return new_batch
