@@ -15,6 +15,9 @@ from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
+# Disable astroquery warnings
+logging.getLogger("astroquery").setLevel(logging.WARNING)
+
 
 class Gaia2Mass(BaseCatalog):
     """
@@ -68,7 +71,7 @@ class Gaia2Mass(BaseCatalog):
         ra_deg: float,
         dec_deg: float,
     ) -> astropy.table.Table:
-        logger.info(
+        logger.debug(
             f"Querying 2MASS - Gaia cross-match around RA {ra_deg:.4f}, "
             f"Dec {dec_deg:.4f} with a radius of {self.search_radius_arcmin:.4f} arcmin"
         )
@@ -96,7 +99,7 @@ class Gaia2Mass(BaseCatalog):
         src_list["FLAGS"] = 0
         src_list["magnitude"] = src_list[f"{self.filter_name.lower()}_m"]
         src_list["magnitude_err"] = src_list[f"{self.filter_name.lower()}_msigcom"]
-        logger.info(f"Found {len(src_list)} sources in Gaia")
+        logger.debug(f"Found {len(src_list)} sources in Gaia")
 
         j_phquals = [x[0] for x in src_list["ph_qual"]]
         h_phquals = [x[0] for x in src_list["ph_qual"]]
@@ -120,7 +123,7 @@ class Gaia2Mass(BaseCatalog):
 
             image_catalog = get_table_from_ldac(self.image_catalog_path)
             src_list = self.trim_catalog(src_list, image_catalog)
-            logger.info(f"Trimmed to {len(src_list)} sources in Gaia")
+            logger.debug(f"Trimmed to {len(src_list)} sources in Gaia")
 
         return src_list
 

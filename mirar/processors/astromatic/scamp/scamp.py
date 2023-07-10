@@ -28,7 +28,7 @@ from mirar.utils import execute
 
 logger = logging.getLogger(__name__)
 
-scamp_header_key = "SCMPHEAD"
+SCAMP_HEADER_KEY = "SCMPHEAD"
 
 
 def run_scamp(
@@ -90,7 +90,8 @@ class Scamp(BaseImageProcessor):
 
         """
         return (
-            "Processor to apply Scamp to images, calculating more precise astrometry."
+            f"Processor to apply Scamp to images and calculate astrometry, "
+            f"using the config at {self.scamp_config}."
         )
 
     def get_scamp_output_dir(self) -> Path:
@@ -122,7 +123,7 @@ class Scamp(BaseImageProcessor):
 
         out_files = []
 
-        with open(scamp_image_list_path, "w") as f:
+        with open(scamp_image_list_path, "w", encoding="utf8") as img_list_f:
             for image in batch:
                 temp_cat_path = copy_temp_file(
                     output_dir=scamp_output_dir, file_path=image[SEXTRACTOR_HEADER_KEY]
@@ -131,7 +132,7 @@ class Scamp(BaseImageProcessor):
                 temp_img_path = get_temp_path(scamp_output_dir, image[BASE_NAME_KEY])
                 self.save_fits(image, temp_img_path)
                 temp_mask_path = self.save_mask_image(image, temp_img_path)
-                f.write(f"{temp_cat_path}\n")
+                img_list_f.write(f"{temp_cat_path}\n")
                 temp_files += [temp_cat_path, temp_img_path, temp_mask_path]
 
                 out_path = Path(os.path.splitext(temp_cat_path)[0]).with_suffix(".head")
@@ -156,8 +157,8 @@ class Scamp(BaseImageProcessor):
             image = batch[i]
             new_out_path = get_untemp_path(out_path)
             shutil.move(out_path, new_out_path)
-            image[scamp_header_key] = str(new_out_path).strip()
-            logger.info(f"Saved to {new_out_path}")
+            image[SCAMP_HEADER_KEY] = str(new_out_path).strip()
+            logger.debug(f"Saved to {new_out_path}")
             batch[i] = image
 
         return batch

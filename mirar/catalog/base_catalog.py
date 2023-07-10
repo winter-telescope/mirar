@@ -76,7 +76,7 @@ class BaseCatalog(ABCatalog, ABC):
         output_path = self.get_output_path(output_dir, base_name)
         output_path.unlink(missing_ok=True)
 
-        logger.info(f"Saving catalog to {output_path}")
+        logger.debug(f"Saving catalog to {output_path}")
 
         save_table_as_ldac(cat, output_path)
 

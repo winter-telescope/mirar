@@ -13,6 +13,7 @@ from queue import Queue
 from threading import Thread
 
 import numpy as np
+from tqdm.auto import tqdm
 
 from mirar.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
 from mirar.errors import (
@@ -73,8 +74,12 @@ class BaseProcessor:
         self.night = None
         self.night_sub_dir = None
         self.preceding_steps = None
+
+        # For caching/multithreading
         self.passed_dataset = {}
         self.err_stack = {}
+        self.n_count = {}
+        self.progress = {}
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -170,10 +175,21 @@ class BaseProcessor:
 
                 workers.append(worker)
 
-            for batch in dataset:
-                watchdog_queue.put(item=batch)
+            with tqdm(total=len(dataset), position=0, leave=False) as progress:
+                # Set up progress bar
+                self.n_count[cache_id] = 0
+                self.progress[cache_id] = progress
+                self.progress[cache_id].update(self.n_count[cache_id])
 
-            watchdog_queue.join()
+                # Loop over batches to add to queue
+                for batch in dataset:
+                    watchdog_queue.put(item=batch)
+
+                # Wait for the queue to empty
+                watchdog_queue.join()
+
+                self.progress[cache_id].refresh()
+                self.progress[cache_id].close()
 
         dataset = self.update_dataset(self.passed_dataset[cache_id])
         err_stack = self.err_stack[cache_id]
@@ -205,6 +221,11 @@ class BaseProcessor:
                 err = self.generate_error_report(exc, batch)
                 logger.error(err.generate_log_message())
                 self.err_stack[cache_id].add_report(err)
+
+            self.n_count[cache_id] += 1
+            self.progress[cache_id].update(self.n_count[cache_id])
+            self.progress[cache_id].refresh()
+
             queue.task_done()
 
     def apply(self, batch: DataBatch):
@@ -417,7 +438,7 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         exists = path.exists()
 
         if np.logical_and(self.try_load_cache, exists):
-            logger.info(f"Loading cached file {path}")
+            logger.debug(f"Loading cached file {path}")
             return self.open_fits(path)
 
         image = self.make_image(images)

@@ -37,6 +37,7 @@ def save_hdu_as_fits(hdu: fits.PrimaryHDU, path: str | Path, overwrite: bool = T
     :param overwrite: boolean whether to overwrite
     :return: None
     """
+    hdu.verify("silentfix+exception")
     hdu.writeto(path, overwrite=overwrite)
 
 
