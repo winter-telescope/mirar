@@ -13,6 +13,7 @@ from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
+from mirar.io import open_mef_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
@@ -20,6 +21,9 @@ from mirar.paths import (
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
 )
+from mirar.pipelines.winter.constants import itid_dict, winter_filters_map
+from mirar.pipelines.winter.models._fields import DEFAULT_FIELD
+from mirar.pipelines.winter.models._programs import default_program
 
 logger = logging.getLogger(__name__)
 
@@ -56,18 +60,12 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
 
         header["UNIQTYPE"] = f"{header['OBSTYPE']}_{header['BOARD_ID']}"
 
-        basename = os.path.basename(path)
-        timestamp = basename.split(".fits")[0].split("_")[1]
-        date = timestamp.split("-")[0]
-        time = timestamp.split("-")[1]
-
         if "RADEG" not in header.keys():
             header["RADEG"] = header["RA"]
             header["DECDEG"] = header["DEC"]
 
-        header["UTCTIME"] = (
-            f"{date[:4]}-{date[4:6]}-{date[6:]}T" f"{time[:2]}:{time[2:4]}:{time[4:]}"
-        )
+        header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
+
         header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
         header["DATE-OBS"] = Time(header["UTCTIME"]).isot
 
@@ -221,3 +219,53 @@ def load_stacked_winter_image(
             header["UTCTIME"] = "2023-06-14T00:00:00"
 
     return data, header
+
+
+def load_winter_mef_image(
+    path: str | Path,
+) -> tuple[astropy.io.fits.Header, list[np.array], list[astropy.io.fits.Header]]:
+    """
+    Load mef image.
+    """
+    header, split_data, split_headers = open_mef_fits(path)
+
+    header["OBSCLASS"] = ["science", "calibration"][
+        header["OBSTYPE"] in ["DARK", "FLAT"]
+    ]
+    header["COADDS"] = 1
+    header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
+
+    header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
+    header["TARGET"] = header["OBSTYPE"].lower()
+    header["RAWPATH"] = path
+    header["BASENAME"] = os.path.basename(path)
+    header["CALSTEPS"] = ""
+    header["PROCFAIL"] = 1
+
+    obstime = Time(header["UTCTIME"])
+    header["EXPID"] = int((obstime.mjd - 59000.0) * 86400.0)  # seconds since 60000 MJD
+
+    header["FID"] = int(winter_filters_map[header["FILTERID"]])
+    logger.info(f"Obstime is {obstime}")
+    header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y-%m-%d")
+    logger.info(f"Nightdate is {header['NIGHTDATE']}")
+    if not header["OBSTYPE"] in itid_dict:
+        header["ITID"] = 5
+    else:
+        header["ITID"] = itid_dict[header["OBSTYPE"]]
+
+    header["EXPMJD"] = header["MJD-OBS"]
+
+    header["RA"] = header["RADEG"]
+    header["DEC"] = header["DECDEG"]
+    for key in ["MOONRA", "MOONDEC", "MOONILLF", "MOONPHAS", "SUNAZ"]:
+        if header[key] == "":
+            header[key] = 99
+
+    if header["FIELDID"] < 0:
+        header["FIELDID"] = DEFAULT_FIELD
+    if header["PROGID"] < 0:
+        header["PROGID"] = default_program.progid
+    # TODO: Get puid from PROGID
+    header["PUID"] = header["PROGID"]
+    return header, split_data, split_headers
