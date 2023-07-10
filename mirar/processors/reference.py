@@ -185,7 +185,7 @@ class ProcessReference(BaseImageProcessor):
             )
 
             self.save_fits(image=resampled_ref_sextractor_img, path=rrsi_path)
-            logger.info(f"Saved reference image to {rrsi_path}")
+            logger.debug(f"Saved reference image to {rrsi_path}")
 
             ref_psfex = self.psfex(
                 output_sub_dir=self.temp_output_subtract_dir, norm_fits=True

@@ -12,13 +12,16 @@ from mirar.data import ImageBatch
 from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
+    EXPTIME_KEY,
     LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     RAW_IMG_KEY,
     STACKED_COMPONENT_IMAGES_KEY,
     SWARP_FLUX_SCALING_KEY,
+    TIME_KEY,
     all_astrometric_keywords,
     copy_temp_file,
+    core_fields,
     get_output_dir,
     get_temp_path,
 )
@@ -375,7 +378,10 @@ class Swarp(BaseImageProcessor):
                         new_image[key] = batch[0][key]
                     except ValueError:
                         continue
+
         new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
+        new_image[EXPTIME_KEY] = np.sum([x[EXPTIME_KEY] for x in batch])
+        new_image[TIME_KEY] = min([x[TIME_KEY] for x in batch])
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
 
@@ -384,6 +390,15 @@ class Swarp(BaseImageProcessor):
 
         new_image[BASE_NAME_KEY] = output_image_path.name
         new_image[LATEST_WEIGHT_SAVE_KEY] = output_image_weight_path.as_posix()
+
+        for key in core_fields:
+            if key not in new_image.keys():
+                err = (
+                    f"New image is missing the core field {key}. "
+                    f"Available fields are {new_image.keys()}."
+                )
+                logger.error(err)
+                raise SwarpError(err)
 
         if not self.cache:
             for temp_file in temp_files:

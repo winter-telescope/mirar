@@ -99,7 +99,7 @@ class BaseReferenceGenerator:
         # Remove if needed
         output_path.unlink(missing_ok=True)
 
-        logger.info(f"Saving reference image to {output_path}")
+        logger.debug(f"Saving reference image to {output_path}")
         ref_hdu.header[BASE_NAME_KEY] = os.path.basename(output_path)
         ref_hdu.header[LATEST_SAVE_KEY] = output_path.as_posix()
         ref_hdu.data[ref_hdu.data == 0] = np.nan  # pylint: disable=no-member

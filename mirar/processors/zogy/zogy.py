@@ -120,6 +120,7 @@ class ZOGYPrepare(BaseImageProcessor):
         self,
         output_sub_dir: str = "sub",
         sci_zp_header_key: str = "ZP",
+        ref_zp_header_key: str | None = None,
         catalog_purifier: Callable[
             [astropy.table.Table, astropy.table.Table],
             [astropy.table.Table, astropy.table.Table],
@@ -129,7 +130,10 @@ class ZOGYPrepare(BaseImageProcessor):
     ):
         super().__init__()
         self.output_sub_dir = output_sub_dir
+        if ref_zp_header_key is None:
+            ref_zp_header_key = sci_zp_header_key
         self.sci_zp_header_key = sci_zp_header_key
+        self.ref_zp_header_key = ref_zp_header_key
         self.catalog_purifier = catalog_purifier
         self.write_region_bool = write_region_bool
         self.crossmatch_radius_arcsec = crossmatch_radius_arcsec
@@ -299,16 +303,18 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_data *= flux_scale
             ref_img.set_data(ref_data)
 
-            ref_unscaled_zp = ref_img["ZP"]
-            ref_img["ZP"] = float(ref_img["ZP"]) + 2.5 * np.log10(flux_scale)
+            ref_unscaled_zp = ref_img[self.ref_zp_header_key]
+            ref_img[self.ref_zp_header_key] = float(
+                ref_img[self.ref_zp_header_key]
+            ) + 2.5 * np.log10(flux_scale)
 
             ref_scaled_path = ref_img_path + ".scaled"
             self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
 
-            logger.info(
+            logger.debug(
                 f"Zeropoints are reference : {ref_unscaled_zp}, "
-                f"scaled reference : {ref_img['ZP']} and "
-                f"science : {image[self.sci_zp_header_key]}"
+                f"scaled reference : {ref_img[self.ref_zp_header_key]} and "
+                f"science : {image[self.ref_zp_header_key]}"
             )
 
             # Scale is 1 by construction for science image
@@ -438,9 +444,9 @@ class ZOGY(ZOGYPrepare):
             image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
                 image[self.sci_zp_header_key]
             )
-            image["SCORMEAN"] = scorr_mean
-            image["SCORMED"] = scorr_median
-            image["SCORSTD"] = scorr_std
+            # image["SCORMEAN"] = scorr_mean FIXME
+            # image["SCORMED"] = scorr_median
+            # image["SCORSTD"] = scorr_std
 
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
 

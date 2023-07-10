@@ -93,7 +93,7 @@ def pyzogy(
     new_psf_big[y_min:y_max, x_min:x_max] = new_psf
     ref_psf_big[y_min:y_max, x_min:x_max] = ref_psf
 
-    logger.info(
+    logger.debug(
         "Max of big PSF is %d %d"
         % np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)
     )
@@ -102,7 +102,7 @@ def pyzogy(
     new_psf_big = fft.fftshift(new_psf_big)
     ref_psf_big = fft.fftshift(ref_psf_big)
 
-    logger.info(
+    logger.debug(
         "Max of big PSF shift is %d %d"
         % np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)
     )
@@ -146,7 +146,7 @@ def pyzogy(
     diff_nocorr_psf = fft.ifftshift(diff_nocorr_psf)
     diff_nocorr_psf = diff_nocorr_psf[y_min:y_max, x_min:x_max]
 
-    logger.info(
+    logger.debug(
         "Max of diff PSF is %d %d"
         % np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape)
     )
