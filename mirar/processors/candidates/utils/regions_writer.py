@@ -81,8 +81,10 @@ class RegionsWriter(BaseDataframeProcessor):
                     output_dir=self.output_dir,
                 )
 
+                regions_path.mkdir(parents=True, exist_ok=True)
+
                 if regions_path not in started_regions_paths:
-                    logger.info(f"Writing regions path to {regions_path}")
+                    logger.debug(f"Writing regions path to {regions_path}")
                     with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
                         regions_f.write("image\n")
                     started_regions_paths.append(regions_path)
