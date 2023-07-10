@@ -1,12 +1,12 @@
 """
 Models for the 'exposures' table
 """
+import logging
 from datetime import date, datetime
 from typing import ClassVar
 
 from pydantic import Field
 from sqlalchemy import (  # event,
-    VARCHAR,
     Column,
     DateTime,
     Double,
@@ -32,6 +32,9 @@ from mirar.processors.sqldatabase.base_model import (
 )
 
 # from mirar.utils.sql import create_q3c_extension
+
+
+logger = logging.getLogger(__name__)
 
 
 class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
@@ -66,28 +69,25 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     puid: Mapped[int] = mapped_column(ForeignKey("programs.puid"))
     program_uid: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
 
-    timeutc = Column(DateTime(timezone=True))
+    utctime = Column(DateTime(timezone=True))
 
-    AExpTime = Column(Float, nullable=False)
+    ExpTime = Column(Float, nullable=False)
     expMJD = Column(Float, nullable=False)
     airmass = Column(Float)
-    shutopen = Column(DateTime(timezone=True))
-    shutclsd = Column(DateTime(timezone=True))
     tempture = Column(Float, default=-999)
     windspd = Column(Float, default=-999)
     Dewpoint = Column(Float, default=-999)
     Humidity = Column(Float, default=-999)
     Pressure = Column(Float, default=-999)
-    Moonra = Column(Float, default=-999)
-    Moondec = Column(Float, default=-999)
-    Moonillf = Column(Float, default=-999)
-    Moonphas = Column(Float, default=-999)
-    Moonaz = Column(Float, default=-999)
-    Moonalt = Column(Float, default=-999)
-    Sunaz = Column(Float, default=-999)
-    Sunalt = Column(Float, default=-999)
-    Detsoft = Column(VARCHAR(50), default="unknown")
-    Detfirm = Column(VARCHAR(50), default="unknown")
+    # Moonra = Column(Float, default=-999)
+    # Moondec = Column(Float, default=-999)
+    # Moonillf = Column(Float, default=-999)
+    # Moonphas = Column(Float, default=-999)
+    # Moonaz = Column(Float, default=-999)
+    # Moonalt = Column(Float, default=-999)
+    # Sunaz = Column(Float, default=-999)
+    # Sunalt = Column(Float, default=-999)
+
     ra = Column(Float)
     dec = Column(Float)
     altitude = Column(Float)
@@ -124,29 +124,28 @@ class Exposures(BaseDB):
     nightdate: date = Field()  # FIXME : why different to obsdate?
     fieldid: int = fieldid_field
     itid: int = Field(ge=0)
-    puID: int = Field(ge=0)
+    puid: int = Field(ge=0)
 
-    timeutc: datetime = Field()
-    AExpTime: float = Field(ge=0)
+    utctime: datetime = Field()
+    ExpTime: float = Field(ge=0)
     expMJD: float = Field(ge=59000)
-    airmass: float = Field(ge=1.0)
-    shutopen: datetime = Field()
-    shutclsd: datetime = Field()
+
     tempture: float = default_unknown_field
     windspd: float = default_unknown_field
     Dewpoint: float = default_unknown_field
     Humidity: float = default_unknown_field
     Pressure: float = default_unknown_field
-    Moonra: float = Field(ge=0.0, le=360.0, default=None)
-    Moondec: float = Field(title="Dec (degrees)", ge=-90.0, le=90, default=None)
-    Moonillf: float = default_unknown_field
-    Moonphas: float = default_unknown_field
-    Moonaz: float = default_unknown_field
-    Moonalt: float = default_unknown_field
-    Sunaz: float = default_unknown_field
-    Sunalt: float = default_unknown_field
-    Detfirm: str = Field(default="unknown")
-    Detsoft: str = Field(default="unknown")
+
+    # TODO: these fields are currently empty in image headers
+    # Moonra: float = Field(ge=0.0, le=360.0, default=None)
+    # Moondec: float = Field(title="Dec (degrees)", ge=-90.0, le=90, default=None)
+    # Moonillf: float = default_unknown_field
+    # Moonphas: float = default_unknown_field
+    # Moonaz: float = default_unknown_field
+    # Moonalt: float = default_unknown_field
+    # Sunaz: float = default_unknown_field
+    # Sunalt: float = default_unknown_field
+
     ra: float = ra_field
     dec: float = dec_field
     altitude: float = alt_field
@@ -159,15 +158,16 @@ class Exposures(BaseDB):
         :return: None
         """
         night = Nights(nightdate=self.nightdate)
+        logger.info(f"Searched for night {self.nightdate}")
         if not night.exists():
             night.insert_entry()
 
-        if not ProgramsTable().exists(values=self.puID, keys="puid"):
+        if not ProgramsTable().exists(values=self.puid, keys="puid"):
             default_puid = ProgramsTable().select_query(
                 compare_values=list(default_program.__dict__.values()),
                 compare_keys=list(default_program.__dict__),
             )
-            self.puID = default_puid
+            self.puid = default_puid
 
         return self._insert_entry()
 
