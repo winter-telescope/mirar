@@ -5,7 +5,9 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import VARCHAR, Column, Double, ForeignKey, Integer, Sequence  # event,
+from sqlalchemy import VARCHAR, Column, Double, Float, ForeignKey, Integer, Sequence
+
+# event,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.pipelines.winter.models._exposures import Exposures
@@ -29,14 +31,18 @@ class RawTable(WinterBase):  # pylint: disable=too-few-public-methods
     uexpid: Mapped[int] = mapped_column(ForeignKey("exposures.uexpid"))
     exposure_ids: Mapped["ExposuresTable"] = relationship(back_populates="raw")
 
-    qid: Mapped[int] = mapped_column(ForeignKey("subdets.qid"))
+    subdetid: Mapped[int] = mapped_column(ForeignKey("subdets.subdetid"))
     subdets: Mapped["SubdetsTable"] = relationship(back_populates="raw")
+    t_roic = Column(Float)
 
     savepath = Column(VARCHAR(255), unique=True)
 
     procstatus = Column(Integer, default=0)
 
     proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
+    astrometry: Mapped["AstrometryStatsTable"] = relationship(
+        back_populates="astrom_raw_ids"
+    )
 
 
 class Raw(BaseDB):
@@ -48,9 +54,10 @@ class Raw(BaseDB):
 
     rawid: int = Field(ge=0)
     uexpid: int = Field(ge=0)
-    qid: int = Field(ge=0)
+    subdetid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
     procstatus: int = Field(ge=0, default=0)
+    t_roic: float = Field()
 
     @validator("savepath")
     @classmethod
