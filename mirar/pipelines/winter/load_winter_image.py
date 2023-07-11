@@ -13,6 +13,7 @@ from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
+from mirar.data import Image
 from mirar.io import open_mef_fits
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -21,9 +22,13 @@ from mirar.paths import (
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
 )
-from mirar.pipelines.winter.constants import itid_dict, winter_filters_map
-from mirar.pipelines.winter.models._fields import DEFAULT_FIELD
-from mirar.pipelines.winter.models._programs import default_program
+from mirar.pipelines.winter.constants import imgtype_dict, winter_filters_map
+from mirar.pipelines.winter.models import (
+    DEFAULT_FIELD,
+    SubdetsTable,
+    default_program,
+    itid_dict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -249,10 +254,11 @@ def load_winter_mef_image(
     logger.info(f"Obstime is {obstime}")
     header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y-%m-%d")
     logger.info(f"Nightdate is {header['NIGHTDATE']}")
-    if not header["OBSTYPE"] in itid_dict:
-        header["ITID"] = 5
+    header["IMGTYPE"] = header["OBSTYPE"]
+    if not header["IMGTYPE"] in imgtype_dict:
+        header["ITID"] = itid_dict[imgtype_dict["OTHER"]]
     else:
-        header["ITID"] = itid_dict[header["OBSTYPE"]]
+        header["ITID"] = itid_dict[imgtype_dict[header["OBSTYPE"]]]
 
     header["EXPMJD"] = header["MJD-OBS"]
 
@@ -269,3 +275,34 @@ def load_winter_mef_image(
     # TODO: Get puid from PROGID
     header["PUID"] = header["PROGID"]
     return header, split_data, split_headers
+
+
+def load_raw_winter_header(image: Image) -> fits.Header:
+    header = image.header
+    data = image.get_data()
+
+    _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
+    header["MEDCOUNT"] = med
+    header["STDDEV"] = std
+    header["PROCSTATUS"] = 0
+    subnx, subny, subnxtot, subnytot = (
+        header["SUBNX"],
+        header["SUBNY"],
+        header["SUBNXTOT"],
+        header["SUBNYTOT"],
+    )
+    subdet = SubdetsTable(
+        boardid=header["BOARD_ID"],
+        nx=header["SUBNX"],
+        ny=header["SUBNY"],
+        nxtot=header["SUBNXTOT"],
+        nytot=header["SUBNYTOT"],
+    )
+    subdetid = subdet.select_query(
+        compare_keys=["boardid", "nx", "ny", "nxtot", "nytot"],
+        compare_values=[header["BOARD_ID"], subnx, subny, subnxtot, subnytot],
+    )
+    header["SUBDETID"] = subdetid[0][0]
+    header["RAWID"] = int(f"{header['EXPID']}_{str(header['SUBDETID']).rjust(2, '0')}")
+
+    return header
