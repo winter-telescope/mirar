@@ -36,6 +36,8 @@ from mirar.paths import (
     RAW_IMG_SUB_DIR,
     base_raw_dir,
     core_fields,
+    get_output_dir,
+    get_temp_path,
 )
 from mirar.processors.base_processor import BaseImageProcessor
 
@@ -296,6 +298,11 @@ class MEFImageLoaderSplitter(BaseImageProcessor):
 
         ext_data_list = [x.astype(np.float64) for x in ext_data_list]
         split_images_list = []
+
+        temp_dir = get_output_dir(dir_root="temp_load_mef", sub_dir=self.night_sub_dir)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        temp_files = []
         for ext_num, ext_data in enumerate(ext_data_list):
             ext_header = ext_header_list[ext_num]
 
@@ -316,11 +323,22 @@ class MEFImageLoaderSplitter(BaseImageProcessor):
                 f"{primary_header[BASE_NAME_KEY].split('.fits')[0]}_"
                 f"{extension_num_str}.fits"
             )
-            for k in ["XTENSION", "BITPIX"]:
-                if k in new_single_header.keys():
-                    del new_single_header[k]
 
-            split_images_list.append(Image(data=ext_data, header=ext_header))
+            # TODO : For some reason the above step doesn't gel well with astropy, and
+            # it can't load the header. So we save it to a temp file and then load it,
+            # which seems to work.
+            temp_savepath = get_temp_path(
+                output_dir=temp_dir, file_path=new_single_header[BASE_NAME_KEY]
+            )
+            astropy.io.fits.writeto(
+                temp_savepath, ext_data, ext_header, overwrite=True
+            )  # pylint: disable=no-member
+            temp_files.append(temp_savepath)
+            tmp_data, tmp_header = open_fits(temp_savepath)
+            split_images_list.append(Image(data=tmp_data, header=tmp_header))
+
+        for temp_file in temp_files:
+            temp_file.unlink()
 
         return split_images_list
 
