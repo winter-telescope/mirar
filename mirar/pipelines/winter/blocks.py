@@ -55,7 +55,10 @@ from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.split import SplitImage
-from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
+from mirar.processors.sqldatabase.database_exporter import (
+    DatabaseImageBatchExporter,
+    DatabaseImageExporter,
+)
 from mirar.processors.utils import (
     HeaderAnnotator,
     ImageBatcher,
@@ -63,12 +66,12 @@ from mirar.processors.utils import (
     ImageLoader,
     ImageSaver,
     ImageSelector,
-    MEFImageLoader,
+    MEFImageLoaderSplitter,
 )
 from mirar.processors.utils.multi_ext_parser import MultiExtParser
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 from mirar.processors.utils.header_annotate import CustomHeaderAnnotator
-from mirar.processors.utils.multi_ext_parser import MEFImageSplitter, MultiExtParser
+from mirar.processors.utils.multi_ext_parser import MultiExtParser
 
 refbuild = [
     ImageDebatcher(),
@@ -140,9 +143,13 @@ load_stack = [
 ]
 
 export_exposures = [
-    MEFImageLoader(input_sub_dir="raw", load_image=load_winter_mef_image),
-    DatabaseImageExporter(db_table=Exposures, duplicate_protocol="ignore"),
-    MEFImageSplitter(extension_num_header_key="BOARD_ID"),
+    MEFImageLoaderSplitter(
+        input_sub_dir="raw",
+        load_image=load_winter_mef_image,
+        extension_num_header_key="BOARD_ID",
+    ),
+    ImageBatcher("UTCTIME"),
+    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
     CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
     ImageSaver(output_dir_name="unpacked_split"),
