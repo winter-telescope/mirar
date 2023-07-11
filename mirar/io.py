@@ -126,6 +126,23 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     return data, header
 
 
+def combine_mef_extension_file_headers(primary_header, extension_header):
+    """
+    Function to combine the primary header with an extension header in a MEF frame
+    """
+    zipped = list(zip(primary_header.values(), primary_header.comments))
+
+    # append primary_header to hdrext
+    for count, key in enumerate(list(primary_header.keys())):
+        extension_header.append((key, zipped[count][0], zipped[count][1]))
+
+    for k in ["XTENSION", "BITPIX"]:
+        if k in extension_header.keys():
+            del extension_header[k]
+
+    return extension_header
+
+
 def check_file_is_complete(path: str) -> bool:
     """
     Function to check whether a fits file is as large as expected.

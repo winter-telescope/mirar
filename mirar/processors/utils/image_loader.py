@@ -6,7 +6,6 @@ import os
 from collections.abc import Callable
 from glob import glob
 from pathlib import Path
-from typing import Type
 
 import astropy.io.fits
 import numpy as np
@@ -25,17 +24,25 @@ from mirar.processors.base_processor import BaseImageProcessor
 from mirar.data import BaseImageBatch, BaseImageData, Image, ImageBatch, MEFImageBatch
 from mirar.data.image_data import MEFImage
 from mirar.errors import ImageNotFoundError
-from mirar.io import check_file_is_complete, open_fits, open_mef_fits
-from mirar.paths import RAW_IMG_KEY, RAW_IMG_SUB_DIR, base_raw_dir, core_fields
-from mirar.processors.base_processor import (
-    BaseImageProcessor,
-    BaseMEFImageProcessor,
-    BaseProcessor,
+from mirar.io import (
+    check_file_is_complete,
+    combine_mef_extension_file_headers,
+    open_fits,
+    open_mef_fits,
 )
+from mirar.paths import (
+    BASE_NAME_KEY,
+    RAW_IMG_KEY,
+    RAW_IMG_SUB_DIR,
+    base_raw_dir,
+    core_fields,
+)
+from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
 
+<<<<<<< HEAD
 class BadImageError(ProcessorError):
     """Exception for bad images"""
 
@@ -75,6 +82,9 @@ class BaseImageLoader(BaseProcessor):
 
 
 class ImageLoader(BaseImageLoader, BaseImageProcessor):
+=======
+class ImageLoader(BaseImageProcessor):
+>>>>>>> ccf50e3e (add new mefsplitterloader)
     """Processor to load raw images."""
 
     base_key = "load"
@@ -87,7 +97,9 @@ class ImageLoader(BaseImageLoader, BaseImageProcessor):
         input_img_dir: str = base_raw_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
     ):
-        super().__init__(input_sub_dir, input_img_dir)
+        super().__init__()
+        self.input_sub_dir = input_sub_dir
+        self.input_img_dir = input_img_dir
         self.load_image = load_image
 
     def __str__(self):
@@ -114,15 +126,28 @@ class ImageLoader(BaseImageLoader, BaseImageProcessor):
 
         return new_img
 
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+        input_dir = os.path.join(
+            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
+        )
+
+        return load_from_dir(
+            input_dir,
+            open_f=self.open_raw_image,
+        )
+
 
 def load_from_dir(
-    input_dir: str | Path, open_f: Callable[[str | Path], BaseImageData], dtype: type
-) -> BaseImageBatch:
+    input_dir: str | Path,
+    open_f: Callable[[str | Path], Image] | Callable[[str | Path], list[Image]],
+    mef: bool = False,
+) -> ImageBatch:
     """
     Function to load all images in a directory
 
     :param input_dir: Input directory
     :param open_f: Function to open images
+    :param mef: Is this a mef frame?
     :return: ImageBatch object
     """
 
@@ -140,6 +165,7 @@ def load_from_dir(
         logger.error(err)
         raise ImageNotFoundError(err)
 
+<<<<<<< HEAD
 
     if dtype == Image:
         images = ImageBatch()
@@ -147,9 +173,19 @@ def load_from_dir(
         images = MEFImageBatch()
     logger.debug(f"Dtype is {dtype}")
     for path in tqdm(img_list):
+=======
+    images = ImageBatch()
+
+    for path in img_list:
+>>>>>>> ccf50e3e (add new mefsplitterloader)
         if check_file_is_complete(path):
-            image = open_f(path)
-            images.append(image)
+            if not mef:
+                image = open_f(path)
+                images.append(image)
+            else:
+                image_list = open_f(path)
+                for x in image_list:
+                    images.append(x)
         else:
             logger.warning(f"File {path} is not complete. Skipping!")
 
@@ -216,11 +252,10 @@ class LoadImageFromHeader(BaseImageProcessor):
         return new_batch
 
 
-class MEFImageLoader(BaseImageLoader, BaseMEFImageProcessor):
+class MEFImageLoaderSplitter(BaseImageProcessor):
     """Processor to load MEF images."""
 
     base_key = "load_mef"
-    image_type = MEFImage
 
     def __init__(
         self,
@@ -230,18 +265,24 @@ class MEFImageLoader(BaseImageLoader, BaseMEFImageProcessor):
             [str],
             [astropy.io.fits.Header, list[np.ndarray], list[astropy.io.fits.Header]],
         ] = open_mef_fits,
+        extension_num_header_key: str = None,
+        only_extract_num: int = None,
     ):
-        super().__init__(input_sub_dir, input_img_dir)
+        super().__init__()
+        self.input_sub_dir = input_sub_dir
+        self.input_img_dir = input_img_dir
         self.load_image = load_image
+        self.extension_num_header_key = extension_num_header_key
+        self.only_extract_num = only_extract_num
 
-    def open_raw_image(self, path: str | Path) -> MEFImage:
+    def open_split_raw_image(self, path: str | Path) -> list[Image]:
         """
         Function to open a raw image as an Image object
 
         :param path: path of raw image
         :return: Image object
         """
-        primary_header, data_list, header_list = self.load_image(path)
+        primary_header, ext_data_list, ext_header_list = self.load_image(path)
 
         for key in core_fields:
             if key not in primary_header.keys():
@@ -253,9 +294,39 @@ class MEFImageLoader(BaseImageLoader, BaseMEFImageProcessor):
                 logger.error(err)
                 raise KeyError(err)
 
-        data_list = [x.astype(np.float64) for x in data_list]
-        return MEFImage(
-            primary_header=primary_header,
-            ext_data_list=data_list,
-            ext_header_list=header_list,
+        ext_data_list = [x.astype(np.float64) for x in ext_data_list]
+        split_images_list = []
+        for ext_num, ext_data in enumerate(ext_data_list):
+            ext_header = ext_header_list[ext_num]
+
+            extension_num_str = str(ext_num)
+            if self.extension_num_header_key is not None:
+                extension_num_str = ext_header[self.extension_num_header_key]
+
+            if self.only_extract_num is not None:
+                if int(extension_num_str) != self.only_extract_num:
+                    continue
+
+            # append primary_header to hdrext
+            new_single_header = combine_mef_extension_file_headers(
+                primary_header=primary_header, extension_header=ext_header
+            )
+
+            new_single_header[BASE_NAME_KEY] = (
+                f"{primary_header[BASE_NAME_KEY].split('.fits')[0]}_"
+                f"{extension_num_str}.fits"
+            )
+            for k in ["XTENSION", "BITPIX"]:
+                if k in new_single_header.keys():
+                    del new_single_header[k]
+
+            split_images_list.append(Image(data=ext_data, header=ext_header))
+
+        return split_images_list
+
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+        input_dir = os.path.join(
+            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
+
+        return load_from_dir(input_dir, open_f=self.open_split_raw_image, mef=True)
