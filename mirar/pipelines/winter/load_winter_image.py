@@ -68,6 +68,7 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
         )
         logger.debug(header["UTCTIME"])
         header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
+        header["DATE-OBS"] = Time(header["UTCTIME"]).isot
 
         header["OBSCLASS"] = ["science", "calibration"][
             header["OBSTYPE"] in ["DARK", "FLAT"]

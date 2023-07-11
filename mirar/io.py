@@ -130,8 +130,11 @@ def check_image_has_core_fields(img: Image):
     """
     for key in core_fields:
         if key not in img.keys():
+            if BASE_NAME_KEY in img.keys():
+                msg = f"({img[BASE_NAME_KEY]}) "
+
             err = (
-                f"New image is missing the core field {key}. "
+                f"New image {msg}is missing the core field {key}. "
                 f"Available fields are {list(img.keys())}."
             )
             logger.error(err)

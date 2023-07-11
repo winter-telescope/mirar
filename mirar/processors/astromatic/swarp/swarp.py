@@ -379,9 +379,9 @@ class Swarp(BaseImageProcessor):
                     except ValueError:
                         continue
 
-        new_image["COADDS"] = np.sum([x["COADDS"] for x in batch])
-        new_image[EXPTIME_KEY] = np.sum([x[EXPTIME_KEY] for x in batch])
-        new_image[TIME_KEY] = min([x[TIME_KEY] for x in batch])
+        new_image["COADDS"] = sum(x["COADDS"] for x in batch)
+        new_image[EXPTIME_KEY] = sum(x[EXPTIME_KEY] for x in batch)
+        new_image[TIME_KEY] = min(x[TIME_KEY] for x in batch)
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
 
@@ -395,7 +395,7 @@ class Swarp(BaseImageProcessor):
         try:
             check_image_has_core_fields(new_image)
         except MissingCoreFieldError as err:
-            raise SwarpError from err
+            raise SwarpError(err) from err
 
         if not self.cache:
             for temp_file in temp_files:

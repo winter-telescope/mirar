@@ -64,7 +64,7 @@ class ImageLoader(BaseImageProcessor):
         try:
             check_image_has_core_fields(new_img)
         except MissingCoreFieldError as err:
-            raise BadImageError from err
+            raise BadImageError(err) from err
 
         return new_img
 
@@ -166,7 +166,7 @@ class LoadImageFromHeader(BaseImageProcessor):
             try:
                 check_image_has_core_fields(new_image)
             except MissingCoreFieldError as err:
-                raise BadImageError from err
+                raise BadImageError(err) from err
 
             new_batch.append(new_image)
 
