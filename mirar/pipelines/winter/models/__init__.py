@@ -5,8 +5,17 @@ from typing import Union
 
 from sqlalchemy.orm import DeclarativeBase
 
+from mirar.pipelines.winter.models._astrometry_stats import (
+    AstrometryStats,
+    AstrometryStatsTable,
+)
 from mirar.pipelines.winter.models._exposures import Exposures, ExposuresTable
-from mirar.pipelines.winter.models._fields import Fields, FieldsTable, populate_fields
+from mirar.pipelines.winter.models._fields import (
+    DEFAULT_FIELD,
+    Fields,
+    FieldsTable,
+    populate_fields,
+)
 from mirar.pipelines.winter.models._filters import (
     Filters,
     FiltersTable,
@@ -16,6 +25,7 @@ from mirar.pipelines.winter.models._imgType import (
     ALL_ITID,
     ImgTypes,
     ImgTypesTable,
+    itid_dict,
     populate_itid,
 )
 from mirar.pipelines.winter.models._nights import Nights, NightsTable
@@ -26,6 +36,7 @@ from mirar.pipelines.winter.models._programs import (
     Program,
     ProgramCredentials,
     ProgramsTable,
+    default_program,
     populate_programs,
 )
 from mirar.pipelines.winter.models._raw import Raw, RawTable
@@ -35,7 +46,11 @@ from mirar.pipelines.winter.models._ref_components import (
 )
 from mirar.pipelines.winter.models._ref_queries import RefQueries, RefQueriesTable
 from mirar.pipelines.winter.models._ref_stacks import RefStacks, RefStacksTable
-from mirar.pipelines.winter.models._subdets import Subdets, SubdetsTable
+from mirar.pipelines.winter.models._subdets import (
+    Subdets,
+    SubdetsTable,
+    populate_subdets,
+)
 from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.processors.database.postgres import (
     ADMIN_PASSWORD,
@@ -46,6 +61,9 @@ from mirar.processors.database.postgres import (
 )
 from mirar.processors.sqldatabase.base_model import BaseTable
 from mirar.utils.sql import get_engine
+
+NXSPLIT = 1
+NYSPLIT = 2
 
 
 def setup_database(base: Union[DeclarativeBase, BaseTable]):
@@ -83,3 +101,4 @@ if DB_USER is not None:
     populate_itid()
     populate_filters()
     populate_programs()
+    populate_subdets(nxtot=NXSPLIT, nytot=NYSPLIT)
