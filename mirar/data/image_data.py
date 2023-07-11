@@ -59,7 +59,7 @@ import hashlib
 import logging
 import threading
 from pathlib import Path
-from typing import Optional, Type
+from typing import Optional
 
 import numpy as np
 from astropy.io.fits import Header
@@ -71,13 +71,7 @@ from mirar.data.cache import USE_CACHE, cache
 logger = logging.getLogger(__name__)
 
 
-class BaseImageData(DataBlock):
-    """
-    Base class for image data.
-    """
-
-
-class Image(BaseImageData):
+class Image(DataBlock):
     """
     A subclass of :class:`~mirar.data.base_data.DataBlock`,
     containing an image and header.
@@ -230,17 +224,7 @@ class Image(BaseImageData):
         return new
 
 
-class BaseImageBatch(DataBatch):
-    """
-    Base class for image batches.
-    """
-
-    @property
-    def data_type(self) -> Type[DataBlock]:
-        raise NotImplementedError
-
-
-class ImageBatch(BaseImageBatch):
+class ImageBatch(DataBatch):
     """
     A subclass of :class:`~mirar.data.base_data.DataBatch`,
     which contains :class:`~mirar.data.image_data.Image` objects
@@ -260,57 +244,6 @@ class ImageBatch(BaseImageBatch):
         self._append(item)
 
     def get_batch(self) -> list[Image]:
-        """Returns the :class:`~mirar.data.image_data.ImageBatch`
-        items within the batch
-
-        :return: list of :class:`~mirar.data.image_data.Image` objects
-        """
-        return self.get_data_list()
-
-
-class MEFImage(BaseImageData):
-    """
-    A subclass of :class:`~mirar.data.base_data.DataBlock`,
-    """
-
-    def __init__(
-        self,
-        primary_header: Header,
-        ext_data_list: list[np.ndarray],
-        ext_header_list: list[Header],
-    ):
-        self._data = None
-        self.ext_header_list = ext_header_list
-        self.ext_data_list = ext_data_list
-        self.primary_header = primary_header
-        super().__init__()
-
-    def __getitem__(self, item):
-        return self.primary_header.__getitem__(item)
-
-    def __setitem__(self, key, value):
-        self.primary_header.__setitem__(key, value)
-
-    def keys(self):
-        """
-        Get the header keys
-
-        :return: Keys of header
-        """
-        return self.primary_header.keys()
-
-
-class MEFImageBatch(BaseImageBatch):
-    """
-    A subclass of :class:`~mirar.data.base_data.DataBatch`,
-    """
-
-    data_type = MEFImage
-
-    def append(self, item: MEFImage):
-        self._append(item)
-
-    def get_batch(self) -> list[MEFImage]:
         """Returns the :class:`~mirar.data.image_data.ImageBatch`
         items within the batch
 
