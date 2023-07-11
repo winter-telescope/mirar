@@ -211,9 +211,9 @@ class BaseTable:
 
     def construct_select_statement(
         self,
-        compare_values,
-        select_keys=None,
-        compare_keys=None,
+        compare_values: list,
+        select_keys: str | list[str] = None,
+        compare_keys: str | list[str] = None,
         comparators: str | list = None,
     ):
         """
@@ -275,7 +275,11 @@ class BaseTable:
         return stmt
 
     def select_query(
-        self, compare_values, select_keys=None, compare_keys=None, comparators=None
+        self,
+        compare_values: list,
+        select_keys: str | list[str] = None,
+        compare_keys: str | list[str] = None,
+        comparators: str | list[str] = None,
     ):
         """
         Run a select query
