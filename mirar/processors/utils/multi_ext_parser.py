@@ -11,88 +11,20 @@ import astropy.io.fits
 import numpy as np
 from tqdm import tqdm
 
-from mirar.data import Image, ImageBatch, MEFImage, MEFImageBatch
+from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
 from mirar.io import open_fits
 from mirar.paths import (
-    BASE_NAME_KEY,
     RAW_IMG_SUB_DIR,
     base_output_dir,
     base_raw_dir,
     get_output_dir,
     get_output_path,
 )
-from mirar.processors.base_processor import BaseImageProcessor, BaseMEFImageProcessor
+from mirar.processors.base_processor import BaseImageProcessor
 from mirar.processors.utils.image_loader import unzip
 
 logger = logging.getLogger(__name__)
-
-
-class MEFImageSplitter(BaseMEFImageProcessor):
-    """
-    Processor to split multi-extension FITS (MEF) images into single-extension files.
-    """
-
-    base_key = "split_mef"
-
-    def __init__(
-        self,
-        extension_num_header_key: str = None,
-        only_extract_num: int = None,
-    ):
-        super().__init__()
-        self.extension_num_header_key = extension_num_header_key
-        self.only_extract_num = only_extract_num
-
-    def _apply_to_images(
-        self,
-        batch: MEFImageBatch,
-    ) -> ImageBatch:
-        """
-        Function to split MEF images into single-extension files
-        :param batch: ImageBatch object
-        :return: ImageBatch object with split MEF images
-        """
-        split_images = []
-        for mef_image in batch:
-            if not isinstance(mef_image, MEFImage):
-                raise TypeError("MEFImageSplitter can only be applied to MEFImages")
-
-            zipped = list(
-                zip(
-                    mef_image.primary_header.values(), mef_image.primary_header.comments
-                )
-            )
-            for ext_num, ext_data in enumerate(mef_image.ext_data_list):
-                ext_header = mef_image.ext_header_list[ext_num]
-
-                extension_num_str = str(ext_num)
-                if self.extension_num_header_key is not None:
-                    extension_num_str = ext_header[self.extension_num_header_key]
-
-                if self.only_extract_num is not None:
-                    if int(extension_num_str) != self.only_extract_num:
-                        continue
-
-                # append primary_header to hdrext
-                for count, key in enumerate(list(mef_image.primary_header.keys())):
-                    ext_header.append((key, zipped[count][0], zipped[count][1]))
-
-                ext_header[BASE_NAME_KEY] = (
-                    f"{mef_image.primary_header[BASE_NAME_KEY].split('.fits')[0]}_"
-                    f"{extension_num_str}.fits"
-                )
-                for k in ["XTENSION", "BITPIX"]:
-                    if k in ext_header.keys():
-                        del ext_header[k]
-
-                split_images.append(Image(data=ext_data, header=ext_header))
-                astropy.io.fits.writeto(
-                    "test.fits", ext_data, ext_header, overwrite=True
-                )
-
-        split_image_batch = ImageBatch(split_images)
-        return split_image_batch
 
 
 class MultiExtParser(BaseImageProcessor):
