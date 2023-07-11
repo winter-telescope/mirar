@@ -131,7 +131,10 @@ class PostgresUser:
                 raise exc
 
             if duplicate_protocol == "fail":
-                err = f"Duplicate error, entry already exists in {db_name}."
+                err = (
+                    f"Duplicate error, entry with {column_dict} "
+                    f"already exists in {db_name}."
+                )
                 logger.error(err)
                 raise errors.UniqueViolation from exc
 
