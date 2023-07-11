@@ -278,6 +278,9 @@ def load_winter_mef_image(
 
 
 def load_raw_winter_header(image: Image) -> fits.Header:
+    """
+    Load raw winter headers
+    """
     header = image.header
     data = image.get_data()
 
@@ -305,4 +308,54 @@ def load_raw_winter_header(image: Image) -> fits.Header:
     header["SUBDETID"] = subdetid[0][0]
     header["RAWID"] = int(f"{header['EXPID']}_{str(header['SUBDETID']).rjust(2, '0')}")
 
+    if "DATASEC" in header.keys():
+        del header["DATASEC"]
+
     return header
+
+
+def get_raw_winter_mask(image: Image) -> np.ndarray:
+    """
+    Get mask for raw winter image.
+    """
+    data = image.get_data()
+    header = image.header
+
+    mask = np.zeros(data.shape)
+    if header["BOARD_ID"] == 0:
+        # data[:500, 700:1500] = np.nan
+        mask[1075:, :] = 1.0
+        mask[:, 1950:] = 1.0
+        mask[:20, :] = 1.0
+
+    if header["BOARD_ID"] == 1:
+        pass
+
+    if header["BOARD_ID"] == 2:
+        mask[1060:, :] = 1.0
+        mask[:, 1970:] = 1.0
+        mask[:55, :] = 1.0
+        mask[:, :20] = 1.0
+
+    if header["BOARD_ID"] == 3:
+        mask[1085:, :] = 1.0
+        mask[:, 1970:] = 1.0
+        mask[:55, :] = 1.0
+        mask[:, :20] = 1.0
+
+    if header["BOARD_ID"] == 4:
+        # data[610:, :280] = np.nan
+        mask[:, 1948:] = 1.0
+        mask[:, :61] = 1.0
+        mask[:20, :] = 1.0
+        mask[1060:, :] = 1.0
+        mask[:, 999:1002] = 1.0
+
+    if header["BOARD_ID"] == 5:
+        # data[740:, 1270: 1850] = np.nan
+        mask[1072:, :] = 1.0
+        mask[:, 1940:] = 1.0
+        mask[:15, :] = 1.0
+        mask[680:, 1180:] = 1.0
+
+    return mask.astype(bool)
