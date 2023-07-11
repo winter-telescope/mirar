@@ -27,6 +27,7 @@ class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
     """
 
     base_key = "dbexporter"
+    max_n_cpu = 1
 
     def __str__(self):
         return (
@@ -90,8 +91,6 @@ class DatabaseImageBatchExporter(DatabaseImageExporter):
     """
     Processor for creating a single entry per batch of images in a database
     """
-
-    max_n_cpu = 2
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         column_names = [
