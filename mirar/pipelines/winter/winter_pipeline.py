@@ -60,10 +60,13 @@ class WINTERPipeline(Pipeline):
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
         "commissioning_split_single_board": commissioning_split_single_board,
+<<<<<<< HEAD
         "imsub": imsub,
         "final": final,
         "reduce": reduce,
         "exportdb": export_db,
+=======
+>>>>>>> e469e7ff (get rid)
     }
 
     gain = 1.0
