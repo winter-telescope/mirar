@@ -23,6 +23,7 @@ from mirar.pipelines.winter.generator import (
 )
 from mirar.pipelines.winter.load_winter_image import (
     load_proc_winter_image,
+    load_raw_winter_header,
     load_raw_winter_image,
     load_stacked_winter_image,
     load_winter_mef_image,
@@ -30,6 +31,14 @@ from mirar.pipelines.winter.load_winter_image import (
 from mirar.processors.astromatic import PSFex, Scamp
 
 from mirar.pipelines.winter.models import Exposures, Proc, Raw
+from mirar.pipelines.winter.models import (
+    NXSPLIT,
+    NYSPLIT,
+    AstrometryStats,
+    Exposures,
+    Proc,
+    Raw,
+)
 from mirar.processors.astromatic import Scamp
 from mirar.processors.astromatic.sextractor.sextractor import (
     Sextractor,
@@ -58,6 +67,7 @@ from mirar.processors.utils import (
 )
 from mirar.processors.utils.multi_ext_parser import MultiExtParser
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
+from mirar.processors.utils.header_annotate import CustomHeaderAnnotator
 from mirar.processors.utils.multi_ext_parser import MEFImageSplitter, MultiExtParser
 
 refbuild = [
@@ -133,7 +143,10 @@ export_exposures = [
     MEFImageLoader(input_sub_dir="raw", load_image=load_winter_mef_image),
     DatabaseImageExporter(db_table=Exposures, duplicate_protocol="ignore"),
     MEFImageSplitter(extension_num_header_key="BOARD_ID"),
-    ImageSaver(output_dir_name="unpacked"),
+    SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
+    CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
+    ImageSaver(output_dir_name="unpacked_split"),
+    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
 ]
 
 load_multiboard_stack = [
@@ -399,6 +412,9 @@ photcal = [
         ref_catalog_generator=winter_photometric_catalog_generator,
         write_regions=True,
         cache=True,
+    ),
+    DatabaseImageExporter(
+        db_table=AstrometryStats, duplicate_protocol="replace", q3c_bool=False
     ),
     # ImageSaver(output_dir_name=f"phot_{board_id}_{target_name}")
     ImageSaver(output_dir_name="photcal"),
