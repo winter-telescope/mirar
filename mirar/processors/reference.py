@@ -185,7 +185,7 @@ class ProcessReference(BaseImageProcessor):
             )
 
             self.save_fits(image=resampled_ref_sextractor_img, path=rrsi_path)
-            logger.info(f"Saved reference image to {rrsi_path}")
+            logger.debug(f"Saved reference image to {rrsi_path}")
 
             ref_psfex = self.psfex(
                 output_sub_dir=self.temp_output_subtract_dir, norm_fits=True
@@ -218,6 +218,14 @@ class GetReferenceImage(BaseImageProcessor):
         super().__init__()
         self.ref_image_generator = ref_image_generator
         self.output_sub_dir = output_sub_dir
+
+    def __str__(self):
+        output_sub_dir = get_output_dir(
+            dir_root=self.output_sub_dir, sub_dir=self.night_sub_dir
+        )
+        return (
+            f"Processor to get reference images and " f"save them to {output_sub_dir}"
+        )
 
     def _apply_to_images(
         self,

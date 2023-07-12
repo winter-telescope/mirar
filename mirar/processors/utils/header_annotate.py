@@ -31,7 +31,7 @@ class HeaderAnnotator(BaseImageProcessor):
     def __str__(self) -> str:
         return (
             f"Updates image headers by adding values "
-            f"for {' and '.join(self.output_key)}."
+            f"for '{self.output_key}' using '{' and '.join(self.input_keys)}'."
         )
 
     def _apply_to_images(

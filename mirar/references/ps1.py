@@ -6,6 +6,7 @@ import logging
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
+from astropy.time import Time
 from astropy.wcs import WCS
 
 from mirar.data import Image
@@ -112,4 +113,5 @@ class PS1Ref(BaseReferenceGenerator):
         ref_hdu.header["GAIN"] = ref_hdu.header["CELL.GAIN"]
         ref_hdu.header["ZP"] = ref_hdu.header["FPA.ZP"]
         del ref_hdu.header["HISTORY"]
+
         return ref_hdu, None

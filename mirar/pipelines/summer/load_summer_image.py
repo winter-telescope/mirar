@@ -95,6 +95,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
         header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y%m%d")
         header["EXPMJD"] = header["OBSMJD"]
+        header["OBS-DATE"] = Time(header["OBSMJD"], format="mjd").isot
 
         default_id = 0
 
