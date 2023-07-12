@@ -460,7 +460,9 @@ extract_subset = [
         only_extract_num=BOARD_ID,
     ),
     ImageLoader(
-        input_sub_dir=f"raw_board_{BOARD_ID}", load_image=load_raw_winter_image
+        input_sub_dir=f"raw_board_{BOARD_ID}",
+        load_image=load_raw_winter_image,
+        input_img_dir=base_output_dir,
     ),
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
     ImageSelector(
