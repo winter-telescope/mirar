@@ -96,6 +96,11 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
         header["RA"] = header["RADEG"]
         header["DEC"] = header["DECDEG"]
 
+        obstime = Time(header["UTCTIME"])
+        header["EXPID"] = int(
+            (obstime.mjd - 59000.0) * 86400.0
+        )  # seconds since 60000 MJD
+
         if COADD_KEY not in header.keys():
             logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
             header[COADD_KEY] = 1
@@ -255,6 +260,7 @@ def load_winter_mef_image(
     header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y-%m-%d")
     logger.info(f"Nightdate is {header['NIGHTDATE']}")
     header["IMGTYPE"] = header["OBSTYPE"]
+
     if not header["IMGTYPE"] in imgtype_dict:
         header["ITID"] = itid_dict[imgtype_dict["OTHER"]]
     else:

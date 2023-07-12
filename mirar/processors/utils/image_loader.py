@@ -17,15 +17,6 @@ from mirar.io import (
     MissingCoreFieldError,
     check_file_is_complete,
     check_image_has_core_fields,
-    open_fits,
-)
-from mirar.paths import RAW_IMG_KEY, RAW_IMG_SUB_DIR, base_raw_dir
-from mirar.processors.base_processor import BaseImageProcessor
-from mirar.data import BaseImageBatch, BaseImageData, Image, ImageBatch, MEFImageBatch
-from mirar.data.image_data import MEFImage
-from mirar.errors import ImageNotFoundError
-from mirar.io import (
-    check_file_is_complete,
     combine_mef_extension_file_headers,
     open_fits,
     open_mef_fits,
@@ -44,49 +35,11 @@ from mirar.processors.base_processor import BaseImageProcessor
 logger = logging.getLogger(__name__)
 
 
-<<<<<<< HEAD
 class BadImageError(ProcessorError):
     """Exception for bad images"""
 
-class BaseImageLoader(BaseProcessor):
-    """Base class for image loaders."""
 
-    @property
-    def image_type(self) -> Type[BaseImageData]:
-        """
-        Type of image to load
-        """
-        raise NotImplementedError
-
-    def __init__(
-        self,
-        input_sub_dir: str = RAW_IMG_SUB_DIR,
-        input_img_dir: str = base_raw_dir,
-    ):
-        super().__init__()
-        self.input_sub_dir = input_sub_dir
-        self.input_img_dir = input_img_dir
-
-    def open_raw_image(self, path: str) -> BaseImageData:
-        """
-        Function to open a raw image
-        """
-        raise NotImplementedError
-
-    def _apply_to_images(self, batch: BaseImageBatch) -> BaseImageBatch:
-        input_dir = os.path.join(
-            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
-        )
-
-        return load_from_dir(
-            input_dir, open_f=self.open_raw_image, dtype=self.image_type
-        )
-
-
-class ImageLoader(BaseImageLoader, BaseImageProcessor):
-=======
 class ImageLoader(BaseImageProcessor):
->>>>>>> ccf50e3e (add new mefsplitterloader)
     """Processor to load raw images."""
 
     base_key = "load"
@@ -167,19 +120,9 @@ def load_from_dir(
         logger.error(err)
         raise ImageNotFoundError(err)
 
-<<<<<<< HEAD
-
-    if dtype == Image:
-        images = ImageBatch()
-    elif dtype == MEFImage:
-        images = MEFImageBatch()
-    logger.debug(f"Dtype is {dtype}")
-    for path in tqdm(img_list):
-=======
     images = ImageBatch()
 
-    for path in img_list:
->>>>>>> ccf50e3e (add new mefsplitterloader)
+    for path in tqdm(img_list):
         if check_file_is_complete(path):
             if not mef:
                 image = open_f(path)

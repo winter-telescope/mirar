@@ -29,9 +29,6 @@ from mirar.pipelines.winter.load_winter_image import (
     load_stacked_winter_image,
     load_winter_mef_image,
 )
-from mirar.processors.astromatic import PSFex, Scamp
-
-from mirar.pipelines.winter.models import Exposures, Proc, Raw
 from mirar.pipelines.winter.models import (
     NXSPLIT,
     NYSPLIT,
@@ -40,7 +37,7 @@ from mirar.pipelines.winter.models import (
     Proc,
     Raw,
 )
-from mirar.processors.astromatic import Scamp
+from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.sextractor import (
     Sextractor,
     sextractor_checkimg_map,
@@ -61,7 +58,6 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
 from mirar.processors.split import SUB_ID_KEY, SplitImage
-from mirar.processors.split import SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
     DatabaseImageBatchExporter,
     DatabaseImageExporter,
@@ -75,10 +71,9 @@ from mirar.processors.utils import (
     ImageSelector,
     MEFImageLoaderSplitter,
 )
-from mirar.processors.utils.multi_ext_parser import MultiExtParser
-from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 from mirar.processors.utils.header_annotate import CustomHeaderAnnotator
 from mirar.processors.utils.multi_ext_parser import MultiExtParser
+from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
     ImageDebatcher(),
@@ -561,15 +556,6 @@ final = [
 
 unpack_subset = extract_subset + split_indiv + save_raw
 unpack_all = extract_all + split_indiv + save_raw
-unpack_subset = extract_subset + split_indiv + select_split_subset + make_log_and_save
-unpack_all = (
-    extract_all
-    + export_to_exposures
-    + mask_single_ext
-    + split_indiv
-    + make_log_and_save
-    + export_to_raw
-)
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", load_image=open_fits),
@@ -600,6 +586,4 @@ commissioning_split = (
     + photcal
 )
 
-
 reduce = unpack_all + full_commissioning_proc
-export_db = export_exposures
