@@ -27,10 +27,12 @@ from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     NORM_PSFEX_KEY,
+    OBSCLASS_KEY,
     RAW_IMG_KEY,
     REF_IMG_KEY,
     REF_PSF_KEY,
     UNC_IMG_KEY,
+    core_fields,
     get_output_dir,
 )
 from mirar.processors.base_processor import BaseImageProcessor
@@ -293,7 +295,16 @@ class ZOGYPrepare(BaseImageProcessor):
             scorr_header = sci_weight_data.get_header()
             scorr_weight_img = Image(data=scorr_weight_data, header=scorr_header)
             scorr_weight_path = sci_img_path.replace(".fits", ".scorr.weight.fits")
-            self.save_fits(scorr_weight_img, path=self.get_path(scorr_weight_path))
+            scorr_weight_img[OBSCLASS_KEY] = "SCORR"
+
+            for key in core_fields:
+                if key not in scorr_weight_img:
+                    scorr_weight_img[key] = image[key]
+
+            self.save_fits(
+                scorr_weight_img,
+                path=self.get_path(scorr_weight_path),
+            )
 
             ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(
                 ref_catalog_path, sci_catalog_path
@@ -329,7 +340,9 @@ class ZOGYPrepare(BaseImageProcessor):
                 np.percentile(ref_data[ref_data != 0.0], 84.13)
                 - np.percentile(ref_data[ref_data != 0.0], 15.86)
             )
-            logger.info(f"Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}")
+            logger.debug(
+                f"Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}"
+            )
 
             # Calculate uncertainty images
             sci_rms_image = self.get_rms_image(image, sci_rms)
@@ -453,6 +466,10 @@ class ZOGY(ZOGYPrepare):
             psf_header = fits.Header({"SIMPLE": True})
             psf_header[BASE_NAME_KEY] = diff_psf_path.name
             psf_header[RAW_IMG_KEY] = diff_psf_path.as_posix()
+
+            for key in core_fields:
+                if key not in psf_header:
+                    psf_header[key] = diff[key]
 
             self.save_fits(
                 image=Image(diff_psf_data, psf_header),
