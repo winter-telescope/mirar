@@ -23,6 +23,7 @@ from mirar.pipelines.winter.blocks import (
     full_commissioning_all_boards,
     imsub,
     log,
+    reduce,
     refbuild,
     unpack_all,
     unpack_subset,
@@ -60,6 +61,7 @@ class WINTERPipeline(Pipeline):
         "commissioning_split_single_board": commissioning_split_single_board,
         "imsub": imsub,
         "final": final,
+        "reduce": reduce,
     }
 
     gain = 1.0

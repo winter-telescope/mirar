@@ -9,6 +9,7 @@ from pathlib import Path
 
 import astropy.io.fits
 import numpy as np
+from tqdm import tqdm
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError, ProcessorError
@@ -103,7 +104,7 @@ def load_from_dir(
 
     images = ImageBatch()
 
-    for path in img_list:
+    for path in tqdm(img_list):
         if check_file_is_complete(path):
             image = open_f(path)
             images.append(image)

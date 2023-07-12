@@ -314,7 +314,6 @@ class ImageHandler:
 
         :param image: Image to save
         :param path: path
-        :param check_core_fields: Check that the image has the core fields
         :return: None
         """
         path = str(path)
