@@ -37,6 +37,7 @@ from mirar.processors.candidates.utils import (
     get_image_center_wcs_coords,
 )
 from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.split import SUB_ID_KEY
 from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from mirar.references.base_reference_generator import BaseReferenceGenerator
@@ -652,7 +653,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             #         image.header[key] = 0
             stackid = (
                 f"{str(image.header['FIELDID']).rjust(5, '0')}"
-                f"{str(image.header['SUBDETID']).rjust(2, '0')}"
+                f"{str(image.header[SUB_ID_KEY]).rjust(2, '0')}"
                 f"{str(winter_filters_map[image.header['FILTER']])}"
             )
             reference_hdu.header["STACKID"] = int(stackid)

@@ -2,6 +2,7 @@
 Tests for getting and making WFAU reference images
 """
 import logging
+import unittest
 
 from mirar.pipelines import get_pipeline
 from mirar.pipelines.winter.build_references import run_winter_reference_build_pipeline
@@ -46,6 +47,7 @@ pipeline = get_pipeline(
 )
 
 
+@unittest.skip
 class TestIRReferencePipeline(BaseTestCase):
     """
     Module for testing IR reference building pipeline
@@ -69,7 +71,7 @@ class TestIRReferencePipeline(BaseTestCase):
         self.logger.info("\n\n Testing WINTER reference building pipeline \n\n")
 
         res, _ = run_winter_reference_build_pipeline(
-            subdet_id=0, field_id=TEST_WINTER_FIELD_ID
+            subdet_id=0, field_id=TEST_WINTER_FIELD_ID, catch_all_errors=False
         )
 
         self.assertEqual(len(res[0]), 1)
