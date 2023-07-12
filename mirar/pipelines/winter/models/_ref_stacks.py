@@ -29,7 +29,7 @@ class RefStacksTable(WinterBase):
     ra1_1 = Column(Float)
     dec1_1 = Column(Float)
     fieldid = Column(Integer, nullable=True, default=None)
-    subdetid = Column(Integer, nullable=True, default=None)
+    subid = Column(Integer, nullable=True, default=None)
     filter = Column(VARCHAR(10))
     savepath = Column(VARCHAR(255))
 
@@ -55,7 +55,7 @@ class RefStacks(BaseDB):
     filter: str = Field(min_length=1)
 
     fieldid: int = Field(ge=0, default=None, nullable=True)
-    subdetid: int = Field(ge=0, default=None, nullable=True)
+    subid: int = Field(ge=0, default=None, nullable=True)
     savepath: str = Field(min_length=1)
 
     def exists(self) -> bool:

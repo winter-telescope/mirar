@@ -229,6 +229,7 @@ subtract = [
     ZOGYPrepare(
         output_sub_dir="subtract",
         sci_zp_header_key="ZP_AUTO",
+        ref_zp_header_key="ZP",
         catalog_purifier=default_summer_catalog_purifier,
     ),
     ZOGY(output_sub_dir="subtract"),

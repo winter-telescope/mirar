@@ -22,7 +22,7 @@ from mirar.errors import (
     NoncriticalProcessingError,
     ProcessorError,
 )
-from mirar.io import open_fits, save_to_path
+from mirar.io import check_image_has_core_fields, open_fits, save_to_path
 from mirar.paths import (
     BASE_NAME_KEY,
     CAL_OUTPUT_SUB_DIR,
@@ -314,9 +314,11 @@ class ImageHandler:
 
         :param image: Image to save
         :param path: path
+        :param check_core_fields: Check that the image has the core fields
         :return: None
         """
         path = str(path)
+        check_image_has_core_fields(image)
         data = image.get_data()
         header = image.get_header()
         if header is not None:
