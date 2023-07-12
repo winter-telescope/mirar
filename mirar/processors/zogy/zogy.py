@@ -27,10 +27,12 @@ from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     NORM_PSFEX_KEY,
+    OBSCLASS_KEY,
     RAW_IMG_KEY,
     REF_IMG_KEY,
     REF_PSF_KEY,
     UNC_IMG_KEY,
+    core_fields,
     get_output_dir,
 )
 from mirar.processors.base_processor import BaseImageProcessor
@@ -120,6 +122,7 @@ class ZOGYPrepare(BaseImageProcessor):
         self,
         output_sub_dir: str = "sub",
         sci_zp_header_key: str = "ZP",
+        ref_zp_header_key: str | None = None,
         catalog_purifier: Callable[
             [astropy.table.Table, astropy.table.Table],
             [astropy.table.Table, astropy.table.Table],
@@ -129,7 +132,10 @@ class ZOGYPrepare(BaseImageProcessor):
     ):
         super().__init__()
         self.output_sub_dir = output_sub_dir
+        if ref_zp_header_key is None:
+            ref_zp_header_key = sci_zp_header_key
         self.sci_zp_header_key = sci_zp_header_key
+        self.ref_zp_header_key = ref_zp_header_key
         self.catalog_purifier = catalog_purifier
         self.write_region_bool = write_region_bool
         self.crossmatch_radius_arcsec = crossmatch_radius_arcsec
@@ -289,7 +295,16 @@ class ZOGYPrepare(BaseImageProcessor):
             scorr_header = sci_weight_data.get_header()
             scorr_weight_img = Image(data=scorr_weight_data, header=scorr_header)
             scorr_weight_path = sci_img_path.replace(".fits", ".scorr.weight.fits")
-            self.save_fits(scorr_weight_img, path=self.get_path(scorr_weight_path))
+            scorr_weight_img[OBSCLASS_KEY] = "SCORR"
+
+            for key in core_fields:
+                if key not in scorr_weight_img:
+                    scorr_weight_img[key] = image[key]
+
+            self.save_fits(
+                scorr_weight_img,
+                path=self.get_path(scorr_weight_path),
+            )
 
             ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(
                 ref_catalog_path, sci_catalog_path
@@ -299,16 +314,18 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_data *= flux_scale
             ref_img.set_data(ref_data)
 
-            ref_unscaled_zp = ref_img["ZP"]
-            ref_img["ZP"] = float(ref_img["ZP"]) + 2.5 * np.log10(flux_scale)
+            ref_unscaled_zp = ref_img[self.ref_zp_header_key]
+            ref_img[self.ref_zp_header_key] = float(
+                ref_img[self.ref_zp_header_key]
+            ) + 2.5 * np.log10(flux_scale)
 
             ref_scaled_path = ref_img_path + ".scaled"
             self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
 
-            logger.info(
+            logger.debug(
                 f"Zeropoints are reference : {ref_unscaled_zp}, "
-                f"scaled reference : {ref_img['ZP']} and "
-                f"science : {image[self.sci_zp_header_key]}"
+                f"scaled reference : {ref_img[self.ref_zp_header_key]} and "
+                f"science : {image[self.ref_zp_header_key]}"
             )
 
             # Scale is 1 by construction for science image
@@ -323,7 +340,9 @@ class ZOGYPrepare(BaseImageProcessor):
                 np.percentile(ref_data[ref_data != 0.0], 84.13)
                 - np.percentile(ref_data[ref_data != 0.0], 15.86)
             )
-            logger.info(f"Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}")
+            logger.debug(
+                f"Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}"
+            )
 
             # Calculate uncertainty images
             sci_rms_image = self.get_rms_image(image, sci_rms)
@@ -447,6 +466,10 @@ class ZOGY(ZOGYPrepare):
             psf_header = fits.Header({"SIMPLE": True})
             psf_header[BASE_NAME_KEY] = diff_psf_path.name
             psf_header[RAW_IMG_KEY] = diff_psf_path.as_posix()
+
+            for key in core_fields:
+                if key not in psf_header:
+                    psf_header[key] = diff[key]
 
             self.save_fits(
                 image=Image(diff_psf_data, psf_header),

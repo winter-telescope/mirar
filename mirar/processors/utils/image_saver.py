@@ -4,6 +4,8 @@ Module for saving images
 import logging
 from pathlib import Path
 
+from astropy.time import Time
+
 from mirar.data import ImageBatch
 from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, base_output_dir, get_output_dir
 from mirar.processors.base_processor import BaseImageProcessor
@@ -47,6 +49,7 @@ class ImageSaver(BaseImageProcessor):
         for image in batch:
             path = output_dir.joinpath(image[BASE_NAME_KEY])
             image[LATEST_SAVE_KEY] = str(path)
+            image["DATE"] = Time.now().isot
 
             if self.write_mask:
                 self.save_mask_image(image, img_path=path)

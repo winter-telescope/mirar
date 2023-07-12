@@ -37,4 +37,15 @@ sextractor_autoastrometry_config = {
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
-swarp_config_path = winter_file_dir.joinpath("swarp.config")
+sextractor_reference_config = {
+    "config_path": winter_file_dir.joinpath("photomCat.sex"),
+    "parameter_path": winter_file_dir.joinpath("photom.param"),
+    "filter_path": winter_file_dir.joinpath("default.conv"),
+    "starnnw_path": winter_file_dir.joinpath("default.nnw"),
+}
+
+swarp_config_path = winter_file_dir.joinpath("config.swarp")
+scamp_config_path = winter_file_dir.joinpath("scamp.conf")
+winter_mask_path = winter_file_dir.joinpath("winter_mask.fits")
+
+psfex_path = winter_file_dir.joinpath("photom.psfex")

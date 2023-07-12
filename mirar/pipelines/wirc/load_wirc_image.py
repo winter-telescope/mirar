@@ -36,9 +36,9 @@ def load_raw_wirc_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Hea
 
     header["TARGET"] = header["OBJECT"].lower()
     if "MJD-OBS" in header.keys():
-        header["UTCTIME"] = Time(header["MJD-OBS"], format="mjd").isot
+        header["DATE-OBS"] = Time(header["MJD-OBS"], format="mjd").isot
     else:
-        header["UTCTIME"] = header["UTSHUT"]
+        header["DATE-OBS"] = header["UTSHUT"]
         header["MJD-OBS"] = Time(header["UTSHUT"]).mjd
     if COADD_KEY not in header.keys():
         logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
