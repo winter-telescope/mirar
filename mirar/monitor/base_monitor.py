@@ -23,6 +23,8 @@ from mirar.data import Dataset, Image, ImageBatch
 from mirar.errors import ErrorReport, ErrorStack, ImageNotFoundError
 from mirar.io import check_file_is_complete
 from mirar.paths import (
+    DITHER_N_KEY,
+    MAX_DITHER_KEY,
     MONITOR_EMAIL_KEY,
     MONITOR_RECIPIENT_KEY,
     PACKAGE_NAME,
@@ -152,6 +154,10 @@ class Monitor:
 
         self.midway_postprocess_complete = False
         self.latest_csv_log = None
+
+        # Queue images that should be processed together
+        self.queued_images = []
+        self.queue_t = Time.now()
 
         self.processed_science_images = []
         self.processed_cal_images = []
@@ -446,25 +452,55 @@ class Monitor:
                             for img in img_batch:
                                 self.update_cals(img)
 
-                        all_img = img_batch + self.get_cals()
+                        sci_img_batch = img_batch + self.get_cals()
+                        
+                        img = img_batch[-1]
 
-                        print(
-                            f"Reducing {event.src_path} "
-                            f"on thread {threading.get_ident()}, "
-                            f"(science={is_science})"
-                        )
-                        _, errorstack = self.pipeline.reduce_images(
-                            dataset=Dataset(all_img),
-                            selected_configurations=self.realtime_configurations,
-                            catch_all_errors=True,
-                        )
-                        self.errorstack += errorstack
-                        self.update_error_log()
+                        if (DITHER_N_KEY in img.keys()) & (
+                            MAX_DITHER_KEY in img.keys()
+                        ):
+                            if img[DITHER_N_KEY] != img[MAX_DITHER_KEY]:
+                                if (Time.now() - self.queue_t) < (1.0 * u.hour):
+                                    self.queued_images.append(event.src_path)
+                                    sci_img_batch = None
+                                else:
+                                    for x in self.queued_images:
+                                        sci_img_batch += self.pipeline.load_raw_image(x)
+                                    self.queued_images = []
 
-                        if is_science:
-                            self.processed_science_images.append(event.src_path)
-                        else:
-                            self.processed_cal_images.append(event.src_path)
+                            # If you have a new dither set, just process
+                            elif np.logical_and(
+                                int(img[DITHER_N_KEY]) == 1.0,
+                                len(self.queued_images) > 0,
+                            ):
+                                if img[MAX_DITHER_KEY] > 1:
+                                    sci_img_batch = ImageBatch([])
+                                    for x in self.queued_images:
+                                        sci_img_batch += self.pipeline.load_raw_image(x)
+                                    self.queued_images = [event.src_path]
+
+                        if sci_img_batch is not None:
+                            self.queue_t = Time.now()
+
+                            all_img = sci_img_batch + self.get_cals()
+
+                            print(
+                                f"Reducing {event.src_path} "
+                                f"on thread {threading.get_ident()}, "
+                                f"(science={is_science})"
+                            )
+                            _, errorstack = self.pipeline.reduce_images(
+                                dataset=Dataset(all_img),
+                                selected_configurations=self.realtime_configurations,
+                                catch_all_errors=True,
+                            )
+                            self.errorstack += errorstack
+                            self.update_error_log()
+
+                            if is_science:
+                                self.processed_science_images.append(event.src_path)
+                            else:
+                                self.processed_cal_images.append(event.src_path)
 
                     # RS: Please forgive me for this coding sin
                     # I just want the monitor to never crash
