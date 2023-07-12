@@ -22,7 +22,7 @@ from mirar.errors import (
     NoncriticalProcessingError,
     ProcessorError,
 )
-from mirar.io import check_image_has_core_fields, open_fits, open_mef_fits, save_mef_to_path, save_to_path
+from mirar.io import check_image_has_core_fields, open_fits, save_to_path
 from mirar.paths import (
     BASE_NAME_KEY,
     CAL_OUTPUT_SUB_DIR,
