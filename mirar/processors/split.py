@@ -7,7 +7,7 @@ import logging
 import numpy as np
 
 from mirar.data import Dataset, Image, ImageBatch
-from mirar.paths import BASE_NAME_KEY
+from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, LATEST_WEIGHT_SAVE_KEY
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -86,6 +86,11 @@ class SplitImage(BaseImageProcessor):
                         "Sub-data coordinate, in form x_y",
                     )
 
+                    new_header["SUBNX"] = (index_x + 1, "Sub-data x index")
+                    new_header["SUBNY"] = (index_y + 1, "Sub-data y index")
+                    new_header["SUBNXTOT"] = (self.n_x, "Total number of sub-data in x")
+                    new_header["SUBNYTOT"] = (self.n_y, "Total number of sub-data in y")
+
                     new_header[SUB_ID_KEY] = k
                     k += 1
 
@@ -99,6 +104,11 @@ class SplitImage(BaseImageProcessor):
                     new_header[BASE_NAME_KEY] = image[BASE_NAME_KEY].replace(
                         ".fits", f"_{sub_img_id}.fits"
                     )
+
+                    for key in [LATEST_SAVE_KEY, LATEST_WEIGHT_SAVE_KEY]:
+                        if key in new_header.keys():
+                            del new_header[key]
+
                     new_images.append(Image(data=new_data, header=new_header))
 
         return new_images

@@ -67,6 +67,6 @@ def populate_filters(filter_map: dict = None):
         filter_map = dict(winter_filters_map)
 
     for filter_name, fid in filter_map.items():
-        summer_filter = Filters(fid=fid, filtername=filter_name)
-        if not summer_filter.exists():
-            summer_filter.insert_entry()
+        winter_filter = Filters(fid=fid, filtername=filter_name)
+        if not winter_filter.exists():
+            winter_filter.insert_entry()

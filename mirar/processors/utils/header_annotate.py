@@ -2,8 +2,11 @@
 Module for adding metadata to Image headers
 """
 import logging
+from typing import Callable
 
-from mirar.data import ImageBatch
+from astropy.io import fits
+
+from mirar.data import Image, ImageBatch
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -87,5 +90,30 @@ class HeaderEditor(BaseImageProcessor):
                 image[key] = self.values[ind]
 
             batch[i] = image
+
+        return batch
+
+
+class CustomHeaderAnnotator(BaseImageProcessor):
+    """
+    Class to annotate an image header using a user-defined function
+    """
+
+    base_key = "custom_header_annotator"
+
+    def __init__(
+        self,
+        header_annotator: Callable[[Image], fits.Header],
+    ):
+        super().__init__()
+        self.header_annotator = header_annotator
+
+    def _apply_to_images(
+        self,
+        batch: ImageBatch,
+    ) -> ImageBatch:
+        for image in batch:
+            new_header = self.header_annotator(image)
+            image.set_header(new_header)
 
         return batch

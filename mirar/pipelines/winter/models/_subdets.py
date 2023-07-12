@@ -21,8 +21,8 @@ class SubdetsTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     __tablename__ = "subdets"
 
-    qid = Column(Integer, primary_key=True)  # serial counter
-    detectorID = Column(Integer)  # WINTER detector ID
+    subdetid = Column(Integer, primary_key=True)  # serial counter
+    boardid = Column(Integer)  # WINTER detector ID
     # subdetid = Column(Integer)  # Sub-detector id (1-2)?
     nx = Column(Integer)
     nxtot = Column(Integer)
@@ -38,7 +38,7 @@ class Subdets(BaseDB):
     """
 
     sql_model: ClassVar = SubdetsTable
-    detectorID: int = Field(Integer, ge=0)
+    boardid: int = Field(Integer, ge=0)
     # subdetid: int = Field(Integer, ge=0)
     nx: int = Field(Integer, ge=0)
     nxtot: int = Field(Integer, ge=0)
@@ -58,7 +58,7 @@ def populate_subdets(ndetectors: int = 6, nxtot: int = 1, nytot: int = 2):
             for nx in range(nxtot):
                 for ny in range(nytot):
                     new = Subdets(
-                        detectorID=ndetector,
+                        boardid=ndetector,
                         nx=nx + 1,
                         ny=ny + 1,
                         nxtot=nxtot,

@@ -13,12 +13,21 @@ from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
+from mirar.data import Image
+from mirar.io import open_mef_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+)
+from mirar.pipelines.winter.constants import imgtype_dict, winter_filters_map
+from mirar.pipelines.winter.models import (
+    DEFAULT_FIELD,
+    SubdetsTable,
+    default_program,
+    itid_dict,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,18 +65,12 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
 
         header["UNIQTYPE"] = f"{header['OBSTYPE']}_{header['BOARD_ID']}"
 
-        basename = os.path.basename(path)
-        timestamp = basename.split(".fits")[0].split("_")[1]
-        date = timestamp.split("-")[0]
-        time = timestamp.split("-")[1]
-
         if "RADEG" not in header.keys():
             header["RADEG"] = header["RA"]
             header["DECDEG"] = header["DEC"]
 
-        header["UTCTIME"] = (
-            f"{date[:4]}-{date[4:6]}-{date[6:]}T" f"{time[:2]}:{time[2:4]}:{time[4:]}"
-        )
+        header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
+
         header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
         header["DATE-OBS"] = Time(header["UTCTIME"]).isot
 
@@ -92,6 +95,11 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
             header["OBSTYPE"] = "WEIGHT"
         header["RA"] = header["RADEG"]
         header["DEC"] = header["DECDEG"]
+
+        obstime = Time(header["UTCTIME"])
+        header["EXPID"] = int(
+            (obstime.mjd - 59000.0) * 86400.0
+        )  # seconds since 60000 MJD
 
         if COADD_KEY not in header.keys():
             logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
@@ -221,3 +229,139 @@ def load_stacked_winter_image(
             header["UTCTIME"] = "2023-06-14T00:00:00"
 
     return data, header
+
+
+def load_winter_mef_image(
+    path: str | Path,
+) -> tuple[astropy.io.fits.Header, list[np.array], list[astropy.io.fits.Header]]:
+    """
+    Load mef image.
+    """
+    header, split_data, split_headers = open_mef_fits(path)
+
+    header["OBSCLASS"] = ["science", "calibration"][
+        header["OBSTYPE"] in ["DARK", "FLAT"]
+    ]
+    header["COADDS"] = 1
+    header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
+
+    header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
+    header["TARGET"] = header["OBSTYPE"].lower()
+    header["RAWPATH"] = path
+    header["BASENAME"] = os.path.basename(path)
+    header["CALSTEPS"] = ""
+    header["PROCFAIL"] = 1
+
+    obstime = Time(header["UTCTIME"])
+    header["EXPID"] = int((obstime.mjd - 59000.0) * 86400.0)  # seconds since 60000 MJD
+
+    header["FID"] = int(winter_filters_map[header["FILTERID"]])
+    logger.info(f"Obstime is {obstime}")
+    header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y-%m-%d")
+    logger.info(f"Nightdate is {header['NIGHTDATE']}")
+    header["IMGTYPE"] = header["OBSTYPE"]
+
+    if not header["IMGTYPE"] in imgtype_dict:
+        header["ITID"] = itid_dict[imgtype_dict["OTHER"]]
+    else:
+        header["ITID"] = itid_dict[imgtype_dict[header["OBSTYPE"]]]
+
+    header["EXPMJD"] = header["MJD-OBS"]
+
+    header["RA"] = header["RADEG"]
+    header["DEC"] = header["DECDEG"]
+    for key in ["MOONRA", "MOONDEC", "MOONILLF", "MOONPHAS", "SUNAZ"]:
+        if header[key] == "":
+            header[key] = 99
+
+    if header["FIELDID"] < 0:
+        header["FIELDID"] = DEFAULT_FIELD
+    if header["PROGID"] < 0:
+        header["PROGID"] = default_program.progid
+    # TODO: Get puid from PROGID
+    header["PUID"] = header["PROGID"]
+    return header, split_data, split_headers
+
+
+def load_raw_winter_header(image: Image) -> fits.Header:
+    """
+    Load raw winter headers
+    """
+    header = image.header
+    data = image.get_data()
+
+    _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
+    header["MEDCOUNT"] = med
+    header["STDDEV"] = std
+    header["PROCSTATUS"] = 0
+    subnx, subny, subnxtot, subnytot = (
+        header["SUBNX"],
+        header["SUBNY"],
+        header["SUBNXTOT"],
+        header["SUBNYTOT"],
+    )
+    subdet = SubdetsTable(
+        boardid=header["BOARD_ID"],
+        nx=header["SUBNX"],
+        ny=header["SUBNY"],
+        nxtot=header["SUBNXTOT"],
+        nytot=header["SUBNYTOT"],
+    )
+    subdetid = subdet.select_query(
+        compare_keys=["boardid", "nx", "ny", "nxtot", "nytot"],
+        compare_values=[header["BOARD_ID"], subnx, subny, subnxtot, subnytot],
+    )
+    header["SUBDETID"] = subdetid[0][0]
+    header["RAWID"] = int(f"{header['EXPID']}_{str(header['SUBDETID']).rjust(2, '0')}")
+
+    if "DATASEC" in header.keys():
+        del header["DATASEC"]
+
+    return header
+
+
+def get_raw_winter_mask(image: Image) -> np.ndarray:
+    """
+    Get mask for raw winter image.
+    """
+    data = image.get_data()
+    header = image.header
+
+    mask = np.zeros(data.shape)
+    if header["BOARD_ID"] == 0:
+        # data[:500, 700:1500] = np.nan
+        mask[1075:, :] = 1.0
+        mask[:, 1950:] = 1.0
+        mask[:20, :] = 1.0
+
+    if header["BOARD_ID"] == 1:
+        pass
+
+    if header["BOARD_ID"] == 2:
+        mask[1060:, :] = 1.0
+        mask[:, 1970:] = 1.0
+        mask[:55, :] = 1.0
+        mask[:, :20] = 1.0
+
+    if header["BOARD_ID"] == 3:
+        mask[1085:, :] = 1.0
+        mask[:, 1970:] = 1.0
+        mask[:55, :] = 1.0
+        mask[:, :20] = 1.0
+
+    if header["BOARD_ID"] == 4:
+        # data[610:, :280] = np.nan
+        mask[:, 1948:] = 1.0
+        mask[:, :61] = 1.0
+        mask[:20, :] = 1.0
+        mask[1060:, :] = 1.0
+        mask[:, 999:1002] = 1.0
+
+    if header["BOARD_ID"] == 5:
+        # data[740:, 1270: 1850] = np.nan
+        mask[1072:, :] = 1.0
+        mask[:, 1940:] = 1.0
+        mask[:15, :] = 1.0
+        mask[680:, 1180:] = 1.0
+
+    return mask.astype(bool)

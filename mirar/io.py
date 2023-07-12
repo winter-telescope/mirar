@@ -69,6 +69,41 @@ def save_to_path(
     save_hdu_as_fits(hdu=img, path=path, overwrite=overwrite)
 
 
+def save_mef_to_path(data_list, header_list, primary_header, path):
+    """
+    Function to save a MEF image with <data> and <header> to <path>.
+    """
+    primary_hdu = fits.PrimaryHDU(header=primary_header)
+    hdu_list = [primary_hdu]
+    assert len(data_list) == len(header_list)
+    for ind, data in enumerate(data_list):
+        hdu_list.append(fits.ImageHDU(data=data, header=header_list[ind]))
+
+    hdulist = fits.HDUList(hdu_list)
+
+    hdulist.writeto(path, overwrite=True)
+
+
+def open_mef_fits(
+    path: str | Path,
+) -> tuple[fits.Header, list[np.ndarray], list[fits.Header]]:
+    """
+    Function to open a MEF fits file saved to <path>
+
+    :param path: path of fits file
+    :return: tuple containing image data and image header
+    """
+    split_data, split_headers = [], []
+    with fits.open(path) as hdu:
+        primary_header = hdu[0].header  # pylint: disable=no-member
+        num_ext = len(hdu)
+        for ext in range(1, num_ext):
+            split_data.append(hdu[ext].data)  # pylint: disable=no-member
+            split_headers.append(hdu[ext].header)  # pylint: disable=no-member
+
+    return primary_header, split_data, split_headers
+
+
 def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     """
     Function to open a fits file saved to <path>
@@ -89,6 +124,23 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
             header[RAW_IMG_KEY] = path
 
     return data, header
+
+
+def combine_mef_extension_file_headers(primary_header, extension_header):
+    """
+    Function to combine the primary header with an extension header in a MEF frame
+    """
+    zipped = list(zip(primary_header.values(), primary_header.comments))
+
+    # append primary_header to hdrext
+    for count, key in enumerate(list(primary_header.keys())):
+        extension_header.append((key, zipped[count][0], zipped[count][1]))
+
+    for k in ["XTENSION", "BITPIX"]:
+        if k in extension_header.keys():
+            del extension_header[k]
+
+    return extension_header
 
 
 def check_file_is_complete(path: str) -> bool:
@@ -113,7 +165,7 @@ def check_file_is_complete(path: str) -> bool:
             with fits.open(path) as hdul:
                 check = (
                     hdul._file.size  # pylint: disable=protected-access
-                    == hdul._file.tell()  # pylint: disable=protected-access
+                    >= hdul._file.tell()  # pylint: disable=protected-access
                 )
         except OSError:
             pass

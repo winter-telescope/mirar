@@ -3,6 +3,7 @@ Module containing processors which mask pixels
 """
 import logging
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -54,7 +55,8 @@ class BaseMask(BaseImageProcessor):
                 image.set_data(data)
 
             logger.debug(
-                f"Masked {np.sum(pixels_to_mask)}/{pixels_to_mask.size} pixels in {image[BASE_NAME_KEY]}"
+                f"Masked {np.sum(pixels_to_mask)}/{pixels_to_mask.size} pixels "
+                f"in {image[BASE_NAME_KEY]}"
             )
 
             if self.write_masked_pixels_to_file:
@@ -147,6 +149,34 @@ class MaskPixelsFromPathInverted(MaskPixelsFromPath):
         """
         mask = super().get_mask(image)
         return ~mask
+
+
+class MaskPixelsFromFunction(BaseMask):
+    """
+    Processor to apply a mask to images using a function
+    """
+
+    base_key = "maskfromfunction"
+
+    def __init__(
+        self,
+        mask_function: Callable[[Image], np.ndarray],
+        write_masked_pixels_to_file: bool = False,
+        output_dir: str | Path = "mask",
+        only_write_mask: bool = False,
+    ):
+        super().__init__(
+            write_masked_pixels_to_file=write_masked_pixels_to_file,
+            output_dir=output_dir,
+            only_write_mask=only_write_mask,
+        )
+        self.mask_function = mask_function
+
+    def get_mask(self, image) -> np.ndarray:
+        """
+        Function to get the mask for a given image
+        """
+        return self.mask_function(image)
 
 
 class MaskAboveThreshold(BaseMask):
@@ -295,3 +325,30 @@ class WriteMaskedCoordsToFile(BaseMask):
         else:
             pixels_to_mask[image.get_data() == MASK_VALUE] = True
         return pixels_to_mask
+
+
+class MaskDatasecPixels(BaseMask):
+    """
+    Processor to mask the data section of an image
+    """
+
+    base_key = "maskdatasec"
+
+    def get_mask(self, image: Image) -> np.ndarray:
+        """
+        Function to mask the data section of an image
+        """
+        header = image.header
+        data = image.get_data()
+        datasec = header["DATASEC"].replace("[", "").replace("]", "").split(",")
+        datasec_xmin = int(datasec[0].split(":")[0])
+        datasec_xmax = int(datasec[0].split(":")[1])
+        datasec_ymin = int(datasec[1].split(":")[0])
+        datasec_ymax = int(datasec[1].split(":")[1])
+
+        mask = np.zeros(data.shape)
+        mask[:, :datasec_xmin] = 1.0
+        mask[:, datasec_xmax:] = 1.0
+        mask[:datasec_ymin, :] = 1.0
+        mask[datasec_ymax:, :] = 1.0
+        return mask.astype(bool)

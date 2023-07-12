@@ -11,6 +11,9 @@ from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.processors.sqldatabase.base_model import BaseDB
 
 ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "NULL"]
+itid_dict = {}
+for i, img_type in enumerate(ALL_ITID):
+    itid_dict[img_type] = i + 1
 DEFAULT_ITID = 5
 
 itid_field = Field(ge=0, le=5, default=5)
@@ -52,7 +55,7 @@ def populate_itid():
 
     :return: None
     """
-    for i, img_type in enumerate(ALL_ITID):
-        itid = ImgTypes(itid=i + 1, imgtype=img_type)
+    for ind, imgtype in enumerate(ALL_ITID):
+        itid = ImgTypes(itid=ind + 1, imgtype=imgtype)
         if not itid.exists():
             itid.insert_entry()

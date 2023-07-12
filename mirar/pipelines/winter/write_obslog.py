@@ -23,6 +23,7 @@ def write_observation_log(image_dir):
         "RADEG",
         "DECDEG",
         "BOARD_ID",
+        "FIELDID",
     ]
 
     all_entries = []

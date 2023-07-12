@@ -22,9 +22,20 @@ from mirar.pipelines.winter.generator import (
     winter_reference_sextractor,
 )
 from mirar.pipelines.winter.load_winter_image import (
+    get_raw_winter_mask,
     load_proc_winter_image,
+    load_raw_winter_header,
     load_raw_winter_image,
     load_stacked_winter_image,
+    load_winter_mef_image,
+)
+from mirar.pipelines.winter.models import (
+    NXSPLIT,
+    NYSPLIT,
+    AstrometryStats,
+    Exposures,
+    Proc,
+    Raw,
 )
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.sextractor import (
@@ -36,11 +47,21 @@ from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.mask import MaskPixelsFromPath, WriteMaskedCoordsToFile
+from mirar.processors.mask import (
+    MaskAboveThreshold,
+    MaskDatasecPixels,
+    MaskPixelsFromFunction,
+    MaskPixelsFromPath,
+    WriteMaskedCoordsToFile,
+)
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
 from mirar.processors.split import SUB_ID_KEY, SplitImage
+from mirar.processors.sqldatabase.database_exporter import (
+    DatabaseImageBatchExporter,
+    DatabaseImageExporter,
+)
 from mirar.processors.utils import (
     HeaderAnnotator,
     ImageBatcher,
@@ -48,7 +69,9 @@ from mirar.processors.utils import (
     ImageLoader,
     ImageSaver,
     ImageSelector,
+    MEFImageLoaderSplitter,
 )
+from mirar.processors.utils.header_annotate import CustomHeaderAnnotator
 from mirar.processors.utils.multi_ext_parser import MultiExtParser
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
@@ -126,7 +149,7 @@ load_multiboard_stack = [
         ("OBSTYPE", "SCIENCE"),
     ),
 ]
-# ImageBatcher("COADDS")]
+
 log = (
     split
     + load
@@ -164,7 +187,6 @@ log_all_boards = (
                 "UTCTIME",
                 "EXPTIME",
                 "OBSTYPE",
-                "UNIQTYPE",
                 "BOARD_ID",
                 "OBSCLASS",
                 "TARGET",
@@ -263,11 +285,14 @@ process_proc = [
     ),
 ]
 
+export_proc = [
+    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False)
+]
+
 process_proc_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
-    # # ImageSelector(("FIELDID", "2789")),
     ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
@@ -292,6 +317,7 @@ process_proc_all_boards = [
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
+    DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
     ImageSaver(output_dir_name="anet"),
     # Sextractor(
     #     **sextractor_autoastrometry_config,
@@ -334,16 +360,6 @@ process_noise = [
     ),
     ImageSaver(output_dir_name=f"noisemask_{BOARD_ID}"),
 ]
-# process_proc = [ImageDebatcher(),
-#                 ImageSelector(("OBSTYPE", ["SCIENCE"])),
-#                 Sextractor(**sextractor_autoastrometry_config,
-#                            write_regions_bool=True,
-#                            output_sub_dir="sextractor",
-#                            cache=False),
-#                 AutoAstrometry(catalog="tmc", pixel_scale=1.07,
-#                                write_crosscheck_files=True,
-#                                inv=False,
-#                                ), ]
 
 stack_proc = [
     ImageBatcher(["TARGNAME", "FILTER"]),
@@ -377,6 +393,9 @@ photcal = [
         ref_catalog_generator=winter_photometric_catalog_generator,
         write_regions=True,
         cache=True,
+    ),
+    DatabaseImageExporter(
+        db_table=AstrometryStats, duplicate_protocol="replace", q3c_bool=False
     ),
     # ImageSaver(output_dir_name=f"phot_{board_id}_{target_name}")
     ImageSaver(output_dir_name="photcal"),
@@ -450,16 +469,38 @@ extract_subset = [
 ]
 
 extract_all = [
-    MultiExtParser(
-        input_sub_dir="raw/",
+    MEFImageLoaderSplitter(
+        input_sub_dir="raw",
+        load_image=load_winter_mef_image,
         extension_num_header_key="BOARD_ID",
-        output_sub_dir="raw_split",
-    ),
-    ImageLoader(input_sub_dir="raw_split", load_image=load_raw_winter_image),
+    )
+]
+
+export_to_exposures = [
+    ImageBatcher("UTCTIME"),
+    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
+]
+
+mask_single_ext = [
+    MaskAboveThreshold(threshold=40000.0),
+    MaskDatasecPixels(),
+    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
 ]
 
 split_indiv = [
     ImageDebatcher(),
+    SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
+    ImageDebatcher(),
+    CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
+]
+
+export_to_raw = [
+    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False)
+]
+
+select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
+
+make_log_and_save = [
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -469,7 +510,6 @@ split_indiv = [
             "FILTER",
             "EXPTIME",
             "OBSTYPE",
-            "UNIQTYPE",
             "BOARD_ID",
             "OBSCLASS",
             "TARGET",

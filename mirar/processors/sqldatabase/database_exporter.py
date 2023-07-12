@@ -4,11 +4,21 @@ Module containing processors for exporting to databases
 import logging
 from abc import ABC
 
+import numpy as np
+
 from mirar.data import ImageBatch, SourceBatch
+from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import BaseDataframeProcessor, BaseImageProcessor
 from mirar.processors.sqldatabase.base_database_processor import BaseDatabaseProcessor
+from mirar.processors.utils.image_selector import ImageBatcher
 
 logger = logging.getLogger(__name__)
+
+
+class ImageBatchDatabaseExporterError(BaseProcessorError):
+    """
+    Error for ImageBatchDatabaseExporter
+    """
 
 
 class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
@@ -17,6 +27,7 @@ class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
     """
 
     base_key = "dbexporter"
+    max_n_cpu = 1
 
     def __str__(self):
         return (
@@ -74,3 +85,50 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
             source_list.set_data(candidate_table)
 
         return batch
+
+
+class DatabaseImageBatchExporter(DatabaseImageExporter):
+    """
+    Processor for creating a single entry per batch of images in a database
+    """
+
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+        column_names = [
+            x for x in self.db_table.__dict__["__annotations__"] if x != "sql_model"
+        ]
+
+        for column in column_names:
+            values = [x[column] for x in batch]
+            if len(np.unique(values)) > 1:
+                err = (
+                    f"Key {column} differs across images in the batch, cannot export"
+                    f"it to database."
+                )
+
+                raise ImageBatchDatabaseExporterError(err)
+
+        image = batch[0]
+        logger.debug(f"Trying to export {[image[x] for x in column_names]}")
+        primary_keys, primary_key_values = self.pg_user.export_to_db(
+            image,
+            db_table=self.db_table,
+            duplicate_protocol=self.duplicate_protocol,
+        )
+
+        for ind, key in enumerate(primary_keys):
+            for image in batch:
+                image[key] = primary_key_values[ind]
+        return batch
+
+    def check_prerequisites(
+        self,
+    ):
+        check = np.sum([isinstance(x, ImageBatcher) for x in self.preceding_steps[-1:]])
+        if check < 1:
+            err = (
+                f"{self.__module__} requires {ImageBatcher} to be run right before it"
+                f"as a prerequisite. "
+                f"However, the following steps were found: {self.preceding_steps}."
+            )
+            logger.error(err)
+            raise ValueError
