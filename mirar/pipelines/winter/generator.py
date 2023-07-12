@@ -12,26 +12,27 @@ from mirar.catalog import Gaia2Mass
 from mirar.catalog.vizier import PS1
 from mirar.data import Image
 from mirar.paths import get_output_dir
+from mirar.pipelines.winter.config import (
+    psfex_path,
+    scamp_config_path,
+    sextractor_reference_config,
+    swarp_config_path,
+)
 from mirar.pipelines.winter.models import RefComponents, RefQueries, RefStacks
 from mirar.pipelines.wirc.wirc_files import sextractor_astrometry_config
+from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
 )
 from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.split import SUB_ID_KEY
 from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.references.local import RefFromPath
 from mirar.references.ukirt import UKIRTRef
 
-# from mirar.catalog.base_catalog import CatalogFromFile
-
 logger = logging.getLogger(__name__)
-winter_dir = os.path.dirname(__file__)
-astromatic_config_dir = os.path.join(winter_dir, "config/")
-swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
-winter_mask_path = os.path.join(winter_dir, "winter_mask.fits")
-scamp_config_path = os.path.join(winter_dir, "config/files/scamp.conf")
 
 
 def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks):
@@ -53,11 +54,11 @@ def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks)
     filtername = image["FILTER"]
     # TODO if in_ukirt and in_vista, different processing
     fieldid = int(image["FIELDID"])
-    subdetid = int(image["SUBDETID"])
+    subdetid = int(image[SUB_ID_KEY])
     logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
     db_results = db_table.sql_model().select_query(
         select_keys=["savepath"],
-        compare_keys=["fieldid", "subdetid"],
+        compare_keys=["fieldid", SUB_ID_KEY.lower()],
         compare_values=[fieldid, subdetid],
         comparators=["__eq__", "__eq__"],
     )
@@ -65,7 +66,7 @@ def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks)
     if len(db_results) > 0:
         savepaths = [x[0] for x in db_results]
         if os.path.exists(savepaths[0]):
-            logger.info(f"Found reference image in database: {savepaths[0]}")
+            logger.debug(f"Found reference image in database: {savepaths[0]}")
             return RefFromPath(path=savepaths[0], filter_name=filtername)
 
     return UKIRTRef(
@@ -90,9 +91,26 @@ def winter_reference_image_resampler(**kwargs) -> Swarp:
     :param kwargs: kwargs
     :return: Swarp processor
     """
-    logger.info(kwargs)
-    return Swarp(
-        swarp_config_path=swarp_config_path, subtract_bkg=True, cache=False, **kwargs
+    logger.debug(kwargs)
+    return Swarp(swarp_config_path=swarp_config_path, cache=False, **kwargs)
+
+
+def winter_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
+    """Returns a Sextractor processor for WINTER reference images"""
+    return Sextractor(
+        **sextractor_reference_config,
+        gain=gain,
+        output_sub_dir=output_sub_dir,
+        cache=True,
+    )
+
+
+def winter_reference_psfex(output_sub_dir: str, norm_fits: bool) -> PSFex:
+    """Returns a PSFEx processor for WINTER"""
+    return PSFex(
+        config_path=psfex_path,
+        output_sub_dir=output_sub_dir,
+        norm_fits=norm_fits,
     )
 
 

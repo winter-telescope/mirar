@@ -13,6 +13,7 @@ from mirar.processors.base_processor import BaseImageProcessor
 logger = logging.getLogger(__name__)
 
 SUB_ID_KEY = "SUBID"
+SUB_COORD_KEY = "SUBCOORD"
 
 
 class SplitImage(BaseImageProcessor):
@@ -29,7 +30,7 @@ class SplitImage(BaseImageProcessor):
         self.n_y = n_y
 
     def __str__(self) -> str:
-        return f"Processor to split images into {self.n_x*self.n_y} smaller images."
+        return f"Processor to split images into {self.n_x}x{self.n_y}={self.n_x*self.n_y} smaller images."
 
     def get_range(
         self,
@@ -57,7 +58,7 @@ class SplitImage(BaseImageProcessor):
     ) -> ImageBatch:
         new_images = ImageBatch()
 
-        logger.info(f"Splitting each data into {self.n_x*self.n_y} sub-images")
+        logger.debug(f"Splitting each data into {self.n_x*self.n_y} sub-images")
 
         for image in batch:
             pix_width_x, pix_width_y = image.get_data().shape
@@ -80,7 +81,7 @@ class SplitImage(BaseImageProcessor):
 
                     sub_img_id = f"{index_x}_{index_y}"
 
-                    new_header["SUBCOORD"] = (
+                    new_header[SUB_COORD_KEY] = (
                         sub_img_id,
                         "Sub-data coordinate, in form x_y",
                     )

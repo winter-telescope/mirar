@@ -4,6 +4,7 @@ Python script containing all IO functions.
 All opening/writing of fits files should run via this script.
 """
 
+import logging
 import warnings
 from pathlib import Path
 
@@ -11,7 +12,14 @@ import numpy as np
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 
-from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY
+from mirar.data import Image
+from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY, core_fields
+
+logger = logging.getLogger(__name__)
+
+
+class MissingCoreFieldError(KeyError):
+    """Base class for missing core field errors"""
 
 
 def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU:
@@ -30,7 +38,7 @@ def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU
 
 def save_hdu_as_fits(hdu: fits.PrimaryHDU, path: str | Path, overwrite: bool = True):
     """
-    Wrapper hunction to save an astropy hdu to file
+    Wrapper function to save an astropy hdu to file
 
     :param hdu: hdu to save
     :param path: path to save
@@ -70,6 +78,7 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     """
     with fits.open(path) as img:
         hdu = img.pop(0)
+        hdu.verify("silentfix+ignore")
         data = hdu.data
         header = hdu.header
 
@@ -110,3 +119,23 @@ def check_file_is_complete(path: str) -> bool:
             pass
 
     return check
+
+
+def check_image_has_core_fields(img: Image):
+    """
+    Function to ensure that an image has all the core fields
+
+    :param img: Image object to check
+    :return: None
+    """
+    for key in core_fields:
+        if key not in img.keys():
+            if BASE_NAME_KEY in img.keys():
+                msg = f"({img[BASE_NAME_KEY]}) "
+
+            err = (
+                f"New image {msg}is missing the core field {key}. "
+                f"Available fields are {list(img.keys())}."
+            )
+            logger.error(err)
+            raise MissingCoreFieldError(err)

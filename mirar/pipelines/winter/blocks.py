@@ -2,11 +2,13 @@
 Module for WINTER data reduction
 """
 from mirar.io import open_fits
-from mirar.paths import FITS_MASK_KEY
+from mirar.paths import BASE_NAME_KEY, DITHER_N_KEY, FITS_MASK_KEY, MAX_DITHER_KEY
 from mirar.pipelines.winter.config import (
+    psfex_path,
     sextractor_anet_config,
     sextractor_autoastrometry_config,
     sextractor_photometry_config,
+    sextractor_reference_config,
     swarp_config_path,
 )
 from mirar.pipelines.winter.generator import (
@@ -15,13 +17,16 @@ from mirar.pipelines.winter.generator import (
     winter_astrostat_catalog_purifier,
     winter_photometric_catalog_generator,
     winter_reference_generator,
+    winter_reference_image_resampler,
+    winter_reference_psfex,
+    winter_reference_sextractor,
 )
 from mirar.pipelines.winter.load_winter_image import (
     load_proc_winter_image,
     load_raw_winter_image,
     load_stacked_winter_image,
 )
-from mirar.processors.astromatic import Scamp
+from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.sextractor import (
     Sextractor,
     sextractor_checkimg_map,
@@ -33,10 +38,11 @@ from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.mask import MaskPixelsFromPath, WriteMaskedCoordsToFile
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.reference import GetReferenceImage
+from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
-from mirar.processors.split import SplitImage
+from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.utils import (
+    HeaderAnnotator,
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
@@ -44,6 +50,7 @@ from mirar.processors.utils import (
     ImageSelector,
 )
 from mirar.processors.utils.multi_ext_parser import MultiExtParser
+from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
     ImageDebatcher(),
@@ -259,8 +266,8 @@ process_proc = [
 process_proc_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
-    ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
-    # ImageSelector(("FIELDID", "2789")),
+    # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
+    # # ImageSelector(("FIELDID", "2789")),
     ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
@@ -452,18 +459,14 @@ extract_all = [
 ]
 
 split_indiv = [
-    SplitImage(n_x=1, n_y=2),
     ImageDebatcher(),
-]
-
-select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
-
-make_log_and_save = [
     CSVLog(
         export_keys=[
-            "SUBCOORD",
-            "FILTER",
             "UTCTIME",
+            "PROGNAME",
+            DITHER_N_KEY,
+            MAX_DITHER_KEY,
+            "FILTER",
             "EXPTIME",
             "OBSTYPE",
             "UNIQTYPE",
@@ -480,20 +483,52 @@ make_log_and_save = [
             "T_ROIC",
         ]
     ),
+    SplitImage(n_x=1, n_y=2),
+]
+
+save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
 ]
 
-unpack_subset = extract_subset + split_indiv + select_split_subset + make_log_and_save
-unpack_all = extract_all + split_indiv + make_log_and_save
+imsub = [
+    ImageLoader(input_sub_dir="photcal", load_image=open_fits),
+    HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
+    ProcessReference(
+        ref_image_generator=winter_reference_generator,
+        swarp_resampler=winter_reference_image_resampler,
+        sextractor=winter_reference_sextractor,
+        ref_psfex=winter_reference_psfex,
+    ),
+    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
+    PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
+    ImageSaver(output_dir_name="presubtract"),
+    ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
+    ImageSaver(output_dir_name="prezogy"),
+    ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
+    ImageSaver(output_dir_name="diffs"),
+]
+
+final = [
+    ImageLoader(input_sub_dir="prezogy", load_image=open_fits),
+    ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
+    ImageSaver(output_dir_name="diffs"),
+]
+
+unpack_subset = extract_subset + split_indiv + save_raw
+unpack_all = extract_all + split_indiv + save_raw
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", load_image=open_fits),
 ]
 
 full_commissioning = load_unpacked + process + process_proc  # + stack_proc
-full_commissioning_all_boards = (
-    load_unpacked + dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards
+
+full_commissioning_proc = (
+    dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards + photcal
 )
+
+full_commissioning_all_boards = load_unpacked + full_commissioning_proc
+
 commissioning_split_single_board = (
     log
     + split_images
@@ -510,12 +545,5 @@ commissioning_split = (
     + process_proc_all_boards
     + photcal
 )
-# commissioning_split = load_all_boards + split_images + process + \
-# process_proc_all_boards + photcal
-commissioning_split = (
-    load_unpacked
-    + dark_cal_all_boards
-    + flat_cal_all_boards
-    + process_proc_all_boards
-    + photcal
-)
+
+reduce = unpack_all + full_commissioning_proc
