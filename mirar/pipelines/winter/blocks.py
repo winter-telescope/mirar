@@ -2,7 +2,7 @@
 Module for WINTER data reduction
 """
 from mirar.io import open_fits
-from mirar.paths import BASE_NAME_KEY, DITHER_N_KEY, FITS_MASK_KEY, MAX_DITHER_KEY
+from mirar.paths import DITHER_N_KEY, FITS_MASK_KEY, MAX_DITHER_KEY, base_output_dir
 from mirar.pipelines.winter.config import (
     psfex_path,
     sextractor_anet_config,
