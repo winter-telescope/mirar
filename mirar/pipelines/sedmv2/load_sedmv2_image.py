@@ -85,6 +85,7 @@ def load_raw_sedmv2_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
             Time("2018-01-01", format="iso").jd
         )  # integer value, night 1, night 2...
         header["EXPMJD"] = header["OBSDATE"]
+        header["DATE-OBS"] = header["OBSDATE"]
 
     return data[0].data, data[0].header  # pylint: disable=no-member
 
