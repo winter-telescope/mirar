@@ -3,6 +3,7 @@ Module for loading raw WINTER images and ensuring they have the correct format
 """
 import logging
 import os
+import warnings
 from pathlib import Path
 
 import astropy
@@ -10,6 +11,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
+from astropy.utils.exceptions import AstropyWarning
 
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -163,7 +165,10 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
             data[680:, 1180:] = np.nan
             # data[data > 25000] = np.nan
 
-        _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", AstropyWarning)
+            _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
+
         header["MEDCOUNT"] = med
         header["STDDEV"] = std
         # if header['RADEG']>300:
@@ -197,7 +202,7 @@ def load_stacked_winter_image(
     """
     Load proc image
     """
-    logger.info(f"Loading {path}")
+    logger.debug(f"Loading {path}")
     with fits.open(path) as img:
         data = img[0].data  # pylint: disable=no-member
         header = img[0].header  # pylint: disable=no-member

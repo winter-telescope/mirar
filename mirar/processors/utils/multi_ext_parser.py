@@ -9,6 +9,7 @@ from pathlib import Path
 
 import astropy.io.fits
 import numpy as np
+from tqdm import tqdm
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
@@ -94,7 +95,7 @@ class MultiExtParser(BaseImageProcessor):
 
         new_paths = []
         with astropy.io.fits.open(path) as hdu:
-            logger.info(f"This file - {path} - has {len(hdu)} extensions.")
+            logger.debug(f"This file - {path} - has {len(hdu)} extensions.")
 
             hdr0 = hdu[0].header  # pylint: disable=no-member
             # zip hdr0's values and comments
@@ -102,7 +103,7 @@ class MultiExtParser(BaseImageProcessor):
             # combining main header (hdr0) with extension header
             if self.skip_first:
                 start = 2
-                logger.info("Ignoring first extension frame")
+                logger.debug("Ignoring first extension frame")
             else:
                 start = 1
             for ext in range(start, len(hdu)):
@@ -180,7 +181,7 @@ def load_from_dir(
         logger.error(err)
         raise ImageNotFoundError(err)
 
-    for path in img_list:
+    for path in tqdm(img_list):
         parse_f(path)
 
     empty_batch = ImageBatch()

@@ -2,7 +2,7 @@
 Module for WINTER data reduction
 """
 from mirar.io import open_fits
-from mirar.paths import FITS_MASK_KEY
+from mirar.paths import BASE_NAME_KEY, DITHER_N_KEY, FITS_MASK_KEY, MAX_DITHER_KEY
 from mirar.pipelines.winter.config import (
     psfex_path,
     sextractor_anet_config,
@@ -266,8 +266,8 @@ process_proc = [
 process_proc_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
-    ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
-    # ImageSelector(("FIELDID", "2789")),
+    # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
+    # # ImageSelector(("FIELDID", "2789")),
     ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
@@ -459,18 +459,14 @@ extract_all = [
 ]
 
 split_indiv = [
-    SplitImage(n_x=1, n_y=2),
     ImageDebatcher(),
-]
-
-select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
-
-make_log_and_save = [
     CSVLog(
         export_keys=[
-            "SUBCOORD",
-            "FILTER",
             "UTCTIME",
+            "PROGNAME",
+            DITHER_N_KEY,
+            MAX_DITHER_KEY,
+            "FILTER",
             "EXPTIME",
             "OBSTYPE",
             "UNIQTYPE",
@@ -487,6 +483,10 @@ make_log_and_save = [
             "T_ROIC",
         ]
     ),
+    SplitImage(n_x=1, n_y=2),
+]
+
+save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
 ]
 
@@ -514,8 +514,8 @@ final = [
     ImageSaver(output_dir_name="diffs"),
 ]
 
-unpack_subset = extract_subset + split_indiv + select_split_subset + make_log_and_save
-unpack_all = extract_all + split_indiv + make_log_and_save
+unpack_subset = extract_subset + split_indiv + save_raw
+unpack_all = extract_all + split_indiv + save_raw
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", load_image=open_fits),
@@ -523,13 +523,11 @@ load_unpacked = [
 
 full_commissioning = load_unpacked + process + process_proc  # + stack_proc
 
-full_commissioning_all_boards = (
-    load_unpacked
-    + dark_cal_all_boards
-    + flat_cal_all_boards
-    + process_proc_all_boards
-    + photcal
+full_commissioning_proc = (
+    dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards + photcal
 )
+
+full_commissioning_all_boards = load_unpacked + full_commissioning_proc
 
 commissioning_split_single_board = (
     log
@@ -547,3 +545,5 @@ commissioning_split = (
     + process_proc_all_boards
     + photcal
 )
+
+reduce = unpack_all + full_commissioning_proc
