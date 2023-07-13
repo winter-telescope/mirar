@@ -21,6 +21,7 @@ from mirar.pipelines.winter.generator import (
     winter_reference_image_resampler,
     winter_reference_psfex,
     winter_reference_sextractor,
+    winter_stackid_annotator,
 )
 from mirar.pipelines.winter.load_winter_image import (
     get_raw_winter_mask,
@@ -29,7 +30,16 @@ from mirar.pipelines.winter.load_winter_image import (
     load_stacked_winter_image,
     load_winter_mef_image,
 )
-from mirar.pipelines.winter.models import Exposures, Proc, Raw
+
+from mirar.pipelines.winter.models import (
+    NXSPLIT,
+    NYSPLIT,
+    AstrometryStats,
+    Exposures,
+    Raw,
+    Stacks,
+)
+
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.sextractor import (
     Sextractor,
@@ -40,6 +50,7 @@ from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
+from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
 from mirar.processors.mask import (
     MaskAboveThreshold,
     MaskDatasecPixels,
@@ -183,7 +194,7 @@ process_detrended = [
 ]
 
 export_proc = [
-    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False)
+    DatabaseImageExporter(db_table=Stacks, duplicate_protocol="replace", q3c_bool=False)
 ]
 
 process_proc_all_boards = [
@@ -214,9 +225,7 @@ process_proc_all_boards = [
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
-    # DatabaseImageExporter(
-    #     db_table=AstrometryStats, duplicate_protocol="replace", q3c_bool=False
-    # ),
+    DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
     ImageSaver(output_dir_name="anet"),
     # Sextractor(
     #     **sextractor_autoastrometry_config,
@@ -239,10 +248,32 @@ process_proc_all_boards = [
         cache=False,
         center_type="ALL",
         temp_output_sub_dir="stack_all",
+        header_keys_to_combine=["RAWID"],
+    ),
+    CustomHeaderAnnotator(header_annotator=winter_stackid_annotator),
+    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
+    Sextractor(
+        **sextractor_photometry_config,
+        output_sub_dir="phot",
+        checkimage_type="BACKGROUND_RMS",
+    ),
+    PhotCalibrator(
+        ref_catalog_generator=winter_photometric_catalog_generator,
+        temp_output_sub_dir="phot",
+        write_regions=True,
+        cache=True,
     ),
     ImageSaver(output_dir_name="stack"),
-    # DatabaseImageExporter(
-    #     db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
+    DatabaseImageExporter(
+        db_table=Stacks, duplicate_protocol="replace", q3c_bool=False
+    ),
+    ModifyImageDatabaseSeqList(
+        db_name="winter",
+        schema_path="fake_placeholder_path.sql",
+        sequence_key="rawid",
+        db_table=Raw.sql_model.__tablename__,
+        db_alter_columns="ustackid",
+    ),
 ]
 
 process_noise = [
@@ -337,12 +368,6 @@ commissioning_noise = load_anet + process_noise
 commissioning_photcal = load_multiboard_stack + photcal
 commissioning_photcal_indiv = load_anet + photcal_indiv
 
-mask_single_ext = [
-    MaskAboveThreshold(threshold=40000.0),
-    MaskDatasecPixels(),
-    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
-]
-
 # Start for new WINTER blocks:
 
 # Loading
@@ -355,14 +380,6 @@ extract_all = [
         only_extract_num=BOARD_ID,
     ),
     ImageDebatcher(),
-    SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
-    ImageDebatcher(),
-    CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
-]
-
-select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
-
-make_log_and_save = [
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -383,9 +400,16 @@ make_log_and_save = [
         ]
     ),
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    MaskAboveThreshold(threshold=40000.0),
+    MaskDatasecPixels(),
+    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
 ]
+
+select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
+
+make_log_and_save = []
 
 # Optional subset selection
 
@@ -399,6 +423,7 @@ select_subset = [
 
 split_indiv = [
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
+    ImageDebatcher(),
     CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
 ]
 
