@@ -1,7 +1,7 @@
 """
 Util functions for database interactions
 """
-from sqlalchemy import DDL, Engine, create_engine
+from sqlalchemy import DDL, Engine, NullPool, create_engine
 
 from mirar.processors.database.postgres import DB_PASSWORD, DB_USER
 
@@ -23,6 +23,7 @@ def get_engine(
     return create_engine(
         f"postgresql+psycopg://{db_user}:{db_password}" f"@/{db_name}",
         future=True,
+        poolclass=NullPool,
     )
 
 
@@ -48,9 +49,10 @@ def create_q3c_extension(
     )
 
     if conn is None:
-        with get_engine().connect() as conn:
-            conn.execute(trig_ddl)
-            conn.commit()
+        engine = get_engine()
+        with engine.connect() as new_conn:
+            new_conn.execute(trig_ddl)
+            new_conn.commit()
     else:
         conn.execute(trig_ddl)
         conn.commit()
