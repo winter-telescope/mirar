@@ -30,7 +30,6 @@ from mirar.pipelines.winter.models._imgType import (
     populate_itid,
 )
 from mirar.pipelines.winter.models._nights import Nights, NightsTable
-from mirar.pipelines.winter.models._proc import Proc, ProcTable
 from mirar.pipelines.winter.models._programs import (
     DEFAULT_MAX_PRIORITY,
     LEN_PROG_KEY,
@@ -47,6 +46,7 @@ from mirar.pipelines.winter.models._ref_components import (
 )
 from mirar.pipelines.winter.models._ref_queries import RefQueries, RefQueriesTable
 from mirar.pipelines.winter.models._ref_stacks import RefStacks, RefStacksTable
+from mirar.pipelines.winter.models._stack import Stacks, StacksTable
 from mirar.pipelines.winter.models._subdets import (
     Subdets,
     SubdetsTable,
