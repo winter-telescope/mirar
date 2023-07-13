@@ -51,7 +51,6 @@ def get_sequence_key_names_from_table(
                 "SELECT c.relname FROM pg_class c WHERE c.relkind = 'S';"
             ).fetchall()
         ]
-        logger.debug(sequences)
         seq_tables = np.array([x.split("_")[0] for x in sequences])
         seq_columns = np.array([x.split("_")[1] for x in sequences])
         table_sequence_keys = seq_columns[(seq_tables == db_table)]

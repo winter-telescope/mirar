@@ -11,7 +11,6 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_config,
     swarp_config_path,
 )
-from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     scamp_config_path,
     winter_astrometric_catalog_generator,
@@ -21,31 +20,35 @@ from mirar.pipelines.winter.generator import (
     winter_reference_image_resampler,
     winter_reference_psfex,
     winter_reference_sextractor,
+    winter_stackid_annotator,
 )
 from mirar.pipelines.winter.load_winter_image import (
     get_raw_winter_mask,
     load_proc_winter_image,
     load_raw_winter_header,
-    load_raw_winter_image,
     load_stacked_winter_image,
     load_winter_mef_image,
 )
-from mirar.pipelines.winter.models import Exposures, Proc, Raw
-from mirar.processors.astromatic import PSFex, Scamp
-from mirar.processors.astromatic.sextractor.sextractor import (
-    Sextractor,
-    sextractor_checkimg_map,
+from mirar.pipelines.winter.models import (
+    NXSPLIT,
+    NYSPLIT,
+    AstrometryStats,
+    Exposures,
+    Raw,
+    Stacks,
 )
+from mirar.processors.astromatic import PSFex, Scamp
+from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
+from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
 from mirar.processors.mask import (
     MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
-    MaskPixelsFromPath,
     WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import PhotCalibrator
@@ -66,7 +69,6 @@ from mirar.processors.utils import (
     MEFImageLoaderSplitter,
 )
 from mirar.processors.utils.header_annotate import CustomHeaderAnnotator
-from mirar.processors.utils.multi_ext_parser import MultiExtParser
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
@@ -79,49 +81,6 @@ refbuild = [
 
 BOARD_ID = 4
 TARGET_NAME = "m39"
-split = [
-    MultiExtParser(
-        input_sub_dir="raw/",
-        extension_num_header_key="BOARD_ID",
-        only_extract_num=BOARD_ID,
-        output_sub_dir=f"raw_split_{BOARD_ID}",
-    )
-]
-
-split_all_boards = [
-    MultiExtParser(
-        input_sub_dir="raw/",
-        extension_num_header_key="BOARD_ID",
-        output_sub_dir="raw_split",
-    )
-]
-load = [
-    ImageLoader(
-        input_sub_dir=f"raw_split_{BOARD_ID}", load_image=load_raw_winter_image
-    ),
-    ImageSelector(("OBSTYPE", ["FOCUS", "DARK", "FLAT", "SCIENCE"])),
-]
-
-split_images = [
-    ImageDebatcher(),
-    SplitImage(n_x=1, n_y=2),
-    ImageSaver(output_dir_name="split"),
-]
-
-load_all_boards = [
-    ImageLoader(input_sub_dir="raw_split", load_image=load_raw_winter_image),
-    ImageSelector(("OBSTYPE", ["FOCUS", "DARK", "FLAT", "SCIENCE"])),
-]
-
-load_proc = [
-    ImageLoader(input_sub_dir=f"skysub_{BOARD_ID}", load_image=load_raw_winter_image),
-    # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
-]
-
-load_dark = [
-    ImageLoader(input_sub_dir=f"darkcal_{BOARD_ID}", load_image=load_raw_winter_image),
-    # ImageSelector(("TARGNAME", f"{TARGET_NAME}")),
-]
 
 load_anet = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
@@ -143,59 +102,6 @@ load_multiboard_stack = [
         ("OBSTYPE", "SCIENCE"),
     ),
 ]
-
-log = (
-    split
-    + load
-    + [
-        CSVLog(
-            export_keys=[
-                "FILTER",
-                "UTCTIME",
-                "EXPTIME",
-                "OBSTYPE",
-                "UNIQTYPE",
-                "BOARD_ID",
-                "OBSCLASS",
-                "TARGET",
-                "FILTER",
-                "BASENAME",
-                "TARGNAME",
-                "RADEG",
-                "DECDEG",
-                "MEDCOUNT",
-                "STDDEV",
-                "T_ROIC",
-            ]
-        )
-    ]
-)
-
-log_all_boards = (
-    split_all_boards
-    + load_all_boards
-    + [
-        CSVLog(
-            export_keys=[
-                "FILTER",
-                "UTCTIME",
-                "EXPTIME",
-                "OBSTYPE",
-                "BOARD_ID",
-                "OBSCLASS",
-                "TARGET",
-                "FILTER",
-                "BASENAME",
-                "TARGNAME",
-                "RADEG",
-                "DECDEG",
-                "MEDCOUNT",
-                "STDDEV",
-                "T_ROIC",
-            ]
-        )
-    ]
-)
 
 dark_cal = [
     ImageSelector(("BOARD_ID", f"{BOARD_ID}")),
@@ -242,8 +148,8 @@ flat_cal_all_boards = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
-process = dark_cal + flat_cal
-process_proc = [
+detrend = dark_cal + flat_cal
+process_detrended = [
     ImageDebatcher(),
     AstrometryNet(
         output_sub_dir=f"anet_{BOARD_ID}",
@@ -281,7 +187,7 @@ process_proc = [
 ]
 
 export_proc = [
-    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False)
+    DatabaseImageExporter(db_table=Stacks, duplicate_protocol="replace", q3c_bool=False)
 ]
 
 process_proc_all_boards = [
@@ -312,9 +218,7 @@ process_proc_all_boards = [
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
-    # DatabaseImageExporter(
-    #     db_table=AstrometryStats, duplicate_protocol="replace", q3c_bool=False
-    # ),
+    DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
     ImageSaver(output_dir_name="anet"),
     # Sextractor(
     #     **sextractor_autoastrometry_config,
@@ -337,27 +241,32 @@ process_proc_all_boards = [
         cache=False,
         center_type="ALL",
         temp_output_sub_dir="stack_all",
+        header_keys_to_combine=["RAWID"],
+    ),
+    CustomHeaderAnnotator(header_annotator=winter_stackid_annotator),
+    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
+    Sextractor(
+        **sextractor_photometry_config,
+        output_sub_dir="phot",
+        checkimage_type="BACKGROUND_RMS",
+    ),
+    PhotCalibrator(
+        ref_catalog_generator=winter_photometric_catalog_generator,
+        temp_output_sub_dir="phot",
+        write_regions=True,
+        cache=True,
     ),
     ImageSaver(output_dir_name="stack"),
-    # DatabaseImageExporter(
-    #     db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
-]
-
-process_noise = [
-    Sextractor(
-        **sextractor_autoastrometry_config,
-        write_regions_bool=True,
-        output_sub_dir="mask_sextractor",
-        checkimage_type="SEGMENTATION",
-        cache=True,
-        verbose_type="FULL",
+    DatabaseImageExporter(
+        db_table=Stacks, duplicate_protocol="replace", q3c_bool=False
     ),
-    MaskPixelsFromPath(
-        mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
-        write_masked_pixels_to_file=True,
-        output_dir="mask1",
+    ModifyImageDatabaseSeqList(
+        db_name="winter",
+        schema_path="fake_placeholder_path.sql",
+        sequence_key="rawid",
+        db_table=Raw.sql_model.__tablename__,
+        db_alter_columns="ustackid",
     ),
-    ImageSaver(output_dir_name=f"noisemask_{BOARD_ID}"),
 ]
 
 stack_proc = [
@@ -430,23 +339,9 @@ stack_multiboard = [
     )
 ]
 
-commissioning = log + process
-
-commissioning_dark = log + dark_cal
-commissioning_proc = load_proc + process_proc
-commissioning_flat = load_dark + flat_cal
-commissioning_reduce = log + dark_cal + flat_cal
-commissioning_stack = load_stack + stack_proc
 commissioning_multiboard_stack = load_multiboard_stack + stack_multiboard
-commissioning_noise = load_anet + process_noise
 commissioning_photcal = load_multiboard_stack + photcal
 commissioning_photcal_indiv = load_anet + photcal_indiv
-
-mask_single_ext = [
-    MaskAboveThreshold(threshold=40000.0),
-    MaskDatasecPixels(),
-    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
-]
 
 # Start for new WINTER blocks:
 
@@ -480,9 +375,16 @@ extract_all = [
         ]
     ),
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    MaskAboveThreshold(threshold=40000.0),
+    MaskDatasecPixels(),
+    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
 ]
+
+select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
+
+make_log_and_save = []
 
 # Optional subset selection
 
@@ -496,6 +398,7 @@ select_subset = [
 
 split_indiv = [
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
+    ImageDebatcher(),
     CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
 ]
 
@@ -544,29 +447,13 @@ final = [
     ImageSaver(output_dir_name="diffs"),
 ]
 
-full_commissioning = load_unpacked + process + process_proc  # + stack_proc
+full_commissioning = load_unpacked + detrend + process_detrended  # + stack_proc
 
 full_commissioning_proc = (
-    dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards + photcal
+    dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards  # + photcal
 )
 
 full_commissioning_all_boards = load_unpacked + full_commissioning_proc
 
-commissioning_split_single_board = (
-    log
-    + split_images
-    + dark_cal_all_boards
-    + flat_cal_all_boards
-    + process_proc_all_boards
-    + photcal
-)
-
-commissioning_split = (
-    load_unpacked
-    + dark_cal_all_boards
-    + flat_cal_all_boards
-    + process_proc_all_boards
-    + photcal
-)
 
 reduce = unpack_all + full_commissioning_proc

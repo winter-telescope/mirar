@@ -141,7 +141,6 @@ class BaseDB(PydanticBase):
 
         update_keys = self.get_table_keys_from_names(update_key_names)
         update_vals = [self.dict()[x] for x in update_key_names]
-        logger.debug(f"{update_keys}, {update_vals}")
 
         returning_keys = self.get_sequence_keys()
 
@@ -149,7 +148,6 @@ class BaseDB(PydanticBase):
         for x, key in enumerate(update_keys):
             update_dict[key.key] = update_vals[x]
 
-        logger.debug(update_dict)
         stmt = (
             Update(self.sql_model)
             .values(**update_dict)
@@ -157,6 +155,7 @@ class BaseDB(PydanticBase):
             .returning(*returning_keys)
         )
 
+        logger.debug(stmt)
         engine = get_engine(db_name=self.sql_model.db_name)
         with engine.connect() as conn:
             res = conn.execute(stmt)

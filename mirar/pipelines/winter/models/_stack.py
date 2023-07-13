@@ -5,29 +5,34 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import REAL, VARCHAR, Column, ForeignKey, Integer, Sequence  # event,
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy import REAL, VARCHAR, Column, Double, Integer, Sequence  # event,
+from sqlalchemy.orm import relationship
 
-from mirar.pipelines.winter.models._raw import Raw
 from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.processors.sqldatabase.base_model import BaseDB, dec_field, ra_field
 
 
-class ProcTable(WinterBase):  # pylint: disable=too-few-public-methods
+class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     """
     Raw table in database
     """
 
-    __tablename__ = "proc"
+    __tablename__ = "stacks"
     __table_args__ = {"extend_existing": True}
 
-    uprocid = Column(
-        Integer, Sequence(start=1, name="raw_urawid_seq"), autoincrement=True
+    ustackid = Column(
+        Integer,
+        Sequence(start=1, name="stacks_ustackid_seq"),
+        autoincrement=True,
+        unique=True,
     )
+    stackid = Column(Double, primary_key=True, autoincrement=False)
+
+    raw = relationship("RawTable", back_populates="stacks")
     # procid = Column(Double, primary_key=True, autoincrement=False)
 
-    rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)
-    raw_ids: Mapped["RawTable"] = relationship(back_populates="proc")
+    # rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)
+    # raw_ids: Mapped["RawTable"] = relationship(back_populates="proc")
 
     savepath = Column(VARCHAR(255), unique=True)
     wghtpath = Column(VARCHAR(255), unique=True)
@@ -48,14 +53,15 @@ class ProcTable(WinterBase):  # pylint: disable=too-few-public-methods
     maglim = Column(REAL)
 
 
-class Proc(BaseDB):
+class Stacks(BaseDB):
     """
     A pydantic model for a raw database entry
     """
 
-    sql_model: ClassVar = ProcTable
+    sql_model: ClassVar = StacksTable
 
-    rawid: int = Field(ge=0)
+    # rawid: int = Field(ge=0)
+    stackid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
     wghtpath: str = Field(min_length=1)
 
@@ -84,18 +90,4 @@ class Proc(BaseDB):
         :return: field value
         """
         assert os.path.exists(field_value)
-        return field_value
-
-    @validator("rawid")
-    @classmethod
-    def validate_expid(cls, field_value: int):
-        """
-        Ensure that expid exists in exposures table
-        Args:
-            field_value: expid
-
-        Returns:
-
-        """
-        assert Raw.sql_model().exists(keys="rawid", values=field_value)
         return field_value
