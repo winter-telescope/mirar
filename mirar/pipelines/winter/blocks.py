@@ -41,10 +41,7 @@ from mirar.pipelines.winter.models import (
 )
 
 from mirar.processors.astromatic import PSFex, Scamp
-from mirar.processors.astromatic.sextractor.sextractor import (
-    Sextractor,
-    sextractor_checkimg_map,
-)
+from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
@@ -55,7 +52,6 @@ from mirar.processors.mask import (
     MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
-    MaskPixelsFromPath,
     WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import PhotCalibrator

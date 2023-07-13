@@ -7,7 +7,6 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
     commissioning_multiboard_stack,
-    commissioning_noise,
     commissioning_photcal,
     commissioning_photcal_indiv,
     final,
@@ -35,7 +34,6 @@ class WINTERPipeline(Pipeline):
         "refbuild": refbuild,
         "commissioning_multiboard_stack": commissioning_multiboard_stack,
         "full_commissioning": full_commissioning,
-        "commissioning_noise": commissioning_noise,
         "commissioning_photcal": commissioning_photcal,
         "commissioning_photcal_indiv": commissioning_photcal_indiv,
         "full_commissioning_all_boards": full_commissioning_all_boards,
