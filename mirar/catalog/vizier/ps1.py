@@ -31,5 +31,5 @@ class PS1(VizierCatalog):
         # check != 0 means this flag is there
         # check == 0 means this flag is not there
         clean_cat = table[np.where(check == 0)[0]]
-        logger.info(f"found {len(clean_cat)} columns without this flag \n")
+        logger.debug(f"found {len(clean_cat)} columns without this flag")
         return clean_cat

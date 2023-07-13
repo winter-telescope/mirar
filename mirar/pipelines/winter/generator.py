@@ -6,7 +6,6 @@ import os
 from typing import Type
 
 import numpy as np
-from astropy.io import fits
 from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
@@ -15,7 +14,6 @@ from mirar.data import Image
 from mirar.paths import get_output_dir
 from mirar.pipelines.winter.config import (
     psfex_path,
-    scamp_config_path,
     sextractor_reference_config,
     swarp_config_path,
 )
@@ -156,6 +154,10 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
             filter_name=filter_name.lower(),
         )
 
+    err = f"Filter {filter_name} not recognised"
+    logger.error(err)
+    raise ValueError(err)
+
 
 def winter_ref_photometric_img_catalog_purifier(catalog: Table, image: Image) -> Table:
     """
@@ -167,17 +169,14 @@ def winter_ref_photometric_img_catalog_purifier(catalog: Table, image: Image) ->
     )
 
 
-def winter_reference_phot_calibrator(image: Image, **kwargs) -> PhotCalibrator:
+def winter_reference_phot_calibrator(_: Image, **kwargs) -> PhotCalibrator:
     """
     Generates a resampler for reference images
 
+    :param _: image
     :param kwargs: kwargs
     :return: Swarp processor
     """
-    # x_lower_limit = 0
-    # y_lower_limit = 0
-    # x_upper_limit = image.header["NAXIS1"]
-    # y_upper_limit = image.header["NAXIS2"]
 
     return PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
@@ -214,7 +213,7 @@ def winter_astrometric_catalog_generator(_) -> Gaia2Mass:
     return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=15)
 
 
-def winter_stackid_annotator(image: Image) -> fits.Header:
+def winter_stackid_annotator(image: Image) -> Image:
     """
     Generates a stack id for WINTER images
 
@@ -222,6 +221,5 @@ def winter_stackid_annotator(image: Image) -> fits.Header:
     :return: stack id
     """
     first_rawid = np.min([int(x) for x in image["RAWID"].split(",")])
-    header = image.header
-    header["STACKID"] = int(first_rawid)
-    return header
+    image["STACKID"] = int(first_rawid)
+    return image
