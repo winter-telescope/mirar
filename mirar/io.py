@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 from astropy.io import fits
-from astropy.utils.exceptions import AstropyUserWarning
+from astropy.utils.exceptions import AstropyUserWarning, AstropyWarning
 
 from mirar.data import Image
 from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY, core_fields
@@ -140,8 +140,10 @@ def combine_mef_extension_file_headers(primary_header, extension_header):
     for count, key in enumerate(list(primary_header.keys())):
         value = zipped[count][0]
         comment = zipped[count][1]
-        if key not in extension_header.keys():
-            extension_header.append((key, value, comment))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=AstropyWarning)
+            if key not in extension_header.keys():
+                extension_header.append((key, value, comment))
 
     return extension_header
 
