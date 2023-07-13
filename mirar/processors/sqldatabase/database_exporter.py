@@ -98,13 +98,22 @@ class DatabaseImageBatchExporter(DatabaseImageExporter):
         ]
 
         for column in column_names:
-            values = [x[column] for x in batch]
+            try:
+                values = [x[column] for x in batch]
+            except KeyError as exc:
+                err = (
+                    f"Key {column} not found in the batch, cannot export it "
+                    f"to database. Available keys are {list(batch[0].keys())}"
+                )
+                logger.error(err)
+                raise ImageBatchDatabaseExporterError(err) from exc
+
             if len(np.unique(values)) > 1:
                 err = (
                     f"Key {column} differs across images in the batch, cannot export"
                     f"it to database."
                 )
-
+                logger.error(err)
                 raise ImageBatchDatabaseExporterError(err)
 
         image = batch[0]

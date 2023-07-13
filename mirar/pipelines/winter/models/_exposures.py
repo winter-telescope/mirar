@@ -158,15 +158,16 @@ class Exposures(BaseDB):
         :return: None
         """
         night = Nights(nightdate=self.nightdate)
-        logger.info(f"Searched for night {self.nightdate}")
+        logger.debug(f"Searched for night {self.nightdate}")
         if not night.exists():
             night.insert_entry()
 
         if not ProgramsTable().exists(values=self.puid, keys="puid"):
             default_puid = ProgramsTable().select_query(
-                compare_values=list(default_program.__dict__.values()),
-                compare_keys=list(default_program.__dict__),
-            )
+                select_keys="puid",
+                compare_values=[default_program.progname],
+                compare_keys=["progname"],
+            )[0][0]
             self.puid = default_puid
 
         return self._insert_entry()

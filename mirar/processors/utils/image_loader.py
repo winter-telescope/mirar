@@ -250,6 +250,7 @@ class MEFImageLoaderSplitter(BaseImageProcessor):
             ext_header = ext_header_list[ext_num]
 
             extension_num_str = str(ext_num)
+
             if self.extension_num_header_key is not None:
                 extension_num_str = ext_header[self.extension_num_header_key]
 
