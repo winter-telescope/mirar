@@ -18,6 +18,12 @@ class CustomImageModifier(BaseImageProcessor):
         super().__init__()
         self.image_modifier = image_modifier
 
+    def __str__(self):
+        return (
+            f"Processor to modify images using "
+            f"'{self.image_modifier.__name__}' function."
+        )
+
     def _apply_to_images(
         self,
         batch: ImageBatch,
