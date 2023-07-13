@@ -11,7 +11,6 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_config,
     swarp_config_path,
 )
-from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     scamp_config_path,
     winter_astrometric_catalog_generator,
@@ -30,7 +29,6 @@ from mirar.pipelines.winter.load_winter_image import (
     load_stacked_winter_image,
     load_winter_mef_image,
 )
-
 from mirar.pipelines.winter.models import (
     NXSPLIT,
     NYSPLIT,
@@ -39,7 +37,6 @@ from mirar.pipelines.winter.models import (
     Raw,
     Stacks,
 )
-
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
@@ -193,7 +190,7 @@ export_proc = [
     DatabaseImageExporter(db_table=Stacks, duplicate_protocol="replace", q3c_bool=False)
 ]
 
-process_proc_all_boards = process_proc_all_boards = [
+process_proc_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
