@@ -26,7 +26,6 @@ from mirar.pipelines.winter.load_winter_image import (
     get_raw_winter_mask,
     load_proc_winter_image,
     load_raw_winter_header,
-    load_raw_winter_image,
     load_stacked_winter_image,
     load_winter_mef_image,
 )
@@ -78,28 +77,6 @@ refbuild = [
 
 BOARD_ID = 4
 TARGET_NAME = "m39"
-
-load = [
-    ImageLoader(
-        input_sub_dir=f"raw_split_{BOARD_ID}", load_image=load_raw_winter_image
-    ),
-    ImageSelector(("OBSTYPE", ["FOCUS", "DARK", "FLAT", "SCIENCE"])),
-]
-
-load_all_boards = [
-    ImageLoader(input_sub_dir="raw_split", load_image=load_raw_winter_image),
-    ImageSelector(("OBSTYPE", ["FOCUS", "DARK", "FLAT", "SCIENCE"])),
-]
-
-load_proc = [
-    ImageLoader(input_sub_dir=f"skysub_{BOARD_ID}", load_image=load_raw_winter_image),
-    # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
-]
-
-load_dark = [
-    ImageLoader(input_sub_dir=f"darkcal_{BOARD_ID}", load_image=load_raw_winter_image),
-    # ImageSelector(("TARGNAME", f"{TARGET_NAME}")),
-]
 
 load_anet = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
