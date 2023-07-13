@@ -2,7 +2,13 @@
 Module for WINTER data reduction
 """
 from mirar.io import open_fits
-from mirar.paths import DITHER_N_KEY, EXPTIME_KEY, FITS_MASK_KEY, MAX_DITHER_KEY
+from mirar.paths import (
+    BASE_NAME_KEY,
+    DITHER_N_KEY,
+    EXPTIME_KEY,
+    FITS_MASK_KEY,
+    MAX_DITHER_KEY,
+)
 from mirar.pipelines.winter.config import (
     psfex_path,
     sextractor_anet_config,
@@ -374,9 +380,11 @@ extract_all = [
         ]
     ),
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    ImageBatcher(BASE_NAME_KEY),
     MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
+    ImageDebatcher(),
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
 ]
@@ -397,7 +405,6 @@ select_subset = [
 
 split_indiv = [
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
-    ImageDebatcher(),
     CustomImageModifier(annotate_winter_subdet_headers),
 ]
 
