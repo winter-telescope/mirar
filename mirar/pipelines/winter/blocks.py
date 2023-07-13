@@ -207,6 +207,7 @@ dark_cal = [
 ]
 
 dark_cal_all_boards = [
+    ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
     WriteMaskedCoordsToFile(output_dir="mask_raw"),
     DarkCalibrator(cache_sub_dir="calibration"),
