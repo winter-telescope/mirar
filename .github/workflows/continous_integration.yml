@@ -105,7 +105,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Echo tag name
-        run: echo "Tag is ${{ github.ref }}, Tagged is ${{ startsWith(github.ref, 'refs/tags/')}}, Python Check is ${{matrix.python-version == 3.10}},  Deploy is ${{ startsWith(github.ref, 'refs/tags/') && matrix.python-version == 3.10}}"
+        run: echo "Tag is ${{ github.ref }}, Tagged is ${{ startsWith(github.ref, 'refs/tags/')}}, Python Check is ${{matrix.python-version == 3.11}},  Deploy is ${{ startsWith(github.ref, 'refs/tags/') && matrix.python-version == 3.11}}"
 
       # Build a tarball and push to Pypi if tagged with new version
       - name: Build and publish
