@@ -5,12 +5,14 @@ Functions to convert FITS files or astropy Tables to FITS_LDAC files and
 vice versa.
 """
 import tempfile
+import warnings
 from pathlib import Path
 
 import astropy.io
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
+from astropy.utils.exceptions import AstropyWarning
 
 
 def convert_hdu_to_ldac(
@@ -59,13 +61,15 @@ def convert_table_to_ldac(tbl: astropy.table.Table) -> astropy.io.fits.HDUList:
     # Cannot save "object"-type fields via fits
     del_list = [x for x in table.dtype.names if table.dtype[x].kind == "O"]
     table.remove_columns(del_list)
-    with tempfile.NamedTemporaryFile(suffix=".fits", mode="rb+") as temp_file:
-        table.write(temp_file, format="fits")
-        temp_file.seek(0)
-        with fits.open(temp_file, mode="update") as hdulist:
-            tbl1, tbl2 = convert_hdu_to_ldac(hdulist[1].copy())
-            new_hdulist = [hdulist[0].copy(), tbl1, tbl2]
-            new_hdulist = fits.HDUList(new_hdulist)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", AstropyWarning)
+        with tempfile.NamedTemporaryFile(suffix=".fits", mode="rb+") as temp_file:
+            table.write(temp_file, format="fits")
+            temp_file.seek(0)
+            with fits.open(temp_file, mode="update") as hdulist:
+                tbl1, tbl2 = convert_hdu_to_ldac(hdulist[1].copy())
+                new_hdulist = [hdulist[0].copy(), tbl1, tbl2]
+                new_hdulist = fits.HDUList(new_hdulist)
     return new_hdulist
 
 

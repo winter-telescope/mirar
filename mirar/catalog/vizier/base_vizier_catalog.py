@@ -75,7 +75,7 @@ class VizierCatalog(BaseCatalog, ABC):
         return table
 
     def get_catalog(self, ra_deg: float, dec_deg: float) -> astropy.table.Table:
-        logger.info(
+        logger.debug(
             f"Querying {self.abbreviation} catalog around RA {ra_deg:.4f}, "
             f"Dec {dec_deg:.4f} with a radius of {self.search_radius_arcmin:.4f} arcmin"
         )
@@ -98,28 +98,28 @@ class VizierCatalog(BaseCatalog, ABC):
         )
 
         if len(query) == 0:
-            logger.info(f"No matches found in the given radius in {self.abbreviation}")
-            table = Table()
+            err = f"No matches found in the given radius in {self.abbreviation}"
+            logger.error(err)
             self.check_coverage(ra_deg, dec_deg)
+            return Table()
 
-        else:
-            table = query[0]
-            logger.debug(f"Table columns are: {table.colnames}")
-            if self.get_mag_key() not in table.colnames:
-                err = (
-                    f"Magnitude column {self.get_mag_key()} not found in table."
-                    f"Available options are : {table.colnames}"
-                )
-                raise VizierError(err)
-
-            table["ra"] = table[self.ra_key]
-            table["dec"] = table[self.dec_key]
-            table["magnitude"] = table[self.get_mag_key()]
-            logger.info(
-                f"{len(table)} matches found in the given radius in {self.abbreviation}"
+        table = query[0]
+        logger.debug(f"Table columns are: {table.colnames}")
+        if self.get_mag_key() not in table.colnames:
+            err = (
+                f"Magnitude column {self.get_mag_key()} not found in table."
+                f"Available options are : {table.colnames}"
             )
-            table.meta["description"] = ""
-            table = self.filter_catalog(table)
+            raise VizierError(err)
+
+        table["ra"] = table[self.ra_key]
+        table["dec"] = table[self.dec_key]
+        table["magnitude"] = table[self.get_mag_key()]
+        logger.debug(
+            f"{len(table)} matches found in the given radius in {self.abbreviation}"
+        )
+        table.meta["description"] = ""
+        table = self.filter_catalog(table)
         return table
 
     @staticmethod

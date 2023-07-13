@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class BaseDatabaseProcessor(BaseProcessor, ABC):
     """Base class for processors which interact with a postgres database"""
 
-    max_n_cpu = min(max_n_cpu, 10)
+    max_n_cpu = min(max_n_cpu, 5)
 
     def __init__(
         self,

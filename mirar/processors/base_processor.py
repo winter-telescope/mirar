@@ -78,7 +78,6 @@ class BaseProcessor:
         # For caching/multithreading
         self.passed_dataset = {}
         self.err_stack = {}
-        self.n_count = {}
         self.progress = {}
 
     @classmethod
@@ -161,6 +160,8 @@ class BaseProcessor:
         if len(dataset) > 0:
             n_cpu = min([self.max_n_cpu, len(dataset)])
 
+            logger.info(f"Running {self.__class__.__name__} on {n_cpu} threads")
+
             watchdog_queue = Queue()
 
             workers = []
@@ -177,9 +178,7 @@ class BaseProcessor:
 
             with tqdm(total=len(dataset), position=0, leave=False) as progress:
                 # Set up progress bar
-                self.n_count[cache_id] = 0
                 self.progress[cache_id] = progress
-                self.progress[cache_id].update(self.n_count[cache_id])
 
                 # Loop over batches to add to queue
                 for batch in dataset:
@@ -222,8 +221,7 @@ class BaseProcessor:
                 logger.error(err.generate_log_message())
                 self.err_stack[cache_id].add_report(err)
 
-            self.n_count[cache_id] += 1
-            self.progress[cache_id].update(self.n_count[cache_id])
+            self.progress[cache_id].update(1)
             self.progress[cache_id].refresh()
 
             queue.task_done()

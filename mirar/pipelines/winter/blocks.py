@@ -2,9 +2,16 @@
 Module for WINTER data reduction
 """
 from mirar.io import open_fits
-from mirar.paths import DITHER_N_KEY, EXPTIME_KEY, FITS_MASK_KEY, MAX_DITHER_KEY
+from mirar.paths import (
+    BASE_NAME_KEY,
+    DITHER_N_KEY,
+    EXPTIME_KEY,
+    FITS_MASK_KEY,
+    MAX_DITHER_KEY,
+)
 from mirar.pipelines.winter.config import (
     psfex_path,
+    scamp_config_path,
     sextractor_anet_config,
     sextractor_autoastrometry_config,
     sextractor_photometry_config,
@@ -12,7 +19,6 @@ from mirar.pipelines.winter.config import (
     swarp_config_path,
 )
 from mirar.pipelines.winter.generator import (
-    scamp_config_path,
     winter_astrometric_catalog_generator,
     winter_astrostat_catalog_purifier,
     winter_photometric_catalog_generator,
@@ -374,11 +380,7 @@ extract_all = [
         ]
     ),
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
-    MaskAboveThreshold(threshold=40000.0),
-    MaskDatasecPixels(),
-    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
-    ImageBatcher("UTCTIME"),
-    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
+    ImageBatcher(BASE_NAME_KEY),
 ]
 
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
@@ -395,9 +397,14 @@ select_subset = [
 
 # Split
 
-split_indiv = [
-    SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
+mask_and_split = [
+    MaskAboveThreshold(threshold=40000.0),
+    MaskDatasecPixels(),
+    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
     ImageDebatcher(),
+    ImageBatcher("UTCTIME"),
+    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
+    SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
     CustomImageModifier(annotate_winter_subdet_headers),
 ]
 
@@ -408,8 +415,8 @@ save_raw = [
     DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
 ]
 
-unpack_subset = extract_all + select_subset + split_indiv + save_raw
-unpack_all = extract_all + split_indiv + save_raw
+unpack_subset = extract_all + select_subset + mask_and_split + save_raw
+unpack_all = extract_all + mask_and_split + save_raw
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Various processing steps

@@ -2,10 +2,12 @@
 Module relating to `swarp <https://www.astromatic.net/software/swarp`_
 """
 import logging
+import warnings
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
+from astropy.utils.exceptions import AstropyWarning
 from astropy.wcs import WCS
 
 from mirar.data import ImageBatch
@@ -372,18 +374,20 @@ class Swarp(BaseImageProcessor):
         # Add missing keywords that are common in all input images to the
         # header of resampled image, and save again
         # Omit any astrometric keywords
-        for key in batch[0].keys():
-            if np.any([key not in x.keys() for x in batch]):
-                continue
-            if np.logical_and(
-                np.sum([x[key] == batch[0][key] for x in batch]) == len(batch),
-                key.strip() not in all_astrometric_keywords,
-            ):
-                if key not in new_image.keys():
-                    try:
-                        new_image[key] = batch[0][key]
-                    except ValueError:
-                        continue
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", AstropyWarning)
+            for key in batch[0].keys():
+                if np.any([key not in x.keys() for x in batch]):
+                    continue
+                if np.logical_and(
+                    np.sum([x[key] == batch[0][key] for x in batch]) == len(batch),
+                    key.strip() not in all_astrometric_keywords,
+                ):
+                    if key not in new_image.keys():
+                        try:
+                            new_image[key] = batch[0][key]
+                        except ValueError:
+                            continue
 
         new_image["COADDS"] = sum(x["COADDS"] for x in batch)
         new_image[EXPTIME_KEY] = sum(x[EXPTIME_KEY] for x in batch)
