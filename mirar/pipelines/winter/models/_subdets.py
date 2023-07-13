@@ -7,6 +7,7 @@ from pydantic import Field
 from sqlalchemy import Column, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.pipelines.winter.constants import subdets
 from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.processors.sqldatabase.base_model import BaseDB, _exists
 from mirar.utils.sql import get_engine
@@ -40,33 +41,25 @@ class Subdets(BaseDB):
     sql_model: ClassVar = SubdetsTable
     boardid: int = Field(Integer, ge=0)
     # subdetid: int = Field(Integer, ge=0)
-    nx: int = Field(Integer, ge=0)
-    nxtot: int = Field(Integer, ge=0)
-    ny: int = Field(Integer, ge=0)
-    nytot: int = Field(Integer, ge=0)
+    nx: int = Field(Integer, ge=1)
+    nxtot: int = Field(Integer, ge=1)
+    ny: int = Field(Integer, ge=1)
+    nytot: int = Field(Integer, ge=1)
 
 
-def populate_subdets(ndetectors: int = 6, nxtot: int = 1, nytot: int = 2):
+def populate_subdets():
     """
     Creates entries in the database based on number of detectors and splits
 
     """
-
     engine = get_engine(db_name=SubdetsTable.db_name)
     if not _exists(Select(SubdetsTable), engine=engine):
-        for ndetector in range(ndetectors):
-            for nx in range(nxtot):
-                for ny in range(nytot):
-                    new = Subdets(
-                        boardid=ndetector,
-                        nx=nx + 1,
-                        ny=ny + 1,
-                        nxtot=nxtot,
-                        nytot=nytot,
-                    )
-
-                    if not new.sql_model().exists(
-                        values=[nx, nxtot, ny, nytot],
-                        keys=["nx", "nxtot", "ny", "nytot"],
-                    ):
-                        new.insert_entry()
+        for _, row in subdets.iterrows():
+            new = Subdets(
+                boardid=row["boardid"],
+                nx=row["nx"],
+                nxtot=row["nxtot"],
+                ny=row["ny"],
+                nytot=row["nytot"],
+            )
+            new.insert_entry()

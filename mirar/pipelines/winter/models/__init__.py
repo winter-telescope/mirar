@@ -5,6 +5,7 @@ from typing import Union
 
 from sqlalchemy.orm import DeclarativeBase
 
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.models._astrometry_stats import (
     AstrometryStats,
     AstrometryStatsTable,
@@ -62,9 +63,6 @@ from mirar.processors.database.postgres import (
 from mirar.processors.sqldatabase.base_model import BaseTable
 from mirar.utils.sql import get_engine
 
-NXSPLIT = 1
-NYSPLIT = 2
-
 
 def setup_database(base: Union[DeclarativeBase, BaseTable]):
     """
@@ -101,4 +99,4 @@ if DB_USER is not None:
     populate_itid()
     populate_filters()
     populate_programs()
-    populate_subdets(nxtot=NXSPLIT, nytot=NYSPLIT)
+    populate_subdets()

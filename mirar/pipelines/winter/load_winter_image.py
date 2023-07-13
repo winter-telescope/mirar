@@ -22,13 +22,8 @@ from mirar.paths import (
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
 )
-from mirar.pipelines.winter.constants import imgtype_dict, winter_filters_map
-from mirar.pipelines.winter.models import (
-    DEFAULT_FIELD,
-    SubdetsTable,
-    default_program,
-    itid_dict,
-)
+from mirar.pipelines.winter.constants import imgtype_dict, subdets, winter_filters_map
+from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_dict
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +46,13 @@ def mask_datasec(data: np.ndarray, header: astropy.io.fits.Header) -> np.ndarray
 
 
 def clean_header(header: astropy.io.fits.Header) -> astropy.io.fits.Header:
+    """
+    Function to clean the header of an image, adding in missing keys and
+    correcting values where necessary
+
+    :param header: Header to clean
+    :return: Updated header
+    """
     header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
 
     header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
@@ -297,18 +299,18 @@ def load_raw_winter_header(image: Image) -> fits.Header:
         header["SUBNXTOT"],
         header["SUBNYTOT"],
     )
-    subdet = SubdetsTable(
-        boardid=header["BOARD_ID"],
-        nx=header["SUBNX"],
-        ny=header["SUBNY"],
-        nxtot=header["SUBNXTOT"],
-        nytot=header["SUBNYTOT"],
+
+    mask = (
+        (subdets["nx"] == subnx)
+        & (subdets["ny"] == subny)
+        & (subdets["nxtot"] == subnxtot)
+        & (subdets["nytot"] == subnytot)
+        & (subdets["boardid"] == header["BOARD_ID"])
     )
-    subdetid = subdet.select_query(
-        compare_keys=["boardid", "nx", "ny", "nxtot", "nytot"],
-        compare_values=[header["BOARD_ID"], subnx, subny, subnxtot, subnytot],
-    )
-    header["SUBDETID"] = subdetid[0][0]
+    assert (
+        np.sum(mask) == 1
+    ), f"Subdet not found for nx={subnx}, ny={subny}, nxtot={subnxtot}, nytot={subnytot} and boardid={header['BOARD_ID']}"
+    header["SUBDETID"] = int(subdets[mask]["subdetid"].iloc[0])
     header["RAWID"] = int(f"{header['EXPID']}_{str(header['SUBDETID']).rjust(2, '0')}")
 
     if "DATASEC" in header.keys():
