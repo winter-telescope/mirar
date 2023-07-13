@@ -45,12 +45,12 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     crval2 = Column(REAL)
     crpix1 = Column(REAL)
     crpix2 = Column(REAL)
-    # zp_auto = Column(REAL)
-    # fwhm_med = Column(REAL)
-    # fwhm_std = Column(REAL)
-    # zp_auto_nstars = Column(Integer)
-    # zp_auto_std = Column(REAL)
-    # maglim = Column(REAL)
+    zp_auto = Column(REAL)
+    fwhm_med = Column(REAL)
+    fwhm_std = Column(REAL)
+    zp_auto_nstars = Column(Integer)
+    zp_auto_std = Column(REAL)
+    maglim = Column(REAL)
 
 
 class Stacks(BaseDB):
@@ -73,12 +73,12 @@ class Stacks(BaseDB):
     crval2: float = dec_field
     crpix1: float = Field()
     crpix2: float = Field()
-    # zp_auto: float = Field(ge=0)
-    # fwhm_med: float = Field(ge=0)
-    # fwhm_std: float = Field(ge=0)
-    # zp_auto_nstars: int = Field(ge=0)
-    # zp_auto_std: float = Field(ge=0)
-    # maglim: float = Field()
+    zp_auto: float = Field(ge=0)
+    fwhm_med: float = Field(ge=0)
+    fwhm_std: float = Field(ge=0)
+    zp_auto_nstars: int = Field(ge=0)
+    zp_auto_std: float = Field(ge=0)
+    maglim: float = Field()
 
     @validator("savepath")
     @classmethod
