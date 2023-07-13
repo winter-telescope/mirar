@@ -61,6 +61,7 @@ class Swarp(BaseImageProcessor):
         subtract_bkg: bool = False,
         flux_scaling_factor: float = None,
         calculate_dims_in_swarp: bool = False,
+        header_keys_to_combine: Optional[str | list[str]] = None,
     ):
         """
 
@@ -119,6 +120,8 @@ class Swarp(BaseImageProcessor):
                 provided, it defaults to 1 (no scaling). If multiple images are provided
                 without FLXSCALE in their headers, the same scaling will be applied to
                 all of them.
+            header_keys_to_combine: list If specified, will combine the values of the
+            corresponding header keys to a comma-separated value in the stacked images
         """
         super().__init__()
         self.swarp_config = swarp_config_path
@@ -139,6 +142,9 @@ class Swarp(BaseImageProcessor):
         self.center_type = center_type
         if self.center_type is not None:
             assert self.center_type in ["MOST", "ALL", "MANUAL"]
+        self.header_keys_to_combine = header_keys_to_combine
+        if isinstance(self.header_keys_to_combine, str):
+            self.header_keys_to_combine = [self.header_keys_to_combine]
 
     def __str__(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
@@ -384,6 +390,13 @@ class Swarp(BaseImageProcessor):
         new_image[TIME_KEY] = min(x[TIME_KEY] for x in batch)
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
+
+        if self.header_keys_to_combine is not None:
+            for key in self.header_keys_to_combine:
+                try:
+                    new_image[key] = ",".join([str(x[key]) for x in batch])
+                except KeyError as exc:
+                    raise SwarpError(f"Key {key} not found in input images.") from exc
 
         if component_images_list is not None:
             new_image[STACKED_COMPONENT_IMAGES_KEY] = ",".join(component_images_list)
