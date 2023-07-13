@@ -147,12 +147,14 @@ class PostgresUser:
                 primary_key_val = value_dict[primary_key.name]
                 sequence_keys = new.get_sequence_keys()
                 sequence_key_names = [k.name for k in sequence_keys]
-                ret = new.sql_model().select_query(
-                    compare_values=[primary_key_val],
-                    compare_keys=[primary_key.name],
-                    select_keys=sequence_key_names,
-                )
-                sequence_values = [x[0] for x in ret]
+                sequence_values = []
+                if len(sequence_keys) > 0:
+                    ret = new.sql_model().select_query(
+                        compare_values=[primary_key_val],
+                        compare_keys=[primary_key.name],
+                        select_keys=sequence_key_names,
+                    )
+                    sequence_values = [x[0] for x in ret]
 
             if duplicate_protocol == "replace":
                 logger.debug(f"Conflict at {exc.orig.diag.constraint_name}")
