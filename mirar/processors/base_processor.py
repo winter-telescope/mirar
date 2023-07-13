@@ -160,6 +160,8 @@ class BaseProcessor:
         if len(dataset) > 0:
             n_cpu = min([self.max_n_cpu, len(dataset)])
 
+            logger.info(f"Running {self.__class__.__name__} on {n_cpu} threads")
+
             watchdog_queue = Queue()
 
             workers = []
