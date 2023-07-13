@@ -11,6 +11,7 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_config,
     swarp_config_path,
 )
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     scamp_config_path,
     winter_astrometric_catalog_generator,
@@ -29,7 +30,7 @@ from mirar.pipelines.winter.load_winter_image import (
     load_stacked_winter_image,
     load_winter_mef_image,
 )
-from mirar.pipelines.winter.models import NXSPLIT, NYSPLIT, Exposures, Proc, Raw
+from mirar.pipelines.winter.models import Exposures, Proc, Raw
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.sextractor import (
     Sextractor,
