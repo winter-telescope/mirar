@@ -197,7 +197,7 @@ export_proc = [
     DatabaseImageExporter(db_table=Stacks, duplicate_protocol="replace", q3c_bool=False)
 ]
 
-process_proc_all_boards = [
+process_proc_all_boards = process_proc_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
@@ -276,23 +276,6 @@ process_proc_all_boards = [
     ),
 ]
 
-process_noise = [
-    Sextractor(
-        **sextractor_autoastrometry_config,
-        write_regions_bool=True,
-        output_sub_dir="mask_sextractor",
-        checkimage_type="SEGMENTATION",
-        cache=True,
-        verbose_type="FULL",
-    ),
-    MaskPixelsFromPath(
-        mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
-        write_masked_pixels_to_file=True,
-        output_dir="mask1",
-    ),
-    ImageSaver(output_dir_name=f"noisemask_{BOARD_ID}"),
-]
-
 stack_proc = [
     ImageBatcher(["TARGNAME", "FILTER"]),
     Swarp(
@@ -364,7 +347,6 @@ stack_multiboard = [
 ]
 
 commissioning_multiboard_stack = load_multiboard_stack + stack_multiboard
-commissioning_noise = load_anet + process_noise
 commissioning_photcal = load_multiboard_stack + photcal
 commissioning_photcal_indiv = load_anet + photcal_indiv
 
@@ -475,7 +457,7 @@ final = [
 full_commissioning = load_unpacked + detrend + process_detrended  # + stack_proc
 
 full_commissioning_proc = (
-    dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards + photcal
+    dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards  # + photcal
 )
 
 full_commissioning_all_boards = load_unpacked + full_commissioning_proc
