@@ -178,7 +178,8 @@ def load_winter_mef_image(
 
     # Sometimes there are exptime keys
     for board_header in split_headers:
-        del board_header["EXPTIME"]
+        if "EXPTIME" in board_header.keys():
+            del board_header["EXPTIME"]
 
     return header, split_data, split_headers
 
@@ -216,6 +217,7 @@ def load_raw_winter_header(image: Image) -> fits.Header:
     ), f"Subdet not found for nx={subnx}, ny={subny}, nxtot={subnxtot}, nytot={subnytot} and boardid={header['BOARD_ID']}"
     header["SUBDETID"] = int(subdets[mask]["subdetid"].iloc[0])
     header["RAWID"] = int(f"{header['EXPID']}_{str(header['SUBDETID']).rjust(2, '0')}")
+    header["USTACKID"] = None
 
     if "DATASEC" in header.keys():
         del header["DATASEC"]
