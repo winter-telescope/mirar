@@ -66,7 +66,6 @@ from mirar.processors.utils import (
     MEFImageLoaderSplitter,
 )
 from mirar.processors.utils.header_annotate import CustomHeaderAnnotator
-from mirar.processors.utils.multi_ext_parser import MultiExtParser
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
@@ -79,33 +78,12 @@ refbuild = [
 
 BOARD_ID = 4
 TARGET_NAME = "m39"
-split = [
-    MultiExtParser(
-        input_sub_dir="raw/",
-        extension_num_header_key="BOARD_ID",
-        only_extract_num=BOARD_ID,
-        output_sub_dir=f"raw_split_{BOARD_ID}",
-    )
-]
 
-split_all_boards = [
-    MultiExtParser(
-        input_sub_dir="raw/",
-        extension_num_header_key="BOARD_ID",
-        output_sub_dir="raw_split",
-    )
-]
 load = [
     ImageLoader(
         input_sub_dir=f"raw_split_{BOARD_ID}", load_image=load_raw_winter_image
     ),
     ImageSelector(("OBSTYPE", ["FOCUS", "DARK", "FLAT", "SCIENCE"])),
-]
-
-split_images = [
-    ImageDebatcher(),
-    SplitImage(n_x=1, n_y=2),
-    ImageSaver(output_dir_name="split"),
 ]
 
 load_all_boards = [
@@ -143,59 +121,6 @@ load_multiboard_stack = [
         ("OBSTYPE", "SCIENCE"),
     ),
 ]
-
-log = (
-    split
-    + load
-    + [
-        CSVLog(
-            export_keys=[
-                "FILTER",
-                "UTCTIME",
-                "EXPTIME",
-                "OBSTYPE",
-                "UNIQTYPE",
-                "BOARD_ID",
-                "OBSCLASS",
-                "TARGET",
-                "FILTER",
-                "BASENAME",
-                "TARGNAME",
-                "RADEG",
-                "DECDEG",
-                "MEDCOUNT",
-                "STDDEV",
-                "T_ROIC",
-            ]
-        )
-    ]
-)
-
-log_all_boards = (
-    split_all_boards
-    + load_all_boards
-    + [
-        CSVLog(
-            export_keys=[
-                "FILTER",
-                "UTCTIME",
-                "EXPTIME",
-                "OBSTYPE",
-                "BOARD_ID",
-                "OBSCLASS",
-                "TARGET",
-                "FILTER",
-                "BASENAME",
-                "TARGNAME",
-                "RADEG",
-                "DECDEG",
-                "MEDCOUNT",
-                "STDDEV",
-                "T_ROIC",
-            ]
-        )
-    ]
-)
 
 dark_cal = [
     ImageSelector(("BOARD_ID", f"{BOARD_ID}")),
@@ -242,8 +167,8 @@ flat_cal_all_boards = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
-process = dark_cal + flat_cal
-process_proc = [
+detrend = dark_cal + flat_cal
+process_detrended = [
     ImageDebatcher(),
     AstrometryNet(
         output_sub_dir=f"anet_{BOARD_ID}",
@@ -430,13 +355,6 @@ stack_multiboard = [
     )
 ]
 
-commissioning = log + process
-
-commissioning_dark = log + dark_cal
-commissioning_proc = load_proc + process_proc
-commissioning_flat = load_dark + flat_cal
-commissioning_reduce = log + dark_cal + flat_cal
-commissioning_stack = load_stack + stack_proc
 commissioning_multiboard_stack = load_multiboard_stack + stack_multiboard
 commissioning_noise = load_anet + process_noise
 commissioning_photcal = load_multiboard_stack + photcal
@@ -460,6 +378,14 @@ extract_all = [
         only_extract_num=BOARD_ID,
     ),
     ImageDebatcher(),
+    SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
+    ImageDebatcher(),
+    CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
+]
+
+select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
+
+make_log_and_save = [
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -544,7 +470,7 @@ final = [
     ImageSaver(output_dir_name="diffs"),
 ]
 
-full_commissioning = load_unpacked + process + process_proc  # + stack_proc
+full_commissioning = load_unpacked + detrend + process_detrended  # + stack_proc
 
 full_commissioning_proc = (
     dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards + photcal
@@ -552,21 +478,5 @@ full_commissioning_proc = (
 
 full_commissioning_all_boards = load_unpacked + full_commissioning_proc
 
-commissioning_split_single_board = (
-    log
-    + split_images
-    + dark_cal_all_boards
-    + flat_cal_all_boards
-    + process_proc_all_boards
-    + photcal
-)
-
-commissioning_split = (
-    load_unpacked
-    + dark_cal_all_boards
-    + flat_cal_all_boards
-    + process_proc_all_boards
-    + photcal
-)
 
 reduce = unpack_all + full_commissioning_proc
