@@ -23,9 +23,9 @@ from mirar.pipelines.winter.generator import (
     winter_stackid_annotator,
 )
 from mirar.pipelines.winter.load_winter_image import (
+    annotate_winter_subdet_headers,
     get_raw_winter_mask,
     load_proc_winter_image,
-    load_raw_winter_header,
     load_stacked_winter_image,
     load_winter_mef_image,
 )
@@ -60,15 +60,15 @@ from mirar.processors.sqldatabase.database_exporter import (
     DatabaseImageExporter,
 )
 from mirar.processors.utils import (
+    CustomImageModifier,
     HeaderAnnotator,
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
     ImageSaver,
     ImageSelector,
-    MEFImageLoaderSplitter,
+    MEFLoader,
 )
-from mirar.processors.utils.header_annotate import CustomHeaderAnnotator
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
@@ -243,7 +243,7 @@ process_proc_all_boards = [
         temp_output_sub_dir="stack_all",
         header_keys_to_combine=["RAWID"],
     ),
-    CustomHeaderAnnotator(header_annotator=winter_stackid_annotator),
+    CustomImageModifier(winter_stackid_annotator),
     ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
     Sextractor(
         **sextractor_photometry_config,
@@ -348,7 +348,7 @@ commissioning_photcal_indiv = load_anet + photcal_indiv
 # Loading
 
 extract_all = [
-    MEFImageLoaderSplitter(
+    MEFLoader(
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
         extension_num_header_key="BOARD_ID",
@@ -398,7 +398,7 @@ select_subset = [
 split_indiv = [
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
     ImageDebatcher(),
-    CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
+    CustomImageModifier(annotate_winter_subdet_headers),
 ]
 
 # Save raw images
