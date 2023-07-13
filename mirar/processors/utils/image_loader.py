@@ -197,7 +197,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         return new_batch
 
 
-class MEFImageLoaderSplitter(BaseImageProcessor):
+class MEFLoader(BaseImageProcessor):
     """Processor to load MEF images."""
 
     base_key = "load_mef"

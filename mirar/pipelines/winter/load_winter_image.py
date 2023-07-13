@@ -184,25 +184,27 @@ def load_winter_mef_image(
     return header, split_data, split_headers
 
 
-def load_raw_winter_header(image: Image) -> fits.Header:
+def annotate_winter_subdet_headers(image: Image) -> Image:
     """
-    Load raw winter headers
+    Annotate winter header with information on the subdetector
+
+    :param image: Image to annotate
+    :return: Annotated header
     """
-    header = image.header
     data = image.get_data()
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
         _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
-        header["MEDCOUNT"] = med
-        header["STDDEV"] = std
-        header["PROCSTATUS"] = 0
+        image["MEDCOUNT"] = med
+        image["STDDEV"] = std
+        image["PROCSTATUS"] = 0
 
     subnx, subny, subnxtot, subnytot = (
-        header["SUBNX"],
-        header["SUBNY"],
-        header["SUBNXTOT"],
-        header["SUBNYTOT"],
+        image["SUBNX"],
+        image["SUBNY"],
+        image["SUBNXTOT"],
+        image["SUBNYTOT"],
     )
 
     mask = (
@@ -210,19 +212,20 @@ def load_raw_winter_header(image: Image) -> fits.Header:
         & (subdets["ny"] == subny)
         & (subdets["nxtot"] == subnxtot)
         & (subdets["nytot"] == subnytot)
-        & (subdets["boardid"] == header["BOARD_ID"])
+        & (subdets["boardid"] == image["BOARD_ID"])
     )
-    assert (
-        np.sum(mask) == 1
-    ), f"Subdet not found for nx={subnx}, ny={subny}, nxtot={subnxtot}, nytot={subnytot} and boardid={header['BOARD_ID']}"
-    header["SUBDETID"] = int(subdets[mask]["subdetid"].iloc[0])
-    header["RAWID"] = int(f"{header['EXPID']}_{str(header['SUBDETID']).rjust(2, '0')}")
-    header["USTACKID"] = None
+    assert np.sum(mask) == 1, (
+        f"Subdet not found for nx={subnx}, ny={subny}, "
+        f"nxtot={subnxtot}, nytot={subnytot} and boardid={image['BOARD_ID']}"
+    )
+    image["SUBDETID"] = int(subdets[mask]["subdetid"].iloc[0])
+    image["RAWID"] = int(f"{image['EXPID']}_{str(image['SUBDETID']).rjust(2, '0')}")
+    image["USTACKID"] = None
 
-    if "DATASEC" in header.keys():
-        del header["DATASEC"]
+    if "DATASEC" in image.keys():
+        del image["DATASEC"]
 
-    return header
+    return image
 
 
 def get_raw_winter_mask(image: Image) -> np.ndarray:
