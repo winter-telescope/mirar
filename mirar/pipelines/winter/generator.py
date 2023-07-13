@@ -6,6 +6,7 @@ import os
 from typing import Type
 
 import numpy as np
+from astropy.io import fits
 from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
@@ -211,3 +212,16 @@ def winter_astrometric_catalog_generator(_) -> Gaia2Mass:
     :return: catalogue
     """
     return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=15)
+
+
+def winter_stackid_annotator(image: Image) -> fits.Header:
+    """
+    Generates a stack id for WINTER images
+
+    :param image: Image
+    :return: stack id
+    """
+    first_rawid = np.min([int(x) for x in image["RAWID"].split(",")])
+    header = image.header
+    header["STACKID"] = int(first_rawid)
+    return header
