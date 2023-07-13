@@ -39,7 +39,7 @@ class RefComponentsTable(WinterBase):
     dec1_1 = Column(Float)
     ra_cent = Column(Float)
     dec_cent = Column(Float)
-    savepath = Column(VARCHAR(255))
+    savepath = Column(VARCHAR(255), unique=True)
     ukirpath = Column(VARCHAR(255))
     filter = Column(VARCHAR(10))
 
