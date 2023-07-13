@@ -37,4 +37,4 @@ for ndetector in range(WINTER_N_BOARDS):
             )
 
 subdets = pd.DataFrame(_subdets)
-subdets["subdetid"] = range(len(subdets))
+subdets["subdetid"] = range(1, len(subdets) + 1)
