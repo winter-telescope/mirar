@@ -352,7 +352,6 @@ extract_all = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
         extension_num_header_key="BOARD_ID",
-        only_extract_num=BOARD_ID,
     ),
     ImageDebatcher(),
     CSVLog(
