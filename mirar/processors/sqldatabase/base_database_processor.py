@@ -5,7 +5,6 @@ import logging
 from abc import ABC
 from typing import Type
 
-from mirar.paths import max_n_cpu
 from mirar.processors.base_processor import BaseProcessor
 from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.processors.sqldatabase.postgres import (
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 class BaseDatabaseProcessor(BaseProcessor, ABC):
     """Base class for processors which interact with a postgres database"""
 
-    max_n_cpu = min(max_n_cpu, 5)
+    max_n_cpu = 1
 
     def __init__(
         self,
@@ -41,8 +40,3 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         self._pg_admin = pg_admin
 
         assert self.duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
-
-    def check_prerequisites(
-        self,
-    ):
-        pass
