@@ -2,7 +2,7 @@
 Module for WINTER data reduction
 """
 from mirar.io import open_fits
-from mirar.paths import DITHER_N_KEY, FITS_MASK_KEY, MAX_DITHER_KEY, base_output_dir
+from mirar.paths import DITHER_N_KEY, EXPTIME_KEY, FITS_MASK_KEY, MAX_DITHER_KEY
 from mirar.pipelines.winter.config import (
     psfex_path,
     sextractor_anet_config,
@@ -342,6 +342,7 @@ process_proc_all_boards = [
         temp_output_sub_dir="stack_all",
     ),
     ImageSaver(output_dir_name="stack"),
+    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
 ]
 
 process_noise = [
@@ -430,15 +431,6 @@ stack_multiboard = [
         center_type="MANUAL",
     )
 ]
-# commissioning = \
-#     log + process_proc
-
-select_subset = [
-    ImageSelector(
-        ("EXPTIME", 120.0), ("FILTER", ["dark", "J"]), ("BOARD_ID", BOARD_ID)
-    ),
-    ImageSaver(output_dir_name="raw_subset"),
-]
 
 commissioning = log + process
 
@@ -452,57 +444,24 @@ commissioning_noise = load_anet + process_noise
 commissioning_photcal = load_multiboard_stack + photcal
 commissioning_photcal_indiv = load_anet + photcal_indiv
 
-extract_subset = [
-    MultiExtParser(
-        input_sub_dir="raw/",
-        extension_num_header_key="BOARD_ID",
-        output_sub_dir=f"raw_board_{BOARD_ID}",
-        only_extract_num=BOARD_ID,
-    ),
-    ImageLoader(
-        input_sub_dir=f"raw_board_{BOARD_ID}",
-        load_image=load_raw_winter_image,
-        input_img_dir=base_output_dir,
-    ),
-    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
-    ImageSelector(
-        ("EXPTIME", 120.0), ("FILTER", ["dark", "J"]), ("BOARD_ID", BOARD_ID)
-    ),
-]
-
-extract_all = [
-    MEFImageLoaderSplitter(
-        input_sub_dir="raw",
-        load_image=load_winter_mef_image,
-        extension_num_header_key="BOARD_ID",
-    )
-]
-
-export_to_exposures = [
-    ImageBatcher("UTCTIME"),
-    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
-]
-
 mask_single_ext = [
     MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
 ]
 
-split_indiv = [
+# Start for new WINTER blocks:
+
+# Loading
+
+extract_all = [
+    MEFImageLoaderSplitter(
+        input_sub_dir="raw",
+        load_image=load_winter_mef_image,
+        extension_num_header_key="BOARD_ID",
+        only_extract_num=BOARD_ID,
+    ),
     ImageDebatcher(),
-    SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
-    ImageDebatcher(),
-    CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
-]
-
-export_to_raw = [
-    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False)
-]
-
-select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
-
-make_log_and_save = [
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -510,27 +469,58 @@ make_log_and_save = [
             DITHER_N_KEY,
             MAX_DITHER_KEY,
             "FILTER",
-            "EXPTIME",
+            EXPTIME_KEY,
             "OBSTYPE",
             "BOARD_ID",
             "OBSCLASS",
             "TARGET",
-            "FILTER",
             "BASENAME",
             "TARGNAME",
             "RADEG",
             "DECDEG",
-            "MEDCOUNT",
-            "STDDEV",
             "T_ROIC",
         ]
     ),
-    SplitImage(n_x=1, n_y=2),
+    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    ImageBatcher("UTCTIME"),
+    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
 ]
+
+# Optional subset selection
+
+select_subset = [
+    ImageSelector(
+        ("EXPTIME", "120.0"), ("BOARD_ID", str(BOARD_ID)), ("FILTER", ["dark", "Y"])
+    ),
+]
+
+# Split
+
+split_indiv = [
+    SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
+    CustomHeaderAnnotator(header_annotator=load_raw_winter_header),
+]
+
+# Save raw images
 
 save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
+    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
 ]
+
+unpack_subset = extract_all + select_subset + split_indiv + save_raw
+unpack_all = extract_all + split_indiv + save_raw
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Various processing steps
+
+# Load from unpacked dir
+
+load_unpacked = [
+    ImageLoader(input_sub_dir="raw_unpacked", load_image=open_fits),
+]
+
+# Image subtraction
 
 imsub = [
     ImageLoader(input_sub_dir="photcal", load_image=open_fits),
@@ -554,13 +544,6 @@ final = [
     ImageLoader(input_sub_dir="prezogy", load_image=open_fits),
     ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
     ImageSaver(output_dir_name="diffs"),
-]
-
-unpack_subset = extract_subset + split_indiv + save_raw
-unpack_all = extract_all + split_indiv + save_raw
-
-load_unpacked = [
-    ImageLoader(input_sub_dir="raw_unpacked", load_image=open_fits),
 ]
 
 full_commissioning = load_unpacked + process + process_proc  # + stack_proc

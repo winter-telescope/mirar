@@ -23,8 +23,8 @@ class PS1(VizierCatalog):
     dec_key = "DEJ2000"
 
     def filter_catalog(self, table: Table) -> Table:
-        logger.info(f"original ps1 table length: {len(table)}")
-        logger.info("removing ps1 sources with SATURATED flag...")
+        logger.debug(f"original ps1 table length: {len(table)}")
+        logger.debug("removing ps1 sources with SATURATED flag...")
         sat_flag = 4096  # SATURATED value
         column = table[str(self.filter_name) + "Flags"]
         check = (column & sat_flag) / sat_flag

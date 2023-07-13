@@ -132,13 +132,16 @@ def combine_mef_extension_file_headers(primary_header, extension_header):
     """
     zipped = list(zip(primary_header.values(), primary_header.comments))
 
-    # append primary_header to hdrext
-    for count, key in enumerate(list(primary_header.keys())):
-        extension_header.append((key, zipped[count][0], zipped[count][1]))
-
     for k in ["XTENSION", "BITPIX"]:
         if k in extension_header.keys():
             del extension_header[k]
+
+    # append primary_header to hdrext
+    for count, key in enumerate(list(primary_header.keys())):
+        value = zipped[count][0]
+        comment = zipped[count][1]
+        if key not in extension_header.keys():
+            extension_header.append((key, value, comment))
 
     return extension_header
 

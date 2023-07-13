@@ -50,6 +50,91 @@ def mask_datasec(data: np.ndarray, header: astropy.io.fits.Header) -> np.ndarray
     return data
 
 
+def clean_header(header: astropy.io.fits.Header) -> astropy.io.fits.Header:
+    header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
+
+    header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
+    header["DATE-OBS"] = Time(header["UTCTIME"]).isot
+
+    header["OBSCLASS"] = ["science", "calibration"][
+        header["OBSTYPE"] in ["DARK", "FLAT"]
+    ]
+
+    header["EXPTIME"] = np.rint(header["EXPTIME"])
+
+    header["TARGET"] = header["OBSTYPE"].lower()
+
+    if header["TARGNAME"] == "":
+        header["TARGNAME"] = f"field_{header['FIELDID']}"
+
+    if (header["FILTERID"] == "dark") & (header["OBSTYPE"] != "BIAS"):
+        header["OBSTYPE"] = "DARK"
+        header["TARGET"] = "dark"
+
+    header["RA"] = header["RADEG"]
+    header["DEC"] = header["DECDEG"]
+
+    obstime = Time(header["UTCTIME"])
+    header["EXPID"] = int((obstime.mjd - 59000.0) * 86400.0)  # seconds since 60000 MJD
+
+    if COADD_KEY not in header.keys():
+        logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
+        header[COADD_KEY] = 1
+
+    header[PROC_HISTORY_KEY] = ""
+    header[PROC_FAIL_KEY] = False
+
+    filter_dict = {"J": 1, "H": 2, "Ks": 3}
+
+    if "FILTERID" not in header.keys():
+        header["FILTERID"] = filter_dict[header["FILTER"]]
+    if "FIELDID" not in header.keys():
+        header["FIELDID"] = 99999
+    if "PROGPI" not in header.keys():
+        header["PROGPI"] = "Kasliwal"
+    if "PROGID" not in header.keys():
+        header["PROGID"] = 0
+
+    if "CTYPE1" not in header:
+        header["CTYPE1"] = "RA---TAN"
+    if "CTYPE2" not in header:
+        header["CTYPE2"] = "DEC--TAN"
+
+    header["FILTER"] = header["FILTERID"]
+    if header["FILTER"] == "Hs":
+        header["FILTER"] = "H"
+
+    header["FID"] = int(winter_filters_map[header["FILTERID"]])
+    logger.debug(f"Obstime is {obstime}")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", AstropyWarning)
+        header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y-%m-%d")
+
+    logger.debug(f"Nightdate is {header['NIGHTDATE']}")
+
+    header["IMGTYPE"] = header["OBSTYPE"]
+
+    if not header["IMGTYPE"] in imgtype_dict:
+        header["ITID"] = itid_dict[imgtype_dict["OTHER"]]
+    else:
+        header["ITID"] = itid_dict[imgtype_dict[header["OBSTYPE"]]]
+
+    header["EXPMJD"] = header["MJD-OBS"]
+
+    for key in ["MOONRA", "MOONDEC", "MOONILLF", "MOONPHAS", "SUNAZ"]:
+        if header[key] == "":
+            header[key] = 99
+
+    if header["FIELDID"] < 0:
+        header["FIELDID"] = DEFAULT_FIELD
+    if header["PROGID"] < 0:
+        header["PROGID"] = default_program.progid
+    # TODO: Get puid from PROGID
+    header["PUID"] = header["PROGID"]
+    return header
+
+
 def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
     """
     Function to load a raw WIRC image
@@ -63,72 +148,13 @@ def load_raw_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.H
         data = img[0].data  # pylint: disable=no-member
         header = img[0].header
 
-        header["UNIQTYPE"] = f"{header['OBSTYPE']}_{header['BOARD_ID']}"
+        header = clean_header(header)
 
-        if "RADEG" not in header.keys():
-            header["RADEG"] = header["RA"]
-            header["DECDEG"] = header["DEC"]
-
-        header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
-
-        header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
-        header["DATE-OBS"] = Time(header["UTCTIME"]).isot
-
-        header["OBSCLASS"] = ["science", "calibration"][
-            header["OBSTYPE"] in ["DARK", "FLAT"]
-        ]
-
-        header["EXPTIME"] = np.rint(header["EXPTIME"])
         header[BASE_NAME_KEY] = os.path.basename(path)
         if RAW_IMG_KEY not in header.keys():
             header[RAW_IMG_KEY] = path
-        header["TARGET"] = header["OBSTYPE"].lower()
-
-        if header["TARGNAME"] == "":
-            header["TARGNAME"] = f"field_{header['FIELDID']}"
-
-        if (header["FILTERID"] == "dark") & (header["OBSTYPE"] != "BIAS"):
-            header["OBSTYPE"] = "DARK"
-            header["TARGET"] = "dark"
-
-        if ".weight" in path:
-            header["OBSTYPE"] = "WEIGHT"
-        header["RA"] = header["RADEG"]
-        header["DEC"] = header["DECDEG"]
-
-        obstime = Time(header["UTCTIME"])
-        header["EXPID"] = int(
-            (obstime.mjd - 59000.0) * 86400.0
-        )  # seconds since 60000 MJD
-
-        if COADD_KEY not in header.keys():
-            logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
-            header[COADD_KEY] = 1
-
-        header[PROC_HISTORY_KEY] = ""
-        header[PROC_FAIL_KEY] = ""
-
-        filter_dict = {"J": 1, "H": 2, "Ks": 3}
-
-        if "FILTERID" not in header.keys():
-            header["FILTERID"] = filter_dict[header["FILTER"]]
-        if "FIELDID" not in header.keys():
-            header["FIELDID"] = 99999
-        if "PROGPI" not in header.keys():
-            header["PROGPI"] = "Kasliwal"
-        if "PROGID" not in header.keys():
-            header["PROGID"] = 0
-
-        if "CTYPE1" not in header:
-            header["CTYPE1"] = "RA---TAN"
-        if "CTYPE2" not in header:
-            header["CTYPE2"] = "DEC--TAN"
 
         data = data.astype(float)
-
-        header["FILTER"] = header["FILTERID"]
-        if header["FILTER"] == "Hs":
-            header["FILTER"] = "H"
 
         if "DATASEC" in header.keys():
             data = mask_datasec(data, header)
@@ -239,47 +265,15 @@ def load_winter_mef_image(
     """
     header, split_data, split_headers = open_mef_fits(path)
 
-    header["OBSCLASS"] = ["science", "calibration"][
-        header["OBSTYPE"] in ["DARK", "FLAT"]
-    ]
-    header["COADDS"] = 1
-    header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
+    header = clean_header(header)
 
-    header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
-    header["TARGET"] = header["OBSTYPE"].lower()
-    header["RAWPATH"] = path
-    header["BASENAME"] = os.path.basename(path)
-    header["CALSTEPS"] = ""
-    header["PROCFAIL"] = 1
+    header[BASE_NAME_KEY] = os.path.basename(path)
+    header[RAW_IMG_KEY] = path
 
-    obstime = Time(header["UTCTIME"])
-    header["EXPID"] = int((obstime.mjd - 59000.0) * 86400.0)  # seconds since 60000 MJD
+    # Sometimes there are exptime keys
+    for board_header in split_headers:
+        del board_header["EXPTIME"]
 
-    header["FID"] = int(winter_filters_map[header["FILTERID"]])
-    logger.info(f"Obstime is {obstime}")
-    header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y-%m-%d")
-    logger.info(f"Nightdate is {header['NIGHTDATE']}")
-    header["IMGTYPE"] = header["OBSTYPE"]
-
-    if not header["IMGTYPE"] in imgtype_dict:
-        header["ITID"] = itid_dict[imgtype_dict["OTHER"]]
-    else:
-        header["ITID"] = itid_dict[imgtype_dict[header["OBSTYPE"]]]
-
-    header["EXPMJD"] = header["MJD-OBS"]
-
-    header["RA"] = header["RADEG"]
-    header["DEC"] = header["DECDEG"]
-    for key in ["MOONRA", "MOONDEC", "MOONILLF", "MOONPHAS", "SUNAZ"]:
-        if header[key] == "":
-            header[key] = 99
-
-    if header["FIELDID"] < 0:
-        header["FIELDID"] = DEFAULT_FIELD
-    if header["PROGID"] < 0:
-        header["PROGID"] = default_program.progid
-    # TODO: Get puid from PROGID
-    header["PUID"] = header["PROGID"]
     return header, split_data, split_headers
 
 
@@ -290,10 +284,13 @@ def load_raw_winter_header(image: Image) -> fits.Header:
     header = image.header
     data = image.get_data()
 
-    _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
-    header["MEDCOUNT"] = med
-    header["STDDEV"] = std
-    header["PROCSTATUS"] = 0
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", AstropyWarning)
+        _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
+        header["MEDCOUNT"] = med
+        header["STDDEV"] = std
+        header["PROCSTATUS"] = 0
+
     subnx, subny, subnxtot, subnytot = (
         header["SUBNX"],
         header["SUBNY"],
