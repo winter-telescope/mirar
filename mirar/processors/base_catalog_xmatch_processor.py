@@ -124,9 +124,10 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
         )
 
         logger.debug(
-            f"Cross-matching catalog to the image with radius "
-            f"{crossmatch_radius_arcsec} arcsec."
+            f"Cross-matching {len(ref_cat)} sources in catalog to {len(img_coords)} "
+            f"image with radius {crossmatch_radius_arcsec} arcsec."
         )
+
         idx, d2d, _ = ref_coords.match_to_catalog_sky(img_coords)
         match_mask = d2d < crossmatch_radius_arcsec * u.arcsec
         matched_ref_cat = ref_cat[match_mask]

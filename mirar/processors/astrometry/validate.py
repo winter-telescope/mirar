@@ -118,18 +118,20 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
             image["FWHM_STD"] = fwhm_std
             image["FWHM_PIX"] = med_fwhm_pix
 
-            _, _, d2d = self.xmatch_catalogs(
-                ref_cat=ref_cat,
-                image_cat=cleaned_img_cat,
-                crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
-            )
+            image.header["ASTUNC"] = -999.0
+            image.header["ASTFIELD"] = -999.0
 
-            if len(d2d) > 0:
-                image.header["ASTUNC"] = np.nanmedian(d2d.value)
-                image.header["ASTFIELD"] = np.arctan(
-                    image.header["CD1_2"] / image.header["CD1_1"]
-                ) * (180 / np.pi)
-            else:
-                image.header["ASTUNC"] = -999
-                image.header["ASTFIELD"] = -999
+            if (len(ref_cat) > 0) & (len(cleaned_img_cat) > 0):
+                _, _, d2d = self.xmatch_catalogs(
+                    ref_cat=ref_cat,
+                    image_cat=cleaned_img_cat,
+                    crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
+                )
+
+                if len(d2d) > 0:
+                    image.header["ASTUNC"] = np.nanmedian(d2d.value)
+                    image.header["ASTFIELD"] = np.arctan(
+                        image.header["CD1_2"] / image.header["CD1_1"]
+                    ) * (180 / np.pi)
+
         return batch

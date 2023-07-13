@@ -29,14 +29,7 @@ from mirar.pipelines.winter.load_winter_image import (
     load_stacked_winter_image,
     load_winter_mef_image,
 )
-from mirar.pipelines.winter.models import (
-    NXSPLIT,
-    NYSPLIT,
-    AstrometryStats,
-    Exposures,
-    Proc,
-    Raw,
-)
+from mirar.pipelines.winter.models import NXSPLIT, NYSPLIT, Exposures, Proc, Raw
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.sextractor import (
     Sextractor,
@@ -83,7 +76,7 @@ refbuild = [
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
-BOARD_ID = 2
+BOARD_ID = 4
 TARGET_NAME = "m39"
 split = [
     MultiExtParser(
@@ -317,7 +310,9 @@ process_proc_all_boards = [
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
-    DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
+    # DatabaseImageExporter(
+    #     db_table=AstrometryStats, duplicate_protocol="replace", q3c_bool=False
+    # ),
     ImageSaver(output_dir_name="anet"),
     # Sextractor(
     #     **sextractor_autoastrometry_config,
@@ -342,7 +337,8 @@ process_proc_all_boards = [
         temp_output_sub_dir="stack_all",
     ),
     ImageSaver(output_dir_name="stack"),
-    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
+    # DatabaseImageExporter(
+    #     db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
 ]
 
 process_noise = [
@@ -395,9 +391,9 @@ photcal = [
         write_regions=True,
         cache=True,
     ),
-    DatabaseImageExporter(
-        db_table=AstrometryStats, duplicate_protocol="replace", q3c_bool=False
-    ),
+    # DatabaseImageExporter(
+    #     db_table=AstrometryStats, duplicate_protocol="replace", q3c_bool=False
+    # ),
     # ImageSaver(output_dir_name=f"phot_{board_id}_{target_name}")
     ImageSaver(output_dir_name="photcal"),
 ]
