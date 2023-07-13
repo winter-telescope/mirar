@@ -37,9 +37,11 @@ class RawTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     savepath = Column(VARCHAR(255), unique=True)
 
-    procstatus = Column(Integer, default=0)
+    # procstatus = Column(Integer, default=0)
+    ustackid: Mapped[int] = mapped_column(ForeignKey("stacks.ustackid"), nullable=True)
+    stacks: Mapped["StacksTable"] = relationship(back_populates="raw")
 
-    proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
+    # proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
     astrometry: Mapped["AstrometryStatsTable"] = relationship(
         back_populates="astrom_raw_ids"
     )
@@ -56,8 +58,8 @@ class Raw(BaseDB):
     uexpid: int = Field(ge=0)
     subdetid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
-    procstatus: int = Field(ge=0, default=0)
     t_roic: float = Field()
+    ustackid: int = Field(ge=0, default=None)
 
     @validator("savepath")
     @classmethod
