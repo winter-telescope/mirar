@@ -8,6 +8,7 @@ from mirar.paths import (
     EXPTIME_KEY,
     FITS_MASK_KEY,
     MAX_DITHER_KEY,
+    base_output_dir,
 )
 from mirar.pipelines.winter.config import (
     psfex_path,
@@ -100,7 +101,11 @@ load_stack = [
 ]
 
 load_ref = [
-    ImageLoader(input_sub_dir="stack", load_image=load_stacked_winter_image),
+    ImageLoader(
+        input_sub_dir="stack",
+        load_image=load_stacked_winter_image,
+        input_img_dir=base_output_dir,
+    ),
     ImageSelector(
         ("FIELDID", 3944),
         ("BOARD_ID", 4),
