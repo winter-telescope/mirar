@@ -640,6 +640,23 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         magerr_zps = np.array([x["MAGZRR"] for x in ukirt_images])
         median_mag_zp = np.median(mag_zps)
 
+        # saving to temporary files to gel well with parallel processing
+        temp_files = []
+        for ind, ref_img in enumerate(ukirt_images):
+            new_basename = (
+                f"{ref_img[BASE_NAME_KEY].strip('.fits')}" f"_{image[BASE_NAME_KEY]}"
+            )
+
+            # temp_output_dir = get_output_dir(dir_root=self.night_sub_dir)
+            # temp_path = get_temp_path(output_dir=temp_output_dir,
+            #                           file_path=new_basename)
+            # ref_img[BASE_NAME_KEY] = os.path.basename(temp_path)
+
+            # self.save_fits(ref_img, temp_path)
+            # temp_files.append(temp_path)
+            # ukirt_images[ind] = self.open_fits(temp_path)
+            ref_img[BASE_NAME_KEY] = new_basename
+
         scaling_factors = 10 ** (0.4 * (median_mag_zp - mag_zps))
         logger.debug(mag_zps)
         logger.debug(magerr_zps)
@@ -724,4 +741,6 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         reference_hdu.header["DEC1_0"] = dec1_0
         reference_hdu.header["DEC1_1"] = dec1_1
 
+        for temp_file in temp_files:
+            temp_file.unlink()
         return reference_hdu, reference_weight_hdu
