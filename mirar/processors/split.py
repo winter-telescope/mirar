@@ -12,7 +12,7 @@ from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
-SUB_ID_KEY = "SUBID"
+SUB_ID_KEY = "SUBDETID"
 SUB_COORD_KEY = "SUBCOORD"
 
 
@@ -30,7 +30,10 @@ class SplitImage(BaseImageProcessor):
         self.n_y = n_y
 
     def __str__(self) -> str:
-        return f"Processor to split images into {self.n_x}x{self.n_y}={self.n_x*self.n_y} smaller images."
+        return (
+            f"Processor to split images into "
+            f"{self.n_x}x{self.n_y}={self.n_x*self.n_y} smaller images."
+        )
 
     def get_range(
         self,

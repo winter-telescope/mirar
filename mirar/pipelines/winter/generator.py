@@ -2,8 +2,6 @@
 Module with generators for WINTER pipeline
 """
 import logging
-import os
-from typing import Type
 
 import numpy as np
 from astropy.table import Table
@@ -17,6 +15,7 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_config,
     swarp_config_path,
 )
+from mirar.pipelines.winter.constants import winter_filters_map
 from mirar.pipelines.winter.models import RefComponents, RefQueries, RefStacks
 from mirar.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from mirar.processors.astromatic import PSFex
@@ -27,60 +26,9 @@ from mirar.processors.base_catalog_xmatch_processor import (
 )
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
-from mirar.processors.sqldatabase.base_model import BaseDB
-from mirar.references.local import RefFromPath
 from mirar.references.ukirt import UKIRTRef
 
 logger = logging.getLogger(__name__)
-
-
-def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks):
-    """
-    Generates a reference image for the winter data
-    Args:
-        db_table: Database table to search for existing image
-        image: Image
-
-    Returns:
-
-    """
-    components_image_dir = get_output_dir(
-        dir_root="components", sub_dir="winter/references"
-    )
-    if not components_image_dir.exists():
-        components_image_dir.mkdir(parents=True)
-
-    filtername = image["FILTER"]
-    # TODO if in_ukirt and in_vista, different processing
-    fieldid = int(image["FIELDID"])
-    subdetid = int(image[SUB_ID_KEY])
-    logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
-    db_results = db_table.sql_model().select_query(
-        select_keys=["savepath"],
-        compare_keys=["fieldid", SUB_ID_KEY.lower()],
-        compare_values=[fieldid, subdetid],
-        comparators=["__eq__", "__eq__"],
-    )
-
-    if len(db_results) > 0:
-        savepaths = [x[0] for x in db_results]
-        if os.path.exists(savepaths[0]):
-            logger.debug(f"Found reference image in database: {savepaths[0]}")
-            return RefFromPath(path=savepaths[0], filter_name=filtername)
-
-    return UKIRTRef(
-        filter_name=filtername,
-        swarp_resampler=winter_reference_image_resampler,
-        sextractor_generator=ref_sextractor,
-        phot_calibrator_generator=winter_reference_phot_calibrator,
-        num_query_points=9,
-        query_table=RefQueries,
-        components_table=RefComponents,
-        write_to_db=True,
-        write_db_table=RefStacks,
-        component_image_dir=components_image_dir.as_posix(),
-        night_sub_dir="winter/references",
-    )
 
 
 def winter_reference_image_resampler(**kwargs) -> Swarp:
@@ -223,3 +171,66 @@ def winter_stackid_annotator(image: Image) -> Image:
     first_rawid = np.min([int(x) for x in image["RAWID"].split(",")])
     image["STACKID"] = int(first_rawid)
     return image
+
+
+def winter_reference_stackid_generator(image: Image) -> int:
+    """
+    Generates a stack id for WINTER reference images
+    """
+    stackid = (
+        f"{str(image.header['FIELDID']).rjust(5, '0')}"
+        f"{str(image.header[SUB_ID_KEY]).rjust(2, '0')}"
+        f"{str(winter_filters_map[image.header['FILTER']])}"
+    )
+    return int(stackid)
+
+
+def winter_reference_generator(image: Image):
+    """
+    Generates a reference image for the winter data
+    Args:
+        db_table: Database table to search for existing image
+        image: Image
+
+    Returns:
+
+    """
+    components_image_dir = get_output_dir(
+        dir_root="components", sub_dir="winter/references"
+    )
+    if not components_image_dir.exists():
+        components_image_dir.mkdir(parents=True)
+
+    filtername = image["FILTER"]
+    # TODO if in_ukirt and in_vista, different processing
+    fieldid = int(image["FIELDID"])
+    subdetid = int(image[SUB_ID_KEY])
+    logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
+    # db_results = db_table.sql_model().select_query(
+    #     select_keys=["savepath"],
+    #     compare_keys=["fieldid", SUB_ID_KEY.lower()],
+    #     compare_values=[fieldid, subdetid],
+    #     comparators=["__eq__", "__eq__"],
+    # )
+    #
+    # if len(db_results) > 0:
+    #     savepaths = [x[0] for x in db_results]
+    #     if os.path.exists(savepaths[0]):
+    #         logger.debug(f"Found reference image in database: {savepaths[0]}")
+    #         return RefFromPath(path=savepaths[0], filter_name=filtername)
+
+    return UKIRTRef(
+        filter_name=filtername,
+        swarp_resampler=winter_reference_image_resampler,
+        sextractor_generator=ref_sextractor,
+        phot_calibrator_generator=winter_reference_phot_calibrator,
+        num_query_points=9,
+        query_table=RefQueries,
+        components_table=RefComponents,
+        write_to_db=False,
+        write_db_table=RefStacks,
+        component_image_dir=components_image_dir.as_posix(),
+        night_sub_dir="winter/references",
+        skip_online_query=False,
+        stack_id_generator=winter_reference_stackid_generator,
+    )

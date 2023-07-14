@@ -13,8 +13,10 @@ from mirar.pipelines.winter.blocks import (
     full_commissioning,
     full_commissioning_all_boards,
     imsub,
+    only_ref,
     reduce,
     refbuild,
+    reftest,
     unpack_all,
     unpack_subset,
 )
@@ -42,6 +44,8 @@ class WINTERPipeline(Pipeline):
         "imsub": imsub,
         "final": final,
         "reduce": reduce,
+        "reftest": reftest,
+        "only_ref": only_ref,
     }
 
     gain = 1.0

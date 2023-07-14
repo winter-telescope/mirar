@@ -1,3 +1,7 @@
+"""
+This module contains the ProcessReference class, which is used to generate
+reference images.
+"""
 import logging
 import os.path
 from collections.abc import Callable
@@ -25,6 +29,10 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessReference(BaseImageProcessor):
+    """
+    Processor to process reference images.
+    """
+
     base_key = "REFPREP"
 
     def __init__(
@@ -43,10 +51,16 @@ class ProcessReference(BaseImageProcessor):
         self.temp_output_subtract_dir = temp_output_subtract_dir
 
     def get_sub_output_dir(self):
+        """
+        Get the output directory for the subtracted images.
+        """
         return get_output_dir(self.temp_output_subtract_dir, self.night_sub_dir)
 
     @staticmethod
     def get_image_header_params(image: Image):
+        """
+        Get the header parameters from the image.
+        """
         header = image.get_header()
 
         wcs = WCS(header)
@@ -208,6 +222,10 @@ class ProcessReference(BaseImageProcessor):
 
 
 class GetReferenceImage(BaseImageProcessor):
+    """
+    Processor to get reference images and save them to a directory
+    """
+
     base_key = "refimg_returner"
 
     def __init__(
@@ -233,9 +251,6 @@ class GetReferenceImage(BaseImageProcessor):
     ) -> ImageBatch:
         ref_batch = ImageBatch()
         for image in batch:
-            logger.info(
-                f"Output directory for reference building is " f"{self.night_sub_dir}"
-            )
             ref_generator = self.ref_image_generator(image)
 
             output_sub_dir = get_output_dir(
@@ -244,7 +259,6 @@ class GetReferenceImage(BaseImageProcessor):
             if not output_sub_dir.exists():
                 output_sub_dir.mkdir(parents=True, exist_ok=True)
 
-            logger.info(f"Output directory for reference building is {output_sub_dir}")
             ref_image_path = ref_generator.write_reference(
                 image,
                 output_dir=output_sub_dir.as_posix(),

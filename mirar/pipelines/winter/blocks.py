@@ -8,6 +8,7 @@ from mirar.paths import (
     EXPTIME_KEY,
     FITS_MASK_KEY,
     MAX_DITHER_KEY,
+    base_output_dir,
 )
 from mirar.pipelines.winter.config import (
     psfex_path,
@@ -78,10 +79,7 @@ from mirar.processors.utils import (
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
-    ImageDebatcher(),
-    GetReferenceImage(
-        ref_image_generator=winter_reference_generator,
-    ),
+    GetReferenceImage(ref_image_generator=winter_reference_generator),
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
@@ -97,6 +95,23 @@ load_stack = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
     # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
     ImageBatcher("EXPTIME"),
+]
+
+load_ref = [
+    ImageLoader(
+        input_sub_dir="stack",
+        load_image=load_stacked_winter_image,
+        input_img_dir=base_output_dir,
+    )
+]
+
+select_ref = [
+    ImageSelector(
+        ("FIELDID", str(3944)),
+        ("BOARD_ID", str(BOARD_ID)),
+    ),
+    ImageDebatcher(),
+    ImageBatcher("STACKID"),
 ]
 
 load_multiboard_stack = [
@@ -196,7 +211,7 @@ export_proc = [
     DatabaseImageExporter(db_table=Stacks, duplicate_protocol="replace", q3c_bool=False)
 ]
 
-process_proc_all_boards = [
+process_stack_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
@@ -250,6 +265,11 @@ process_proc_all_boards = [
         header_keys_to_combine=["RAWID"],
     ),
     CustomImageModifier(winter_stackid_annotator),
+    ImageSaver(output_dir_name="stack"),
+]
+
+photcal_and_export = [
+    ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
     Sextractor(
         **sextractor_photometry_config,
@@ -262,7 +282,7 @@ process_proc_all_boards = [
         write_regions=True,
         cache=True,
     ),
-    ImageSaver(output_dir_name="stack"),
+    ImageSaver(output_dir_name="final"),
     DatabaseImageExporter(
         db_table=Stacks, duplicate_protocol="replace", q3c_bool=False
     ),
@@ -377,6 +397,7 @@ extract_all = [
             "RADEG",
             "DECDEG",
             "T_ROIC",
+            "FIELDID",
         ]
     ),
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
@@ -391,7 +412,10 @@ make_log_and_save = []
 
 select_subset = [
     ImageSelector(
-        ("EXPTIME", "120.0"), ("BOARD_ID", str(BOARD_ID)), ("FILTER", ["dark", "Y"])
+        ("FIELDID", ["3944", "999999999"]),
+        ("EXPTIME", "120.0"),
+        ("BOARD_ID", str(BOARD_ID)),
+        ("FILTER", ["dark", "J"]),
     ),
 ]
 
@@ -456,10 +480,23 @@ final = [
 full_commissioning = load_unpacked + detrend + process_detrended  # + stack_proc
 
 full_commissioning_proc = (
-    dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards  # + photcal
+    dark_cal_all_boards
+    + flat_cal_all_boards
+    + process_stack_all_boards
+    + photcal_and_export
 )
 
 full_commissioning_all_boards = load_unpacked + full_commissioning_proc
 
-
 reduce = unpack_all + full_commissioning_proc
+
+reftest = (
+    unpack_subset
+    + dark_cal_all_boards
+    + flat_cal_all_boards
+    + process_stack_all_boards
+    + select_ref
+    + refbuild
+)
+
+only_ref = load_ref + select_ref + refbuild

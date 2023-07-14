@@ -28,7 +28,6 @@ from mirar.paths import (
     core_fields,
     get_output_path,
 )
-from mirar.pipelines.winter.constants import winter_filters_map
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.base_processor import ImageHandler
@@ -37,7 +36,6 @@ from mirar.processors.candidates.utils import (
     get_image_center_wcs_coords,
 )
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.split import SUB_ID_KEY
 from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from mirar.references.base_reference_generator import BaseReferenceGenerator
@@ -265,7 +263,7 @@ def check_query_exists_locally(
     Function to check if component images exist locally based on the query_ra
     and query_dec
     Args:
-        query_ra:
+        query_ra: ra that was queried
         query_dec:
         db_table:
 
@@ -297,9 +295,36 @@ def check_query_exists_locally(
     return savepaths
 
 
+def get_locally_existing_overlap_images(
+    query_ra, query_dec, query_filt, components_table
+):
+    """
+    Function to get the locally existing images that overlap with the given coordinates
+    Args:
+        query_ra:
+        query_dec:
+        query_filt:
+        components_table:
+
+    Returns:
+
+    """
+    savepaths = []
+    results = components_table.sql_model().select_query(
+        select_keys=["savepath"],
+        compare_values=[query_ra, query_ra, query_dec, query_dec, query_filt],
+        compare_keys=["ra0_0", "ra1_1", "dec0_0", "dec1_1", "filter"],
+        comparators=["__le__", "__ge__", "__ge__", "__le__", "__eq__"],
+    )
+    logger.debug(results)
+    if len(results) > 0:
+        savepaths = [x[0] for x in results]
+    return savepaths
+
+
 def check_multiframe_exists_locally(
     db_table, multiframe_id, extension_id, frame_lx, frame_hx, frame_ly, frame_hy
-):
+) -> list:
     """
     Function to query database to check if a multiframe exists locally
     Args:
@@ -357,6 +382,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         write_db_table: Type[BaseDB] = None,
         component_image_dir: str = None,
         night_sub_dir: str = None,
+        skip_online_query: bool = False,
+        stack_id_generator: Callable[[Image], int] = None,
     ):
         super().__init__(
             filter_name=filter_name, write_to_db=write_to_db, db_table=write_db_table
@@ -385,6 +412,23 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
 
         self.component_image_dir = component_image_dir
         self.night_sub_dir = night_sub_dir
+        self.skip_online_query = skip_online_query
+        self.stack_id_generator = stack_id_generator
+
+        if self.write_to_db:
+            if self.write_db_table is None:
+                err = (
+                    "You have requested writing to a database, but no database "
+                    "has been specified"
+                )
+                raise UKIRTRefError(err)
+
+            if self.stack_id_generator is None:
+                err = (
+                    "You have requested writing the stack to a database, "
+                    "but no stack id generator has been specified"
+                )
+                raise UKIRTRefError(err)
 
     def get_reference(self, image: Image) -> tuple[PrimaryHDU, PrimaryHDU]:
         header = image.get_header()
@@ -436,6 +480,8 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                 # Need to add a cache and check there.
                 url, query_exists = [], False
                 if self.check_local_database:
+                    # First, check if the exact coordinates have been queried to UKIRT
+                    # server before.
                     url = check_query_exists_locally(
                         query_ra=crd.ra.deg,
                         query_dec=crd.dec.deg,
@@ -444,9 +490,24 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                         components_table=self.components_table,
                     )
                     logger.debug(f"Found {len(url)} images locally.")
+
+                    # If no query found, check if the coordinates overlap with any of
+                    # the component images present in the database.
+                    if len(url) == 0:
+                        url = get_locally_existing_overlap_images(
+                            query_ra=crd.ra.deg,
+                            query_dec=crd.dec.deg,
+                            query_filt=self.filter_name,
+                            components_table=self.components_table,
+                        )
+                        logger.debug(
+                            f"Found {len(url)} component images containing "
+                            f"the coordinates locally."
+                        )
+
                     query_exists = len(url) > 0
 
-                if len(url) == 0:
+                if (len(url) == 0) and (not self.skip_online_query):
                     url = ukirt_query.get_image_list(
                         crd,
                         image_width=ukirt_image_width,
@@ -568,7 +629,6 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         ukirt_image_names = [x[BASE_NAME_KEY] for x in ukirt_images]
         _, unique_image_indexes = np.unique(ukirt_image_names, return_index=True)
         ukirt_images = ukirt_images[unique_image_indexes]
-
         mag_zps = np.array(
             [
                 x["MAGZPT"]
@@ -579,6 +639,23 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         )
         magerr_zps = np.array([x["MAGZRR"] for x in ukirt_images])
         median_mag_zp = np.median(mag_zps)
+
+        # saving to temporary files to gel well with parallel processing
+        temp_files = []
+        for ind, ref_img in enumerate(ukirt_images):
+            new_basename = (
+                f"{ref_img[BASE_NAME_KEY].strip('.fits')}" f"_{image[BASE_NAME_KEY]}"
+            )
+
+            # temp_output_dir = get_output_dir(dir_root=self.night_sub_dir)
+            # temp_path = get_temp_path(output_dir=temp_output_dir,
+            #                           file_path=new_basename)
+            # ref_img[BASE_NAME_KEY] = os.path.basename(temp_path)
+
+            # self.save_fits(ref_img, temp_path)
+            # temp_files.append(temp_path)
+            # ukirt_images[ind] = self.open_fits(temp_path)
+            ref_img[BASE_NAME_KEY] = new_basename
 
         scaling_factors = 10 ** (0.4 * (median_mag_zp - mag_zps))
         logger.debug(mag_zps)
@@ -651,11 +728,7 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
             # for key in ["FIELDID", "SUBDETID"]:
             #     if key not in image.header:
             #         image.header[key] = 0
-            stackid = (
-                f"{str(image.header['FIELDID']).rjust(5, '0')}"
-                f"{str(image.header[SUB_ID_KEY]).rjust(2, '0')}"
-                f"{str(winter_filters_map[image.header['FILTER']])}"
-            )
+            stackid = self.stack_id_generator(image)
             reference_hdu.header["STACKID"] = int(stackid)
         reference_hdu.header["RA_CENT"] = ra_cent
         reference_hdu.header["DEC_CENT"] = dec_cent
@@ -668,4 +741,6 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         reference_hdu.header["DEC1_0"] = dec1_0
         reference_hdu.header["DEC1_1"] = dec1_1
 
+        for temp_file in temp_files:
+            temp_file.unlink()
         return reference_hdu, reference_weight_hdu
