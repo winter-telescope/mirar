@@ -1,3 +1,7 @@
+"""
+This module contains the ProcessReference class, which is used to generate
+reference images.
+"""
 import logging
 import os.path
 from collections.abc import Callable
@@ -25,6 +29,10 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessReference(BaseImageProcessor):
+    """
+    Processor to process reference images.
+    """
+
     base_key = "REFPREP"
 
     def __init__(
@@ -43,10 +51,16 @@ class ProcessReference(BaseImageProcessor):
         self.temp_output_subtract_dir = temp_output_subtract_dir
 
     def get_sub_output_dir(self):
+        """
+        Get the output directory for the subtracted images.
+        """
         return get_output_dir(self.temp_output_subtract_dir, self.night_sub_dir)
 
     @staticmethod
     def get_image_header_params(image: Image):
+        """
+        Get the header parameters from the image.
+        """
         header = image.get_header()
 
         wcs = WCS(header)
@@ -208,16 +222,23 @@ class ProcessReference(BaseImageProcessor):
 
 
 class GetReferenceImage(BaseImageProcessor):
+    """
+    Processor to get reference images and save them to a directory
+    """
+
     base_key = "refimg_returner"
 
     def __init__(
         self,
         ref_image_generator: Callable[..., BaseReferenceGenerator],
         output_sub_dir: str = "ref",
+        max_n_cpu: int = None,
     ):
         super().__init__()
         self.ref_image_generator = ref_image_generator
         self.output_sub_dir = output_sub_dir
+        if max_n_cpu is not None:
+            self.max_n_cpu = max_n_cpu
 
     def __str__(self):
         output_sub_dir = get_output_dir(
