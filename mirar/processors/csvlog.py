@@ -35,9 +35,13 @@ class CSVLog(BaseImageProcessor):
         self.export_keys = export_keys
         self.output_sub_dir = output_sub_dir
         self.output_base_dir = output_base_dir
+        self.all_rows = []
 
     def __str__(self) -> str:
-        return "Processor to create a CSV log summarising the image metadata."
+        return (
+            f"Processor to create a CSV log summarising the image metadata, "
+            f"to {self.get_output_path()}."
+        )
 
     def get_log_name(self) -> str:
         """
@@ -76,18 +80,15 @@ class CSVLog(BaseImageProcessor):
     ) -> ImageBatch:
         output_path = self.get_output_path()
 
-        all_rows = []
+        # One row in log per batch
+        row = []
+        for key in self.export_keys:
+            row.append(batch[0][key])
+        self.all_rows.append(row)
 
-        for image in batch:
-            row = []
-            for key in self.export_keys:
-                row.append(image[key])
-
-            all_rows.append(row)
-
-        log = pd.DataFrame(all_rows, columns=self.export_keys)
-
-        logger.info(f"Saving log to: {output_path}")
+        # Update log
+        log = pd.DataFrame(self.all_rows, columns=self.export_keys)
+        logger.debug(f"Saving log with {len(log)}  rows to: {output_path}")
         log.to_csv(output_path)
 
         return batch
