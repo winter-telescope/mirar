@@ -61,8 +61,8 @@ class BaseMask(BaseImageProcessor):
 
             if self.write_masked_pixels_to_file:
                 mask_directory = get_output_dir(self.output_dir, self.night_sub_dir)
-                if not mask_directory.exists():
-                    mask_directory.mkdir(parents=True)
+                mask_directory.mkdir(parents=True, exist_ok=True)
+
                 mask_file_path = mask_directory.joinpath(
                     image[BASE_NAME_KEY]
                 ).with_suffix(".mask.fits")
