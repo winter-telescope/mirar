@@ -2,8 +2,6 @@
 Module with generators for WINTER pipeline
 """
 import logging
-import os
-from typing import Type
 
 import numpy as np
 from astropy.table import Table
@@ -28,8 +26,6 @@ from mirar.processors.base_catalog_xmatch_processor import (
 )
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
-from mirar.processors.sqldatabase.base_model import BaseDB
-from mirar.references.local import RefFromPath
 from mirar.references.ukirt import UKIRTRef
 
 logger = logging.getLogger(__name__)
@@ -177,7 +173,6 @@ def winter_stackid_annotator(image: Image) -> Image:
     return image
 
 
-
 def winter_reference_stackid_generator(image: Image) -> int:
     """
     Generates a stack id for WINTER reference images
@@ -190,7 +185,7 @@ def winter_reference_stackid_generator(image: Image) -> int:
     return int(stackid)
 
 
-def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks):
+def winter_reference_generator(image: Image):
     """
     Generates a reference image for the winter data
     Args:
@@ -236,6 +231,6 @@ def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks)
         write_db_table=RefStacks,
         component_image_dir=components_image_dir.as_posix(),
         night_sub_dir="winter/references",
-        skip_online_query=True,
+        skip_online_query=False,
         stack_id_generator=winter_reference_stackid_generator,
     )
