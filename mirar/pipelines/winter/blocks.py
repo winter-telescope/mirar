@@ -101,7 +101,12 @@ load_stack = [
 
 load_ref = [
     ImageLoader(input_sub_dir="stack", load_image=load_stacked_winter_image),
-    ImageSelector(("FIELDID", 3944), ("BOARD_ID", 4), ("SUBCOORD", "0_0")),
+    ImageSelector(
+        ("FIELDID", 3944),
+        ("BOARD_ID", 4),
+    ),
+    ImageDebatcher(),
+    ImageBatcher("STACKID"),
 ]
 
 load_multiboard_stack = [
@@ -488,3 +493,5 @@ reftest = (
     + load_ref
     + refbuild
 )
+
+only_ref = load_ref + refbuild
