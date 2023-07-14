@@ -79,13 +79,11 @@ from mirar.processors.utils import (
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
-    GetReferenceImage(
-        ref_image_generator=winter_reference_generator,
-    ),
+    GetReferenceImage(ref_image_generator=winter_reference_generator, max_n_cpu=1),
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
-BOARD_ID = 0
+BOARD_ID = 4
 TARGET_NAME = "m39"
 
 load_anet = [
@@ -106,8 +104,8 @@ load_ref = [
         input_img_dir=base_output_dir,
     ),
     ImageSelector(
-        ("FIELDID", 3944),
-        ("BOARD_ID", 4),
+        ("FIELDID", str(3944)),
+        ("BOARD_ID", str(BOARD_ID)),
     ),
     ImageDebatcher(),
     ImageBatcher("STACKID"),
