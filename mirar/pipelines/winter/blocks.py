@@ -102,7 +102,10 @@ load_ref = [
         input_sub_dir="stack",
         load_image=load_stacked_winter_image,
         input_img_dir=base_output_dir,
-    ),
+    )
+]
+
+select_ref = [
     ImageSelector(
         ("FIELDID", str(3944)),
         ("BOARD_ID", str(BOARD_ID)),
@@ -492,8 +495,8 @@ reftest = (
     + dark_cal_all_boards
     + flat_cal_all_boards
     + process_stack_all_boards
-    + load_ref
+    + select_ref
     + refbuild
 )
 
-only_ref = load_ref + refbuild
+only_ref = load_ref + select_ref + refbuild
