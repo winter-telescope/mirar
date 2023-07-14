@@ -629,7 +629,6 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
         ukirt_image_names = [x[BASE_NAME_KEY] for x in ukirt_images]
         _, unique_image_indexes = np.unique(ukirt_image_names, return_index=True)
         ukirt_images = ukirt_images[unique_image_indexes]
-
         mag_zps = np.array(
             [
                 x["MAGZPT"]
