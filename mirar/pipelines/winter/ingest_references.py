@@ -8,7 +8,7 @@ from glob import glob
 
 from astropy.io import fits
 
-from mirar.paths import base_output_dir, get_output_dir
+from mirar.paths import LATEST_SAVE_KEY, base_output_dir, get_output_dir
 from mirar.pipelines.winter.models import RefComponents
 from mirar.processors.sqldatabase.postgres import PostgresUser
 
@@ -36,6 +36,7 @@ def export_image_to_db(path: str, db_table=RefComponents, pg_user=PostgresUser()
     """
     with fits.open(path, "update") as hdul:
         header = hdul[0].header  # pylint: disable=no-member
+        header[LATEST_SAVE_KEY] = path
         sequence_key_names, sequence_values = pg_user.export_to_db(
             db_table=db_table, value_dict=header, duplicate_protocol="ignore"
         )
