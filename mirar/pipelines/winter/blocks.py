@@ -79,7 +79,7 @@ from mirar.processors.utils import (
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
-    GetReferenceImage(ref_image_generator=winter_reference_generator, max_n_cpu=1),
+    GetReferenceImage(ref_image_generator=winter_reference_generator),
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
