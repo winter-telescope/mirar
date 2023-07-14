@@ -232,13 +232,10 @@ class GetReferenceImage(BaseImageProcessor):
         self,
         ref_image_generator: Callable[..., BaseReferenceGenerator],
         output_sub_dir: str = "ref",
-        max_n_cpu: int = None,
     ):
         super().__init__()
         self.ref_image_generator = ref_image_generator
         self.output_sub_dir = output_sub_dir
-        if max_n_cpu is not None:
-            self.max_n_cpu = max_n_cpu
 
     def __str__(self):
         output_sub_dir = get_output_dir(
@@ -254,9 +251,6 @@ class GetReferenceImage(BaseImageProcessor):
     ) -> ImageBatch:
         ref_batch = ImageBatch()
         for image in batch:
-            logger.info(
-                f"Output directory for reference building is " f"{self.night_sub_dir}"
-            )
             ref_generator = self.ref_image_generator(image)
 
             output_sub_dir = get_output_dir(
@@ -265,7 +259,6 @@ class GetReferenceImage(BaseImageProcessor):
             if not output_sub_dir.exists():
                 output_sub_dir.mkdir(parents=True, exist_ok=True)
 
-            logger.info(f"Output directory for reference building is {output_sub_dir}")
             ref_image_path = ref_generator.write_reference(
                 image,
                 output_dir=output_sub_dir.as_posix(),
