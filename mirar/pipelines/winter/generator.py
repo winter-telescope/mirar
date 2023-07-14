@@ -211,18 +211,18 @@ def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks)
     fieldid = int(image["FIELDID"])
     subdetid = int(image[SUB_ID_KEY])
     logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
-    db_results = db_table.sql_model().select_query(
-        select_keys=["savepath"],
-        compare_keys=["fieldid", SUB_ID_KEY.lower()],
-        compare_values=[fieldid, subdetid],
-        comparators=["__eq__", "__eq__"],
-    )
-
-    if len(db_results) > 0:
-        savepaths = [x[0] for x in db_results]
-        if os.path.exists(savepaths[0]):
-            logger.debug(f"Found reference image in database: {savepaths[0]}")
-            return RefFromPath(path=savepaths[0], filter_name=filtername)
+    # db_results = db_table.sql_model().select_query(
+    #     select_keys=["savepath"],
+    #     compare_keys=["fieldid", SUB_ID_KEY.lower()],
+    #     compare_values=[fieldid, subdetid],
+    #     comparators=["__eq__", "__eq__"],
+    # )
+    #
+    # if len(db_results) > 0:
+    #     savepaths = [x[0] for x in db_results]
+    #     if os.path.exists(savepaths[0]):
+    #         logger.debug(f"Found reference image in database: {savepaths[0]}")
+    #         return RefFromPath(path=savepaths[0], filter_name=filtername)
 
     return UKIRTRef(
         filter_name=filtername,
@@ -232,7 +232,7 @@ def winter_reference_generator(image: Image, db_table: Type[BaseDB] = RefStacks)
         num_query_points=9,
         query_table=RefQueries,
         components_table=RefComponents,
-        write_to_db=True,
+        write_to_db=False,
         write_db_table=RefStacks,
         component_image_dir=components_image_dir.as_posix(),
         night_sub_dir="winter/references",
