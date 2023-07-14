@@ -5,6 +5,7 @@ import argparse
 import logging
 import sys
 from glob import glob
+from pathlib import Path
 
 from astropy.io import fits
 
@@ -47,18 +48,20 @@ def export_image_to_db(path: str, db_table=RefComponents, pg_user=PostgresUser()
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-sub_dir", type=str, default="components")
-    parser.add_argument("-base_ref_dir", type=str, default=base_output_dir)
+    parser.add_argument("-base_output_dir", type=str, default=base_output_dir)
     parser.add_argument("-level", type=str, default="INFO")
     args = parser.parse_args()
 
     logger = get_logger(args.level)
     output_dir = get_output_dir(
-        dir_root=args.sub_dir, sub_dir="winter/references", output_dir=args.base_ref_dir
+        dir_root=args.sub_dir,
+        sub_dir="winter/references",
+        output_dir=Path(args.base_output_dir),
     )
 
     ref_imglist = glob(f"{output_dir}/*.fits")
 
-    logger.info(f"Found {len(ref_imglist)} reference images")
+    logger.info(f"Found {len(ref_imglist)} reference images in {output_dir}")
     for ind, ref_img in enumerate(ref_imglist):
         export_image_to_db(ref_img)
         logger.info(f"Exported {ref_img} to database : {ind+1}/{len(ref_imglist)}")
