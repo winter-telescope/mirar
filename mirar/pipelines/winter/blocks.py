@@ -201,7 +201,7 @@ export_proc = [
     DatabaseImageExporter(db_table=Stacks, duplicate_protocol="replace", q3c_bool=False)
 ]
 
-process_proc_all_boards = [
+process_stack_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
@@ -255,6 +255,11 @@ process_proc_all_boards = [
         header_keys_to_combine=["RAWID"],
     ),
     CustomImageModifier(winter_stackid_annotator),
+    ImageSaver(output_dir_name="stack"),
+]
+
+photcal_and_export = [
+    ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
     Sextractor(
         **sextractor_photometry_config,
@@ -267,7 +272,7 @@ process_proc_all_boards = [
         write_regions=True,
         cache=True,
     ),
-    ImageSaver(output_dir_name="stack"),
+    ImageSaver(output_dir_name="final"),
     DatabaseImageExporter(
         db_table=Stacks, duplicate_protocol="replace", q3c_bool=False
     ),
@@ -382,6 +387,7 @@ extract_all = [
             "RADEG",
             "DECDEG",
             "T_ROIC",
+            "FIELDID",
         ]
     ),
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
@@ -396,7 +402,10 @@ make_log_and_save = []
 
 select_subset = [
     ImageSelector(
-        ("EXPTIME", "120.0"), ("BOARD_ID", str(BOARD_ID)), ("FILTER", ["dark", "Y"])
+        ("FIELDID", ["3944", "999999999"]),
+        ("EXPTIME", "120.0"),
+        ("BOARD_ID", str(BOARD_ID)),
+        ("FILTER", ["dark", "J"]),
     ),
 ]
 
@@ -461,12 +470,21 @@ final = [
 full_commissioning = load_unpacked + detrend + process_detrended  # + stack_proc
 
 full_commissioning_proc = (
-    dark_cal_all_boards + flat_cal_all_boards + process_proc_all_boards  # + photcal
+    dark_cal_all_boards
+    + flat_cal_all_boards
+    + process_stack_all_boards
+    + photcal_and_export
 )
 
 full_commissioning_all_boards = load_unpacked + full_commissioning_proc
 
-
 reduce = unpack_all + full_commissioning_proc
 
-reftest = load_ref + refbuild
+reftest = (
+    unpack_subset
+    + dark_cal_all_boards
+    + flat_cal_all_boards
+    + process_stack_all_boards
+    + load_ref
+    + refbuild
+)
