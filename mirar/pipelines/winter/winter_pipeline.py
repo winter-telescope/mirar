@@ -15,6 +15,7 @@ from mirar.pipelines.winter.blocks import (
     imsub,
     reduce,
     refbuild,
+    reftest,
     unpack_all,
     unpack_subset,
 )
@@ -42,6 +43,7 @@ class WINTERPipeline(Pipeline):
         "imsub": imsub,
         "final": final,
         "reduce": reduce,
+        "reftest": reftest,
     }
 
     gain = 1.0
