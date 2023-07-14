@@ -79,7 +79,6 @@ from mirar.processors.utils import (
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 refbuild = [
-    ImageDebatcher(),
     GetReferenceImage(
         ref_image_generator=winter_reference_generator,
     ),
