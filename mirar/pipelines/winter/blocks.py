@@ -99,6 +99,11 @@ load_stack = [
     ImageBatcher("EXPTIME"),
 ]
 
+load_ref = [
+    ImageLoader(input_sub_dir="stack", load_image=load_stacked_winter_image),
+    ImageSelector(("FIELDID", 3944), ("BOARD_ID", 4), ("SUBCOORD", "0_0")),
+]
+
 load_multiboard_stack = [
     ImageLoader(
         input_sub_dir=f"stack_all_{TARGET_NAME}", load_image=load_stacked_winter_image
@@ -463,3 +468,5 @@ full_commissioning_all_boards = load_unpacked + full_commissioning_proc
 
 
 reduce = unpack_all + full_commissioning_proc
+
+reftest = load_ref + refbuild
