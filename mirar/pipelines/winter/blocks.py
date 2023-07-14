@@ -85,7 +85,7 @@ refbuild = [
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
-BOARD_ID = 4
+BOARD_ID = 0
 TARGET_NAME = "m39"
 
 load_anet = [
