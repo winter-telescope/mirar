@@ -4,9 +4,11 @@ Python script containing all IO functions.
 All opening/writing of fits files should run via this script.
 """
 
+import copy
 import logging
 import warnings
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 from astropy.io import fits
@@ -84,26 +86,6 @@ def save_mef_to_path(data_list, header_list, primary_header, path):
     hdulist.writeto(path, overwrite=True)
 
 
-def open_mef_fits(
-    path: str | Path,
-) -> tuple[fits.Header, list[np.ndarray], list[fits.Header]]:
-    """
-    Function to open a MEF fits file saved to <path>
-
-    :param path: path of fits file
-    :return: tuple containing image data and image header
-    """
-    split_data, split_headers = [], []
-    with fits.open(path) as hdu:
-        primary_header = hdu[0].header  # pylint: disable=no-member
-        num_ext = len(hdu)
-        for ext in range(1, num_ext):
-            split_data.append(hdu[ext].data)  # pylint: disable=no-member
-            split_headers.append(hdu[ext].header)  # pylint: disable=no-member
-
-    return primary_header, split_data, split_headers
-
-
 def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     """
     Function to open a fits file saved to <path>
@@ -126,6 +108,48 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     return data, header
 
 
+def open_raw_image(
+    path: str | Path,
+    open_f: Callable[[str | Path], tuple[np.ndarray, fits.Header]] = open_fits,
+) -> Image:
+    """
+    Function to open a raw image as an Image object
+
+    :param path: path of raw image
+    :param open_f: function to open the raw image
+    :return: Image object
+    """
+    data, header = open_f(path)
+
+    new_img = Image(data.astype(np.float64), header)
+
+    check_image_has_core_fields(new_img)
+
+    return new_img
+
+
+def open_mef_fits(
+    path: str | Path,
+) -> tuple[fits.Header, list[np.ndarray], list[fits.Header]]:
+    """
+    Function to open a MEF fits file saved to <path>
+
+    :param path: path of fits file
+    :return: tuple containing image data and image header
+    """
+    split_data, split_headers = [], []
+    with fits.open(path) as hdu:
+        primary_header = hdu[0].header  # pylint: disable=no-member
+        num_ext = len(hdu)
+        for ext in range(1, num_ext):
+            split_data.append(
+                hdu[ext].data.astype(np.float64)
+            )  # pylint: disable=no-member
+            split_headers.append(hdu[ext].header)  # pylint: disable=no-member
+
+    return primary_header, split_data, split_headers
+
+
 def combine_mef_extension_file_headers(primary_header, extension_header):
     """
     Function to combine the primary header with an extension header in a MEF frame
@@ -146,6 +170,50 @@ def combine_mef_extension_file_headers(primary_header, extension_header):
                 extension_header.append((key, value, comment))
 
     return extension_header
+
+
+def open_mef_image(
+    path: str | Path,
+    open_f: Callable[
+        [str | Path], tuple[fits.Header, list[np.ndarray], list[fits.Header]]
+    ] = open_mef_fits,
+) -> list[Image]:
+    """
+    Function to open a raw image as an Image object
+
+    :param path: path of raw image
+    :param open_f: function to open the raw image
+    :return: Image object
+    """
+
+    primary_header, ext_data_list, ext_header_list = open_f(path)
+
+    ext_data_list = [x.astype(np.float64) for x in ext_data_list]
+    split_images_list = []
+
+    for ext_num, ext_data in enumerate(ext_data_list):
+        ext_header = ext_header_list[ext_num]
+
+        extension_num_str = str(ext_num)
+
+        # append primary_header to hdrext
+        new_single_header = combine_mef_extension_file_headers(
+            primary_header=primary_header, extension_header=ext_header
+        )
+
+        new_single_header[BASE_NAME_KEY] = (
+            f"{primary_header[BASE_NAME_KEY].split('.fits')[0]}_"
+            f"{extension_num_str}.fits"
+        )
+
+        split_images_list.append(
+            Image(data=copy.deepcopy(ext_data), header=copy.deepcopy(new_single_header))
+        )
+
+    for image in split_images_list:
+        check_image_has_core_fields(image)
+
+    return split_images_list
 
 
 def check_file_is_complete(path: str) -> bool:

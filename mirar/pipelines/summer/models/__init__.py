@@ -1,12 +1,11 @@
 """
 Models for database and pydantic dataclass models
 """
-from typing import Union
-
-from sqlalchemy.orm import DeclarativeBase
+from typing import Type
 
 from mirar.pipelines.summer.models._exposures import Exposure, ExposuresTable
 from mirar.pipelines.summer.models._fields import (
+    DEFAULT_FIELD,
     FieldEntry,
     FieldsTable,
     populate_fields,
@@ -51,7 +50,7 @@ from mirar.processors.sqldatabase.postgres_utils import (
 from mirar.utils.sql import get_engine
 
 
-def setup_database(base: Union[DeclarativeBase, BaseTable]):
+def setup_database(base: Type[BaseTable]):
     """
     Function to setup database
     Args:
@@ -59,7 +58,7 @@ def setup_database(base: Union[DeclarativeBase, BaseTable]):
     Returns:
     """
     if DB_USER is not None:
-        db_name = base.db_name
+        db_name = str(base.db_name)
         admin_engine = get_engine(
             db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
         )

@@ -1,7 +1,6 @@
 """
 Module for WINTER data reduction
 """
-from mirar.io import open_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     DITHER_N_KEY,
@@ -379,7 +378,9 @@ extract_all = [
         load_image=load_winter_mef_image,
         extension_num_header_key="BOARD_ID",
     ),
-    ImageDebatcher(),
+    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    ImageBatcher("UTCTIME"),
+    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -400,8 +401,6 @@ extract_all = [
             "FIELDID",
         ]
     ),
-    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
-    ImageBatcher(BASE_NAME_KEY),
 ]
 
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
@@ -422,12 +421,10 @@ select_subset = [
 # Split
 
 mask_and_split = [
+    ImageBatcher(BASE_NAME_KEY),
     MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
-    ImageDebatcher(),
-    ImageBatcher("UTCTIME"),
-    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
     CustomImageModifier(annotate_winter_subdet_headers),
 ]
@@ -448,13 +445,13 @@ unpack_all = extract_all + mask_and_split + save_raw
 # Load from unpacked dir
 
 load_unpacked = [
-    ImageLoader(input_sub_dir="raw_unpacked", load_image=open_fits),
+    ImageLoader(input_sub_dir="raw_unpacked"),
 ]
 
 # Image subtraction
 
 imsub = [
-    ImageLoader(input_sub_dir="photcal", load_image=open_fits),
+    ImageLoader(input_sub_dir="photcal"),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -472,7 +469,7 @@ imsub = [
 ]
 
 final = [
-    ImageLoader(input_sub_dir="prezogy", load_image=open_fits),
+    ImageLoader(input_sub_dir="prezogy"),
     ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
     ImageSaver(output_dir_name="diffs"),
 ]

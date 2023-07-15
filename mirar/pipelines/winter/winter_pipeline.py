@@ -3,7 +3,9 @@ Module with pipeline for building reference images in the IR from WFAU
 """
 import logging
 
+from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
+from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
     commissioning_multiboard_stack,
@@ -21,6 +23,7 @@ from mirar.pipelines.winter.blocks import (
     unpack_subset,
 )
 from mirar.pipelines.winter.config import PIPELINE_NAME
+from mirar.pipelines.winter.load_winter_image import load_raw_winter_mef
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +55,8 @@ class WINTERPipeline(Pipeline):
     non_linear_level = 65535
 
     @staticmethod
-    def _load_raw_image(path: str):
-        pass
+    def _load_raw_image(path: str) -> Image | list[Image]:
+        return open_mef_image(path, load_raw_winter_mef)
 
     @staticmethod
     def download_raw_images_for_night(night: str):

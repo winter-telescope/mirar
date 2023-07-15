@@ -14,7 +14,7 @@ from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image
-from mirar.io import open_mef_fits
+from mirar.io import open_mef_fits, open_mef_image
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
@@ -163,7 +163,7 @@ def load_stacked_winter_image(
     return data, header
 
 
-def load_winter_mef_image(
+def load_raw_winter_mef(
     path: str | Path,
 ) -> tuple[astropy.io.fits.Header, list[np.array], list[astropy.io.fits.Header]]:
     """
@@ -182,6 +182,18 @@ def load_winter_mef_image(
             del board_header["EXPTIME"]
 
     return header, split_data, split_headers
+
+
+def load_winter_mef_image(
+    path: str | Path,
+) -> list[Image]:
+    """
+    Function to load iwinter mef images
+
+    :param path: Path to image
+    :return: list of images
+    """
+    return open_mef_image(path, load_raw_winter_mef)
 
 
 def annotate_winter_subdet_headers(image: Image) -> Image:

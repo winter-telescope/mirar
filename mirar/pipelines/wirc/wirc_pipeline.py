@@ -2,10 +2,9 @@
 Module for the WIRC (https://doi.org/10.1117/12.460336) pipeline
 """
 import logging
+from pathlib import Path
 
-import astropy.io.fits
-import numpy as np
-
+from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.wirc.blocks import imsub, load_raw, reduce
@@ -44,5 +43,5 @@ class WircPipeline(Pipeline):
         )
 
     @staticmethod
-    def _load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
+    def _load_raw_image(path: str | Path) -> Image | list[Image]:
         return load_raw_wirc_image(path)

@@ -3,11 +3,11 @@ Module to run the summer data reduction pipeline
 """
 import logging
 import os
+from pathlib import Path
 
-import astropy.io.fits
-import numpy as np
-
+from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
+from mirar.io import open_raw_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.summer.blocks import (
     build_log,
@@ -65,5 +65,5 @@ class SummerPipeline(Pipeline):
         )
 
     @staticmethod
-    def _load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
+    def _load_raw_image(path: str | Path) -> Image | list[Image]:
         return load_raw_summer_image(path)

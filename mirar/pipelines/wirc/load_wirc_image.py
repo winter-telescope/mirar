@@ -8,7 +8,8 @@ import astropy
 import numpy as np
 from astropy.time import Time
 
-from mirar.io import open_fits
+from mirar.data import Image
+from mirar.io import open_fits, open_raw_image
 from mirar.paths import COADD_KEY, PROC_FAIL_KEY, PROC_HISTORY_KEY, SATURATE_KEY
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 WIRC_NONLINEAR_LEVEL = 30000
 
 
-def load_raw_wirc_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
     """
     Function to load a raw WIRC image
 
@@ -67,3 +68,13 @@ def load_raw_wirc_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Hea
     data = data.astype(float)
     data[data == 0.0] = np.nan
     return data, header
+
+
+def load_raw_wirc_image(path: str | Path) -> Image:
+    """
+    Function to load a raw WIRC image
+
+    :param path: Path to the raw image
+    :return: Image object
+    """
+    return open_raw_image(path, load_raw_wirc_fits)
