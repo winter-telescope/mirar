@@ -15,6 +15,12 @@ from mirar.processors.utils.image_selector import select_from_images
 logger = logging.getLogger(__name__)
 
 
+class MissingDarkError(ImageNotFoundError):
+    """
+    Error for when a dark image is missing
+    """
+
+
 def default_select_dark(
     images: ImageBatch,
 ) -> ImageBatch:
@@ -75,9 +81,13 @@ class DarkCalibrator(ProcessorWithCache):
 
         n_frames = len(images)
         if n_frames == 0:
-            err = f"Found {n_frames} suitable darks in batch"
+            err = (
+                f"Found {n_frames} suitable darks in batch. "
+                f"First image in batch has exposure time {images[0]['EXPTIME']}"
+                f"and name {images[0]['BASENAME']}"
+            )
             logger.error(err)
-            raise ImageNotFoundError(err)
+            raise MissingDarkError(err)
 
         nx, ny = images[0].get_data().shape
 
