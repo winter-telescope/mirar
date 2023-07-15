@@ -3,6 +3,8 @@ This file contains the configuration for the winter pipeline.
 """
 from pathlib import Path
 
+from mirar.processors.utils.cal_hunter import CalRequirement
+
 PIPELINE_NAME = "winter"
 
 winter_file_dir = Path(__file__).parent.joinpath("files")
@@ -49,3 +51,9 @@ scamp_config_path = winter_file_dir.joinpath("scamp.conf")
 winter_mask_path = winter_file_dir.joinpath("winter_mask.fits")
 
 psfex_path = winter_file_dir.joinpath("photom.psfex")
+
+winter_cal_requirements = [
+    CalRequirement(
+        target_name="dark", required_field="EXPTIME", required_values=["120.0"]
+    ),
+]

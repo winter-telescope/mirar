@@ -137,6 +137,7 @@ dark_cal_all_boards = [
     ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
     WriteMaskedCoordsToFile(output_dir="mask_raw"),
     DarkCalibrator(cache_sub_dir="calibration"),
+    ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name="darkcal"),
     ImageDebatcher(),
 ]
@@ -159,10 +160,8 @@ flat_cal = [
 
 flat_cal_all_boards = [
     # ImageSelector(("OBSTYPE", ["SCIENCE"]), ("TARGNAME", f"{TARGET_NAME}")),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir="skycals"),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name="skyflatcal"),
     NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
     ImageSaver(output_dir_name="skysub"),
@@ -372,12 +371,15 @@ commissioning_photcal_indiv = load_anet + photcal_indiv
 
 # Loading
 
-extract_all = [
+load_raw = [
     MEFLoader(
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
         extension_num_header_key="BOARD_ID",
     ),
+]
+
+extract_all = [
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
@@ -436,8 +438,10 @@ save_raw = [
     DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
 ]
 
-unpack_subset = extract_all + select_subset + mask_and_split + save_raw
-unpack_all = extract_all + mask_and_split + save_raw
+unpack_subset = load_raw + extract_all + select_subset + mask_and_split + save_raw
+
+export_raw_all = extract_all + mask_and_split + save_raw
+unpack_all = load_raw + export_raw_all
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Various processing steps
@@ -497,3 +501,5 @@ reftest = (
 )
 
 only_ref = load_ref + select_ref + refbuild
+
+realtime = export_raw_all + dark_cal_all_boards

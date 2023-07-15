@@ -99,6 +99,13 @@ class Monitor:
             pipeline, night=night, selected_configurations=realtime_configurations
         )
 
+        for config in realtime_configurations:
+            assert config in self.pipeline.all_pipeline_configurations, (
+                f"Invalid configuration '{config}' for pipeline {pipeline}. "
+                f"Available configurations are "
+                f"{list(self.pipeline.all_pipeline_configurations.keys())}"
+            )
+
         self.raw_image_directory = Path(
             raw_img_dir(
                 sub_dir=self.pipeline.night_sub_dir,
@@ -453,7 +460,7 @@ class Monitor:
                                 self.update_cals(img)
 
                         sci_img_batch = img_batch + self.get_cals()
-                        
+
                         img = img_batch[-1]
 
                         if (DITHER_N_KEY in img.keys()) & (
@@ -463,6 +470,15 @@ class Monitor:
                                 if (Time.now() - self.queue_t) < (1.0 * u.hour):
                                     self.queued_images.append(event.src_path)
                                     sci_img_batch = None
+                                    logger.info(
+                                        f"Added {event.src_path} to queue. "
+                                        f"It has dither number {img[DITHER_N_KEY]}. "
+                                        f"Waiting for dither {img[MAX_DITHER_KEY]}."
+                                        f"Time since last image: "
+                                        f"{Time.now() - self.queue_t}. There are "
+                                        f"{len(self.queued_images)} images"
+                                        f" in the queue."
+                                    )
                                 else:
                                     for x in self.queued_images:
                                         sci_img_batch += self.pipeline.load_raw_image(x)
@@ -478,6 +494,13 @@ class Monitor:
                                     for x in self.queued_images:
                                         sci_img_batch += self.pipeline.load_raw_image(x)
                                     self.queued_images = [event.src_path]
+                                    logger.info(
+                                        f"Adding {event.src_path} to queue. "
+                                        f"It has dither number {img[DITHER_N_KEY]}."
+                                        f"The previous dither set was incomplete. "
+                                        f"Processing these {len(sci_img_batch)} "
+                                        f"images now."
+                                    )
 
                         if sci_img_batch is not None:
                             self.queue_t = Time.now()

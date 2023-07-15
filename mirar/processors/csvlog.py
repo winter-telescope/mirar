@@ -3,6 +3,7 @@ Module to generate a CSV log of observations
 """
 import logging
 import os
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
@@ -20,6 +21,8 @@ class CSVLog(BaseImageProcessor):
     """
     Processor to generate a CSV log
     """
+
+    max_n_cpu = 1
 
     base_key = "csvlog"
 
@@ -51,7 +54,7 @@ class CSVLog(BaseImageProcessor):
         """
         return f"{self.night}_log.csv"
 
-    def get_output_path(self) -> str:
+    def get_output_path(self) -> Path:
         """
         Returns the full log output path
 
