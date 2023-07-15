@@ -473,7 +473,23 @@ class Monitor:
                         if (DITHER_N_KEY in img.keys()) & (
                             MAX_DITHER_KEY in img.keys()
                         ):
-                            if img[DITHER_N_KEY] != img[MAX_DITHER_KEY]:
+                            # If you have a new dither set, just process
+                            if np.logical_and(
+                                    int(img[DITHER_N_KEY]) == 1,
+                                    len(self.queued_images) > 0,
+                            ):
+                                if img[MAX_DITHER_KEY] > 1:
+                                    sci_img_batch = ImageBatch([])
+                                    self.queued_images = [event.src_path]
+                                    logger.info(
+                                        f"Adding {event.src_path} to queue. "
+                                        f"It has dither number {img[DITHER_N_KEY]}."
+                                        f"The previous dither set was incomplete. "
+                                        f"Processing these {len(sci_img_batch)} "
+                                        f"images now."
+                                    )
+                                    
+                            elif img[DITHER_N_KEY] != img[MAX_DITHER_KEY]:
                                 if (Time.now() - self.queue_t) < (1.0 * u.hour):
                                     self.queued_images.append(event.src_path)
                                     sci_img_batch = None
@@ -489,22 +505,6 @@ class Monitor:
                                     )
                                 else:
                                     self.queued_images = []
-
-                            # If you have a new dither set, just process
-                            elif np.logical_and(
-                                int(img[DITHER_N_KEY]) == 1.0,
-                                len(self.queued_images) > 0,
-                            ):
-                                if img[MAX_DITHER_KEY] > 1:
-                                    sci_img_batch = ImageBatch([])
-                                    self.queued_images = [event.src_path]
-                                    logger.info(
-                                        f"Adding {event.src_path} to queue. "
-                                        f"It has dither number {img[DITHER_N_KEY]}."
-                                        f"The previous dither set was incomplete. "
-                                        f"Processing these {len(sci_img_batch)} "
-                                        f"images now."
-                                    )
 
                         if sci_img_batch is not None:
                             self.queue_t = Time.now()
