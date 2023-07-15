@@ -23,6 +23,8 @@ from mirar.data import Dataset, Image, ImageBatch
 from mirar.errors import ErrorReport, ErrorStack, ImageNotFoundError
 from mirar.io import check_file_is_complete
 from mirar.paths import (
+    DITHER_N_KEY,
+    MAX_DITHER_KEY,
     MONITOR_EMAIL_KEY,
     MONITOR_RECIPIENT_KEY,
     PACKAGE_NAME,
@@ -97,6 +99,13 @@ class Monitor:
             pipeline, night=night, selected_configurations=realtime_configurations
         )
 
+        for config in realtime_configurations:
+            assert config in self.pipeline.all_pipeline_configurations, (
+                f"Invalid configuration '{config}' for pipeline {pipeline}. "
+                f"Available configurations are "
+                f"{list(self.pipeline.all_pipeline_configurations.keys())}"
+            )
+
         self.raw_image_directory = Path(
             raw_img_dir(
                 sub_dir=self.pipeline.night_sub_dir,
@@ -152,6 +161,10 @@ class Monitor:
 
         self.midway_postprocess_complete = False
         self.latest_csv_log = None
+
+        # Queue images that should be processed together
+        self.queued_images = []
+        self.queue_t = Time.now()
 
         self.processed_science_images = []
         self.processed_cal_images = []
@@ -446,25 +459,72 @@ class Monitor:
                             for img in img_batch:
                                 self.update_cals(img)
 
-                        all_img = img_batch + self.get_cals()
+                        sci_img_batch = img_batch + self.get_cals()
+                        load_queue = list(self.queued_images)
 
-                        print(
-                            f"Reducing {event.src_path} "
-                            f"on thread {threading.get_ident()}, "
-                            f"(science={is_science})"
-                        )
-                        _, errorstack = self.pipeline.reduce_images(
-                            dataset=Dataset(all_img),
-                            selected_configurations=self.realtime_configurations,
-                            catch_all_errors=True,
-                        )
-                        self.errorstack += errorstack
-                        self.update_error_log()
+                        img = img_batch[-1]
 
-                        if is_science:
-                            self.processed_science_images.append(event.src_path)
-                        else:
-                            self.processed_cal_images.append(event.src_path)
+                        if (DITHER_N_KEY in img.keys()) & (
+                            MAX_DITHER_KEY in img.keys()
+                        ):
+                            if img[DITHER_N_KEY] != img[MAX_DITHER_KEY]:
+                                if (Time.now() - self.queue_t) < (1.0 * u.hour):
+                                    self.queued_images.append(event.src_path)
+                                    sci_img_batch = None
+                                    logger.info(
+                                        f"Added {event.src_path} to queue. "
+                                        f"It has dither number {img[DITHER_N_KEY]}. "
+                                        f"Waiting for dither {img[MAX_DITHER_KEY]}."
+                                        f"Time since last image: "
+                                        f"{Time.now() - self.queue_t}. There are "
+                                        f"{len(self.queued_images)} images"
+                                        f" in the queue."
+                                    )
+                                else:
+                                    self.queued_images = []
+
+                            # If you have a new dither set, just process
+                            elif np.logical_and(
+                                int(img[DITHER_N_KEY]) == 1.0,
+                                len(self.queued_images) > 0,
+                            ):
+                                if img[MAX_DITHER_KEY] > 1:
+                                    sci_img_batch = ImageBatch([])
+                                    self.queued_images = [event.src_path]
+                                    logger.info(
+                                        f"Adding {event.src_path} to queue. "
+                                        f"It has dither number {img[DITHER_N_KEY]}."
+                                        f"The previous dither set was incomplete. "
+                                        f"Processing these {len(sci_img_batch)} "
+                                        f"images now."
+                                    )
+
+                        if sci_img_batch is not None:
+                            self.queue_t = Time.now()
+
+                            all_img = sci_img_batch + self.get_cals()
+
+                            for x in load_queue:
+                                all_img += self.pipeline.load_raw_image(x)
+
+                            print(
+                                f"Reducing {event.src_path} "
+                                f"on thread {threading.get_ident()}, "
+                                f"alongside {len(load_queue)} queue images"
+                                f"(science={is_science})"
+                            )
+                            _, errorstack = self.pipeline.reduce_images(
+                                dataset=Dataset(all_img),
+                                selected_configurations=self.realtime_configurations,
+                                catch_all_errors=True,
+                            )
+                            self.errorstack += errorstack
+                            self.update_error_log()
+
+                            if is_science:
+                                self.processed_science_images.append(event.src_path)
+                            else:
+                                self.processed_cal_images.append(event.src_path)
 
                     # RS: Please forgive me for this coding sin
                     # I just want the monitor to never crash

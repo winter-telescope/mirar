@@ -16,13 +16,14 @@ from mirar.pipelines.winter.blocks import (
     full_commissioning_all_boards,
     imsub,
     only_ref,
+    realtime,
     reduce,
     refbuild,
     reftest,
     unpack_all,
     unpack_subset,
 )
-from mirar.pipelines.winter.config import PIPELINE_NAME
+from mirar.pipelines.winter.config import PIPELINE_NAME, winter_cal_requirements
 from mirar.pipelines.winter.load_winter_image import load_raw_winter_mef
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class WINTERPipeline(Pipeline):
     """
 
     name = "winter"
+    default_cal_requirements = winter_cal_requirements
 
     all_pipeline_configurations = {
         "refbuild": refbuild,
@@ -49,6 +51,7 @@ class WINTERPipeline(Pipeline):
         "reduce": reduce,
         "reftest": reftest,
         "only_ref": only_ref,
+        "realtime": realtime,
     }
 
     gain = 1.0
