@@ -164,7 +164,7 @@ class Monitor:
 
         # Queue images that should be processed together
         self.queued_images = []
-        self.queue_t = Time.now()
+        self.queue_t = None
 
         self.processed_science_images = []
         self.processed_cal_images = []
@@ -451,6 +451,7 @@ class Monitor:
                             time.sleep(3)
 
                     try:
+                        # Start processing
                         img_batch = self.pipeline.load_raw_image(event.src_path)
 
                         is_science = img_batch[0]["OBSCLASS"] == "science"
@@ -458,6 +459,11 @@ class Monitor:
                         if not is_science:
                             for img in img_batch:
                                 self.update_cals(img)
+
+                        else:
+                            # Start clock with first science image
+                            if self.queue_t is None:
+                                self.queue_t = Time.now()
 
                         sci_img_batch = img_batch + self.get_cals()
                         load_queue = list(self.queued_images)
@@ -476,7 +482,8 @@ class Monitor:
                                         f"It has dither number {img[DITHER_N_KEY]}. "
                                         f"Waiting for dither {img[MAX_DITHER_KEY]}."
                                         f"Time since last image: "
-                                        f"{Time.now() - self.queue_t}. There are "
+                                        f"{(Time.now() - self.queue_t).to('hour'):.3f}"
+                                        f" hours. There are "
                                         f"{len(self.queued_images)} images"
                                         f" in the queue."
                                     )
