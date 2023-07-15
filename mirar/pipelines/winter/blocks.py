@@ -383,6 +383,9 @@ extract_all = [
     ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
+]
+
+csvlog = [
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -406,8 +409,6 @@ extract_all = [
 ]
 
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
-
-make_log_and_save = []
 
 # Optional subset selection
 
@@ -438,10 +439,11 @@ save_raw = [
     DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
 ]
 
-unpack_subset = load_raw + extract_all + select_subset + mask_and_split + save_raw
+unpack_subset = (
+    load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
+)
 
-export_raw_all = extract_all + mask_and_split + save_raw
-unpack_all = load_raw + export_raw_all
+unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Various processing steps
@@ -502,4 +504,4 @@ reftest = (
 
 only_ref = load_ref + select_ref + refbuild
 
-realtime = export_raw_all + dark_cal_all_boards
+realtime = extract_all + mask_and_split + save_raw + full_commissioning_proc

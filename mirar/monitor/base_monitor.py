@@ -460,6 +460,7 @@ class Monitor:
                                 self.update_cals(img)
 
                         sci_img_batch = img_batch + self.get_cals()
+                        load_queue = list(self.queued_images)
 
                         img = img_batch[-1]
 
@@ -480,8 +481,6 @@ class Monitor:
                                         f" in the queue."
                                     )
                                 else:
-                                    for x in self.queued_images:
-                                        sci_img_batch += self.pipeline.load_raw_image(x)
                                     self.queued_images = []
 
                             # If you have a new dither set, just process
@@ -491,8 +490,6 @@ class Monitor:
                             ):
                                 if img[MAX_DITHER_KEY] > 1:
                                     sci_img_batch = ImageBatch([])
-                                    for x in self.queued_images:
-                                        sci_img_batch += self.pipeline.load_raw_image(x)
                                     self.queued_images = [event.src_path]
                                     logger.info(
                                         f"Adding {event.src_path} to queue. "
@@ -507,9 +504,13 @@ class Monitor:
 
                             all_img = sci_img_batch + self.get_cals()
 
+                            for x in load_queue:
+                                all_img += self.pipeline.load_raw_image(x)
+
                             print(
                                 f"Reducing {event.src_path} "
                                 f"on thread {threading.get_ident()}, "
+                                f"alongside {len(load_queue)} queue images"
                                 f"(science={is_science})"
                             )
                             _, errorstack = self.pipeline.reduce_images(
