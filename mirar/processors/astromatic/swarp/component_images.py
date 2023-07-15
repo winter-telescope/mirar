@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 from astropy.io.fits import Header
 
-from mirar.data import Image, ImageBatch
+from mirar.data import ImageBatch
 from mirar.io import open_fits
 from mirar.paths import STACKED_COMPONENT_IMAGES_KEY
 from mirar.processors.astromatic.swarp.swarp import Swarp
@@ -60,14 +60,13 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
                     f"Are you sure it was saved using ImageSaver to this path just "
                     f"before the Swarp processor that stacked it?"
                 )
-            component_data, component_header = self.load_image(component_image_path)
-            component_image = Image(component_data, component_header)
+            component_image = self.load_image(component_image_path)
             if self.copy_header_keys is not None:
                 for key in self.copy_header_keys:
                     if key in image.keys():
                         component_image[key] = image[key]
             component_batch.append(component_image)
-        logger.info(f"Loaded {len(component_batch)} component images")
+        logger.debug(f"Loaded {len(component_batch)} component images")
         return component_batch
 
     def check_prerequisites(

@@ -3,6 +3,8 @@ Module with functions to load raw and processed summer images
 """
 import logging
 import os
+import warnings
+from pathlib import Path
 
 import astropy
 import numpy as np
@@ -10,7 +12,10 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
+from astropy.utils.exceptions import AstropyWarning
 
+from mirar.data import Image
+from mirar.io import open_fits, open_raw_image
 from mirar.paths import (
     BASE_NAME_KEY,
     GAIN_KEY,
@@ -20,12 +25,12 @@ from mirar.paths import (
     RAW_IMG_KEY,
     __version__,
 )
-from mirar.pipelines.summer.models._fields import DEFAULT_FIELD
+from mirar.pipelines.summer.models import DEFAULT_FIELD
 
 logger = logging.getLogger(__name__)
 
 
-def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
     """
     Function to load a raw summer image and add/modify the required headers
     Args:
@@ -34,18 +39,21 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
     Returns: [image data, image header]
 
     """
-    with fits.open(path) as data:
-        header = data[0].header
+    data, header = open_fits(path)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", AstropyWarning)
         header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
-        header["UTCTIME"] = header["UTCSHUT"]
+        header["UTCTIME"] = str(header["UTCSHUT"]).replace(" ", "T")
+
+        header["MJD-OBS"] = header["OBSMJD"]
+        header["DATE-OBS"] = Time(header["OBSMJD"], format="mjd").isot
         try:
             header["TARGET"] = header["OBSTYPE"].lower()
         except (ValueError, AttributeError):
             header["TARGET"] = header["OBSTYPE"]
 
-        crd = SkyCoord(
-            ra=data[0].header["RA"], dec=data[0].header["DEC"], unit=(u.deg, u.deg)
-        )
+        crd = SkyCoord(ra=header["RA"], dec=header["DEC"], unit=(u.deg, u.deg))
         header["RA"] = crd.ra.deg
         header["DEC"] = crd.dec.deg
 
@@ -53,8 +61,8 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["CRVAL2"] = header["DEC"]
 
         tel_crd = SkyCoord(
-            ra=data[0].header["TELRA"],
-            dec=data[0].header["TELDEC"],
+            ra=header["TELRA"],
+            dec=header["TELDEC"],
             unit=(u.deg, u.deg),
         )
         header["TELRA"] = tel_crd.ra.deg
@@ -64,7 +72,7 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header[LATEST_SAVE_KEY] = path
         header[RAW_IMG_KEY] = path
 
-        data[0].data = data[0].data * 1.0  # pylint: disable=no-member
+        data = data * 1.0  # pylint: disable=no-member
 
         if "other" in header["FILTERID"]:
             header["FILTERID"] = "r"
@@ -118,16 +126,12 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         try:
             header["SHUTOPEN"] = Time(header["SHUTOPEN"], format="iso").jd
         except ValueError:
-            logger.warning(
-                f"Error parsing 'SHUTOPEN' of {path}: ({header['SHUTOPEN']})"
-            )
+            logger.debug(f"Error parsing 'SHUTOPEN' of {path}: ({header['SHUTOPEN']})")
 
         try:
             header["SHUTCLSD"] = Time(header["SHUTCLSD"], format="iso").jd
         except ValueError:
-            logger.warning(
-                f"Error parsing 'SHUTCLSD' of {path}: ({header['SHUTCLSD']})"
-            )
+            logger.debug(f"Error parsing 'SHUTCLSD' of {path}: ({header['SHUTCLSD']})")
 
         header["PROCFLAG"] = 0
 
@@ -204,11 +208,21 @@ def load_raw_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
         if GAIN_KEY not in header.keys():
             header[GAIN_KEY] = 1
-        data[0].header = header
-    return data[0].data, data[0].header  # pylint: disable=no-member
+
+    return data, header  # pylint: disable=no-member
 
 
-def load_proc_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_summer_image(path: str | Path) -> Image:
+    """
+    Function to load a raw summer image and add/modify the required headers
+
+    :param path: Path to the raw image
+    :return: Image object
+    """
+    return open_raw_image(path, load_raw_summer_fits)
+
+
+def load_proc_summer_image(path: str) -> Image:
     """
     Function to load a processed summer image and add/modify the required headers
     Args:
@@ -217,9 +231,7 @@ def load_proc_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]
     Returns: [image data, image header]
 
     """
-    with fits.open(path) as img:
-        data = img[0].data  # pylint: disable=no-member
-        header = img[0].header
+    data, header = open_fits(path)
 
     if "ZP" not in header.keys():
         header["ZP"] = header["ZP_AUTO"]
@@ -239,5 +251,4 @@ def load_proc_summer_image(path: str) -> tuple[np.array, astropy.io.fits.Header]
 
     header["TIMEUTC"] = header["UTCISO"]
     data[data == 0] = np.nan
-    # logger.info(header['CRVAL2'])
-    return data, header
+    return Image(data, header)

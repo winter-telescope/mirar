@@ -171,7 +171,7 @@ class Monitor:
                 self.archival_cals = find_required_cals(
                     latest_dir=str(self.raw_image_directory),
                     night=night,
-                    open_f=self.pipeline.load_raw_image,
+                    open_f=self.pipeline.unpack_raw_image,
                     requirements=cal_requirements,
                 )
             except ImageNotFoundError as exc:
@@ -438,14 +438,15 @@ class Monitor:
                             time.sleep(3)
 
                     try:
-                        img = self.pipeline.load_raw_image(event.src_path)
+                        img_batch = self.pipeline.load_raw_image(event.src_path)
 
-                        is_science = img["OBSCLASS"] == "science"
+                        is_science = img_batch[0]["OBSCLASS"] == "science"
 
                         if not is_science:
-                            self.update_cals(img)
+                            for img in img_batch:
+                                self.update_cals(img)
 
-                        all_img = ImageBatch(img) + self.get_cals()
+                        all_img = img_batch + self.get_cals()
 
                         print(
                             f"Reducing {event.src_path} "

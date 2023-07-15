@@ -15,7 +15,6 @@ import os
 from pathlib import Path
 from typing import Optional
 
-import astropy.io.fits
 import numpy as np
 
 from mirar.data import Dataset, Image, ImageBatch
@@ -104,7 +103,7 @@ class Pipeline:
         return copy.copy(self.all_pipeline_configurations[configuration])
 
     @staticmethod
-    def _load_raw_image(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.header]:
+    def _load_raw_image(path: str | Path) -> Image | list[Image]:
         """
         Function to load in a raw image and ensure it
         has the correct format for the code.
@@ -114,7 +113,7 @@ class Pipeline:
         """
         raise NotImplementedError
 
-    def load_raw_image(self, path: str) -> Image:
+    def load_raw_image(self, path: str) -> ImageBatch:
         """
         Function to load in a raw image and create an
         :class:`~mirar.data.image_data.Image` object which
@@ -123,10 +122,12 @@ class Pipeline:
         :param path: path of raw image
         :return: Image object
         """
-        data, header = self._load_raw_image(path)
-        return Image(data=data, header=header)
+        raw_images = self._load_raw_image(path)
+        if not isinstance(raw_images, list):
+            raw_images = [raw_images]
+        return ImageBatch(raw_images)
 
-    def unpack_raw_image(self, path: str) -> tuple[np.ndarray, astropy.io.fits.Header]:
+    def unpack_raw_image(self, path: str) -> Image | list[Image]:
         """
         Function to load in a raw image and ensure it has
          the correct format for the code.

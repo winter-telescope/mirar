@@ -146,7 +146,7 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             night=night,
         )
 
-        batches, errorstack = pipe.reduce_images(catch_all_errors=True)
+        batches, errorstack = pipe.reduce_images(catch_all_errors=False)
 
         if args.postprocessconfig is not None:
             post_config = [
