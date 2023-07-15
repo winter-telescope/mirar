@@ -237,8 +237,8 @@ def check_file_is_complete(path: str) -> bool:
         try:
             with fits.open(path) as hdul:
                 check = (
-                    hdul._file.size  # pylint: disable=protected-access
-                    >= hdul._file.tell()  # pylint: disable=protected-access
+                    hdul[-1]._file.tell()  # pylint: disable=protected-access
+                    == hdul[-1]._file.size  # pylint: disable=protected-access
                 )
         except OSError:
             pass
