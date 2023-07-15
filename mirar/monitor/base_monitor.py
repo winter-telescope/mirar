@@ -475,8 +475,8 @@ class Monitor:
                         ):
                             # If you have a new dither set, just process
                             if np.logical_and(
-                                    int(img[DITHER_N_KEY]) == 1,
-                                    len(self.queued_images) > 0,
+                                int(img[DITHER_N_KEY]) == 1,
+                                len(self.queued_images) > 0,
                             ):
                                 if img[MAX_DITHER_KEY] > 1:
                                     sci_img_batch = ImageBatch([])
@@ -488,7 +488,7 @@ class Monitor:
                                         f"Processing these {len(sci_img_batch)} "
                                         f"images now."
                                     )
-                                    
+
                             elif img[DITHER_N_KEY] != img[MAX_DITHER_KEY]:
                                 if (Time.now() - self.queue_t) < (1.0 * u.hour):
                                     self.queued_images.append(event.src_path)
