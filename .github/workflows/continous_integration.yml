@@ -39,6 +39,8 @@ jobs:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
           mamba-version: "*"
+          channels: conda-forge,defaults
+          channel-priority: true
 
       - name: Install poetry
         shell: bash -el {0}
