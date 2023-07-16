@@ -46,7 +46,7 @@ jobs:
           conda list
 
       - name: Install poetry
-        run: pipx install poetry
+        run: pip install poetry
 
       # Set up the python versions
       - name: Set up Python ${{ matrix.python-version }}
@@ -64,21 +64,24 @@ jobs:
 
       - name: install packages
         run: |
-          sudo apt-get update
-          sudo apt-get install -y sextractor scamp swarp build-essential
-          echo "deb http://ftp.us.debian.org/debian sid main" | sudo tee -a /etc/apt/sources.list
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0E98404D386FA1D9
-          sudo apt-get update && sudo apt-get install -y psfex
-          sudo ln -s /usr/bin/source-extractor /usr/bin/sex
-          sudo ln -s /usr/bin/SWarp /usr/bin/swarp
-          echo `sex --version`
-          echo `scamp --version`
-          echo `swarp --version`
-          echo `psfex --version`
+          which python
+#          sudo apt-get update
+#          sudo apt-get install -y sextractor scamp swarp build-essential
+#          echo "deb http://ftp.us.debian.org/debian sid main" | sudo tee -a /etc/apt/sources.list
+#          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138
+#          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0E98404D386FA1D9
+#          sudo apt-get update && sudo apt-get install -y psfex
+#          sudo ln -s /usr/bin/source-extractor /usr/bin/sex
+#          sudo ln -s /usr/bin/SWarp /usr/bin/swarp
+#          echo `sex --version`
+#          echo `scamp --version`
+#          echo `swarp --version`
+#          echo `psfex --version`
+          conda install -c conda-forge sextractor scamp swarp psfex
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
           poetry install
+
 
       # Set up database
       - name: postgres
