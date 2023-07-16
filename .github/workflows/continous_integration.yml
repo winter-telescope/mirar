@@ -38,9 +38,6 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
-          channels: conda-forge,defaults
-          channel-priority: true
 
       - name: Install poetry
         shell: bash -el {0}
@@ -56,7 +53,7 @@ jobs:
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-          mamba install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex
+          mamba install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
           poetry install

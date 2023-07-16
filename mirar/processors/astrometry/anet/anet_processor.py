@@ -51,7 +51,7 @@ class AstrometryNet(BaseImageProcessor):
         # limits on scale (lower, upper)
         scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
         downsample: Optional[float | int] = None,
-        timeout: float = ASTROMETRY_TIMEOUT,  # astrometry cmd execute timeout, in seconds
+        timeout: float = ASTROMETRY_TIMEOUT,  # astrometry cmd execute timeout, in secs
         use_sextractor: bool = False,
         sextractor_path: str = "sex",
         search_radius_deg: float = 5.0,
@@ -241,20 +241,19 @@ class AstrometryNet(BaseImageProcessor):
                     f"file {new_img_path} found."
                 )
 
-            solved = fits.open(new_img_path)
-            hdr = solved[0].header  # pylint: disable=no-member
+            with fits.open(new_img_path) as solved:
+                hdr = solved[0].header  # pylint: disable=no-member
 
             del hdr["HISTORY"]
 
             # Clean up!
 
-            with fits.open(new_img_path) as hdul:  # pylint: disable=no-member
-                hdr = hdul[0].header
+            with fits.open(new_img_path) as hdul:
+                hdr = hdul[0].header  # pylint: disable=no-member
                 data = hdul[0].data  # pylint: disable=no-member
                 if "HISTORY" in hdr:
                     del hdr["HISTORY"]
 
-            # batch[i] = self.open_fits(newname)  # pylint: disable=no-member
             batch[i] = Image(data=data, header=hdr)
 
             if not cache:

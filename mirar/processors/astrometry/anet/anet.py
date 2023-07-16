@@ -80,7 +80,8 @@ def run_astrometry_net_single(
         cmd += f"--downsample {downsample} "
 
     # cmd with a ra, dec first guess (speeds up solution)
-    header = fits.open(img_path)[0].header  # pylint: disable=no-member
+    with fits.open(img_path) as hdul:
+        header = hdul[0].header  # pylint: disable=no-member
     ra_req, dec_req = header["RA"], header["DEC"]  # requested ra, dec
     if use_sextractor:
         cmd += f"--use-source-extractor --source-extractor-path '{sextractor_path}' "
