@@ -46,7 +46,7 @@ jobs:
           conda list
 
       - name: Install poetry
-        run: pip install poetry
+        run: conda install poetry
 
       # Set up the python versions
       - name: Set up Python ${{ matrix.python-version }}
