@@ -62,7 +62,7 @@ jobs:
       - name: astrometry.net index files
         run: |
           rmdir /usr/share/miniconda/envs/test/data
-          ln -ls /home/runner/work/mirar-starterpack/anet_index/data/ /usr/share/miniconda/envs/test/
+          ln -s /home/runner/work/mirar-starterpack/anet_index/data/ /usr/share/miniconda/envs/test/
           ls /usr/share/miniconda/envs/test/
           ls /usr/share/miniconda/envs/test/data
 
