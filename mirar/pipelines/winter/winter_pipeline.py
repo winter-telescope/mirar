@@ -15,6 +15,7 @@ from mirar.pipelines.winter.blocks import (
     full_commissioning,
     full_commissioning_all_boards,
     imsub,
+    load_test,
     only_ref,
     realtime,
     reduce,
@@ -52,6 +53,7 @@ class WINTERPipeline(Pipeline):
         "reftest": reftest,
         "only_ref": only_ref,
         "realtime": realtime,
+        "test": load_test + realtime,
     }
 
     gain = 1.0

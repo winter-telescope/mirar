@@ -34,15 +34,14 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - name: Install poetry
-        run: pipx install poetry
-
-      # Set up the python versions
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - uses: conda-incubator/setup-miniconda@v2
         with:
+          auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          cache: "poetry"
+
+      - name: Install poetry
+        shell: bash -el {0}
+        run: conda install poetry
 
       # Runs a set of commands using the runners shell
       - name: set up ssh
@@ -51,38 +50,36 @@ jobs:
           ssh-private-key: |
             ${{ secrets.WIRC_STARTERPACK_TOKEN }}
 
-      - name: install packages
+      - name: install packages with conda
+        shell: bash -el {0}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y sextractor scamp swarp build-essential
-          echo "deb http://ftp.us.debian.org/debian sid main" | sudo tee -a /etc/apt/sources.list
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0E98404D386FA1D9
-          sudo apt-get update && sudo apt-get install -y psfex
-          sudo ln -s /usr/bin/source-extractor /usr/bin/sex
-          sudo ln -s /usr/bin/SWarp /usr/bin/swarp
-          echo `sex --version`
-          echo `scamp --version`
-          echo `swarp --version`
-          echo `psfex --version`
+          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
           poetry install
 
+      # Set up astrometry.net
+      - name: astrometry.net index files
+        run: |
+          rmdir /usr/share/miniconda/envs/test/data
+          ln -s /home/runner/work/mirar/mirar_starterpack/anet_index/data/ /usr/share/miniconda/envs/test/
+
       # Set up database
       - name: postgres
         run: |
-          sudo apt install postgresql
+          sudo apt-get install postgresql
           sudo service postgresql restart
           sudo -u postgres psql -c "create user runner; grant all privileges on database postgres to runner; ALTER USER runner WITH SUPERUSER;"
 
       # First make sure the doc tests are up to date
       - name: Run doc tests
+        shell: bash -el {0}
         run: |
           poetry run make -C docs/ doctest
 
       # Runs a set of commands using the runners shell
       - name: Test the code
+        shell: bash -el {0}
         env:
           OUTPUT_DATA_DIR : /home/runner/
           PG_ADMIN_USER: runner
@@ -95,10 +92,11 @@ jobs:
           KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
         run: |
-          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
+          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests
 
       - name: Run Coveralls
         if: ${{ success() }}
+        shell: bash -el {0}
         run: |
           poetry run coveralls --service=github
         env:
@@ -109,6 +107,7 @@ jobs:
 
       # Build a tarball and push to Pypi if tagged with new version
       - name: Build and publish
+        shell: bash -el {0}
         if: ${{ startsWith(github.ref, 'refs/tags/') && success() && matrix.python-version == 3.11}}
         run: |
           poetry publish -n --build

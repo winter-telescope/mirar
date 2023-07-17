@@ -1,6 +1,7 @@
 """
 Module for WINTER data reduction
 """
+from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
     DITHER_N_KEY,
@@ -76,6 +77,17 @@ from mirar.processors.utils import (
     MEFLoader,
 )
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
+
+load_test = [
+    MEFLoader(
+        input_img_dir=get_test_data_dir(),
+        input_sub_dir="raw",
+        load_image=load_winter_mef_image,
+    ),
+    ImageSelector(
+        ("BOARD_ID", "4"),
+    ),
+]
 
 refbuild = [
     GetReferenceImage(ref_image_generator=winter_reference_generator),
