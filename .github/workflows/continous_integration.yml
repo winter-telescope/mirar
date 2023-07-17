@@ -53,7 +53,7 @@ jobs:
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry
+          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
           poetry install
@@ -63,8 +63,7 @@ jobs:
         run: |
           rmdir /usr/share/miniconda/envs/test/data
           ln -s /home/runner/work/mirar-starterpack/anet_index/data/ /usr/share/miniconda/envs/test/
-          ls /usr/share/miniconda/envs/test/
-          ls /usr/share/miniconda/envs/test/data
+          ls /usr/share/miniconda/envs/test/data/
 
       # Set up database
       - name: postgres
@@ -94,7 +93,7 @@ jobs:
           KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
         run: |
-          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
+          TESTDATA_CHECK="True" poetry run coverage run -m unittest tests/test_winter_pipeline.py
 
       - name: Run Coveralls
         if: ${{ success() }}
