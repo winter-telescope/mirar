@@ -92,7 +92,7 @@ jobs:
           KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
         run: |
-          TESTDATA_CHECK="True" poetry run coverage run -m unittest tests/test_suumer_pipeline.py
+          TESTDATA_CHECK="True" poetry run coverage run -m unittest tests/test_summer_pipeline.py
 
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
