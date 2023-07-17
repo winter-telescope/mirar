@@ -63,7 +63,6 @@ jobs:
         run: |
           rmdir /usr/share/miniconda/envs/test/data
           ln -s /home/runner/work/mirar-starterpack/anet_index/data/ /usr/share/miniconda/envs/test/
-          ls /usr/share/miniconda/envs/test/data/
 
       # Set up database
       - name: postgres
