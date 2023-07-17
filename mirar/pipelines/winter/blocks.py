@@ -9,6 +9,7 @@ from mirar.paths import (
     EXPTIME_KEY,
     FITS_MASK_KEY,
     MAX_DITHER_KEY,
+    TARGET_KEY,
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
@@ -478,7 +479,7 @@ load_unpacked = [
 # Image subtraction
 
 imsub = [
-    ImageLoader(input_sub_dir="photcal"),
+    ImageLoader(input_sub_dir="final"),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
