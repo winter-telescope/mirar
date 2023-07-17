@@ -16,7 +16,7 @@ test_data_dir = base_code_dir.parent.joinpath(
 )
 
 
-TEST_DATA_TAG = "v0.1.7"
+TEST_DATA_TAG = "v0.1.8"
 
 COMPLETED_CHECK_BOOL = f"{PACKAGE_NAME}_testdata_check"
 NEED_TEST_DATA = "TESTDATA_CHECK"
@@ -57,7 +57,7 @@ def update_test_data():
     :return: None
     """
     if not os.path.isdir(test_data_dir):
-        cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
+        cmd = f"git clone {TEST_DATA_URL} {test_data_dir} --depth=1"
 
         logger.info(f"No test data found. Downloading. Executing: {cmd}")
 
