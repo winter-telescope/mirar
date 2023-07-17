@@ -7,8 +7,6 @@ from collections.abc import Callable
 from glob import glob
 from pathlib import Path
 
-import astropy.io.fits
-import numpy as np
 from tqdm import tqdm
 
 from mirar.data import Image, ImageBatch
@@ -17,7 +15,6 @@ from mirar.io import (
     MissingCoreFieldError,
     check_file_is_complete,
     check_image_has_core_fields,
-    open_fits,
     open_mef_image,
     open_raw_image,
 )
@@ -56,7 +53,6 @@ def load_from_dir(
     :param open_f: Function to open images
     :return: ImageBatch object
     """
-
     img_list = sorted(glob(f"{input_dir}/*.fits"))
 
     # check for zipped files too
@@ -98,7 +94,7 @@ class ImageLoader(BaseImageProcessor):
     base_key = "load"
 
     image_type = Image
-    default_load_image = open_raw_image
+    default_load_image = staticmethod(open_raw_image)
 
     def __init__(
         self,
@@ -111,12 +107,15 @@ class ImageLoader(BaseImageProcessor):
         self.input_img_dir = Path(input_img_dir)
         if load_image is None:
             load_image = self.default_load_image
-        self.load_image = load_image
+        self.load_image_f = load_image
+
+    def load_image(self, path: str | Path) -> Image | list[Image]:
+        return self.load_image_f(path=path)
 
     def __str__(self):
         return (
             f"Processor to load images from the '{self.input_sub_dir}' subdirectory "
-            f"using the '{self.load_image.__name__}' function"
+            f"using the '{self.load_image_f.__name__}' function"
         )
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
@@ -141,7 +140,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         self,
         header_key: str = RAW_IMG_KEY,
         copy_header_keys: str | list[str] = None,
-        load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
+        load_image: Callable[[str | Path], Image] = open_raw_image,
     ):
         super().__init__()
         self.header_key = header_key
@@ -179,7 +178,7 @@ class MEFLoader(ImageLoader):
     """Processor to load MEF images."""
 
     base_key = "load_mef"
-    default_load_image = open_mef_image
+    default_load_image = staticmethod(open_mef_image)
 
     def __init__(
         self,
@@ -190,73 +189,6 @@ class MEFLoader(ImageLoader):
         super().__init__(**kwargs)
         self.extension_num_header_key = extension_num_header_key
         self.only_extract_num = only_extract_num
-
-    # def open_split_raw_image(self, path: str | Path) -> list[Image]:
-    #     """
-    #     Function to open a raw image as an Image object
-    #
-    #     :param path: path of raw image
-    #     :return: Image object
-    #     """
-    #     primary_header, ext_data_list, ext_header_list = self.load_image(path)
-    #
-    #     for key in core_fields:
-    #         if key not in primary_header.keys():
-    #             err = (
-    #                 f"Essential key {key} not found in header. "
-    #                 f"Please add this field first. Available fields are: "
-    #                 f"{list(primary_header.keys())}"
-    #             )
-    #             logger.error(err)
-    #             raise KeyError(err)
-    #
-    #     ext_data_list = [x.astype(np.float64) for x in ext_data_list]
-    #     split_images_list = []
-    #
-    #     temp_dir = get_output_dir(dir_root="temp_load_mef",
-    #                               sub_dir=self.night_sub_dir)
-    #     temp_dir.mkdir(parents=True, exist_ok=True)
-    #
-    #     temp_files = []
-    #     for ext_num, ext_data in enumerate(ext_data_list):
-    #         ext_header = ext_header_list[ext_num]
-    #
-    #         extension_num_str = str(ext_num)
-    #
-    #         if self.extension_num_header_key is not None:
-    #             extension_num_str = ext_header[self.extension_num_header_key]
-    #
-    #         if self.only_extract_num is not None:
-    #             if int(extension_num_str) != self.only_extract_num:
-    #                 continue
-    #
-    #         # append primary_header to hdrext
-    #         new_single_header = combine_mef_extension_file_headers(
-    #             primary_header=primary_header, extension_header=ext_header
-    #         )
-    #
-    #         new_single_header[BASE_NAME_KEY] = (
-    #             f"{primary_header[BASE_NAME_KEY].split('.fits')[0]}_"
-    #             f"{extension_num_str}.fits"
-    #         )
-    #
-    #         # TODO : For some reason the above step doesn't gel well with astropy, and
-    #         # it can't load the header. So we save it to a temp file and then load it,
-    #         # which seems to work.
-    #         temp_savepath = get_temp_path(
-    #             output_dir=temp_dir, file_path=new_single_header[BASE_NAME_KEY]
-    #         )
-    #         astropy.io.fits.writeto(
-    #             temp_savepath, ext_data, ext_header, overwrite=True
-    #         )  # pylint: disable=no-member
-    #         temp_files.append(temp_savepath)
-    #         tmp_data, tmp_header = open_fits(temp_savepath)
-    #         split_images_list.append(Image(data=tmp_data, header=tmp_header))
-    #
-    #     for temp_file in temp_files:
-    #         temp_file.unlink()
-    #
-    #     return split_images_list
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         input_dir = self.input_img_dir.joinpath(
