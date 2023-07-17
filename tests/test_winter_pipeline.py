@@ -71,6 +71,15 @@ class TestWinterPipeline(BaseTestCase):
 
         header = res[0][0].get_header()
 
+        # # Uncomment to print new expected ZP dict
+        print("New Results:")
+        new_exp = "expected_zp = { \n"
+        for header_key in header.keys():
+            if "ZP_" in header_key:
+                new_exp += f'    "{header_key}": {header[header_key]}, \n'
+        new_exp += "}"
+        print(new_exp)
+
         for key, value in expected_zp.items():
             if isinstance(value, float):
                 self.assertAlmostEqual(value, header[key], places=2)
@@ -80,11 +89,3 @@ class TestWinterPipeline(BaseTestCase):
                 raise TypeError(
                     f"Type for value ({type(value)} is neither float not int."
                 )
-
-        # Uncomment to print new expected ZP dict
-        # new_exp = "expected_zp = { \n"
-        # for header_key in header.keys():
-        #     if "ZP_" in header_key:
-        #         new_exp += f'    "{header_key}": {header[header_key]}, \n'
-        # new_exp += "}"
-        # print(new_exp)
