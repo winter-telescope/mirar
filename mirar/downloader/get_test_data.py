@@ -57,7 +57,7 @@ def update_test_data():
     :return: None
     """
     if not os.path.isdir(test_data_dir):
-        cmd = f"git clone {TEST_DATA_URL} {test_data_dir}"
+        cmd = f"git clone {TEST_DATA_URL} {test_data_dir} --depth=1"
 
         logger.info(f"No test data found. Downloading. Executing: {cmd}")
 
