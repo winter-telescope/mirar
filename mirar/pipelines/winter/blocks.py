@@ -9,7 +9,6 @@ from mirar.paths import (
     EXPTIME_KEY,
     FITS_MASK_KEY,
     MAX_DITHER_KEY,
-    TARGET_KEY,
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (

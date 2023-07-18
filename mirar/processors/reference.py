@@ -50,7 +50,7 @@ class ProcessReference(BaseImageProcessor):
         self.psfex = ref_psfex
         self.temp_output_subtract_dir = temp_output_subtract_dir
 
-    def get_sub_output_dir(self):
+    def get_sub_output_dir(self) -> Path:
         """
         Get the output directory for the subtracted images.
         """
@@ -241,9 +241,7 @@ class GetReferenceImage(BaseImageProcessor):
         output_sub_dir = get_output_dir(
             dir_root=self.output_sub_dir, sub_dir=self.night_sub_dir
         )
-        return (
-            f"Processor to get reference images and " f"save them to {output_sub_dir}"
-        )
+        return f"Processor to get reference images and save them to {output_sub_dir}"
 
     def _apply_to_images(
         self,

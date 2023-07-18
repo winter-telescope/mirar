@@ -77,7 +77,7 @@ class BaseReferenceGenerator:
         """
         raise NotImplementedError()
 
-    def write_reference(self, image: Image, output_dir: str) -> Path:
+    def write_reference(self, image: Image, output_dir: str | Path) -> Path:
         """
         Write reference image to file
 
@@ -92,8 +92,9 @@ class BaseReferenceGenerator:
         ref_hdu, ref_weight_hdu = self.get_reference(image)
 
         output_path = Path(
-            self.get_output_path(output_dir, base_name).replace(".fits", "")
-            + "_ref.fits"
+            str(self.get_output_path(output_dir, base_name)).replace(
+                ".fits", "_ref.fits"
+            )
         )
 
         # This is because Swarp requires the COADDS keyword. I am setting it to
@@ -132,7 +133,7 @@ class BaseReferenceGenerator:
 
         if ref_weight_hdu is not None:
             output_weight_path = Path(
-                self.get_output_path(output_dir, base_name).replace(".fits", "")
+                str(self.get_output_path(output_dir, base_name)).replace(".fits", "")
                 + "_ref_weight.fits"
             )
             output_weight_path.unlink(missing_ok=True)
@@ -163,7 +164,7 @@ class BaseReferenceGenerator:
         return output_path
 
     @staticmethod
-    def get_output_path(output_dir: str, base_name: str) -> str:
+    def get_output_path(output_dir: str | Path, base_name: str) -> Path:
         """
         Get output path
 
@@ -171,4 +172,4 @@ class BaseReferenceGenerator:
         :param base_name: Name
         :return: output path
         """
-        return os.path.join(output_dir, base_name)
+        return Path(output_dir).joinpath(base_name)
