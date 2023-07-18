@@ -6,9 +6,9 @@ import logging
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.pipelines.sedmv2.blocks import process_transient
-from mirar.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
+from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
-from mirar.processors.utils import ImageLoader, MultiExtParser
+from mirar.processors.utils import MEFLoader  # MultiExtParser
 from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -16,35 +16,28 @@ logger = logging.getLogger(__name__)
 test_data_dir = get_test_data_dir()
 
 expected_zp = {
-    "ZP_4.0": 25.369777526872806,
-    "ZP_4.0_std": 0.15461781708145925,
-    "ZP_4.0_nstars": 44,
-    "ZP_6.0": 26.170285429971866,
-    "ZP_6.0_std": 0.13190330937620584,
-    "ZP_6.0_nstars": 44,
-    "ZP_8.0": 26.67797980440313,
-    "ZP_8.0_std": 0.10765968427604075,
-    "ZP_8.0_nstars": 44,
-    "ZP_10.0": 27.017411718819357,
-    "ZP_10.0_std": 0.08541367017112357,
-    "ZP_10.0_nstars": 44,
-    "ZP_AUTO": 27.501692101349697,
-    "ZP_AUTO_std": 0.05994188327036158,
+    "ZP_4.0": 25.37294329566108,
+    "ZP_4.0_std": 0.15462107846416773,
+    "ZP_4.0_nstars": 45,
+    "ZP_6.0": 26.173137675679527,
+    "ZP_6.0_std": 0.13210938173513917,
+    "ZP_6.0_nstars": 45,
+    "ZP_8.0": 26.68036031751845,
+    "ZP_8.0_std": 0.10794668404233344,
+    "ZP_8.0_nstars": 45,
+    "ZP_10.0": 27.019062413397897,
+    "ZP_10.0_std": 0.08550068701694684,
+    "ZP_10.0_nstars": 45,
+    "ZP_AUTO": 27.501423087867526,
+    "ZP_AUTO_std": 0.059945737356448876,
     "ZP_AUTO_nstars": 37,
 }
 
 test_configuration = [
-    MultiExtParser(
+    MEFLoader(
         input_img_dir=test_data_dir,
-        input_sub_dir="raw/mef/",
-        output_img_dir=test_data_dir,
-        output_sub_dir="raw/",
-        skip_first=True,
-    ),
-    ImageLoader(
-        input_img_dir=test_data_dir,
-        input_sub_dir="raw",
-        load_image=load_raw_sedmv2_image,
+        input_sub_dir="raw/",
+        load_image=load_sedmv2_mef_image,
     ),
 ] + process_transient
 
