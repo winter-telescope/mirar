@@ -61,8 +61,9 @@ jobs:
       # Set up astrometry.net
       - name: astrometry.net index files
         run: |
-          rmdir /usr/share/miniconda/envs/test/data
-          ln -s /home/runner/work/mirar/mirar_starterpack/anet_index/data/ /usr/share/miniconda/envs/test/
+          curl -o /usr/share/miniconda/envs/test/data/index-5201-04.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5201-04.fits
+          curl -o /usr/share/miniconda/envs/test/data/index-5204-13.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5204-13.fits
+          curl -o /usr/share/miniconda/envs/test/data/index-5205-13.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5205-13.fits
 
       # Set up database
       - name: postgres

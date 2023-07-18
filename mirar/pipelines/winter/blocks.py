@@ -2,6 +2,7 @@
 Module for WINTER data reduction
 """
 from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.io import open_raw_image
 from mirar.paths import (
     BASE_NAME_KEY,
     DITHER_N_KEY,
@@ -78,7 +79,7 @@ from mirar.processors.utils import (
 )
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
-load_test = [
+build_test = [
     MEFLoader(
         input_img_dir=get_test_data_dir(),
         input_sub_dir="raw",
@@ -86,6 +87,14 @@ load_test = [
     ),
     ImageSelector(
         ("BOARD_ID", "4"),
+    ),
+]
+
+load_test = [
+    ImageLoader(
+        input_img_dir=get_test_data_dir(),
+        input_sub_dir="raw",
+        load_image=open_raw_image,
     ),
 ]
 
@@ -426,8 +435,8 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 select_subset = [
     ImageSelector(
-        ("FIELDID", ["3944", "999999999"]),
         ("EXPTIME", "120.0"),
+        ("FIELDID", ["3944", "999999999"]),
         ("BOARD_ID", str(BOARD_ID)),
         ("FILTER", ["dark", "J"]),
     ),
