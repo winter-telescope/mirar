@@ -4,10 +4,9 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~mirar.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
-from mirar.paths import BASE_NAME_KEY, base_raw_dir, core_fields
+from mirar.paths import BASE_NAME_KEY, core_fields
 from mirar.pipelines.sedmv2.config import (
     psfex_config_path,
-    sedmv2_cal_requirements,
     sedmv2_mask_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
@@ -21,7 +20,7 @@ from mirar.pipelines.sedmv2.generator import (
     sedmv2_reference_psfex,
     sedmv2_reference_sextractor,
 )
-from mirar.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_image
+from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
@@ -40,12 +39,12 @@ from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
-    ImageLoader,
     ImageSaver,
     ImageSelector,
-    MultiExtParser,
+    MEFLoader,
 )
-from mirar.processors.utils.cal_hunter import CalHunter
+
+# from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.header_annotate import HeaderEditor
 from mirar.processors.zogy.zogy import (
     ZOGY,
@@ -54,19 +53,16 @@ from mirar.processors.zogy.zogy import (
 )
 
 load_raw = [
-    MultiExtParser(
-        input_img_dir=base_raw_dir,
-        input_sub_dir="raw/mef/",
-        output_img_dir=base_raw_dir,
-        output_sub_dir="raw/",
-        skip_first=True,
+    MEFLoader(
+        input_sub_dir="raw",
+        load_image=load_sedmv2_mef_image,
     ),
-    ImageLoader(load_image=load_raw_sedmv2_image),
+    ImageSaver(output_dir_name="loaded"),
 ]
 
-cal_hunter = [
-    CalHunter(load_image=load_raw_sedmv2_image, requirements=sedmv2_cal_requirements),
-]
+# cal_hunter = [
+# CalHunter(load_image=load_raw_sedmv2_image, requirements=sedmv2_cal_requirements),
+# ]
 
 build_log = [  # pylint: disable=duplicate-code
     CSVLog(
@@ -88,7 +84,9 @@ reduce = [
     MaskPixelsFromPath(mask_path=sedmv2_mask_path),
     BiasCalibrator(),
     ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
-    ImageBatcher(split_key="filter"),
+    ImageBatcher(
+        split_key="filterid"
+    ),  # maybe change back to filter after revising load func
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),  # pylint: disable=duplicate-code
@@ -100,7 +98,7 @@ reduce = [
         downsample=2,
         timeout=900,
     ),
-    ImageSaver(output_dir_name="masked", write_mask=True),
+    ImageSaver(output_dir_name="a-net-solved", write_mask=True),
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
@@ -116,9 +114,9 @@ resample = [
         combine=False,
         calculate_dims_in_swarp=True,
     ),
-    ImageSaver(
-        output_dir_name="resampled", write_mask=True
-    ),  # pylint: disable=duplicate-code
+    # ImageSaver(
+    #    output_dir_name="resampled", write_mask=True
+    # ),  # pylint: disable=duplicate-code
 ]
 
 calibrate = [
@@ -187,7 +185,7 @@ resample_transient = [
     ImageDebatcher(),
     ImageBatcher(split_key="origname"),  # reaches for files coming from the same MEF
     Swarp(
-        cache=True,
+        # cache=True,
         swarp_config_path=swarp_config_path,
         include_scamp=False,
         combine=True,
