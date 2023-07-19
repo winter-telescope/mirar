@@ -176,19 +176,3 @@ class MEFLoader(ImageLoader):
 
     base_key = "load_mef"
     default_load_image = staticmethod(open_mef_image)
-
-    def __init__(
-        self,
-        extension_num_header_key: str = None,
-        only_extract_num: int = None,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.extension_num_header_key = extension_num_header_key
-        self.only_extract_num = only_extract_num
-
-    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-        input_dir = self.input_img_dir.joinpath(
-            os.path.join(self.night_sub_dir, self.input_sub_dir)
-        )
-        return load_from_dir(input_dir, open_f=self.load_image)

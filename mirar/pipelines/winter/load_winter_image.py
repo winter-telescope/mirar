@@ -207,7 +207,7 @@ def load_winter_mef_image(
     :param path: Path to image
     :return: list of images
     """
-    return open_mef_image(path, load_raw_winter_mef)
+    return open_mef_image(path, load_raw_winter_mef, extension_key="BOARD_ID")
 
 
 def annotate_winter_subdet_headers(image: Image) -> Image:
