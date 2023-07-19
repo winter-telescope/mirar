@@ -7,13 +7,13 @@ from astropy.time import Time
 
 from mirar.data import SourceBatch
 from mirar.paths import CAND_NAME_KEY
-from mirar.processors.base_processor import BaseDataframeProcessor
+from mirar.processors.base_processor import BaseSourceProcessor
 from mirar.processors.database import BaseDatabaseProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
+class CandidateNamer(BaseDatabaseProcessor, BaseSourceProcessor):
     """Processor to sequentially assign names to sources, of the form a, aa, aba..."""
 
     base_key = "namer"
@@ -130,7 +130,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseDataframeProcessor):
         logger.info(name)
         return len(name) > 0, name
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

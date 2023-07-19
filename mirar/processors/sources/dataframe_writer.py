@@ -8,12 +8,12 @@ from typing import Optional
 
 from mirar.data import SourceBatch
 from mirar.paths import base_output_dir, get_output_dir, get_output_path
-from mirar.processors.base_processor import BaseDataframeProcessor
+from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class DataframeWriter(BaseDataframeProcessor):
+class DataframeWriter(BaseSourceProcessor):
     """
     Class to write a candidate table to a pandas dataframe
     """
@@ -35,7 +35,7 @@ class DataframeWriter(BaseDataframeProcessor):
             f"Processor to save candidates to {self.output_dir_name} as a json file. "
         )
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

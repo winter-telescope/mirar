@@ -7,12 +7,12 @@ import numpy as np
 
 from mirar.catalog.base_catalog import BaseXMatchCatalog
 from mirar.data import SourceBatch
-from mirar.processors.base_processor import BaseDataframeProcessor
+from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class XMatch(BaseDataframeProcessor):
+class XMatch(BaseSourceProcessor):
     """
     Class to cross-match a candidate_table to a catalog
     """
@@ -26,7 +26,7 @@ class XMatch(BaseDataframeProcessor):
         self.catalog = catalog
         super().__init__()
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

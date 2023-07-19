@@ -27,14 +27,14 @@ from mirar.paths import (
     get_output_dir,
 )
 from mirar.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
-from mirar.processors.base_processor import BaseCandidateGenerator
+from mirar.processors.base_processor import BaseSourceGenerator
 from mirar.processors.photometry.utils import make_cutouts
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
 
-class DetectCandidates(BaseCandidateGenerator):
+class SourceDetector(BaseSourceGenerator):
     """
     Class to detect candidates by running sourceextractor on an image
     """
@@ -72,22 +72,34 @@ class DetectCandidates(BaseCandidateGenerator):
 
     def generate_candidates_table(
         self,
-        scorr_catalog_name,
-        sci_resamp_imagename,
-        ref_resamp_imagename,
-        diff_filename,
-        diff_scorr_filename,
-        diff_psf_filename,
-        diff_unc_filename,
+        scorr_catalog_path: str | Path,
+        sci_resamp_image_path: str | Path,
+        ref_resamp_image_path: str | Path,
+        diff_path: str | Path,
+        diff_scorr_path: str | Path,
+        diff_psf_path: str | Path,
+        diff_unc_path: str | Path,
     ) -> pd.DataFrame:
-        det_srcs = get_table_from_ldac(scorr_catalog_name)
+        """
+        Generate a candidates table from a difference image
+
+        :param scorr_catalog_path: Path to the scorr catalog
+        :param sci_resamp_image_path:
+        :param ref_resamp_image_path:
+        :param diff_path:
+        :param diff_scorr_path:
+        :param diff_psf_path:
+        :param diff_unc_path:
+        :return:
+        """
+        det_srcs = get_table_from_ldac(scorr_catalog_path)
         if len(det_srcs) == 0:
             return pd.DataFrame()
-        logger.info(f"Found {len(det_srcs)} candidates in image {diff_filename}.")
+        logger.info(f"Found {len(det_srcs)} candidates in image {diff_path}.")
         det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"] - 1
         det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"] - 1
 
-        scorr_data = fits.getdata(diff_scorr_filename)
+        scorr_data = fits.getdata(diff_scorr_path)
         xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"] - 1, det_srcs["YPEAK_IMAGE"] - 1
         scorr_peaks = scorr_data[ypeaks, xpeaks]
         det_srcs["xpeak"] = xpeaks
@@ -104,7 +116,7 @@ class DetectCandidates(BaseCandidateGenerator):
             xpeak, ypeak = int(xpeaks[ind]), int(ypeaks[ind])
 
             display_sci_cutout, display_ref_cutout, display_diff_cutout = make_cutouts(
-                [sci_resamp_imagename, ref_resamp_imagename, diff_filename],
+                [sci_resamp_image_path, ref_resamp_image_path, diff_path],
                 (xpeak, ypeak),
                 cutout_size_display,
             )
@@ -121,17 +133,17 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs["cutoutTemplate"] = display_ref_ims
         det_srcs["cutoutDifference"] = display_diff_ims
 
-        diff_zp = float(fits.getval(diff_filename, "ZP"))
+        diff_zp = float(fits.getval(diff_path, "ZP"))
         det_srcs[ZP_KEY] = diff_zp
-        det_srcs[LATEST_SAVE_KEY] = diff_filename
+        det_srcs[LATEST_SAVE_KEY] = diff_path
         det_srcs["magzpsci"] = diff_zp
-        diff_zp_unc = float(fits.getval(diff_filename, "ZP_std"))
+        diff_zp_unc = float(fits.getval(diff_path, "ZP_std"))
         det_srcs["magzpsciunc"] = diff_zp_unc
-        det_srcs["diffimname"] = diff_filename
-        det_srcs["sciimname"] = sci_resamp_imagename
-        det_srcs["refimname"] = ref_resamp_imagename
-        det_srcs[NORM_PSFEX_KEY] = diff_psf_filename
-        det_srcs[UNC_IMG_KEY] = diff_unc_filename
+        det_srcs["diffimname"] = diff_path
+        det_srcs["sciimname"] = sci_resamp_image_path
+        det_srcs["refimname"] = ref_resamp_image_path
+        det_srcs[NORM_PSFEX_KEY] = diff_psf_path
+        det_srcs[UNC_IMG_KEY] = diff_unc_path
         det_srcs[CAND_RA_KEY] = det_srcs["ALPHA_J2000"]
         det_srcs[CAND_DEC_KEY] = det_srcs["DELTA_J2000"]
         det_srcs["fwhm"] = det_srcs["FWHM_IMAGE"]
@@ -141,16 +153,16 @@ class DetectCandidates(BaseCandidateGenerator):
         det_srcs["bimagerat"] = det_srcs["bimage"] / det_srcs["fwhm"]
         det_srcs["elong"] = det_srcs["ELONGATION"]
 
-        det_srcs["jd"] = fits.getval(sci_resamp_imagename, "MJD-OBS") + 2400000.5
-        det_srcs["exptime"] = fits.getval(diff_filename, "EXPTIME")
-        det_srcs["field"] = fits.getval(sci_resamp_imagename, "FIELDID")
-        det_srcs["programpi"] = fits.getval(sci_resamp_imagename, "PROGPI")
-        det_srcs["programid"] = fits.getval(sci_resamp_imagename, "PROGID")
-        det_srcs["fid"] = fits.getval(sci_resamp_imagename, "FILTERID")
+        det_srcs["jd"] = fits.getval(sci_resamp_image_path, "MJD-OBS") + 2400000.5
+        det_srcs["exptime"] = fits.getval(diff_path, "EXPTIME")
+        det_srcs["field"] = fits.getval(sci_resamp_image_path, "FIELDID")
+        det_srcs["programpi"] = fits.getval(sci_resamp_image_path, "PROGPI")
+        det_srcs["programid"] = fits.getval(sci_resamp_image_path, "PROGID")
+        det_srcs["fid"] = fits.getval(sci_resamp_image_path, "FILTERID")
         det_srcs["candid"] = np.array(
             det_srcs["jd"] * 100, dtype=int
         ) * 10000 + np.arange(len(det_srcs))
-        det_srcs["diffmaglim"] = fits.getval(diff_filename, "DIFFMLIM")
+        det_srcs["diffmaglim"] = fits.getval(diff_path, "DIFFMLIM")
         det_srcs["isdiffpos"] = 1
         det_srcs = det_srcs.to_pandas()
         logger.info(det_srcs["diffmaglim"])
@@ -188,13 +200,13 @@ class DetectCandidates(BaseCandidateGenerator):
             )
             ref_image_path = os.path.join(self.get_sub_output_dir(), image[REF_IMG_KEY])
             cands_table = self.generate_candidates_table(
-                scorr_catalog_name=cands_catalog_name,
-                sci_resamp_imagename=sci_image_path,
-                ref_resamp_imagename=ref_image_path,
-                diff_filename=diff_image_path,
-                diff_scorr_filename=scorr_image_path,
-                diff_psf_filename=diff_psf_path,
-                diff_unc_filename=diff_unc_path,
+                scorr_catalog_path=cands_catalog_name,
+                sci_resamp_image_path=sci_image_path,
+                ref_resamp_image_path=ref_image_path,
+                diff_path=diff_image_path,
+                diff_scorr_path=scorr_image_path,
+                diff_psf_path=diff_psf_path,
+                diff_unc_path=diff_unc_path,
             )
 
             if len(cands_table) > 0:

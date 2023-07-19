@@ -8,12 +8,12 @@ from typing import Optional
 
 from mirar.data import SourceBatch
 from mirar.paths import base_output_dir, get_output_path
-from mirar.processors.base_processor import BaseDataframeProcessor
+from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class RegionsWriter(BaseDataframeProcessor):
+class RegionsWriter(BaseSourceProcessor):
     """
     Class to write a regions file from candidate table
     """
@@ -37,7 +37,7 @@ class RegionsWriter(BaseDataframeProcessor):
             f"the {self.output_dir_name} directory. "
         )
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

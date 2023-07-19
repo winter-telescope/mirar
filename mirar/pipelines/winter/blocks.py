@@ -53,7 +53,6 @@ from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
-from mirar.processors.candidates import DataframeWriter, DetectCandidates
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
@@ -68,6 +67,7 @@ from mirar.processors.photometry.aperture_photometry import CandidateAperturePho
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
+from mirar.processors.sources import DataframeWriter, SourceDetector
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
     DatabaseImageBatchExporter,
@@ -501,7 +501,7 @@ imsub = [
 
 detect_candidates = [
     HeaderAnnotator(input_keys=["ZP_AUTO"], output_key="ZP"),
-    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
+    SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
 ]
 
 process_candidates = [

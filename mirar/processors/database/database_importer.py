@@ -9,7 +9,7 @@ from typing import Optional
 import pandas as pd
 
 from mirar.data import DataBlock, Image, ImageBatch, SourceBatch
-from mirar.processors.base_processor import BaseDataframeProcessor, BaseImageProcessor
+from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 from mirar.processors.database.constraints import DBQueryConstraints
 
@@ -143,7 +143,7 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
 #     return candidate_table
 
 
-class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor, ABC):
+class DatabaseDataframeImporter(BaseDatabaseImporter, BaseSourceProcessor, ABC):
     """
     Base Class for dataframe DB importers
     """
@@ -196,7 +196,7 @@ class DatabaseDataframeImporter(BaseDatabaseImporter, BaseDataframeProcessor, AB
     #     raise NotImplementedError
 
 
-class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcessor):
+class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseSourceProcessor):
     """
     Processor to crossmatch to sources in a database
     """
@@ -253,7 +253,7 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseDataframeProcess
             return None
         return self.user_defined_constraints(cand)
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

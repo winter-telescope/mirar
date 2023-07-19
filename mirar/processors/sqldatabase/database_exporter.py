@@ -8,7 +8,7 @@ import numpy as np
 
 from mirar.data import ImageBatch, SourceBatch
 from mirar.errors.exceptions import BaseProcessorError
-from mirar.processors.base_processor import BaseDataframeProcessor, BaseImageProcessor
+from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.sqldatabase.base_database_processor import BaseDatabaseProcessor
 from mirar.processors.utils.image_selector import ImageBatcher
 
@@ -55,12 +55,12 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
         return batch
 
 
-class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
+class DatabaseDataframeExporter(BaseDatabaseExporter, BaseSourceProcessor):
     """
     Processor for exporting sources to a database
     """
 
-    def _apply_to_candidates(self, batch: SourceBatch) -> SourceBatch:
+    def _apply_to_sources(self, batch: SourceBatch) -> SourceBatch:
         for source_list in batch:
             candidate_table = source_list.get_data()
 

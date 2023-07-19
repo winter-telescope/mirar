@@ -66,7 +66,7 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
         psf_filename = row[self.psf_file_key]
         return psf_filename
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

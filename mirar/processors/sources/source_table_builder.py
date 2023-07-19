@@ -25,7 +25,7 @@ from mirar.paths import (
     core_fields,
     get_output_path,
 )
-from mirar.processors.base_processor import BaseCandidateGenerator
+from mirar.processors.base_processor import BaseSourceGenerator
 
 
 class TableFromHeaderError(ProcessorError):
@@ -36,7 +36,7 @@ class HeaderKeyMissingError(ProcessorError):
     """Error relating to missing keys in headers"""
 
 
-class SourceTablefromHeader(BaseCandidateGenerator):
+class SourceTablefromHeader(BaseSourceGenerator):
     """
     Class to create a source table from an image header with user specified header keys
     """

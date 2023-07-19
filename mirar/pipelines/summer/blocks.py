@@ -37,8 +37,6 @@ from mirar.pipelines.summer.models import Exposure, Proc, Raw
 from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
-from mirar.processors.candidates import DataframeWriter, DetectCandidates
-from mirar.processors.candidates.utils import RegionsWriter
 from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.database.database_exporter import (
@@ -50,6 +48,9 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import ProcessReference
+from mirar.processors.sources import DataframeWriter
+from mirar.processors.sources.source_detector import SourceDetector
+from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from mirar.processors.utils import ImageBatcher, ImageLoader, ImageSaver, ImageSelector
 from mirar.processors.utils.cal_hunter import CalHunter
@@ -244,7 +245,7 @@ export_diff_to_db = [
 ]
 
 extract_candidates = [
-    DetectCandidates(output_sub_dir="subtract", **sextractor_candidates_config),
+    SourceDetector(output_sub_dir="subtract", **sextractor_candidates_config),
     RegionsWriter(output_dir_name="candidates"),
     CandidatePSFPhotometry(),
     CandidateAperturePhotometry(
