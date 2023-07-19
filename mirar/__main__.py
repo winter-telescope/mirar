@@ -24,7 +24,6 @@ parser = argparse.ArgumentParser(
     description=f"{PACKAGE_NAME}: Modular Image Reduction and Analysis Resource"
 )
 
-ln = Time.now() - 1.0 * u.day
 parser.add_argument(
     "-n", "--night", default=None, help="Sub-directory to use in the data directory"
 )
@@ -85,8 +84,6 @@ if args.download:
     logger.info("Download complete")
 
 night = args.night
-if night is None:
-    night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
 
 with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
     print(f"Using cache {temp_dir_path}")
@@ -102,6 +99,10 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
         CONFIG = args.config
         if CONFIG is None:
             CONFIG = "realtime"
+
+        if night is None:
+            ln = Time.now()
+            night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
 
         monitor = Monitor(
             pipeline=args.pipeline,
@@ -139,6 +140,10 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
         CONFIG = args.config
         if CONFIG is None:
             CONFIG = "default"
+
+        if night is None:
+            ln = Time.now() - 1.0 * u.day
+            night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
 
         pipe = get_pipeline(
             args.pipeline,
