@@ -13,6 +13,7 @@ class BaseSourceFilter(BaseSourceProcessor):
     """
     Base class for source filters
     """
+
     base_key = "filter"
 
     def _apply_to_sources(self, batch: SourceBatch) -> SourceBatch:
