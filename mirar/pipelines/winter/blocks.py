@@ -114,6 +114,8 @@ refbuild = [
 BOARD_ID = 4
 TARGET_NAME = "m39"
 
+# Everything in this block is deprecated/untested/probably outdated
+
 load_anet = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
     # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
