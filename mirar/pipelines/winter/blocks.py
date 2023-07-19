@@ -234,8 +234,7 @@ export_proc = [
 
 process_stack_all_boards = [
     ImageDebatcher(),
-    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
-    # ImageSelector(("FIELDID", ["2789", "0697", "9170"])),
+    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "EXPTIME"]),
     ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
@@ -262,19 +261,8 @@ process_stack_all_boards = [
     ),
     DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
     ImageSaver(output_dir_name="anet"),
-    # Sextractor(
-    #     **sextractor_autoastrometry_config,
-    #     write_regions_bool=True,
-    #     output_sub_dir="scamp",
-    # ),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
-    # Scamp(
-    #     temp_output_sub_dir="scamp",
-    #     ref_catalog_generator=winter_astrometric_catalog_generator,
-    #     scamp_config_path=scamp_config_path,
-    #     cache=False,
-    # ),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
