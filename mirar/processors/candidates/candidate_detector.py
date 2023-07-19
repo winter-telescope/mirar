@@ -4,12 +4,14 @@ Module to detect candidates in an image
 
 import logging
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from astropy.io import fits
 
 from mirar.data import ImageBatch, SourceBatch, SourceTable
+from mirar.data.utils.coords import makebitims
 from mirar.paths import (
     BASE_NAME_KEY,
     CAND_DEC_KEY,
@@ -26,7 +28,6 @@ from mirar.paths import (
 )
 from mirar.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
 from mirar.processors.base_processor import BaseCandidateGenerator
-from mirar.processors.candidates.utils import makebitims
 from mirar.processors.photometry.utils import make_cutouts
 from mirar.utils.ldac_tools import get_table_from_ldac
 
@@ -61,7 +62,7 @@ class DetectCandidates(BaseCandidateGenerator):
             "and converts them to a pandas dataframe"
         )
 
-    def get_sub_output_dir(self):
+    def get_sub_output_dir(self) -> Path:
         """
         Get output sub-directory
         Returns:

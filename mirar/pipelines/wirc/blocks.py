@@ -33,12 +33,15 @@ from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkim
 from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.astrometry.utils import AstrometryFromFile
-from mirar.processors.candidates.candidate_detector import DetectCandidates
+from mirar.processors.candidates import (
+    CandidateNamer,
+    DataframeWriter,
+    DetectCandidates,
+)
 from mirar.processors.candidates.candidate_extractor import (
     ForcedPhotometryCandidateTable,
 )
-from mirar.processors.candidates.namer import CandidateNamer
-from mirar.processors.candidates.utils import DataframeWriter, RegionsWriter
+from mirar.processors.candidates.utils import RegionsWriter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_exporter import DatabaseDataframeExporter

@@ -8,8 +8,8 @@ from pathlib import Path
 import astropy.table
 
 from mirar.data import Image
+from mirar.data.utils import get_image_center_wcs_coords
 from mirar.paths import BASE_NAME_KEY
-from mirar.processors.candidates.utils import get_image_center_wcs_coords
 from mirar.utils.ldac_tools import get_table_from_ldac, save_table_as_ldac
 
 logger = logging.getLogger(__name__)

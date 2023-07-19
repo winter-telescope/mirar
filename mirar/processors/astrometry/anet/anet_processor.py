@@ -10,6 +10,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 from mirar.data import Image, ImageBatch
+from mirar.data.utils import write_regions_file
 from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -26,7 +27,6 @@ from mirar.processors.astromatic.sextractor.settings import (
 )
 from mirar.processors.astrometry.anet.anet import run_astrometry_net_single
 from mirar.processors.base_processor import BaseImageProcessor
-from mirar.processors.candidates.utils.regions_writer import write_regions_file
 
 logger = logging.getLogger(__name__)
 

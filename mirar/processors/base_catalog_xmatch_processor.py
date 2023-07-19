@@ -12,13 +12,13 @@ from astropy.table import Table
 
 from mirar.catalog import BaseCatalog
 from mirar.data import Image
+from mirar.data.utils import write_regions_file
 from mirar.errors import ProcessorError
 from mirar.paths import BASE_NAME_KEY, copy_temp_file, get_output_dir, get_output_path
 from mirar.processors import BaseImageProcessor
 from mirar.processors.astromatic import Sextractor
 from mirar.processors.astromatic.sextractor.sextractor import SEXTRACTOR_HEADER_KEY
 from mirar.processors.base_processor import PrerequisiteError, logger
-from mirar.processors.candidates.utils.regions_writer import write_regions_file
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 

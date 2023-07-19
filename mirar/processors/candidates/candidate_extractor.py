@@ -8,6 +8,7 @@ import pandas as pd
 from astropy.io.fits import Header
 
 from mirar.data import ImageBatch, SourceBatch, SourceTable
+from mirar.data.utils import get_xy_from_wcs
 from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -25,7 +26,6 @@ from mirar.paths import (
     get_output_path,
 )
 from mirar.processors.base_processor import BaseCandidateGenerator
-from mirar.processors.candidates.utils import get_xy_from_wcs
 
 
 class TableFromHeaderError(ProcessorError):
