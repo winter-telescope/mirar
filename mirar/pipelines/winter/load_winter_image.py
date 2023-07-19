@@ -18,11 +18,17 @@ from mirar.io import open_mef_fits, open_mef_image
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
+    OBSCLASS_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
 )
-from mirar.pipelines.winter.constants import imgtype_dict, subdets, winter_filters_map
+from mirar.pipelines.winter.constants import (
+    imgtype_dict,
+    palomar_observer,
+    subdets,
+    winter_filters_map,
+)
 from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_dict
 
 logger = logging.getLogger(__name__)
@@ -38,12 +44,20 @@ def clean_header(header: astropy.io.fits.Header) -> astropy.io.fits.Header:
     """
     header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
 
-    header["MJD-OBS"] = Time(header["UTCTIME"]).mjd
-    header["DATE-OBS"] = Time(header["UTCTIME"]).isot
+    date_t = Time(header["UTCTIME"])
 
-    header["OBSCLASS"] = ["science", "calibration"][
+    header["MJD-OBS"] = date_t.mjd
+    header["DATE-OBS"] = date_t.isot
+
+    header[OBSCLASS_KEY] = ["science", "calibration"][
         header["OBSTYPE"] in ["DARK", "FLAT"]
     ]
+
+    if header[OBSCLASS_KEY] == "calibration":
+        sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
+        if sun_pos.alt.to_value("deg") > -25.0:
+            header[OBSCLASS_KEY] = "TEST"
+            header["OBSTYPE"] = "TEST"
 
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
