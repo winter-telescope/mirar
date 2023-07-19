@@ -398,7 +398,6 @@ load_raw = [
     MEFLoader(
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
-        extension_num_header_key="BOARD_ID",
     ),
 ]
 
