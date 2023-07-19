@@ -24,6 +24,7 @@ from mirar.pipelines.winter.generator import (
     winter_astrometric_catalog_generator,
     winter_astrostat_catalog_purifier,
     winter_photometric_catalog_generator,
+    winter_refbuild_reference_generator,
     winter_reference_generator,
     winter_reference_image_resampler,
     winter_reference_psfex,
@@ -99,7 +100,7 @@ load_test = [
 ]
 
 refbuild = [
-    GetReferenceImage(ref_image_generator=winter_reference_generator),
+    GetReferenceImage(ref_image_generator=winter_refbuild_reference_generator),
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
