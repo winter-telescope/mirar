@@ -1,6 +1,7 @@
 """
 Module for WINTER data reduction
 """
+from mirar.catalog.kowalski import PS1, TMASS
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.io import open_raw_image
 from mirar.paths import (
@@ -16,6 +17,7 @@ from mirar.pipelines.winter.config import (
     scamp_config_path,
     sextractor_anet_config,
     sextractor_autoastrometry_config,
+    sextractor_candidate_config,
     sextractor_photometry_config,
     sextractor_reference_config,
     swarp_config_path,
@@ -45,6 +47,7 @@ from mirar.pipelines.winter.models import (
     Raw,
     Stacks,
 )
+from mirar.processors.alerts import AvroPacketMaker
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
@@ -60,8 +63,11 @@ from mirar.processors.mask import (
     WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
+from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
+from mirar.processors.sources import DataframeWriter, SourceDetector
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
     DatabaseImageBatchExporter,
@@ -77,6 +83,7 @@ from mirar.processors.utils import (
     ImageSelector,
     MEFLoader,
 )
+from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 build_test = [
@@ -109,12 +116,6 @@ TARGET_NAME = "m39"
 load_anet = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
     # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
-]
-
-load_stack = [
-    ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
-    # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
-    ImageBatcher("EXPTIME"),
 ]
 
 load_ref = [
@@ -477,8 +478,11 @@ load_unpacked = [
 
 # Image subtraction
 
+load_stack = [
+    ImageLoader(input_sub_dir="final"),
+]
+
 imsub = [
-    ImageLoader(input_sub_dir="photcal"),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -495,11 +499,62 @@ imsub = [
     ImageSaver(output_dir_name="diffs"),
 ]
 
-final = [
-    ImageLoader(input_sub_dir="prezogy"),
-    ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
-    ImageSaver(output_dir_name="diffs"),
+detect_candidates = [
+    HeaderAnnotator(input_keys=["ZP_AUTO"], output_key="ZP"),
+    SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
 ]
+
+process_candidates = [
+    DataframeWriter(output_dir_name="candidates"),
+    CandidatePSFPhotometry(
+        zp_colname="ZP",
+    ),
+    CandidateAperturePhotometry(
+        aper_diameters=[16, 70],
+        phot_cutout_size=100,
+        bkg_in_diameters=[25, 90],
+        bkg_out_diameters=[40, 100],
+        col_suffix_list=["", "big"],
+        zp_colname="ZP",
+    ),
+    DataframeWriter(output_dir_name="candidates"),
+    XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
+    XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
+    DataframeWriter(output_dir_name="kowalski"),
+    # DatabaseHistoryImporter(
+    #     crossmatch_radius_arcsec=2.0,
+    #     time_field_name="jd",
+    #     history_duration_days=500.0,
+    #     db_name="winter",
+    #     db_table="candidates",
+    #     db_output_columns=candidate_colnames,
+    #     schema_path=wirc_candidate_schema_path,
+    #     q3c_bool=False,
+    # ),
+    # CandidateNamer(
+    #     db_name="winter",
+    #     db_table="candidates",
+    #     base_name="WNTR",
+    #     name_start="aaaaa",
+    #     xmatch_radius_arcsec=2,
+    #     schema_path=wirc_candidate_schema_path,
+    # ),
+    # DatabaseDataframeExporter(
+    #     db_name="wirc",
+    #     db_table="candidates",
+    #     schema_path=wirc_candidate_schema_path,
+    #     duplicate_protocol="replace",
+    # ),
+    # DataframeWriter(output_dir_name="dbop"),
+]
+
+package_candidates = [
+    AvroPacketMaker(
+        output_sub_dir="avro", base_name="WNTR", broadcast=False, save_local=True
+    ),
+]
+
+candidates = detect_candidates + process_candidates
 
 full_commissioning = load_unpacked + detrend + process_detrended  # + stack_proc
 
@@ -526,3 +581,5 @@ reftest = (
 only_ref = load_ref + select_ref + refbuild
 
 realtime = extract_all + mask_and_split + save_raw + full_commissioning_proc
+
+full = realtime + imsub

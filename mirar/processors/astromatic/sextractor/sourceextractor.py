@@ -6,8 +6,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from mirar.data.utils import write_regions_file
 from mirar.processors.astromatic.config import astromatic_config_dir
-from mirar.processors.candidates.utils.regions_writer import write_regions_file
 from mirar.utils import ExecutionError, execute
 from mirar.utils.ldac_tools import get_table_from_ldac
 

@@ -8,13 +8,14 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
+    candidates,
     commissioning_multiboard_stack,
     commissioning_photcal,
     commissioning_photcal_indiv,
-    final,
     full_commissioning,
     full_commissioning_all_boards,
     imsub,
+    load_stack,
     load_test,
     only_ref,
     realtime,
@@ -47,8 +48,8 @@ class WINTERPipeline(Pipeline):
         "full_commissioning_all_boards": full_commissioning_all_boards,
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
-        "imsub": imsub,
-        "final": final,
+        "imsub": load_stack + imsub,
+        "candidates": load_stack + imsub + candidates,
         "reduce": reduce,
         "reftest": reftest,
         "only_ref": only_ref,

@@ -33,12 +33,6 @@ from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkim
 from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.astrometry.utils import AstrometryFromFile
-from mirar.processors.candidates.candidate_detector import DetectCandidates
-from mirar.processors.candidates.candidate_extractor import (
-    ForcedPhotometryCandidateTable,
-)
-from mirar.processors.candidates.namer import CandidateNamer
-from mirar.processors.candidates.utils import DataframeWriter, RegionsWriter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_exporter import DatabaseDataframeExporter
@@ -62,6 +56,9 @@ from mirar.processors.photometry.psf_photometry import (
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
+from mirar.processors.sources import CandidateNamer, DataframeWriter, SourceDetector
+from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
+from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
     HeaderAnnotator,
     ImageBatcher,
@@ -215,7 +212,7 @@ candidate_photometry = [
 ]
 
 detect_candidates = [
-    DetectCandidates(output_sub_dir="subtract", **sextractor_candidate_config),
+    SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
 ]
 
 process_candidates = [

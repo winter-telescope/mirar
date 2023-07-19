@@ -471,7 +471,7 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
         return self.master_image_path
 
 
-class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
+class BaseSourceGenerator(BaseProcessor, ImageHandler, ABC):
     """
     Base CandidateGenerator processor (image batch in, source batch out)
     """
@@ -495,7 +495,7 @@ class BaseCandidateGenerator(BaseProcessor, ImageHandler, ABC):
         raise NotImplementedError
 
 
-class BaseDataframeProcessor(BaseProcessor, ABC):
+class BaseSourceProcessor(BaseProcessor, ABC):
     """
     Base dataframe processor (Source batch in, source batch out)
     """
@@ -506,9 +506,9 @@ class BaseDataframeProcessor(BaseProcessor, ABC):
         cls.subclasses[cls.base_key] = cls
 
     def _apply(self, batch: SourceBatch) -> SourceBatch:
-        return self._apply_to_candidates(batch)
+        return self._apply_to_sources(batch)
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

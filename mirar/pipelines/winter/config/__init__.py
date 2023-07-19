@@ -46,6 +46,13 @@ sextractor_reference_config = {
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
+sextractor_candidate_config = {
+    "cand_det_sextractor_config": winter_file_dir.joinpath("photomCat.sex"),
+    "cand_det_sextractor_nnw": winter_file_dir.joinpath("default.nnw"),
+    "cand_det_sextractor_filter": winter_file_dir.joinpath("default.conv"),
+    "cand_det_sextractor_params": winter_file_dir.joinpath("Scorr.param"),
+}
+
 swarp_config_path = winter_file_dir.joinpath("config.swarp")
 scamp_config_path = winter_file_dir.joinpath("scamp.conf")
 winter_mask_path = winter_file_dir.joinpath("winter_mask.fits")

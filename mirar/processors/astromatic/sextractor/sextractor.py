@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from mirar.data import ImageBatch
+from mirar.data.utils.coords import write_regions_file
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
@@ -22,7 +23,6 @@ from mirar.processors.astromatic.sextractor.sourceextractor import (
     run_sextractor_single,
 )
 from mirar.processors.base_processor import BaseImageProcessor
-from mirar.processors.candidates.utils.regions_writer import write_regions_file
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)

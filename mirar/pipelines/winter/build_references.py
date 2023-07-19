@@ -11,10 +11,9 @@ from astropy.io import fits
 from wintertoo.data import winter_fields
 
 from mirar.data import Dataset, Image, ImageBatch
-from mirar.data.utils import plot_fits_image
+from mirar.data.utils import get_corners_ra_dec_from_header, plot_fits_image
 from mirar.paths import BASE_NAME_KEY, core_fields, get_output_dir
 from mirar.pipelines.winter.winter_pipeline import WINTERPipeline
-from mirar.processors.candidates.utils import get_corners_ra_dec_from_header
 from mirar.processors.split import SUB_ID_KEY
 
 logger = logging.getLogger(__name__)

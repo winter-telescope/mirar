@@ -21,9 +21,9 @@ from mirar.paths import (
     get_output_dir,
 )
 from mirar.processors.base_processor import (
-    BaseDataframeProcessor,
     BaseImageProcessor,
     BaseProcessor,
+    BaseSourceProcessor,
     ImageHandler,
 )
 from mirar.processors.photometry.utils import (
@@ -224,7 +224,7 @@ class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
         return int(np.round(x)), int(np.round(y))
 
 
-class BaseCandidatePhotometry(BasePhotometryProcessor, BaseDataframeProcessor):
+class BaseCandidatePhotometry(BasePhotometryProcessor, BaseSourceProcessor):
     """
     Processor to run photometry on a candidates table
     """

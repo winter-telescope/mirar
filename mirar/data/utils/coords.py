@@ -1,16 +1,17 @@
 """
-Utils for candidates
+Functions to get image coordinates from WCS
 """
 import gzip
 import io
+import logging
 
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
 
 from mirar.data import Image
-from mirar.processors.candidates.utils.dataframe_writer import DataframeWriter
-from mirar.processors.candidates.utils.regions_writer import RegionsWriter
+
+logger = logging.getLogger(__name__)
 
 
 def get_corners_ra_dec_from_header(header: fits.Header) -> list[tuple[float, float]]:
@@ -70,6 +71,28 @@ def get_xy_from_wcs(
     wcs = WCS(header)
     x, y = wcs.all_world2pix(ra_deg, dec_deg, origin)
     return x, y
+
+
+def write_regions_file(
+    regions_path, x_coords, y_coords, system="image", region_radius=5
+):
+    """
+    Function to write a regions file
+    Args:
+        regions_path: str, path to regions file
+        x_coords: list, x-coordinates or RA
+        y_coords: list, y-coordinates or Dec
+        system: str, image or wcs
+        region_radius: float, radius of circle
+
+    Returns:
+
+    """
+    logger.debug(f"Writing regions path to {regions_path}")
+    with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
+        regions_f.write(f"{system}\n")
+        for ind, x in enumerate(x_coords):
+            regions_f.write(f"CIRCLE({x},{y_coords[ind]},{region_radius})\n")
 
 
 def makebitims(image: np.array):

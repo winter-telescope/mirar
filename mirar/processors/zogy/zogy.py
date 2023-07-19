@@ -22,6 +22,7 @@ from astropy.stats import sigma_clipped_stats
 from astropy.table import Table
 
 from mirar.data import Image, ImageBatch
+from mirar.data.utils import write_regions_file
 from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -36,7 +37,6 @@ from mirar.paths import (
     get_output_dir,
 )
 from mirar.processors.base_processor import BaseImageProcessor
-from mirar.processors.candidates.utils.regions_writer import write_regions_file
 from mirar.processors.zogy.pyzogy import pyzogy
 from mirar.utils.ldac_tools import get_table_from_ldac
 
@@ -457,9 +457,15 @@ class ZOGY(ZOGYPrepare):
             image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
                 image[self.sci_zp_header_key]
             )
-            image["SCORMEAN"] = scorr_mean
-            image["SCORMED"] = scorr_median
-            image["SCORSTD"] = scorr_std
+            key_map = {
+                "SCORMEAN": scorr_mean,
+                "SCORMED": scorr_median,
+                "SCORSTD": scorr_std,
+            }
+            for key, value in key_map.items():
+                if np.isnan(value):
+                    value = -999.0
+                image[key] = value
 
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
 

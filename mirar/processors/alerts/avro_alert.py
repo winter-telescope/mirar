@@ -18,12 +18,12 @@ import pandas as pd
 
 from mirar.data import SourceBatch
 from mirar.paths import get_output_dir
-from mirar.processors.base_processor import BaseDataframeProcessor
+from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class AvroPacketMaker(BaseDataframeProcessor):
+class AvroPacketMaker(BaseSourceProcessor):
     """Class to generate Avro Packets from a dataframe of candidates.
 
     Attributes:
@@ -48,7 +48,7 @@ class AvroPacketMaker(BaseDataframeProcessor):
         self.save_local = save_local
         self.broadcast = broadcast
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

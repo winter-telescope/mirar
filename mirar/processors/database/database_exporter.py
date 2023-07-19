@@ -5,7 +5,7 @@ import logging
 from abc import ABC
 
 from mirar.data import ImageBatch, SourceBatch
-from mirar.processors.base_processor import BaseDataframeProcessor, BaseImageProcessor
+from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 
 logger = logging.getLogger(__name__)
@@ -45,12 +45,12 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
         return batch
 
 
-class DatabaseDataframeExporter(BaseDatabaseExporter, BaseDataframeProcessor):
+class DatabaseDataframeExporter(BaseDatabaseExporter, BaseSourceProcessor):
     """
     Processor for exporting sources to a database
     """
 
-    def _apply_to_candidates(self, batch: SourceBatch) -> SourceBatch:
+    def _apply_to_sources(self, batch: SourceBatch) -> SourceBatch:
         for source_list in batch:
             candidate_table = source_list.get_data()
 

@@ -30,7 +30,7 @@ from urllib3.util import Retry
 
 from mirar.data import SourceBatch
 from mirar.paths import PACKAGE_NAME, __version__
-from mirar.processors.base_processor import BaseDataframeProcessor
+from mirar.processors.base_processor import BaseSourceProcessor
 
 matplotlib.use("agg")
 
@@ -69,7 +69,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
             kwargs["timeout"] = DEFAULT_TIMEOUT
 
 
-class SendToFritz(BaseDataframeProcessor):
+class SendToFritz(BaseSourceProcessor):
     """
     Processor for sending candidates to Fritz.
     """
@@ -154,7 +154,7 @@ class SendToFritz(BaseDataframeProcessor):
 
         return token_fritz
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

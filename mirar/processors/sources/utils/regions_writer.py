@@ -8,34 +8,12 @@ from typing import Optional
 
 from mirar.data import SourceBatch
 from mirar.paths import base_output_dir, get_output_path
-from mirar.processors.base_processor import BaseDataframeProcessor
+from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-def write_regions_file(
-    regions_path, x_coords, y_coords, system="image", region_radius=5
-):
-    """
-    Function to write a regions file
-    Args:
-        regions_path: str, path to regions file
-        x_coords: list, x-coordinates or RA
-        y_coords: list, y-coordinates or Dec
-        system: str, image or wcs
-        region_radius: float, radius of circle
-
-    Returns:
-
-    """
-    logger.debug(f"Writing regions path to {regions_path}")
-    with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
-        regions_f.write(f"{system}\n")
-        for ind, x in enumerate(x_coords):
-            regions_f.write(f"CIRCLE({x},{y_coords[ind]},{region_radius})\n")
-
-
-class RegionsWriter(BaseDataframeProcessor):
+class RegionsWriter(BaseSourceProcessor):
     """
     Class to write a regions file from candidate table
     """
@@ -47,10 +25,8 @@ class RegionsWriter(BaseDataframeProcessor):
         output_dir_name: Optional[str] = None,
         region_pix_radius: float = 8,
         output_dir: str | Path = base_output_dir,
-        *args,
-        **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.output_dir_name = output_dir_name
         self.region_pix_radius = region_pix_radius
         self.output_dir = Path(output_dir)
@@ -61,7 +37,7 @@ class RegionsWriter(BaseDataframeProcessor):
             f"the {self.output_dir_name} directory. "
         )
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:

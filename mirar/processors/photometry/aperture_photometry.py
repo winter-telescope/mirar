@@ -50,7 +50,7 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
             self.col_suffix_list = self.aperture_photometer.aper_diameters
         self.zp_colname = zp_colname
 
-    def _apply_to_candidates(
+    def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
