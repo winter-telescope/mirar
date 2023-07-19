@@ -49,6 +49,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-sub_dir", type=str, default="components")
     parser.add_argument("-base_output_dir", type=str, default=base_output_dir)
+
+    parser.add_argument("-base_ref_dir", type=str, default=base_output_dir)
     parser.add_argument("-level", type=str, default="INFO")
     args = parser.parse_args()
 

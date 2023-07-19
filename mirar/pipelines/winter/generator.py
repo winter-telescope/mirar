@@ -2,6 +2,7 @@
 Module with generators for WINTER pipeline
 """
 import logging
+import os
 
 import numpy as np
 from astropy.table import Table
@@ -26,6 +27,7 @@ from mirar.processors.base_catalog_xmatch_processor import (
 )
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
+from mirar.references.local import RefFromPath
 from mirar.references.ukirt import UKIRTRef
 
 logger = logging.getLogger(__name__)
@@ -218,6 +220,54 @@ def winter_reference_generator(image: Image):
     #     if os.path.exists(savepaths[0]):
     #         logger.debug(f"Found reference image in database: {savepaths[0]}")
     #         return RefFromPath(path=savepaths[0], filter_name=filtername)
+
+    return UKIRTRef(
+        filter_name=filtername,
+        swarp_resampler=winter_reference_image_resampler,
+        sextractor_generator=ref_sextractor,
+        phot_calibrator_generator=winter_reference_phot_calibrator,
+        num_query_points=9,
+        query_table=RefQueries,
+        components_table=RefComponents,
+        write_to_db=False,
+        write_db_table=RefStacks,
+        component_image_dir=components_image_dir.as_posix(),
+        night_sub_dir="winter/references",
+        skip_online_query=False,
+        stack_id_generator=winter_reference_stackid_generator,
+    )
+
+
+def winter_refbuild_reference_generator(image: Image):
+    """
+    Generates a reference image for the winter data
+    Args:
+        db_table: Database table to search for existing image
+        image: Image
+
+    Returns:
+
+    """
+    components_image_dir = get_output_dir(
+        dir_root="components", sub_dir="winter/references"
+    )
+    stack_image_dir = get_output_dir(
+        dir_root="stacked_ref", sub_dir="winter/references"
+    )
+    if not components_image_dir.exists():
+        components_image_dir.mkdir(parents=True)
+
+    filtername = image["FILTER"]
+    # TODO if in_ukirt and in_vista, different processing
+    fieldid = int(image["FIELDID"])
+    subdetid = int(image[SUB_ID_KEY])
+    logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
+
+    stack_image_path = stack_image_dir / f"field{fieldid}_subdet{subdetid}_ref.fits"
+
+    if os.path.exists(stack_image_path):
+        logger.debug(f"Found reference image in database: {stack_image_path}")
+        return RefFromPath(path=stack_image_path, filter_name=filtername)
 
     return UKIRTRef(
         filter_name=filtername,
