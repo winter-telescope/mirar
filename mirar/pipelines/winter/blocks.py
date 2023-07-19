@@ -155,16 +155,6 @@ dark_cal = [
     ImageDebatcher(),
 ]
 
-dark_cal_all_boards = [
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
-    WriteMaskedCoordsToFile(output_dir="mask_raw"),
-    DarkCalibrator(cache_sub_dir="calibration"),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    ImageSaver(output_dir_name="darkcal"),
-    ImageDebatcher(),
-]
-
 flat_cal = [
     # ImageSelector(("OBSTYPE", ["FOCUS", "SCIENCE", "FLAT"])),
     # ImageSelector(("TARGNAME", ["INTERESTING"])),
@@ -179,15 +169,6 @@ flat_cal = [
     ImageSaver(output_dir_name=f"skyflatcal_{BOARD_ID}"),
     NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
     ImageSaver(output_dir_name=f"skysub_{BOARD_ID}"),
-]
-
-flat_cal_all_boards = [
-    # ImageSelector(("OBSTYPE", ["SCIENCE"]), ("TARGNAME", f"{TARGET_NAME}")),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
-    SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir="skycals"),
-    ImageSaver(output_dir_name="skyflatcal"),
-    NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
-    ImageSaver(output_dir_name="skysub"),
 ]
 
 detrend = dark_cal + flat_cal
@@ -230,78 +211,6 @@ process_detrended = [
 
 export_proc = [
     DatabaseImageExporter(db_table=Stacks, duplicate_protocol="replace", q3c_bool=False)
-]
-
-process_stack_all_boards = [
-    ImageDebatcher(),
-    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "EXPTIME"]),
-    ImageSaver(output_dir_name="pre_anet"),
-    AstrometryNet(
-        output_sub_dir="anet",
-        scale_bounds=[15, 23],
-        scale_units="amw",
-        use_sextractor=True,
-        parity="neg",
-        search_radius_deg=1.0,
-        sextractor_config_path=sextractor_anet_config["config_path"],
-        use_weight=True,
-    ),
-    ImageSaver(output_dir_name="post_anet"),
-    Sextractor(
-        **sextractor_autoastrometry_config,
-        write_regions_bool=True,
-        output_sub_dir="scamp",
-    ),
-    AstrometryStatsWriter(
-        ref_catalog_generator=winter_photometric_catalog_generator,
-        image_catalog_purifier=winter_astrostat_catalog_purifier,
-        write_regions=True,
-        cache=True,
-        crossmatch_radius_arcsec=5.0,
-    ),
-    DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
-    ImageSaver(output_dir_name="anet"),
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
-    Swarp(
-        swarp_config_path=swarp_config_path,
-        calculate_dims_in_swarp=True,
-        include_scamp=False,
-        subtract_bkg=False,
-        cache=False,
-        center_type="ALL",
-        temp_output_sub_dir="stack_all",
-        header_keys_to_combine=["RAWID"],
-    ),
-    CustomImageModifier(winter_stackid_annotator),
-    ImageSaver(output_dir_name="stack"),
-]
-
-photcal_and_export = [
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
-    Sextractor(
-        **sextractor_photometry_config,
-        output_sub_dir="phot",
-        checkimage_type="BACKGROUND_RMS",
-    ),
-    PhotCalibrator(
-        ref_catalog_generator=winter_photometric_catalog_generator,
-        temp_output_sub_dir="phot",
-        write_regions=True,
-        cache=True,
-    ),
-    ImageSaver(output_dir_name="final"),
-    DatabaseImageExporter(
-        db_table=Stacks, duplicate_protocol="replace", q3c_bool=False
-    ),
-    ModifyImageDatabaseSeqList(
-        db_name="winter",
-        schema_path="fake_placeholder_path.sql",
-        sequence_key="rawid",
-        db_table=Raw.sql_model.__tablename__,
-        db_alter_columns="ustackid",
-    ),
 ]
 
 stack_proc = [
@@ -462,6 +371,98 @@ unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked"),
+]
+
+# Detrend blocks
+
+dark_cal_all_boards = [
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
+    WriteMaskedCoordsToFile(output_dir="mask_raw"),
+    DarkCalibrator(cache_sub_dir="calibration"),
+    ImageSelector(("OBSTYPE", ["SCIENCE"])),
+    ImageSaver(output_dir_name="darkcal"),
+    ImageDebatcher(),
+]
+
+flat_cal_all_boards = [
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
+    SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir="skycals"),
+    ImageSaver(output_dir_name="skyflatcal"),
+    NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
+    ImageSaver(output_dir_name="skysub"),
+]
+
+process_stack_all_boards = [
+    ImageDebatcher(),
+    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "EXPTIME"]),
+    ImageSaver(output_dir_name="pre_anet"),
+    AstrometryNet(
+        output_sub_dir="anet",
+        scale_bounds=[15, 23],
+        scale_units="amw",
+        use_sextractor=True,
+        parity="neg",
+        search_radius_deg=1.0,
+        sextractor_config_path=sextractor_anet_config["config_path"],
+        use_weight=True,
+    ),
+    ImageSaver(output_dir_name="post_anet"),
+    Sextractor(
+        **sextractor_autoastrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="scamp",
+    ),
+    AstrometryStatsWriter(
+        ref_catalog_generator=winter_photometric_catalog_generator,
+        image_catalog_purifier=winter_astrostat_catalog_purifier,
+        write_regions=True,
+        cache=True,
+        crossmatch_radius_arcsec=5.0,
+    ),
+    DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
+    ImageSaver(output_dir_name="anet"),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
+    Swarp(
+        swarp_config_path=swarp_config_path,
+        calculate_dims_in_swarp=True,
+        include_scamp=False,
+        subtract_bkg=False,
+        cache=False,
+        center_type="ALL",
+        temp_output_sub_dir="stack_all",
+        header_keys_to_combine=["RAWID"],
+    ),
+    CustomImageModifier(winter_stackid_annotator),
+    ImageSaver(output_dir_name="stack"),
+]
+
+photcal_and_export = [
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
+    Sextractor(
+        **sextractor_photometry_config,
+        output_sub_dir="phot",
+        checkimage_type="BACKGROUND_RMS",
+    ),
+    PhotCalibrator(
+        ref_catalog_generator=winter_photometric_catalog_generator,
+        temp_output_sub_dir="phot",
+        write_regions=True,
+        cache=True,
+    ),
+    ImageSaver(output_dir_name="final"),
+    DatabaseImageExporter(
+        db_table=Stacks, duplicate_protocol="replace", q3c_bool=False
+    ),
+    ModifyImageDatabaseSeqList(
+        db_name="winter",
+        schema_path="fake_placeholder_path.sql",
+        sequence_key="rawid",
+        db_table=Raw.sql_model.__tablename__,
+        db_alter_columns="ustackid",
+    ),
 ]
 
 # Image subtraction
