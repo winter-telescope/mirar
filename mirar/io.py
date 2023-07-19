@@ -177,12 +177,14 @@ def open_mef_image(
     open_f: Callable[
         [str | Path], tuple[fits.Header, list[np.ndarray], list[fits.Header]]
     ] = open_mef_fits,
+    extension_key: str | None = None,
 ) -> list[Image]:
     """
     Function to open a raw image as an Image object
 
     :param path: path of raw image
     :param open_f: function to open the raw image
+    :param extension_key: key to use to number the MEF frames
     :return: Image object
     """
 
@@ -194,7 +196,10 @@ def open_mef_image(
     for ext_num, ext_data in enumerate(ext_data_list):
         ext_header = ext_header_list[ext_num]
 
-        extension_num_str = str(ext_num)
+        if extension_key is not None:
+            extension_num_str = str(ext_header[extension_key])
+        else:
+            extension_num_str = str(ext_num)
 
         # append primary_header to hdrext
         new_single_header = combine_mef_extension_file_headers(
