@@ -113,6 +113,7 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
     plt.axis("off")
 
     plt.savefig(output_path)
+    plt.close()
 
 
 def iterate_flowify(

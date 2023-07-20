@@ -33,7 +33,8 @@ class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
         return (
             f"Processor to save "
             f"{['candidates', 'images'][isinstance(self, BaseImageProcessor)]} "
-            f"to the '{self.db_table}' table of the '{self.db_name}' Postgres database."
+            f"to the '{self.db_table.__name__}' table of "
+            f"the '{self.db_name}' Postgres database."
         )
 
 
