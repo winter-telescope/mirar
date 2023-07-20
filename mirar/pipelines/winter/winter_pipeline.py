@@ -48,6 +48,7 @@ class WINTERPipeline(Pipeline):
         "full_commissioning_all_boards": full_commissioning_all_boards,
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
+        "stack": full_commissioning_all_boards,
         "imsub": load_stack + imsub,
         "candidates": load_stack + imsub + candidates,
         "reduce": reduce,
