@@ -125,6 +125,7 @@ class Monitor:
         self.log_level = log_level
         self.log_path = self.configure_logs(log_level)
         self.error_path = self.pipeline.get_error_output_path()
+        self.error_path.unlink(missing_ok=True)  # Do not just append log to the old one
 
         self.final_postprocess_hours = float(final_postprocess_hours) * u.hour
         logger.info(f"Will terminate after {final_postprocess_hours} hours.")
@@ -358,6 +359,7 @@ class Monitor:
             observer.stop()
             observer.join()
             self.postprocess()
+            logger.info(f"Saving log to {self.log_path}")
 
     def update_error_log(self):
         """Function to overwrite the error file with the latest version.
@@ -449,11 +451,14 @@ class Monitor:
                         transfer_done = check_file_is_complete(event.src_path)
 
                         if not transfer_done:
-                            print(
+                            msg = (
                                 f"Seems like the file {event.src_path} is not "
                                 f"fully transferred. "
-                                "Waiting a couple of seconds before trying again."
+                                f"Waiting a couple of seconds before trying again."
                             )
+                            print(msg)
+                            logger.info(msg)
+                            # self.update_error_log()
                             time.sleep(3)
 
                         # If a corrupt image comes in, give up eventually
@@ -468,7 +473,7 @@ class Monitor:
                                 exc, "monitor", contents=[event.src_path]
                             )
                             self.errorstack.add_report(err_report)
-                            self.update_error_log()
+                            # self.update_error_log()
 
                             self.failed_images.append(event.src_path)
                             break
@@ -496,6 +501,14 @@ class Monitor:
                         if (DITHER_N_KEY in img.keys()) & (
                             MAX_DITHER_KEY in img.keys()
                         ):
+                            msg = (
+                                f"Image {event.src_path} is dither number "
+                                f"{img[DITHER_N_KEY]} of {img[MAX_DITHER_KEY]}"
+                            )
+                            print(msg)
+                            logger.info(msg)
+                            # self.update_error_log()
+
                             # If you have a new dither set, just process
                             if np.logical_and(
                                 int(img[DITHER_N_KEY]) == 1,
@@ -511,6 +524,7 @@ class Monitor:
                                         f"Processing these {len(sci_img_batch)} "
                                         f"images now."
                                     )
+                                    # self.update_error_log()
 
                             elif img[DITHER_N_KEY] != img[MAX_DITHER_KEY]:
                                 if (Time.now() - self.queue_t) < (1.0 * u.hour):
@@ -526,6 +540,7 @@ class Monitor:
                                         f"{len(self.queued_images)} images"
                                         f" in the queue."
                                     )
+                                    # self.update_error_log()
                                 else:
                                     self.queued_images = []
 
@@ -537,12 +552,16 @@ class Monitor:
                             for x in load_queue:
                                 all_img += self.pipeline.load_raw_image(x)
 
-                            print(
+                            msg = (
                                 f"Reducing {event.src_path} "
                                 f"on thread {threading.get_ident()}, "
                                 f"alongside {len(load_queue)} queue images"
                                 f"(science={is_science})"
                             )
+                            print(msg)
+                            logger.info(msg)
+                            # self.update_error_log()
+
                             _, errorstack = self.pipeline.reduce_images(
                                 dataset=Dataset(all_img),
                                 selected_configurations=self.realtime_configurations,
