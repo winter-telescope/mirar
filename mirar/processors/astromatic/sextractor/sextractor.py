@@ -197,7 +197,9 @@ class Sextractor(BaseImageProcessor):
                     region_radius=5,
                 )
 
-            image[SEXTRACTOR_HEADER_KEY] = sextractor_out_dir.joinpath(output_cat).as_posix()
+            image[SEXTRACTOR_HEADER_KEY] = sextractor_out_dir.joinpath(
+                output_cat
+            ).as_posix()
 
             if len(checkimage_name) > 0:
                 if isinstance(self.checkimage_type, str):
