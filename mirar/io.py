@@ -93,17 +93,17 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     :param path: path of fits file
     :return: tuple containing image data and image header
     """
-    with fits.open(path) as img:
+    with fits.open(path, memmap=False) as img:
         hdu = img.pop(0)
         hdu.verify("silentfix+ignore")
         data = hdu.data
         header = hdu.header
 
-        if BASE_NAME_KEY not in header:
-            header[BASE_NAME_KEY] = Path(path).name
+    if BASE_NAME_KEY not in header:
+        header[BASE_NAME_KEY] = Path(path).name
 
-        if RAW_IMG_KEY not in header.keys():
-            header[RAW_IMG_KEY] = path
+    if RAW_IMG_KEY not in header.keys():
+        header[RAW_IMG_KEY] = path
 
     return data, header
 
@@ -138,7 +138,7 @@ def open_mef_fits(
     :return: tuple containing image data and image header
     """
     split_data, split_headers = [], []
-    with fits.open(path) as hdu:
+    with fits.open(path, memmap=False) as hdu:
         primary_header = hdu[0].header  # pylint: disable=no-member
         num_ext = len(hdu)
         for ext in range(1, num_ext):

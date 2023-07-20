@@ -14,7 +14,7 @@ from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image
-from mirar.io import open_mef_fits, open_mef_image
+from mirar.io import open_fits, open_mef_fits, open_mef_image
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
@@ -139,13 +139,11 @@ def load_proc_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.
     Load proc image
     """
     logger.debug(f"Loading {path}")
-    with fits.open(path) as img:
-        data = img[0].data  # pylint: disable=no-member
-        header = img[0].header  # pylint: disable=no-member
-        if "weight" in path:
-            header["OBSTYPE"] = "weight"
+    data, header = open_fits(path)
+    if "weight" in path:
+        header["OBSTYPE"] = "weight"
 
-        header["FILTER"] = header["FILTERID"]
+    header["FILTER"] = header["FILTERID"]
 
     return data, header
 
@@ -157,22 +155,21 @@ def load_stacked_winter_image(
     Load proc image
     """
     logger.debug(f"Loading {path}")
-    with fits.open(path) as img:
-        data = img[0].data  # pylint: disable=no-member
-        header = img[0].header  # pylint: disable=no-member
-        if "weight" in path:
-            header["OBSTYPE"] = "weight"
+    data, header = open_fits(path)
 
-            header["OBSCLASS"] = "weight"
-            header["COADDS"] = 1
-            header["TARGET"] = "science"
-            header["CALSTEPS"] = ""
-            header["PROCFAIL"] = 1
-            header["RAWPATH"] = ""
-            header["BASENAME"] = os.path.basename(path)
-            header["TARGNAME"] = "weight"
-        if "UTCTIME" not in header.keys():
-            header["UTCTIME"] = "2023-06-14T00:00:00"
+    if "weight" in path:
+        header["OBSTYPE"] = "weight"
+
+        header["OBSCLASS"] = "weight"
+        header["COADDS"] = 1
+        header["TARGET"] = "science"
+        header["CALSTEPS"] = ""
+        header["PROCFAIL"] = 1
+        header["RAWPATH"] = ""
+        header["BASENAME"] = os.path.basename(path)
+        header["TARGNAME"] = "weight"
+    if "UTCTIME" not in header.keys():
+        header["UTCTIME"] = "2023-06-14T00:00:00"
 
     return data, header
 

@@ -87,7 +87,7 @@ def save_table_as_ldac(tbl: astropy.table.Table, file_path: str, **kwargs):
         Keyword arguments to pass to hdulist.writeto
     """
     hdulist = convert_table_to_ldac(tbl)
-    hdulist.writeto(file_path, **kwargs)
+    hdulist.writeto(file_path, overwrite=True, **kwargs)
 
 
 def get_table_from_ldac(file_path: str | Path, frame: int = 1) -> astropy.table.Table:
