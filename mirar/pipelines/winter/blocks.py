@@ -380,7 +380,6 @@ load_unpacked = [
 dark_cal_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
-    WriteMaskedCoordsToFile(output_dir="mask_raw"),
     DarkCalibrator(cache_sub_dir="calibration"),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name="darkcal"),
@@ -389,9 +388,9 @@ dark_cal_all_boards = [
 
 flat_cal_all_boards = [
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
-    SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir="skycals"),
+    SkyFlatCalibrator(cache_sub_dir="skycals"),
     ImageSaver(output_dir_name="skyflatcal"),
-    NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
+    NightSkyMedianCalibrator(),
     ImageSaver(output_dir_name="skysub"),
 ]
 
