@@ -227,9 +227,16 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             ref_cat, _, cleaned_img_cat = self.setup_catalogs(image)
 
             fwhm_med, _, fwhm_std, med_fwhm_pix, _, _ = get_fwhm(cleaned_img_cat)
-            image["FWHM_MED"] = fwhm_med
-            image["FWHM_STD"] = fwhm_std
-            image["FWHM_PIX"] = med_fwhm_pix
+
+            header_map = {
+                "FWHM_MED": fwhm_med,
+                "FWHM_STD": fwhm_std,
+                "FWHM_PIX": med_fwhm_pix,
+            }
+            for key, value in header_map.items():
+                if np.isnan(value):
+                    value = -999.0
+                image.header[key] = value
 
             if len(ref_cat) == 0:
                 err = "No sources found in reference catalog"

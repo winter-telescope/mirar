@@ -22,15 +22,13 @@ def fix_headers(logfile, night, keyword_list, sub_dir="raw"):
         image_filename = get_output_path(
             base_name=image_basename, dir_root=sub_dir, sub_dir="winter/" + night
         )
-        img_hdulist = fits.open(image_filename, "update")
-        img_header = img_hdulist[0].header
-        for key in keyword_list:
-            if obslog.loc[ind][key] is np.nan:
-                img_header[key] = ""
-            else:
-                img_header[key] = obslog.loc[ind][key]
-
-        img_hdulist.close()
+        with fits.open(image_filename, "update") as img_hdulist:
+            img_header = img_hdulist[0].header
+            for key in keyword_list:
+                if obslog.loc[ind][key] is np.nan:
+                    img_header[key] = ""
+                else:
+                    img_header[key] = obslog.loc[ind][key]
 
 
 if __name__ == "__main__":
