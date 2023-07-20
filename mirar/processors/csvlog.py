@@ -43,7 +43,7 @@ class CSVLog(BaseImageProcessor):
     def __str__(self) -> str:
         return (
             f"Processor to create a CSV log summarising the image metadata, "
-            f"to {self.get_output_path()}."
+            f"with name '{self.get_output_path().name}'."
         )
 
     def get_log_name(self) -> str:

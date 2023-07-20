@@ -178,6 +178,12 @@ class MaskPixelsFromFunction(BaseMask):
         """
         return self.mask_function(image)
 
+    def __str__(self) -> str:
+        return (
+            f"Processor to mask pixels using the function "
+            f"'{self.mask_function.__name__}'"
+        )
+
 
 class MaskAboveThreshold(BaseMask):
     """
@@ -212,7 +218,7 @@ class MaskAboveThreshold(BaseMask):
             raise ValueError("Must specify either threshold or threshold_key, not both")
 
     def __str__(self) -> str:
-        return f"Processor to mask pixels above a threshold: {self.threshold}"
+        return f"Processor to mask pixels above a threshold '{self.threshold}'"
 
     def get_mask(self, image) -> np.ndarray:
         """
@@ -256,7 +262,7 @@ class MaskPixelsFromWCS(BaseMask):
             self.mask_file_key = None
 
     def __str__(self) -> str:
-        return "Processor to mask pixels using a  list of RA/Dec."
+        return "Processor to mask pixels using a list of RA/Dec coordinates."
 
     def get_mask(self, image) -> np.ndarray:
         """
@@ -315,6 +321,9 @@ class WriteMaskedCoordsToFile(BaseMask):
             only_write_mask=only_write_mask,
         )
 
+    def __str__(self) -> str:
+        return f"Processor to save image masks to the {self.output_dir} directory"
+
     def get_mask(self, image) -> np.ndarray:
         pixels_to_mask = np.zeros(image.get_data().shape, dtype=bool)
 
@@ -352,3 +361,6 @@ class MaskDatasecPixels(BaseMask):
         mask[:datasec_ymin, :] = 1.0
         mask[datasec_ymax:, :] = 1.0
         return mask.astype(bool)
+
+    def __str__(self) -> str:
+        return "Processor to mask pixels using a 'datasec' keyword in the header."
