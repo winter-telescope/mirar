@@ -304,7 +304,7 @@ def run_sextractor_dual(
     )
 
     cmd += checkimage_cmd
-    logger.info(weight_image)
+    logger.debug(f"Weight: {weight_image}")
     if weight_image is None:
         cmd += "-WEIGHT_TYPE None"
     else:

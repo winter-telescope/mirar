@@ -167,7 +167,8 @@ class SourceDetector(BaseSourceGenerator):
         det_srcs["diffmaglim"] = diff["DIFFMLIM"]
         det_srcs["isdiffpos"] = 1
         det_srcs = det_srcs.to_pandas()
-        logger.info(det_srcs["diffmaglim"])
+
+        logger.debug(det_srcs["diffmaglim"])
 
         return det_srcs
 

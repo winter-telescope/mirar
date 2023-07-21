@@ -162,21 +162,15 @@ class BasePhotometryProcessor(BaseProcessor, ImageHandler):
         temp_imagepath = self.photometry_out_temp_dir.joinpath(image_basename)
         self.save_fits(image, temp_imagepath)
 
-        unc_exists, temp_unc_imagepath = False, None
-        if UNC_IMG_KEY in image.header.keys():
-            unc_filename = image.header[UNC_IMG_KEY]
-            if unc_filename is None:
-                unc_exists = False
-            else:
-                temp_unc_imagepath = Path(unc_filename)
-                unc_exists = os.path.exists(unc_filename)
-        if not unc_exists:
-            rms_image = get_rms_image(image)
-            unc_filename = image[BASE_NAME_KEY] + ".unc"
-            temp_unc_imagepath = self.photometry_out_temp_dir.joinpath(unc_filename)
-            self.save_fits(rms_image, path=temp_unc_imagepath)
-            logger.info(f"Saved unc file to {temp_unc_imagepath}")
-        return temp_imagepath, temp_unc_imagepath
+        unc_filename = Path(image[BASE_NAME_KEY] + ".unc")
+
+        unc_filename.parent.mkdir(parents=True, exist_ok=True)
+
+        rms_image = get_rms_image(image)
+        unc_filename = self.photometry_out_temp_dir.joinpath(unc_filename)
+        self.save_fits(rms_image, path=unc_filename)
+        logger.debug(f"Saved unc file to {unc_filename}")
+        return temp_imagepath, unc_filename.as_posix()
 
     def generate_cutouts(self, data_item: Image | pd.Series):
         """

@@ -57,6 +57,8 @@ swarp_config_path = winter_file_dir.joinpath("config.swarp")
 scamp_config_path = winter_file_dir.joinpath("scamp.conf")
 winter_mask_path = winter_file_dir.joinpath("winter_mask.fits")
 
+winter_candidate_config = winter_file_dir.joinpath("candidates.sql")
+
 psfex_path = winter_file_dir.joinpath("photom.psfex")
 
 winter_cal_requirements = [
