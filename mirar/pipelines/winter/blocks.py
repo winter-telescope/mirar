@@ -12,7 +12,6 @@ from mirar.paths import (
     MAX_DITHER_KEY,
     TARGET_KEY,
     base_output_dir,
-    get_output_dir,
 )
 from mirar.pipelines.winter.config import (
     psfex_path,
@@ -307,9 +306,9 @@ load_raw = [
 ]
 
 extract_all = [
-    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
+    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
 ]
 
 csvlog = [
