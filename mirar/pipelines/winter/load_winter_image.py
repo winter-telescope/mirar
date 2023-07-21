@@ -129,10 +129,10 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     if header["FIELDID"] < 0:
         header["FIELDID"] = DEFAULT_FIELD
-    if header["PROGID"] < 0:
-        header["PROGID"] = default_program.progid
-    # TODO: Get puid from PROGID
-    header["PUID"] = header["PROGID"]
+
+    if "PROGNAME" not in header:
+        header["PROGNAME"] = default_program.progname
+
     return header
 
 
