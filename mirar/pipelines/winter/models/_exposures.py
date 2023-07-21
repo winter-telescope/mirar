@@ -66,8 +66,8 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     itid: Mapped[int] = mapped_column(ForeignKey("imgTypes.itid"))
     img_type: Mapped["ImgTypesTable"] = relationship(back_populates="exposures")
 
-    puid: Mapped[int] = mapped_column(ForeignKey("programs.puid"))
-    program_uid: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
+    progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
+    program_name: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
 
     utctime = Column(DateTime(timezone=True))
 
@@ -124,7 +124,7 @@ class Exposures(BaseDB):
     nightdate: date = Field()  # FIXME : why different to obsdate?
     fieldid: int = fieldid_field
     itid: int = Field(ge=0)
-    puid: int = Field(ge=0)
+    progname: str = Field(min_length=1)
 
     utctime: datetime = Field()
     ExpTime: float = Field(ge=0)
@@ -162,13 +162,13 @@ class Exposures(BaseDB):
         if not night.exists():
             night.insert_entry()
 
-        if not ProgramsTable().exists(values=self.puid, keys="puid"):
-            default_puid = ProgramsTable().select_query(
-                select_keys="puid",
+        if not ProgramsTable().exists(values=self.progname, keys="progname"):
+            default_progname = ProgramsTable().select_query(
+                select_keys="progname",
                 compare_values=[default_program.progname],
                 compare_keys=["progname"],
             )[0][0]
-            self.puid = default_puid
+            self.progname = default_progname
 
         return self._insert_entry()
 

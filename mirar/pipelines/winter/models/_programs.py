@@ -37,7 +37,7 @@ class ProgramsTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     progtitle = Column(VARCHAR(20), nullable=True)  # Optional 20 char descr. of title
 
-    exposures: Mapped["ExposuresTable"] = relationship(back_populates="program_uid")
+    exposures: Mapped["ExposuresTable"] = relationship(back_populates="program_name")
 
 
 class ProgramCredentials(BaseModel):
