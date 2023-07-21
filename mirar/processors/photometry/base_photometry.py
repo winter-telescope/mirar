@@ -162,15 +162,10 @@ class BasePhotometryProcessor(BaseProcessor, ImageHandler):
         temp_imagepath = self.photometry_out_temp_dir.joinpath(image_basename)
         self.save_fits(image, temp_imagepath)
 
-        if UNC_IMG_KEY in image.header.keys():
-            unc_filename = Path(image.header[UNC_IMG_KEY])
-
-        else:
-            unc_filename = Path(image[BASE_NAME_KEY] + ".unc")
+        unc_filename = Path(image[BASE_NAME_KEY] + ".unc")
 
         unc_filename.parent.mkdir(parents=True, exist_ok=True)
 
-        # if not unc_filename.exists():
         rms_image = get_rms_image(image)
         unc_filename = self.photometry_out_temp_dir.joinpath(unc_filename)
         self.save_fits(rms_image, path=unc_filename)
