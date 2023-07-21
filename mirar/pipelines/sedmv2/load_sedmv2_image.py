@@ -5,13 +5,14 @@ import logging
 import os
 from pathlib import Path
 
-import astropy
 import numpy as np
+from astropy.io import fits
 
 from mirar.data import Image
 from mirar.io import open_mef_fits, open_mef_image
 from mirar.paths import (
     BASE_NAME_KEY,
+    GAIN_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
@@ -21,7 +22,7 @@ from mirar.paths import (
 logger = logging.getLogger(__name__)
 
 
-def clean_science_header(header: astropy.io.fits.Header) -> astropy.io.fits.Header:
+def clean_science_header(header: fits.Header) -> fits.Header:
     """
     function to modify the primary header of an SEDMv2 science file
     :param header: original primary header of science file
@@ -38,9 +39,9 @@ def clean_science_header(header: astropy.io.fits.Header) -> astropy.io.fits.Head
     header["TELRA"] = header["TELRAD"]
     header["TELDEC"] = header["TELDECD"]
 
-    header.append(("GAIN", 1.0, "Gain in electrons / ADU"), end=True)
-    if header["GAIN"] == 0.0:
-        header["GAIN"] = 1.0
+    header.append((GAIN_KEY, 1.0, "Gain in electrons / ADU"), end=True)
+    if header[GAIN_KEY] == 0.0:
+        header[GAIN_KEY] = 1.0
 
     # filters
     header["FILTERID"] = header["FILTER"].split(" ")[1][0]
@@ -72,8 +73,8 @@ def clean_science_header(header: astropy.io.fits.Header) -> astropy.io.fits.Head
 
 
 def clean_cal_header(
-    hdr0: astropy.io.fits.Header, hdr1: astropy.io.fits.Header, filepath
-) -> tuple[astropy.io.fits.Header, list[astropy.io.fits.Header]]:
+    hdr0: fits.Header, hdr1: fits.Header, filepath
+) -> tuple[fits.Header, list[fits.Header]]:
     """
     function to modify the primary header of an SEDMv2 calibration file (flat or bias)
     :param hdr0: original primary header of calibration file
@@ -102,6 +103,7 @@ def clean_cal_header(
     hdr0["COADDS"] = 1
     hdr0["CALSTEPS"] = ""
     hdr0["PROCFAIL"] = 1
+    hdr0[GAIN_KEY] = 1.0
 
     req_headers = [
         "RA",
@@ -136,7 +138,7 @@ def clean_cal_header(
 
 def load_raw_sedmv2_mef(
     path: str | Path, skip_first=True
-) -> tuple[astropy.io.fits.Header, list[np.array], list[astropy.io.fits.Header]]:
+) -> tuple[fits.Header, list[np.array], list[fits.Header]]:
     """
     Load mef image
     """

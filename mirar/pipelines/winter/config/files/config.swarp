@@ -12,7 +12,6 @@ HEADER_SUFFIX          .head           # Filename extension for additional heade
  
 WEIGHT_TYPE            NONE            # BACKGROUND,MAP_RMS,MAP_VARIANCE
 
-#RESCALE_WEIGHTS        N                 # or MAP_WEIGHT
 WEIGHT_SUFFIX          .weight.fits    # Suffix to use for weight-maps
 WEIGHT_IMAGE                           # Weightmap filename if suffix not used
                                        # (all or for each weight-map)
@@ -22,11 +21,6 @@ WEIGHT_IMAGE                           # Weightmap filename if suffix not used
 COMBINE                N               # Combine resampled images (Y/N)?
 COMBINE_TYPE           MEDIAN          # MEDIAN,AVERAGE,MIN,MAX,WEIGHTED,CHI2
                                        # or SUM
-#CLIP_AMPFRAC           0.3                                       #
-#CLIP_SIGMA             4.0
-#CLIP_WRITELOG          N
-#CLIP_LOGNAME           clipped.log
-#BLANK_BADPIXELS        N
  
 #-------------------------------- Astrometry ----------------------------------
  

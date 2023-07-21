@@ -30,7 +30,7 @@ class SEDMv2Pipeline(Pipeline):
     """
 
     name = PIPELINE_NAME
-    gain = 1
+
     non_linear_level = 30000  # no idea, for pylint
     default_cal_requirements = sedmv2_cal_requirements
     all_pipeline_configurations = {

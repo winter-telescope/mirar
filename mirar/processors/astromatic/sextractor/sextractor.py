@@ -58,7 +58,6 @@ class Sextractor(BaseImageProcessor):
         checkimage_name: Optional[str | list] = None,
         checkimage_type: Optional[str | list] = None,
         gain: Optional[float] = None,
-        dual: bool = False,
         cache: bool = False,
         mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
@@ -76,7 +75,6 @@ class Sextractor(BaseImageProcessor):
         :param checkimage_name: name of checkimage to output. Leave to None to use
         pipeline defaults in sextractor_checkimage_map for output name (recommended).
         :param gain: gain for sextractor. Leave to None if not known.
-        :param dual: whether to run sextractor in dual mode
         :param cache: whether to cache sextractor output
         :param mag_zp: magnitude zero point for sextractor. Leave to None if not known.
         :param write_regions_bool: whether to write regions file for ds9
@@ -94,7 +92,6 @@ class Sextractor(BaseImageProcessor):
         self.checkimage_name = checkimage_name
         self.checkimage_type = checkimage_type
         self.gain = gain
-        self.dual = dual
         self.cache = cache
         self.mag_zp = mag_zp
         self.write_regions = write_regions_bool
@@ -150,8 +147,8 @@ class Sextractor(BaseImageProcessor):
                 weight_path = self.save_mask_image(image, temp_path)
                 temp_files.append(Path(weight_path))
 
-            output_cat = os.path.join(
-                sextractor_out_dir, image[BASE_NAME_KEY].replace(".fits", ".cat")
+            output_cat = sextractor_out_dir.joinpath(
+                image[BASE_NAME_KEY].replace(".fits", ".cat")
             )
 
             _, checkimage_name = parse_checkimage(
@@ -190,7 +187,7 @@ class Sextractor(BaseImageProcessor):
                 x_coords = output_catalog["X_IMAGE"]
                 y_coords = output_catalog["Y_IMAGE"]
 
-                regions_path = output_cat + ".reg"
+                regions_path = output_cat.with_suffix(".reg")
 
                 write_regions_file(
                     regions_path=regions_path,
@@ -200,7 +197,9 @@ class Sextractor(BaseImageProcessor):
                     region_radius=5,
                 )
 
-            image[SEXTRACTOR_HEADER_KEY] = os.path.join(sextractor_out_dir, output_cat)
+            image[SEXTRACTOR_HEADER_KEY] = sextractor_out_dir.joinpath(
+                output_cat
+            ).as_posix()
 
             if len(checkimage_name) > 0:
                 if isinstance(self.checkimage_type, str):

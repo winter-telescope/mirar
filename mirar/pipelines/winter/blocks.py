@@ -89,13 +89,13 @@ from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 build_test = [
     MEFLoader(
-        input_img_dir=get_test_data_dir(),
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
     ImageSelector(
         ("BOARD_ID", "4"),
     ),
+    ImageSaver("testdata", output_dir=get_test_data_dir()),
 ]
 
 load_test = [
@@ -491,6 +491,7 @@ imsub = [
 
 detect_candidates = [
     HeaderAnnotator(input_keys=["ZP_AUTO"], output_key="ZP"),
+    HeaderAnnotator(input_keys=["ZP_AUTO_STD"], output_key="ZP_STD"),
     SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
 ]
 

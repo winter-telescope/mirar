@@ -18,6 +18,7 @@ from mirar.io import open_fits, open_mef_fits, open_mef_image
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
+    GAIN_KEY,
     OBSCLASS_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
@@ -34,7 +35,7 @@ from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_d
 logger = logging.getLogger(__name__)
 
 
-def clean_header(header: astropy.io.fits.Header) -> astropy.io.fits.Header:
+def clean_header(header: fits.Header) -> fits.Header:
     """
     Function to clean the header of an image, adding in missing keys and
     correcting values where necessary
@@ -42,6 +43,7 @@ def clean_header(header: astropy.io.fits.Header) -> astropy.io.fits.Header:
     :param header: Header to clean
     :return: Updated header
     """
+    header[GAIN_KEY] = 1.0
     header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
 
     date_t = Time(header["UTCTIME"])
@@ -134,7 +136,7 @@ def clean_header(header: astropy.io.fits.Header) -> astropy.io.fits.Header:
     return header
 
 
-def load_proc_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
+def load_proc_winter_image(path: str | Path) -> tuple[np.array, fits.Header]:
     """
     Load proc image
     """
@@ -150,7 +152,7 @@ def load_proc_winter_image(path: str | Path) -> tuple[np.array, astropy.io.fits.
 
 def load_stacked_winter_image(
     path: str | Path,
-) -> tuple[np.array, astropy.io.fits.Header]:
+) -> tuple[np.array, fits.Header]:
     """
     Load proc image
     """

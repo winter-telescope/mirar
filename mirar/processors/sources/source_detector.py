@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from astropy.io import fits
 
-from mirar.data import ImageBatch, SourceBatch, SourceTable
+from mirar.data import Image, ImageBatch, SourceBatch, SourceTable
 from mirar.data.utils.coords import makebitims
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -72,10 +72,10 @@ class SourceDetector(BaseSourceGenerator):
 
     def generate_candidates_table(
         self,
+        diff: Image,
         scorr_catalog_path: str | Path,
         sci_resamp_image_path: str | Path,
         ref_resamp_image_path: str | Path,
-        diff_path: str | Path,
         diff_scorr_path: str | Path,
         diff_psf_path: str | Path,
         diff_unc_path: str | Path,
@@ -93,9 +93,12 @@ class SourceDetector(BaseSourceGenerator):
         :return:
         """
         det_srcs = get_table_from_ldac(scorr_catalog_path)
+
+        diff_path = diff[LATEST_SAVE_KEY]
+
         if len(det_srcs) == 0:
             return pd.DataFrame()
-        logger.info(f"Found {len(det_srcs)} candidates in image {diff_path}.")
+        logger.debug(f"Found {len(det_srcs)} candidates in image.")
         det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"] - 1
         det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"] - 1
 
@@ -133,13 +136,12 @@ class SourceDetector(BaseSourceGenerator):
         det_srcs["cutoutTemplate"] = display_ref_ims
         det_srcs["cutoutDifference"] = display_diff_ims
 
-        diff_zp = float(fits.getval(diff_path, "ZP"))
-        det_srcs[ZP_KEY] = diff_zp
-        det_srcs[LATEST_SAVE_KEY] = diff_path
-        det_srcs["magzpsci"] = diff_zp
-        diff_zp_unc = float(fits.getval(diff_path, "ZP_std"))
+        det_srcs[ZP_KEY] = diff[ZP_KEY]
+        det_srcs[LATEST_SAVE_KEY] = diff[LATEST_SAVE_KEY]
+        det_srcs["magzpsci"] = diff[ZP_KEY]
+        diff_zp_unc = diff[f"{ZP_KEY}_STD"]
         det_srcs["magzpsciunc"] = diff_zp_unc
-        det_srcs["diffimname"] = diff_path
+        det_srcs["diffimname"] = diff[LATEST_SAVE_KEY]
         det_srcs["sciimname"] = sci_resamp_image_path
         det_srcs["refimname"] = ref_resamp_image_path
         det_srcs[NORM_PSFEX_KEY] = diff_psf_path
@@ -154,7 +156,7 @@ class SourceDetector(BaseSourceGenerator):
         det_srcs["elong"] = det_srcs["ELONGATION"]
 
         det_srcs["jd"] = fits.getval(sci_resamp_image_path, "MJD-OBS") + 2400000.5
-        det_srcs["exptime"] = fits.getval(diff_path, "EXPTIME")
+        det_srcs["exptime"] = diff["EXPTIME"]
         det_srcs["field"] = fits.getval(sci_resamp_image_path, "FIELDID")
         det_srcs["programpi"] = fits.getval(sci_resamp_image_path, "PROGPI")
         det_srcs["programid"] = fits.getval(sci_resamp_image_path, "PROGID")
@@ -162,7 +164,7 @@ class SourceDetector(BaseSourceGenerator):
         det_srcs["candid"] = np.array(
             det_srcs["jd"] * 100, dtype=int
         ) * 10000 + np.arange(len(det_srcs))
-        det_srcs["diffmaglim"] = fits.getval(diff_path, "DIFFMLIM")
+        det_srcs["diffmaglim"] = diff["DIFFMLIM"]
         det_srcs["isdiffpos"] = 1
         det_srcs = det_srcs.to_pandas()
         logger.info(det_srcs["diffmaglim"])
@@ -200,10 +202,10 @@ class SourceDetector(BaseSourceGenerator):
             )
             ref_image_path = os.path.join(self.get_sub_output_dir(), image[REF_IMG_KEY])
             cands_table = self.generate_candidates_table(
+                diff=image,
                 scorr_catalog_path=cands_catalog_name,
                 sci_resamp_image_path=sci_image_path,
                 ref_resamp_image_path=ref_image_path,
-                diff_path=diff_image_path,
                 diff_scorr_path=scorr_image_path,
                 diff_psf_path=diff_psf_path,
                 diff_unc_path=diff_unc_path,

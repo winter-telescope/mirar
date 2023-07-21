@@ -130,15 +130,15 @@ def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
 
 
 def run_sextractor_single(
-    img: str,
-    output_dir: str,
+    img: str | Path,
+    output_dir: str | Path,
     catalog_name: Optional[Path] = None,
     config: str = default_config_path,
     parameters_name: str = default_param_path,
     filter_name: str = default_filter_name,
     starnnw_name: str = default_starnnw_path,
     saturation: float = None,
-    weight_image: Optional[str] = None,
+    weight_image: Optional[str | Path] = None,
     verbose_type: str = "QUIET",
     checkimage_name: Optional[str | list] = None,
     checkimage_type: Optional[str | list] = None,
