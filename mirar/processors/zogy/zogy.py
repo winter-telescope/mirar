@@ -48,6 +48,12 @@ class ZOGYError(ProcessorError):
 
 
 def default_wirc_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
+    """
+
+    :param sci_catalog:
+    :param ref_catalog:
+    :return:
+    """
     good_sci_sources = (
         (sci_catalog["FLAGS"] == 0)
         & (sci_catalog["SNR_WIN"] > 5)
@@ -141,6 +147,11 @@ class ZOGYPrepare(BaseImageProcessor):
         self.crossmatch_radius_arcsec = crossmatch_radius_arcsec
 
     def get_sub_output_dir(self) -> Path:
+        """
+        Get output directory for this processor
+
+        :return: Path to output directory
+        """
         return Path(get_output_dir(self.output_sub_dir, self.night_sub_dir))
 
     def get_path(self, name: str | Path) -> Path:
@@ -255,8 +266,9 @@ class ZOGYPrepare(BaseImageProcessor):
         :return: An RMS :class:`~mirar.data.image_data.Image`
         """
         gain = image["GAIN"]
+
         poisson_noise = np.copy(image.get_data()) / gain
-        poisson_noise[poisson_noise < 0] = 0
+        poisson_noise[poisson_noise < 0] = 0.0
         rms_image = Image(
             data=np.sqrt(poisson_noise + rms**2), header=image.get_header()
         )

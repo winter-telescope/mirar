@@ -491,6 +491,7 @@ imsub = [
 
 detect_candidates = [
     HeaderAnnotator(input_keys=["ZP_AUTO"], output_key="ZP"),
+    HeaderAnnotator(input_keys=["ZP_AUTO_STD"], output_key="ZP_STD"),
     SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
 ]
 

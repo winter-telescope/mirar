@@ -299,6 +299,7 @@ core_fields = [
     TARGET_KEY,
     TIME_KEY,
     COADD_KEY,
+    GAIN_KEY,
     PROC_HISTORY_KEY,
     PROC_FAIL_KEY,
     RAW_IMG_KEY,

@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-
+"""
+Core ZOGY algorithm implementation in Python.
 ############################################################
 # Python implementation of ZOGY image subtraction algorithm
 # See Zackay, Ofek, and Gal-Yam 2016 for details
@@ -9,17 +9,15 @@
 # SBC - 28 July 2017
 # RDS - 30 October 2022
 ############################################################
+"""
 
 import logging
-import sys
 from pathlib import Path
 
-import astropy.io.fits as fits
 import numpy as np
-
-# Could also use numpy.fft, but this is apparently faster
 import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
+from astropy.io import fits
 
 logger = logging.getLogger(__name__)
 
@@ -63,22 +61,22 @@ def pyzogy(
     """
 
     # Load the new and ref images into memory
-    with fits.open(new_image_path) as f:
-        new = f[0].data
+    with fits.open(new_image_path) as img_f:
+        new = img_f[0].data  # pylint: disable=no-member
 
-    with fits.open(ref_image_path) as f:
-        ref = f[0].data
+    with fits.open(ref_image_path) as ref_f:
+        ref = ref_f[0].data  # pylint: disable=no-member
 
     # Load the PSFs into memory
-    with fits.open(new_psf_path) as f:
-        new_psf = f[0].data
+    with fits.open(new_psf_path) as img_psf_f:
+        new_psf = img_psf_f[0].data  # pylint: disable=no-member
 
-    with fits.open(ref_psf_path) as f:
-        ref_psf = f[0].data
+    with fits.open(ref_psf_path) as ref_psf_f:
+        ref_psf = ref_psf_f[0].data  # pylint: disable=no-member
 
-    logger.info(
-        f"Max of small PSF is %d %d"
-        % np.unravel_index(np.argmax(new_psf, axis=None), new_psf.shape)
+    logger.debug(
+        f"Max of small PSF is "
+        f"{np.unravel_index(np.argmax(new_psf, axis=None), new_psf.shape)}"
     )
 
     # Place PSF at center of image with same size as new / reference
@@ -94,17 +92,17 @@ def pyzogy(
     ref_psf_big[y_min:y_max, x_min:x_max] = ref_psf
 
     logger.debug(
-        "Max of big PSF is %d %d"
-        % np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)
+        f"Max of big PSF is "
+        f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
     )
 
-    # Shift the PSF to the origin so it will not introduce a shift
+    # Shift the PSF to the origin, so that it will not introduce a shift
     new_psf_big = fft.fftshift(new_psf_big)
     ref_psf_big = fft.fftshift(ref_psf_big)
 
     logger.debug(
-        "Max of big PSF shift is %d %d"
-        % np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)
+        f"Max of big PSF shift is "
+        f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
     )
 
     # Take all the Fourier Transforms
@@ -130,9 +128,6 @@ def pyzogy(
     # TODO: Why is the flux_zero_point normalization in there?
     diff = np.real(fft.ifft2(diff_hat)) / flux_zero_point
 
-    # Nocorr image
-    diff_nocorr = np.real(fft.ifft2(diff_hat_numerator))
-
     # Fourier Transform of PSF of Subtraction Image (Equation 14)
     diff_hat_psf = ref_psf_hat * new_psf_hat / flux_zero_point / diff_hat_denominator
 
@@ -141,14 +136,9 @@ def pyzogy(
     diff_psf = fft.ifftshift(diff_psf)
     diff_psf = diff_psf[y_min:y_max, x_min:x_max]
 
-    # PSF of Image Nocorr
-    diff_nocorr_psf = np.real(fft.ifft2(ref_psf_hat * new_psf_hat))
-    diff_nocorr_psf = fft.ifftshift(diff_nocorr_psf)
-    diff_nocorr_psf = diff_nocorr_psf[y_min:y_max, x_min:x_max]
-
     logger.debug(
-        "Max of diff PSF is %d %d"
-        % np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape)
+        f"Max of diff PSF is "
+        f"{np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape)}"
     )
 
     # Fourier Transform of Score Image (Equation 17)
@@ -161,11 +151,11 @@ def pyzogy(
 
     # Start out with source noise
     # Load the sigma images into memory
-    with fits.open(new_sigma_path) as f:
-        new_sigma = f[0].data
+    with fits.open(new_sigma_path) as img_sigma_f:
+        new_sigma = img_sigma_f[0].data  # pylint: disable=no-member
 
-    with fits.open(ref_sigma_path) as f:
-        ref_sigma = f[0].data
+    with fits.open(ref_sigma_path) as ref_sigma_f:
+        ref_sigma = ref_sigma_f[0].data  # pylint: disable=no-member
 
     # Sigma to variance
     new_variance = new_sigma**2
@@ -197,82 +187,21 @@ def pyzogy(
     # Equation 31
     # TODO: Check axis (0/1) vs x/y coordinates
     new_sigma = np.real(fft.ifft2(kn_hat * new_hat))
-    dSNdx = new_sigma - np.roll(new_sigma, 1, axis=1)
-    dSNdy = new_sigma - np.roll(new_sigma, 1, axis=0)
+    dsn_dx = new_sigma - np.roll(new_sigma, 1, axis=1)
+    dsn_dy = new_sigma - np.roll(new_sigma, 1, axis=0)
 
     # Equation 30
-    V_ast_S_N = dx**2 * dSNdx**2 + dy**2 * dSNdy**2
+    v_ast_s_n = dx**2 * dsn_dx**2 + dy**2 * dsn_dy**2
 
     # Equation 33
     ref_sigma = np.real(fft.ifft2(kr_hat * ref_hat))
-    dSRdx = ref_sigma - np.roll(ref_sigma, 1, axis=1)
-    dSRdy = ref_sigma - np.roll(ref_sigma, 1, axis=0)
+    dsr_dx = ref_sigma - np.roll(ref_sigma, 1, axis=1)
+    dsr_dy = ref_sigma - np.roll(ref_sigma, 1, axis=0)
 
     # Equation 32
-    V_ast_S_R = dx**2 * dSRdx**2 + dy**2 * dSRdy**2
+    v_ast_s_r = dx**2 * dsr_dx**2 + dy**2 * dsr_dy**2
 
     # Calculate Scorr
-    s_corr = score / np.sqrt(new_noise + ref_noise + V_ast_S_N + V_ast_S_R)
+    s_corr = score / np.sqrt(new_noise + ref_noise + v_ast_s_n + v_ast_s_r)
 
     return diff, diff_psf, s_corr
-
-
-if __name__ == "__main__":
-    if len(sys.argv) == 12:
-        D, P_D, S_corr = pyzogy(
-            sys.argv[1],
-            sys.argv[2],
-            sys.argv[3],
-            sys.argv[4],
-            sys.argv[5],
-            sys.argv[6],
-            float(sys.argv[7]),
-            float(sys.argv[8]),
-        )
-
-        # Difference Image
-        tmp = fits.open(sys.argv[1])
-        tmp[0].data = D.astype(np.float32)
-        tmp.writeto(sys.argv[9], output_verify="warn", overwrite=True)
-
-        # S_corr image
-        tmp[0].data = S_corr.astype(np.float32)
-        tmp.writeto(sys.argv[11], output_verify="warn", overwrite=True)
-
-        # PSF Image
-        tmp = fits.open(sys.argv[3])
-        tmp[0].data = P_D.astype(np.float32)
-        tmp.writeto(sys.argv[10], output_verify="warn", overwrite=True)
-
-    elif len(sys.argv) == 14:
-        D, P_D, S_corr = pyzogy(
-            sys.argv[1],
-            sys.argv[2],
-            sys.argv[3],
-            sys.argv[4],
-            sys.argv[5],
-            sys.argv[6],
-            float(sys.argv[7]),
-            float(sys.argv[8]),
-            dx=float(sys.argv[9]),
-            dy=float(sys.argv[10]),
-        )
-
-        # Difference Image
-        tmp = fits.open(sys.argv[1])
-        tmp[0].data = D.astype(np.float32)
-        tmp.writeto(sys.argv[11], output_verify="warn", overwrite=True)
-
-        # S_corr image
-        tmp[0].data = S_corr.astype(np.float32)
-        tmp.writeto(sys.argv[13], output_verify="warn", overwrite=True)
-
-        # PSF Image
-        tmp = fits.open(sys.argv[3])
-        tmp[0].data = P_D.astype(np.float32)
-        tmp.writeto(sys.argv[12], output_verify="warn", overwrite=True)
-
-    else:
-        print(
-            "Usage: python py_zogy.py <NewImage> <RefImage> <NewPSF> <RefPSF> <NewSigmaImage> <RefSigmaImage> <NewSigmaMode> <RefSigmaMode> <AstUncertX> <AstUncertY> <DiffImage> <DiffPSF> <ScorrImage>"
-        )
