@@ -24,7 +24,6 @@ class WircPipeline(Pipeline):
     name = PIPELINE_NAME
 
     non_linear_level = 30000
-    gain = 1.2
 
     all_pipeline_configurations = {
         "default": load_raw + reduce,

@@ -8,6 +8,7 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
+    build_test,
     candidates,
     commissioning_multiboard_stack,
     commissioning_photcal,
@@ -56,9 +57,9 @@ class WINTERPipeline(Pipeline):
         "only_ref": only_ref,
         "realtime": realtime,
         "test": load_test + realtime,
+        "buildtest": build_test,
     }
 
-    gain = 1.0
     non_linear_level = 65535
 
     @staticmethod

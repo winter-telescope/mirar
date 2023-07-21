@@ -10,7 +10,13 @@ from astropy.time import Time
 
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
-from mirar.paths import COADD_KEY, PROC_FAIL_KEY, PROC_HISTORY_KEY, SATURATE_KEY
+from mirar.paths import (
+    COADD_KEY,
+    GAIN_KEY,
+    PROC_FAIL_KEY,
+    PROC_HISTORY_KEY,
+    SATURATE_KEY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +31,7 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     :return: data and header of image
     """
     data, header = open_fits(path)
+    header[GAIN_KEY] = 1.2
     header["FILTER"] = header["AFT"].split("__")[0]
     if "COADDS" in header.keys():
         header["DETCOADD"] = header["COADDS"]

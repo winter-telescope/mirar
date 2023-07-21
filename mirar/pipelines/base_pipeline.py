@@ -57,11 +57,6 @@ class Pipeline:
         raise NotImplementedError()
 
     @property
-    def gain(self):
-        """Gain of instrument"""
-        raise NotImplementedError()
-
-    @property
     def non_linear_level(self):
         """Non-linear level of instrument"""
         raise NotImplementedError()
