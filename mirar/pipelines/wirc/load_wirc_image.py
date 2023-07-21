@@ -31,7 +31,8 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     :return: data and header of image
     """
     data, header = open_fits(path)
-    header[GAIN_KEY] = 1.2
+    if GAIN_KEY not in header.keys():
+        header[GAIN_KEY] = 1.2
     header["FILTER"] = header["AFT"].split("__")[0]
     if "COADDS" in header.keys():
         header["DETCOADD"] = header["COADDS"]

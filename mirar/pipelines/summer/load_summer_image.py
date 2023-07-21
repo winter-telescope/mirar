@@ -207,7 +207,7 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["RAWID"] = header["EXPID"]  # + subdetid
 
         if GAIN_KEY not in header.keys():
-            header[GAIN_KEY] = 1
+            header[GAIN_KEY] = 1.0
 
     return data, header  # pylint: disable=no-member
 

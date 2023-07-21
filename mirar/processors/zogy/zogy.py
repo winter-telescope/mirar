@@ -268,7 +268,7 @@ class ZOGYPrepare(BaseImageProcessor):
         gain = image["GAIN"]
 
         poisson_noise = np.copy(image.get_data()) / gain
-        poisson_noise[poisson_noise < 0] = 0.0
+        poisson_noise[poisson_noise < 0.0] = 0.0
         rms_image = Image(
             data=np.sqrt(poisson_noise + rms**2), header=image.get_header()
         )
