@@ -79,14 +79,10 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     Dewpoint = Column(Float, default=-999)
     Humidity = Column(Float, default=-999)
     Pressure = Column(Float, default=-999)
-    # Moonra = Column(Float, default=-999)
-    # Moondec = Column(Float, default=-999)
-    # Moonillf = Column(Float, default=-999)
-    # Moonphas = Column(Float, default=-999)
-    # Moonaz = Column(Float, default=-999)
-    # Moonalt = Column(Float, default=-999)
-    # Sunaz = Column(Float, default=-999)
-    # Sunalt = Column(Float, default=-999)
+
+    Moonaz = Column(Float, default=-999)
+    Moonalt = Column(Float, default=-999)
+    Sunalt = Column(Float, default=-999)
 
     ra = Column(Float)
     dec = Column(Float)
@@ -136,15 +132,9 @@ class Exposures(BaseDB):
     Humidity: float = default_unknown_field
     Pressure: float = default_unknown_field
 
-    # TODO: these fields are currently empty in image headers
-    # Moonra: float = Field(ge=0.0, le=360.0, default=None)
-    # Moondec: float = Field(title="Dec (degrees)", ge=-90.0, le=90, default=None)
-    # Moonillf: float = default_unknown_field
-    # Moonphas: float = default_unknown_field
-    # Moonaz: float = default_unknown_field
-    # Moonalt: float = default_unknown_field
-    # Sunaz: float = default_unknown_field
-    # Sunalt: float = default_unknown_field
+    Moonaz: float = default_unknown_field
+    Moonalt: float = default_unknown_field
+    Sunalt: float = default_unknown_field
 
     ra: float = ra_field
     dec: float = dec_field
