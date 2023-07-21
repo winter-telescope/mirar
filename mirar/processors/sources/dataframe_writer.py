@@ -28,7 +28,6 @@ class DataframeWriter(BaseSourceProcessor):
         super().__init__()
         self.output_dir_name = output_dir_name
         self.output_dir = Path(output_dir)
-        logger.debug(f"Saving candidates to {self.output_dir_name}")
 
     def __str__(self) -> str:
         return (
@@ -39,29 +38,25 @@ class DataframeWriter(BaseSourceProcessor):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
-        try:
-            os.makedirs(
-                get_output_dir(
-                    dir_root=self.output_dir_name,
-                    sub_dir=self.night_sub_dir,
-                    output_dir=self.output_dir,
-                )
-            )
-        except OSError:
-            pass
+        output_dir = get_output_dir(
+            dir_root=self.output_dir_name,
+            sub_dir=self.night_sub_dir,
+            output_dir=self.output_dir,
+        )
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         for source_list in batch:
             candidate_table = source_list.get_data()
-            df_basepath = os.path.basename(
-                candidate_table.loc[0]["diffimname"]
-            ).replace(".fits", ".candidates.json")
+            df_basepath = Path(candidate_table.loc[0]["diffimname"]).with_suffix(
+                ".candidates.json"
+            )
             df_path = get_output_path(
-                df_basepath,
+                df_basepath.name,
                 dir_root=self.output_dir_name,
                 sub_dir=self.night_sub_dir,
                 output_dir=self.output_dir,
             )
-            logger.info(f"Writing dataframe to {df_path}")
+            logger.debug(f"Writing dataframe to {df_path}")
             candidate_table.to_json(df_path)
 
         return batch

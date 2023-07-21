@@ -174,7 +174,7 @@ class ZOGYPrepare(BaseImageProcessor):
         :param sci_catalog_name: path of sci catalog
         :return: returns astrometric uncertainties in x/y and flux scale
         """
-        logger.info(f"Reference catalog is at {ref_catalog_name}")
+        logger.debug(f"Reference catalog is at {ref_catalog_name}")
         ref_catalog = get_table_from_ldac(ref_catalog_name)
         sci_catalog = get_table_from_ldac(sci_catalog_name)
 
@@ -184,7 +184,7 @@ class ZOGYPrepare(BaseImageProcessor):
         good_sci_sources, good_ref_sources = self.catalog_purifier(
             sci_catalog, ref_catalog
         )
-        logger.info(
+        logger.debug(
             f"Number of good sources SCI: {np.sum(good_sci_sources)} "
             f"REF: {np.sum(good_ref_sources)}"
         )
@@ -241,18 +241,18 @@ class ZOGYPrepare(BaseImageProcessor):
         sci_flux_auto = sci_catalog["FLUX_AUTO"]
         ref_flux_auto = ref_catalog["FLUX_AUTO"]
 
-        logger.info(f"Number of cross-matched sources is {len(d2d)}")
+        logger.debug(f"Number of cross-matched sources is {len(d2d)}")
 
         ast_unc_x = np.std(xpos_sci[idx_sci] - xpos_ref[idx_ref])
         ast_unc_y = np.std(ypos_sci[idx_sci] - ypos_ref[idx_ref])
 
-        logger.info(f"Astrometric uncertainties are X: {ast_unc_x} Y: {ast_unc_y}")
+        logger.debug(f"Astrometric uncertainties are X: {ast_unc_x} Y: {ast_unc_y}")
 
         _, flux_scale_median, flux_scale_std = sigma_clipped_stats(
             sci_flux_auto[idx_sci] / ref_flux_auto[idx_ref]
         )
         flux_scale = flux_scale_median
-        logger.info(
+        logger.debug(
             f"Flux scaling for reference is {flux_scale:.5f} +/- {flux_scale_std:.5f}"
         )
         return ast_unc_x, ast_unc_y, flux_scale
@@ -446,7 +446,7 @@ class ZOGY(ZOGYPrepare):
 
             scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(scorr_data)
 
-            logger.info(
+            logger.debug(
                 f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}"
             )
 

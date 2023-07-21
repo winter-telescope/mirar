@@ -10,7 +10,9 @@ from mirar.paths import (
     EXPTIME_KEY,
     FITS_MASK_KEY,
     MAX_DITHER_KEY,
+    TARGET_KEY,
     base_output_dir,
+    get_output_dir,
 )
 from mirar.pipelines.winter.config import (
     psfex_path,
@@ -21,6 +23,7 @@ from mirar.pipelines.winter.config import (
     sextractor_photometry_config,
     sextractor_reference_config,
     swarp_config_path,
+    winter_candidate_config,
 )
 from mirar.pipelines.winter.generator import (
     winter_astrometric_catalog_generator,
@@ -56,7 +59,10 @@ from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
+from mirar.processors.database.database_exporter import DatabaseDataframeExporter
+from mirar.processors.database.database_importer import DatabaseHistoryImporter
 from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
+from mirar.processors.database.utils import get_column_names_from_schema
 from mirar.processors.mask import (
     MaskAboveThreshold,
     MaskDatasecPixels,
@@ -68,7 +74,7 @@ from mirar.processors.photometry.aperture_photometry import CandidateAperturePho
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
-from mirar.processors.sources import DataframeWriter, SourceDetector
+from mirar.processors.sources import CandidateNamer, DataframeWriter, SourceDetector
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
     DatabaseImageBatchExporter,
@@ -118,7 +124,7 @@ TARGET_NAME = "m39"
 
 load_anet = [
     ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
-    # ImageSelector(("TARGNAME", f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
+    # ImageSelector((TARGET_KEY, f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
 ]
 
 load_ref = [
@@ -143,7 +149,7 @@ load_multiboard_stack = [
         input_sub_dir=f"stack_all_{TARGET_NAME}", load_image=load_stacked_winter_image
     ),
     ImageSelector(
-        # ("TARGNAME", f"{TARGET_NAME}"),
+        # (TARGET_KEY, f"{TARGET_NAME}"),
         ("OBSTYPE", "SCIENCE"),
     ),
 ]
@@ -159,13 +165,13 @@ dark_cal = [
 
 flat_cal = [
     # ImageSelector(("OBSTYPE", ["FOCUS", "SCIENCE", "FLAT"])),
-    # ImageSelector(("TARGNAME", ["INTERESTING"])),
+    # ImageSelector((TARGET_KEY, ["INTERESTING"])),
     # ImageBatcher(["BOARD_ID", "FILTER"]),
     # FlatCalibrator(flat_mask_key=FITS_MASK_KEY,
     #                cache_sub_dir=f"calibration_{board_id}"
     #                ),
-    ImageSelector(("OBSTYPE", ["SCIENCE"]), ("TARGNAME", f"{TARGET_NAME}")),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "EXPTIME", "SUBCOORD"]),
+    ImageSelector(("OBSTYPE", ["SCIENCE"]), (TARGET_KEY, f"{TARGET_NAME}")),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir=f"skycals_{BOARD_ID}"),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name=f"skyflatcal_{BOARD_ID}"),
@@ -216,7 +222,7 @@ export_proc = [
 ]
 
 stack_proc = [
-    ImageBatcher(["TARGNAME", "FILTER"]),
+    ImageBatcher([TARGET_KEY, "FILTER"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -231,7 +237,7 @@ stack_proc = [
 photcal = [
     # ImageSelector(("BOARD_ID", board_id)),
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     Sextractor(
         **sextractor_photometry_config,
         output_sub_dir="phot",
@@ -320,7 +326,7 @@ csvlog = [
             "OBSCLASS",
             "TARGET",
             "BASENAME",
-            "TARGNAME",
+            TARGET_KEY,
             "RADEG",
             "DECDEG",
             "T_ROIC",
@@ -390,6 +396,7 @@ flat_cal_all_boards = [
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(cache_sub_dir="skycals"),
     ImageSaver(output_dir_name="skyflatcal"),
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD", TARGET_KEY]),
     NightSkyMedianCalibrator(),
     ImageSaver(output_dir_name="skysub"),
 ]
@@ -424,7 +431,7 @@ process_stack_all_boards = [
     DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
     ImageSaver(output_dir_name="anet"),
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -441,7 +448,7 @@ process_stack_all_boards = [
 
 photcal_and_export = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "TARGNAME", "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     Sextractor(
         **sextractor_photometry_config,
         output_sub_dir="phot",
@@ -470,6 +477,7 @@ photcal_and_export = [
 
 load_stack = [
     ImageLoader(input_sub_dir="final"),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
 ]
 
 imsub = [
@@ -495,6 +503,8 @@ detect_candidates = [
     SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
 ]
 
+candidate_colnames = get_column_names_from_schema(winter_candidate_config)
+
 process_candidates = [
     DataframeWriter(output_dir_name="candidates"),
     CandidatePSFPhotometry(
@@ -512,30 +522,30 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     DataframeWriter(output_dir_name="kowalski"),
-    # DatabaseHistoryImporter(
-    #     crossmatch_radius_arcsec=2.0,
-    #     time_field_name="jd",
-    #     history_duration_days=500.0,
-    #     db_name="winter",
-    #     db_table="candidates",
-    #     db_output_columns=candidate_colnames,
-    #     schema_path=wirc_candidate_schema_path,
-    #     q3c_bool=False,
-    # ),
-    # CandidateNamer(
-    #     db_name="winter",
-    #     db_table="candidates",
-    #     base_name="WNTR",
-    #     name_start="aaaaa",
-    #     xmatch_radius_arcsec=2,
-    #     schema_path=wirc_candidate_schema_path,
-    # ),
-    # DatabaseDataframeExporter(
-    #     db_name="wirc",
-    #     db_table="candidates",
-    #     schema_path=wirc_candidate_schema_path,
-    #     duplicate_protocol="replace",
-    # ),
+    DatabaseHistoryImporter(
+        crossmatch_radius_arcsec=2.0,
+        time_field_name="jd",
+        history_duration_days=500.0,
+        db_name="winter",
+        db_table="candidates",
+        db_output_columns=candidate_colnames,
+        schema_path=winter_candidate_config,
+        q3c_bool=False,
+    ),
+    CandidateNamer(
+        db_name="winter",
+        db_table="candidates",
+        base_name="WNTR",
+        name_start="aaaaa",
+        xmatch_radius_arcsec=2,
+        schema_path=winter_candidate_config,
+    ),
+    DatabaseDataframeExporter(
+        db_name="winter",
+        db_table="candidates",
+        schema_path=winter_candidate_config,
+        duplicate_protocol="replace",
+    ),
     # DataframeWriter(output_dir_name="dbop"),
 ]
 
@@ -545,7 +555,7 @@ package_candidates = [
     ),
 ]
 
-candidates = detect_candidates + process_candidates
+candidates = detect_candidates + process_candidates + package_candidates
 
 full_commissioning = load_unpacked + detrend + process_detrended  # + stack_proc
 
