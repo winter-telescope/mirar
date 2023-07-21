@@ -130,7 +130,12 @@ def clean_header(header: fits.Header) -> fits.Header:
     if header["FIELDID"] < 0:
         header["FIELDID"] = DEFAULT_FIELD
 
+    # If PROGNAME is not present or is empty, set it to default here.
+    # Otherwise, it gets set to default in the insert_entry for exposures.
     if "PROGNAME" not in header:
+        header["PROGNAME"] = default_program.progname
+
+    if len(header["PROGNAME"]) == 0:
         header["PROGNAME"] = default_program.progname
 
     return header
