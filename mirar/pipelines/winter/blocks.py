@@ -3,7 +3,6 @@ Module for WINTER data reduction
 """
 from mirar.catalog.kowalski import PS1, TMASS
 from mirar.downloader.get_test_data import get_test_data_dir
-from mirar.io import open_raw_image
 from mirar.paths import (
     BASE_NAME_KEY,
     DITHER_N_KEY,
@@ -12,7 +11,6 @@ from mirar.paths import (
     MAX_DITHER_KEY,
     TARGET_KEY,
     base_output_dir,
-    get_output_dir,
 )
 from mirar.pipelines.winter.config import (
     psfex_path,
@@ -41,6 +39,7 @@ from mirar.pipelines.winter.load_winter_image import (
     get_raw_winter_mask,
     load_proc_winter_image,
     load_stacked_winter_image,
+    load_test_winter_image,
     load_winter_mef_image,
 )
 from mirar.pipelines.winter.models import (
@@ -108,7 +107,7 @@ load_test = [
     ImageLoader(
         input_img_dir=get_test_data_dir(),
         input_sub_dir="raw",
-        load_image=open_raw_image,
+        load_image=load_test_winter_image,
     ),
 ]
 
@@ -307,9 +306,9 @@ load_raw = [
 ]
 
 extract_all = [
-    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
+    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
 ]
 
 csvlog = [

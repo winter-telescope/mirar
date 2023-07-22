@@ -66,8 +66,8 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     itid: Mapped[int] = mapped_column(ForeignKey("imgTypes.itid"))
     img_type: Mapped["ImgTypesTable"] = relationship(back_populates="exposures")
 
-    puid: Mapped[int] = mapped_column(ForeignKey("programs.puid"))
-    program_uid: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
+    progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
+    program_name: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
 
     utctime = Column(DateTime(timezone=True))
 
@@ -79,14 +79,10 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     Dewpoint = Column(Float, default=-999)
     Humidity = Column(Float, default=-999)
     Pressure = Column(Float, default=-999)
-    # Moonra = Column(Float, default=-999)
-    # Moondec = Column(Float, default=-999)
-    # Moonillf = Column(Float, default=-999)
-    # Moonphas = Column(Float, default=-999)
-    # Moonaz = Column(Float, default=-999)
-    # Moonalt = Column(Float, default=-999)
-    # Sunaz = Column(Float, default=-999)
-    # Sunalt = Column(Float, default=-999)
+
+    Moonaz = Column(Float, default=-999)
+    Moonalt = Column(Float, default=-999)
+    Sunalt = Column(Float, default=-999)
 
     ra = Column(Float)
     dec = Column(Float)
@@ -124,7 +120,7 @@ class Exposures(BaseDB):
     nightdate: date = Field()  # FIXME : why different to obsdate?
     fieldid: int = fieldid_field
     itid: int = Field(ge=0)
-    puid: int = Field(ge=0)
+    progname: str = Field(min_length=1)
 
     utctime: datetime = Field()
     ExpTime: float = Field(ge=0)
@@ -136,15 +132,9 @@ class Exposures(BaseDB):
     Humidity: float = default_unknown_field
     Pressure: float = default_unknown_field
 
-    # TODO: these fields are currently empty in image headers
-    # Moonra: float = Field(ge=0.0, le=360.0, default=None)
-    # Moondec: float = Field(title="Dec (degrees)", ge=-90.0, le=90, default=None)
-    # Moonillf: float = default_unknown_field
-    # Moonphas: float = default_unknown_field
-    # Moonaz: float = default_unknown_field
-    # Moonalt: float = default_unknown_field
-    # Sunaz: float = default_unknown_field
-    # Sunalt: float = default_unknown_field
+    Moonaz: float = default_unknown_field
+    Moonalt: float = default_unknown_field
+    Sunalt: float = default_unknown_field
 
     ra: float = ra_field
     dec: float = dec_field
@@ -162,13 +152,13 @@ class Exposures(BaseDB):
         if not night.exists():
             night.insert_entry()
 
-        if not ProgramsTable().exists(values=self.puid, keys="puid"):
-            default_puid = ProgramsTable().select_query(
-                select_keys="puid",
+        if not ProgramsTable().exists(values=self.progname, keys="progname"):
+            default_progname = ProgramsTable().select_query(
+                select_keys="progname",
                 compare_values=[default_program.progname],
                 compare_keys=["progname"],
             )[0][0]
-            self.puid = default_puid
+            self.progname = default_progname
 
         return self._insert_entry()
 
