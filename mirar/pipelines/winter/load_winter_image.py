@@ -14,7 +14,7 @@ from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image
-from mirar.io import open_fits, open_mef_fits, open_mef_image
+from mirar.io import open_fits, open_mef_fits, open_mef_image, open_raw_image
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
@@ -55,7 +55,7 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["OBSTYPE"] in ["DARK", "FLAT"]
     ]
 
-    if header[OBSCLASS_KEY] == "calibration":
+    if header["OBSTYPE"] == "DARK":
         sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
         if sun_pos.alt.to_value("deg") > -25.0:
             header[OBSCLASS_KEY] = "TEST"
@@ -106,13 +106,10 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["FILTER"] = "H"
 
     header["FID"] = int(winter_filters_map[header["FILTERID"]])
-    logger.debug(f"Obstime is {obstime}")
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
         header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y-%m-%d")
-
-    logger.debug(f"Nightdate is {header['NIGHTDATE']}")
 
     header["IMGTYPE"] = header["OBSTYPE"]
 
@@ -135,7 +132,7 @@ def clean_header(header: fits.Header) -> fits.Header:
     if "PROGNAME" not in header:
         header["PROGNAME"] = default_program.progname
 
-    if len(header["PROGNAME"]) == 0:
+    if header["PROGNAME"] == "":
         header["PROGNAME"] = default_program.progname
 
     return header
@@ -179,6 +176,15 @@ def load_stacked_winter_image(
         header["UTCTIME"] = "2023-06-14T00:00:00"
 
     return data, header
+
+
+def load_test_winter_image(
+    path: str | Path,
+) -> Image:
+    image = open_raw_image(path)
+    header = clean_header(image.header)
+    image.set_header(header)
+    return image
 
 
 def load_raw_winter_mef(
