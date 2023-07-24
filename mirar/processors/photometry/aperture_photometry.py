@@ -128,6 +128,17 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         for image in batch:
             image_cutout, unc_image_cutout = self.generate_cutouts(image)
 
+            imagename, unc_imagename = self.get_image_filenames(image)
+            cutout_dir = "/Users/benjaminroulston/Documents/DATA_NOT_FOR_DROPBOX/SEDMv2/OUTPUT_DATA/image_cutouts/"
+            np.savetxt(
+                f"{cutout_dir}{imagename.name.replace('.fits', '_cutout.txt')}",
+                image_cutout,
+            )
+            np.savetxt(
+                f"{cutout_dir}{unc_imagename.name.replace('.fits.unc', '_unc_cutout.txt')}",
+                unc_image_cutout,
+            )
+
             fluxes, fluxuncs = self.aperture_photometer.perform_photometry(
                 image_cutout, unc_image_cutout
             )

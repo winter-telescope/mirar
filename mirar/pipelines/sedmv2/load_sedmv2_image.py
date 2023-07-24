@@ -57,6 +57,28 @@ def clean_science_header(header: fits.Header) -> fits.Header:
     header["COADDS"] = 1
     # header["BZERO"] = 0
 
+    if isinstance(header["OBJECTID"], str):
+        if "GWLIb" in header["QCOMMENT"]:
+            print("changing OBJ coord in header for GW Lib.")
+            header["OBJRAD"] = 229.9802519789
+            header["OBJDECD"] = -25.0067323323
+            print("changing OBJECTID in header for GWLib.")
+            header["OBJECTID"] = "GWLib"
+        elif "SDSSdC11h26m33.94s+04d41m37.61s" in header["QCOMMENT"]:
+            print("changing OBJECTID in header for SDSSdC11h26m33.94s+04d41m37.61s.")
+            header["OBJECTID"] = "SDSSdC11h26m33.94s+04d41m37.61s"
+    else:
+        print("Not updating any header info in this image.")
+
+    if not "EXPTIME" in header:
+        header["EXPTIME"] = header["EXPOSURE"]
+
+    # print("changing OBJ coord in header for Zach's obkect!")
+    # header["OBJRAD"] = 296.13913
+    # header["OBJDECD"] = 45.948832499999995
+    # header["OBJRAD"] = 296.20914375
+    # header["OBJDECD"] = 45.9812411111111
+
     # times
     # orig_dateobs = header["DATE-OBS"]
     # header["DATE-OBS"] = convert_to_UTC(orig_dateobs) # this is the date of entire obs

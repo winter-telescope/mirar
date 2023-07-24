@@ -12,7 +12,6 @@ from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.sedmv2.blocks import (
     image_photometry,
     load_raw,
-    process,
     process_stellar,
     process_transient,
 )
@@ -34,7 +33,6 @@ class SEDMv2Pipeline(Pipeline):
     non_linear_level = 30000  # no idea, for pylint
     default_cal_requirements = sedmv2_cal_requirements
     all_pipeline_configurations = {
-        "default": load_raw + process,
         "default_stellar": load_raw + process_stellar + image_photometry,
         "default_transient": load_raw + process_transient,  # +imsub,
     }

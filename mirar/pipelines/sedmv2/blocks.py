@@ -107,16 +107,20 @@ reduce = [
     ),
 ]
 
-resample = [
+resample_stellar = [
+    # ImageDebatcher(),
+    # reaches for files coming from the same object
+    # (note there can be more tha one MEF file per stellar object!)
+    # ImageBatcher(split_key="OBJECTID"),
     Swarp(
         swarp_config_path=swarp_config_path,
         include_scamp=False,
         combine=False,
         calculate_dims_in_swarp=True,
     ),
-    # ImageSaver(
-    #    output_dir_name="resampled", write_mask=True
-    # ),  # pylint: disable=duplicate-code
+    ImageSaver(
+        output_dir_name="resampled", write_mask=True
+    ),  # pylint: disable=duplicate-code
 ]
 
 calibrate = [
@@ -133,36 +137,33 @@ calibrate = [
     HeaderEditor(edit_keys="procflag", values=1),
 ]
 
-process = reduce + resample + calibrate
-
-
 # stellar --
 
 parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 
 # process_stellar = parse_stellar + process
-process_stellar = process
+process_stellar = reduce + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
     # ImageSelector(("OBSTYPE", "SCIENCE")),
     ImageDebatcher(),
     ImageAperturePhotometry(
-        aper_diameters=[8, 16],
-        bkg_in_diameters=[20, 25],
-        bkg_out_diameters=[30, 40],
+        aper_diameters=[5, 10],
+        bkg_in_diameters=[6, 11],
+        bkg_out_diameters=[11, 16],
         col_suffix_list=None,  # [""],
         phot_cutout_size=100,
         target_ra_key="OBJRAD",
         target_dec_key="OBJDECD",
         zp_colname="ZP_AUTO",
     ),
-    Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
-    PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),
-    ImagePSFPhotometry(
-        target_ra_key="OBJRAD",
-        target_dec_key="OBJDECD",
-        zp_colname="ZP_AUTO",
-    ),
+    # Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
+    # PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),
+    # ImagePSFPhotometry(
+    #     target_ra_key="OBJRAD",
+    #     target_dec_key="OBJDECD",
+    #     zp_colname="ZP_AUTO",
+    # ),
     ImageSaver(output_dir_name="photometry"),
 ]
 
