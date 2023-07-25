@@ -13,6 +13,7 @@ from mirar.pipelines.winter.blocks import (
     commissioning_multiboard_stack,
     commissioning_photcal,
     commissioning_photcal_indiv,
+    detrend_all_boards,
     full_commissioning,
     full_commissioning_all_boards,
     imsub,
@@ -60,9 +61,10 @@ class WINTERPipeline(Pipeline):
         "test": load_test + realtime,
         "buildtest": build_test,
         "photcal": photcal,
+        "detrend_all": detrend_all_boards,
     }
 
-    non_linear_level = 65535
+    non_linear_level = 40000.0
 
     @staticmethod
     def _load_raw_image(path: str) -> Image | list[Image]:
