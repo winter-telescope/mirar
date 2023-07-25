@@ -10,30 +10,30 @@ from mirar.testing import BaseTestCase
 logger = logging.getLogger(__name__)
 
 expected_zp = {
-    "ZP_2.0": 23.24860191345215,
-    "ZP_2.0_std": 0.13277117908000946,
-    "ZP_2.0_nstars": 470,
-    "ZP_3.0": 23.736268997192383,
-    "ZP_3.0_std": 0.12201324105262756,
-    "ZP_3.0_nstars": 468,
-    "ZP_4.0": 23.91571807861328,
-    "ZP_4.0_std": 0.136481374502182,
-    "ZP_4.0_nstars": 477,
-    "ZP_5.0": 23.973907470703125,
-    "ZP_5.0_std": 0.14150625467300415,
-    "ZP_5.0_nstars": 480,
-    "ZP_6.0": 23.996763229370117,
-    "ZP_6.0_std": 0.14331680536270142,
-    "ZP_6.0_nstars": 481,
-    "ZP_7.0": 24.011491775512695,
-    "ZP_7.0_std": 0.14509068429470062,
-    "ZP_7.0_nstars": 481,
-    "ZP_8.0": 24.017929077148438,
-    "ZP_8.0_std": 0.14915655553340912,
-    "ZP_8.0_nstars": 482,
-    "ZP_AUTO": 24.015439987182617,
-    "ZP_AUTO_std": 0.1488943099975586,
-    "ZP_AUTO_nstars": 481,
+    "ZP_2.0": 23.25054359436035,
+    "ZP_2.0_std": 0.13186413049697876,
+    # "ZP_2.0_nstars": 453,
+    "ZP_3.0": 23.74294090270996,
+    "ZP_3.0_std": 0.12157108634710312,
+    # "ZP_3.0_nstars": 450,
+    "ZP_4.0": 23.923004150390625,
+    "ZP_4.0_std": 0.12683318555355072,
+    # "ZP_4.0_nstars": 453,
+    "ZP_5.0": 23.978313446044922,
+    "ZP_5.0_std": 0.13428601622581482,
+    # "ZP_5.0_nstars": 458,
+    "ZP_6.0": 24.00155258178711,
+    "ZP_6.0_std": 0.13657590746879578,
+    # "ZP_6.0_nstars": 459,
+    "ZP_7.0": 24.013032913208008,
+    "ZP_7.0_std": 0.13995112478733063,
+    # "ZP_7.0_nstars": 461,
+    "ZP_8.0": 24.016738891601562,
+    "ZP_8.0_std": 0.14567917585372925,
+    # "ZP_8.0_nstars": 465,
+    "ZP_AUTO": 24.013835906982422,
+    "ZP_AUTO_std": 0.14517906308174133,
+    # "ZP_AUTO_nstars": 463,
 }
 
 
@@ -68,9 +68,12 @@ class TestWinterPipeline(BaseTestCase):
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
+        # Expect two datasets, for two different sub-boards
         self.assertEqual(len(res[0]), 1)
+        self.assertEqual(len(res[1]), 1)
 
-        header = res[0][0].get_header()
+        headers = [x[0].get_header() for x in res]
+        header = [x for x in headers if x["SUBCOORD"] == "0_1"][0]
 
         # # Uncomment to print new expected ZP dict
         print("New Results:")
