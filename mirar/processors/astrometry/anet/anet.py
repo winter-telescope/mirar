@@ -105,10 +105,7 @@ def run_astrometry_net_single(
             f"A-net command:\n {cmd_loc}"
         )
 
-        if timeout is not None:
-            execute(cmd_loc, output_dir, timeout=timeout)
-        else:
-            execute(cmd_loc, output_dir)
+        execute(cmd_loc, output_dir, timeout=timeout)
 
         if not os.path.isfile(img_path):
             logger.debug(
