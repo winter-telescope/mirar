@@ -16,7 +16,8 @@ from mirar.pipelines.winter.config import (
     psfex_path,
     scamp_config_path,
     sextractor_anet_config,
-    sextractor_autoastrometry_config,
+    sextractor_astrometry_config,
+    sextractor_astromstats_config,
     sextractor_candidate_config,
     sextractor_photometry_config,
     sextractor_reference_config,
@@ -24,7 +25,8 @@ from mirar.pipelines.winter.config import (
     winter_candidate_config,
 )
 from mirar.pipelines.winter.generator import (
-    winter_astrometric_catalog_generator,
+    winter_astrometric_ref_catalog_generator,
+    winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_photometric_catalog_generator,
     winter_refbuild_reference_generator,
@@ -163,57 +165,13 @@ dark_cal = [
 ]
 
 flat_cal = [
-    # ImageSelector(("OBSTYPE", ["FOCUS", "SCIENCE", "FLAT"])),
-    # ImageSelector((TARGET_KEY, ["INTERESTING"])),
-    # ImageBatcher(["BOARD_ID", "FILTER"]),
-    # FlatCalibrator(flat_mask_key=FITS_MASK_KEY,
-    #                cache_sub_dir=f"calibration_{board_id}"
-    #                ),
-    ImageSelector(("OBSTYPE", ["SCIENCE"]), (TARGET_KEY, f"{TARGET_NAME}")),
+    ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir=f"skycals_{BOARD_ID}"),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
     ImageSaver(output_dir_name=f"skyflatcal_{BOARD_ID}"),
     NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
     ImageSaver(output_dir_name=f"skysub_{BOARD_ID}"),
-]
-
-detrend = dark_cal + flat_cal
-process_detrended = [
-    ImageDebatcher(),
-    AstrometryNet(
-        output_sub_dir=f"anet_{BOARD_ID}",
-        scale_bounds=[25, 40],
-        scale_units="amw",
-        use_sextractor=True,
-        parity="neg",
-        search_radius_deg=1.0,
-        sextractor_config_path=sextractor_autoastrometry_config["config_path"],
-        use_weight=True,
-        timeout=30,
-    ),
-    ImageSaver(output_dir_name=f"anet_{BOARD_ID}"),
-    Sextractor(
-        **sextractor_autoastrometry_config,
-        write_regions_bool=True,
-        output_sub_dir="scamp",
-    ),
-    Scamp(
-        temp_output_sub_dir="scamp",
-        ref_catalog_generator=winter_astrometric_catalog_generator,
-        scamp_config_path=scamp_config_path,
-        cache=False,
-    ),
-    ImageDebatcher(),
-    Swarp(
-        swarp_config_path=swarp_config_path,
-        calculate_dims_in_swarp=True,
-        include_scamp=True,
-        subtract_bkg=False,
-        cache=True,
-        center_type="ALL",
-        temp_output_sub_dir=f"stack_all_{TARGET_NAME}",
-    ),
 ]
 
 export_proc = [
@@ -415,10 +373,24 @@ process_stack_all_boards = [
         use_weight=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD", "FIELDID"]),
     Sextractor(
-        **sextractor_autoastrometry_config,
+        **sextractor_astrometry_config,
         write_regions_bool=True,
         output_sub_dir="scamp",
+        catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
+    ),
+    Scamp(
+        scamp_config_path=scamp_config_path,
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+        copy_scamp_header_to_image=True,
+    ),
+    ImageSaver(output_dir_name="post-scamp"),
+    Sextractor(
+        **sextractor_astromstats_config,
+        write_regions_bool=True,
+        output_sub_dir="astrostats",
     ),
     AstrometryStatsWriter(
         ref_catalog_generator=winter_photometric_catalog_generator,
@@ -556,7 +528,9 @@ package_candidates = [
 
 candidates = detect_candidates + process_candidates + package_candidates
 
-full_commissioning = load_unpacked + detrend + process_detrended  # + stack_proc
+full_commissioning = (
+    load_unpacked + dark_cal + flat_cal + process_stack_all_boards + photcal_and_export
+)
 
 full_commissioning_proc = (
     dark_cal_all_boards
