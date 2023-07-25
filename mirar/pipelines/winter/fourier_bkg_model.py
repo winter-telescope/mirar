@@ -1,3 +1,6 @@
+"""
+Module to subtract a Fourier background model from a raw image.
+"""
 import numpy as np
 from numpy import fft
 
@@ -5,6 +8,9 @@ from numpy import fft
 def subtract_fourier_background_model(
     raw_data: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Subtract a Fourier background model from a raw image.
+    """
     # USER-CONFIGURABLE PARAMETERS
 
     # Filter out stars from the original image before taking the FFT
