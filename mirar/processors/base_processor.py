@@ -76,7 +76,7 @@ class BaseProcessor:
         self.preceding_steps = None
 
         # For caching/multithreading
-        self.passed_dataset = {}
+        self.passed_batches = {}
         self.err_stack = {}
         self.progress = {}
 
@@ -142,7 +142,7 @@ class BaseProcessor:
         :return: None
 
         """
-        del self.passed_dataset[cache_id]
+        del self.passed_batches[cache_id]
         del self.err_stack[cache_id]
 
     def base_apply(self, dataset: Dataset) -> tuple[Dataset, ErrorStack]:
@@ -154,7 +154,7 @@ class BaseProcessor:
         """
         cache_id = threading.get_ident()
 
-        self.passed_dataset[cache_id] = Dataset()
+        self.passed_batches[cache_id] = {}
         self.err_stack[cache_id] = ErrorStack()
 
         if len(dataset) > 0:
@@ -181,8 +181,8 @@ class BaseProcessor:
                 self.progress[cache_id] = progress
 
                 # Loop over batches to add to queue
-                for batch in dataset:
-                    watchdog_queue.put(item=batch)
+                for j, batch in enumerate(dataset):
+                    watchdog_queue.put(item=(j, batch))
 
                 # Wait for the queue to empty
                 watchdog_queue.join()
@@ -190,7 +190,12 @@ class BaseProcessor:
                 self.progress[cache_id].refresh()
                 self.progress[cache_id].close()
 
-        dataset = self.update_dataset(self.passed_dataset[cache_id])
+        new_dataset = []
+
+        for key in sorted(self.passed_batches[cache_id].keys()):
+            new_dataset.append(self.passed_batches[cache_id][key])
+
+        dataset = self.update_dataset(Dataset(new_dataset))
         err_stack = self.err_stack[cache_id]
 
         self.clean_cache(cache_id=cache_id)
@@ -207,15 +212,15 @@ class BaseProcessor:
         :return: None
         """
         while True:
-            batch = queue.get()
+            j, batch = queue.get()
             try:
                 batch = self.apply(batch)
-                self.passed_dataset[cache_id].append(batch)
+                self.passed_batches[cache_id][j] = batch
             except NoncriticalProcessingError as exc:
                 err = self.generate_error_report(exc, batch)
                 logger.error(err.generate_log_message())
                 self.err_stack[cache_id].add_report(err)
-                self.passed_dataset[cache_id].append(batch)
+                self.passed_batches[cache_id][j] = batch
             except Exception as exc:  # pylint: disable=broad-except
                 err = self.generate_error_report(exc, batch)
                 logger.error(err.generate_log_message())
