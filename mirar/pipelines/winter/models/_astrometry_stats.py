@@ -41,6 +41,10 @@ class AstrometryStatsTable(WinterBase):  # pylint: disable=too-few-public-method
     fwhm_med = Column(Float)
     fwhm_std = Column(Float)
     fwhm_pix = Column(Float)
+    astirms1 = Column(Float)
+    astirms2 = Column(Float)
+    astrrms1 = Column(Float)
+    astrrms2 = Column(Float)
 
     ra_column_name = "crval1"
     dec_column_name = "crval2"
@@ -66,7 +70,7 @@ class AstrometryStats(BaseDB):
 
     sql_model: ClassVar = AstrometryStatsTable
 
-    rawid: float = default_unknown_field
+    rawid: int = Field(ge=0)
     crval1: float = ra_field
     crval2: float = dec_field
     crpix1: float = default_unknown_field
@@ -80,6 +84,10 @@ class AstrometryStats(BaseDB):
     fwhm_med: float = default_unknown_field
     fwhm_std: float = default_unknown_field
     fwhm_pix: float = default_unknown_field
+    astirms1: float = default_unknown_field
+    astirms2: float = default_unknown_field
+    astrrms1: float = default_unknown_field
+    astrrms2: float = default_unknown_field
 
     def exists(self) -> bool:
         """
