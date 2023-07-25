@@ -28,6 +28,7 @@ from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_generator,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
+    winter_fourier_filtered_image_generator,
     winter_photometric_catalog_generator,
     winter_refbuild_reference_generator,
     winter_reference_generator,
@@ -367,6 +368,8 @@ flat_cal_all_boards = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
+fourier_filter = [CustomImageModifier(winter_fourier_filtered_image_generator)]
+
 process_stack_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "EXPTIME"]),
@@ -544,6 +547,7 @@ full_commissioning = (
 full_commissioning_proc = (
     dark_cal_all_boards
     + flat_cal_all_boards
+    + fourier_filter
     + process_stack_all_boards
     + photcal_and_export
 )
