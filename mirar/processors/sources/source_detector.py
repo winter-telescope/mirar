@@ -202,7 +202,7 @@ class SourceDetector(BaseSourceGenerator):
                 self.get_sub_output_dir(), image[BASE_NAME_KEY]
             )
             ref_image_path = os.path.join(self.get_sub_output_dir(), image[REF_IMG_KEY])
-            cands_table = self.generate_candidates_table(
+            srcs_table = self.generate_candidates_table(
                 diff=image,
                 scorr_catalog_path=cands_catalog_name,
                 sci_resamp_image_path=sci_image_path,
@@ -212,16 +212,23 @@ class SourceDetector(BaseSourceGenerator):
                 diff_unc_path=diff_unc_path,
             )
 
-            if len(cands_table) > 0:
+            if len(srcs_table) > 0:
                 x_shape, y_shape = image.get_data().shape
-                cands_table["X_SHAPE"] = x_shape
-                cands_table["Y_SHAPE"] = y_shape
+                srcs_table["X_SHAPE"] = x_shape
+                srcs_table["Y_SHAPE"] = y_shape
 
             metadata = {}
 
             for key in core_fields:
                 metadata[key] = image[key]
 
-            all_cands.append(SourceTable(cands_table, metadata=metadata))
+            if len(srcs_table) == 0:
+                msg = f"No sources found in image {image[BASE_NAME_KEY]}"
+                logger.warning(msg)
+
+            else:
+                msg = f"Found {len(srcs_table)} sources in image {image[BASE_NAME_KEY]}"
+                logger.debug(msg)
+                all_cands.append(SourceTable(srcs_table, metadata=metadata))
 
         return all_cands
