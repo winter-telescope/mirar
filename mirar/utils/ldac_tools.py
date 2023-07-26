@@ -105,5 +105,7 @@ def get_table_from_ldac(file_path: str | Path, frame: int = 1) -> astropy.table.
     """
     if frame > 0:
         frame = frame * 2
-    tbl = Table.read(file_path, hdu=frame)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", AstropyWarning)
+        tbl = Table.read(file_path, hdu=frame)
     return tbl
