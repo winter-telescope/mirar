@@ -58,6 +58,9 @@ class SourceTable(DataBlock):
         """
         return self.metadata.keys()
 
+    def __len__(self):
+        return len(self.source_list)
+
 
 class SourceBatch(DataBatch):
     """
