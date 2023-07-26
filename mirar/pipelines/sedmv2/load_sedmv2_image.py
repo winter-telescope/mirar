@@ -22,7 +22,9 @@ from mirar.paths import (
 logger = logging.getLogger(__name__)
 
 
-def clean_science_header(header: fits.Header) -> fits.Header:
+def clean_science_header(
+    header: fits.Header, split_headers: list[fits.Header]
+) -> tuple[fits.Header, list[fits.Header]]:
     """
     function to modify the primary header of an SEDMv2 science file
     :param header: original primary header of science file
@@ -39,9 +41,18 @@ def clean_science_header(header: fits.Header) -> fits.Header:
     header["TELRA"] = header["TELRAD"]
     header["TELDEC"] = header["TELDECD"]
 
-    header.append((GAIN_KEY, 1.0, "Gain in electrons / ADU"), end=True)
-    if header[GAIN_KEY] == 0.0:
+    if GAIN_KEY in header:
+        if header[GAIN_KEY] == 0.0:
+            header[GAIN_KEY] = 1.0
+    else:
         header[GAIN_KEY] = 1.0
+
+    for ext in split_headers:
+        if GAIN_KEY in ext:
+            if ext[GAIN_KEY] == 0.0:
+                ext[GAIN_KEY] = 1.0
+        else:
+            ext[GAIN_KEY] = 1.0
 
     # filters
     header["FILTERID"] = header["FILTER"].split(" ")[1][0]
@@ -57,27 +68,18 @@ def clean_science_header(header: fits.Header) -> fits.Header:
     header["COADDS"] = 1
     # header["BZERO"] = 0
 
-    if isinstance(header["OBJECTID"], str):
+    if not isinstance(header["OBJECTID"], str):
         if "GWLIb" in header["QCOMMENT"]:
-            print("changing OBJ coord in header for GW Lib.")
             header["OBJRAD"] = 229.9802519789
             header["OBJDECD"] = -25.0067323323
-            print("changing OBJECTID in header for GWLib.")
             header["OBJECTID"] = "GWLib"
         elif "SDSSdC11h26m33.94s+04d41m37.61s" in header["QCOMMENT"]:
-            print("changing OBJECTID in header for SDSSdC11h26m33.94s+04d41m37.61s.")
             header["OBJECTID"] = "SDSSdC11h26m33.94s+04d41m37.61s"
-    else:
-        print("Not updating any header info in this image.")
+        elif isinstance(header["QCOMMENT"], str):
+            header["OBJECTID"] = header["QCOMMENT"]
 
     if not "EXPTIME" in header:
         header["EXPTIME"] = header["EXPOSURE"]
-
-    # print("changing OBJ coord in header for Zach's obkect!")
-    # header["OBJRAD"] = 296.13913
-    # header["OBJDECD"] = 45.948832499999995
-    # header["OBJRAD"] = 296.20914375
-    # header["OBJDECD"] = 45.9812411111111
 
     # times
     # orig_dateobs = header["DATE-OBS"]
@@ -91,7 +93,7 @@ def clean_science_header(header: fits.Header) -> fits.Header:
     # header["EXPMJD"] = header["OBSDATE"]
     # header["DATE-OBS"] = header["OBSDATE"]
 
-    return header
+    return header, split_headers
 
 
 def clean_cal_header(
@@ -170,7 +172,8 @@ def load_raw_sedmv2_mef(
         if skip_first:
             split_data = split_data[1:]
             split_headers = split_headers[1:]
-        header = clean_science_header(header)
+
+        header, split_headers = clean_science_header(header, split_headers)
         # reformat UTC values present in split_headers
         # for hdr in split_headers:
         #    orig = hdr["UTC"]

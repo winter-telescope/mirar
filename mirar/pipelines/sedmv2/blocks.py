@@ -5,12 +5,11 @@ lists which are used to build configurations for the
 :class:`~mirar.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
 from mirar.paths import BASE_NAME_KEY, core_fields
-from mirar.pipelines.sedmv2.config import (
+from mirar.pipelines.sedmv2.config import (  # sextractor_reference_config,
     psfex_config_path,
     sedmv2_mask_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
-    sextractor_reference_config,
     swarp_config_path,
 )
 from mirar.pipelines.sedmv2.generator import (
@@ -31,9 +30,8 @@ from mirar.processors.photometry.aperture_photometry import (
     CandidateAperturePhotometry,
     ImageAperturePhotometry,
 )
-from mirar.processors.photometry.psf_photometry import (
+from mirar.processors.photometry.psf_photometry import (  # ImagePSFPhotometry,
     CandidatePSFPhotometry,
-    ImagePSFPhotometry,
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
@@ -148,9 +146,9 @@ image_photometry = [  # imported from wirc/blocks.py
     # ImageSelector(("OBSTYPE", "SCIENCE")),
     ImageDebatcher(),
     ImageAperturePhotometry(
-        aper_diameters=[5, 10],
-        bkg_in_diameters=[6, 11],
-        bkg_out_diameters=[11, 16],
+        aper_diameters=[16, 31],
+        bkg_in_diameters=[19, 34],
+        bkg_out_diameters=[34, 50],
         col_suffix_list=None,  # [""],
         phot_cutout_size=100,
         target_ra_key="OBJRAD",

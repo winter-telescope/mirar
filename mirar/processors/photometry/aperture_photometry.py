@@ -20,6 +20,8 @@ from mirar.processors.photometry.base_photometry import (
     BaseImagePhotometry,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class CandidateAperturePhotometry(BaseCandidatePhotometry):
     """
@@ -135,7 +137,8 @@ class ImageAperturePhotometry(BaseImagePhotometry):
                 image_cutout,
             )
             np.savetxt(
-                f"{cutout_dir}{unc_imagename.name.replace('.fits.unc', '_unc_cutout.txt')}",
+                f"{cutout_dir}{unc_imagename.name.replace('.fits.unc',\
+                                                          '_unc_cutout.txt')}",
                 unc_image_cutout,
             )
 
@@ -144,13 +147,16 @@ class ImageAperturePhotometry(BaseImagePhotometry):
             )
 
             for ind, flux in enumerate(fluxes):
-                fluxunc = fluxuncs[ind]
-                suffix = self.col_suffix_list[ind]
-                image[f"fluxap{suffix}"] = flux
-                image[f"fluxunc{suffix}"] = fluxunc
-                image[f"magap{suffix}"] = float(
-                    image[self.zp_colname]
-                ) - 2.5 * np.log10(flux)
-                image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
+                try:
+                    fluxunc = fluxuncs[ind]
+                    suffix = self.col_suffix_list[ind]
+                    image[f"fluxap{suffix}"] = flux
+                    image[f"fluxunc{suffix}"] = fluxunc
+                    image[f"magap{suffix}"] = float(
+                        image[self.zp_colname]
+                    ) - 2.5 * np.log10(flux)
+                    image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
+                except ValueError:
+                    logger.error(f"Aperture photometry failed on: {imagename=}")
 
         return batch
