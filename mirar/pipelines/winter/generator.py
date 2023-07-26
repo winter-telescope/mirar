@@ -10,13 +10,14 @@ from astropy.table import Table
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.vizier import PS1
 from mirar.data import Image
-from mirar.paths import get_output_dir
+from mirar.paths import SATURATE_KEY, get_output_dir
 from mirar.pipelines.winter.config import (
     psfex_path,
     sextractor_reference_config,
     swarp_config_path,
 )
 from mirar.pipelines.winter.constants import winter_filters_map
+from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
 from mirar.pipelines.winter.models import RefComponents, RefQueries, RefStacks
 from mirar.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from mirar.processors.astromatic import PSFex
@@ -294,3 +295,29 @@ def winter_refbuild_reference_generator(image: Image):
         skip_online_query=False,
         stack_id_generator=winter_reference_stackid_generator,
     )
+
+
+def winter_fourier_filtered_image_generator(image: Image) -> Image:
+    """
+    Generates a fourier filtered image for the winter data
+    """
+    # First, set the nans in the raw_data to the median value
+    raw_data = image.get_data()
+    replace_value = np.nanmedian(raw_data)  # 0.0
+
+    mask = image.get_mask()  # 0 is masked, 1 is unmasked
+
+    raw_data[~mask] = replace_value
+
+    filtered_data, sky_model = subtract_fourier_background_model(raw_data)
+
+    # mask the data back
+    filtered_data[~mask] = np.nan
+
+    image.set_data(filtered_data)
+
+    # Update the header
+    image.header["MEDCOUNT"] = np.nanmedian(filtered_data)
+    image.header[SATURATE_KEY] -= np.nanmedian(sky_model)
+
+    return image
