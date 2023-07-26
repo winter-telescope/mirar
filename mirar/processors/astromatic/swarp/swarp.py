@@ -165,7 +165,7 @@ class Swarp(BaseImageProcessor):
     ) -> ImageBatch:
         basenames = [x[BASE_NAME_KEY] for x in batch]
         sort_inds = np.argsort(basenames)
-        batch = [batch[i] for i in sort_inds]
+        batch = ImageBatch([batch[i] for i in sort_inds])
 
         swarp_output_dir = self.get_swarp_output_dir()
         swarp_output_dir.mkdir(parents=True, exist_ok=True)
