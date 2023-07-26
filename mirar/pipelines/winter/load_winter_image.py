@@ -23,6 +23,7 @@ from mirar.paths import (
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    SATURATE_KEY,
 )
 from mirar.pipelines.winter.constants import (
     imgtype_dict,
@@ -44,6 +45,7 @@ def clean_header(header: fits.Header) -> fits.Header:
     :return: Updated header
     """
     header[GAIN_KEY] = 1.0
+    header[SATURATE_KEY] = 40000.0
     header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
 
     date_t = Time(header["UTCTIME"])
@@ -54,6 +56,9 @@ def clean_header(header: fits.Header) -> fits.Header:
     header[OBSCLASS_KEY] = ["science", "calibration"][
         header["OBSTYPE"] in ["DARK", "FLAT"]
     ]
+
+    if header["EXPTIME"] == 0.0:
+        header["OBSTYPE"] = "BIAS"
 
     if header["OBSTYPE"] == "DARK":
         sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
@@ -181,6 +186,9 @@ def load_stacked_winter_image(
 def load_test_winter_image(
     path: str | Path,
 ) -> Image:
+    """
+    Load test WINTER image
+    """
     image = open_raw_image(path)
     header = clean_header(image.header)
     image.set_header(header)
