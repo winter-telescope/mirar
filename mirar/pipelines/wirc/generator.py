@@ -62,12 +62,7 @@ def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     """
     filter_name = image["FILTER"]
     return Gaia2Mass(
-        min_mag=10,
-        max_mag=20,
-        search_radius_arcmin=10,
-        filter_name=filter_name,
-        acceptable_h_ph_quals=["A"],
-        acceptable_k_ph_quals=["A"],
+        min_mag=10, max_mag=20, search_radius_arcmin=10, filter_name=filter_name
     )
 
 

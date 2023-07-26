@@ -11,16 +11,16 @@ CATALOG_TYPE     FITS_LDAC     # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
 #------------------------------- Extraction ----------------------------------
  
 DETECT_TYPE      CCD            # CCD (linear) or PHOTO (with gamma correction)
-DETECT_MINAREA   10              # minimum number of pixels above threshold
+DETECT_MINAREA   3              # minimum number of pixels above threshold
 THRESH_TYPE	 RELATIVE	# threshold type: RELATIVE (in sigmas) or ABSOLUTE (in ADUs)
 
-DETECT_THRESH    5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
-ANALYSIS_THRESH  5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+DETECT_THRESH    3            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+ANALYSIS_THRESH  3            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
  
 FILTER           Y              # apply filter for detection (Y or N)?
 
-DEBLEND_NTHRESH  16             # Number of deblending sub-thresholds
-DEBLEND_MINCONT  1e-4          # Minimum contrast parameter for deblending
+DEBLEND_NTHRESH  32             # Number of deblending sub-thresholds
+DEBLEND_MINCONT  0.005          # Minimum contrast parameter for deblending
  
 CLEAN            Y              # Clean spurious detections? (Y or N)?
 CLEAN_PARAM      1.0            # Cleaning efficiency
@@ -39,17 +39,16 @@ WEIGHT_THRESH                   # weight threshold[s] for bad pixels
  
 #------------------------------ Photometry -----------------------------------
 
-PHOT_APERTURES   4.0, 6.0, 8.0, 10.0           # MAG_APER aperture diameter(s) in pixels
+PHOT_APERTURES   4.0           # MAG_APER aperture diameter(s) in pixels
 PHOT_FLUXFRAC    0.5        # flux fraction[s] used for FLUX_RADIUS
 PHOT_AUTOPARAMS  1.0,2.0                        # MAG_AUTO parameters: <Kron_fact>,<min_radius>
 PHOT_PETROPARAMS 1.0,2.0                        # MAG_PETRO parameters: <Petrosian_fact>,
 
 SATUR_KEY        SATURATE       # keyword for saturation level (in ADUs)
-SATUR_LEVEL      60000        # level (in ADUs) at which arises saturation
- 
+
 MAG_ZEROPOINT    0            # magnitude zero-point
 MAG_GAMMA        4.0            # gamma of emulsion (for photographic scans)
-GAIN             1.6         # detector gain in e-/ADU
+GAIN             1.0         # detector gain in e-/ADU
 
 PIXEL_SCALE      0           # size of pixel in arcsec (0=use FITS WCS info)
  
@@ -59,7 +58,7 @@ SEEING_FWHM      2            # stellar FWHM in arcsec
 
 #------------------------------ Background -----------------------------------
  
-BACK_SIZE        256             # Background mesh: <size> or <width>,<height>
+BACK_SIZE        128             # Background mesh: <size> or <width>,<height>
 BACK_FILTERSIZE  6              # Background filter: <size> or <width>,<height>
  
 BACK_TYPE        AUTO           # AUTO or MANUAL

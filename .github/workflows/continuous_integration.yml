@@ -54,6 +54,10 @@ jobs:
         shell: bash -el {0}
         run: |
           conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
+          swarp -v
+          scamp -v
+          sex -v
+          solve-field --version
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
           poetry install

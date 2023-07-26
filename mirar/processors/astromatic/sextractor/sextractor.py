@@ -8,9 +8,12 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
-from mirar.data import ImageBatch
+from astropy.io import fits
+from astropy.table import Table
+
+from mirar.data import Image, ImageBatch
 from mirar.data.utils.coords import write_regions_file
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -23,7 +26,7 @@ from mirar.processors.astromatic.sextractor.sourceextractor import (
     run_sextractor_single,
 )
 from mirar.processors.base_processor import BaseImageProcessor
-from mirar.utils.ldac_tools import get_table_from_ldac
+from mirar.utils.ldac_tools import convert_table_to_ldac, get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +64,7 @@ class Sextractor(BaseImageProcessor):
         cache: bool = False,
         mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
+        catalog_purifier: Callable[[Table, Image], Table] = None,
     ):
         """
         :param output_sub_dir: subdirectory to output sextractor files
@@ -78,6 +82,8 @@ class Sextractor(BaseImageProcessor):
         :param cache: whether to cache sextractor output
         :param mag_zp: magnitude zero point for sextractor. Leave to None if not known.
         :param write_regions_bool: whether to write regions file for ds9
+        :param catalog_purifier: If not None, will apply this function to the
+        Sextractor catalog before saving
         """
         # pylint: disable=too-many-arguments
         super().__init__()
@@ -95,6 +101,7 @@ class Sextractor(BaseImageProcessor):
         self.cache = cache
         self.mag_zp = mag_zp
         self.write_regions = write_regions_bool
+        self.catalog_purifier = catalog_purifier
 
     def __str__(self) -> str:
         return (
@@ -180,6 +187,14 @@ class Sextractor(BaseImageProcessor):
                 for temp_file in temp_files:
                     os.remove(temp_file)
                     logger.debug(f"Deleted temporary file {temp_file}")
+
+            if self.catalog_purifier is not None:
+                output_catalog = get_table_from_ldac(output_cat)
+                clean_catalog = self.catalog_purifier(output_catalog, image)
+                clean_hdu = convert_table_to_ldac(clean_catalog)
+                with fits.open(output_cat, memmap=False) as hdul:
+                    clean_hdulist = fits.HDUList([hdul[0], hdul[1], clean_hdu[2]])
+                    clean_hdulist.writeto(output_cat, overwrite=True)
 
             if self.write_regions:
                 output_catalog = get_table_from_ldac(output_cat)

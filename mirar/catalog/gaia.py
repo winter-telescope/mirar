@@ -102,8 +102,8 @@ class Gaia2Mass(BaseCatalog):
         logger.debug(f"Found {len(src_list)} sources in Gaia")
 
         j_phquals = [x[0] for x in src_list["ph_qual"]]
-        h_phquals = [x[0] for x in src_list["ph_qual"]]
-        k_phquals = [x[0] for x in src_list["ph_qual"]]
+        h_phquals = [x[1] for x in src_list["ph_qual"]]
+        k_phquals = [x[2] for x in src_list["ph_qual"]]
 
         j_phmask = np.array([x in self.acceptable_ph_quals["j"] for x in j_phquals])
         h_phmask = np.array([x in self.acceptable_ph_quals["h"] for x in h_phquals])

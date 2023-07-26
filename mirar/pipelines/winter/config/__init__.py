@@ -10,12 +10,16 @@ PIPELINE_NAME = "winter"
 winter_file_dir = Path(__file__).parent.joinpath("files")
 
 sextractor_astrometry_config = {
-    "config_path": winter_file_dir.joinpath("photomCat.sex"),
+    "config_path": winter_file_dir.joinpath("astrom.sex"),
     "filter_path": winter_file_dir.joinpath("default.conv"),
     "parameter_path": winter_file_dir.joinpath("astrom.param"),
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
+sextractor_astromstats_config = sextractor_astrometry_config
+sextractor_astromstats_config["parameter_path"] = winter_file_dir.joinpath(
+    "astromstats.param"
+)
 
 sextractor_photometry_config = {
     "config_path": winter_file_dir.joinpath("photomCat.sex"),
@@ -27,13 +31,6 @@ sextractor_photometry_config = {
 
 sextractor_anet_config = {
     "config_path": winter_file_dir.joinpath("astrom_anet.sex"),
-    "filter_path": winter_file_dir.joinpath("default.conv"),
-    "parameter_path": winter_file_dir.joinpath("astrom.param"),
-    "starnnw_path": winter_file_dir.joinpath("default.nnw"),
-}
-
-sextractor_autoastrometry_config = {
-    "config_path": winter_file_dir.joinpath("astrom.sex"),
     "filter_path": winter_file_dir.joinpath("default.conv"),
     "parameter_path": winter_file_dir.joinpath("astrom.param"),
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
@@ -54,7 +51,7 @@ sextractor_candidate_config = {
 }
 
 swarp_config_path = winter_file_dir.joinpath("config.swarp")
-scamp_config_path = winter_file_dir.joinpath("scamp.conf")
+scamp_config_path = winter_file_dir.joinpath("astrom.scamp")
 winter_mask_path = winter_file_dir.joinpath("winter_mask.fits")
 
 winter_candidate_config = winter_file_dir.joinpath("candidates.sql")

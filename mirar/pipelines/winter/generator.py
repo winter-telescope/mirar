@@ -154,13 +154,23 @@ def ref_sextractor(image: Image):
     )
 
 
-def winter_astrometric_catalog_generator(_) -> Gaia2Mass:
+def winter_astrometric_ref_catalog_generator(_) -> Gaia2Mass:
     """
-    Function to crossmatch WIRC to GAIA/2mass for astrometry
+    Function to generate a reference catalog for WINTER astrometry
 
     :return: catalogue
     """
-    return Gaia2Mass(min_mag=10, max_mag=20, search_radius_arcmin=15)
+    return Gaia2Mass(min_mag=7, max_mag=20, search_radius_arcmin=20)
+
+
+def winter_astrometry_sextractor_catalog_purifier(catalog: Table, _) -> Table:
+    """
+    Function to purify the Sextractor catalog for WINTER astrometry
+    """
+    clean_catalog = catalog[
+        (catalog["FLAGS"] == 0) & (catalog["FWHM_IMAGE"] > 0) & (catalog["SNR_WIN"] > 0)
+    ]
+    return clean_catalog
 
 
 def winter_stackid_annotator(image: Image) -> Image:
