@@ -57,6 +57,7 @@ jobs:
           swarp -v
           scamp -v
           sex -v
+          solve-field --version
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
           poetry install
