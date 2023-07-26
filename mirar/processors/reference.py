@@ -90,10 +90,8 @@ class ProcessReference(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-        try:
-            os.makedirs(self.get_sub_output_dir())
-        except OSError:
-            pass
+        output_dir = self.get_sub_output_dir()
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         new_batch = ImageBatch()
 
@@ -149,9 +147,7 @@ class ProcessReference(BaseImageProcessor):
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
             resampled_ref_img = ref_resampler.apply(ImageBatch(ref_image))[0]
 
-            resampled_ref_path = os.path.join(
-                self.get_sub_output_dir(), resampled_ref_img.get_name()
-            )
+            resampled_ref_path = output_dir.joinpath(resampled_ref_img.get_name())
             self.save_fits(resampled_ref_img, resampled_ref_path)
 
             (
