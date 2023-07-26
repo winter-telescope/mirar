@@ -19,6 +19,7 @@ from mirar.pipelines.winter.blocks import (
     load_stack,
     load_test,
     only_ref,
+    photcal,
     realtime,
     reduce,
     refbuild,
@@ -58,6 +59,7 @@ class WINTERPipeline(Pipeline):
         "realtime": realtime,
         "test": load_test + realtime,
         "buildtest": build_test,
+        "photcal": photcal,
     }
 
     non_linear_level = 65535

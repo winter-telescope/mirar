@@ -48,7 +48,7 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import ProcessReference
-from mirar.processors.sources import DataframeWriter
+from mirar.processors.sources import JsonSourceWriter
 from mirar.processors.sources.source_detector import SourceDetector
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
@@ -255,7 +255,7 @@ extract_candidates = [
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    DataframeWriter(output_dir_name="candidates"),
+    JsonSourceWriter(output_dir_name="candidates"),
 ]
 
 imsub = subtract + export_diff_to_db + extract_candidates  # FIXME

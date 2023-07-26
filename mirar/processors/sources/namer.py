@@ -107,7 +107,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseSourceProcessor):
             last_name_letters = last_name[len(self.base_name) + 2 :]
             new_name_letters = self.increment_string(last_name_letters)
             name = self.base_name + str(cand_year) + new_name_letters
-        logger.debug(name)
+        logger.debug(f"Assigning name: {name}")
         return name
 
     def is_detected_previously(self, ra_deg: float, dec_deg: float) -> tuple[bool, str]:
@@ -127,7 +127,6 @@ class CandidateNamer(BaseDatabaseProcessor, BaseSourceProcessor):
             dec=dec_deg,
             crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
         )  # [0]
-        logger.info(name)
         return len(name) > 0, name
 
     def _apply_to_sources(
