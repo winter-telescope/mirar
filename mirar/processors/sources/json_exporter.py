@@ -88,6 +88,6 @@ class JsonSourceWriter(BaseSourceProcessor):
 
             logger.debug(f"Writing dataframe to {json_path}")
 
-            save_source_table_to_json(source_table, json_path)
+            save_source_table_to_json(source_list, json_path)
 
         return batch
