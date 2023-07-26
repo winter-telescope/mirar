@@ -167,12 +167,7 @@ class AstrometryNet(BaseImageProcessor):
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         anet_out_dir = self.get_anet_output_dir()
         cache = False
-
-        try:
-            os.makedirs(anet_out_dir)
-        except OSError:
-            pass
-        temp_files, sextractor_temp_files = [], []
+        anet_out_dir.mkdir(parents=True, exist_ok=True)
 
         # Ensure that if a source-extractor config file is provided, it has the
         # correct PARAMETERS_NAME, FILTER_NAME and STARNNW_NAME.
@@ -224,16 +219,19 @@ class AstrometryNet(BaseImageProcessor):
                 coords_file = anet_out_dir.joinpath(
                     image[BASE_NAME_KEY].replace(".fits", ".axy")
                 )
-                regions_path = anet_out_dir.joinpath(image[BASE_NAME_KEY] + ".reg")
-                logger.debug(f"Loading coords from {coords_file}")
-                with fits.open(coords_file) as hdul:
-                    coords_table = Table(hdul[1].data)  # pylint: disable=no-member
-                    write_regions_file(
-                        regions_path=regions_path,
-                        x_coords=coords_table[self.x_image_key],
-                        y_coords=coords_table[self.y_image_key],
-                        system="image",
-                    )
+                if not coords_file.exists():
+                    logger.warning(f"Failed to find coords file {coords_file}")
+                else:
+                    regions_path = anet_out_dir.joinpath(image[BASE_NAME_KEY] + ".reg")
+                    logger.debug(f"Loading coords from {coords_file}")
+                    with fits.open(coords_file) as hdul:
+                        coords_table = Table(hdul[1].data)  # pylint: disable=no-member
+                        write_regions_file(
+                            regions_path=regions_path,
+                            x_coords=coords_table[self.x_image_key],
+                            y_coords=coords_table[self.y_image_key],
+                            system="image",
+                        )
 
             if not new_img_path.exists():
                 raise AstrometryNetError(
