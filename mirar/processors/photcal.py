@@ -2,7 +2,6 @@
 Module for running photometric calibration
 """
 import logging
-import os
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -151,7 +150,11 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         if len(matched_img_cat) < self.num_matches_threshold:
             err = (
                 "Not enough cross-matched sources "
-                "found to calculate a reliable zeropoint."
+                "found to calculate a reliable zeropoint. "
+                f"Only found {len(matched_img_cat)} crossmatches, "
+                f"while {self.num_matches_threshold} are required. "
+                f"Used {len(ref_cat)} reference sources and "
+                f"{len(clean_img_cat)} image sources."
             )
             logger.error(err)
             raise PhotometryCrossMatchError(err)
@@ -217,11 +220,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         batch: ImageBatch,
     ) -> ImageBatch:
         phot_output_dir = self.get_phot_output_dir()
-
-        try:
-            os.makedirs(phot_output_dir)
-        except OSError:
-            pass
+        phot_output_dir.mkdir(parents=True, exist_ok=True)
 
         for image in batch:
             ref_cat, _, cleaned_img_cat = self.setup_catalogs(image)
@@ -238,15 +237,24 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                     value = -999.0
                 image.header[key] = value
 
-            if len(ref_cat) == 0:
-                err = "No sources found in reference catalog"
+            if len(ref_cat) < self.num_matches_threshold:
+                err = (
+                    f"Not enough sources ({len(ref_cat)} found in reference catalog "
+                    f"to calculate a reliable zeropoint. "
+                    f"Require at least {self.num_matches_threshold} matches."
+                )
                 logger.error(err)
                 raise PhotometryReferenceError(err)
 
             logger.debug(f"Found {len(cleaned_img_cat)} clean sources in image.")
 
-            if len(cleaned_img_cat) == 0:
-                err = "No clean sources found in image"
+            if len(cleaned_img_cat) < self.num_matches_threshold:
+                err = (
+                    f"Not enough sources ({len(cleaned_img_cat)} "
+                    f"found in source catalog "
+                    f"to calculate a reliable zeropoint. "
+                    f"Require at least {self.num_matches_threshold} matches."
+                )
                 logger.error(err)
                 raise PhotometrySourceError(err)
 

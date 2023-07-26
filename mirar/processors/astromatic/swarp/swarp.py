@@ -238,7 +238,9 @@ class Swarp(BaseImageProcessor):
                     | (self.center_ra is None)
                     | (self.center_dec is None)
                 ):
-                    wcs = WCS(image.get_header())
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", AstropyWarning)
+                        wcs = WCS(image.get_header())
 
                     cd11 = image["CD1_1"]
                     cd21 = image["CD2_1"]
