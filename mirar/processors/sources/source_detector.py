@@ -219,8 +219,9 @@ class SourceDetector(BaseSourceGenerator):
 
             metadata = {}
 
-            for key in core_fields:
-                metadata[key] = image[key]
+            for key in image.keys():
+                if key != "COMMENT":
+                    metadata[key] = image[key]
 
             if len(srcs_table) == 0:
                 msg = f"No sources found in image {image[BASE_NAME_KEY]}"

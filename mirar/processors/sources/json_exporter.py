@@ -1,8 +1,8 @@
 """
 Module with classes to write a candidate table to a pandas dataframe
 """
+import json
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -12,13 +12,16 @@ from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
+SOURCE_SUFFIX = ".sources.json"
+METADATA_SUFFIX = ".metadata.json"
 
-class DataframeWriter(BaseSourceProcessor):
+
+class JsonSourceWriter(BaseSourceProcessor):
     """
-    Class to write a candidate table to a pandas dataframe
+    Class to write a source table to a pair of json files
     """
 
-    base_key = "DFWRITE"
+    base_key = "JSONWRITE"
 
     def __init__(
         self,
@@ -46,9 +49,11 @@ class DataframeWriter(BaseSourceProcessor):
         output_dir.mkdir(parents=True, exist_ok=True)
 
         for source_list in batch:
-            candidate_table = source_list.get_data()
-            df_basepath = Path(candidate_table.loc[0]["diffimname"]).with_suffix(
-                ".candidates.json"
+            # Export sources
+            source_table = source_list.get_data()
+            assert len(source_table) > 0, "Candidate table is empty"
+            df_basepath = Path(source_table.loc[0]["diffimname"]).with_suffix(
+                SOURCE_SUFFIX
             )
             df_path = get_output_path(
                 df_basepath.name,
@@ -57,6 +62,21 @@ class DataframeWriter(BaseSourceProcessor):
                 output_dir=self.output_dir,
             )
             logger.debug(f"Writing dataframe to {df_path}")
-            candidate_table.to_json(df_path)
+            source_table.to_json(df_path)
+
+            # Export metadata
+            source_metadata = source_list.get_metadata()
+            metadata_basepath = Path(source_table.loc[0]["diffimname"]).with_suffix(
+                METADATA_SUFFIX
+            )
+            metadata_path = get_output_path(
+                metadata_basepath.name,
+                dir_root=self.output_dir_name,
+                sub_dir=self.night_sub_dir,
+                output_dir=self.output_dir,
+            )
+            logger.debug(f"Writing metadata to {metadata_path}")
+            with open(metadata_path, "w", encoding="utf8") as metadata_f:
+                json.dump(source_metadata, metadata_f)
 
         return batch

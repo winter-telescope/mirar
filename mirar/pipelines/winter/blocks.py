@@ -73,7 +73,7 @@ from mirar.processors.photometry.aperture_photometry import CandidateAperturePho
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
-from mirar.processors.sources import CandidateNamer, DataframeWriter, SourceDetector
+from mirar.processors.sources import CandidateNamer, JsonSourceWriter, SourceDetector
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
     DatabaseImageBatchExporter,
@@ -342,7 +342,7 @@ select_subset = [
     ImageSelector(
         ("EXPTIME", "120.0"),
         ("FIELDID", ["3944", "999999999"]),
-        ("BOARD_ID", str(BOARD_ID)),
+        # ("BOARD_ID", str(BOARD_ID)),
         ("FILTER", ["dark", "J"]),
     ),
 ]
@@ -387,23 +387,23 @@ dark_cal_all_boards = [
     ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
     DarkCalibrator(cache_sub_dir="calibration"),
     ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    ImageSaver(output_dir_name="darkcal"),
+    # ImageSaver(output_dir_name="darkcal"),
     ImageDebatcher(),
 ]
 
 flat_cal_all_boards = [
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(cache_sub_dir="skycals"),
-    ImageSaver(output_dir_name="skyflatcal"),
+    # ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD", TARGET_KEY]),
     NightSkyMedianCalibrator(),
-    ImageSaver(output_dir_name="skysub"),
+    # ImageSaver(output_dir_name="skysub"),
 ]
 
 process_stack_all_boards = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "EXPTIME"]),
-    ImageSaver(output_dir_name="pre_anet"),
+    # ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[15, 23],
@@ -414,7 +414,7 @@ process_stack_all_boards = [
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
     ),
-    ImageSaver(output_dir_name="post_anet"),
+    # ImageSaver(output_dir_name="post_anet"),
     Sextractor(
         **sextractor_autoastrometry_config,
         write_regions_bool=True,
@@ -428,7 +428,7 @@ process_stack_all_boards = [
         crossmatch_radius_arcsec=5.0,
     ),
     DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
-    ImageSaver(output_dir_name="anet"),
+    # ImageSaver(output_dir_name="anet"),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     Swarp(
@@ -489,9 +489,9 @@ imsub = [
     ),
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
-    ImageSaver(output_dir_name="presubtract"),
+    # ImageSaver(output_dir_name="presubtract"),
     ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
-    ImageSaver(output_dir_name="prezogy"),
+    # ImageSaver(output_dir_name="prezogy"),
     ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
     ImageSaver(output_dir_name="diffs"),
 ]
@@ -505,7 +505,7 @@ detect_candidates = [
 candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
 process_candidates = [
-    DataframeWriter(output_dir_name="candidates"),
+    JsonSourceWriter(output_dir_name="candidates"),
     CandidatePSFPhotometry(
         zp_colname="ZP",
     ),
@@ -517,10 +517,10 @@ process_candidates = [
         col_suffix_list=["", "big"],
         zp_colname="ZP",
     ),
-    DataframeWriter(output_dir_name="candidates"),
+    JsonSourceWriter(output_dir_name="candidates"),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
-    DataframeWriter(output_dir_name="kowalski"),
+    JsonSourceWriter(output_dir_name="kowalski"),
     DatabaseHistoryImporter(
         crossmatch_radius_arcsec=2.0,
         time_field_name="jd",
@@ -564,6 +564,8 @@ full_commissioning_proc = (
     + process_stack_all_boards
     + photcal_and_export
 )
+
+photcal = [ImageLoader(input_sub_dir="stack")] + photcal_and_export
 
 full_commissioning_all_boards = load_unpacked + full_commissioning_proc
 
