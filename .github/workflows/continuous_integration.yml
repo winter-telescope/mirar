@@ -65,9 +65,9 @@ jobs:
       # Set up astrometry.net
       - name: astrometry.net index files
         run: |
-          curl -o /usr/share/miniconda/envs/test/data/index-4205-03.fits http://broiler.astrometry.net/~dstn/4200/index-4205-03.fits
-          curl -o /usr/share/miniconda/envs/test/data/index-4204-13.fits http://broiler.astrometry.net/~dstn/4200/index-4204-13.fits
-          curl -o /usr/share/miniconda/envs/test/data/index-4203-13.fits http://broiler.astrometry.net/~dstn/4200/index-4203-13.fits
+          curl -o /usr/share/miniconda/envs/test/data/index-5201-04.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5201-04.fits
+          curl -o /usr/share/miniconda/envs/test/data/index-5204-13.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5204-13.fits
+          curl -o /usr/share/miniconda/envs/test/data/index-5205-13.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5205-13.fits
 
       # Set up database
       - name: postgres
