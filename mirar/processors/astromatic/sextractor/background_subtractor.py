@@ -1,3 +1,6 @@
+"""
+Module for subtracting the background from an image using Sextractor
+"""
 from pathlib import Path
 
 import numpy as np

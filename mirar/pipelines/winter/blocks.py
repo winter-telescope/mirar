@@ -54,11 +54,13 @@ from mirar.pipelines.winter.models import (
 )
 from mirar.processors.alerts import AvroPacketMaker
 from mirar.processors.astromatic import PSFex, Scamp
+from mirar.processors.astromatic.sextractor.background_subtractor import (
+    SextractorBkgSubtractor,
+)
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
-from mirar.processors.background import SextractorBkgSubtractor
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_exporter import DatabaseDataframeExporter
