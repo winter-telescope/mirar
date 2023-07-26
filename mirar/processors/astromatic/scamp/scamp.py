@@ -106,7 +106,7 @@ class Scamp(BaseImageProcessor):
         scamp_config_path: str,
         temp_output_sub_dir: str = "scamp",
         cache: bool = False,
-        copy_scamp_header_to_image: bool = True,
+        copy_scamp_header_to_image: bool = False,
     ):
         super().__init__()
         self.scamp_config = scamp_config_path
