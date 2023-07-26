@@ -135,6 +135,10 @@ class Scamp(BaseImageProcessor):
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+        basenames = [x[BASE_NAME_KEY] for x in batch]
+        sort_inds = np.argsort(basenames)
+        batch = ImageBatch([batch[i] for i in sort_inds])
+
         scamp_output_dir = self.get_scamp_output_dir()
         scamp_output_dir.mkdir(parents=True, exist_ok=True)
 
