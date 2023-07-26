@@ -38,6 +38,7 @@ sextractor_checkimg_map = {
     "MINIBACKGROUND": "MINIBKG",
     "MINIBACK_RMS": "MINIBGRM",
     "SEGMENTATION": "SEGMAP",
+    "-BACKGROUND": "BKGSUB",
 }
 
 
@@ -102,6 +103,11 @@ class Sextractor(BaseImageProcessor):
         self.mag_zp = mag_zp
         self.write_regions = write_regions_bool
         self.catalog_purifier = catalog_purifier
+
+        if isinstance(self.checkimage_name, str):
+            self.checkimage_name = [self.checkimage_name]
+        if isinstance(self.checkimage_type, str):
+            self.checkimage_type = [self.checkimage_type]
 
     def __str__(self) -> str:
         return (
@@ -217,8 +223,6 @@ class Sextractor(BaseImageProcessor):
             ).as_posix()
 
             if len(checkimage_name) > 0:
-                if isinstance(self.checkimage_type, str):
-                    self.checkimage_type = [self.checkimage_type]
                 for i, checkimg_type in enumerate(self.checkimage_type):
                     image[sextractor_checkimg_map[checkimg_type]] = checkimage_name[i]
 

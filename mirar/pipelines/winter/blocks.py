@@ -54,6 +54,9 @@ from mirar.pipelines.winter.models import (
 )
 from mirar.processors.alerts import AvroPacketMaker
 from mirar.processors.astromatic import PSFex, Scamp
+from mirar.processors.astromatic.sextractor.background_subtractor import (
+    SextractorBkgSubtractor,
+)
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
@@ -299,8 +302,8 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 select_subset = [
     ImageSelector(
         ("EXPTIME", "120.0"),
-        ("FIELDID", ["3944", "999999999"]),
-        # ("BOARD_ID", str(BOARD_ID)),
+        ("FIELDID", ["3944", "999999999", "6124"]),
+        ("BOARD_ID", str(BOARD_ID)),
         ("FILTER", ["dark", "J"]),
     ),
 ]
@@ -353,9 +356,15 @@ flat_cal_all_boards = [
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
     SkyFlatCalibrator(cache_sub_dir="skycals"),
     # ImageSaver(output_dir_name="skyflatcal"),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD", TARGET_KEY]),
-    NightSkyMedianCalibrator(),
-    # ImageSaver(output_dir_name="skysub"),
+    ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="skysub",
+        checkimage_type=["-BACKGROUND"],
+    ),
+    SextractorBkgSubtractor(),
+    ImageSaver(output_dir_name="skysub"),
 ]
 
 process_stack_all_boards = [
@@ -553,6 +562,8 @@ reftest = (
     + select_ref
     + refbuild
 )
+
+detrend_all_boards = load_unpacked + dark_cal_all_boards + flat_cal_all_boards
 
 only_ref = load_ref + select_ref + refbuild
 
