@@ -81,7 +81,7 @@ class AvroPacketMaker(BaseSourceProcessor):
                         # change to native python type
                         candidate[key] = candidate_df.iloc[i].get(key).item()
                 except AttributeError:  # for IOBytes objs
-                    candidate[key] = candidate_df.iloc[i].get(key).getvalue()
+                    candidate[key] = candidate_df.iloc[i].get(key)
             all_candidates.append(candidate)
 
         return all_candidates
