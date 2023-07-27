@@ -11,7 +11,7 @@ import pandas as pd
 from astropy.io import fits
 
 from mirar.data import Image, ImageBatch, SourceBatch, SourceTable
-from mirar.data.utils.coords import makebitims
+from mirar.data.utils import encode_img
 from mirar.paths import (
     BASE_NAME_KEY,
     CAND_DEC_KEY,
@@ -23,7 +23,6 @@ from mirar.paths import (
     XPOS_KEY,
     YPOS_KEY,
     ZP_KEY,
-    core_fields,
     get_output_dir,
 )
 from mirar.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
@@ -93,6 +92,7 @@ class SourceDetector(BaseSourceGenerator):
         :return:
         """
         det_srcs = get_table_from_ldac(scorr_catalog_path)
+        det_srcs = det_srcs.to_pandas()
 
         diff_path = diff[LATEST_SAVE_KEY]
 
@@ -115,8 +115,8 @@ class SourceDetector(BaseSourceGenerator):
         display_ref_ims = []
         display_diff_ims = []
 
-        for ind, _ in enumerate(det_srcs):
-            xpeak, ypeak = int(xpeaks[ind]), int(ypeaks[ind])
+        for _, row in det_srcs.iterrows():
+            xpeak, ypeak = int(row["xpeak"]), int(row["ypeak"])
 
             display_sci_cutout, display_ref_cutout, display_diff_cutout = make_cutouts(
                 [sci_resamp_image_path, ref_resamp_image_path, diff_path],
@@ -124,9 +124,9 @@ class SourceDetector(BaseSourceGenerator):
                 cutout_size_display,
             )
 
-            display_sci_bit = makebitims(display_sci_cutout.astype(np.float32))
-            display_ref_bit = makebitims(display_ref_cutout.astype(np.float32))
-            display_diff_bit = makebitims(display_diff_cutout.astype(np.float32))
+            display_sci_bit = encode_img(display_sci_cutout)
+            display_ref_bit = encode_img(display_ref_cutout)
+            display_diff_bit = encode_img(display_diff_cutout)
 
             display_sci_ims.append(display_sci_bit)
             display_ref_ims.append(display_ref_bit)
@@ -166,7 +166,6 @@ class SourceDetector(BaseSourceGenerator):
         ) * 10000 + np.arange(len(det_srcs))
         det_srcs["diffmaglim"] = diff["DIFFMLIM"]
         det_srcs["isdiffpos"] = 1
-        det_srcs = det_srcs.to_pandas()
 
         logger.debug(det_srcs["diffmaglim"])
 
