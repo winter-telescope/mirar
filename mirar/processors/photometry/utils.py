@@ -2,13 +2,14 @@
 Module with utis for photometry
 """
 import logging
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from matplotlib.patches import Circle
-from photutils import CircularAnnulus, CircularAperture, aperture_photometry
+from photutils.aperture import CircularAnnulus, CircularAperture, aperture_photometry
 
 from mirar.data import Image
 from mirar.paths import GAIN_KEY
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def make_cutouts(
-    image_paths: str | list[str], position: tuple, half_size: int
+    image_paths: Path | list[Path], position: tuple, half_size: int
 ) -> list[np.array]:
     """
     Function to make cutouts
@@ -129,9 +130,9 @@ def psf_photometry(
     best_fit_psf_fluxunc = psf_flux_uncs[minchi2_ind]
 
     best_fit_psfmodel = psfmodels[:, :, minchi2_ind]
-    ys, xs = np.where(best_fit_psfmodel == np.max(best_fit_psfmodel))
-    yshift = ys[0] - 6
-    xshift = xs[0] - 6
+    ys_cen, xs_cen = np.where(best_fit_psfmodel == np.max(best_fit_psfmodel))
+    yshift = ys_cen[0] - 6
+    xshift = xs_cen[0] - 6
 
     return best_fit_psf_flux, best_fit_psf_fluxunc, minchi2, xshift, yshift
 
@@ -149,25 +150,27 @@ def make_psf_shifted_array(psf_filename: str, cutout_size_psf_phot: int = 20):
     psf = fits.getdata(psf_filename)
     normpsf = psf / np.sum(psf)
     ngrid = 81
-    xs = np.linspace(-4, 4, 9)
-    gx, gy = np.meshgrid(xs, xs)
-    gx = np.ndarray.flatten(gx)
-    gy = np.ndarray.flatten(gy)
+    x_crds = np.linspace(-4, 4, 9)
+    grid_x, grid_y = np.meshgrid(x_crds, x_crds)
+    grid_x = np.ndarray.flatten(grid_x)
+    grid_y = np.ndarray.flatten(grid_y)
 
     padpsfs = np.zeros((60, 60, ngrid))
     for i in range(ngrid):
         padpsfs[
-            int(10 + gy[i]) : int(51 + gy[i]), int(10 + gx[i]) : int(51 + gx[i]), i
+            int(10 + grid_y[i]) : int(51 + grid_y[i]),
+            int(10 + grid_x[i]) : int(51 + grid_x[i]),
+            i,
         ] = normpsf
 
     normpsfmax = np.max(normpsf)
-    x1, x2 = np.where(padpsfs[:, :, 12] == normpsfmax)
-    x1 = int(x1)
-    x2 = int(x2)
+    xcen_1, xcen_2 = np.where(padpsfs[:, :, 12] == normpsfmax)
+    xcen_1 = int(xcen_1)
+    xcen_2 = int(xcen_2)
 
     psfmodels = padpsfs[
-        x1 - cutout_size_psf_phot : x1 + cutout_size_psf_phot + 1,
-        x2 - cutout_size_psf_phot : x2 + cutout_size_psf_phot + 1,
+        xcen_1 - cutout_size_psf_phot : xcen_1 + cutout_size_psf_phot + 1,
+        xcen_2 - cutout_size_psf_phot : xcen_2 + cutout_size_psf_phot + 1,
     ]
     return psfmodels
 
@@ -179,6 +182,7 @@ def aper_photometry(
     bkg_in_diameter: float,
     bkg_out_diameter: float,
     plot: bool = False,
+    plotfilename: str = None,
 ):
     """
     Perform aperture photometry
@@ -188,13 +192,17 @@ def aper_photometry(
         aper_diameter:
         bkg_in_diameter:
         bkg_out_diameter:
-        plot:
+        plot: whether to plot the cutout
+        plotfilename: filename to save plot to
 
     Returns:
 
     """
-    x, y = int(image_cutout.shape[0] / 2), int(image_cutout.shape[1] / 2)
+    x_crd, y_crd = int(image_cutout.shape[0] / 2), int(image_cutout.shape[1] / 2)
+
     if plot:
+        if plotfilename is None:
+            raise ValueError("Please provide a filename to save the plot to.")
         fig, ax = plt.subplots()
         mean, std = np.nanmean(image_cutout), np.nanstd(image_cutout)
         ax.imshow(
@@ -207,33 +215,35 @@ def aper_photometry(
         )
         # c = Circle(xy=(x_img, y_img),radius=15)
 
-        c = Circle(xy=(x, y), radius=aper_diameter / 2)
-        c1 = Circle(xy=(x, y), radius=bkg_in_diameter / 2)
-        c2 = Circle(xy=(x, y), radius=bkg_out_diameter / 2)
-        c.set_facecolor("none")
-        c.set_edgecolor("red")
-        c1.set_facecolor("none")
-        c1.set_edgecolor("red")
-        c2.set_facecolor("none")
-        c2.set_edgecolor("red")
-        ax.add_artist(c)
-        ax.add_artist(c1)
-        ax.add_artist(c2)
-        ax.set_xlim(x - 30, x + 30)
-        ax.set_ylim(y - 30, y + 30)
+        circle = Circle(xy=(x_crd, y_crd), radius=aper_diameter / 2)
+        bkg_inner_annulus = Circle(xy=(x_crd, y_crd), radius=bkg_in_diameter / 2)
+        bkg_outer_annulus = Circle(xy=(x_crd, y_crd), radius=bkg_out_diameter / 2)
+        circle.set_facecolor("none")
+        circle.set_edgecolor("red")
+        bkg_inner_annulus.set_facecolor("none")
+        bkg_inner_annulus.set_edgecolor("red")
+        bkg_outer_annulus.set_facecolor("none")
+        bkg_outer_annulus.set_edgecolor("red")
+        ax.add_artist(circle)
+        ax.add_artist(bkg_inner_annulus)
+        ax.add_artist(bkg_outer_annulus)
+        ax.set_xlim(x_crd - 30, x_crd + 30)
+        ax.set_ylim(y_crd - 30, y_crd + 30)
+        plt.savefig(plotfilename)
+        plt.close(fig)
 
-    aperture = CircularAperture((x, y), r=aper_diameter)
+    aperture = CircularAperture((x_crd, y_crd), r=aper_diameter)
     annulus_aperture = CircularAnnulus(
-        (x, y), r_in=bkg_in_diameter / 2, r_out=bkg_out_diameter / 2
+        (x_crd, y_crd), r_in=bkg_in_diameter / 2, r_out=bkg_out_diameter / 2
     )
 
     annulus_masks = annulus_aperture.to_mask(method="center")
     annulus_data = annulus_masks.multiply(image_cutout)
     mask = annulus_masks.data
     annulus_data_1d = annulus_data[mask > 0]
-    bkg_mean, bkg_median, bkg_std = sigma_clipped_stats(annulus_data_1d, sigma=2)
+    _, bkg_median, _ = sigma_clipped_stats(annulus_data_1d, sigma=2)
     bkg = np.zeros(image_cutout.shape) + bkg_median
-    bkg_error = np.zeros(image_cutout.shape) + bkg_std
+    # bkg_error = np.zeros(image_cutout.shape) + bkg_std
 
     aperture_mask = aperture.to_mask(method="center")
     aperture_unc_data = aperture_mask.multiply(image_unc_cutout)
