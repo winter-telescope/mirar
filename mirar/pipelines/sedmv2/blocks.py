@@ -144,7 +144,6 @@ process_stellar = reduce + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
     # ImageSelector(("OBSTYPE", "SCIENCE")),
-    ImageDebatcher(),
     ImageAperturePhotometry(
         aper_diameters=[16, 31],
         bkg_in_diameters=[19, 34],

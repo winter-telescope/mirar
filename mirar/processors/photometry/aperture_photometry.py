@@ -130,33 +130,18 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         for image in batch:
             image_cutout, unc_image_cutout = self.generate_cutouts(image)
 
-            imagename, unc_imagename = self.get_image_filenames(image)
-            cutout_dir = "/Users/benjaminroulston/Documents/DATA_NOT_FOR_DROPBOX/SEDMv2/OUTPUT_DATA/image_cutouts/"
-            np.savetxt(
-                f"{cutout_dir}{imagename.name.replace('.fits', '_cutout.txt')}",
-                image_cutout,
-            )
-            np.savetxt(
-                f"{cutout_dir}{unc_imagename.name.replace('.fits.unc',\
-                                                          '_unc_cutout.txt')}",
-                unc_image_cutout,
-            )
-
             fluxes, fluxuncs = self.aperture_photometer.perform_photometry(
                 image_cutout, unc_image_cutout
             )
 
             for ind, flux in enumerate(fluxes):
-                try:
-                    fluxunc = fluxuncs[ind]
-                    suffix = self.col_suffix_list[ind]
-                    image[f"fluxap{suffix}"] = flux
-                    image[f"fluxunc{suffix}"] = fluxunc
-                    image[f"magap{suffix}"] = float(
-                        image[self.zp_colname]
-                    ) - 2.5 * np.log10(flux)
-                    image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
-                except ValueError:
-                    logger.error(f"Aperture photometry failed on: {imagename=}")
+                fluxunc = fluxuncs[ind]
+                suffix = self.col_suffix_list[ind]
+                image[f"fluxap{suffix}"] = flux
+                image[f"fluxunc{suffix}"] = fluxunc
+                image[f"magap{suffix}"] = float(
+                    image[self.zp_colname]
+                ) - 2.5 * np.log10(flux)
+                image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
 
         return batch
