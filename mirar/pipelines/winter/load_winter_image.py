@@ -57,14 +57,24 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["OBSTYPE"] in ["DARK", "FLAT"]
     ]
 
+    # Check to ensure that biases and darks are tagged appropriately
     if header["EXPTIME"] == 0.0:
         header["OBSTYPE"] = "BIAS"
 
+    if (header["FILTERID"] == "dark") & (header["OBSTYPE"] not in ["BIAS", "TEST"]):
+        header["OBSTYPE"] = "DARK"
+        header["TARGET"] = "dark"
+
+    # Discard pre-sunset, post-sunset darks
     if header["OBSTYPE"] == "DARK":
         sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
         if sun_pos.alt.to_value("deg") > -25.0:
             header[OBSCLASS_KEY] = "TEST"
             header["OBSTYPE"] = "TEST"
+
+    # Sometimes darks come with wrong fieldids
+    if header["OBSTYPE"] == "DARK":
+        header["FIELDID"] = DEFAULT_FIELD
 
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
@@ -73,15 +83,10 @@ def clean_header(header: fits.Header) -> fits.Header:
     if header["TARGNAME"] == "":
         header["TARGNAME"] = f"field_{header['FIELDID']}"
 
-    if (header["FILTERID"] == "dark") & (header["OBSTYPE"] != "BIAS"):
-        header["OBSTYPE"] = "DARK"
-        header["TARGET"] = "dark"
-
     header["RA"] = header["RADEG"]
     header["DEC"] = header["DECDEG"]
 
-    obstime = Time(header["UTCTIME"])
-    header["EXPID"] = int((obstime.mjd - 59000.0) * 86400.0)  # seconds since 60000 MJD
+    header["EXPID"] = int((date_t.mjd - 59000.0) * 86400.0)  # seconds since 60000 MJD
 
     if COADD_KEY not in header.keys():
         logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
@@ -90,31 +95,36 @@ def clean_header(header: fits.Header) -> fits.Header:
     header[PROC_HISTORY_KEY] = ""
     header[PROC_FAIL_KEY] = False
 
+    # Make sure filter is a keyword that the pipeline recognizes
     filter_dict = {"J": 1, "H": 2, "Ks": 3}
-
     if "FILTERID" not in header.keys():
         header["FILTERID"] = filter_dict[header["FILTER"]]
-    if "FIELDID" not in header.keys():
-        header["FIELDID"] = 99999
-    if "PROGPI" not in header.keys():
-        header["PROGPI"] = "Kasliwal"
-    if "PROGID" not in header.keys():
-        header["PROGID"] = 0
-
-    if "CTYPE1" not in header:
-        header["CTYPE1"] = "RA---TAN"
-    if "CTYPE2" not in header:
-        header["CTYPE2"] = "DEC--TAN"
-
     header["FILTER"] = header["FILTERID"]
     if header["FILTER"] == "Hs":
         header["FILTER"] = "H"
-
     header["FID"] = int(winter_filters_map[header["FILTERID"]])
+
+    # Set default values if field details seem incorrect
+    if "FIELDID" not in header.keys():
+        header["FIELDID"] = DEFAULT_FIELD
+    if header["FIELDID"] < 0:
+        header["FIELDID"] = DEFAULT_FIELD
+
+    # Set default values if program is not correct
+    if "PROGPI" not in header.keys():
+        header["PROGPI"] = default_program.pi_name
+    if "PROGID" not in header.keys():
+        header["PROGID"] = default_program.progid
+    # If PROGNAME is not present or is empty, set it to default here.
+    # Otherwise, it gets set to default in the insert_entry for exposures.
+    if "PROGNAME" not in header:
+        header["PROGNAME"] = default_program.progname
+    if header["PROGNAME"] == "":
+        header["PROGNAME"] = default_program.progname
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
-        header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y-%m-%d")
+        header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
 
     header["IMGTYPE"] = header["OBSTYPE"]
 
@@ -124,21 +134,6 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["ITID"] = itid_dict[imgtype_dict[header["OBSTYPE"]]]
 
     header["EXPMJD"] = header["MJD-OBS"]
-
-    for key in ["MOONRA", "MOONDEC", "MOONILLF", "MOONPHAS", "SUNAZ"]:
-        if header[key] == "":
-            header[key] = 99
-
-    if header["FIELDID"] < 0:
-        header["FIELDID"] = DEFAULT_FIELD
-
-    # If PROGNAME is not present or is empty, set it to default here.
-    # Otherwise, it gets set to default in the insert_entry for exposures.
-    if "PROGNAME" not in header:
-        header["PROGNAME"] = default_program.progname
-
-    if header["PROGNAME"] == "":
-        header["PROGNAME"] = default_program.progname
 
     return header
 
@@ -242,7 +237,6 @@ def annotate_winter_subdet_headers(image: Image) -> Image:
         _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
         image["MEDCOUNT"] = med
         image["STDDEV"] = std
-        image["PROCSTATUS"] = 0
 
     subnx, subny, subnxtot, subnytot = (
         image["SUBNX"],
@@ -269,6 +263,8 @@ def annotate_winter_subdet_headers(image: Image) -> Image:
     if "DATASEC" in image.keys():
         del image["DATASEC"]
 
+    # TODO: Write a little snippet to estimate the central RA/Dec from the pointing
+    #  RA/Dec, BOARD_ID, SUBCOORD, and PA
     return image
 
 
