@@ -2,7 +2,6 @@
 Module with processors to perform point-spread-function photometry
 """
 import logging
-import shutil
 
 import numpy as np
 
@@ -107,8 +106,7 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
             )
 
             source_table.set_data(candidate_table)
-        if self.photometry_out_temp_dir is not None:
-            shutil.rmtree(self.photometry_out_temp_dir)
+
         return batch
 
     def check_prerequisites(
@@ -165,8 +163,6 @@ class ImagePSFPhotometry(BaseImagePhotometry):
             image[MAG_PSF_KEY] = -2.5 * np.log10(flux) + float(image[self.zp_colname])
             image[MAGERR_PSF_KEY] = 1.086 * fluxunc / flux
 
-        if self.photometry_out_temp_dir is not None:
-            shutil.rmtree(self.photometry_out_temp_dir)
         return batch
 
     def check_prerequisites(

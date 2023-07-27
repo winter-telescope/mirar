@@ -2,7 +2,6 @@
 Module with classes to perform photometry on an image or candidates
 """
 import logging
-import os
 from pathlib import Path
 
 import numpy as np
@@ -67,7 +66,9 @@ class PSFPhotometry(BasePhotometry):
         super().__init__()
         self.psf_filename = psf_filename
 
-    def perform_photometry(self, image_cutout: np.array, unc_image_cutout: np.array):
+    def perform_photometry(
+        self, image_cutout: np.array, unc_image_cutout: np.array
+    ) -> tuple[float, float, float, float, float]:
         psfmodels = make_psf_shifted_array(
             psf_filename=self.psf_filename,
             cutout_size_psf_phot=int(image_cutout.shape[0] / 2),
@@ -102,7 +103,9 @@ class AperturePhotometry(BasePhotometry):
         self.bkg_in_diameters = bkg_in_diameters
         self.bkg_out_diameters = bkg_out_diameters
 
-    def perform_photometry(self, image_cutout: np.array, unc_image_cutout: np.array):
+    def perform_photometry(
+        self, image_cutout: np.array, unc_image_cutout: np.array
+    ) -> tuple[list[float], list[float]]:
         fluxes, fluxuncs = [], []
         for ind, aper_diam in enumerate(self.aper_diameters):
             flux, fluxunc = aper_photometry(
@@ -123,18 +126,24 @@ class BasePhotometryProcessor(BaseProcessor, ImageHandler):
     """
 
     def __init__(
-        self, phot_cutout_size: int = 20, temp_output_sub_dir: str = "photometry"
+        self,
+        phot_cutout_size: int = 20,
+        temp_output_sub_dir: str = "photometry",
     ):
+        """
+        Args:
+            phot_cutout_size: size of cutout to perform photometry on
+            temp_output_sub_dir: subdirectory to save temporary photometry files
+        """
         super().__init__()
         self.phot_cutout_size = phot_cutout_size
         self.temp_output_sub_dir = temp_output_sub_dir
-        self.photometry_out_temp_dir = get_output_dir(
-            self.temp_output_sub_dir, self.night_sub_dir
-        )
 
-    def get_image_filenames(self, data_item: Image | pd.Series):
+    def save_temp_image_uncimage(
+        self, data_item: Image | pd.Series
+    ) -> tuple[Path, Path]:
         """
-        Get image and uncertainty image filenames
+        Create temporary image and uncertainty images and return their paths.
         Args:
             data_item: pandas DataFrame Series or astropy fits Header
 
@@ -143,9 +152,11 @@ class BasePhotometryProcessor(BaseProcessor, ImageHandler):
         """
         raise NotImplementedError
 
-    def get_physical_coordinates(self, data_item: Image | pd.Series):
+    def get_physical_coordinates(
+        self, data_item: Image | pd.Series
+    ) -> tuple[float, float]:
         """
-        Get physical coordinates on which to perform photometry
+        Get physical coordinates (x, y) at which to perform photometry
         Args:
             data_item: pandas DataFrame Series or astropy fits Header
 
@@ -155,39 +166,58 @@ class BasePhotometryProcessor(BaseProcessor, ImageHandler):
         """
         raise NotImplementedError
 
-    def get_temp_image_unc_imagenames(self, image: Image) -> (str, str):
-        self.photometry_out_temp_dir.mkdir(parents=True, exist_ok=True)
-
+    def save_temp_image(self, image) -> Path:
+        """
+        Save a temporary image and return its path
+        """
+        photometry_out_temp_dir = get_output_dir(
+            self.temp_output_sub_dir, self.night_sub_dir
+        )
         image_basename = image.header[BASE_NAME_KEY]
-        temp_imagepath = self.photometry_out_temp_dir.joinpath(image_basename)
+        temp_imagepath = photometry_out_temp_dir.joinpath(image_basename)
+        temp_imagepath.parent.mkdir(parents=True, exist_ok=True)
         self.save_fits(image, temp_imagepath)
+        return temp_imagepath
 
+    def save_uncertainty_image(self, image: Image) -> Path:
+        """
+        Create an uncertainty image from the image and return the filenames of the
+        image and uncertainty image
+        """
+        photometry_out_temp_dir = get_output_dir(
+            self.temp_output_sub_dir, self.night_sub_dir
+        )
         unc_filename = Path(image[BASE_NAME_KEY] + ".unc")
-
-        unc_filename.parent.mkdir(parents=True, exist_ok=True)
-
         rms_image = get_rms_image(image)
-        unc_filename = self.photometry_out_temp_dir.joinpath(unc_filename)
+        unc_filename = photometry_out_temp_dir.joinpath(unc_filename)
+        unc_filename.parent.mkdir(parents=True, exist_ok=True)
         self.save_fits(rms_image, path=unc_filename)
         logger.debug(f"Saved unc file to {unc_filename}")
-        return temp_imagepath, unc_filename.as_posix()
 
-    def generate_cutouts(self, data_item: Image | pd.Series):
+        return unc_filename
+
+    def generate_cutouts(
+        self, data_item: Image | pd.Series
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
-        Generate image cutouts
+        Generate image and uncertainty image cutouts. This function first saves the
+        image and uncertainty image to temporary files, then generates the cutouts,
+        then deletes the temporary files.
         Args:
             data_item: pandas DataFrame Series or astropy fits Header
 
         Returns:
             tuple: 2D numpy arrays of the image cutout and uncertainty image cutout
         """
-        imagename, unc_imagename = self.get_image_filenames(data_item)
+        temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(data_item)
         x, y = self.get_physical_coordinates(data_item)
         image_cutout, unc_image_cutout = make_cutouts(
-            image_paths=[imagename, unc_imagename],
+            image_paths=[temp_imagename, temp_unc_imagename],
             position=(x, y),
             half_size=self.phot_cutout_size,
         )
+        temp_imagename.unlink()
+        temp_unc_imagename.unlink()
         return image_cutout, unc_image_cutout
 
 
@@ -198,20 +228,23 @@ class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
 
     def __init__(
         self,
+        *args,
         target_ra_key: str = "TARGRA",
         target_dec_key: str = "TARGDEC",
-        *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.target_ra_key = target_ra_key
         self.target_dec_key = target_dec_key
 
-    def get_image_filenames(self, image: Image):
-        image_filename, unc_filename = self.get_temp_image_unc_imagenames(image)
+    def save_temp_image_uncimage(self, data_item: Image):
+        image = data_item
+        image_filename = self.save_temp_image(image)
+        unc_filename = self.save_uncertainty_image(image)
         return image_filename, unc_filename
 
-    def get_physical_coordinates(self, image: Image) -> (int, int):
+    def get_physical_coordinates(self, data_item: Image) -> (int, int):
+        image = data_item
         ra, dec = image[self.target_ra_key], image[self.target_dec_key]
         wcs = WCS(image.header)
         x, y = wcs.all_world2pix(ra, dec, 0)
@@ -225,12 +258,12 @@ class BaseCandidatePhotometry(BasePhotometryProcessor, BaseSourceProcessor):
 
     def __init__(
         self,
+        *args,
         image_colname=LATEST_SAVE_KEY,
         unc_image_colname=UNC_IMG_KEY,
         psf_file_colname=NORM_PSFEX_KEY,
         x_colname=XPOS_KEY,
         y_colname=YPOS_KEY,
-        *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -240,14 +273,17 @@ class BaseCandidatePhotometry(BasePhotometryProcessor, BaseSourceProcessor):
         self.xpos_key = x_colname
         self.ypos_key = y_colname
 
-    def get_image_filenames(self, row):
+    def save_temp_image_uncimage(self, data_item: pd.Series):
+        row = data_item
         imagename = row[self.image_key]
         image = Image(header=fits.getheader(imagename), data=fits.getdata(imagename))
 
-        image_filename, unc_filename = self.get_temp_image_unc_imagenames(image)
+        image_filename = self.save_temp_image(image)
+        unc_filename = self.save_uncertainty_image(image)
 
         return image_filename, unc_filename
 
-    def get_physical_coordinates(self, row: pd.Series):
+    def get_physical_coordinates(self, data_item: pd.Series):
+        row = data_item
         x, y = row[self.xpos_key], row[self.ypos_key]
         return int(x), int(y)

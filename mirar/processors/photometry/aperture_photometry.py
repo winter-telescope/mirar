@@ -1,7 +1,6 @@
 """
 Module with processors to perform aperture photometry
 """
-import shutil
 from typing import Optional
 
 import numpy as np
@@ -83,8 +82,6 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
 
             source_table.set_data(candidate_table)
 
-        if self.photometry_out_temp_dir is not None:
-            shutil.rmtree(self.photometry_out_temp_dir)
         return batch
 
 
@@ -139,6 +136,4 @@ class ImageAperturePhotometry(BaseImagePhotometry):
                 ) - 2.5 * np.log10(flux)
                 image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
 
-        if self.photometry_out_temp_dir is not None:
-            shutil.rmtree(self.photometry_out_temp_dir)
         return batch

@@ -57,7 +57,7 @@ pipeline = WircPipeline(night=NIGHT_NAME, selected_configurations="test_fp")
 pipeline.add_configuration(
     configuration_name="test_fp", configuration=test_fp_configuration
 )
-pipeline.configure_processors(test_fp_configuration, sub_dir=NIGHT_NAME)
+pipeline.configure_processors(test_fp_configuration, sub_dir=f"wirc/{NIGHT_NAME}")
 
 
 class TestForcedPhot(BaseTestCase):
@@ -75,7 +75,6 @@ class TestForcedPhot(BaseTestCase):
         res, _ = pipeline.reduce_images(
             dataset=Dataset(ImageBatch()), catch_all_errors=False
         )
-
         self.assertEqual(len(res), 1)
 
         candidates_table = res[0][0].get_data()
