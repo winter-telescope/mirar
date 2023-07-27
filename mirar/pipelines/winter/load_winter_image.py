@@ -72,6 +72,10 @@ def clean_header(header: fits.Header) -> fits.Header:
             header[OBSCLASS_KEY] = "TEST"
             header["OBSTYPE"] = "TEST"
 
+    # Sometimes darks come with wrong fieldids
+    if header["OBSTYPE"] == "DARK":
+        header["FIELDID"] = DEFAULT_FIELD
+
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
     header["TARGET"] = header["OBSTYPE"].lower()
