@@ -476,7 +476,7 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
         return self.master_image_path
 
 
-class BaseSourceGenerator(BaseProcessor, ImageHandler, ABC):
+class BaseSourceGenerator(CleanupProcessor, ImageHandler, ABC):
     """
     Base CandidateGenerator processor (image batch in, source batch out)
     """
@@ -490,9 +490,8 @@ class BaseSourceGenerator(BaseProcessor, ImageHandler, ABC):
         source_batch = self._apply_to_images(batch)
 
         if len(source_batch) == 0:
-            err = "No sources found in image batch"
-            logger.error(err)
-            raise NoCandidatesError(err)
+            msg = "No sources found in image batch"
+            logger.warning(msg)
 
         return source_batch
 

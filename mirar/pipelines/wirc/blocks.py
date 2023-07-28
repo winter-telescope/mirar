@@ -56,7 +56,7 @@ from mirar.processors.photometry.psf_photometry import (
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
-from mirar.processors.sources import CandidateNamer, JsonSourceWriter, SourceDetector
+from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
@@ -225,10 +225,10 @@ process_candidates = [
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    JsonSourceWriter(output_dir_name="candidates"),
+    SourceWriter(output_dir_name="candidates"),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
-    JsonSourceWriter(output_dir_name="kowalski"),
+    SourceWriter(output_dir_name="kowalski"),
     DatabaseHistoryImporter(
         crossmatch_radius_arcsec=2.0,
         time_field_name="jd",
@@ -253,7 +253,7 @@ process_candidates = [
         schema_path=wirc_candidate_schema_path,
         duplicate_protocol="replace",
     ),
-    JsonSourceWriter(output_dir_name="dbop"),
+    SourceWriter(output_dir_name="dbop"),
     # EdgeCandidatesMask(edge_boundary_size=100)
     # FilterCandidates(),
 ]
