@@ -7,8 +7,8 @@ from mirar.paths import (
     BASE_NAME_KEY,
     DITHER_N_KEY,
     EXPTIME_KEY,
-    FITS_MASK_KEY,
     MAX_DITHER_KEY,
+    OBSCLASS_KEY,
     TARGET_KEY,
     base_output_dir,
 )
@@ -40,12 +40,12 @@ from mirar.pipelines.winter.generator import (
 from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
     get_raw_winter_mask,
-    load_proc_winter_image,
     load_stacked_winter_image,
     load_test_winter_image,
     load_winter_mef_image,
 )
 from mirar.pipelines.winter.models import (
+    DEFAULT_FIELD,
     NXSPLIT,
     NYSPLIT,
     AstrometryStats,
@@ -71,13 +71,12 @@ from mirar.processors.database.utils import get_column_names_from_schema
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
-    WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
-from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
+from mirar.processors.sky import SkyFlatCalibrator
 from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
@@ -104,6 +103,9 @@ build_test = [
     ),
     ImageSelector(
         ("BOARD_ID", "4"),
+        (OBSCLASS_KEY, ["dark", "science"]),
+        (EXPTIME_KEY, "120.0"),
+        ("FIELDID", ["9767", str(DEFAULT_FIELD)]),
     ),
     ImageSaver("testdata", output_dir=get_test_data_dir()),
 ]
@@ -114,21 +116,7 @@ load_test = [
         input_sub_dir="raw",
         load_image=load_test_winter_image,
     ),
-]
-
-refbuild = [
-    GetReferenceImage(ref_image_generator=winter_refbuild_reference_generator),
-    ImageSaver(output_dir_name="stacked_ref"),
-]
-
-BOARD_ID = 4
-TARGET_NAME = "m39"
-
-# Everything in this block is deprecated/untested/probably outdated
-
-load_anet = [
-    ImageLoader(input_sub_dir=f"anet_{BOARD_ID}", load_image=load_proc_winter_image),
-    # ImageSelector((TARGET_KEY, f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
+    ImageBatcher("UTCTIME"),
 ]
 
 load_ref = [
@@ -139,121 +127,10 @@ load_ref = [
     )
 ]
 
-select_ref = [
-    ImageSelector(
-        ("FIELDID", str(3944)),
-        ("BOARD_ID", str(BOARD_ID)),
-    ),
-    ImageDebatcher(),
-    ImageBatcher("STACKID"),
+refbuild = [
+    GetReferenceImage(ref_image_generator=winter_refbuild_reference_generator),
+    ImageSaver(output_dir_name="stacked_ref"),
 ]
-
-load_multiboard_stack = [
-    ImageLoader(
-        input_sub_dir=f"stack_all_{TARGET_NAME}", load_image=load_stacked_winter_image
-    ),
-    ImageSelector(
-        # (TARGET_KEY, f"{TARGET_NAME}"),
-        ("OBSTYPE", "SCIENCE"),
-    ),
-]
-
-dark_cal = [
-    ImageSelector(("BOARD_ID", f"{BOARD_ID}")),
-    ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
-    WriteMaskedCoordsToFile(output_dir="mask_raw"),
-    DarkCalibrator(cache_sub_dir=f"calibration_{BOARD_ID}"),
-    ImageSaver(output_dir_name=f"darkcal_{BOARD_ID}"),
-    ImageDebatcher(),
-]
-
-flat_cal = [
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "EXPTIME", "SUBCOORD"]),
-    SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir=f"skycals_{BOARD_ID}"),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
-    ImageSaver(output_dir_name=f"skyflatcal_{BOARD_ID}"),
-    NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
-    ImageSaver(output_dir_name=f"skysub_{BOARD_ID}"),
-]
-
-export_proc = [
-    DatabaseImageExporter(db_table=Stacks, duplicate_protocol="replace", q3c_bool=False)
-]
-
-stack_proc = [
-    ImageBatcher([TARGET_KEY, "FILTER"]),
-    Swarp(
-        swarp_config_path=swarp_config_path,
-        calculate_dims_in_swarp=True,
-        include_scamp=False,
-        subtract_bkg=True,
-        cache=True,
-        center_type="MANUAL",
-    ),
-    ImageSaver(output_dir_name=f"stack_{TARGET_NAME}"),
-]
-
-photcal = [
-    # ImageSelector(("BOARD_ID", board_id)),
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
-    Sextractor(
-        **sextractor_photometry_config,
-        output_sub_dir="phot",
-        checkimage_type="BACKGROUND_RMS",
-    ),
-    PhotCalibrator(
-        ref_catalog_generator=winter_photometric_catalog_generator,
-        temp_output_sub_dir="phot",
-        write_regions=True,
-        cache=True,
-    ),
-    AstrometryStatsWriter(
-        ref_catalog_generator=winter_photometric_catalog_generator,
-        write_regions=True,
-        cache=True,
-    ),
-    # DatabaseImageExporter(
-    #     db_table=AstrometryStats, duplicate_protocol="replace", q3c_bool=False
-    # ),
-    # ImageSaver(output_dir_name=f"phot_{board_id}_{target_name}")
-    ImageSaver(output_dir_name="photcal"),
-]
-
-photcal_indiv = [
-    ImageSelector(("BOARD_ID", BOARD_ID)),
-    ImageDebatcher(),
-    ImageBatcher(["UTCTIME"]),
-    Sextractor(
-        **sextractor_photometry_config,
-        output_sub_dir=f"phot_{BOARD_ID}_{TARGET_NAME}",
-        checkimage_type="BACKGROUND_RMS",
-    ),
-    PhotCalibrator(
-        ref_catalog_generator=winter_photometric_catalog_generator,
-        temp_output_sub_dir=f"phot_{BOARD_ID}_{TARGET_NAME}",
-        write_regions=True,
-        cache=True,
-    ),
-    ImageSaver(output_dir_name=f"phot_{BOARD_ID}_{TARGET_NAME}"),
-]
-
-stack_multiboard = [
-    Swarp(
-        swarp_config_path=swarp_config_path,
-        calculate_dims_in_swarp=True,
-        include_scamp=False,
-        subtract_bkg=False,
-        cache=True,
-        temp_output_sub_dir=f"multiboard_stack_{TARGET_NAME}",
-        center_type="MANUAL",
-    )
-]
-
-commissioning_multiboard_stack = load_multiboard_stack + stack_multiboard
-commissioning_photcal = load_multiboard_stack + photcal
-commissioning_photcal_indiv = load_anet + photcal_indiv
 
 # Start for new WINTER blocks:
 
@@ -269,7 +146,7 @@ load_raw = [
 extract_all = [
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
-    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["dark", "science"])),
 ]
 
 csvlog = [
@@ -281,10 +158,8 @@ csvlog = [
             MAX_DITHER_KEY,
             "FILTER",
             EXPTIME_KEY,
-            "OBSTYPE",
+            OBSCLASS_KEY,
             "BOARD_ID",
-            "OBSCLASS",
-            "TARGET",
             "BASENAME",
             TARGET_KEY,
             "RADEG",
@@ -298,7 +173,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-
+BOARD_ID = 4
 select_subset = [
     ImageSelector(
         ("EXPTIME", "120.0"),
@@ -306,6 +181,15 @@ select_subset = [
         ("BOARD_ID", str(BOARD_ID)),
         ("FILTER", ["dark", "J"]),
     ),
+]
+
+select_ref = [
+    ImageSelector(
+        ("FIELDID", str(3944)),
+        ("BOARD_ID", str(BOARD_ID)),
+    ),
+    ImageDebatcher(),
+    ImageBatcher("STACKID"),
 ]
 
 # Split
@@ -326,12 +210,6 @@ save_raw = [
     DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
 ]
 
-unpack_subset = (
-    load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
-)
-
-unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
-
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Various processing steps
 
@@ -343,17 +221,17 @@ load_unpacked = [
 
 # Detrend blocks
 
-dark_cal_all_boards = [
+dark_calibrate = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", EXPTIME_KEY, "SUBCOORD"]),
     DarkCalibrator(cache_sub_dir="calibration"),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     # ImageSaver(output_dir_name="darkcal"),
     ImageDebatcher(),
 ]
 
-flat_cal_all_boards = [
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
+flat_calibrate = [
+    ImageBatcher(["BOARD_ID", "FILTER", EXPTIME_KEY, "SUBCOORD"]),
     SkyFlatCalibrator(cache_sub_dir="skycals"),
     # ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
@@ -369,9 +247,9 @@ flat_cal_all_boards = [
 
 fourier_filter = [CustomImageModifier(winter_fourier_filtered_image_generator)]
 
-process_stack_all_boards = [
+astrometry = [
     ImageDebatcher(),
-    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "EXPTIME"]),
+    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     # ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
@@ -382,11 +260,11 @@ process_stack_all_boards = [
         search_radius_deg=1.0,
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
-        timeout=45,
+        timeout=60,
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD", "FIELDID"]),
+    ImageBatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -399,6 +277,11 @@ process_stack_all_boards = [
         copy_scamp_header_to_image=True,
     ),
     ImageSaver(output_dir_name="post-scamp"),
+]
+
+validate_astrometry = [
+    ImageDebatcher(),
+    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         **sextractor_astromstats_config,
         write_regions_bool=True,
@@ -412,9 +295,11 @@ process_stack_all_boards = [
         crossmatch_radius_arcsec=5.0,
     ),
     DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
-    # ImageSaver(output_dir_name="anet"),
+]
+
+stack_dithers = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -538,39 +423,44 @@ package_candidates = [
     ),
 ]
 
-candidates = detect_candidates + process_candidates + package_candidates
+# Combinations of different blocks, to be used in configurations
+process_and_stack = astrometry + validate_astrometry + stack_dithers
 
-full_commissioning = (
-    load_unpacked + dark_cal + flat_cal + process_stack_all_boards + photcal_and_export
+unpack_subset = (
+    load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
 )
 
-full_commissioning_proc = (
-    dark_cal_all_boards
-    + flat_cal_all_boards
+unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
+
+full_reduction = (
+    dark_calibrate
+    + flat_calibrate
     + fourier_filter
-    + process_stack_all_boards
+    + process_and_stack
     + photcal_and_export
 )
 
-photcal = [ImageLoader(input_sub_dir="stack")] + photcal_and_export
+photcal_stacks = [ImageLoader(input_sub_dir="stack")] + photcal_and_export
 
-full_commissioning_all_boards = load_unpacked + full_commissioning_proc
+reduce_unpacked = load_unpacked + full_reduction
 
-reduce = unpack_all + full_commissioning_proc
+reduce = unpack_all + full_reduction
 
 reftest = (
     unpack_subset
-    + dark_cal_all_boards
-    + flat_cal_all_boards
-    + process_stack_all_boards
+    + dark_calibrate
+    + flat_calibrate
+    + process_and_stack
     + select_ref
     + refbuild
 )
 
-detrend_all_boards = load_unpacked + dark_cal_all_boards + flat_cal_all_boards
+detrend_unpacked = load_unpacked + dark_calibrate + flat_calibrate
 
 only_ref = load_ref + select_ref + refbuild
 
-realtime = extract_all + mask_and_split + save_raw + full_commissioning_proc
+realtime = extract_all + mask_and_split + save_raw + full_reduction
+
+candidates = detect_candidates + process_candidates + package_candidates
 
 full = realtime + imsub

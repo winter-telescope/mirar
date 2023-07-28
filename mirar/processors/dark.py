@@ -8,7 +8,7 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.paths import BASE_NAME_KEY, SATURATE_KEY
+from mirar.paths import BASE_NAME_KEY, EXPTIME_KEY, OBSCLASS_KEY, SATURATE_KEY
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -30,7 +30,7 @@ def default_select_dark(
     :param images: images to filter
     :return: batch of dark images
     """
-    return select_from_images(images, target_values="dark")
+    return select_from_images(images, key=OBSCLASS_KEY, target_values="dark")
 
 
 class DarkCalibrator(ProcessorWithCache):
@@ -64,12 +64,12 @@ class DarkCalibrator(ProcessorWithCache):
 
         for image in batch:
             data = image.get_data()
-            data = data - (master_dark.get_data() * image["EXPTIME"])
+            data = data - (master_dark.get_data() * image[EXPTIME_KEY])
             image.set_data(data)
 
             if SATURATE_KEY in image.header:
                 image[SATURATE_KEY] -= (
-                    np.nanmedian(master_dark.get_data()) * image["EXPTIME"]
+                    np.nanmedian(master_dark.get_data()) * image[EXPTIME_KEY]
                 )
         return batch
 
@@ -83,7 +83,7 @@ class DarkCalibrator(ProcessorWithCache):
         if n_frames == 0:
             err = (
                 f"Found {n_frames} suitable darks in batch. "
-                f"First image in batch has exposure time {images[0]['EXPTIME']}"
+                f"First image in batch has exposure time {images[0][EXPTIME_KEY]}"
                 f"and name {images[0][BASE_NAME_KEY]}"
             )
             logger.error(err)
@@ -95,13 +95,13 @@ class DarkCalibrator(ProcessorWithCache):
 
         individual_dark_exptimes = []
         for i, img in enumerate(dark_images):
-            dark_exptime = img["EXPTIME"]
+            dark_exptime = img[EXPTIME_KEY]
             darks[:, :, i] = img.get_data() / dark_exptime
             individual_dark_exptimes.append(str(dark_exptime))
 
         logger.debug(f"Median combining {n_frames} darks")
         master_dark_header = dark_images[0].get_header()
-        master_dark_header["EXPTIME"] = 1.0
+        master_dark_header[EXPTIME_KEY] = 1.0
         master_dark_header["NCOMBINE"] = n_frames
         master_dark_header["INDIVEXP"] = ",".join(individual_dark_exptimes)
         master_dark = Image(np.nanmedian(darks, axis=2), header=master_dark_header)

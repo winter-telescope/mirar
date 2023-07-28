@@ -5,7 +5,7 @@ lists which are used to build configurations for the
 :class:`~mirar.pipelines.summer.summer_pipeline.SummerPipeline`.
 """
 from mirar.downloader.get_test_data import get_test_data_dir
-from mirar.paths import BASE_NAME_KEY, GAIN_KEY, core_fields
+from mirar.paths import BASE_NAME_KEY, GAIN_KEY, OBSCLASS_KEY, core_fields
 from mirar.pipelines.summer.config import (
     DB_NAME,
     PIPELINE_NAME,
@@ -102,7 +102,7 @@ build_log = [
             "FIELDID",
             "FILTERID",
             "EXPTIME",
-            "OBSTYPE",
+            OBSCLASS_KEY,
             "RA",
             "DEC",
             "TARGTYPE",
@@ -127,7 +127,7 @@ export_raw = [
     ),
     MaskPixelsFromPath(mask_path=summer_mask_path),
     DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
-    ImageSelector(("OBSTYPE", ["BIAS", "FLAT", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
 ]
 
 cal_hunter = [
@@ -137,21 +137,21 @@ cal_hunter = [
 test_cr = [
     MaskPixelsFromPath(mask_path=summer_mask_path),
     BiasCalibrator(),
-    ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["bias", "science"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     LACosmicCleaner(effective_gain_key=GAIN_KEY, readnoise=2),
     ImageSaver(output_dir_name="crclean"),
 ]
 
 process_raw = [
     BiasCalibrator(),
-    ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     LACosmicCleaner(effective_gain_key=GAIN_KEY, readnoise=2),
     ImageSaver(output_dir_name="detrend", write_mask=True),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
@@ -212,7 +212,7 @@ process_raw = [
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector(("OBSTYPE", "SCIENCE")),
+    ImageSelector((OBSCLASS_KEY, "science")),
     ProcessReference(
         ref_image_generator=summer_reference_image_generator,
         ref_psfex=summer_reference_psfex,

@@ -24,6 +24,7 @@ from mirar.paths import (
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
     SATURATE_KEY,
+    TARGET_KEY,
 )
 from mirar.pipelines.winter.constants import (
     imgtype_dict,
@@ -54,35 +55,48 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["MJD-OBS"] = date_t.mjd
     header["DATE-OBS"] = date_t.isot
 
-    header[OBSCLASS_KEY] = ["science", "calibration"][
-        header["OBSTYPE"] in ["DARK", "FLAT"]
-    ]
+    header[OBSCLASS_KEY] = header["OBSTYPE"].lower()
 
     # Check to ensure that biases and darks are tagged appropriately
     if header["EXPTIME"] == 0.0:
-        header["OBSTYPE"] = "BIAS"
+        header[OBSCLASS_KEY] = "bias"
 
-    if (header["FILTERID"] == "dark") & (header["OBSTYPE"] not in ["BIAS", "TEST"]):
-        header["OBSTYPE"] = "DARK"
-        header["TARGET"] = "dark"
+    if (header["FILTERID"] == "dark") & (header[OBSCLASS_KEY] not in ["bias", "test"]):
+        header[OBSCLASS_KEY] = "dark"
 
     # Discard pre-sunset, post-sunset darks
-    if header["OBSTYPE"] == "DARK":
+    if header[OBSCLASS_KEY] == "dark":
         sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
         if sun_pos.alt.to_value("deg") > -25.0:
-            header[OBSCLASS_KEY] = "TEST"
-            header["OBSTYPE"] = "TEST"
+            header[OBSCLASS_KEY] = "test"
 
     # Sometimes darks come with wrong fieldids
-    if header["OBSTYPE"] == "DARK":
+    if header[OBSCLASS_KEY] == "dark":
         header["FIELDID"] = DEFAULT_FIELD
 
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
-    header["TARGET"] = header["OBSTYPE"].lower()
+    # Set up the target name
 
-    if header["TARGNAME"] == "":
-        header["TARGNAME"] = f"field_{header['FIELDID']}"
+    targ_name = f"field_{header['FIELDID']}"
+
+    if TARGET_KEY in header.keys():
+        if header[TARGET_KEY] != "":
+            targ_name = header[TARGET_KEY]
+    # If the observation is dark/bias/focus/pointing/flat, enforce TARGET_KEY is also
+    # dark/bias as the TARGET_KEY is used for CalHunter. Currently they may not come
+    # with the correct TARGET_KEY.
+    if header[OBSCLASS_KEY].lower() in [
+        "dark",
+        "bias",
+        "focus",
+        "pointing",
+        "flat",
+        "test",
+    ]:
+        targ_name = header["OBSTYPE"].lower()
+
+    header[TARGET_KEY] = targ_name
 
     header["RA"] = header["RADEG"]
     header["DEC"] = header["DECDEG"]
@@ -146,7 +160,7 @@ def load_proc_winter_image(path: str | Path) -> tuple[np.array, fits.Header]:
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
     if "weight" in path:
-        header["OBSTYPE"] = "weight"
+        header[OBSCLASS_KEY] = "weight"
 
     header["FILTER"] = header["FILTERID"]
 
@@ -163,16 +177,14 @@ def load_stacked_winter_image(
     data, header = open_fits(path)
 
     if "weight" in path:
-        header["OBSTYPE"] = "weight"
+        header[OBSCLASS_KEY] = "weight"
 
-        header["OBSCLASS"] = "weight"
         header["COADDS"] = 1
-        header["TARGET"] = "science"
         header["CALSTEPS"] = ""
         header["PROCFAIL"] = 1
         header["RAWPATH"] = ""
         header["BASENAME"] = os.path.basename(path)
-        header["TARGNAME"] = "weight"
+        header[TARGET_KEY] = "weight"
     if "UTCTIME" not in header.keys():
         header["UTCTIME"] = "2023-06-14T00:00:00"
 

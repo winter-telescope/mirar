@@ -4,6 +4,7 @@ Module containing functions and processors to filter images
 import logging
 
 from mirar.data import ImageBatch
+from mirar.paths import TARGET_KEY
 from mirar.processors.base_processor import BaseImageProcessor, CleanupProcessor
 
 logger = logging.getLogger(__name__)
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def filter_images(
     images: ImageBatch,
-    header_key: str = "target",
+    header_key: str = TARGET_KEY,
     reject_values: str | list[str] = "science",
 ) -> ImageBatch:
     """

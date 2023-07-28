@@ -10,7 +10,6 @@ import astropy
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.io import fits
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
@@ -20,9 +19,11 @@ from mirar.paths import (
     BASE_NAME_KEY,
     GAIN_KEY,
     LATEST_SAVE_KEY,
+    OBSCLASS_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    TARGET_KEY,
     __version__,
 )
 from mirar.pipelines.summer.models import DEFAULT_FIELD
@@ -43,15 +44,30 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
-        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
+        header[OBSCLASS_KEY] = header["OBSTYPE"].lower()
         header["UTCTIME"] = str(header["UTCSHUT"]).replace(" ", "T")
 
         header["MJD-OBS"] = header["OBSMJD"]
         header["DATE-OBS"] = Time(header["OBSMJD"], format="mjd").isot
+
+        # If the image is a calibration image, set the target name to the OBSTYPE.
+        # If it is a science image, it is either a field observation, or a ToO with
+        # a target name. If it is a field observation, set the target name to the
+        # field ID. If it is a ToO, set the target name to the TARGNAME.
+        if header[OBSCLASS_KEY] == "science":
+            if "TARGNAME" in header:
+                target_name = header["TARGNAME"]
+            else:
+                target_name = header[OBSCLASS_KEY]
+            if target_name == "":
+                target_name = f"field_{header['FIELDID']}"
+        else:
+            target_name = header[OBSCLASS_KEY]
+
         try:
-            header["TARGET"] = header["OBSTYPE"].lower()
+            header[TARGET_KEY] = target_name.lower()
         except (ValueError, AttributeError):
-            header["TARGET"] = header["OBSTYPE"]
+            header[TARGET_KEY] = target_name
 
         crd = SkyCoord(ra=header["RA"], dec=header["DEC"], unit=(u.deg, u.deg))
         header["RA"] = crd.ra.deg
@@ -93,11 +109,8 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         )  # seconds since 60000 MJD
 
         header["PROCID"] = int(str(header["EXPID"]) + str(pipeline_version_padded_str))
-        # header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
 
         header["OBSDATE"] = int(header["UTC"].split("_")[0])
-
-        # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
 
         header["TIMEUTC"] = header["UTCISO"]
 
@@ -163,10 +176,10 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
             "OTHER": 5,
         }
 
-        if not header["OBSTYPE"] in itid_dict:
+        if not header[OBSCLASS_KEY] in itid_dict:
             header["ITID"] = 5
         else:
-            header["ITID"] = itid_dict[header["OBSTYPE"]]
+            header["ITID"] = itid_dict[header[OBSCLASS_KEY]]
 
         if header["FIELDID"] == "radec":
             header["FIELDID"] = DEFAULT_FIELD

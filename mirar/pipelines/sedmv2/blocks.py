@@ -4,7 +4,7 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~mirar.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
-from mirar.paths import BASE_NAME_KEY, core_fields
+from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, core_fields
 from mirar.pipelines.sedmv2.config import (  # sextractor_reference_config,
     psfex_config_path,
     sedmv2_mask_path,
@@ -68,7 +68,7 @@ build_log = [  # pylint: disable=duplicate-code
             "UTC",
             "FIELDID",
             "FILTERID",
-            "OBSTYPE",
+            OBSCLASS_KEY,
             "RA",
             "DEC",
             "PROGID",
@@ -81,13 +81,13 @@ build_log = [  # pylint: disable=duplicate-code
 reduce = [
     MaskPixelsFromPath(mask_path=sedmv2_mask_path),
     BiasCalibrator(),
-    ImageSelector(("OBSTYPE", ["FLAT", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
     ImageBatcher(
         split_key="filterid"
     ),  # maybe change back to filter after revising load func
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),  # pylint: disable=duplicate-code
+    ImageSelector((OBSCLASS_KEY, ["science"])),  # pylint: disable=duplicate-code
     ImageSaver(output_dir_name="detrend", write_mask=True),
     AstrometryNet(
         output_sub_dir="a-net",
@@ -200,7 +200,7 @@ process_transient = reduce + resample_transient + calibrate
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector(("OBSTYPE", "SCIENCE")),
+    ImageSelector((OBSCLASS_KEY, "science")),
     ProcessReference(
         ref_image_generator=sedmv2_reference_image_generator,
         ref_psfex=sedmv2_reference_psfex,
