@@ -277,7 +277,8 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
 
     mask = np.zeros(data.shape)
     if header["BOARD_ID"] == 0:
-        # data[:500, 700:1500] = np.nan
+        # Mask the outage in the bottom center
+        mask[:500, 700:1600] = 1.0
         mask[1075:, :] = 1.0
         mask[:, 1950:] = 1.0
         mask[:20, :] = 1.0
@@ -298,7 +299,10 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:, :20] = 1.0
 
     if header["BOARD_ID"] == 4:
-        # data[610:, :280] = np.nan
+        # # Mask the region to the top left
+        mask[610:, :250] = 1.0
+        # # There seems to be a dead spot in the middle of the image
+        mask[503:518, 390:405] = 1.0
         mask[:, 1948:] = 1.0
         mask[:, :61] = 1.0
         mask[:20, :] = 1.0
@@ -306,10 +310,10 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:, 999:1002] = 1.0
 
     if header["BOARD_ID"] == 5:
-        # data[740:, 1270: 1850] = np.nan
+        # Mask the outage in the top-right.
+        mask[700:, 1200:1900] = 1.0
         mask[1072:, :] = 1.0
         mask[:, 1940:] = 1.0
         mask[:15, :] = 1.0
-        mask[680:, 1180:] = 1.0
 
     return mask.astype(bool)
