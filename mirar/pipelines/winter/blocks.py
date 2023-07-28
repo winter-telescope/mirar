@@ -440,7 +440,7 @@ stack = [  # ImageSaver(output_dir_name="anet"),
 process_stack_all_boards = do_astrometry + validate_astrometry + stack
 photcal_and_export = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", "FIELDID", "SUBCOORD"]),
     Sextractor(
         **sextractor_photometry_config,
         output_sub_dir="phot",
