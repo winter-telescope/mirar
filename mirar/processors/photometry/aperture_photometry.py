@@ -12,7 +12,6 @@ from mirar.paths import (
     APMAG_PREFIX_KEY,
     APMAGUNC_PREFIX_KEY,
     ZP_KEY,
-    get_output_dir,
 )
 from mirar.processors.photometry.base_photometry import (
     AperturePhotometry,
@@ -96,7 +95,6 @@ class ImageAperturePhotometry(BaseImagePhotometry):
     def __init__(
         self,
         *args,
-        temp_output_sub_dir: str = "temp_aperture_photometry",
         aper_diameters: float | list[float] = 10.0,
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
@@ -116,10 +114,6 @@ class ImageAperturePhotometry(BaseImagePhotometry):
             self.col_suffix_list = self.aperture_photometer.aper_diameters
 
         self.zp_colname = zp_colname
-        self.temp_output_sub_dir = temp_output_sub_dir
-        self.photometry_out_temp_dir = get_output_dir(
-            self.temp_output_sub_dir, self.night_sub_dir
-        )
 
     def _apply_to_images(
         self,
