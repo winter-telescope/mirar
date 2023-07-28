@@ -68,8 +68,7 @@ from mirar.processors.database.database_exporter import DatabaseDataframeExporte
 from mirar.processors.database.database_importer import DatabaseHistoryImporter
 from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
 from mirar.processors.database.utils import get_column_names_from_schema
-from mirar.processors.mask import (
-    MaskAboveThreshold,
+from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
     WriteMaskedCoordsToFile,
@@ -313,7 +312,7 @@ select_subset = [
 
 mask_and_split = [
     ImageBatcher(BASE_NAME_KEY),
-    MaskAboveThreshold(threshold=40000.0),
+    # MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
@@ -383,6 +382,7 @@ process_stack_all_boards = [
         search_radius_deg=1.0,
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
+        timeout=45,
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
