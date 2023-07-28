@@ -422,7 +422,7 @@ validate_astrometry = [
 ]
 stack = [  # ImageSaver(output_dir_name="anet"),
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", "FIELDID", "SUBCOORD"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
