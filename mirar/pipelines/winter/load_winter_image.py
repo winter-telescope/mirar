@@ -47,6 +47,7 @@ def clean_header(header: fits.Header) -> fits.Header:
     """
     header[GAIN_KEY] = 1.0
     header[SATURATE_KEY] = 40000.0
+
     header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
 
     date_t = Time(header["UTCTIME"])
@@ -213,12 +214,13 @@ def load_winter_mef_image(
     path: str | Path,
 ) -> list[Image]:
     """
-    Function to load iwinter mef images
+    Function to load winter mef images
 
     :param path: Path to image
     :return: list of images
     """
-    return open_mef_image(path, load_raw_winter_mef, extension_key="BOARD_ID")
+    images = open_mef_image(path, load_raw_winter_mef, extension_key="BOARD_ID")
+    return images
 
 
 def annotate_winter_subdet_headers(image: Image) -> Image:

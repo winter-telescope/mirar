@@ -66,6 +66,9 @@ class NewImageHandler(FileSystemEventHandler):
             self.queue.put(event)
 
 
+FILE_TRANSFER_TIMEOUT_S = 60.0
+
+
 class Monitor:
     """Class to 'monitor' a directory, watching for newly created files.
     It then reduces these files. It will watch for a fixed duration,
@@ -451,140 +454,144 @@ class Monitor:
                     while not transfer_done:
                         transfer_done = check_file_is_complete(event.src_path)
 
+                        wait = (Time.now() - t_start).to(u.second).value
+
+                        # If a corrupt image comes in, give up eventually
+                        if wait > FILE_TRANSFER_TIMEOUT_S:
+                            err = (
+                                f"File {event.src_path} has not been fully "
+                                f"transferred after 60 seconds. "
+                                f"It is probably corrupted. Skipping this file."
+                            )
+                            logger.error(err)
+                            try:
+                                raise ImageTimeoutError(err)
+                            except ImageTimeoutError as exc:
+                                err_report = ErrorReport(
+                                    exc, "monitor", contents=[event.src_path]
+                                )
+                                self.errorstack.add_report(err_report)
+                            self.failed_images.append(event.src_path)
+                            break
+
                         if not transfer_done:
                             msg = (
                                 f"Seems like the file {event.src_path} is not "
-                                f"fully transferred. "
-                                f"Waiting a couple of seconds before trying again."
+                                f"fully transferred. Waited for {wait:.1f} seconds so far, "
+                                f"and will time out after {FILE_TRANSFER_TIMEOUT_S} s. "
+                                f"Will try again."
                             )
-                            print(msg)
                             logger.info(msg)
                             # self.update_error_log()
                             time.sleep(3)
 
-                        # If a corrupt image comes in, give up eventually
-                        if Time.now() - t_start > 60:
-                            err = (
-                                f"File {event.src_path} has not been fully "
-                                f"transferred after 60 seconds. Skipping this file."
-                            )
-                            logger.error(err)
-                            exc = ImageTimeoutError(err)
+                    if transfer_done:
+                        try:
+                            # Start processing
+                            img_batch = self.pipeline.load_raw_image(event.src_path)
+
+                            is_science = img_batch[0][OBSCLASS_KEY] == "science"
+
+                            if not is_science:
+                                for img in img_batch:
+                                    self.update_cals(img)
+
+                            else:
+                                # Start clock with first science image
+                                if self.queue_t is None:
+                                    self.queue_t = Time.now()
+
+                            sci_img_batch = img_batch + self.get_cals()
+                            load_queue = list(self.queued_images)
+
+                            img = img_batch[-1]
+
+                            if (DITHER_N_KEY in img.keys()) & (
+                                MAX_DITHER_KEY in img.keys()
+                            ):
+                                msg = (
+                                    f"Image {event.src_path} is dither number "
+                                    f"{img[DITHER_N_KEY]} of {img[MAX_DITHER_KEY]}"
+                                )
+                                print(msg)
+                                logger.info(msg)
+                                # self.update_error_log()
+
+                                # If you have a new dither set, just process
+                                if np.logical_and(
+                                    int(img[DITHER_N_KEY]) == 1,
+                                    len(self.queued_images) > 0,
+                                ):
+                                    if img[MAX_DITHER_KEY] > 1:
+                                        sci_img_batch = ImageBatch([])
+                                        self.queued_images = [event.src_path]
+                                        logger.info(
+                                            f"Adding {event.src_path} to queue. "
+                                            f"It has dither number {img[DITHER_N_KEY]}."
+                                            f"The previous dither set was incomplete. "
+                                            f"Processing these {len(sci_img_batch)} "
+                                            f"images now."
+                                        )
+                                        # self.update_error_log()
+
+                                elif img[DITHER_N_KEY] != img[MAX_DITHER_KEY]:
+                                    if (Time.now() - self.queue_t) < (1.0 * u.hour):
+                                        self.queued_images.append(event.src_path)
+                                        sci_img_batch = None
+                                        logger.info(
+                                            f"Added {event.src_path} to queue. "
+                                            f"It has dither number {img[DITHER_N_KEY]}. "
+                                            f"Waiting for dither {img[MAX_DITHER_KEY]}."
+                                            f"Time since last image: "
+                                            f"{(Time.now() - self.queue_t).to('hour'):.3f}"
+                                            f" hours. There are "
+                                            f"{len(self.queued_images)} images"
+                                            f" in the queue."
+                                        )
+                                        # self.update_error_log()
+                                    else:
+                                        self.queued_images = []
+
+                            if sci_img_batch is not None:
+                                self.queue_t = Time.now()
+
+                                all_img = sci_img_batch + self.get_cals()
+
+                                for x in load_queue:
+                                    all_img += self.pipeline.load_raw_image(x)
+
+                                msg = (
+                                    f"Reducing {event.src_path} "
+                                    f"on thread {threading.get_ident()}, "
+                                    f"alongside {len(load_queue)} queue images"
+                                    f"(science={is_science})"
+                                )
+                                print(msg)
+                                logger.info(msg)
+                                # self.update_error_log()
+
+                                _, errorstack = self.pipeline.reduce_images(
+                                    dataset=Dataset(all_img),
+                                    selected_configurations=self.realtime_configurations,
+                                    catch_all_errors=True,
+                                )
+                                self.errorstack += errorstack
+                                self.update_error_log()
+
+                                if is_science:
+                                    self.processed_science_images.append(event.src_path)
+                                else:
+                                    self.processed_cal_images.append(event.src_path)
+
+                        # RS: Please forgive me for this coding sin
+                        # I just want the monitor to never crash
+                        except Exception as exc:  # pylint: disable=broad-except
                             err_report = ErrorReport(
                                 exc, "monitor", contents=[event.src_path]
                             )
                             self.errorstack.add_report(err_report)
-                            # self.update_error_log()
-
-                            self.failed_images.append(event.src_path)
-                            break
-
-                    try:
-                        # Start processing
-                        img_batch = self.pipeline.load_raw_image(event.src_path)
-
-                        is_science = img_batch[0][OBSCLASS_KEY] == "science"
-
-                        if not is_science:
-                            for img in img_batch:
-                                self.update_cals(img)
-
-                        else:
-                            # Start clock with first science image
-                            if self.queue_t is None:
-                                self.queue_t = Time.now()
-
-                        sci_img_batch = img_batch + self.get_cals()
-                        load_queue = list(self.queued_images)
-
-                        img = img_batch[-1]
-
-                        if (DITHER_N_KEY in img.keys()) & (
-                            MAX_DITHER_KEY in img.keys()
-                        ):
-                            msg = (
-                                f"Image {event.src_path} is dither number "
-                                f"{img[DITHER_N_KEY]} of {img[MAX_DITHER_KEY]}"
-                            )
-                            print(msg)
-                            logger.info(msg)
-                            # self.update_error_log()
-
-                            # If you have a new dither set, just process
-                            if np.logical_and(
-                                int(img[DITHER_N_KEY]) == 1,
-                                len(self.queued_images) > 0,
-                            ):
-                                if img[MAX_DITHER_KEY] > 1:
-                                    sci_img_batch = ImageBatch([])
-                                    self.queued_images = [event.src_path]
-                                    logger.info(
-                                        f"Adding {event.src_path} to queue. "
-                                        f"It has dither number {img[DITHER_N_KEY]}."
-                                        f"The previous dither set was incomplete. "
-                                        f"Processing these {len(sci_img_batch)} "
-                                        f"images now."
-                                    )
-                                    # self.update_error_log()
-
-                            elif img[DITHER_N_KEY] != img[MAX_DITHER_KEY]:
-                                if (Time.now() - self.queue_t) < (1.0 * u.hour):
-                                    self.queued_images.append(event.src_path)
-                                    sci_img_batch = None
-                                    logger.info(
-                                        f"Added {event.src_path} to queue. "
-                                        f"It has dither number {img[DITHER_N_KEY]}. "
-                                        f"Waiting for dither {img[MAX_DITHER_KEY]}."
-                                        f"Time since last image: "
-                                        f"{(Time.now() - self.queue_t).to('hour'):.3f}"
-                                        f" hours. There are "
-                                        f"{len(self.queued_images)} images"
-                                        f" in the queue."
-                                    )
-                                    # self.update_error_log()
-                                else:
-                                    self.queued_images = []
-
-                        if sci_img_batch is not None:
-                            self.queue_t = Time.now()
-
-                            all_img = sci_img_batch + self.get_cals()
-
-                            for x in load_queue:
-                                all_img += self.pipeline.load_raw_image(x)
-
-                            msg = (
-                                f"Reducing {event.src_path} "
-                                f"on thread {threading.get_ident()}, "
-                                f"alongside {len(load_queue)} queue images"
-                                f"(science={is_science})"
-                            )
-                            print(msg)
-                            logger.info(msg)
-                            # self.update_error_log()
-
-                            _, errorstack = self.pipeline.reduce_images(
-                                dataset=Dataset(all_img),
-                                selected_configurations=self.realtime_configurations,
-                                catch_all_errors=True,
-                            )
-                            self.errorstack += errorstack
                             self.update_error_log()
-
-                            if is_science:
-                                self.processed_science_images.append(event.src_path)
-                            else:
-                                self.processed_cal_images.append(event.src_path)
-
-                    # RS: Please forgive me for this coding sin
-                    # I just want the monitor to never crash
-                    except Exception as exc:  # pylint: disable=broad-except
-                        err_report = ErrorReport(
-                            exc, "monitor", contents=[event.src_path]
-                        )
-                        self.errorstack.add_report(err_report)
-                        self.update_error_log()
-                        self.failed_images.append(event.src_path)
+                            self.failed_images.append(event.src_path)
 
             else:
                 time.sleep(1)
