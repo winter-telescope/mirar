@@ -406,7 +406,8 @@ do_astrometry = [
 ]
 
 validate_astrometry = [
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD", "FIELDID"]),
+    ImageDebatcher(),
+    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         **sextractor_astromstats_config,
         write_regions_bool=True,
