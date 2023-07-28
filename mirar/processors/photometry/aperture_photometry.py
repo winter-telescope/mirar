@@ -20,8 +20,6 @@ from mirar.processors.photometry.base_photometry import (
     BaseImagePhotometry,
 )
 
-logger = logging.getLogger(__name__)
-
 
 class CandidateAperturePhotometry(BaseCandidatePhotometry):
     """

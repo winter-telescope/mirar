@@ -69,14 +69,8 @@ def clean_science_header(
     # header["BZERO"] = 0
 
     if not isinstance(header["OBJECTID"], str):
-        if "GWLIb" in header["QCOMMENT"]:
-            header["OBJRAD"] = 229.9802519789
-            header["OBJDECD"] = -25.0067323323
-            header["OBJECTID"] = "GWLib"
-        elif "SDSSdC11h26m33.94s+04d41m37.61s" in header["QCOMMENT"]:
-            header["OBJECTID"] = "SDSSdC11h26m33.94s+04d41m37.61s"
-        elif isinstance(header["QCOMMENT"], str):
-            header["OBJECTID"] = header["QCOMMENT"]
+        if isinstance(header["QCOMMENT"], str):
+            header["OBJECTID"] = header["QCOMMENT"].split("_")[0]
 
     if not "EXPTIME" in header:
         header["EXPTIME"] = header["EXPOSURE"]

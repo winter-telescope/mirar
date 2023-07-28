@@ -33,6 +33,7 @@ class SEDMv2Pipeline(Pipeline):
     non_linear_level = 30000  # no idea, for pylint
     default_cal_requirements = sedmv2_cal_requirements
     all_pipeline_configurations = {
+        "default": load_raw + process_stellar,
         "default_stellar": load_raw + process_stellar + image_photometry,
         "default_transient": load_raw + process_transient,  # +imsub,
     }

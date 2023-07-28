@@ -91,10 +91,10 @@ reduce = [
     ImageSaver(output_dir_name="detrend", write_mask=True),
     AstrometryNet(
         output_sub_dir="a-net",
-        scale_bounds=(0.1667, 0.0333),
+        scale_bounds=(0.08333333, 0.11666667),
         scale_units="degw",
         downsample=2,
-        timeout=900,
+        timeout=60,
     ),
     ImageSaver(output_dir_name="a-net-solved", write_mask=True),
     Sextractor(
@@ -145,9 +145,9 @@ process_stellar = reduce + resample_stellar + calibrate
 image_photometry = [  # imported from wirc/blocks.py
     # ImageSelector(("OBSTYPE", "SCIENCE")),
     ImageAperturePhotometry(
-        aper_diameters=[16, 31],
-        bkg_in_diameters=[19, 34],
-        bkg_out_diameters=[34, 50],
+        aper_diameters=[6, 16],
+        bkg_in_diameters=[9, 19],
+        bkg_out_diameters=[16, 34],
         col_suffix_list=None,  # [""],
         phot_cutout_size=100,
         target_ra_key="OBJRAD",
