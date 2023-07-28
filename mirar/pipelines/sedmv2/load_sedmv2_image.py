@@ -34,7 +34,7 @@ def clean_science_header(
     """
 
     header[OBSCLASS_KEY] = "science"
-    header[TARGET_KEY] = header["OBSTYPE"].lower()
+    header[TARGET_KEY] = "science"
 
     # positions
     header["RA"] = header["RAD"]
@@ -101,12 +101,9 @@ def clean_cal_header(
     :return: modified headers
     """
 
-    hdr0["OBSTYPE"] = hdr1["IMGTYPE"].upper()
+    hdr0[OBSCLASS_KEY] = hdr1["IMGTYPE"].lower()
     hdr0["IMGTYPE"] = hdr1["IMGTYPE"]
-    hdr0[OBSCLASS_KEY] = "calibration"
-    hdr0[TARGET_KEY] = hdr0[
-        "OBSTYPE"
-    ].lower()  # should target be OBJECTID? maybe for science imgs?
+    hdr0[TARGET_KEY] = hdr0[OBSCLASS_KEY]
 
     # flat/bias-specific keys
     if hdr0["IMGTYPE"] == "flat":
