@@ -132,7 +132,7 @@ load_anet = [
 ]
 
 load_for_stacking = [
-    ImageLoader(input_sub_dir="post-scamp"),
+    ImageLoader(input_sub_dir="post-scamp", input_img_dir=base_output_dir),
 ]
 
 load_ref = [
