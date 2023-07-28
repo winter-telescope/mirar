@@ -22,7 +22,9 @@ from mirar.paths import (
 logger = logging.getLogger(__name__)
 
 
-def clean_science_header(header: fits.Header) -> fits.Header:
+def clean_science_header(
+    header: fits.Header, split_headers: list[fits.Header]
+) -> tuple[fits.Header, list[fits.Header]]:
     """
     function to modify the primary header of an SEDMv2 science file
     :param header: original primary header of science file
@@ -39,9 +41,18 @@ def clean_science_header(header: fits.Header) -> fits.Header:
     header["TELRA"] = header["TELRAD"]
     header["TELDEC"] = header["TELDECD"]
 
-    header.append((GAIN_KEY, 1.0, "Gain in electrons / ADU"), end=True)
-    if header[GAIN_KEY] == 0.0:
+    if GAIN_KEY in header:
+        if header[GAIN_KEY] == 0.0:
+            header[GAIN_KEY] = 1.0
+    else:
         header[GAIN_KEY] = 1.0
+
+    for ext in split_headers:
+        if GAIN_KEY in ext:
+            if ext[GAIN_KEY] == 0.0:
+                ext[GAIN_KEY] = 1.0
+        else:
+            ext[GAIN_KEY] = 1.0
 
     # filters
     header["FILTERID"] = header["FILTER"].split(" ")[1][0]
@@ -57,6 +68,13 @@ def clean_science_header(header: fits.Header) -> fits.Header:
     header["COADDS"] = 1
     # header["BZERO"] = 0
 
+    if not isinstance(header["OBJECTID"], str):
+        if isinstance(header["QCOMMENT"], str):
+            header["OBJECTID"] = header["QCOMMENT"].split("_")[0]
+
+    if not "EXPTIME" in header:
+        header["EXPTIME"] = header["EXPOSURE"]
+
     # times
     # orig_dateobs = header["DATE-OBS"]
     # header["DATE-OBS"] = convert_to_UTC(orig_dateobs) # this is the date of entire obs
@@ -69,7 +87,7 @@ def clean_science_header(header: fits.Header) -> fits.Header:
     # header["EXPMJD"] = header["OBSDATE"]
     # header["DATE-OBS"] = header["OBSDATE"]
 
-    return header
+    return header, split_headers
 
 
 def clean_cal_header(
@@ -148,7 +166,8 @@ def load_raw_sedmv2_mef(
         if skip_first:
             split_data = split_data[1:]
             split_headers = split_headers[1:]
-        header = clean_science_header(header)
+
+        header, split_headers = clean_science_header(header, split_headers)
         # reformat UTC values present in split_headers
         # for hdr in split_headers:
         #    orig = hdr["UTC"]

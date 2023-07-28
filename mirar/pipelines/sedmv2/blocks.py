@@ -5,12 +5,11 @@ lists which are used to build configurations for the
 :class:`~mirar.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
 from mirar.paths import BASE_NAME_KEY, core_fields
-from mirar.pipelines.sedmv2.config import (
+from mirar.pipelines.sedmv2.config import (  # sextractor_reference_config,
     psfex_config_path,
     sedmv2_mask_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
-    sextractor_reference_config,
     swarp_config_path,
 )
 from mirar.pipelines.sedmv2.generator import (
@@ -31,9 +30,8 @@ from mirar.processors.photometry.aperture_photometry import (
     CandidateAperturePhotometry,
     ImageAperturePhotometry,
 )
-from mirar.processors.photometry.psf_photometry import (
+from mirar.processors.photometry.psf_photometry import (  # ImagePSFPhotometry,
     CandidatePSFPhotometry,
-    ImagePSFPhotometry,
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
@@ -93,10 +91,10 @@ reduce = [
     ImageSaver(output_dir_name="detrend", write_mask=True),
     AstrometryNet(
         output_sub_dir="a-net",
-        scale_bounds=(0.1667, 0.0333),
+        scale_bounds=(0.08333333, 0.11666667),
         scale_units="degw",
         downsample=2,
-        timeout=900,
+        timeout=60,
     ),
     ImageSaver(output_dir_name="a-net-solved", write_mask=True),
     Sextractor(
@@ -107,16 +105,20 @@ reduce = [
     ),
 ]
 
-resample = [
+resample_stellar = [
+    # ImageDebatcher(),
+    # reaches for files coming from the same object
+    # (note there can be more tha one MEF file per stellar object!)
+    # ImageBatcher(split_key="OBJECTID"),
     Swarp(
         swarp_config_path=swarp_config_path,
         include_scamp=False,
         combine=False,
         calculate_dims_in_swarp=True,
     ),
-    # ImageSaver(
-    #    output_dir_name="resampled", write_mask=True
-    # ),  # pylint: disable=duplicate-code
+    ImageSaver(
+        output_dir_name="resampled", write_mask=True
+    ),  # pylint: disable=duplicate-code
 ]
 
 calibrate = [
@@ -133,35 +135,32 @@ calibrate = [
     HeaderEditor(edit_keys="procflag", values=1),
 ]
 
-process = reduce + resample + calibrate
-
-
 # stellar --
 
 parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 
 # process_stellar = parse_stellar + process
-process_stellar = process
+process_stellar = reduce + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
-    # ImageSelector(("SOURCE", "stellar")),
+    # ImageSelector(("OBSTYPE", "SCIENCE")),
     ImageAperturePhotometry(
-        aper_diameters=[16],
-        bkg_in_diameters=[25],
-        bkg_out_diameters=[40],
-        col_suffix_list=[""],
+        aper_diameters=[6, 16],
+        bkg_in_diameters=[9, 19],
+        bkg_out_diameters=[16, 34],
+        col_suffix_list=None,  # [""],
         phot_cutout_size=100,
         target_ra_key="OBJRAD",
         target_dec_key="OBJDECD",
         zp_colname="ZP_AUTO",
     ),
-    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
-    PSFex(config_path=psfex_config_path, output_sub_dir="photometry", norm_fits=True),
-    ImagePSFPhotometry(
-        target_ra_key="OBJRAD",
-        target_dec_key="OBJDECD",
-        zp_colname="ZP_AUTO",
-    ),
+    # Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
+    # PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),
+    # ImagePSFPhotometry(
+    #     target_ra_key="OBJRAD",
+    #     target_dec_key="OBJDECD",
+    #     zp_colname="ZP_AUTO",
+    # ),
     ImageSaver(output_dir_name="photometry"),
 ]
 
