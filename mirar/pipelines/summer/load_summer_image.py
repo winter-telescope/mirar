@@ -56,7 +56,10 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         if header["OBSCLASS"] == "calibration":
             target_name = header["OBSTYPE"]
         else:
-            target_name = header["TARGNAME"]
+            if "TARGNAME" in header:
+                target_name = header["TARGNAME"]
+            else:
+                target_name = header["OBSTYPE"]
             if target_name == "":
                 target_name = f"field_{header['FIELDID']}"
         try:
