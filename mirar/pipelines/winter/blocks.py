@@ -131,6 +131,10 @@ load_anet = [
     # ImageSelector((TARGET_KEY, f"{TARGET_NAME}"), ("OBSTYPE", "SCIENCE")),
 ]
 
+load_for_stacking = [
+    ImageLoader(input_sub_dir="post-scamp"),
+]
+
 load_ref = [
     ImageLoader(
         input_sub_dir="stack",
@@ -369,7 +373,7 @@ flat_cal_all_boards = [
 
 fourier_filter = [CustomImageModifier(winter_fourier_filtered_image_generator)]
 
-process_stack_all_boards = [
+do_astrometry = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "EXPTIME"]),
     # ImageSaver(output_dir_name="pre_anet"),
@@ -399,6 +403,9 @@ process_stack_all_boards = [
         copy_scamp_header_to_image=True,
     ),
     ImageSaver(output_dir_name="post-scamp"),
+]
+
+validate_astrometry = [
     Sextractor(
         **sextractor_astromstats_config,
         write_regions_bool=True,
@@ -412,7 +419,8 @@ process_stack_all_boards = [
         crossmatch_radius_arcsec=5.0,
     ),
     DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
-    # ImageSaver(output_dir_name="anet"),
+]
+stack = [  # ImageSaver(output_dir_name="anet"),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     Swarp(
@@ -429,6 +437,7 @@ process_stack_all_boards = [
     ImageSaver(output_dir_name="stack"),
 ]
 
+process_stack_all_boards = do_astrometry + validate_astrometry + stack
 photcal_and_export = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
@@ -461,6 +470,9 @@ photcal_and_export = [
 load_stack = [
     ImageLoader(input_sub_dir="final"),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    ImageSelector(
+        (BASE_NAME_KEY, ["WINTERcamera_20230727-035357-778_mef_2_0_0.fits_stack.fits"])
+    ),
 ]
 
 imsub = [
