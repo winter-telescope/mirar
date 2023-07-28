@@ -54,7 +54,7 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         # If it is a science image, it is either a field observation, or a ToO with
         # a target name. If it is a field observation, set the target name to the
         # field ID. If it is a ToO, set the target name to the TARGNAME.
-        if header[OBSCLASS_KEY] == "SCIENCE":
+        if header[OBSCLASS_KEY] == "science":
             if "TARGNAME" in header:
                 target_name = header["TARGNAME"]
             else:
