@@ -10,6 +10,7 @@ from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
     build_test,
     candidates,
+    csvlog,
     detrend_unpacked,
     imsub,
     load_stack,
@@ -46,7 +47,7 @@ class WINTERPipeline(Pipeline):
         "reduce_unpacked": reduce_unpacked,
         "photcal_stacks": photcal_stacks,
         "buildtest": build_test,
-        "test": load_test + realtime,
+        "test": load_test + csvlog + realtime,
         "refbuild": refbuild,
         "reftest": reftest,
         "only_ref": only_ref,

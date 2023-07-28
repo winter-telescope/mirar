@@ -45,6 +45,7 @@ from mirar.pipelines.winter.load_winter_image import (
     load_winter_mef_image,
 )
 from mirar.pipelines.winter.models import (
+    DEFAULT_FIELD,
     NXSPLIT,
     NYSPLIT,
     AstrometryStats,
@@ -102,6 +103,9 @@ build_test = [
     ),
     ImageSelector(
         ("BOARD_ID", "4"),
+        (OBSCLASS_KEY, ["dark", "science"]),
+        (EXPTIME_KEY, "120.0"),
+        ("FIELDID", ["9767", str(DEFAULT_FIELD)]),
     ),
     ImageSaver("testdata", output_dir=get_test_data_dir()),
 ]
@@ -112,6 +116,7 @@ load_test = [
         input_sub_dir="raw",
         load_image=load_test_winter_image,
     ),
+    ImageBatcher("UTCTIME"),
 ]
 
 load_ref = [
@@ -141,7 +146,7 @@ load_raw = [
 extract_all = [
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
-    ImageSelector((OBSCLASS_KEY, ["DARK", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["dark", "science"])),
 ]
 
 csvlog = [
