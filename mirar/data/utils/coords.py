@@ -1,11 +1,8 @@
 """
 Functions to get image coordinates from WCS
 """
-import gzip
-import io
 import logging
 
-import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
 
@@ -93,23 +90,3 @@ def write_regions_file(
         regions_f.write(f"{system}\n")
         for ind, x in enumerate(x_coords):
             regions_f.write(f"CIRCLE({x},{y_coords[ind]},{region_radius})\n")
-
-
-def makebitims(image: np.array):
-    """
-    make bit images of the cutouts for the marshal
-    Args:
-        image: input image cutout
-
-    Returns:
-        buf2: a gzipped fits file of the cutout image as
-        a BytesIO object
-    """
-    # open buffer and store image in memory
-    buf = io.BytesIO()
-    buf2 = io.BytesIO()
-    fits.writeto(buf, image)
-    with gzip.open(buf2, "wb") as fz:
-        fz.write(buf.getvalue())
-
-    return buf2

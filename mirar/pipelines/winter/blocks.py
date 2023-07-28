@@ -78,7 +78,7 @@ from mirar.processors.photometry.aperture_photometry import CandidateAperturePho
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator, SkyFlatCalibrator
-from mirar.processors.sources import CandidateNamer, JsonSourceWriter, SourceDetector
+from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
     DatabaseImageBatchExporter,
@@ -489,7 +489,7 @@ detect_candidates = [
 candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
 process_candidates = [
-    JsonSourceWriter(output_dir_name="candidates"),
+    SourceWriter(output_dir_name="candidates"),
     CandidatePSFPhotometry(
         zp_colname="ZP",
     ),
@@ -501,10 +501,10 @@ process_candidates = [
         col_suffix_list=["", "big"],
         zp_colname="ZP",
     ),
-    JsonSourceWriter(output_dir_name="candidates"),
+    SourceWriter(output_dir_name="candidates"),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
-    JsonSourceWriter(output_dir_name="kowalski"),
+    SourceWriter(output_dir_name="kowalski"),
     DatabaseHistoryImporter(
         crossmatch_radius_arcsec=2.0,
         time_field_name="jd",
