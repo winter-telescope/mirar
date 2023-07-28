@@ -5,6 +5,7 @@ import logging
 
 from mirar.data import Dataset, ImageBatch
 from mirar.errors import ProcessorError
+from mirar.paths import TARGET_KEY
 from mirar.processors.base_processor import BaseImageProcessor, CleanupProcessor
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ class ParsingError(KeyError, ProcessorError):
 
 def select_from_images(
     batch: ImageBatch,
-    key: str = "target",
+    key: str = TARGET_KEY,
     target_values: str | list[str] = "science",
 ) -> ImageBatch:
     """
