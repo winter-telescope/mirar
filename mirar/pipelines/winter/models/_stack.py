@@ -51,6 +51,7 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     zp_auto_nstars = Column(Integer)
     zp_auto_std = Column(REAL)
     maglim = Column(REAL)
+    coadds = Column(Integer)
 
 
 class Stacks(BaseDB):
@@ -79,6 +80,7 @@ class Stacks(BaseDB):
     zp_auto_nstars: int = Field(ge=0)
     zp_auto_std: float = Field(ge=0)
     maglim: float = Field()
+    coadds: int = Field(ge=0)
 
     @validator("savepath")
     @classmethod
