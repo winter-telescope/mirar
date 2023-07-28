@@ -13,6 +13,7 @@ from mirar.io import open_fits, open_raw_image
 from mirar.paths import (
     COADD_KEY,
     GAIN_KEY,
+    OBSCLASS_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     SATURATE_KEY,
@@ -40,9 +41,7 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     if SATURATE_KEY not in header:
         header[SATURATE_KEY] = WIRC_NONLINEAR_LEVEL * header["DETCOADD"]
     if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
-        header["OBSTYPE"] = "calibration"
-
-    header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
+        header[OBSCLASS_KEY] = header["OBJECT"]
 
     # Apparently for WIRC, the images come tagged correctly.
     header[TARGET_KEY] = header["OBJECT"].lower()

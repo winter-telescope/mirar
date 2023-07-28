@@ -55,8 +55,8 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
     """
     Processor to only select a subset of images from a batch. Images can
     be selected using header keywords. For example, using:
-        ImageSelector(("OBSTYPE", "SCIENCE"))
-    selects Images with header["OBSTYPE"]=="SCIENCE"
+        ImageSelector(("OBSCLASS", "SCIENCE"))
+    selects Images with header["OBSCLASS"]=="SCIENCE"
     """
 
     base_key = "select"

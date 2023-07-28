@@ -7,7 +7,7 @@ from glob import glob
 from astropy.io import fits
 from astropy.table import Table
 
-from mirar.paths import get_output_dir
+from mirar.paths import OBSCLASS_KEY, get_output_dir
 
 
 def write_observation_log(image_dir):
@@ -18,7 +18,7 @@ def write_observation_log(image_dir):
     keywords = [
         "FILTER",
         "EXPTIME",
-        "OBSTYPE",
+        OBSCLASS_KEY,
         "TARGNAME",
         "RADEG",
         "DECDEG",

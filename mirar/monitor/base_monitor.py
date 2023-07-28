@@ -27,6 +27,7 @@ from mirar.paths import (
     MAX_DITHER_KEY,
     MONITOR_EMAIL_KEY,
     MONITOR_RECIPIENT_KEY,
+    OBSCLASS_KEY,
     PACKAGE_NAME,
     RAW_IMG_SUB_DIR,
     __version__,
@@ -482,7 +483,7 @@ class Monitor:
                         # Start processing
                         img_batch = self.pipeline.load_raw_image(event.src_path)
 
-                        is_science = img_batch[0]["OBSCLASS"] == "science"
+                        is_science = img_batch[0][OBSCLASS_KEY] == "science"
 
                         if not is_science:
                             for img in img_batch:

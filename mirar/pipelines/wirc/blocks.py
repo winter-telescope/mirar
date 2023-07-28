@@ -2,7 +2,13 @@
 Module containing standard processing blocks for WIRC
 """
 from mirar.catalog.kowalski import PS1, TMASS
-from mirar.paths import FITS_MASK_KEY, LATEST_SAVE_KEY, RAW_IMG_KEY, SATURATE_KEY
+from mirar.paths import (
+    FITS_MASK_KEY,
+    LATEST_SAVE_KEY,
+    OBSCLASS_KEY,
+    RAW_IMG_KEY,
+    SATURATE_KEY,
+)
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
@@ -83,8 +89,7 @@ log = [
             "UTSHUT",
             "EXPTIME",
             "COADDS",
-            "OBSTYPE",
-            "OBSCLASS",
+            OBSCLASS_KEY,
         ]
     )
 ]
@@ -97,7 +102,7 @@ reduction = [
     ImageSaver(output_dir_name="darkcal"),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageDebatcher(),
-    ImageSelector(("obsclass", "science")),
+    ImageSelector((OBSCLASS_KEY, "science")),
     # ImageSelector(("object", "ZTF18aavqmki")),
     ImageBatcher(split_key=["filter", "object"]),
     SkyFlatCalibrator(),

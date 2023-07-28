@@ -10,7 +10,7 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.paths import BASE_NAME_KEY, FLAT_FRAME_KEY, LATEST_SAVE_KEY
+from mirar.paths import BASE_NAME_KEY, FLAT_FRAME_KEY, LATEST_SAVE_KEY, OBSCLASS_KEY
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -26,7 +26,7 @@ def default_select_flat(
     :param images: set of images
     :return: subset of flat images
     """
-    return select_from_images(images, target_values="flat")
+    return select_from_images(images, key=OBSCLASS_KEY, target_values="flat")
 
 
 class FlatCalibrator(ProcessorWithCache):
@@ -160,7 +160,7 @@ class SkyFlatCalibrator(FlatCalibrator):
         :param images: set of images
         :return: subset of 'sky' images
         """
-        return select_from_images(images, key="obsclass", target_values="science")
+        return select_from_images(images, key=OBSCLASS_KEY, target_values="science")
 
     def __str__(self) -> str:
         return (

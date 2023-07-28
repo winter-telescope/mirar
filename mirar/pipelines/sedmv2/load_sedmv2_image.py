@@ -13,6 +13,7 @@ from mirar.io import open_mef_fits, open_mef_image
 from mirar.paths import (
     BASE_NAME_KEY,
     GAIN_KEY,
+    OBSCLASS_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
@@ -30,8 +31,7 @@ def clean_science_header(header: fits.Header) -> fits.Header:
     :return: modified header
     """
 
-    header["OBSTYPE"] = "SCIENCE"
-    header["OBSCLASS"] = "science"
+    header[OBSCLASS_KEY] = "science"
     header[TARGET_KEY] = header["OBSTYPE"].lower()
 
     # positions
@@ -85,13 +85,11 @@ def clean_cal_header(
 
     hdr0["OBSTYPE"] = hdr1["IMGTYPE"].upper()
     hdr0["IMGTYPE"] = hdr1["IMGTYPE"]
-    hdr0["OBSCLASS"] = "calibration"
+    hdr0[OBSCLASS_KEY] = "calibration"
     hdr0[TARGET_KEY] = hdr0[
         "OBSTYPE"
     ].lower()  # should target be OBJECTID? maybe for science imgs?
 
-    hdr0["OBSTYPE"] = hdr0["IMGTYPE"].upper()
-    hdr0["OBSCLASS"] = "calibration"
     # flat/bias-specific keys
     if hdr0["IMGTYPE"] == "flat":
         filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
@@ -177,19 +175,3 @@ def load_sedmv2_mef_image(
     :return: list of images
     """
     return open_mef_image(path, load_raw_sedmv2_mef)
-
-
-# def convert_to_UTC(val):
-#    """
-#    function to reformat the time-related header values in raw sedmv2 files
-#    ex:
-#        :param val: '20230526_034424.333029'
-#        :return: '2023-05-26T03:47:04.310'
-#    """
-#    val = str(val)
-#    yr,mo,day = val[:4],val[4:6],val[6:8]
-#    hr,minute,sec = val[9:11],val[11:13],val[13:15]
-#    decimal=val.split('.')[1]
-#    new_str = yr+'-'+mo+'-'+day+'T'+hr+':'+minute+':'+sec+'.'+decimal
-#    t = Time(new_str, format='isot', scale='utc')
-#    return t.value

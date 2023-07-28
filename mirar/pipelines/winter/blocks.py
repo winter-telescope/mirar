@@ -8,6 +8,7 @@ from mirar.paths import (
     DITHER_N_KEY,
     EXPTIME_KEY,
     MAX_DITHER_KEY,
+    OBSCLASS_KEY,
     TARGET_KEY,
     base_output_dir,
 )
@@ -140,7 +141,7 @@ load_raw = [
 extract_all = [
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
-    ImageSelector(("OBSTYPE", ["DARK", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["DARK", "SCIENCE"])),
 ]
 
 csvlog = [
@@ -152,9 +153,8 @@ csvlog = [
             MAX_DITHER_KEY,
             "FILTER",
             EXPTIME_KEY,
-            "OBSTYPE",
+            OBSCLASS_KEY,
             "BOARD_ID",
-            "OBSCLASS",
             "BASENAME",
             TARGET_KEY,
             "RADEG",
@@ -220,7 +220,7 @@ dark_calibrate = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
     DarkCalibrator(cache_sub_dir="calibration"),
-    ImageSelector(("OBSTYPE", ["SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["SCIENCE"])),
     # ImageSaver(output_dir_name="darkcal"),
     ImageDebatcher(),
 ]

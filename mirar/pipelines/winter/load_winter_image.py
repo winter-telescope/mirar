@@ -54,26 +54,23 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["MJD-OBS"] = date_t.mjd
     header["DATE-OBS"] = date_t.isot
 
-    header[OBSCLASS_KEY] = ["science", "calibration"][
-        header["OBSTYPE"] in ["DARK", "FLAT"]
-    ]
+    header[OBSCLASS_KEY] = header["OBSTYPE"]
 
     # Check to ensure that biases and darks are tagged appropriately
     if header["EXPTIME"] == 0.0:
-        header["OBSTYPE"] = "BIAS"
+        header[OBSCLASS_KEY] = "BIAS"
 
-    if (header["FILTERID"] == "dark") & (header["OBSTYPE"] not in ["BIAS", "TEST"]):
-        header["OBSTYPE"] = "DARK"
+    if (header["FILTERID"] == "dark") & (header[OBSCLASS_KEY] not in ["BIAS", "TEST"]):
+        header[OBSCLASS_KEY] = "DARK"
 
     # Discard pre-sunset, post-sunset darks
-    if header["OBSTYPE"] == "DARK":
+    if header[OBSCLASS_KEY] == "DARK":
         sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
         if sun_pos.alt.to_value("deg") > -25.0:
             header[OBSCLASS_KEY] = "TEST"
-            header["OBSTYPE"] = "TEST"
 
     # Sometimes darks come with wrong fieldids
-    if header["OBSTYPE"] == "DARK":
+    if header[OBSCLASS_KEY] == "DARK":
         header["FIELDID"] = DEFAULT_FIELD
 
     header["EXPTIME"] = np.rint(header["EXPTIME"])
@@ -83,7 +80,7 @@ def clean_header(header: fits.Header) -> fits.Header:
     # If the observation is dark/bias/focus/pointing/flat, enforce TARGET_KEY is also
     # dark/bias as the TARGET_KEY is used for CalHunter. Currently they may not come
     # with the correct TARGET_KEY.
-    if header["OBSTYPE"] in ["DARK", "BIAS", "FOCUS", "POINTING", "FLAT"]:
+    if header[OBSCLASS_KEY] in ["DARK", "BIAS", "FOCUS", "POINTING", "FLAT"]:
         header[TARGET_KEY] = header["OBSTYPE"].lower()
 
     header["RA"] = header["RADEG"]
@@ -148,7 +145,7 @@ def load_proc_winter_image(path: str | Path) -> tuple[np.array, fits.Header]:
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
     if "weight" in path:
-        header["OBSTYPE"] = "weight"
+        header[OBSCLASS_KEY] = "weight"
 
     header["FILTER"] = header["FILTERID"]
 
@@ -165,9 +162,8 @@ def load_stacked_winter_image(
     data, header = open_fits(path)
 
     if "weight" in path:
-        header["OBSTYPE"] = "weight"
+        header[OBSCLASS_KEY] = "weight"
 
-        header["OBSCLASS"] = "weight"
         header["COADDS"] = 1
         header["CALSTEPS"] = ""
         header["PROCFAIL"] = 1

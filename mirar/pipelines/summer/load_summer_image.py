@@ -19,6 +19,7 @@ from mirar.paths import (
     BASE_NAME_KEY,
     GAIN_KEY,
     LATEST_SAVE_KEY,
+    OBSCLASS_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
@@ -43,7 +44,7 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
-        header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "SCIENCE"]
+        header[OBSCLASS_KEY] = header["OBSTYPE"]
         header["UTCTIME"] = str(header["UTCSHUT"]).replace(" ", "T")
 
         header["MJD-OBS"] = header["OBSMJD"]
@@ -53,13 +54,11 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         # If it is a science image, it is either a field observation, or a ToO with
         # a target name. If it is a field observation, set the target name to the
         # field ID. If it is a ToO, set the target name to the TARGNAME.
-        if header["OBSCLASS"] == "calibration":
-            target_name = header["OBSTYPE"]
-        else:
+        if header[OBSCLASS_KEY] == "SCIENCE":
             if "TARGNAME" in header:
                 target_name = header["TARGNAME"]
             else:
-                target_name = header["OBSTYPE"]
+                target_name = header[OBSCLASS_KEY]
             if target_name == "":
                 target_name = f"field_{header['FIELDID']}"
         try:
@@ -177,10 +176,10 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
             "OTHER": 5,
         }
 
-        if not header["OBSTYPE"] in itid_dict:
+        if not header[OBSCLASS_KEY] in itid_dict:
             header["ITID"] = 5
         else:
-            header["ITID"] = itid_dict[header["OBSTYPE"]]
+            header["ITID"] = itid_dict[header[OBSCLASS_KEY]]
 
         if header["FIELDID"] == "radec":
             header["FIELDID"] = DEFAULT_FIELD
