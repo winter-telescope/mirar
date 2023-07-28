@@ -44,7 +44,7 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
-        header[OBSCLASS_KEY] = header["OBSTYPE"]
+        header[OBSCLASS_KEY] = header["OBSTYPE"].lower()
         header["UTCTIME"] = str(header["UTCSHUT"]).replace(" ", "T")
 
         header["MJD-OBS"] = header["OBSMJD"]
@@ -61,6 +61,9 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
                 target_name = header[OBSCLASS_KEY]
             if target_name == "":
                 target_name = f"field_{header['FIELDID']}"
+        else:
+            target_name = header[OBSCLASS_KEY]
+
         try:
             header[TARGET_KEY] = target_name.lower()
         except (ValueError, AttributeError):
@@ -106,11 +109,8 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         )  # seconds since 60000 MJD
 
         header["PROCID"] = int(str(header["EXPID"]) + str(pipeline_version_padded_str))
-        # header.append(('GAIN', summer_gain, 'Gain in electrons / ADU'), end=True)
 
         header["OBSDATE"] = int(header["UTC"].split("_")[0])
-
-        # header["EXPID"] = str(header["NIGHT"]) + str(header["OBSHISTID"])
 
         header["TIMEUTC"] = header["UTCISO"]
 

@@ -127,7 +127,7 @@ export_raw = [
     ),
     MaskPixelsFromPath(mask_path=summer_mask_path),
     DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
-    ImageSelector((OBSCLASS_KEY, ["BIAS", "FLAT", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
 ]
 
 cal_hunter = [
@@ -137,21 +137,21 @@ cal_hunter = [
 test_cr = [
     MaskPixelsFromPath(mask_path=summer_mask_path),
     BiasCalibrator(),
-    ImageSelector((OBSCLASS_KEY, ["FLAT", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["bias", "science"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
-    ImageSelector((OBSCLASS_KEY, ["SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     LACosmicCleaner(effective_gain_key=GAIN_KEY, readnoise=2),
     ImageSaver(output_dir_name="crclean"),
 ]
 
 process_raw = [
     BiasCalibrator(),
-    ImageSelector((OBSCLASS_KEY, ["FLAT", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector((OBSCLASS_KEY, ["SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     LACosmicCleaner(effective_gain_key=GAIN_KEY, readnoise=2),
     ImageSaver(output_dir_name="detrend", write_mask=True),
     AutoAstrometry(pa=0, inv=True, pixel_scale=SUMMER_PIXEL_SCALE),
@@ -212,7 +212,7 @@ process_raw = [
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector((OBSCLASS_KEY, "SCIENCE")),
+    ImageSelector((OBSCLASS_KEY, "science")),
     ProcessReference(
         ref_image_generator=summer_reference_image_generator,
         ref_psfex=summer_reference_psfex,

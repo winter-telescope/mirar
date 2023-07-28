@@ -81,13 +81,13 @@ build_log = [  # pylint: disable=duplicate-code
 reduce = [
     MaskPixelsFromPath(mask_path=sedmv2_mask_path),
     BiasCalibrator(),
-    ImageSelector((OBSCLASS_KEY, ["FLAT", "SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
     ImageBatcher(
         split_key="filterid"
     ),  # maybe change back to filter after revising load func
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector((OBSCLASS_KEY, ["SCIENCE"])),  # pylint: disable=duplicate-code
+    ImageSelector((OBSCLASS_KEY, ["science"])),  # pylint: disable=duplicate-code
     ImageSaver(output_dir_name="detrend", write_mask=True),
     AstrometryNet(
         output_sub_dir="a-net",
@@ -200,7 +200,7 @@ process_transient = reduce + resample_transient + calibrate
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector((OBSCLASS_KEY, "SCIENCE")),
+    ImageSelector((OBSCLASS_KEY, "science")),
     ProcessReference(
         ref_image_generator=sedmv2_reference_image_generator,
         ref_psfex=sedmv2_reference_psfex,

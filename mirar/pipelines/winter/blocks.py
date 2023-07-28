@@ -218,15 +218,15 @@ load_unpacked = [
 
 dark_calibrate = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "EXPTIME", "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", EXPTIME_KEY, "SUBCOORD"]),
     DarkCalibrator(cache_sub_dir="calibration"),
-    ImageSelector((OBSCLASS_KEY, ["SCIENCE"])),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     # ImageSaver(output_dir_name="darkcal"),
     ImageDebatcher(),
 ]
 
 flat_calibrate = [
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", EXPTIME_KEY, "SUBCOORD"]),
     SkyFlatCalibrator(cache_sub_dir="skycals"),
     # ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
@@ -259,7 +259,7 @@ astrometry = [
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
-    ImageBatcher([TARGET_KEY, "FILTER", "EXPTIME", "BOARD_ID", "SUBCOORD"]),
+    ImageBatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
