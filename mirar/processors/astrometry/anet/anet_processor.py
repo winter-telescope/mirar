@@ -2,7 +2,6 @@
 Module containing a processor to run astrometry.net
 """
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -12,6 +11,7 @@ from astropy.table import Table
 from mirar.data import Image, ImageBatch
 from mirar.data.utils import write_regions_file
 from mirar.errors import ProcessorError
+from mirar.io import open_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
@@ -55,11 +55,11 @@ class AstrometryNet(BaseImageProcessor):
         use_sextractor: bool = False,
         sextractor_path: str = "sex",
         search_radius_deg: float = 5.0,
-        parity: str = None,
-        sextractor_config_path: str = None,
-        sextractor_params_path: str | Path = None,
-        sextractor_conv_path: str | Path = default_conv_path,
-        sextractor_starnnw_path: str | Path = default_starnnw_path,
+        parity: str | None = None,
+        sextractor_config_path: str | Path | None = None,
+        sextractor_params_path: str | Path | None = None,
+        sextractor_conv_path: str | Path | None = default_conv_path,
+        sextractor_starnnw_path: str | Path | None = default_starnnw_path,
         x_image_key: str = "X_IMAGE",
         y_image_key: str = "Y_IMAGE",
         sort_key_name: str = "MAG_AUTO",
@@ -105,15 +105,28 @@ class AstrometryNet(BaseImageProcessor):
         self.y_image_key = y_image_key
         self.sort_key_name = sort_key_name
         self.use_weight = use_weight
-        self.sextractor_config_path = sextractor_config_path
-        self.sextractor_params_path = sextractor_params_path
-        self.sextractor_conv_path = sextractor_conv_path
-        self.sextractor_starnnw_path = sextractor_starnnw_path
+        self.sextractor_config_path = (
+            Path(sextractor_config_path) if sextractor_config_path is not None else None
+        )
+        self.sextractor_params_path = (
+            Path(sextractor_params_path) if sextractor_params_path is not None else None
+        )
+        self.sextractor_conv_path = (
+            Path(sextractor_conv_path) if sextractor_conv_path is not None else None
+        )
+        self.sextractor_starnnw_path = (
+            Path(sextractor_starnnw_path)
+            if sextractor_starnnw_path is not None
+            else None
+        )
 
         self.write_regions = write_regions
 
     def __str__(self) -> str:
-        return "Processor to perform astrometric calibration via astrometry.net."
+        return (
+            "Processor to perform astrometric calibration "
+            "locally with astrometry.net."
+        )
 
     def get_anet_output_dir(self) -> Path:
         """
@@ -123,7 +136,7 @@ class AstrometryNet(BaseImageProcessor):
         """
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
-    def setup_sextractor_config(self, image: Image) -> (str | Path, list):
+    def setup_sextractor_config(self, image: Image) -> (Path | None, list[Path]):
         """
         Setup sextractor config file
         """
@@ -146,7 +159,9 @@ class AstrometryNet(BaseImageProcessor):
                 )
                 sextractor_temp_files.append(temp_params_path)
             else:
-                assert os.path.exists(sextractor_params_path)
+                assert (
+                    sextractor_params_path.exists()
+                ), f"sextractor params file {sextractor_params_path} does not exist"
             sextractor_config_dict = parse_sextractor_config(
                 self.sextractor_config_path
             )
@@ -154,7 +169,7 @@ class AstrometryNet(BaseImageProcessor):
             sextractor_config_dict["FILTER_NAME"] = self.sextractor_conv_path
             sextractor_config_dict["STARNNW_NAME"] = self.sextractor_starnnw_path
             temp_config_path = get_temp_path(
-                anet_out_dir, f"{image[BASE_NAME_KEY]}" f"_sex_astrom_anet.sex"
+                anet_out_dir, f"{image[BASE_NAME_KEY]}_sex_astrom_anet.sex"
             )
             write_sextractor_config_to_file(
                 config_dict=sextractor_config_dict,
@@ -166,8 +181,9 @@ class AstrometryNet(BaseImageProcessor):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         anet_out_dir = self.get_anet_output_dir()
-        cache = False
         anet_out_dir.mkdir(parents=True, exist_ok=True)
+
+        assert len(batch) > 0, "Batch must contain at least one image"
 
         # Ensure that if a source-extractor config file is provided, it has the
         # correct PARAMETERS_NAME, FILTER_NAME and STARNNW_NAME.
@@ -233,35 +249,27 @@ class AstrometryNet(BaseImageProcessor):
                             system="image",
                         )
 
-            if not new_img_path.exists():
+            solved_path = new_img_path.with_suffix(".solved")
+
+            if not solved_path.exists():
                 raise AstrometryNetError(
                     f"AstrometryNet did not run successfully - no output "
-                    f"file {new_img_path} found."
+                    f"file {solved_path} found."
                 )
 
-            with fits.open(new_img_path) as solved:
-                hdr = solved[0].header  # pylint: disable=no-member
-
-            del hdr["HISTORY"]
-
             # Clean up!
-
-            with fits.open(new_img_path) as hdul:
-                hdr = hdul[0].header  # pylint: disable=no-member
-                data = hdul[0].data  # pylint: disable=no-member
-                if "HISTORY" in hdr:
-                    del hdr["HISTORY"]
+            data, hdr = open_fits(new_img_path)
+            if "HISTORY" in hdr:
+                del hdr["HISTORY"]
 
             batch[i] = Image(data=data, header=hdr)
 
-            if not cache:
-                for temp_file in temp_files:
-                    temp_file.unlink(missing_ok=True)
-                    logger.debug(f"Deleted temporary file {temp_file}")
+            for temp_file in temp_files:
+                temp_file.unlink(missing_ok=True)
+                logger.debug(f"Deleted temporary file {temp_file}")
 
-        if not cache:
-            for file in sextractor_temp_files:
-                os.remove(file)
-                logger.debug(f"Deleted temporary file {file}")
+        for temp_file in sextractor_temp_files:
+            temp_file.unlink(missing_ok=True)
+            logger.debug(f"Deleted temporary file {temp_file}")
 
         return batch
