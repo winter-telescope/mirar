@@ -155,7 +155,6 @@ csvlog = [
             "OBSTYPE",
             "BOARD_ID",
             "OBSCLASS",
-            "TARGET",
             "BASENAME",
             TARGET_KEY,
             "RADEG",

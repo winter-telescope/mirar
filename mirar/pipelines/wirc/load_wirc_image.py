@@ -16,6 +16,7 @@ from mirar.paths import (
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     SATURATE_KEY,
+    TARGET_KEY,
 )
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,8 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
 
     header["OBSCLASS"] = ["calibration", "science"][header["OBSTYPE"] == "object"]
 
-    header["TARGET"] = header["OBJECT"].lower()
+    # Apparently for WIRC, the images come tagged correctly.
+    header[TARGET_KEY] = header["OBJECT"].lower()
     if "MJD-OBS" in header.keys():
         header["DATE-OBS"] = Time(header["MJD-OBS"], format="mjd").isot
     else:

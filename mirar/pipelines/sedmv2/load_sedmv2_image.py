@@ -16,6 +16,7 @@ from mirar.paths import (
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    TARGET_KEY,
     __version__,
 )
 
@@ -31,7 +32,7 @@ def clean_science_header(header: fits.Header) -> fits.Header:
 
     header["OBSTYPE"] = "SCIENCE"
     header["OBSCLASS"] = "science"
-    header["TARGET"] = header["OBSTYPE"].lower()
+    header[TARGET_KEY] = header["OBSTYPE"].lower()
 
     # positions
     header["RA"] = header["RAD"]
@@ -85,7 +86,7 @@ def clean_cal_header(
     hdr0["OBSTYPE"] = hdr1["IMGTYPE"].upper()
     hdr0["IMGTYPE"] = hdr1["IMGTYPE"]
     hdr0["OBSCLASS"] = "calibration"
-    hdr0["TARGET"] = hdr0[
+    hdr0[TARGET_KEY] = hdr0[
         "OBSTYPE"
     ].lower()  # should target be OBJECTID? maybe for science imgs?
 

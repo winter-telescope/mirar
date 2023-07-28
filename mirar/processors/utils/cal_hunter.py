@@ -12,6 +12,7 @@ import numpy as np
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
 from mirar.io import open_fits
+from mirar.paths import TARGET_KEY
 from mirar.processors.utils.image_loader import ImageLoader, load_from_dir
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -47,7 +48,7 @@ class CalRequirement:
         """
 
         new_images = select_from_images(
-            images, key="TARGET", target_values=self.target_name
+            images, key=TARGET_KEY, target_values=self.target_name
         )
 
         if len(new_images) > 0:

@@ -10,7 +10,6 @@ import astropy
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.io import fits
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
@@ -23,6 +22,7 @@ from mirar.paths import (
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    TARGET_KEY,
     __version__,
 )
 from mirar.pipelines.summer.models import DEFAULT_FIELD
@@ -48,10 +48,21 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
 
         header["MJD-OBS"] = header["OBSMJD"]
         header["DATE-OBS"] = Time(header["OBSMJD"], format="mjd").isot
+
+        # If the image is a calibration image, set the target name to the OBSTYPE.
+        # If it is a science image, it is either a field observation, or a ToO with
+        # a target name. If it is a field observation, set the target name to the
+        # field ID. If it is a ToO, set the target name to the TARGNAME.
+        if header["OBSCLASS"] == "calibration":
+            target_name = header["OBSTYPE"]
+        else:
+            target_name = header["TARGNAME"]
+            if target_name == "":
+                target_name = f"field_{header['FIELDID']}"
         try:
-            header["TARGET"] = header["OBSTYPE"].lower()
+            header[TARGET_KEY] = target_name.lower()
         except (ValueError, AttributeError):
-            header["TARGET"] = header["OBSTYPE"]
+            header[TARGET_KEY] = target_name
 
         crd = SkyCoord(ra=header["RA"], dec=header["DEC"], unit=(u.deg, u.deg))
         header["RA"] = crd.ra.deg

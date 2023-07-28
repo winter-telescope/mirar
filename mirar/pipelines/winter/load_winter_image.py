@@ -24,6 +24,7 @@ from mirar.paths import (
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
     SATURATE_KEY,
+    TARGET_KEY,
 )
 from mirar.pipelines.winter.constants import (
     imgtype_dict,
@@ -63,7 +64,6 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     if (header["FILTERID"] == "dark") & (header["OBSTYPE"] not in ["BIAS", "TEST"]):
         header["OBSTYPE"] = "DARK"
-        header["TARGET"] = "dark"
 
     # Discard pre-sunset, post-sunset darks
     if header["OBSTYPE"] == "DARK":
@@ -78,10 +78,13 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
-    header["TARGET"] = header["OBSTYPE"].lower()
-
-    if header["TARGNAME"] == "":
-        header["TARGNAME"] = f"field_{header['FIELDID']}"
+    if header[TARGET_KEY] == "":
+        header[TARGET_KEY] = f"field_{header['FIELDID']}"
+    # If the observation is dark/bias/focus/pointing/flat, enforce TARGET_KEY is also
+    # dark/bias as the TARGET_KEY is used for CalHunter. Currently they may not come
+    # with the correct TARGET_KEY.
+    if header["OBSTYPE"] in ["DARK", "BIAS", "FOCUS", "POINTING", "FLAT"]:
+        header[TARGET_KEY] = header["OBSTYPE"].lower()
 
     header["RA"] = header["RADEG"]
     header["DEC"] = header["DECDEG"]
@@ -166,12 +169,11 @@ def load_stacked_winter_image(
 
         header["OBSCLASS"] = "weight"
         header["COADDS"] = 1
-        header["TARGET"] = "science"
         header["CALSTEPS"] = ""
         header["PROCFAIL"] = 1
         header["RAWPATH"] = ""
         header["BASENAME"] = os.path.basename(path)
-        header["TARGNAME"] = "weight"
+        header[TARGET_KEY] = "weight"
     if "UTCTIME" not in header.keys():
         header["UTCTIME"] = "2023-06-14T00:00:00"
 
