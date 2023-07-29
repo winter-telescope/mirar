@@ -64,6 +64,9 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
 
     if "FILTERID" not in header.keys():
         header["FILTERID"] = filter_dict[header["FILTER"]]
+
+    header["FID"] = header["FILTERID"]
+
     if "FIELDID" not in header.keys():
         header["FIELDID"] = 99999
     if "PROGPI" not in header.keys():
@@ -72,11 +75,11 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
         header["PROGID"] = 0
     if "ZP" not in header.keys():
         if "TMC_ZP" in header.keys():
-            header["ZP"] = header["TMC_ZP"]
-            header["ZP_std"] = header["TMC_ZPSD"]
+            header["ZP"] = float(header["TMC_ZP"])
+            header["ZP_std"] = float(header["TMC_ZPSD"])
         if "ZP_AUTO" in header.keys():
-            header["ZP"] = header["ZP_AUTO"]
-            header["ZP_std"] = header["ZP_AUTO_std"]
+            header["ZP"] = float(header["ZP_AUTO"])
+            header["ZP_std"] = float(header["ZP_AUTO_std"])
     data = data.astype(float)
     data[data == 0.0] = np.nan
     return data, header
