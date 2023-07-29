@@ -4,8 +4,8 @@
     "name": "alert",
     "doc": "avro alert schema for testing WINTER - version 0.1",
     "fields": [
-        {"name": "schemavsn", "type": "string", "doc": "schema version used"},
-        {"name": "publisher", "type": "string", "doc": "origin of alert packet"},
+        {"name": "schemavsn", "type": "string", "doc": "schema version used", "default": "0.1"},
+        {"name": "publisher", "type": "string", "doc": "origin of alert packet", "default":  "WIRC-mirar"},
         {"name": "objectId", "type": "string"},
         {"name": "candid", "type": "long"},
         {"name": "candidate", "type": "wirc.alert.candidate", "doc": "candidate information"},
