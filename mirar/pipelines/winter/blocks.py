@@ -25,6 +25,7 @@ from mirar.pipelines.winter.config import (
     winter_candidate_config,
 )
 from mirar.pipelines.winter.generator import (
+    select_winter_flats,
     winter_astrometric_ref_catalog_generator,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
@@ -176,7 +177,7 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 BOARD_ID = 4
 select_subset = [
     ImageSelector(
-        ("EXPTIME", "120.0"),
+        (EXPTIME_KEY, "120.0"),
         ("FIELDID", ["3944", "999999999", "6124"]),
         ("BOARD_ID", str(BOARD_ID)),
         ("FILTER", ["dark", "J"]),
@@ -231,8 +232,8 @@ dark_calibrate = [
 ]
 
 flat_calibrate = [
-    ImageBatcher(["BOARD_ID", "FILTER", EXPTIME_KEY, "SUBCOORD"]),
-    SkyFlatCalibrator(cache_sub_dir="skycals"),
+    ImageBatcher(["BOARD_ID", "FILTER", "SUBCOORD"]),
+    SkyFlatCalibrator(cache_sub_dir="skycals", select_flat_images=select_winter_flats),
     # ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
@@ -299,7 +300,7 @@ validate_astrometry = [
 
 stack_dithers = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", EXPTIME_KEY, TARGET_KEY, "SUBCOORD"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,

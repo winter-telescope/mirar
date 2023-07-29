@@ -9,8 +9,8 @@ from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.vizier import PS1
-from mirar.data import Image
-from mirar.paths import SATURATE_KEY, get_output_dir
+from mirar.data import Image, ImageBatch
+from mirar.paths import EXPTIME_KEY, SATURATE_KEY, get_output_dir
 from mirar.pipelines.winter.config import (
     psfex_path,
     sextractor_reference_config,
@@ -28,6 +28,7 @@ from mirar.processors.base_catalog_xmatch_processor import (
 )
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
+from mirar.processors.utils.image_selector import select_from_images
 from mirar.references.local import RefFromPath
 from mirar.references.ukirt import UKIRTRef
 
@@ -321,3 +322,14 @@ def winter_fourier_filtered_image_generator(image: Image) -> Image:
     image.header[SATURATE_KEY] -= np.nanmedian(sky_model)
 
     return image
+
+
+def select_winter_flats(images: ImageBatch) -> ImageBatch:
+    """
+    Selects the flat images for the winter data
+    """
+    # TODO: Ideally this will select all exposures with exptime above a filter-dependent
+    #  threshold, TBD.
+    images = select_from_images(images, key=EXPTIME_KEY, target_values="120")
+    images = select_from_images(images, target_values="science")
+    return images
