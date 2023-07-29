@@ -28,6 +28,7 @@ from mirar.pipelines.wirc.wirc_files import (
     sextractor_photometry_config,
     sextractor_reference_config,
     swarp_sp_path,
+    wirc_avro_schema_path,
     wirc_candidate_schema_path,
     wirc_mask_path,
 )
@@ -265,7 +266,8 @@ process_candidates = [
 
 package_candidates = [
     AvroPacketMaker(
-        output_sub_dir="avro", base_name="WNTR", broadcast=False, save_local=True
+        base_name="WIRC",
+        avro_schema_path=wirc_avro_schema_path,
     ),
     SendToFritz(
         base_name="WIRCTEST",

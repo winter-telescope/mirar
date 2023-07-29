@@ -63,3 +63,5 @@ winter_cal_requirements = [
         target_name="dark", required_field="EXPTIME", required_values=["120.0"]
     ),
 ]
+
+winter_avro_schema_path = winter_file_dir.joinpath("avro_schema/winter.alert.avsc")

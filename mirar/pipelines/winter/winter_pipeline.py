@@ -9,14 +9,16 @@ from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
     build_test,
-    candidates,
     csvlog,
+    detect_candidates,
     detrend_unpacked,
     imsub,
+    load_candidates,
     load_stack,
     load_test,
     only_ref,
     photcal_stacks,
+    process_candidates,
     realtime,
     reduce,
     reduce_unpacked,
@@ -53,7 +55,8 @@ class WINTERPipeline(Pipeline):
         "only_ref": only_ref,
         "realtime": realtime,
         "imsub": load_stack + imsub,
-        "candidates": load_stack + imsub + candidates,
+        "detect_candidates": load_stack + imsub + detect_candidates,
+        "process_candidates": load_candidates + process_candidates,
     }
 
     non_linear_level = 40000.0

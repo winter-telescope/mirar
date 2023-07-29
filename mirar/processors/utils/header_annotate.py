@@ -39,9 +39,12 @@ class HeaderAnnotator(BaseImageProcessor):
         batch: ImageBatch,
     ) -> ImageBatch:
         for i, image in enumerate(batch):
-            new_val = ""
-            for key in self.input_keys:
-                new_val += str(image[key])
+            if len(self.input_keys) > 1:
+                new_val = ""
+                for key in self.input_keys:
+                    new_val += str(image[key])
+            else:
+                new_val = image[self.input_keys[0]]
 
             image[self.output_key] = new_val
             batch[i] = image

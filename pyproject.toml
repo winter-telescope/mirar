@@ -12,7 +12,7 @@ python = ">=3.10.0,<3.12"
 astroplan = "^0.8"
 astropy = {extras = ["all"], version = "^5.3"}
 astroquery = "^0.4.6"
-avro-python3 = "~1.10.1"
+avro-python3 = "^1.10.2"
 coveralls = {extras = ["toml"], version = "^3.3.1"}
 confluent-kafka = "^2.1.1"
 docker = "^6.1.3"

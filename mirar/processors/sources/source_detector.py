@@ -160,7 +160,7 @@ class SourceDetector(BaseSourceGenerator):
         det_srcs["field"] = fits.getval(sci_resamp_image_path, "FIELDID")
         det_srcs["programpi"] = fits.getval(sci_resamp_image_path, "PROGPI")
         det_srcs["programid"] = fits.getval(sci_resamp_image_path, "PROGID")
-        det_srcs["fid"] = fits.getval(sci_resamp_image_path, "FILTERID")
+        det_srcs["fid"] = fits.getval(sci_resamp_image_path, "FID")
         det_srcs["candid"] = np.array(
             det_srcs["jd"] * 100, dtype=int
         ) * 10000 + np.arange(len(det_srcs))
