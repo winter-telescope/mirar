@@ -22,6 +22,7 @@ from mirar.pipelines.winter.config import (
     sextractor_photometry_config,
     sextractor_reference_config,
     swarp_config_path,
+    winter_avro_schema_path,
     winter_candidate_config,
 )
 from mirar.pipelines.winter.generator import (
@@ -77,7 +78,12 @@ from mirar.processors.photometry.aperture_photometry import CandidateAperturePho
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import SkyFlatCalibrator
-from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
+from mirar.processors.sources import (
+    CandidateNamer,
+    SourceDetector,
+    SourceLoader,
+    SourceWriter,
+)
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
     DatabaseImageBatchExporter,
@@ -369,12 +375,6 @@ detect_candidates = [
     HeaderAnnotator(input_keys=["ZP_AUTO"], output_key="ZP"),
     HeaderAnnotator(input_keys=["ZP_AUTO_STD"], output_key="ZP_STD"),
     SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
-]
-
-candidate_colnames = get_column_names_from_schema(winter_candidate_config)
-
-process_candidates = [
-    SourceWriter(output_dir_name="candidates"),
     CandidatePSFPhotometry(
         zp_colname="ZP",
     ),
@@ -387,6 +387,16 @@ process_candidates = [
         zp_colname="ZP",
     ),
     SourceWriter(output_dir_name="candidates"),
+]
+
+candidate_colnames = get_column_names_from_schema(winter_candidate_config)
+
+load_candidates = [
+    SourceLoader(input_dir_name="candidates"),
+]
+
+process_candidates = [
+    # SourceWriter(output_dir_name="candidates"),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
@@ -414,12 +424,10 @@ process_candidates = [
         schema_path=winter_candidate_config,
         duplicate_protocol="replace",
     ),
-    # DataframeWriter(output_dir_name="dbop"),
-]
-
-package_candidates = [
     AvroPacketMaker(
-        output_sub_dir="avro", base_name="WNTR", broadcast=False, save_local=True
+        base_name="WNTR",
+        broadcast=False,
+        avro_schema_path=winter_avro_schema_path,
     ),
 ]
 
@@ -461,6 +469,6 @@ only_ref = load_ref + select_ref + refbuild
 
 realtime = extract_all + mask_and_split + save_raw + full_reduction
 
-candidates = detect_candidates + process_candidates + package_candidates
+candidates = detect_candidates + process_candidates
 
 full = realtime + imsub

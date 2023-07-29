@@ -47,3 +47,5 @@ sextractor_candidate_config = {
 }
 
 psfex_path = wirc_file_dir.joinpath("photom.psfex")
+
+wirc_avro_schema_path = Path(__file__).parent.joinpath("avro_schema/wirc.alert.avsc")

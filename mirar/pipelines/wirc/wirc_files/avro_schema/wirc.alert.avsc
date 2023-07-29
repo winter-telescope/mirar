@@ -1,0 +1,19 @@
+{
+    "namespace": "wirc",
+    "type": "record",
+    "name": "alert",
+    "doc": "avro alert schema for testing WINTER - version 0.1",
+    "fields": [
+        {"name": "schemavsn", "type": "string", "doc": "schema version used"},
+        {"name": "publisher", "type": "string", "doc": "origin of alert packet"},
+        {"name": "objectId", "type": "string"},
+        {"name": "candid", "type": "long"},
+        {"name": "candidate", "type": "wirc.alert.candidate", "doc": "candidate information"},
+        {"name": "prv_candidates", "type": [{
+            "type": "array",
+            "items": "wirc.alert.prv_candidate"}, "null"]},
+        {"name": "cutoutScience", "type": "bytes", "doc": "science cutout image [gzipped fits bytestream]"},
+        {"name": "cutoutTemplate", "type": "bytes", "doc": "cutout of template image [gzipped fits bytestream]"},
+        {"name": "cutoutDifference", "type": "bytes", "doc": "difference image cutout [gzipped fits bytestream]"}
+        ]
+}
