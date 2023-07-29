@@ -54,7 +54,6 @@ from mirar.pipelines.winter.models import (
     Raw,
     Stacks,
 )
-from mirar.processors.alerts import AvroPacketMaker
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
@@ -63,6 +62,7 @@ from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
+from mirar.processors.avro import IPACAvroExporter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_exporter import DatabaseDataframeExporter
@@ -424,7 +424,9 @@ process_candidates = [
         schema_path=winter_candidate_config,
         duplicate_protocol="replace",
     ),
-    AvroPacketMaker(
+    SourceWriter(output_dir_name="preavro"),
+    IPACAvroExporter(
+        topic_prefix="winter",
         base_name="WNTR",
         broadcast=False,
         avro_schema_path=winter_avro_schema_path,

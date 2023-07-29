@@ -32,7 +32,6 @@ from mirar.pipelines.wirc.wirc_files import (
     wirc_candidate_schema_path,
     wirc_mask_path,
 )
-from mirar.processors.alerts import AvroPacketMaker, SendToFritz
 from mirar.processors.astromatic import Scamp, Sextractor, Swarp
 from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.astromatic.scamp.scamp import SCAMP_HEADER_KEY
@@ -40,6 +39,7 @@ from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkim
 from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.astrometry.utils import AstrometryFromFile
+from mirar.processors.avro import IPACAvroExporter, SendToFritz
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_exporter import DatabaseDataframeExporter
@@ -265,7 +265,7 @@ process_candidates = [
 ]
 
 package_candidates = [
-    AvroPacketMaker(
+    IPACAvroExporter(
         base_name="WIRC",
         avro_schema_path=wirc_avro_schema_path,
     ),

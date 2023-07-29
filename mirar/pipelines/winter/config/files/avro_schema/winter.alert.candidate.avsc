@@ -2,7 +2,7 @@
 	"namespace": "winter.alert",
 	"type": "record",
 	"name": "candidate",
-	"doc": "avro alert schema - version 0.4",
+	"doc": "avro alert candidate schema for WINTER",
 	"fields": [
 		{"name": "jd", "type": "double", "doc": "Observation Julian date at start of exposure [days]"},
 		{"name": "diffmaglim", "type": ["float", "null"], "doc": "Expected 5-sigma mag limit in difference image based on global noise estimate [mag]"},
