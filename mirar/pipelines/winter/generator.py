@@ -330,6 +330,19 @@ def select_winter_flats(images: ImageBatch) -> ImageBatch:
     """
     # TODO: Ideally this will select all exposures with exptime above a filter-dependent
     #  threshold, TBD.
-    images = select_from_images(images, key=EXPTIME_KEY, target_values="120")
+    flat_exptime_threshold = 30
+    flat_num_images_threshold = 5
     images = select_from_images(images, target_values="science")
-    return images
+    exptimes = [x[EXPTIME_KEY] for x in images]
+    # Find the longest exposure time with at least 5 exposures
+    unique_exptimes, exptime_counts = np.unique(exptimes, return_counts=True)
+    valid_inds = (exptime_counts >= flat_num_images_threshold) & (
+        unique_exptimes >= flat_exptime_threshold
+    )
+    flats_batch = ImageBatch([])
+    if np.sum(valid_inds) > 0:
+        max_exptime = np.max(unique_exptimes[valid_inds])
+        flats_batch = select_from_images(
+            images, key=EXPTIME_KEY, target_values=f"{max_exptime}"
+        )
+    return flats_batch

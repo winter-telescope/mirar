@@ -69,6 +69,7 @@ from mirar.processors.database.database_exporter import DatabaseDataframeExporte
 from mirar.processors.database.database_importer import DatabaseHistoryImporter
 from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
 from mirar.processors.database.utils import get_column_names_from_schema
+from mirar.processors.flat import FlatCalibrator
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -77,7 +78,6 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
 from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
-from mirar.processors.sky import SkyFlatCalibrator
 from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
@@ -233,7 +233,7 @@ dark_calibrate = [
 
 flat_calibrate = [
     ImageBatcher(["BOARD_ID", "FILTER", "SUBCOORD"]),
-    SkyFlatCalibrator(cache_sub_dir="skycals", select_flat_images=select_winter_flats),
+    FlatCalibrator(cache_sub_dir="skycals", select_flat_images=select_winter_flats),
     # ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
