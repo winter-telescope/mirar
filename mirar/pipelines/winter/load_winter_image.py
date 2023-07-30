@@ -148,10 +148,10 @@ def clean_header(header: fits.Header) -> fits.Header:
         warnings.simplefilter("ignore", AstropyWarning)
         header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
 
-    header["IMGTYPE"] = header["OBSTYPE"]
+    header["IMGTYPE"] = header[OBSCLASS_KEY]
 
     if not header["IMGTYPE"] in imgtype_dict:
-        header["ITID"] = itid_dict[imgtype_dict["OTHER"]]
+        header["ITID"] = itid_dict[imgtype_dict["other"]]
     else:
         header["ITID"] = itid_dict[imgtype_dict[header[OBSCLASS_KEY]]]
 
