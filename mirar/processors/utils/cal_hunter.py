@@ -178,6 +178,8 @@ def find_required_cals(
             f"Some required calibration images were missing from image set. "
             f"Found {n_cal} additional calibration images from older nights"
         )
+        for image in images:
+            print(image)
 
     return images
 
