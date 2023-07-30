@@ -61,12 +61,19 @@ def clean_header(header: fits.Header) -> fits.Header:
     if header["EXPTIME"] == 0.0:
         header[OBSCLASS_KEY] = "bias"
 
-    if (header["FILTERID"] == "dark") & (header[OBSCLASS_KEY] not in ["bias", "test"]):
-        header[OBSCLASS_KEY] = "dark"
+    if header["FILTERID"] == "dark":
+        if header[OBSCLASS_KEY] not in [
+            "dark",
+            "bias",
+            "test",
+        ]:
+            header[OBSCLASS_KEY] = "test"
 
     # Discard pre-sunset, post-sunset darks
     if header[OBSCLASS_KEY] == "dark":
         sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
+        
+        print("sunpos:", sun_pos.alt.to_value("deg"))
         if sun_pos.alt.to_value("deg") > -25.0:
             header[OBSCLASS_KEY] = "test"
 
