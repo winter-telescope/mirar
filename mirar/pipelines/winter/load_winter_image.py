@@ -72,10 +72,10 @@ def clean_header(header: fits.Header) -> fits.Header:
     # Discard pre-sunset, post-sunset darks
     if header[OBSCLASS_KEY] == "dark":
         sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
-        
-        print("sunpos:", sun_pos.alt.to_value("deg"))
         if sun_pos.alt.to_value("deg") > -25.0:
             header[OBSCLASS_KEY] = "test"
+
+        print("sunpos:", sun_pos.alt.to_value("deg"), header[OBSCLASS_KEY])
 
     # Sometimes darks come with wrong fieldids
     if header[OBSCLASS_KEY] == "dark":
