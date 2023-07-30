@@ -75,8 +75,6 @@ def clean_header(header: fits.Header) -> fits.Header:
         if sun_pos.alt.to_value("deg") > -25.0:
             header[OBSCLASS_KEY] = "test"
 
-        print("sunpos:", sun_pos.alt.to_value("deg"), header[OBSCLASS_KEY])
-
     # Sometimes darks come with wrong fieldids
     if header[OBSCLASS_KEY] == "dark":
         header["FIELDID"] = DEFAULT_FIELD
@@ -156,9 +154,6 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["ITID"] = itid_dict[imgtype_dict[header[OBSCLASS_KEY]]]
 
     header["EXPMJD"] = header["MJD-OBS"]
-
-    print(date_t, header[TARGET_KEY], header[OBSCLASS_KEY])
-
     return header
 
 

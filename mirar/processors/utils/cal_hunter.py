@@ -11,7 +11,7 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.io import open_fits
+from mirar.io import open_raw_image
 from mirar.paths import TARGET_KEY
 from mirar.processors.utils.image_loader import ImageLoader, load_from_dir
 from mirar.processors.utils.image_selector import select_from_images
@@ -46,8 +46,6 @@ class CalRequirement:
         :param images: ImageBatch
         :return: None
         """
-
-        print(f"Checking images where key {TARGET_KEY} = {self.target_name}")
 
         new_images = select_from_images(
             images, key=TARGET_KEY, target_values=self.target_name
@@ -95,7 +93,7 @@ def find_required_cals(
     latest_dir: str | Path,
     night: str,
     requirements: list[CalRequirement],
-    open_f: Callable[[str], Image] = open_fits,
+    open_f: Callable[[str], Image] = open_raw_image,
     images: ImageBatch = ImageBatch(),
     skip_latest_night: bool = False,
 ) -> ImageBatch:
@@ -176,12 +174,10 @@ def find_required_cals(
                     n_cal += 1
 
     if n_cal > 0:
-        logger.warning(
+        logger.debug(
             f"Some required calibration images were missing from image set. "
             f"Found {n_cal} additional calibration images from older nights"
         )
-        for image in images:
-            print(image)
 
     return images
 
@@ -226,7 +222,7 @@ class CalHunter(ImageLoader):
             latest_dir=latest_dir,
             night=self.night,
             requirements=requirements,
-            open_f=self.unpack_raw_image,
+            open_f=self.load_image,
             images=batch,
             skip_latest_night=True,
         )
