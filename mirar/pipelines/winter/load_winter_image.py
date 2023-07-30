@@ -61,8 +61,13 @@ def clean_header(header: fits.Header) -> fits.Header:
     if header["EXPTIME"] == 0.0:
         header[OBSCLASS_KEY] = "bias"
 
-    if (header["FILTERID"] == "dark") & (header[OBSCLASS_KEY] not in ["bias", "test"]):
-        header[OBSCLASS_KEY] = "dark"
+    if header["FILTERID"] == "dark":
+        if header[OBSCLASS_KEY] not in [
+            "dark",
+            "bias",
+            "test",
+        ]:
+            header[OBSCLASS_KEY] = "test"
 
     # Discard pre-sunset, post-sunset darks
     if header[OBSCLASS_KEY] == "dark":
@@ -94,7 +99,7 @@ def clean_header(header: fits.Header) -> fits.Header:
         "flat",
         "test",
     ]:
-        targ_name = header["OBSTYPE"].lower()
+        targ_name = header[OBSCLASS_KEY].lower()
 
     header[TARGET_KEY] = targ_name
 
@@ -141,15 +146,14 @@ def clean_header(header: fits.Header) -> fits.Header:
         warnings.simplefilter("ignore", AstropyWarning)
         header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
 
-    header["IMGTYPE"] = header["OBSTYPE"]
+    header["IMGTYPE"] = header[OBSCLASS_KEY]
 
     if not header["IMGTYPE"] in imgtype_dict:
-        header["ITID"] = itid_dict[imgtype_dict["OTHER"]]
+        header["ITID"] = itid_dict[imgtype_dict["other"]]
     else:
-        header["ITID"] = itid_dict[imgtype_dict[header["OBSTYPE"]]]
+        header["ITID"] = itid_dict[imgtype_dict[header[OBSCLASS_KEY]]]
 
     header["EXPMJD"] = header["MJD-OBS"]
-
     return header
 
 
