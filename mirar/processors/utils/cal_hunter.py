@@ -47,6 +47,8 @@ class CalRequirement:
         :return: None
         """
 
+        print(f"Checking images where key {TARGET_KEY} = {self.target_name}")
+
         new_images = select_from_images(
             images, key=TARGET_KEY, target_values=self.target_name
         )
@@ -224,7 +226,7 @@ class CalHunter(ImageLoader):
             latest_dir=latest_dir,
             night=self.night,
             requirements=requirements,
-            open_f=self.open_raw_image,
+            open_f=self.unpack_raw_image,
             images=batch,
             skip_latest_night=True,
         )
