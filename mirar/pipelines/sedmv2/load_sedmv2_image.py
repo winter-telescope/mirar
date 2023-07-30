@@ -151,25 +151,29 @@ def clean_cal_header(
 
 
 def load_raw_sedmv2_mef(
-    path: str | Path, skip_first=True
+    path: str | Path,
 ) -> tuple[fits.Header, list[np.array], list[fits.Header]]:
     """
     Load mef image
     """
     header, split_data, split_headers = open_mef_fits(path)
 
-    if "IMGTYPE" in header.keys():
+    if "IMGTYPE" in header.keys():  # mode fritz
+        check_header = header
+        skip_first = True
+    else:  # mode0
+        check_header = split_headers[0]
+        skip_first = False
+
+    if check_header["IMGTYPE"] == "object":
         if skip_first:
             split_data = split_data[1:]
             split_headers = split_headers[1:]
-
         header, split_headers = clean_science_header(header, split_headers)
-        # reformat UTC values present in split_headers
-        # for hdr in split_headers:
-        #    orig = hdr["UTC"]
-        #    hdr["UTC"] = convert_to_UTC(orig)
-    else:
+    elif check_header["IMGTYPE"] in ["flat", "bias"]:
         header, split_headers = clean_cal_header(header, split_headers[0], path)
+    else:
+        logger.debug("Unexpected IMGTYPE. Is this a dark?")
 
     header[BASE_NAME_KEY] = os.path.basename(path)
     header[RAW_IMG_KEY] = path
@@ -186,7 +190,7 @@ def load_sedmv2_mef_image(
     path: str | Path,
 ) -> list[Image]:
     """
-    Function to load iwinter mef images
+    Function to load sedmv2 mef images
     :param path: Path to image
     :return: list of images
     """
