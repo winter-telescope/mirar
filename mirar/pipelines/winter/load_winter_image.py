@@ -101,7 +101,7 @@ def clean_header(header: fits.Header) -> fits.Header:
         "flat",
         "test",
     ]:
-        targ_name = header["OBSTYPE"].lower()
+        targ_name = header[OBSCLASS_KEY].lower()
 
     header[TARGET_KEY] = targ_name
 
