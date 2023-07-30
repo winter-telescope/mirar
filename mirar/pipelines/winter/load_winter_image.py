@@ -153,9 +153,11 @@ def clean_header(header: fits.Header) -> fits.Header:
     if not header["IMGTYPE"] in imgtype_dict:
         header["ITID"] = itid_dict[imgtype_dict["OTHER"]]
     else:
-        header["ITID"] = itid_dict[imgtype_dict[header["OBSTYPE"]]]
+        header["ITID"] = itid_dict[imgtype_dict[header[OBSCLASS_KEY]]]
 
     header["EXPMJD"] = header["MJD-OBS"]
+
+    print(date_t, header[TARGET_KEY], header[OBSCLASS_KEY])
 
     return header
 
