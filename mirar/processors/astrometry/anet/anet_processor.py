@@ -25,18 +25,14 @@ from mirar.processors.astromatic.sextractor.settings import (
     write_param_file,
     write_sextractor_config_to_file,
 )
-from mirar.processors.astrometry.anet.anet import run_astrometry_net_single
+from mirar.processors.astrometry.anet.anet import (
+    ASTROMETRY_TIMEOUT,
+    AstrometryNetError,
+    run_astrometry_net_single,
+)
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
-
-ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
-
-
-class AstrometryNetError(ProcessorError):
-    """
-    Class for errors in astrometry.net
-    """
 
 
 class AstrometryNet(BaseImageProcessor):

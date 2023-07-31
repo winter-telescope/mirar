@@ -8,13 +8,19 @@ from typing import Optional
 
 from astropy.io import fits
 
-from mirar.utils import ExecutionError, execute
+from mirar.errors import ProcessorError
+from mirar.utils import ExecutionError, TimeoutExecutionError, execute
 
 logger = logging.getLogger(__name__)
 
 
-class AstrometryNetError(ExecutionError):
-    """Astrometry.net-related error"""
+ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
+
+
+class AstrometryNetError(ProcessorError):
+    """
+    Class for errors in astrometry.net
+    """
 
 
 def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
@@ -41,10 +47,10 @@ def run_astrometry_net_single(
     scale_bounds: Optional[tuple | list] = None,  # limits on scale (lower, upper)
     scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
     downsample: Optional[float | int] = None,  # downsample by factor of __
-    timeout: Optional[float] = None,  # astrometry cmd execute timeout, in seconds
+    timeout: float = ASTROMETRY_TIMEOUT,  # astrometry cmd execute timeout, in seconds
     use_sextractor: bool = False,
     sextractor_path: str = "sex",
-    search_radius_deg: float = 5,
+    search_radius_deg: float = 5.0,
     parity: str = None,
     sextractor_config_path: str = None,
     x_image_key: str = "X_IMAGE",
@@ -114,14 +120,11 @@ def run_astrometry_net_single(
                 f"A-net command:\n {cmd}"
             )
 
-            if timeout is not None:
-                execute(cmd, output_dir, timeout=timeout)
-            else:
-                execute(cmd, output_dir)
+            execute(cmd, output_dir, timeout=timeout)
 
             if not os.path.isfile(img_path):
                 logger.debug("Second attempt failed.")
-    except ExecutionError as err:
+    except (ExecutionError, TimeoutExecutionError) as err:
         raise AstrometryNetError(err) from err
 
     return img_path

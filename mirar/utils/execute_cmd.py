@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from subprocess import TimeoutExpired
 
 import docker
 
@@ -21,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 class ExecutionError(Exception):
     """Error relating to executing bash command"""
+
+
+class TimeoutExecutionError(Exception):
+    """Error relating to timeout when executing bash command"""
 
 
 DEFAULT_TIMEOUT = 300.0
@@ -104,12 +109,21 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT)
 
     except subprocess.CalledProcessError as err:
         msg = (
-            f"Error found when running with command: \n \n '{err.cmd}' \n \n"
+            f"Execution Error found when running with command: \n \n '{err.cmd}' \n \n"
             f"This yielded a return code of {err.returncode}. "
             f"The following traceback was found: \n {err.stderr.decode()}"
         )
         logger.error(msg)
         raise ExecutionError(msg) from err
+
+    except TimeoutExpired as err:
+        msg = (
+            f"Timeout error found when running with command: \n \n '{err.cmd}' \n \n"
+            f"The timeout was set to {timeout} seconds. "
+            f"The following traceback was found: \n {err.stderr.decode()}"
+        )
+        logger.error(msg)
+        raise TimeoutExecutionError(msg) from err
 
 
 def temp_config(config_path: str | Path, output_dir: str | Path) -> Path:
