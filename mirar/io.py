@@ -150,9 +150,15 @@ def open_mef_fits(
     return primary_header, split_data, split_headers
 
 
-def combine_mef_extension_file_headers(primary_header, extension_header):
+def combine_mef_extension_file_headers(
+    primary_header: fits.Header, extension_header: fits.Header
+) -> fits.Header:
     """
     Function to combine the primary header with an extension header in a MEF frame
+
+    :param primary_header: astropy Header object
+    :param extension_header: astropy Header object
+    :return: astropy Header object
     """
     zipped = list(zip(primary_header.values(), primary_header.comments))
 
@@ -170,6 +176,42 @@ def combine_mef_extension_file_headers(primary_header, extension_header):
                 extension_header.append((key, value, comment))
 
     return extension_header
+
+
+def tag_mef_extension_file_headers(
+    primary_header: fits.Header,
+    extension_headers: list[fits.Header],
+    extension_key: str | None = None,
+) -> list[fits.Header]:
+    """
+    Function to tag the extension headers in a MEF frame
+
+    :param primary_header: Primary header
+    :param extension_headers: Extension headers
+    :param extension_key: Key to use for tagging the extension headers
+    :return: List of tagged extension headers
+    """
+
+    new_extension_headers = []
+
+    for ext_num, ext_header in enumerate(extension_headers):
+        if extension_key is not None:
+            extension_num_str = str(ext_header[extension_key])
+        else:
+            extension_num_str = str(ext_num)
+
+        # append primary_header to hdrext
+        new_single_header = combine_mef_extension_file_headers(
+            primary_header=primary_header, extension_header=ext_header
+        )
+
+        new_single_header[BASE_NAME_KEY] = (
+            f"{primary_header[BASE_NAME_KEY].split('.fits')[0]}_"
+            f"{extension_num_str}.fits"
+        )
+        new_extension_headers.append(new_single_header)
+
+    return new_extension_headers
 
 
 def open_mef_image(
@@ -190,33 +232,21 @@ def open_mef_image(
 
     primary_header, ext_data_list, ext_header_list = open_f(path)
 
+    ext_header_list = tag_mef_extension_file_headers(
+        primary_header=primary_header,
+        extension_headers=ext_header_list,
+        extension_key=extension_key,
+    )
+
     ext_data_list = [x.astype(np.float64) for x in ext_data_list]
     split_images_list = []
 
-    for ext_num, ext_data in enumerate(ext_data_list):
-        ext_header = ext_header_list[ext_num]
-
-        if extension_key is not None:
-            extension_num_str = str(ext_header[extension_key])
-        else:
-            extension_num_str = str(ext_num)
-
-        # append primary_header to hdrext
-        new_single_header = combine_mef_extension_file_headers(
-            primary_header=primary_header, extension_header=ext_header
-        )
-
-        new_single_header[BASE_NAME_KEY] = (
-            f"{primary_header[BASE_NAME_KEY].split('.fits')[0]}_"
-            f"{extension_num_str}.fits"
-        )
-
-        split_images_list.append(
-            Image(data=copy.deepcopy(ext_data), header=copy.deepcopy(new_single_header))
-        )
-
-    for image in split_images_list:
+    for i, ext_data in enumerate(ext_data_list):
+        single_header = ext_header_list[i]
+        image = Image(data=copy.deepcopy(ext_data), header=copy.deepcopy(single_header))
         check_image_has_core_fields(image)
+
+        split_images_list.append(image)
 
     return split_images_list
 
