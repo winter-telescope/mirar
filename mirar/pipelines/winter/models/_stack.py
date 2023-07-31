@@ -53,9 +53,9 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     maglim = Column(REAL)
 
 
-class Stacks(BaseDB):
+class Stack(BaseDB):
     """
-    A pydantic model for a raw database entry
+    A pydantic model for a stack database entry
     """
 
     sql_model: ClassVar = StacksTable

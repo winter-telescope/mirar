@@ -63,9 +63,9 @@ class AstrometryStatsTable(WinterBase):  # pylint: disable=too-few-public-method
 default_unknown_field = Field(default=-999)
 
 
-class AstrometryStats(BaseDB):
+class AstrometryStat(BaseDB):
     """
-    A pydantic model for a raw database entry
+    A pydantic model for an astrometry stats database entry
     """
 
     sql_model: ClassVar = AstrometryStatsTable

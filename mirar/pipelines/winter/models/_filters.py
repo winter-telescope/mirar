@@ -27,7 +27,7 @@ class FiltersTable(WinterBase):  # pylint: disable=too-few-public-methods
     exposures: Mapped["ExposuresTable"] = relationship(back_populates="filt")
 
 
-class Filters(BaseDB):
+class Filter(BaseDB):
     """
     A pydantic model for a filters database entry
     """
@@ -67,6 +67,6 @@ def populate_filters(filter_map: dict = None):
         filter_map = dict(winter_filters_map)
 
     for filter_name, fid in filter_map.items():
-        winter_filter = Filters(fid=fid, filtername=filter_name)
+        winter_filter = Filter(fid=fid, filtername=filter_name)
         if not winter_filter.exists():
             winter_filter.insert_entry()

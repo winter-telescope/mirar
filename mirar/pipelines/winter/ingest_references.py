@@ -10,7 +10,7 @@ from pathlib import Path
 from astropy.io import fits
 
 from mirar.paths import LATEST_SAVE_KEY, base_output_dir, get_output_dir
-from mirar.pipelines.winter.models import RefComponents
+from mirar.pipelines.winter.models import RefComponent
 from mirar.processors.sqldatabase.postgres import PostgresUser
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ def get_logger(level="INFO"):
     return log
 
 
-def export_image_to_db(path: str, db_table=RefComponents, pg_user=PostgresUser()):
+def export_image_to_db(path: str, db_table=RefComponent, pg_user=PostgresUser()):
     """
     Export a fits image to the database
     """

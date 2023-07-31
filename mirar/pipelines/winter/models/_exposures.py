@@ -19,8 +19,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.pipelines.winter.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.winter.models._filters import FiltersTable, fid_field
-from mirar.pipelines.winter.models._imgType import ImgTypesTable
-from mirar.pipelines.winter.models._nights import Nights, NightsTable
+from mirar.pipelines.winter.models._img_type import ImgTypesTable
+from mirar.pipelines.winter.models._nights import Night, NightsTable
 from mirar.pipelines.winter.models._programs import ProgramsTable, default_program
 from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.processors.sqldatabase.base_model import (
@@ -63,7 +63,7 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     fieldid: Mapped[int] = mapped_column(ForeignKey("fields.fieldid"))
     field: Mapped["FieldsTable"] = relationship(back_populates="exposures")
 
-    itid: Mapped[int] = mapped_column(ForeignKey("imgTypes.itid"))
+    itid: Mapped[int] = mapped_column(ForeignKey("imgtypes.itid"))
     img_type: Mapped["ImgTypesTable"] = relationship(back_populates="exposures")
 
     progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
@@ -108,9 +108,9 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
 default_unknown_field = Field(default=-999)
 
 
-class Exposures(BaseDB):
+class Exposure(BaseDB):
     """
-    A pydantic model for a raw database entry
+    A pydantic model for am exposure database entry
     """
 
     sql_model: ClassVar = ExposuresTable
@@ -147,7 +147,7 @@ class Exposures(BaseDB):
 
         :return: None
         """
-        night = Nights(nightdate=self.nightdate)
+        night = Night(nightdate=self.nightdate)
         logger.debug(f"Searched for night {self.nightdate}")
         if not night.exists():
             night.insert_entry()

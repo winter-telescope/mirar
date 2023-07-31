@@ -10,7 +10,7 @@ from sqlalchemy import VARCHAR, Column, Double, Float, ForeignKey, Integer, Sequ
 # event,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from mirar.pipelines.winter.models._exposures import Exposures
+from mirar.pipelines.winter.models._exposures import Exposure
 from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.processors.sqldatabase.base_model import BaseDB
 
@@ -84,5 +84,5 @@ class Raw(BaseDB):
         Returns:
 
         """
-        assert Exposures.sql_model().exists(keys="uexpid", values=field_value)
+        assert Exposure.sql_model().exists(keys="uexpid", values=field_value)
         return field_value
