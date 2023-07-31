@@ -26,9 +26,9 @@ class RefQueriesTable(WinterBase):
     components: Mapped["RefComponentsTable"] = relationship(back_populates="queries")
 
 
-class RefQueries(BaseDB):
+class RefQuery(BaseDB):
     """
-    Pydantic model for Reference queries
+    Pydantic model for a reference query entry
     """
 
     sql_model: ClassVar = RefQueriesTable

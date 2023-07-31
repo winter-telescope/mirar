@@ -44,9 +44,9 @@ class RefComponentsTable(WinterBase):
     filter = Column(VARCHAR(10))
 
 
-class RefComponents(BaseDB):
+class RefComponent(BaseDB):
     """
-    Pydantic model for Reference components
+    Pydantic model for a Reference component entry
     """
 
     sql_model: ClassVar = RefComponentsTable

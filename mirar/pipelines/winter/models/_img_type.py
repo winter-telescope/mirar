@@ -24,14 +24,14 @@ class ImgTypesTable(WinterBase):  # pylint: disable=too-few-public-methods
     ITID table in database
     """
 
-    __tablename__ = "imgTypes"
+    __tablename__ = "img_types"
 
     itid = Column(Integer, primary_key=True)
     imgtype = Column(VARCHAR(20), unique=True)
     exposures: Mapped["ExposuresTable"] = relationship(back_populates="img_type")
 
 
-class ImgTypes(BaseDB):
+class ImgType(BaseDB):
     """
     A pydantic model for a ITID database entry
     """
@@ -56,6 +56,6 @@ def populate_itid():
     :return: None
     """
     for ind, imgtype in enumerate(ALL_ITID):
-        itid = ImgTypes(itid=ind + 1, imgtype=imgtype)
+        itid = ImgType(itid=ind + 1, imgtype=imgtype)
         if not itid.exists():
             itid.insert_entry()

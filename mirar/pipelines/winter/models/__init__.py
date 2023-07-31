@@ -7,29 +7,29 @@ from sqlalchemy.orm import DeclarativeBase
 
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.models._astrometry_stats import (
-    AstrometryStats,
+    AstrometryStat,
     AstrometryStatsTable,
 )
-from mirar.pipelines.winter.models._exposures import Exposures, ExposuresTable
+from mirar.pipelines.winter.models._exposures import Exposure, ExposuresTable
 from mirar.pipelines.winter.models._fields import (
     DEFAULT_FIELD,
-    Fields,
+    FieldEntry,
     FieldsTable,
     populate_fields,
 )
 from mirar.pipelines.winter.models._filters import (
-    Filters,
+    Filter,
     FiltersTable,
     populate_filters,
 )
-from mirar.pipelines.winter.models._imgType import (
+from mirar.pipelines.winter.models._img_type import (
     ALL_ITID,
-    ImgTypes,
+    ImgType,
     ImgTypesTable,
     itid_dict,
     populate_itid,
 )
-from mirar.pipelines.winter.models._nights import Nights, NightsTable
+from mirar.pipelines.winter.models._nights import Night, NightsTable
 from mirar.pipelines.winter.models._programs import (
     DEFAULT_MAX_PRIORITY,
     LEN_PROG_KEY,
@@ -41,14 +41,14 @@ from mirar.pipelines.winter.models._programs import (
 )
 from mirar.pipelines.winter.models._raw import Raw, RawTable
 from mirar.pipelines.winter.models._ref_components import (
-    RefComponents,
+    RefComponent,
     RefComponentsTable,
 )
-from mirar.pipelines.winter.models._ref_queries import RefQueries, RefQueriesTable
-from mirar.pipelines.winter.models._ref_stacks import RefStacks, RefStacksTable
-from mirar.pipelines.winter.models._stack import Stacks, StacksTable
+from mirar.pipelines.winter.models._ref_queries import RefQueriesTable, RefQuery
+from mirar.pipelines.winter.models._ref_stacks import RefStack, RefStacksTable
+from mirar.pipelines.winter.models._stack import Stack, StacksTable
 from mirar.pipelines.winter.models._subdets import (
-    Subdets,
+    Subdet,
     SubdetsTable,
     populate_subdets,
 )
