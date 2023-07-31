@@ -63,7 +63,7 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     fieldid: Mapped[int] = mapped_column(ForeignKey("fields.fieldid"))
     field: Mapped["FieldsTable"] = relationship(back_populates="exposures")
 
-    itid: Mapped[int] = mapped_column(ForeignKey("imgTypes.itid"))
+    itid: Mapped[int] = mapped_column(ForeignKey("imgtypes.itid"))
     img_type: Mapped["ImgTypesTable"] = relationship(back_populates="exposures")
 
     progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
