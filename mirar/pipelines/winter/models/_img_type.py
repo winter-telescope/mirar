@@ -24,7 +24,7 @@ class ImgTypesTable(WinterBase):  # pylint: disable=too-few-public-methods
     ITID table in database
     """
 
-    __tablename__ = "img_types"
+    __tablename__ = "imgtypes"
 
     itid = Column(Integer, primary_key=True)
     imgtype = Column(VARCHAR(20), unique=True)
