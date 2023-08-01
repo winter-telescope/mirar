@@ -19,20 +19,20 @@ logger = logging.getLogger(__name__)
 test_data_dir = get_test_data_dir()
 
 expected_zp = {
-    "ZP_6.0": 27.760366439819336,
-    "ZP_6.0_std": 0.2747618854045868,
+    "ZP_6.0": 28.654869079589844,
+    "ZP_6.0_std": 0.27347737550735474,
     "ZP_6.0_nstars": 13,
-    "ZP_10.0": 28.341157913208008,
-    "ZP_10.0_std": 0.09141725301742554,
+    "ZP_10.0": 29.23480987548828,
+    "ZP_10.0_std": 0.09129349142313004,
     "ZP_10.0_nstars": 11,
-    "ZP_14.0": 28.417837142944336,
-    "ZP_14.0_std": 0.13541148602962494,
+    "ZP_14.0": 29.311601638793945,
+    "ZP_14.0_std": 0.13507914543151855,
     "ZP_14.0_nstars": 13,
-    "ZP_18.0": 28.475311279296875,
-    "ZP_18.0_std": 0.10811392217874527,
+    "ZP_18.0": 29.368980407714844,
+    "ZP_18.0_std": 0.10783938318490982,
     "ZP_18.0_nstars": 13,
-    "ZP_AUTO": 28.48914909362793,
-    "ZP_AUTO_std": 0.09673704952001572,
+    "ZP_AUTO": 29.382888793945312,
+    "ZP_AUTO_std": 0.0966394692659378,
     "ZP_AUTO_nstars": 12,
 }
 
@@ -95,6 +95,14 @@ class TestWircPipeline(BaseTestCase):
 
         header = res[0][0].get_header()
 
+        print("New Results:")
+        new_exp = "expected_zp = { \n"
+        for header_key in header.keys():
+            if "ZP_" in header_key:
+                new_exp += f'    "{header_key}": {header[header_key]}, \n'
+        new_exp += "}"
+        print(new_exp)
+
         for key, value in expected_zp.items():
             if isinstance(value, float):
                 self.assertAlmostEqual(value, header[key], places=2)
@@ -104,22 +112,3 @@ class TestWircPipeline(BaseTestCase):
                 raise TypeError(
                     f"Type for value ({type(value)} is neither float not int."
                 )
-
-
-if __name__ == "__main__":
-    print("Calculating latest ZP dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images(
-        Dataset(ImageBatch()), catch_all_errors=False
-    )
-
-    new_header = new_res[0][0].get_header()
-
-    new_exp = "expected_zp = { \n"
-    for header_key in new_header.keys():
-        if "ZP_" in header_key:
-            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp += "}"
-    print(new_exp)

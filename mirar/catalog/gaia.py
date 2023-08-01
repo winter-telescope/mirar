@@ -19,6 +19,12 @@ logger = logging.getLogger(__name__)
 logging.getLogger("astroquery").setLevel(logging.WARNING)
 
 
+# 2MASS values from https://iopscience.iop.org/article/10.1086/376474
+zeromag_2mass = {"j": 1594.0 * u.Jansky, "h": 1024.0 * u.Jansky, "k": 666.8 * u.Jansky}
+
+offsets_2mass = {key: zm.to("mag(AB)").value for key, zm in zeromag_2mass.items()}
+
+
 class Gaia2Mass(BaseCatalog):
     """
     Crossmatched Gaia/2Mass catalog
@@ -100,6 +106,14 @@ class Gaia2Mass(BaseCatalog):
         src_list["magnitude"] = src_list[f"{self.filter_name.lower()}_m"]
         src_list["magnitude_err"] = src_list[f"{self.filter_name.lower()}_msigcom"]
         logger.debug(f"Found {len(src_list)} sources in Gaia")
+
+        # Convert to AB magnitudes
+
+        offset = offsets_2mass[self.filter_name.lower()]
+
+        logger.debug(f"Adding {offset:.2f} to convert from 2MASS to AB magnitudes")
+
+        src_list["magnitude"] += offset
 
         j_phquals = [x[0] for x in src_list["ph_qual"]]
         h_phquals = [x[1] for x in src_list["ph_qual"]]
