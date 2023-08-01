@@ -42,6 +42,9 @@ class RefComponentsTable(WinterBase):
     savepath = Column(VARCHAR(255), unique=True)
     ukirpath = Column(VARCHAR(255))
     filter = Column(VARCHAR(10))
+    zp = Column(Float)
+    zpstd = Column(Float)
+    seeing = Column(Float)
 
 
 class RefComponent(BaseDB):
@@ -72,6 +75,9 @@ class RefComponent(BaseDB):
     dec_cent: float = dec_field
     ukirpath: str = Field(min_length=1)
     filter: str = Field(min_length=1)
+    zp: float = Field(ge=0)
+    zpstd: float = Field(ge=0)
+    seeing: float = Field()
 
     def exists(self) -> bool:
         """
