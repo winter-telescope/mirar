@@ -24,9 +24,9 @@ class NightsTable(WinterBase):  # pylint: disable=too-few-public-methods
     exposures: Mapped["ExposuresTable"] = relationship(back_populates="night")
 
 
-class Nights(BaseDB):
+class Night(BaseDB):
     """
-    A pydantic model for a nights database entry
+    A pydantic model for a night database entry
     """
 
     sql_model: ClassVar = NightsTable

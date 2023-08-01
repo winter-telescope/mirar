@@ -18,7 +18,7 @@ from mirar.pipelines.winter.config import (
 )
 from mirar.pipelines.winter.constants import winter_filters_map
 from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
-from mirar.pipelines.winter.models import RefComponents, RefQueries, RefStacks
+from mirar.pipelines.winter.models import RefComponent, RefQuery, RefStack
 from mirar.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
@@ -238,10 +238,10 @@ def winter_reference_generator(image: Image):
         sextractor_generator=ref_sextractor,
         phot_calibrator_generator=winter_reference_phot_calibrator,
         num_query_points=9,
-        query_table=RefQueries,
-        components_table=RefComponents,
+        query_table=RefQuery,
+        components_table=RefComponent,
         write_to_db=False,
-        write_db_table=RefStacks,
+        write_db_table=RefStack,
         component_image_dir=components_image_dir.as_posix(),
         night_sub_dir="winter/references",
         skip_online_query=False,
@@ -286,10 +286,10 @@ def winter_refbuild_reference_generator(image: Image):
         sextractor_generator=ref_sextractor,
         phot_calibrator_generator=winter_reference_phot_calibrator,
         num_query_points=9,
-        query_table=RefQueries,
-        components_table=RefComponents,
+        query_table=RefQuery,
+        components_table=RefComponent,
         write_to_db=False,
-        write_db_table=RefStacks,
+        write_db_table=RefStack,
         component_image_dir=components_image_dir.as_posix(),
         night_sub_dir="winter/references",
         skip_online_query=False,

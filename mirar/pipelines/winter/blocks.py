@@ -49,10 +49,10 @@ from mirar.pipelines.winter.models import (
     DEFAULT_FIELD,
     NXSPLIT,
     NYSPLIT,
-    AstrometryStats,
-    Exposures,
+    AstrometryStat,
+    Exposure,
     Raw,
-    Stacks,
+    Stack,
 )
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.background_subtractor import (
@@ -151,7 +151,7 @@ load_raw = [
 
 extract_all = [
     ImageBatcher("UTCTIME"),
-    DatabaseImageBatchExporter(db_table=Exposures, duplicate_protocol="ignore"),
+    DatabaseImageBatchExporter(db_table=Exposure, duplicate_protocol="ignore"),
     ImageSelector((OBSCLASS_KEY, ["dark", "science"])),
 ]
 
@@ -266,7 +266,7 @@ astrometry = [
         search_radius_deg=1.0,
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
-        timeout=60,
+        timeout=120,
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
@@ -300,7 +300,7 @@ validate_astrometry = [
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
-    DatabaseImageExporter(db_table=AstrometryStats, duplicate_protocol="ignore"),
+    DatabaseImageExporter(db_table=AstrometryStat, duplicate_protocol="ignore"),
 ]
 
 stack_dithers = [
@@ -335,9 +335,7 @@ photcal_and_export = [
         cache=True,
     ),
     ImageSaver(output_dir_name="final"),
-    DatabaseImageExporter(
-        db_table=Stacks, duplicate_protocol="replace", q3c_bool=False
-    ),
+    DatabaseImageExporter(db_table=Stack, duplicate_protocol="replace", q3c_bool=False),
     ModifyImageDatabaseSeqList(
         db_name="winter",
         schema_path="fake_placeholder_path.sql",

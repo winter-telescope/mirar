@@ -36,7 +36,7 @@ class FieldsTable(WinterBase):  # pylint: disable=too-few-public-methods
 fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD, exclude={-99})
 
 
-class Fields(BaseDB):
+class FieldEntry(BaseDB):
     """
     A pydantic model for a fields database entry
     """
@@ -69,7 +69,7 @@ def populate_fields():
         winter_fields["gall"] = winter_fields["Gal_Long"]
         winter_fields["galb"] = winter_fields["Gal_Lat"]
 
-        keys = list(Fields.__fields__)
+        keys = list(FieldEntry.__fields__)
 
         idx = list(range(0, len(winter_fields), chunk)) + [len(winter_fields)]
 

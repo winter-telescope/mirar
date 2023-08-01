@@ -33,9 +33,9 @@ class SubdetsTable(WinterBase):  # pylint: disable=too-few-public-methods
     raw: Mapped["RawTable"] = relationship(back_populates="subdets")
 
 
-class Subdets(BaseDB):
+class Subdet(BaseDB):
     """
-    A pydantic model for a fields database entry
+    A pydantic model for a subdet database entry
     """
 
     sql_model: ClassVar = SubdetsTable
@@ -55,7 +55,7 @@ def populate_subdets():
     engine = get_engine(db_name=SubdetsTable.db_name)
     if not _exists(Select(SubdetsTable), engine=engine):
         for _, row in subdets.iterrows():
-            new = Subdets(
+            new = Subdet(
                 boardid=row["boardid"],
                 nx=row["nx"],
                 nxtot=row["nxtot"],

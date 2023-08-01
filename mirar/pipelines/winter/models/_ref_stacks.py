@@ -34,9 +34,9 @@ class RefStacksTable(WinterBase):
     savepath = Column(VARCHAR(255), unique=True)
 
 
-class RefStacks(BaseDB):
+class RefStack(BaseDB):
     """
-    Pydantic model for reference stacks table
+    Pydantic model for a reference stack entry
     """
 
     sql_model: ClassVar = RefStacksTable
