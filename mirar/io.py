@@ -8,14 +8,14 @@ import copy
 import logging
 import warnings
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 import numpy as np
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning, AstropyWarning
 
 from mirar.data import Image
-from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY, core_fields
+from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, RAW_IMG_KEY, core_fields
 
 logger = logging.getLogger(__name__)
 
@@ -86,14 +86,14 @@ def save_mef_to_path(data_list, header_list, primary_header, path):
     hdulist.writeto(path, overwrite=True)
 
 
-def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
+def open_fits(path: str | Path, **fits_open_kwargs) -> tuple[np.ndarray, fits.Header]:
     """
     Function to open a fits file saved to <path>
 
     :param path: path of fits file
     :return: tuple containing image data and image header
     """
-    with fits.open(path, memmap=False) as img:
+    with fits.open(path, memmap=False, **fits_open_kwargs) as img:
         hdu = img.pop(0)
         hdu.verify("silentfix+ignore")
         data = hdu.data
@@ -108,9 +108,33 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     return data, header
 
 
+def save_fits(
+    image: Image,
+    path: str | Path,
+):
+    """
+    Save an Image to path
+
+    :param image: Image to save
+    :param path: path
+    :return: None
+    """
+    path = str(path)
+    check_image_has_core_fields(image)
+    data = image.get_data()
+    header = image.get_header()
+    if header is not None:
+        header[LATEST_SAVE_KEY] = path
+    logger.debug(f"Saving to {path}")
+    save_to_path(data, header, path)
+
+
 def open_raw_image(
     path: str | Path,
-    open_f: Callable[[str | Path], tuple[np.ndarray, fits.Header]] = open_fits,
+    open_f: Callable[
+        [str | Path, Optional[dict]], tuple[np.ndarray, fits.Header]
+    ] = open_fits,
+    **fits_open_kwargs,
 ) -> Image:
     """
     Function to open a raw image as an Image object
@@ -119,7 +143,7 @@ def open_raw_image(
     :param open_f: function to open the raw image
     :return: Image object
     """
-    data, header = open_f(path)
+    data, header = open_f(path, **fits_open_kwargs)
 
     new_img = Image(data.astype(np.float64), header)
 
@@ -292,10 +316,14 @@ def check_image_has_core_fields(img: Image):
         if key not in img.keys():
             if BASE_NAME_KEY in img.keys():
                 msg = f"({img[BASE_NAME_KEY]}) "
-
-            err = (
-                f"New image {msg}is missing the core field {key}. "
-                f"Available fields are {list(img.keys())}."
-            )
+                err = (
+                    f"New image {msg}is missing the core field {key}. "
+                    f"Available fields are {list(img.keys())}."
+                )
+            else:
+                err = (
+                    f"New image is missing the core field {BASE_NAME_KEY}. Available "
+                    f"fields are {list(img.keys())}."
+                )
             logger.error(err)
             raise MissingCoreFieldError(err)
