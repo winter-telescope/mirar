@@ -6,8 +6,6 @@ from typing import ClassVar
 
 from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Double, Float, ForeignKey, Integer, Sequence
-
-# event,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.pipelines.winter.models._exposures import Exposure

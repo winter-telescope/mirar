@@ -25,6 +25,7 @@ from mirar.pipelines.winter.config import (
     winter_avro_schema_path,
     winter_candidate_config,
 )
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_generator,
     winter_astrometry_sextractor_catalog_purifier,
@@ -47,8 +48,6 @@ from mirar.pipelines.winter.load_winter_image import (
 )
 from mirar.pipelines.winter.models import (
     DEFAULT_FIELD,
-    NXSPLIT,
-    NYSPLIT,
     AstrometryStat,
     Exposure,
     Raw,

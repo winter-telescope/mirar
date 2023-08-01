@@ -51,6 +51,7 @@ class PostgresUser:
     def validate_credentials(self):
         """
         Checks that user credentials exist
+
         :return: None
         """
         if self.db_user is None:
@@ -69,7 +70,10 @@ class PostgresUser:
             logger.error(err)
             raise DataBaseError(err)
 
-        # TODO check user exists
+        with psycopg.connect(
+            f"dbname=postgres user={self.db_user} password={self.db_password}"
+        ) as conn:
+            conn.execute("SELECT 1")
 
     def run_sql_command_from_file(self, file_path: str | Path, db_name: str):
         """
@@ -421,30 +425,6 @@ class PostgresUser:
             conn.execute(sql)
             logger.info(f"Created db {db_name}")
 
-    def check_if_table_exists(self, db_name: str, db_table: str) -> bool:
-        """
-        Check if a db table account exists
-
-        :param db_name: database to check
-        :param db_table: table to check
-        :return: boolean
-        """
-
-        check_command = (
-            "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema='public';"
-        )
-
-        table_exist_bool = self.check_if_exists(
-            check_command=check_command,
-            check_value=db_table,
-            db_name=db_name,
-        )
-
-        logger.debug(f"Table '{db_table}' does {['not ', ''][table_exist_bool]} exist")
-
-        return table_exist_bool
-
     def modify_db_entry(
         self,
         db_name: str,
@@ -525,51 +505,5 @@ class PostgresAdmin(PostgresUser):
             f"dbname=postgres user={self.db_user} password={self.db_password}"
         ) as conn:
             conn.autocommit = True
-            command = f"CREATE ROLE {new_db_user} WITH password '{new_password}' LOGIN;"
+            command = f"CREATE ROLE {new_db_user} WITH password '{new_password}' CREATEDB NOCREATEROLE LOGIN;"
             conn.execute(command)
-
-    def grant_privileges(self, db_name: str, db_user: str, schema: str = "public"):
-        """
-        Grant privilege to user on database
-
-        :param db_name: name of database
-        :param db_user: username to grant privileges for db_user
-        :return: None
-        """
-        with psycopg.connect(
-            f"dbname=postgres user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-            command = f"""GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {db_user};"""
-            conn.execute(command)
-            command = f"""ALTER DATABASE {db_name} OWNER TO {db_user}"""
-            conn.execute(command)
-
-        with psycopg.connect(
-            f"dbname={db_name} user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-            command = f"""GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA {schema}
-            TO {db_user};"""
-            conn.execute(command)
-            command = f"""GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA {schema}
-                        TO {db_user};"""
-            conn.execute(command)
-
-    def check_if_user_exists(self, user_name: str) -> bool:
-        """
-        Check if a user account exists
-
-        :param user_name: username to check
-        :return: boolean
-        """
-        check_command = """SELECT usename FROM pg_user;"""
-
-        user_exist_bool = self.check_if_exists(
-            check_command=check_command,
-            check_value=user_name,
-        )
-
-        logger.debug(f"User '{user_name}' does {['not ', ''][user_exist_bool]} exist")
-
-        return user_exist_bool

@@ -39,44 +39,37 @@ from mirar.pipelines.summer.models._subdets import (
     populate_subdets,
 )
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseTable
-from mirar.processors.sqldatabase.postgres import PostgresAdmin
-from mirar.processors.sqldatabase.postgres_utils import (
-    ADMIN_PASSWORD,
-    ADMIN_USER,
-    DB_PASSWORD,
-    DB_USER,
-)
-from mirar.utils.sql import get_engine
+from mirar.pipelines.winter.models import setup_database
+from mirar.processors.sqldatabase.postgres_utils import DB_USER
 
-
-def setup_database(base: Type[BaseTable]):
-    """
-    Function to setup database
-    Args:
-        base:
-    Returns:
-    """
-    if DB_USER is not None:
-        db_name = str(base.db_name)
-        admin_engine = get_engine(
-            db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
-        )
-
-        pg_admin = PostgresAdmin()
-
-        if not pg_admin.check_if_db_exists(db_name=db_name):
-            pg_admin.create_db(db_name=db_name)
-
-        base.metadata.create_all(
-            admin_engine
-        )  # extensions need to be created as a superuser
-
-        if not pg_admin.check_if_user_exists(user_name=DB_USER):
-            pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
-
-        pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
-
+# def setup_database(base: Type[BaseTable]):
+#     """
+#     Function to setup database
+#     Args:
+#         base:
+#     Returns:
+#     """
+#     if DB_USER is not None:
+#         db_name = str(base.db_name)
+#         admin_engine = get_engine(
+#             db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
+#         )
+#
+#         pg_admin = PostgresAdmin()
+#
+#         if not pg_admin.check_if_db_exists(db_name=db_name):
+#             pg_admin.create_db(db_name=db_name)
+#
+#         base.metadata.create_all(
+#             admin_engine
+#         )  # extensions need to be created as a superuser
+#
+#         if not pg_admin.check_if_user_exists(user_name=DB_USER):
+#             pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
+#
+#         pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
+#
+#
 
 if DB_USER is not None:
     setup_database(SummerBase)

@@ -95,16 +95,6 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     raw: Mapped["RawTable"] = relationship(back_populates="exposure_ids")
 
 
-# @event.listens_for(target=RawTable.__table__, identifier="after_create")
-# def raw_q3c(tbl, conn, *args, **kw):
-#     create_q3c_extension(
-#         conn=conn,
-#         __tablename__=RawTable.__tablename__,
-#         ra_column_name=RawTable.ra_column_name,
-#         dec_column_name=RawTable.dec_column_name,
-#     )
-
-
 default_unknown_field = Field(default=-999)
 
 

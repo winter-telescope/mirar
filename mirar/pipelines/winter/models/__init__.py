@@ -1,11 +1,12 @@
 """
 Models for database and pydantic dataclass models
 """
+import logging
 from typing import Union
 
+from psycopg import OperationalError
 from sqlalchemy.orm import DeclarativeBase
 
-from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.models._astrometry_stats import (
     AstrometryStat,
     AstrometryStatsTable,
@@ -53,47 +54,51 @@ from mirar.pipelines.winter.models._subdets import (
     populate_subdets,
 )
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.database.postgres import (
+from mirar.processors.sqldatabase.base_model import BaseTable
+from mirar.processors.sqldatabase.postgres import (
     ADMIN_PASSWORD,
     ADMIN_USER,
     DB_PASSWORD,
     DB_USER,
     PostgresAdmin,
+    PostgresUser,
 )
-from mirar.processors.sqldatabase.base_model import BaseTable
 from mirar.utils.sql import get_engine
 
+logger = logging.getLogger(__name__)
 
-def setup_database(base: Union[DeclarativeBase, BaseTable]):
+
+def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
     """
     Function to setup database
-    Args:
-        base:
-    Returns:
+
+    :param db_base: BaseTable
+    :return: None
     """
-    if DB_USER is not None:
-        db_name = base.db_name
-        admin_engine = get_engine(
-            db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
+    db_name = db_base.db_name
+    engine = get_engine(db_name=db_name)
+
+    pg_user = PostgresUser()
+
+    try:
+        pg_user.validate_credentials()
+    except OperationalError:
+        logger.warning(
+            f"Failed to credentials for user {DB_USER}. " f"Will try creating new user."
         )
-
         pg_admin = PostgresAdmin()
+        pg_admin.validate_credentials()
+        pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
+        pg_user.validate_credentials()
 
-        if not pg_admin.check_if_db_exists(db_name=db_name):
-            pg_admin.create_db(db_name=db_name)
+    if not pg_user.check_if_db_exists(db_name=db_name):
+        pg_user.create_db(db_name=db_name)
 
-        base.metadata.create_all(
-            admin_engine
-        )  # extensions need to be created as a superuser
-
-        if not pg_admin.check_if_user_exists(user_name=DB_USER):
-            pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
-
-        pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
+    db_base.metadata.create_all(engine)
 
 
 if DB_USER is not None:
-    setup_database(base=WinterBase)
+    setup_database(db_base=WinterBase)
 
     populate_fields()
     populate_itid()
