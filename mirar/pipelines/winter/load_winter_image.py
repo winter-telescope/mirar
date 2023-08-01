@@ -14,7 +14,13 @@ from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image
-from mirar.io import open_fits, open_mef_fits, open_mef_image, open_raw_image
+from mirar.io import (
+    open_fits,
+    open_mef_fits,
+    open_mef_image,
+    open_raw_image,
+    tag_mef_extension_file_headers,
+)
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
@@ -160,6 +166,9 @@ def clean_header(header: fits.Header) -> fits.Header:
 def load_proc_winter_image(path: str | Path) -> tuple[np.array, fits.Header]:
     """
     Load proc image
+
+    :param path: Path to image
+    :return data and header
     """
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
@@ -176,6 +185,9 @@ def load_stacked_winter_image(
 ) -> tuple[np.array, fits.Header]:
     """
     Load proc image
+
+    :param path: Path to image
+    :return: data and header
     """
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
@@ -200,6 +212,9 @@ def load_test_winter_image(
 ) -> Image:
     """
     Load test WINTER image
+
+    :param path: Path to image
+    :return: Image object
     """
     image = open_raw_image(path)
     header = clean_header(image.header)
@@ -212,20 +227,29 @@ def load_raw_winter_mef(
 ) -> tuple[astropy.io.fits.Header, list[np.array], list[astropy.io.fits.Header]]:
     """
     Load mef image.
+
+    :param path: Path to image
+    :return: Primary header, list of data arrays, list of headers
     """
-    header, split_data, split_headers = open_mef_fits(path)
+    primary_header, split_data, split_headers = open_mef_fits(path)
 
-    header = clean_header(header)
+    split_headers = tag_mef_extension_file_headers(
+        primary_header=primary_header,
+        extension_headers=split_headers,
+        extension_key="BOARD_ID",
+    )
 
-    header[BASE_NAME_KEY] = os.path.basename(path)
-    header[RAW_IMG_KEY] = path
+    primary_header = clean_header(primary_header)
+
+    primary_header[BASE_NAME_KEY] = os.path.basename(path)
+    primary_header[RAW_IMG_KEY] = path
 
     # Sometimes there are exptime keys
     for board_header in split_headers:
         if "EXPTIME" in board_header.keys():
             del board_header["EXPTIME"]
 
-    return header, split_data, split_headers
+    return primary_header, split_data, split_headers
 
 
 def load_winter_mef_image(
@@ -246,7 +270,7 @@ def annotate_winter_subdet_headers(image: Image) -> Image:
     Annotate winter header with information on the subdetector
 
     :param image: Image to annotate
-    :return: Annotated header
+    :return: Image with updated header
     """
     data = image.get_data()
 
