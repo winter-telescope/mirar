@@ -29,12 +29,13 @@ from mirar.processors.base_catalog_xmatch_processor import (
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
 from mirar.references.local import RefFromPath
-from mirar.references.ukirt import UKIRTRef
+from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
+from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 
 logger = logging.getLogger(__name__)
 
 
-def winter_reference_image_resampler(**kwargs) -> Swarp:
+def winter_reference_image_resampler_for_zogy(**kwargs) -> Swarp:
     """
     Generates a resampler for reference images
 
@@ -42,7 +43,28 @@ def winter_reference_image_resampler(**kwargs) -> Swarp:
     :return: Swarp processor
     """
     logger.debug(kwargs)
-    return Swarp(swarp_config_path=swarp_config_path, cache=False, **kwargs)
+    return Swarp(
+        swarp_config_path=swarp_config_path, cache=False, subtract_bkg=False, **kwargs
+    )
+
+
+def winter_wfau_component_image_stacker(**kwargs) -> Swarp:
+    """
+    Generates a resampler for reference images
+
+    :param kwargs: kwargs
+    :return: Swarp processor
+    """
+    logger.debug(kwargs)
+    return Swarp(
+        swarp_config_path=swarp_config_path,
+        cache=True,
+        include_scamp=False,
+        combine=True,
+        calculate_dims_in_swarp=True,
+        subtract_bkg=True,
+        center_type="ALL",
+    )
 
 
 def winter_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
@@ -198,6 +220,21 @@ def winter_reference_stackid_generator(image: Image) -> int:
     return int(stackid)
 
 
+def winter_reference_stack_annotator(stacked_image: Image, image: Image) -> Image:
+    """
+    Generates a stack id for WINTER reference images
+    """
+    stackid = (
+        f"{str(image.header['FIELDID']).rjust(5, '0')}"
+        f"{str(image.header[SUB_ID_KEY]).rjust(2, '0')}"
+        f"{str(winter_filters_map[image.header['FILTER']])}"
+    )
+    stacked_image["STACKID"] = int(stackid)
+    stacked_image["FIELDID"] = image.header["FIELDID"]
+    stacked_image[SUB_ID_KEY] = image.header[SUB_ID_KEY]
+    return stacked_image
+
+
 def winter_reference_generator(image: Image):
     """
     Generates a reference image for the winter data
@@ -219,81 +256,44 @@ def winter_reference_generator(image: Image):
     fieldid = int(image["FIELDID"])
     subdetid = int(image[SUB_ID_KEY])
     logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
-    # db_results = db_table.sql_model().select_query(
-    #     select_keys=["savepath"],
-    #     compare_keys=["fieldid", SUB_ID_KEY.lower()],
-    #     compare_values=[fieldid, subdetid],
-    #     comparators=["__eq__", "__eq__"],
-    # )
-    #
-    # if len(db_results) > 0:
-    #     savepaths = [x[0] for x in db_results]
-    #     if os.path.exists(savepaths[0]):
-    #         logger.debug(f"Found reference image in database: {savepaths[0]}")
-    #         return RefFromPath(path=savepaths[0], filter_name=filtername)
 
-    return UKIRTRef(
-        filter_name=filtername,
-        swarp_resampler=winter_reference_image_resampler,
-        sextractor_generator=ref_sextractor,
-        phot_calibrator_generator=winter_reference_phot_calibrator,
+    db_results = RefStack.sql_model().select_query(
+        select_keys=["savepath"],
+        compare_keys=["fieldid", SUB_ID_KEY.lower()],
+        compare_values=[fieldid, subdetid],
+        comparators=["__eq__", "__eq__"],
+    )
+
+    ref_exists = False
+    if len(db_results) > 0:
+        savepaths = [x[0] for x in db_results]
+        if os.path.exists(savepaths[0]):
+            ref_exists = True
+            logger.debug(f"Found reference image in database: {savepaths[0]}")
+
+    if ref_exists:
+        return RefFromPath(path=savepaths[0], filter_name=filtername)
+
+    ukirt_query = UKIRTOnlineQuery(
         num_query_points=9,
-        query_table=RefQuery,
-        components_table=RefComponent,
-        write_to_db=False,
-        write_db_table=RefStack,
-        component_image_dir=components_image_dir.as_posix(),
-        night_sub_dir="winter/references",
-        skip_online_query=False,
-        stack_id_generator=winter_reference_stackid_generator,
-    )
-
-
-def winter_refbuild_reference_generator(image: Image):
-    """
-    Generates a reference image for the winter data
-    Args:
-        db_table: Database table to search for existing image
-        image: Image
-
-    Returns:
-
-    """
-    components_image_dir = get_output_dir(
-        dir_root="components", sub_dir="winter/references"
-    )
-    stack_image_dir = get_output_dir(
-        dir_root="stacked_ref", sub_dir="winter/references"
-    )
-    if not components_image_dir.exists():
-        components_image_dir.mkdir(parents=True)
-
-    filtername = image["FILTER"]
-    # TODO if in_ukirt and in_vista, different processing
-    fieldid = int(image["FIELDID"])
-    subdetid = int(image[SUB_ID_KEY])
-    logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
-
-    stack_image_path = stack_image_dir / f"field{fieldid}_subdet{subdetid}_ref.fits"
-
-    if os.path.exists(stack_image_path):
-        logger.debug(f"Found reference image in database: {stack_image_path}")
-        return RefFromPath(path=stack_image_path, filter_name=filtername)
-
-    return UKIRTRef(
         filter_name=filtername,
-        swarp_resampler=winter_reference_image_resampler,
-        sextractor_generator=ref_sextractor,
-        phot_calibrator_generator=winter_reference_phot_calibrator,
-        num_query_points=9,
-        query_table=RefQuery,
-        components_table=RefComponent,
-        write_to_db=False,
-        write_db_table=RefStack,
-        component_image_dir=components_image_dir.as_posix(),
-        night_sub_dir="winter/references",
+        use_db_for_component_queries=True,
+        components_db_table=RefComponent,
+        query_db_table=RefQuery,
         skip_online_query=False,
-        stack_id_generator=winter_reference_stackid_generator,
+        component_image_subdir="winter/references/components",
+    )
+    return WFCAMStackedRef(
+        filter_name=filtername,
+        wfcam_query=ukirt_query,
+        image_resampler_generator=winter_wfau_component_image_stacker,
+        write_stacked_image=True,
+        write_stack_sub_dir="winter/references/ref_stacks",
+        write_stack_to_db=True,
+        stacks_db_table=RefStack,
+        component_image_sub_dir="components",
+        references_base_subdir_name="winter/references",
+        stack_image_annotator=winter_reference_stack_annotator,
     )
 
 
