@@ -33,7 +33,7 @@ from mirar.pipelines.winter.generator import (
     winter_fourier_filtered_image_generator,
     winter_photometric_catalog_generator,
     winter_reference_generator,
-    winter_reference_image_resampler,
+    winter_reference_image_resampler_for_zogy,
     winter_reference_psfex,
     winter_reference_sextractor,
     winter_stackid_annotator,
@@ -359,7 +359,7 @@ imsub = [
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
-        swarp_resampler=winter_reference_image_resampler,
+        swarp_resampler=winter_reference_image_resampler_for_zogy,
         sextractor=winter_reference_sextractor,
         ref_psfex=winter_reference_psfex,
     ),
