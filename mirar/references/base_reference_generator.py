@@ -201,6 +201,8 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
         self,
         filter_name: str,
         image_resampler_generator: Callable[..., Swarp],
+        write_stacked_image: bool = True,
+        write_stack_sub_dir: str = "references/stack",
         write_stack_to_db: bool = False,
         stacks_db_table: Type[BaseDB] = None,
         duplicate_protocol: str = "replace",
@@ -215,13 +217,17 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
         Initialise
         filter_name: Filter name
         image_resampler_generator: FUnction returning a Swarp object for resampling
-        write_stack_to_db: Write stack to db
+        write_stacked_image: Write stacked image to file?
+        write_stack_sub_dir: Subdirectory to write stacked image to. Defaults to
+        "references/stack"
+        write_stack_to_db: Write stacked image to db
         stacks_db_table: Table to write stack to, required if write_stack_to_db is True
         duplicate_protocol: Duplicate protocol
         q3c_bool: Use q3c
         stack_image_annotator: Function to optionally annotate the stack image with
         pipeline-specific information after it has been stacked
-        references_base_subdir_name: Base name for the references subdirectory
+        references_base_subdir_name: Base name for the references subdirectory, with
+        components etc.
         photcal_stack: Do you want to photometrically calibrate the stack? If not, make
         sure zeropoints are being calculated in the get_components method.
         sextractor_generator: Function returning a Sextractor object for source
@@ -235,6 +241,8 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
             db_table=stacks_db_table,
             duplicate_protocol=duplicate_protocol,
             q3c_bool=q3c_bool,
+            write_image=write_stacked_image,
+            write_image_sub_dir=write_stack_sub_dir,
         )
         self.image_resampler_generator = image_resampler_generator
         self.stack_image_annotator = stack_image_annotator

@@ -1,5 +1,44 @@
 """
-Module for querying reference images from the UKIRT survey
+Module for querying reference images from the UKIRT survey.
+This module can be used to query THe WFAU service to download NIR images.
+Only single extension images overlapping with the specified coordinates are downloaded.
+These images are then stacked together.
+To reduce the number of queries to the server, the user can optionally choose to set up
+databases. If this is chosen, this script currently assumes the following database
+structure ->
+1. Two tables : query_db_table and components_db_table
+a. query_db_table : This table stores the details of the queries. The following columns
+are required - query_ra, query_dec, query_filt, compid (primary key of the table entry
+of the image downloaded).
+b. components_db_table : This table stores the details of the individual downloaded
+images. The following columns are required - compid (primary_key), savepath (saved path)
+, multiframeid, extension_id, frame_lx, frame_ly, frame_hx, frame_hy (paramters used to
+uniquely identify a WFCAM image).
+It is recommended to use the database model files from
+mirar/pipelines/winter/models/ref_queries.py and
+mirar/pipelines/winter/models/ref_components.py to set up the tables in your database.
+
+This module works in the following way -
+1. The user specifies an image and the filter to query and optionally the
+database details.
+2. The image is broken down into user-specified number of coordinates to get overlapping
+images from the archive.
+3. If the user has specified database details, each coordinate is checked against the
+query database to see if it has been queried before. If so, the corresponding component
+images from the comoponent_db_table are used.
+4. If not, the query is made to the WFAU server to get the URLs of the images. The
+details of each image are extracted from the URL.
+5. If the user has specified database details, the image details are xmatched to the
+database to see if the image has been downloaded before. If so, the corresponding image
+is used.
+6. If not, the image is downloaded and saved to the user-specified path.
+7. If the user has specified database details, the details of the downloaded image and
+the query are ingested into the respective tables.
+8. The downloaded images are filtered to remove images with wildly different zeropoints
+and poor seeings. The remaining images are stacked together using SWarp. The median
+zeropoint is assigned to the stacked image.
+9. The stacked image is optionally saved to the user-specified path and inserted into
+a user-specified stack-table in the database by the parent class.
 """
 import logging
 from collections.abc import Callable
@@ -73,9 +112,10 @@ def check_query_exists_locally(
     and query_dec
     Args:
         query_ra: ra that was queried
-        query_dec:
-        db_table:
-
+        query_dec: dec that was queried
+        query_filt: filter that was queried
+        query_table: table with query details
+        components_table: table with component image details
     Returns:
 
     """
@@ -105,15 +145,15 @@ def check_query_exists_locally(
 
 
 def get_locally_existing_overlap_images(
-    query_ra, query_dec, query_filt, components_table
-):
+    query_ra: float, query_dec: float, query_filt: float, components_table: Type[BaseDB]
+) -> list[str]:
     """
     Function to get the locally existing images that overlap with the given coordinates
     Args:
-        query_ra:
-        query_dec:
-        query_filt:
-        components_table:
+        query_ra: ra that was queried
+        query_dec: dec that was queried
+        query_filt: filter that was queried
+        components_table: table with component image details
 
     Returns:
 
@@ -132,8 +172,14 @@ def get_locally_existing_overlap_images(
 
 
 def check_multiframe_exists_locally(
-    db_table, multiframe_id, extension_id, frame_lx, frame_hx, frame_ly, frame_hy
-) -> list:
+    db_table: Type[BaseDB],
+    multiframe_id: int,
+    extension_id: int,
+    frame_lx: int,
+    frame_hx: int,
+    frame_ly: int,
+    frame_hy: int,
+) -> list[str]:
     """
     Function to query database to check if a multiframe exists locally
     Args:
@@ -201,7 +247,7 @@ def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
 
 def download_wfcam_archive_images(
     crd: SkyCoord,
-    wfau_query,
+    wfau_query: BaseWFAUClass,
     survey_name: str,
     waveband: str,
     save_dir_path: Path,
@@ -300,6 +346,10 @@ def download_wfcam_archive_images(
 
 
 class WFAUQuery:
+    """
+    Class to handle queries to the WFAU database.
+    """
+
     def __init__(
         self,
         num_query_points: int = 4,
@@ -311,8 +361,31 @@ class WFAUQuery:
         query_db_table: Type[BaseDB] = None,
         skip_online_query: bool = False,
         filter_images: Callable[[ImageBatch], ImageBatch] = default_filter_wfau_images,
-        num_images_per_query: int = None,
     ):
+        """
+        Parameters:
+            num_query_points: Number of points to use to define the query region. The
+            image is divided into np.sqrt(num_query_points) x np.sqrt(num_query_points)
+            regions.
+            query_coords_function: Function to use to get the query coordinates from the
+            header.
+            use_db_for_component_queries: Whether to use local databases to perform
+            queries. This is useful if you want to reduce the number of queries to the
+            online database. If set, the code assumes that you are storing the
+            individual images in a `components_db_table` and also the details of every
+            query to a `query_db_table`.
+            components_db_table: Table with the details of the individual WFCAM
+            single extension images. The following keys need to be present in the db, as
+            they uniquely determine a WFCAM image:
+            multiframe_id, extension_id, frame_lx, frame_hx, frame_ly, frame_hy, the
+            primary key should be compid.
+            query_db_table: Table with the details of the queries to the WFCAM database.
+            The following keys need to be present in the db : query_ra, query_dec,
+            query_filt and compid.
+            skip_online_query: Whether to skip the online query and only use the local
+            databases.
+            filter_images: Function to use to filter the images.
+        """
         self.num_query_points = num_query_points
         self.components_db_table = components_db_table
         self.query_db_table = query_db_table
@@ -320,7 +393,6 @@ class WFAUQuery:
         self.query_coords_function = query_coords_function
         self.skip_online_query = skip_online_query
         self.filter_images = filter_images
-        self.num_images_per_query = num_images_per_query
 
         if self.use_db_for_component_queries:
             if self.components_db_table is None:
@@ -333,7 +405,15 @@ class WFAUQuery:
                     "query_table must be provided if check_local_database is True"
                 )
 
-    def get_query_crds(self, header, num_query_points: int):
+    def get_query_crds(
+        self, header: fits.Header, num_query_points: int
+    ) -> (list[float], list[float]):
+        """
+        Get the query coordinates from the header.
+        header: Header of the image.
+        num_query_points: Number of points to use to define the query region. The image
+        is divided into np.sqrt(num_query_points) x np.sqrt(num_query_points) regions.
+        """
         return self.query_coords_function(header, num_query_points)
 
     def run_wfau_query(
@@ -344,6 +424,14 @@ class WFAUQuery:
         filter_name: str,
         savedir: Path,
     ) -> ImageBatch:
+        """
+        Run the query to the WFAU database.
+        wfau_query: WFAU query object.
+        query_crds: Coordinates to query.
+        wfau_survey_names: WFAU names of the survey databases to query.
+        filter_name: Name of the filter to query.
+        savedir: Directory to save the images.
+        """
         (
             wfcam_image_paths,
             wfau_query_ras,
@@ -454,6 +542,8 @@ class WFCAMStackedRefOnline(BaseStackReferenceGenerator, ImageHandler, WFAUQuery
         self,
         filter_name: str,
         image_resampler_generator: Callable[..., Swarp],
+        write_stacked_image: bool = True,
+        write_stack_sub_dir: str = "references/ref_stacks",
         num_query_points: int = 4,
         write_stack_to_db: bool = False,
         stacks_db_table: Type[BaseDB] = None,
@@ -479,6 +569,8 @@ class WFCAMStackedRefOnline(BaseStackReferenceGenerator, ImageHandler, WFAUQuery
             photcal_stack=photcal_stack,
             sextractor_generator=sextractor_generator,
             phot_calibrator_generator=phot_calibrator_generator,
+            write_stacked_image=write_stacked_image,
+            write_stack_sub_dir=write_stack_sub_dir,
         )
         WFAUQuery.__init__(
             self,
@@ -501,12 +593,22 @@ class WFCAMStackedRefOnline(BaseStackReferenceGenerator, ImageHandler, WFAUQuery
         self.references_base_subdir_name = references_base_subdir_name
 
     def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
+        """
+        Get the surveys that are available at the given coordinates
+        """
         raise NotImplementedError
 
     def get_query_class(self) -> BaseWFAUClass:
+        """
+        Get the class that will be used to query the WFAU database, e.g. VSAClass or
+        UKIDSSClass
+        """
         raise NotImplementedError
 
     def get_component_images(self, image: Image) -> ImageBatch:
+        """
+        Get the component images for the given image
+        """
         header = image.get_header()
 
         query_ra_list, query_dec_list = self.get_query_crds(
