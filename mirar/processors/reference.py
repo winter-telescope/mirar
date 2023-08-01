@@ -14,7 +14,6 @@ from mirar.data import Image, ImageBatch
 from mirar.paths import (
     BASE_NAME_KEY,
     NORM_PSFEX_KEY,
-    RAW_IMG_KEY,
     REF_IMG_KEY,
     REF_PSF_KEY,
     get_output_dir,
@@ -98,19 +97,7 @@ class ProcessReference(BaseImageProcessor):
         for image in batch:
             ref_writer = self.ref_image_generator(image)
 
-            ref_image_path = ref_writer.write_reference(
-                image, output_dir=self.get_sub_output_dir()
-            )
-
-            ref_image = self.open_fits(ref_image_path)
-
-            if BASE_NAME_KEY not in ref_image.keys():
-                base_name = Path(ref_image_path).name
-                logger.debug(f"Setting basename to {base_name})")
-                ref_image[BASE_NAME_KEY] = base_name
-
-            if RAW_IMG_KEY not in ref_image.keys():
-                ref_image[RAW_IMG_KEY] = str(ref_image_path)
+            ref_image = ref_writer.get_reference_image(image)
 
             ref_gain = ref_image["GAIN"]
 
@@ -141,7 +128,7 @@ class ProcessReference(BaseImageProcessor):
                 include_scamp=False,
                 combine=False,
                 gain=ref_gain,
-                subtract_bkg=True,
+                subtract_bkg=False,
             )
 
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
@@ -162,6 +149,7 @@ class ProcessReference(BaseImageProcessor):
             ) = self.get_image_header_params(resampled_ref_img)
 
             # This is a fall back if the ref image resampling by Swarp fails
+            # Resample the science image onto resampled reference image
             sci_resampler = self.swarp_resampler(
                 pixscale=ref_resamp_pixscale,
                 x_imgpixsize=ref_resamp_x_imgsize,
@@ -173,7 +161,7 @@ class ProcessReference(BaseImageProcessor):
                 include_scamp=False,
                 combine=False,
                 gain=sci_gain,
-                subtract_bkg=True,
+                subtract_bkg=False,
             )
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
 
@@ -214,6 +202,7 @@ class ProcessReference(BaseImageProcessor):
             ]
 
             new_batch.append(resampled_sci_image)
+
         return new_batch
 
 
@@ -253,12 +242,9 @@ class GetReferenceImage(BaseImageProcessor):
             if not output_sub_dir.exists():
                 output_sub_dir.mkdir(parents=True, exist_ok=True)
 
-            ref_image_path = ref_generator.write_reference(
+            ref_image = ref_generator.get_reference_image(
                 image,
-                output_dir=output_sub_dir.as_posix(),
             )
-
-            ref_image = self.open_fits(ref_image_path)
 
             ref_batch.append(ref_image)
 
