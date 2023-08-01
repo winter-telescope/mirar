@@ -46,6 +46,12 @@ class Gaia2Mass(BaseCatalog):
     ):
         super().__init__(*args, filter_name=filter_name, **kwargs)
 
+        filter_name = filter_name.lower()
+
+        assert (
+            filter_name in offsets_2mass.keys()
+        ), f"Filter name must be one of {offsets_2mass.keys()}, not '{filter_name}'"
+
         self.trim = trim
         self.image_catalog_path = image_catalog_path
         self.snr_threshold = snr_threshold
@@ -63,11 +69,11 @@ class Gaia2Mass(BaseCatalog):
             "k": acceptable_k_ph_quals,
         }
 
-        if self.acceptable_ph_quals[self.filter_name.lower()] is None:
-            self.acceptable_ph_quals[self.filter_name.lower()] = ["A"]
+        if self.acceptable_ph_quals[self.filter_name] is None:
+            self.acceptable_ph_quals[self.filter_name] = ["A"]
 
-        for filt in self.acceptable_ph_quals:
-            if self.acceptable_ph_quals[filt] is None:
+        for filt, val in self.acceptable_ph_quals.items():
+            if val is None:
                 self.acceptable_ph_quals[filt] = ["A", "B", "C"]
 
         logger.debug(f"Sextractor catalog path is {self.image_catalog_path}")
