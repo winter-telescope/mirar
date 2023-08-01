@@ -72,7 +72,8 @@ class TMASS(BaseKowalskiXMatch):
                 for tmass_filter, offset in offsets_2mass.items():
                     tmass_key = f"{tmass_filter}_m"
                     vega_mag = ab_dict[tmass_key]
-                    ab_dict[tmass_key] = vega_mag + offset
+                    if vega_mag is not None:
+                        ab_dict[tmass_key] = vega_mag + offset
 
                 new_list.append(ab_dict)
 
