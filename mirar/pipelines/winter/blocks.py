@@ -10,6 +10,7 @@ from mirar.paths import (
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
     TARGET_KEY,
+    ZP_KEY,
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
@@ -348,8 +349,11 @@ photcal_and_export = [
 # Image subtraction
 
 load_stack = [
-    ImageLoader(input_sub_dir="final"),
+    ImageLoader(input_sub_dir="final_copy"),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    ImageSelector(
+        (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_2_0_0.fits_stack.fits")
+    ),
 ]
 
 imsub = [
@@ -363,9 +367,13 @@ imsub = [
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     # ImageSaver(output_dir_name="presubtract"),
-    ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
+    ZOGYPrepare(
+        output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
+    ),
     # ImageSaver(output_dir_name="prezogy"),
-    ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
+    ZOGY(
+        output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
+    ),
     ImageSaver(output_dir_name="diffs"),
 ]
 
