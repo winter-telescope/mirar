@@ -233,16 +233,16 @@ def load_raw_winter_mef(
     """
     primary_header, split_data, split_headers = open_mef_fits(path)
 
+    primary_header = clean_header(primary_header)
+
+    primary_header[BASE_NAME_KEY] = os.path.basename(path)
+    primary_header[RAW_IMG_KEY] = path
+
     split_headers = tag_mef_extension_file_headers(
         primary_header=primary_header,
         extension_headers=split_headers,
         extension_key="BOARD_ID",
     )
-
-    primary_header = clean_header(primary_header)
-
-    primary_header[BASE_NAME_KEY] = os.path.basename(path)
-    primary_header[RAW_IMG_KEY] = path
 
     # Sometimes there are exptime keys
     for board_header in split_headers:
