@@ -2,6 +2,7 @@
 Module relating to `swarp <https://www.astromatic.net/software/swarp`_
 """
 import logging
+import shutil
 import warnings
 from pathlib import Path
 from typing import Optional
@@ -182,11 +183,12 @@ class Swarp(BaseImageProcessor):
         temp_files = [swarp_image_list_path, swarp_weight_list_path]
 
         # If swarp is run with combine -N option,
-        # it just sets the output name as inpname+.resamp.fits
+        # it outputs an intermediate file called inpname+.resamp.fits. This name is not
+        # changeable.
 
         if self.combine:
             output_image_path = swarp_output_dir.joinpath(
-                Path(batch[0][BASE_NAME_KEY]).name + "_stack.fits",
+                Path(batch[0][BASE_NAME_KEY]).name.replace(".fits", "_stack.fits"),
             )
         else:
             if len(batch) > 1:
@@ -201,10 +203,10 @@ class Swarp(BaseImageProcessor):
             logger.warning(
                 "You are choosing to run Swarp without combining the image. "
                 "This causes swarp to output an intermediate image, "
-                "with possibly incorrect FLXSCALE values. Please consider "
-                "running with combine=True, it almost always gives the same "
-                "result as running it without, but will have consistent "
-                "headers."
+                "with possibly incorrect FLXSCALE values. Make sure you have thought "
+                "this through. Please consider running with combine=True, "
+                "it almost always gives the same result as running it without, "
+                "but will have FLXSCALE in headers that make sense."
             )
             output_image_path = swarp_output_dir.joinpath(
                 Path(batch[0][BASE_NAME_KEY]).with_suffix(".resamp.fits").name,
@@ -291,6 +293,7 @@ class Swarp(BaseImageProcessor):
 
                 self.save_fits(image, temp_img_path)
 
+                logger.debug(f"Saving mask image for {temp_img_path}")
                 temp_mask_path = self.save_mask_image(image, temp_img_path)
 
                 img_list.write(f"{temp_img_path}\n")
@@ -358,8 +361,10 @@ class Swarp(BaseImageProcessor):
             )
 
             if temp_output_image_path.exists():
-                temp_output_image_path.rename(output_image_path)
-                temp_output_image_weight_path.rename(output_image_weight_path)
+                shutil.copy(temp_output_image_path, output_image_path)
+                shutil.copy(temp_output_image_weight_path, output_image_weight_path)
+                # temp_output_image_path.rename(output_image_path)
+                # temp_output_image_weight_path.rename(output_image_weight_path)
             else:
                 err = (
                     f"Swarp seems to have misbehaved, "
