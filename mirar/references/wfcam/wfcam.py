@@ -330,7 +330,7 @@ class WFAUQuery:
                 )
             if self.query_db_table is None:
                 raise ValueError(
-                    "query_table must be provided if " "check_local_database is True"
+                    "query_table must be provided if check_local_database is True"
                 )
 
     def get_query_crds(self, header, num_query_points: int):
