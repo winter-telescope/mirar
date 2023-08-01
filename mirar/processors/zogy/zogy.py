@@ -49,6 +49,7 @@ class ZOGYError(ProcessorError):
 
 def default_wirc_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
     """
+    TODO: This should be in wirc?
 
     :param sci_catalog:
     :param ref_catalog:
@@ -73,6 +74,9 @@ def default_wirc_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
 
 
 def default_summer_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
+    """
+    TODO: Catalog purifier for the summer data. This should probably be in summer.
+    """
     # Need to do this because the summer data is typically much
     # shallower than the PS1 data, and only the brightest
     # sources in PS1 xmatch to it.
@@ -94,6 +98,9 @@ def default_summer_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
 
 
 def default_sedmv2_catalog_purifier(sci_catalog, ref_catalog):
+    """
+    TODO: This should be in sedmv2?
+    """
     good_sci_sources = (
         (sci_catalog["FLAGS"] == 0)
         & (sci_catalog["SNR_WIN"] > 5)
@@ -133,7 +140,7 @@ class ZOGYPrepare(BaseImageProcessor):
             [astropy.table.Table, astropy.table.Table],
             [astropy.table.Table, astropy.table.Table],
         ] = default_wirc_catalog_purifier,
-        write_region_bool: bool = False,
+        write_region_bool: bool = True,
         crossmatch_radius_arcsec: float = 1.0,
     ):
         super().__init__()
@@ -331,17 +338,19 @@ class ZOGYPrepare(BaseImageProcessor):
                 ref_img[self.ref_zp_header_key]
             ) + 2.5 * np.log10(flux_scale)
 
-            ref_scaled_path = ref_img_path + ".scaled"
+            ref_scaled_path = ref_img_path.replace(".fits", ".scaled.fits")
             self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
 
             logger.debug(
                 f"Zeropoints are reference : {ref_unscaled_zp}, "
                 f"scaled reference : {ref_img[self.ref_zp_header_key]} and "
-                f"science : {image[self.ref_zp_header_key]}"
+                f"science : {image[self.sci_zp_header_key]}"
             )
 
             # Scale is 1 by construction for science image
-            sci_scaled_path = self.get_path(sci_img_path + ".scaled")
+            sci_scaled_path = self.get_path(
+                sci_img_path.replace(".fits", ".scaled.fits")
+            )
             self.save_fits(image, path=sci_scaled_path)
 
             sci_rms = 0.5 * (
@@ -360,8 +369,8 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_rms_image = self.get_rms_image(image, sci_rms)
             ref_rms_image = self.get_rms_image(ref_img, ref_rms)
 
-            sci_rms_path = sci_img_path + ".unc"
-            ref_rms_path = ref_img_path + ".unc"
+            sci_rms_path = sci_img_path + ".unc.fits"
+            ref_rms_path = ref_img_path + ".unc.fits"
 
             self.save_fits(
                 sci_rms_image, path=os.path.join(self.get_path(sci_rms_path))
@@ -424,6 +433,7 @@ class ZOGY(ZOGYPrepare):
 
             # temp_files = [sci_image_path, ref_image_path, sci_rms_path, ref_rms_path]
 
+            logger.debug(f"Ast unc x is {ast_unc_x:.2f} and y is {ast_unc_y:.2f}")
             diff_data, diff_psf_data, scorr_data = pyzogy(
                 new_image_path=sci_image_path,
                 ref_image_path=ref_image_path,
@@ -457,7 +467,7 @@ class ZOGY(ZOGYPrepare):
                 sci_rms_image.get_data() ** 2 + ref_rms_image.get_data() ** 2
             )
             _, diff_rms_median, _ = sigma_clipped_stats(diff_rms_data)
-            diff_rms_path = diff_image_path.with_suffix(".unc")
+            diff_rms_path = diff_image_path.with_suffix(".unc.fits")
 
             image["DIFFIMG"] = diff_image_path.as_posix()
             image["DIFFPSF"] = diff_psf_path.as_posix()
