@@ -2,9 +2,9 @@
 Models for database and pydantic dataclass models
 """
 import logging
-from typing import Union
+from typing import Type, Union
 
-from psycopg import OperationalError
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase
 
 from mirar.database.base_model import BaseTable
@@ -62,9 +62,23 @@ from mirar.pipelines.winter.models.base_model import WinterBase
 logger = logging.getLogger(__name__)
 
 
-def setup_database(
-    db_base: Union[DeclarativeBase, BaseTable], q3c_tables: list | None = None
-):
+def set_up_q3c(db_name: str, db_table: BaseTable):
+    """
+    Function to setup q3c extension for a given table in db
+
+    :param db_name: Name of database
+    :param db_table: Table to setup q3c extension for
+    :return:
+    """
+    create_q3c_extension(
+        db_name=db_name,
+        table_name=db_table.__tablename__,
+        ra_column_name=db_table.ra_column_name,
+        dec_column_name=db_table.dec_column_name,
+    )
+
+
+def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
     """
     Function to setup database
 
@@ -102,19 +116,12 @@ def setup_database(
         pg_admin.validate_credentials()
         pg_admin.create_extension(extension_name="q3c", db_name=db_name)
 
-    if q3c_tables is not None:
-        for table in q3c_tables:
-            create_q3c_extension(
-                db_name=db_name,
-                table_name=table.__tablename__,
-                ra_column_name=table.ra_column_name,
-                dec_column_name=table.dec_column_name,
-                pg_user=pg_user,
-            )
-
 
 if DB_USER is not None:
-    setup_database(db_base=WinterBase, q3c_tables=[ExposuresTable])
+    setup_database(db_base=WinterBase)
+
+    for table in [ExposuresTable]:
+        set_up_q3c(db_name=WinterBase.db_name, db_table=table)
 
     populate_fields()
     populate_itid()

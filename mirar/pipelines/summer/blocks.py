@@ -39,9 +39,6 @@ from mirar.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
-from mirar.processors.database.database_exporter import (
-    DatabaseImageExporter as PSQLDatabaseImageExporter,
-)
 from mirar.processors.database.database_modifier import ModifyImageDatabaseSeq
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
@@ -52,6 +49,9 @@ from mirar.processors.sources import SourceWriter
 from mirar.processors.sources.source_detector import SourceDetector
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
+from mirar.processors.sqldatabase.database_exporter import (
+    DatabaseImageExporter as PSQLDatabaseImageExporter,
+)
 from mirar.processors.utils import ImageBatcher, ImageLoader, ImageSaver, ImageSelector
 from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.header_annotate import HeaderEditor
@@ -202,7 +202,6 @@ process_raw = [
     ModifyImageDatabaseSeq(
         db_name=DB_NAME,
         db_table="raw",  # FIXME
-        schema_path=get_summer_schema_path("raw"),
         db_alter_columns="procstatus",
     ),
 ]
@@ -240,7 +239,6 @@ export_diff_to_db = [
     PSQLDatabaseImageExporter(
         db_name=PIPELINE_NAME,  # FIXME
         db_table="diff",
-        schema_path=get_summer_schema_path("diff"),
     ),
 ]
 

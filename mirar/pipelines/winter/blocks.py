@@ -64,10 +64,8 @@ from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.avro import IPACAvroExporter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.database.database_exporter import DatabaseDataframeExporter
 from mirar.processors.database.database_importer import DatabaseHistoryImporter
 from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
-from mirar.processors.database.utils import get_column_names_from_schema
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -85,6 +83,7 @@ from mirar.processors.sources import (
 )
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.sqldatabase.database_exporter import (
+    DatabaseDataframeExporter,
     DatabaseImageBatchExporter,
     DatabaseImageExporter,
 )
@@ -337,7 +336,6 @@ photcal_and_export = [
     DatabaseImageExporter(db_table=Stack, duplicate_protocol="replace", q3c_bool=False),
     ModifyImageDatabaseSeqList(
         db_name="winter",
-        schema_path="fake_placeholder_path.sql",
         sequence_key="rawid",
         db_table=Raw.sql_model.__tablename__,
         db_alter_columns="ustackid",
@@ -385,8 +383,8 @@ detect_candidates = [
     ),
     SourceWriter(output_dir_name="candidates"),
 ]
-
-candidate_colnames = get_column_names_from_schema(winter_candidate_config)
+#
+# candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
 load_candidates = [
     SourceLoader(input_dir_name="candidates"),
@@ -403,8 +401,7 @@ process_candidates = [
         history_duration_days=500.0,
         db_name="winter",
         db_table="candidates",
-        db_output_columns=candidate_colnames,
-        schema_path=winter_candidate_config,
+        # db_output_columns=candidate_colnames,
         q3c_bool=False,
     ),
     CandidateNamer(
@@ -413,12 +410,10 @@ process_candidates = [
         base_name="WNTR",
         name_start="aaaaa",
         xmatch_radius_arcsec=2,
-        schema_path=winter_candidate_config,
     ),
     DatabaseDataframeExporter(
         db_name="winter",
         db_table="candidates",
-        schema_path=winter_candidate_config,
         duplicate_protocol="replace",
     ),
     SourceWriter(output_dir_name="preavro"),

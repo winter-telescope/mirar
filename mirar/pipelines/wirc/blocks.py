@@ -42,7 +42,6 @@ from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.avro import IPACAvroExporter, SendToFritz
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.database.database_exporter import DatabaseDataframeExporter
 from mirar.processors.database.database_importer import DatabaseHistoryImporter
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import (
@@ -66,6 +65,7 @@ from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
 from mirar.processors.sources.utils import RegionsWriter
+from mirar.processors.sqldatabase.database_exporter import DatabaseDataframeExporter
 from mirar.processors.utils import (
     HeaderAnnotator,
     ImageBatcher,
@@ -242,7 +242,6 @@ process_candidates = [
         db_name="wirc",
         db_table="candidates",
         db_output_columns=candidate_colnames,
-        schema_path=wirc_candidate_schema_path,
         q3c_bool=False,
     ),
     CandidateNamer(
@@ -251,12 +250,10 @@ process_candidates = [
         base_name="WIRC",
         name_start="aaaaa",
         xmatch_radius_arcsec=2,
-        schema_path=wirc_candidate_schema_path,
     ),
     DatabaseDataframeExporter(
         db_name="wirc",
         db_table="candidates",
-        schema_path=wirc_candidate_schema_path,
         duplicate_protocol="replace",
     ),
     SourceWriter(output_dir_name="dbop"),

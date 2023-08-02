@@ -5,7 +5,7 @@ import logging
 
 from sqlalchemy import DDL
 
-from mirar.database.user import PostgresUser
+from mirar.database.engine import get_engine
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,6 @@ def create_q3c_extension(
     table_name: str,
     ra_column_name: str,
     dec_column_name: str,
-    pg_user: PostgresUser,
 ):
     """
     Function to create q3c extension and index on table
@@ -24,7 +23,6 @@ def create_q3c_extension(
     :param table_name: Name of table
     :param ra_column_name: ra column name
     :param dec_column_name: dec column name
-    :param pg_user: PostgresUser
     :return:
     """
 
@@ -37,7 +35,7 @@ def create_q3c_extension(
         f"ANALYZE {table_name};"
     )
 
-    engine = pg_user.get_engine(db_name=db_name)
+    engine = get_engine(db_name=db_name)
 
     with engine.connect() as conn:
         conn.execute(trig_ddl)
