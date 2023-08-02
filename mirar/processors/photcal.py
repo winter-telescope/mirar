@@ -297,4 +297,6 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                     image[f"MAGLIM_{int(diam)}"] = limmags[ind]
                 image["MAGLIM"] = limmags[-1]
 
+                image["MAGSYS"] = "AB"
+
         return batch
