@@ -12,13 +12,23 @@ from mirar.paths import (
     EXPTIME_KEY,
     GAIN_KEY,
     OBSCLASS_KEY,
-    RAW_IMG_KEY,
-    TARGET_KEY,
     TIME_KEY,
     ZP_KEY,
     ZP_STD_KEY,
     core_fields,
 )
+
+MULTIFRAME_ID_KEY = "MFID"
+EXTENSION_ID_KEY = "XTNSNID"
+LX_KEY = "LX"
+LY_KEY = "LY"
+HX_KEY = "HX"
+HY_KEY = "HY"
+COMPID_KEY = "COMPID"
+
+QUERY_RA_KEY = "QRY_RA"
+QUERY_DEC_KEY = "QRY_DEC"
+QUERY_FILT_KEY = "QRY_FILT"
 
 
 def get_query_coordinates_from_header(
@@ -163,12 +173,12 @@ def make_wfcam_image_from_hdulist(
     image.header["DEC1_0"] = dec1_0
     image.header["RA1_1"] = ra1_1
     image.header["DEC1_1"] = dec1_1
-    image.header["MULTIFRAME_ID"] = multiframeid
-    image.header["EXTENSION_ID"] = extension_id
-    image.header["LX"] = frame_lx
-    image.header["HX"] = frame_hx
-    image.header["LY"] = frame_ly
-    image.header["HY"] = frame_hy
+    image.header[MULTIFRAME_ID_KEY] = multiframeid
+    image.header[EXTENSION_ID_KEY] = extension_id
+    image.header[LX_KEY] = frame_lx
+    image.header[HX_KEY] = frame_hx
+    image.header[LY_KEY] = frame_ly
+    image.header[HY_KEY] = frame_hy
 
     image.header["UKIRPATH"] = ukirt_filename
     image.header[ZP_KEY] = image.header["MAGZPT"]

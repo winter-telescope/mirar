@@ -16,7 +16,6 @@ from astroquery.ukidss import UkidssClass
 from astroquery.utils.commons import FileContainer
 from astroquery.wfau import BaseWFAUClass
 from astrosurveyutils.surveys import MOCSurvey
-from tqdm import tqdm
 
 from mirar.data import Image, ImageBatch
 from mirar.data.utils import get_image_center_wcs_coords
@@ -26,6 +25,16 @@ from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, get_output_dir, get_outp
 from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from mirar.references.wfcam.utils import (
+    COMPID_KEY,
+    EXTENSION_ID_KEY,
+    HX_KEY,
+    HY_KEY,
+    LX_KEY,
+    LY_KEY,
+    MULTIFRAME_ID_KEY,
+    QUERY_DEC_KEY,
+    QUERY_FILT_KEY,
+    QUERY_RA_KEY,
     find_ukirt_surveys,
     get_query_coordinates_from_header,
     get_wfcam_file_identifiers_from_url,
@@ -107,8 +116,8 @@ class WFAUQuery(BaseWFCAMQuery):
     table entry of the image downloaded).
     b. components_db_table : This table stores the details of the individual downloaded
     images. The following columns are required - compid (primary_key),
-    savepath (saved path) , multiframeid, extension_id, frame_lx,
-    frame_ly, frame_hx, frame_hy (paramters used to uniquely identify a WFCAM image).
+    savepath (saved path) , mfid (multiframeid), xtnsnid (extension_id), lx,
+    ly, hx, hy (paramters used to uniquely identify a WFCAM image).
     It is recommended to use the database model files from
     mirar/pipelines/winter/models/ref_queries.py and
     mirar/pipelines/winter/models/ref_components.py to set up the tables in your
@@ -157,11 +166,10 @@ class WFAUQuery(BaseWFCAMQuery):
             components_db_table: Table with the details of the individual WFCAM
             single extension images. The following keys need to be present in the db, as
             they uniquely determine a WFCAM image:
-            multiframe_id, extension_id, frame_lx, frame_hx, frame_ly, frame_hy, the
-            primary key should be compid.
+            mfid, xtnsnid, lx, hx, ly, hy, compid the primary key should be compid.
             query_db_table: Table with the details of the queries to the WFCAM database.
-            The following keys need to be present in the db : query_ra, query_dec,
-            query_filt and compid.
+            The following keys need to be present in the db : qry_ra, qry_dec,
+            qry_filt and compid.
             skip_online_query: Whether to skip the online query and only use the local
             databases.
         """
@@ -186,6 +194,30 @@ class WFAUQuery(BaseWFCAMQuery):
                 raise ValueError(
                     "query_table must be provided if check_local_database is True"
                 )
+
+            required_components_db_keys = [
+                MULTIFRAME_ID_KEY.lower(),
+                EXTENSION_ID_KEY.lower(),
+                LX_KEY.lower(),
+                HX_KEY.lower(),
+                LY_KEY.lower(),
+                HY_KEY.lower(),
+                COMPID_KEY.lower(),
+            ]
+            for key in required_components_db_keys:
+                if key not in self.components_db_table.sql_model.__table__.columns:
+                    raise ValueError(
+                        f"{key} must be present in the components_db_table"
+                    )
+            required_query_db_keys = [
+                QUERY_RA_KEY.lower(),
+                QUERY_DEC_KEY.lower(),
+                QUERY_FILT_KEY.lower(),
+                COMPID_KEY.lower(),
+            ]
+            for key in required_query_db_keys:
+                if key not in self.query_db_table.sql_model.__table__.columns:
+                    raise ValueError(f"{key} must be present in the query_db_table")
 
     def get_query_class(self) -> BaseWFAUClass:
         """
@@ -263,7 +295,7 @@ class WFAUQuery(BaseWFCAMQuery):
                 [],
                 [],
             )
-            for ind in tqdm(range(len(query_crds))):
+            for ind, crd in enumerate(query_crds):
                 crd = query_crds[ind]
                 # Need to add a cache and check there.
                 imagepaths, query_exists = [], False
@@ -278,6 +310,8 @@ class WFAUQuery(BaseWFCAMQuery):
                         components_table=self.components_db_table,
                     )
                     logger.debug(f"Found {len(imagepaths)} images locally.")
+                    query_exists = len(imagepaths) > 0
+                    print(crd, query_exists)
 
                     # If no query found, check if the coordinates overlap with any of
                     # the component images present in the database. This is a hack to
@@ -294,8 +328,6 @@ class WFAUQuery(BaseWFCAMQuery):
                             f"the coordinates locally."
                         )
 
-                    query_exists = len(imagepaths) > 0
-
                 # If no query found locally, download from the UKIRT server.
                 # This runs only is skip_online_query is False, again, as a safeguard
                 # against cases where the server is out for long times.
@@ -311,13 +343,16 @@ class WFAUQuery(BaseWFCAMQuery):
                         duplicate_protocol="ignore",
                     )
 
-                    # Make an entry in the queries table
-                    if self.use_db_for_component_queries:
-                        downloaded_images = [
-                            open_raw_image(imagepath) for imagepath in imagepaths
-                        ]
-                        dbexporter = DatabaseImageExporter(db_table=self.query_db_table)
-                        _ = dbexporter.apply(ImageBatch(downloaded_images))
+                # Make an entry in the queries table
+                if self.use_db_for_component_queries & (not query_exists):
+                    downloaded_images = [
+                        open_raw_image(imagepath) for imagepath in imagepaths
+                    ]
+                    for img in downloaded_images:
+                        img[QUERY_RA_KEY] = crd.ra.deg
+                        img[QUERY_DEC_KEY] = crd.dec.deg
+                    dbexporter = DatabaseImageExporter(db_table=self.query_db_table)
+                    _ = dbexporter.apply(ImageBatch(downloaded_images))
 
                 qexists_list = [query_exists] * len(imagepaths)
                 ra_list, dec_list = [crd.ra.deg] * len(imagepaths), [crd.dec.deg] * len(
@@ -339,6 +374,7 @@ class WFAUQuery(BaseWFCAMQuery):
             f"UKIRT image url length {len(wfcam_image_paths)}. "
             f"List {wfcam_image_paths}"
         )
+
         if len(wfcam_image_paths) == 0:
             err = "No image found at the given coordinates in the UKIRT database"
             raise WFAURefNotFoundError(err)
@@ -429,9 +465,9 @@ def download_wfcam_archive_images(
             imagepath = get_output_path(
                 wfcam_image[BASE_NAME_KEY], dir_root=save_dir_path.as_posix()
             )
-            wfcam_image["QUERY_RA"] = crd.ra.deg
-            wfcam_image["QUERY_DEC"] = crd.dec.deg
-            wfcam_image["QUERY_FILT"] = waveband
+            wfcam_image[QUERY_RA_KEY] = crd.ra.deg
+            wfcam_image[QUERY_DEC_KEY] = crd.dec.deg
+            wfcam_image[QUERY_FILT_KEY] = waveband
             wfcam_image[LATEST_SAVE_KEY] = imagepath.as_posix()
 
             if use_local_database:
@@ -467,9 +503,13 @@ def check_query_exists_locally(
 
     """
     results = query_table.sql_model().select_query(
-        select_keys="compid",
+        select_keys=COMPID_KEY.lower(),
         compare_values=[query_ra, query_dec, query_filt],
-        compare_keys=["query_ra", "query_dec", "query_filt"],
+        compare_keys=[
+            QUERY_RA_KEY.lower(),
+            QUERY_DEC_KEY.lower(),
+            QUERY_FILT_KEY.lower(),
+        ],
         comparators=["__eq__", "__eq__", "__eq__"],
     )
     logger.debug(results)
@@ -482,12 +522,12 @@ def check_query_exists_locally(
             comp_results = components_table.sql_model().select_query(
                 select_keys="savepath",
                 compare_values=[compid],
-                compare_keys=["compid"],
+                compare_keys=[COMPID_KEY.lower()],
                 comparators=["__eq__"],
             )
             if len(comp_results) == 0:
                 raise ValueError(f"Component {compid} not found in database")
-            savepaths.append(comp_results[0][0])
+            savepaths.append(Path(comp_results[0][0]))
     return savepaths
 
 
@@ -514,7 +554,7 @@ def get_locally_existing_overlap_images(
     )
     logger.debug(results)
     if len(results) > 0:
-        savepaths = [x[0] for x in results]
+        savepaths = [Path(x[0]) for x in results]
     return savepaths
 
 
@@ -551,7 +591,14 @@ def check_multiframe_exists_locally(
             frame_ly,
             frame_hy,
         ],
-        compare_keys=["multiframe_id", "extension_id", "lx", "hx", "ly", "hy"],
+        compare_keys=[
+            MULTIFRAME_ID_KEY.lower(),
+            EXTENSION_ID_KEY.lower(),
+            LX_KEY.lower(),
+            HX_KEY.lower(),
+            LY_KEY.lower(),
+            HY_KEY.lower(),
+        ],
         comparators=["__eq__", "__eq__", "__eq__", "__eq__", "__eq__", "__eq__"],
     )
     logger.debug(results)
