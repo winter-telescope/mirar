@@ -20,11 +20,11 @@ class RefComponentsTable(WinterBase):
 
     compid = Column(Integer, primary_key=True)
     queries: Mapped["RefQueriesTable"] = relationship(back_populates="components")
-    query_ra = Column(Float)
-    query_dec = Column(Float)
+    qry_ra = Column(Float)
+    qry_dec = Column(Float)
 
-    multiframe_id = Column(Double)
-    extension_id = Column(Integer)
+    mfid = Column(Double)
+    xtnsnid = Column(Integer)
     lx = Column(Integer)
     ly = Column(Integer)
     hx = Column(Integer)
@@ -54,11 +54,11 @@ class RefComponent(BaseDB):
 
     sql_model: ClassVar = RefComponentsTable
 
-    query_ra: float = ra_field
-    query_dec: float = dec_field
+    qry_ra: float = ra_field
+    qry_dec: float = dec_field
     savepath: str = Field(min_length=1)
-    multiframe_id: int = Field(ge=0)
-    extension_id: int = Field(ge=0)
+    mfid: int = Field(ge=0)
+    xtnsnid: int = Field(ge=0)
     lx: int = Field(ge=0)
     ly: int = Field(ge=0)
     hx: int = Field(ge=0)
@@ -86,5 +86,6 @@ class RefComponent(BaseDB):
         :return: bool
         """
         return self.sql_model().exists(
-            values=[self.query_ra, self.query_dec], keys=["query_ra", "query_dec"]
+            values=[self.mfid, self.xtnsnid, self.lx, self.hx, self.ly, self.hy],
+            keys=["mfid", "xtnsnid", "lx", "hx", "ly", "hy"],
         )
