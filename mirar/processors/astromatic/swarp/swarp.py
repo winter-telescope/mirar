@@ -167,6 +167,11 @@ class Swarp(BaseImageProcessor):
         basenames = [x[BASE_NAME_KEY] for x in batch]
         sort_inds = np.argsort(basenames)
         batch = ImageBatch([batch[i] for i in sort_inds])
+        if len(basenames) != len(set(basenames)):
+            raise SwarpError(
+                "Duplicate basenames in batch, "
+                f"following names were found: {basenames}"
+            )
 
         swarp_output_dir = self.get_swarp_output_dir()
         swarp_output_dir.mkdir(parents=True, exist_ok=True)
