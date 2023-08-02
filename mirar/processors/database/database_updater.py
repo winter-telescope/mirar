@@ -8,9 +8,10 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from mirar.data import ImageBatch
+from mirar.data import Image, ImageBatch
+from mirar.database.constraints import DBQueryConstraints
 from mirar.database.postgres_utils import get_sequence_key_names_from_table
-from mirar.processors.database.constraints import DBQueryConstraints
+from mirar.database.transactions import update_database_entry
 from mirar.processors.database.database_importer import (
     BaseDatabaseImporter,
     BaseImageDatabaseImporter,
@@ -19,20 +20,22 @@ from mirar.processors.database.database_importer import (
 logger = logging.getLogger(__name__)
 
 
-class BaseDatabaseModifier(BaseDatabaseImporter, ABC):
+class BaseDatabaseUpdater(BaseDatabaseImporter, ABC):
     """
-    Base class for database modifiers
+    Base class for database updaters
     """
 
-    base_key = "dbmodifier"
+    base_key = "dbupdater"
 
-    def __init__(self, db_alter_columns: Optional[str] = None, **kwargs):
+    def __init__(self, db_alter_columns: str | list[str], **kwargs):
         super().__init__(db_output_columns=db_alter_columns, **kwargs)
+        if not isinstance(db_alter_columns, list):
+            db_alter_columns = [db_alter_columns]
         self.db_alter_columns = db_alter_columns
 
 
-class ImageDatabaseModifier(BaseDatabaseModifier, BaseImageDatabaseImporter, ABC):
-    """Base Class for modifying image entries in a database"""
+class ImageDatabaseUpdater(BaseDatabaseUpdater, BaseImageDatabaseImporter, ABC):
+    """Base Class for updating image entries in a database"""
 
     def _apply_to_images(
         self,
@@ -41,18 +44,40 @@ class ImageDatabaseModifier(BaseDatabaseModifier, BaseImageDatabaseImporter, ABC
         for image in batch:
             query_constraints = self.get_constraints(image)
 
-            self.pg_user.modify_db_entry(
-                value_dict=image,
+            update_dict = self.get_export_dict(image)
+
+            update_database_entry(
+                update_dict=update_dict,
                 db_constraints=query_constraints,
-                db_alter_columns=self.db_alter_columns,
-                db_table=self.db_table,
-                db_name=self.db_name,
+                db_model=self.db_table,
             )
+            #
+            #
+            #
+            # self.pg_user.modify_db_entry(
+            #     value_dict=image,
+            #     db_constraints=query_constraints,
+            #     db_alter_columns=self.db_alter_columns,
+            #     db_table=self.db_table,
+            #     db_name=self.db_name,
+            # )
 
         return batch
 
+    def get_export_dict(self, image: Image) -> dict:
+        """
+        Create a dictionary to export the relevant fields to a database from an image
 
-class ModifyImageDatabaseSeq(ImageDatabaseModifier):
+        :param image: Image to export
+        :return: Dictionary of keys/values to export
+        """
+        new = {}
+        for key in self.db_alter_columns:
+            new[key] = image[key]
+        return new
+
+
+class ModifyImageDatabaseSeq(ImageDatabaseUpdater):
     """Processor to modify images in a database with a sequence"""
 
     def __init__(self, sequence_key: Optional[str | list[str]] = None, **kwargs):
@@ -61,11 +86,11 @@ class ModifyImageDatabaseSeq(ImageDatabaseModifier):
 
     def get_constraints(self, data):
         if self.sequence_key is None:
-            self.sequence_key = list(
-                self.pg_user.get_sequence_keys_from_table(self.db_table, self.db_name)
+            self.sequence_key = get_sequence_key_names_from_table(
+                self.db_table.sql_model.__tablename__, self.db_name
             )
 
-        accepted_values = [data[x.upper()] for x in self.sequence_key]
+        accepted_values = [data[x.lower()] for x in self.sequence_key]
         comparison_types = ["="] * len(accepted_values)
 
         query_constraints = DBQueryConstraints(
@@ -89,8 +114,8 @@ class ModifyImageDatabaseSeqList(ModifyImageDatabaseSeq):
         if isinstance(self.sequence_key, str):
             self.sequence_key = [self.sequence_key]
         if self.sequence_key is None:
-            self.sequence_key = list(
-                self.pg_user.get_sequence_keys_from_table(self.db_table, self.db_name)
+            self.sequence_key = get_sequence_key_names_from_table(
+                self.db_table.sql_model.__tablename__, self.db_name
             )
 
     def _apply_to_images(
@@ -100,7 +125,7 @@ class ModifyImageDatabaseSeqList(ModifyImageDatabaseSeq):
         for image in batch:
             try:
                 data_array = [
-                    [int(y) for y in image[x.upper()].split(",")]
+                    [int(y) for y in image[x.lower()].split(",")]
                     for x in self.sequence_key
                 ]
             except ValueError as exc:
@@ -111,19 +136,23 @@ class ModifyImageDatabaseSeqList(ModifyImageDatabaseSeq):
                 raise ValueError("All sequence keys must have the same length")
 
             data_df = pd.DataFrame(
-                np.array(data_array).T, columns=[x.upper() for x in self.sequence_key]
+                np.array(data_array).T, columns=[x.lower() for x in self.sequence_key]
             )
             logger.debug(data_df)
+
+            update_dict = self.get_export_dict(image)
+
             for ind in range(len(data_df)):
                 row = data_df.iloc[ind]
                 query_constraints = self.get_constraints(row)
 
-                self.pg_user.modify_db_entry(
-                    value_dict=image,
+                print(query_constraints.parse_constraints())
+                print(update_dict)
+
+                update_database_entry(
+                    update_dict=update_dict,
                     db_constraints=query_constraints,
-                    db_alter_columns=self.db_alter_columns,
-                    db_table=self.db_table,
-                    db_name=self.db_name,
+                    db_model=self.db_table,
                 )
 
         return batch

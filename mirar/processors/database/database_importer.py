@@ -9,9 +9,9 @@ from typing import Optional
 import pandas as pd
 
 from mirar.data import DataBlock, Image, ImageBatch, SourceBatch
+from mirar.database.constraints import DBQueryConstraints
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
-from mirar.processors.database.constraints import DBQueryConstraints
 
 logger = logging.getLogger(__name__)
 

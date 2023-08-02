@@ -32,6 +32,9 @@ class ProcTable(SummerBase):  # pylint: disable=too-few-public-methods
     rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)
     raw_ids: Mapped["RawTable"] = relationship(back_populates="proc")
 
+    diffid: Mapped[int] = Column(Integer, ForeignKey("diff.diffid"))
+    diff_ids: Mapped["DiffTable"] = relationship(back_populates="proc")
+
     savepath = Column(VARCHAR(255), unique=True)
     wghtpath = Column(VARCHAR(255), unique=True)
 

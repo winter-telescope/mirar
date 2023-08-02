@@ -3,7 +3,7 @@ Module to define PSQL database tables using sqlalchemy
 """
 import logging
 from datetime import date
-from typing import ClassVar
+from typing import ClassVar, Type
 
 import numpy as np
 from pydantic import BaseModel, Extra, Field, root_validator, validator
@@ -33,7 +33,7 @@ class BaseDB(PydanticBase):
     Base Database Table model, requiring an associated SQLalchemy table
     """
 
-    sql_model: ClassVar[Table]
+    sql_model: ClassVar[Type[Table]]
 
     @root_validator(pre=True)
     def sql_model_exists_check(cls, values):

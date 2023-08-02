@@ -69,7 +69,7 @@ from mirar.processors.database.database_exporter import (
     DatabaseSourceExporter,
 )
 from mirar.processors.database.database_importer import DatabaseHistoryImporter
-from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
+from mirar.processors.database.database_updater import ModifyImageDatabaseSeqList
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -334,9 +334,8 @@ photcal_and_export = [
     ImageSaver(output_dir_name="final"),
     DatabaseImageExporter(db_table=Stack, duplicate_protocol="replace", q3c_bool=False),
     ModifyImageDatabaseSeqList(
-        db_name="winter",
         sequence_key="rawid",
-        db_table=Raw.sql_model.__tablename__,
+        db_table=Raw,
         db_alter_columns="ustackid",
     ),
 ]
@@ -394,27 +393,26 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
-    DatabaseHistoryImporter(
-        crossmatch_radius_arcsec=2.0,
-        time_field_name="jd",
-        history_duration_days=500.0,
-        db_name="winter",
-        db_table="candidates",
-        # db_output_columns=candidate_colnames,
-        q3c_bool=False,
-    ),
-    CandidateNamer(
-        db_name="winter",
-        db_table="candidates",
-        base_name="WNTR",
-        name_start="aaaaa",
-        xmatch_radius_arcsec=2,
-    ),
-    DatabaseSourceExporter(
-        db_name="winter",
-        db_table="candidates",
-        duplicate_protocol="replace",
-    ),
+    # DatabaseHistoryImporter(
+    #     crossmatch_radius_arcsec=2.0,
+    #     time_field_name="jd",
+    #     history_duration_days=500.0,
+    #     db_name="winter",
+    #     db_table="candidates",
+    #     # db_output_columns=candidate_colnames,
+    #     q3c_bool=False,
+    # ),
+    # CandidateNamer(
+    #     db_name="winter",
+    #     db_table="candidates",
+    #     base_name="WNTR",
+    #     name_start="aaaaa",
+    #     xmatch_radius_arcsec=2,
+    # ),
+    # DatabaseSourceExporter(
+    #     db_table="candidates",
+    #     duplicate_protocol="replace",
+    # ),
     SourceWriter(output_dir_name="preavro"),
     IPACAvroExporter(
         topic_prefix="winter",

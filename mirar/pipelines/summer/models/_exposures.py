@@ -93,6 +93,7 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
     dec_column_name = "dec"
 
     raw: Mapped["RawTable"] = relationship(back_populates="exposure_ids")
+    diff: Mapped["DiffTable"] = relationship(back_populates="exposure_ids")
 
 
 # @event.listens_for(target=RawTable.__table__, identifier="after_create")

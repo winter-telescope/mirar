@@ -5,8 +5,10 @@ Module to export data to a database table
 import logging
 from typing import Type
 
+from psycopg import errors
 from pydantic import ValidationError
 from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
 
 from mirar.data import DataBlock
 from mirar.database.base_model import BaseDB

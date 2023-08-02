@@ -3,6 +3,7 @@ Models for database and pydantic dataclass models
 """
 
 from mirar.database.credentials import DB_USER
+from mirar.pipelines.summer.models._diff import Diff, DiffTable
 from mirar.pipelines.summer.models._exposures import Exposure, ExposuresTable
 from mirar.pipelines.summer.models._fields import (
     DEFAULT_FIELD,

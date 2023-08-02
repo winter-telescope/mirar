@@ -32,17 +32,14 @@ from mirar.pipelines.summer.load_summer_image import (
     load_proc_summer_image,
     load_raw_summer_image,
 )
-from mirar.pipelines.summer.models import Exposure, Proc, Raw
+from mirar.pipelines.summer.models import Diff, Exposure, Proc, Raw
 from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.database.database_exporter import DatabaseImageExporter
-from mirar.processors.database.database_exporter import (
-    DatabaseImageExporter as PSQLDatabaseImageExporter,
-)
-from mirar.processors.database.database_modifier import ModifyImageDatabaseSeq
+from mirar.processors.database.database_updater import ModifyImageDatabaseSeq
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
@@ -190,7 +187,7 @@ process_raw = [
         # additional_headers=["PROCIMG"],
         write_mask=True,
     ),
-    HeaderEditor(edit_keys="procflag", values=1),
+    HeaderEditor(edit_keys="procstatus", values=1),
     # PSQLDatabaseImageExporter(
     #     db_name=DB_NAME,
     #     db_table="proc",  # FIXME
@@ -199,8 +196,8 @@ process_raw = [
     # ),
     DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
     ModifyImageDatabaseSeq(
-        db_name=DB_NAME,
-        db_table="raw",  # FIXME
+        # db_name=DB_NAME,
+        db_table=Raw,  # FIXME
         db_alter_columns="procstatus",
     ),
 ]
@@ -235,9 +232,8 @@ subtract = [
 ]
 
 export_diff_to_db = [
-    PSQLDatabaseImageExporter(
-        db_name=PIPELINE_NAME,  # FIXME
-        db_table="diff",
+    DatabaseImageExporter(
+        db_table=Diff,
     ),
 ]
 
