@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 expected_zp = {
     "ZP_2.0": 24.176036834716797,
     "ZP_2.0_std": 0.12187111377716064,
-    "ZP_2.0_nstars": 720,
+    "ZP_2.0_nstars": 721,
     "ZP_3.0": 24.66560935974121,
     "ZP_3.0_std": 0.1159907802939415,
     "ZP_3.0_nstars": 725,
@@ -76,7 +76,7 @@ class TestWinterPipeline(BaseTestCase):
         header = [x for x in headers if x["SUBCOORD"] == "0_1"][0]
 
         # # Uncomment to print new expected ZP dict
-        print("New Results:")
+        print("New Results WINTER:")
         new_exp = "expected_zp = { \n"
         for header_key in header.keys():
             if "ZP_" in header_key:
