@@ -167,7 +167,6 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
         dec_field_name: str = "dec",
         order_field_name: Optional[str] = None,
         order_ascending: bool = False,
-        q3c_bool: bool = False,
         query_dist: bool = False,
         **kwargs,
     ):
@@ -205,8 +204,10 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
         :param cand: single source
         :return: db constraint
         """
-        if self.user_defined_constraints is None:
-            return None
+
+        print(self.q3c_bool)
+        raise
+
         return self.user_defined_constraints(cand)
 
     def _apply_to_sources(
