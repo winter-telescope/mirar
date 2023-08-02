@@ -44,9 +44,9 @@ class Gaia2Mass(BaseCatalog):
         acceptable_k_ph_quals: str | list[str] = None,
         **kwargs,
     ):
-        super().__init__(*args, filter_name=filter_name, **kwargs)
-
         filter_name = filter_name.lower()
+
+        super().__init__(*args, filter_name=filter_name, **kwargs)
 
         assert (
             filter_name in offsets_2mass.keys()
