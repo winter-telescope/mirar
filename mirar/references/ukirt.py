@@ -33,7 +33,7 @@ from mirar.paths import (
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.base_processor import ImageHandler
-from mirar.processors.database.database_exporter import DatabaseImageExporter
+from mirar.processors.database.database_inserter import DatabaseImageInserter
 from mirar.processors.photcal import PhotCalibrator
 from mirar.references.base_reference_generator import BaseReferenceGenerator
 
@@ -593,10 +593,9 @@ class UKIRTRef(BaseReferenceGenerator, ImageHandler):
                 ukirt_image["QUERY_DEC"] = dec
                 ukirt_image[LATEST_SAVE_KEY] = savepath.as_posix()
                 if self.check_local_database:
-                    dbexporter = DatabaseImageExporter(
+                    dbexporter = DatabaseImageInserter(
                         db_table=self.components_table,
                         duplicate_protocol=self.duplicate_protocol,
-                        q3c_bool=self.q3c_bool,
                     )
                     ukirt_db_batch = dbexporter.apply(ImageBatch([ukirt_image]))
                     ukirt_image = ukirt_db_batch[0]

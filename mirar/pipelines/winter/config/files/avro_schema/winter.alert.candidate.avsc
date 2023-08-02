@@ -54,7 +54,7 @@
         {"name": "jdstarthist", "type": ["double", "null"], "doc": "Earliest Julian date of epoch corresponding to ndethist [days]"},
         {"name": "jdendhist", "type": ["double", "null"], "doc": "Latest Julian date of epoch corresponding to ndethist [days]"},
         {"name": "scorr", "type": ["double", "null"], "doc": "Peak-pixel signal-to-noise ratio in point source matched-filtered detection image"},
-        {"name": "tooflag", "type": ["bool", "null"], "default": 0, "doc": "1 => candidate is from a Target-of-Opportunity (ToO) exposure; 0 => candidate is from a non-ToO exposure"},
+        {"name": "tooflag", "type": ["int", "null"], "default": 0, "doc": "1 => candidate is from a Target-of-Opportunity (ToO) exposure; 0 => candidate is from a non-ToO exposure"},
         {"name": "sgmag1", "type": ["float", "null"], "doc": "g-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
 		{"name": "srmag1", "type": ["float", "null"], "doc": "r-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
 		{"name": "simag1", "type": ["float", "null"], "doc": "i-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"},

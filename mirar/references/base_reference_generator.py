@@ -29,7 +29,7 @@ from mirar.paths import (
     RAW_IMG_KEY,
     TARGET_KEY,
 )
-from mirar.processors.database.database_exporter import DatabaseImageExporter
+from mirar.processors.database.database_inserter import DatabaseImageInserter
 
 logger = logging.getLogger(__name__)
 
@@ -152,10 +152,9 @@ class BaseReferenceGenerator:
         save_hdu_as_fits(ref_hdu, output_path)
 
         if self.write_to_db:
-            dbexporter = DatabaseImageExporter(
+            dbexporter = DatabaseImageInserter(
                 db_table=self.write_db_table,
                 duplicate_protocol=self.duplicate_protocol,
-                q3c_bool=self.q3c_bool,
             )
             ref_image = Image(header=ref_hdu.header, data=ref_hdu.data)
             ref_image_batch = ImageBatch([ref_image])

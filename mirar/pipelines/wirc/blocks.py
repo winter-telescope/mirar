@@ -40,8 +40,8 @@ from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.avro import IPACAvroExporter, SendToFritz
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.database.database_exporter import DatabaseSourceExporter
-from mirar.processors.database.database_importer import DatabaseHistoryImporter
+from mirar.processors.database.database_inserter import DatabaseSourceInserter
+from mirar.processors.database.database_selector import DatabaseHistorySelector
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import (
     MaskAboveThreshold,
