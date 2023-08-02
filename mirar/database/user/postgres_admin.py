@@ -9,8 +9,8 @@ from mirar.database.credentials import (
     PG_ADMIN_PWD_KEY,
     PG_ADMIN_USER_KEY,
 )
-from mirar.database.user.postgres_user import PostgresUser
 from mirar.database.engine import get_engine
+from mirar.database.user.postgres_user import PostgresUser
 
 
 class PostgresAdmin(PostgresUser):

@@ -7,11 +7,11 @@ from abc import ABC
 import numpy as np
 
 from mirar.data import ImageBatch, SourceBatch
+from mirar.database.transactions import export_to_db
 from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 from mirar.processors.utils.image_selector import ImageBatcher
-from mirar.database.transactions import export_to_db
 
 logger = logging.getLogger(__name__)
 

@@ -9,12 +9,12 @@ import numpy as np
 import pandas as pd
 
 from mirar.data import ImageBatch
+from mirar.database.postgres_utils import get_sequence_key_names_from_table
 from mirar.processors.database.constraints import DBQueryConstraints
 from mirar.processors.database.database_importer import (
     BaseDatabaseImporter,
     BaseImageDatabaseImporter,
 )
-from mirar.database.postgres_utils import get_sequence_key_names_from_table
 
 logger = logging.getLogger(__name__)
 

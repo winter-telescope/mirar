@@ -3,16 +3,15 @@ Module to export data to a database table
 """
 
 import logging
+from typing import Type
 
+from pydantic import ValidationError
+from sqlalchemy import inspect
+
+from mirar.data import DataBlock
 from mirar.database.base_model import BaseDB
 from mirar.database.constants import POSTGRES_DUPLICATE_PROTOCOLS
-from mirar.data import DataBlock
-from typing import Type
 from mirar.database.errors import DataBaseError
-
-from sqlalchemy import inspect
-from pydantic import ValidationError
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +33,7 @@ def export_to_db(
 
     assert duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
 
-    column_names = [
-        x for x in db_table.__dict__["__annotations__"] if x != "sql_model"
-    ]
+    column_names = [x for x in db_table.__dict__["__annotations__"] if x != "sql_model"]
 
     column_dict = {}
     for column in column_names:
