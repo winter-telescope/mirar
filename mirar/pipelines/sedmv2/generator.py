@@ -110,7 +110,9 @@ def sedmv2_reference_image_resampler(**kwargs) -> Swarp:
     :param kwargs: kwargs
     :return: Swarp processor
     """
-    return Swarp(swarp_config_path=swarp_config_path, cache=True, **kwargs)
+    return Swarp(
+        swarp_config_path=swarp_config_path, cache=True, subtract_bkg=True, **kwargs
+    )
 
 
 def sedmv2_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:

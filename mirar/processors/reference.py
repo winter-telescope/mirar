@@ -128,7 +128,6 @@ class ProcessReference(BaseImageProcessor):
                 include_scamp=False,
                 combine=False,
                 gain=ref_gain,
-                subtract_bkg=False,
             )
 
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
@@ -161,7 +160,6 @@ class ProcessReference(BaseImageProcessor):
                 include_scamp=False,
                 combine=False,
                 gain=sci_gain,
-                subtract_bkg=False,
             )
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
 
