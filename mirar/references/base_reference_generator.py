@@ -98,7 +98,7 @@ class BaseReferenceGenerator:
         Get loaded ref image for image
 
         :param image: image
-        :return: ref image
+        :return: reference image HDU, reference weight image HDU
         """
         raise NotImplementedError()
 
@@ -267,6 +267,8 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
     def get_component_images(self, image: Image) -> ImageBatch:
         """
         Get component reference images that will be stacked together.
+        :param image: image
+        :return: ImageBatch of component reference images to be used for stacking
         """
         raise NotImplementedError
 
@@ -275,7 +277,7 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
         Get loaded ref image for image
 
         :param image: image
-        :return: ref image
+        :return: ref image HDU, ref weight HDU
         """
         component_image_batch = self.get_component_images(image)
         resampler = self.image_resampler_generator()
