@@ -119,7 +119,6 @@ def save_fits(
     :param path: path
     :return: None
     """
-    path = str(path)
     check_image_has_core_fields(image)
     data = image.get_data()
     header = image.get_header()
@@ -131,9 +130,7 @@ def save_fits(
 
 def open_raw_image(
     path: str | Path,
-    open_f: Callable[
-        [str | Path, Optional[dict]], tuple[np.ndarray, fits.Header]
-    ] = open_fits,
+    open_f: Callable[[str | Path], tuple[np.ndarray, fits.Header]] = open_fits,
     **fits_open_kwargs,
 ) -> Image:
     """
