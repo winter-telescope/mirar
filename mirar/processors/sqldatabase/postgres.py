@@ -10,8 +10,9 @@ import psycopg
 from psycopg import errors
 from psycopg.rows import Row
 from pydantic import ValidationError
-from sqlalchemy import inspect
+from sqlalchemy import DDL, inspect, text
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy_utils import create_database, database_exists
 
 from mirar.data import DataBlock
 from mirar.errors import ProcessorError
@@ -28,6 +29,7 @@ from mirar.processors.sqldatabase.postgres_utils import (
     PG_ADMIN_USER_KEY,
     POSTGRES_DUPLICATE_PROTOCOLS,
 )
+from mirar.utils.sql import get_engine
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +76,17 @@ class PostgresUser:
             f"dbname=postgres user={self.db_user} password={self.db_password}"
         ) as conn:
             conn.execute("SELECT 1")
+
+    def get_engine(self, db_name: str):
+        """
+        Get engine for database
+
+        :param db_name: Name of database
+        :return: engine
+        """
+        return get_engine(
+            db_user=self.db_user, db_password=self.db_password, db_name=db_name
+        )
 
     def run_sql_command_from_file(self, file_path: str | Path, db_name: str):
         """
@@ -389,41 +402,19 @@ class PostgresUser:
 
         return check_value in existing_user_names
 
-    def check_if_db_exists(self, db_name: str) -> bool:
-        """
-        Check if a user account exists
-
-        :param db_name: database to check
-        :return: boolean
-        """
-
-        check_command = """SELECT datname FROM pg_database;"""
-
-        db_exist_bool = self.check_if_exists(
-            check_command=check_command,
-            check_value=db_name,
-            db_name="postgres",
-        )
-
-        logger.debug(f"Database '{db_name}' does {['not ', ''][db_exist_bool]} exist")
-
-        return db_exist_bool
-
     def create_db(self, db_name: str):
         """
-        Creates a database using credentials
+        Creates a database using credentials, if it does not exist
 
         :param db_name: DB to create
         :return: None
         """
 
-        with psycopg.connect(
-            f"dbname=postgres user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-            sql = f"""CREATE database {db_name}"""
-            conn.execute(sql)
-            logger.info(f"Created db {db_name}")
+        engine = self.get_engine(db_name=db_name)
+        if not database_exists(engine.url):
+            create_database(engine.url)
+
+        assert database_exists(engine.url)
 
     def modify_db_entry(
         self,
@@ -480,6 +471,30 @@ class PostgresUser:
 
         return query_output
 
+    def has_extension(
+        self,
+        extension_name: str,
+        db_name: str,
+    ) -> bool:
+        """
+        Function to create q3c extension and index on table
+
+        :param extension_name: name of extension to check
+        :param db_name: name of database to check
+        :return: boolean
+        """
+
+        engine = self.get_engine(db_name=db_name)
+        with engine.connect() as conn:
+            command = text(
+                f"SELECT extname FROM pg_extension WHERE extname='{extension_name}'"
+            )
+            res = conn.execute(command).all()
+
+        assert len(res) <= 1, "More than one extension found"
+
+        return len(res) == 1
+
 
 class PostgresAdmin(PostgresUser):
     """
@@ -500,10 +515,27 @@ class PostgresAdmin(PostgresUser):
         :param new_password: new user password
         :return: None
         """
-
-        with psycopg.connect(
-            f"dbname=postgres user={self.db_user} password={self.db_password}"
-        ) as conn:
-            conn.autocommit = True
-            command = f"CREATE ROLE {new_db_user} WITH password '{new_password}' CREATEDB NOCREATEROLE LOGIN;"
+        engine = self.get_engine(db_name="postgres")
+        with engine.connect() as conn:
+            command = DDL(
+                f"CREATE ROLE {new_db_user} WITH password '{new_password}' CREATEDB NOCREATEROLE LOGIN;"
+            )
             conn.execute(command)
+            conn.commit()
+
+    def create_extension(self, extension_name: str, db_name: str):
+        """
+        Function to create new extension for database
+
+        :param extension_name: name of extension to create
+        :param db_name: name of database to create extension in
+        :return: None
+        """
+
+        engine = self.get_engine(db_name=db_name)
+        with engine.connect() as conn:
+            command = DDL(f"CREATE EXTENSION IF NOT EXISTS {extension_name};")
+            conn.execute(command)
+            conn.commit()
+
+        assert self.has_extension(extension_name=extension_name, db_name=db_name)

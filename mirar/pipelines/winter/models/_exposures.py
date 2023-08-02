@@ -31,9 +31,6 @@ from mirar.processors.sqldatabase.base_model import (
     ra_field,
 )
 
-# from mirar.utils.sql import create_q3c_extension
-
-
 logger = logging.getLogger(__name__)
 
 
