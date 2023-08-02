@@ -47,7 +47,7 @@ class ZOGYError(ProcessorError):
     """Error derived from running ZOGY"""
 
 
-def default_wirc_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
+def default_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
     """
     TODO: This should be in wirc?
 
@@ -73,51 +73,6 @@ def default_wirc_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
     return good_sci_sources, good_ref_sources
 
 
-def default_summer_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
-    """
-    TODO: Catalog purifier for the summer data. This should probably be in summer.
-    """
-    # Need to do this because the summer data is typically much
-    # shallower than the PS1 data, and only the brightest
-    # sources in PS1 xmatch to it.
-    good_sci_sources = (
-        (sci_catalog["FLAGS"] == 0)
-        & (sci_catalog["SNR_WIN"] > 5)
-        & (sci_catalog["FWHM_WORLD"] < 4.0 / 3600)
-        & (sci_catalog["FWHM_WORLD"] > 0.5 / 3600)
-        & (sci_catalog["SNR_WIN"] < 1000)
-    )
-
-    good_ref_sources = (
-        (ref_catalog["SNR_WIN"] > 5)
-        & (ref_catalog["FWHM_WORLD"] < 5.0 / 3600)
-        & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
-    )
-
-    return good_sci_sources, good_ref_sources
-
-
-def default_sedmv2_catalog_purifier(sci_catalog, ref_catalog):
-    """
-    TODO: This should be in sedmv2?
-    """
-    good_sci_sources = (
-        (sci_catalog["FLAGS"] == 0)
-        & (sci_catalog["SNR_WIN"] > 5)
-        & (sci_catalog["FWHM_WORLD"] < 4.0 / 3600)
-        & (sci_catalog["FWHM_WORLD"] > 0.5 / 3600)
-        & (sci_catalog["SNR_WIN"] < 1000)
-    )
-
-    good_ref_sources = (
-        (ref_catalog["SNR_WIN"] > 5)
-        & (ref_catalog["FWHM_WORLD"] < 5.0 / 3600)
-        & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
-    )
-
-    return good_sci_sources, good_ref_sources
-
-
 class ZOGYPrepare(BaseImageProcessor):
     """
     Class to create a cross-matched source catalogue for ZOGY,
@@ -139,7 +94,7 @@ class ZOGYPrepare(BaseImageProcessor):
         catalog_purifier: Callable[
             [astropy.table.Table, astropy.table.Table],
             [astropy.table.Table, astropy.table.Table],
-        ] = default_wirc_catalog_purifier,
+        ] = default_catalog_purifier,
         write_region_bool: bool = True,
         crossmatch_radius_arcsec: float = 1.0,
     ):

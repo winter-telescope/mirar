@@ -42,7 +42,6 @@ def winter_reference_image_resampler_for_zogy(**kwargs) -> Swarp:
     :param kwargs: kwargs
     :return: Swarp processor
     """
-    logger.debug(kwargs)
     return Swarp(
         swarp_config_path=swarp_config_path, cache=False, subtract_bkg=False, **kwargs
     )
@@ -55,7 +54,6 @@ def winter_wfau_component_image_stacker(**kwargs) -> Swarp:
     :param kwargs: kwargs
     :return: Swarp processor
     """
-    logger.debug(kwargs)
     return Swarp(
         swarp_config_path=swarp_config_path,
         cache=True,
@@ -248,8 +246,7 @@ def winter_reference_generator(image: Image):
     components_image_dir = get_output_dir(
         dir_root="components", sub_dir="winter/references"
     )
-    if not components_image_dir.exists():
-        components_image_dir.mkdir(parents=True)
+    components_image_dir.mkdir(parents=True, exist_ok=True)
 
     filtername = image["FILTER"]
     # TODO if in_ukirt and in_vista, different processing

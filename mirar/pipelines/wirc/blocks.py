@@ -17,6 +17,7 @@ from mirar.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
     wirc_reference_sextractor,
+    wirc_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from mirar.pipelines.wirc.wirc_files import (
@@ -181,7 +182,7 @@ subtract = [
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     ZOGYPrepare(output_sub_dir="subtract"),
-    ZOGY(output_sub_dir="subtract"),
+    ZOGY(output_sub_dir="subtract", catalog_purifier=wirc_zogy_catalogs_purifier),
 ]
 
 image_photometry = [
