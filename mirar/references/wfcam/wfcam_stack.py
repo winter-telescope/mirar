@@ -34,12 +34,15 @@ logger = logging.getLogger(__name__)
 
 def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
     """
-    Function to filter WFAU images
+    Function to filter WFAU images based on zeropoints and seeing.
+    The images are filtered to remove images with wildly different zeropoints (more than
+    0.4 mag from the median zeropoint)
+    and seeing < 0 or > 2.5 arcsec.
     Args:
-        image_batch:
+        :param image_batch: ImageBatch
 
     Returns:
-
+        :return: Filtered image batch
     """
     image_array = np.array([x for x in image_batch])
 
@@ -86,6 +89,12 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
         phot_calibrator_generator: Callable[..., PhotCalibrator] = None,
         filter_images: Callable[[ImageBatch], ImageBatch] = default_filter_wfau_images,
     ):
+        """
+        Args:
+            :param wfcam_query: Query to be used to query WFCAM images
+            :component_image_sub_dir: Subdirectory to save the component images
+            :param filter_images: Function to filter the queried images
+        """
         BaseStackReferenceGenerator.__init__(
             self,
             filter_name=filter_name,
@@ -107,9 +116,11 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
 
     def get_component_images(self, image: Image) -> ImageBatch:
         """
-        Get the component images for the given image
+        Function to get the component images for a given image
+        Args:
+            :param image: Image for which the component images are to be found
+            :return: ImageBatch of component images
         """
-
         wfau_images = self.wfcam_query.run_query(image)
 
         wfau_images = self.filter_images(wfau_images)

@@ -36,13 +36,13 @@ def get_query_coordinates_from_header(
 ) -> (list[float], list[float]):
     """
     Function to get break an image into numpoints sections and get the
-    relevsnt coordinates
+    relevant coordinates
     Args:
-        header:
-        numpoints:
+        :param header: header of the image
+        :param numpoints: number of points to break the image into
 
     Returns:
-
+        :return: list of RA and Dec coordinates
     """
     nx, ny = header["NAXIS1"], header["NAXIS2"]
 
@@ -73,12 +73,12 @@ def find_ukirt_surveys(ra: float, dec: float, band: str) -> list[MOCSurvey]:
     """
     Find which UKIRT survey does the given RA/Dec belong to
     Args:
-        ra:
-        dec:
-        band:
+        :param ra: RA in degrees
+        :param dec: Dec in degrees
+        :param band: band name
 
     Returns:
-
+        :return: list of surveys
     """
     surveys = get_known_ukirt_surveys()
     band_surveys = np.array([x for x in surveys if x.filter_name == band])
@@ -86,15 +86,15 @@ def find_ukirt_surveys(ra: float, dec: float, band: str) -> list[MOCSurvey]:
     return band_surveys[in_survey_footprint]
 
 
-def combine_headers(primary_header, header_to_append):
+def combine_headers(primary_header: fits.Header, header_to_append: fits.Header):
     """
     Function to append a header to another
     Args:
-        primary_header:
-        header_to_append:
+        :param primary_header:
+        :param header_to_append:
 
     Returns:
-
+        :return: combined header
     """
     if "SIMPLE" not in primary_header.keys():
         primary_header.insert(0, ("SIMPLE", True))
@@ -117,10 +117,10 @@ def make_wfcam_image_from_hdulist(
     """
     Function to convert a ukirt image with two headers to a single header image
     Args:
-        ukirt_hdulist:
-        url:
+        :param ukirt_hdulist: HDUList with two headers
+        :param url: URL of the image
     Returns:
-
+        :return: Image object
     """
     assert len(ukirt_hdulist) == 2
     # combined_header = ukirt_hdulist[1].header.copy()
@@ -195,8 +195,9 @@ def get_wfcam_file_identifiers_from_url(url: str) -> list:
     """
     Function to get the UKIRT file identifiers from the URL
     Args:
-        url:
+        :param url: URL of the UKIRT image
     Returns:
+        :return: list of identifiers
 
     """
     ukirt_filename = url.split("?")[1].split("&")[0].split("=")[1]
