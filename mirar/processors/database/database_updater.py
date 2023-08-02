@@ -12,15 +12,15 @@ from mirar.data import Image, ImageBatch
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.postgres_utils import get_sequence_key_names_from_table
 from mirar.database.transactions import update_database_entry
-from mirar.processors.database.database_importer import (
-    BaseDatabaseImporter,
-    BaseImageDatabaseImporter,
+from mirar.processors.database.database_selector import (
+    BaseDatabaseSelector,
+    BaseImageDatabaseSelector,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class BaseDatabaseUpdater(BaseDatabaseImporter, ABC):
+class BaseDatabaseUpdater(BaseDatabaseSelector, ABC):
     """
     Base class for database updaters
     """
@@ -34,7 +34,7 @@ class BaseDatabaseUpdater(BaseDatabaseImporter, ABC):
         self.db_alter_columns = db_alter_columns
 
 
-class ImageDatabaseUpdater(BaseDatabaseUpdater, BaseImageDatabaseImporter, ABC):
+class ImageDatabaseUpdater(BaseDatabaseUpdater, BaseImageDatabaseSelector, ABC):
     """Base Class for updating image entries in a database"""
 
     def _apply_to_images(
@@ -51,16 +51,6 @@ class ImageDatabaseUpdater(BaseDatabaseUpdater, BaseImageDatabaseImporter, ABC):
                 db_constraints=query_constraints,
                 db_model=self.db_table,
             )
-            #
-            #
-            #
-            # self.pg_user.modify_db_entry(
-            #     value_dict=image,
-            #     db_constraints=query_constraints,
-            #     db_alter_columns=self.db_alter_columns,
-            #     db_table=self.db_table,
-            #     db_name=self.db_name,
-            # )
 
         return batch
 
@@ -77,14 +67,22 @@ class ImageDatabaseUpdater(BaseDatabaseUpdater, BaseImageDatabaseImporter, ABC):
         return new
 
 
-class ModifyImageDatabaseSeq(ImageDatabaseUpdater):
-    """Processor to modify images in a database with a sequence"""
+class ImageSequenceDatabaseUpdater(ImageDatabaseUpdater):
+    """
+    Processor to modify images in a database with a sequence
+    """
 
     def __init__(self, sequence_key: Optional[str | list[str]] = None, **kwargs):
         super().__init__(**kwargs)
         self.sequence_key = sequence_key
 
-    def get_constraints(self, data):
+    def get_constraints(self, data) -> DBQueryConstraints:
+        """
+        Function to get the constraints for a database query
+
+        :param data: Image to get constraints for
+        :return: Constraints for a database query
+        """
         if self.sequence_key is None:
             self.sequence_key = get_sequence_key_names_from_table(
                 self.db_table.sql_model.__tablename__, self.db_name
@@ -102,7 +100,7 @@ class ModifyImageDatabaseSeq(ImageDatabaseUpdater):
         return query_constraints
 
 
-class ModifyImageDatabaseSeqList(ModifyImageDatabaseSeq):
+class ImageSequenceDatabaseUpdaterList(ImageSequenceDatabaseUpdater):
     """
     Processor to modify multiple entries specified by a list of sequences in an
     image database
@@ -145,9 +143,6 @@ class ModifyImageDatabaseSeqList(ModifyImageDatabaseSeq):
             for ind in range(len(data_df)):
                 row = data_df.iloc[ind]
                 query_constraints = self.get_constraints(row)
-
-                print(query_constraints.parse_constraints())
-                print(update_dict)
 
                 update_database_entry(
                     update_dict=update_dict,

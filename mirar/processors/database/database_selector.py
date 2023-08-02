@@ -10,20 +10,28 @@ import pandas as pd
 
 from mirar.data import DataBlock, Image, ImageBatch, SourceBatch
 from mirar.database.constraints import DBQueryConstraints
+from mirar.database.transactions import select_from_table
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class BaseDatabaseImporter(BaseDatabaseProcessor, ABC):
-    """Base Class for any database importer"""
+class BaseDatabaseSelector(BaseDatabaseProcessor, ABC):
+    """Base Class for any database selector"""
 
-    base_key = "dbimporter"
+    base_key = "dbselector"
 
-    def __init__(self, *args, boolean_match_key: Optional[str] = None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        boolean_match_key: Optional[str] = None,
+        q3c_bool: bool = False,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.boolean_match_key = boolean_match_key
+        self.q3c_bool = q3c_bool
 
 
 def update_header_with_single_match(data: DataBlock, res: list[dict]) -> DataBlock:
@@ -42,7 +50,7 @@ def update_header_with_single_match(data: DataBlock, res: list[dict]) -> DataBlo
     return data
 
 
-class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
+class BaseImageDatabaseSelector(BaseDatabaseSelector, BaseImageProcessor):
     """
     Processor to import data from images
     """
@@ -68,12 +76,10 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
         for i, image in enumerate(batch):
             query_constraints = self.get_constraints(image)
 
-            res = import_from_db(
-                db_name=self.db_name,
-                db_table=self.db_table,
+            res = select_from_table(
+                db_model=self.db_table,
                 db_constraints=query_constraints,
-                db_output_columns=self.db_output_columns,
-                output_alias_map=self.output_alias_map,
+                output_columns=self.db_output_columns,
             )
 
             image = self.update_header(image, res)
@@ -95,7 +101,7 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
         raise NotImplementedError()
 
 
-class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
+class CrossmatchDatabaseWithHeader(BaseImageDatabaseSelector):
     """Processor to crossmatch to a database"""
 
     def __init__(self, db_query_columns: str | list[str], *args, **kwargs):
@@ -130,7 +136,7 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
         return query_constraints
 
 
-class DatabaseDataframeImporter(BaseDatabaseImporter, BaseSourceProcessor, ABC):
+class DatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC):
     """
     Base Class for dataframe DB importers
     """
@@ -138,17 +144,15 @@ class DatabaseDataframeImporter(BaseDatabaseImporter, BaseSourceProcessor, ABC):
     def __init__(
         self,
         db_output_columns: str | list[str],
-        output_alias_map: Optional[str | list[str]] = None,
         max_num_results: Optional[int] = None,
         **kwargs,
     ):
         self.db_output_columns = db_output_columns
-        self.output_alias_map = output_alias_map
         self.max_num_results = max_num_results
         super().__init__(**kwargs)
 
 
-class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseSourceProcessor):
+class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
     """
     Processor to crossmatch to sources in a database
     """
@@ -215,19 +219,12 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseSourceProcessor)
             for ind in range(len(candidate_table)):
                 cand = candidate_table.loc[ind]
                 query_constraints = self.get_source_constraints(cand)
-                res = crossmatch_with_database(
-                    db_name=self.db_name,
-                    db_table=self.db_table,
-                    db_output_columns=self.db_output_columns,
-                    output_alias_map=self.output_alias_map,
-                    query_constraints=query_constraints,
-                    ra=cand[self.ra_field_name],
-                    dec=cand[self.dec_field_name],
-                    crossmatch_radius_arcsec=self.xmatch_radius_arcsec,
-                    query_distance_bool=self.query_dist,
-                    q3c_bool=self.q3c,
-                    order_field_name=self.order_field_name,
-                    num_limit=self.max_num_results,
+
+                # FIXME: q3c
+                res = select_from_table(
+                    db_model=self.db_table,
+                    db_constraints=query_constraints,
+                    output_columns=self.db_output_columns,
                 )
                 results.append(res)
             new_table = self.update_dataframe(candidate_table, results)
@@ -235,7 +232,7 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseSourceProcessor)
         return batch
 
 
-class DatabaseHistoryImporter(DatabaseCrossmatchImporter):
+class DatabaseHistorySelector(DatabaseCrossmatchSelector):
     """
     Processor to import previous detections of a source from a database
     """

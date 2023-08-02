@@ -24,14 +24,11 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         pg_user: PostgresUser = PostgresUser(),
         pg_admin: PostgresAdmin = PostgresAdmin(),
         duplicate_protocol: str = "fail",
-        q3c_bool: bool = False,
     ):
         super().__init__()
         self.db_table = db_table
         self.db_name = self.db_table.sql_model.db_name
-        self.db_check_bool = False
         self.duplicate_protocol = duplicate_protocol
-        self.q3c = q3c_bool
 
         self.pg_user = pg_user
         self._pg_admin = pg_admin

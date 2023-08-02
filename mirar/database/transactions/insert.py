@@ -18,7 +18,7 @@ from mirar.database.errors import DataBaseError
 logger = logging.getLogger(__name__)
 
 
-def export_to_db(
+def insert_in_table(
     value_dict: dict | DataBlock,
     db_table: Type[BaseDB],
     duplicate_protocol: str = "fail",

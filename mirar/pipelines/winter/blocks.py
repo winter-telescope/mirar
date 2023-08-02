@@ -63,13 +63,13 @@ from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.avro import IPACAvroExporter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.database.database_exporter import (
-    DatabaseImageBatchExporter,
-    DatabaseImageExporter,
-    DatabaseSourceExporter,
+from mirar.processors.database.database_inserter import (
+    DatabaseImageBatchInserter,
+    DatabaseImageInserter,
+    DatabaseSourceInserter,
 )
-from mirar.processors.database.database_importer import DatabaseHistoryImporter
-from mirar.processors.database.database_updater import ModifyImageDatabaseSeqList
+from mirar.processors.database.database_selector import DatabaseHistorySelector
+from mirar.processors.database.database_updater import ImageSequenceDatabaseUpdaterList
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -148,7 +148,7 @@ load_raw = [
 
 extract_all = [
     ImageBatcher("UTCTIME"),
-    DatabaseImageBatchExporter(db_table=Exposure, duplicate_protocol="ignore"),
+    DatabaseImageBatchInserter(db_table=Exposure, duplicate_protocol="ignore"),
     ImageSelector((OBSCLASS_KEY, ["dark", "science"])),
 ]
 
@@ -210,7 +210,7 @@ mask_and_split = [
 
 save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
-    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
+    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -297,7 +297,7 @@ validate_astrometry = [
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
-    DatabaseImageExporter(db_table=AstrometryStat, duplicate_protocol="ignore"),
+    DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="ignore"),
 ]
 
 stack_dithers = [
@@ -332,8 +332,8 @@ photcal_and_export = [
         cache=True,
     ),
     ImageSaver(output_dir_name="final"),
-    DatabaseImageExporter(db_table=Stack, duplicate_protocol="replace", q3c_bool=False),
-    ModifyImageDatabaseSeqList(
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
+    ImageSequenceDatabaseUpdaterList(
         sequence_key="rawid",
         db_table=Raw,
         db_alter_columns="ustackid",

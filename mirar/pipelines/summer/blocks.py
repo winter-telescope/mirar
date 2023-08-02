@@ -7,8 +7,6 @@ lists which are used to build configurations for the
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import BASE_NAME_KEY, GAIN_KEY, OBSCLASS_KEY, core_fields
 from mirar.pipelines.summer.config import (
-    DB_NAME,
-    PIPELINE_NAME,
     SUMMER_PIXEL_SCALE,
     psfex_config_path,
     scamp_path,
@@ -38,8 +36,8 @@ from mirar.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
-from mirar.processors.database.database_exporter import DatabaseImageExporter
-from mirar.processors.database.database_updater import ModifyImageDatabaseSeq
+from mirar.processors.database.database_inserter import DatabaseImageInserter
+from mirar.processors.database.database_updater import ImageSequenceDatabaseUpdater
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
@@ -116,13 +114,12 @@ load_processed = [
 
 export_raw = [
     # ImageSelector(("BASENAME", "SUMMER_20220402_214324_Camera0.fits")),
-    DatabaseImageExporter(
+    DatabaseImageInserter(
         db_table=Exposure,
         duplicate_protocol="replace",
-        q3c_bool=False,
     ),
     MaskPixelsFromPath(mask_path=summer_mask_path),
-    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
+    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
     ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
 ]
 
@@ -188,16 +185,10 @@ process_raw = [
         write_mask=True,
     ),
     HeaderEditor(edit_keys="procstatus", values=1),
-    # PSQLDatabaseImageExporter(
-    #     db_name=DB_NAME,
-    #     db_table="proc",  # FIXME
-    #     schema_path=get_summer_schema_path("proc"),
-    #     duplicate_protocol="replace",
-    # ),
-    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
-    ModifyImageDatabaseSeq(
+    DatabaseImageInserter(db_table=Proc, duplicate_protocol="replace"),
+    ImageSequenceDatabaseUpdater(
         # db_name=DB_NAME,
-        db_table=Raw,  # FIXME
+        db_table=Raw,
         db_alter_columns="procstatus",
     ),
 ]
@@ -232,7 +223,7 @@ subtract = [
 ]
 
 export_diff_to_db = [
-    DatabaseImageExporter(
+    DatabaseImageInserter(
         db_table=Diff,
     ),
 ]

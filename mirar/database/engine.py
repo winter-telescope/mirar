@@ -7,9 +7,9 @@ from mirar.database.credentials import DB_PASSWORD, DB_USER
 
 
 def get_engine(
+    db_name: str,
     db_user: str = DB_USER,
     db_password: str = DB_PASSWORD,
-    db_name: str = "summer",
 ) -> Engine:
     """
     Function to create a postgres engine

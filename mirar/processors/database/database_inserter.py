@@ -7,7 +7,7 @@ from abc import ABC
 import numpy as np
 
 from mirar.data import ImageBatch, SourceBatch
-from mirar.database.transactions import export_to_db
+from mirar.database.transactions import insert_in_table
 from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
@@ -22,12 +22,12 @@ class ImageBatchDatabaseExporterError(BaseProcessorError):
     """
 
 
-class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
+class BaseDatabaseInserter(BaseDatabaseProcessor, ABC):
     """
-    Base class for DB exporters
+    Base class for DB inserter
     """
 
-    base_key = "dbexporter"
+    base_key = "dbinserter"
     max_n_cpu = 1
 
     def __str__(self):
@@ -39,14 +39,14 @@ class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
         )
 
 
-class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
+class DatabaseImageInserter(BaseDatabaseInserter, BaseImageProcessor):
     """
     Processor for exporting images to a database
     """
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         for image in batch:
-            primary_keys, primary_key_values = export_to_db(
+            primary_keys, primary_key_values = insert_in_table(
                 image,
                 db_table=self.db_table,
                 duplicate_protocol=self.duplicate_protocol,
@@ -57,7 +57,7 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
         return batch
 
 
-class DatabaseSourceExporter(BaseDatabaseExporter, BaseSourceProcessor):
+class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
     """
     Processor for exporting sources to a database
     """
@@ -68,7 +68,7 @@ class DatabaseSourceExporter(BaseDatabaseExporter, BaseSourceProcessor):
 
             primary_key_dict = {}
             for _, candidate_row in candidate_table.iterrows():
-                primary_keys, primary_key_values = export_to_db(
+                primary_keys, primary_key_values = insert_in_table(
                     candidate_row.to_dict(),
                     db_table=self.db_table,
                 )
@@ -86,7 +86,7 @@ class DatabaseSourceExporter(BaseDatabaseExporter, BaseSourceProcessor):
         return batch
 
 
-class DatabaseImageBatchExporter(DatabaseImageExporter):
+class DatabaseImageBatchInserter(DatabaseImageInserter):
     """
     Processor for creating a single entry per batch of images in a database
     """
@@ -117,7 +117,7 @@ class DatabaseImageBatchExporter(DatabaseImageExporter):
 
         image = batch[0]
         logger.debug(f"Trying to export {[image[x] for x in column_names]}")
-        primary_keys, primary_key_values = export_to_db(
+        primary_keys, primary_key_values = insert_in_table(
             image,
             db_table=self.db_table,
             duplicate_protocol=self.duplicate_protocol,
