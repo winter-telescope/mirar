@@ -10,7 +10,6 @@ from mirar.pipelines.summer.config import (
     DB_NAME,
     PIPELINE_NAME,
     SUMMER_PIXEL_SCALE,
-    get_summer_schema_path,
     psfex_config_path,
     scamp_path,
     sextractor_astrometry_config,
@@ -48,8 +47,8 @@ from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import SourceWriter
 from mirar.processors.sources.source_detector import SourceDetector
 from mirar.processors.sources.utils import RegionsWriter
-from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
-from mirar.processors.sqldatabase.database_exporter import (
+from mirar.processors.database.database_exporter import DatabaseImageExporter
+from mirar.processors.database.database_exporter import (
     DatabaseImageExporter as PSQLDatabaseImageExporter,
 )
 from mirar.processors.utils import ImageBatcher, ImageLoader, ImageSaver, ImageSelector

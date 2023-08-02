@@ -10,7 +10,8 @@ from sqlalchemy.orm import DeclarativeBase
 from mirar.database.base_model import BaseTable
 from mirar.database.engine import get_engine
 from mirar.database.q3c import create_q3c_extension
-from mirar.database.user import DB_PASSWORD, DB_USER, PostgresAdmin, PostgresUser
+from mirar.database.credentials import DB_PASSWORD, DB_USER
+from mirar.database.user import PostgresAdmin, PostgresUser
 from mirar.pipelines.winter.models._astrometry_stats import (
     AstrometryStat,
     AstrometryStatsTable,

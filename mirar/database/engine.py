@@ -3,7 +3,7 @@ Util functions for database interactions
 """
 from sqlalchemy import Engine, NullPool, create_engine
 
-from mirar.database.user.credentials import DB_PASSWORD, DB_USER
+from mirar.database.credentials import DB_PASSWORD, DB_USER
 
 
 def get_engine(

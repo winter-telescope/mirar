@@ -3,13 +3,14 @@ Postgres Admin class
 """
 from sqlalchemy.sql.ddl import DDL
 
-from mirar.database.user.credentials import (
+from mirar.database.credentials import (
     ADMIN_PASSWORD,
     ADMIN_USER,
     PG_ADMIN_PWD_KEY,
     PG_ADMIN_USER_KEY,
 )
 from mirar.database.user.postgres_user import PostgresUser
+from mirar.database.engine import get_engine
 
 
 class PostgresAdmin(PostgresUser):
@@ -31,7 +32,11 @@ class PostgresAdmin(PostgresUser):
         :param new_password: new user password
         :return: None
         """
-        engine = self.get_engine(db_name="postgres")
+        engine = get_engine(
+            db_name="postgres",
+            db_user=self.db_user,
+            db_password=self.db_password,
+        )
         with engine.connect() as conn:
             command = DDL(
                 f"CREATE ROLE {new_db_user} WITH password '{new_password}' CREATEDB NOCREATEROLE LOGIN;"
@@ -47,8 +52,11 @@ class PostgresAdmin(PostgresUser):
         :param db_name: name of database to create extension in
         :return: None
         """
-
-        engine = self.get_engine(db_name=db_name)
+        engine = get_engine(
+            db_name=db_name,
+            db_user=self.db_user,
+            db_password=self.db_password,
+        )
         with engine.connect() as conn:
             command = DDL(f"CREATE EXTENSION IF NOT EXISTS {extension_name};")
             conn.execute(command)

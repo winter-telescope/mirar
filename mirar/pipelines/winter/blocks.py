@@ -23,7 +23,6 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_config,
     swarp_config_path,
     winter_avro_schema_path,
-    winter_candidate_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
@@ -82,8 +81,8 @@ from mirar.processors.sources import (
     SourceWriter,
 )
 from mirar.processors.split import SUB_ID_KEY, SplitImage
-from mirar.processors.sqldatabase.database_exporter import (
-    DatabaseDataframeExporter,
+from mirar.processors.database.database_exporter import (
+    DatabaseSourceExporter,
     DatabaseImageBatchExporter,
     DatabaseImageExporter,
 )
@@ -411,7 +410,7 @@ process_candidates = [
         name_start="aaaaa",
         xmatch_radius_arcsec=2,
     ),
-    DatabaseDataframeExporter(
+    DatabaseSourceExporter(
         db_name="winter",
         db_table="candidates",
         duplicate_protocol="replace",

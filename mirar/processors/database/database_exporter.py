@@ -9,8 +9,9 @@ import numpy as np
 from mirar.data import ImageBatch, SourceBatch
 from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
-from mirar.processors.sqldatabase.base_database_processor import BaseDatabaseProcessor
+from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 from mirar.processors.utils.image_selector import ImageBatcher
+from mirar.database.transactions import export_to_db
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         for image in batch:
-            primary_keys, primary_key_values = self.pg_user.export_to_db(
+            primary_keys, primary_key_values = export_to_db(
                 image,
                 db_table=self.db_table,
                 duplicate_protocol=self.duplicate_protocol,
@@ -56,7 +57,7 @@ class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
         return batch
 
 
-class DatabaseDataframeExporter(BaseDatabaseExporter, BaseSourceProcessor):
+class DatabaseSourceExporter(BaseDatabaseExporter, BaseSourceProcessor):
     """
     Processor for exporting sources to a database
     """
@@ -67,7 +68,7 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseSourceProcessor):
 
             primary_key_dict = {}
             for _, candidate_row in candidate_table.iterrows():
-                primary_keys, primary_key_values = self.pg_user.export_to_db(
+                primary_keys, primary_key_values = export_to_db(
                     candidate_row.to_dict(),
                     db_table=self.db_table,
                 )
@@ -76,10 +77,7 @@ class DatabaseDataframeExporter(BaseDatabaseExporter, BaseSourceProcessor):
                         primary_key_dict[key] = [primary_key_values[ind]]
                     else:
                         primary_key_dict[key].append(primary_key_values[ind])
-                    # candidate_row[key] = primary_key_values[ind]
 
-                # new_table = pd.concat([new_table,candidate_row])
-                # new_table.append(candidate_row, ignore_index=True)
             for key, val in primary_key_dict.items():
                 candidate_table[key] = val
 
@@ -119,7 +117,7 @@ class DatabaseImageBatchExporter(DatabaseImageExporter):
 
         image = batch[0]
         logger.debug(f"Trying to export {[image[x] for x in column_names]}")
-        primary_keys, primary_key_values = self.pg_user.export_to_db(
+        primary_keys, primary_key_values = export_to_db(
             image,
             db_table=self.db_table,
             duplicate_protocol=self.duplicate_protocol,

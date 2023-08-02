@@ -20,7 +20,6 @@ from mirar.pipelines.wirc.generator import (
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from mirar.pipelines.wirc.wirc_files import (
-    candidate_colnames,
     psfex_path,
     scamp_fp_path,
     sextractor_astrometry_config,
@@ -29,7 +28,6 @@ from mirar.pipelines.wirc.wirc_files import (
     sextractor_reference_config,
     swarp_sp_path,
     wirc_avro_schema_path,
-    wirc_candidate_schema_path,
     wirc_mask_path,
 )
 from mirar.processors.astromatic import Scamp, Sextractor, Swarp
@@ -65,7 +63,7 @@ from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
 from mirar.processors.sources.utils import RegionsWriter
-from mirar.processors.sqldatabase.database_exporter import DatabaseDataframeExporter
+from mirar.processors.database.database_exporter import DatabaseSourceExporter
 from mirar.processors.utils import (
     HeaderAnnotator,
     ImageBatcher,
@@ -235,27 +233,25 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
-    DatabaseHistoryImporter(
-        crossmatch_radius_arcsec=2.0,
-        time_field_name="jd",
-        history_duration_days=500.0,
-        db_name="wirc",
-        db_table="candidates",
-        db_output_columns=candidate_colnames,
-        q3c_bool=False,
-    ),
-    CandidateNamer(
-        db_name="wirc",
-        db_table="candidates",
-        base_name="WIRC",
-        name_start="aaaaa",
-        xmatch_radius_arcsec=2,
-    ),
-    DatabaseDataframeExporter(
-        db_name="wirc",
-        db_table="candidates",
-        duplicate_protocol="replace",
-    ),
+    # DatabaseHistoryImporter(
+    #     crossmatch_radius_arcsec=2.0,
+    #     time_field_name="jd",
+    #     history_duration_days=500.0,
+    #     db_name="wirc",
+    #     db_table="candidates",
+    #     db_output_columns=[], # FIXME
+    #     q3c_bool=False,
+    # ),
+    # CandidateNamer(
+    #     db_table="candidates",
+    #     base_name="WIRC",
+    #     name_start="aaaaa",
+    #     xmatch_radius_arcsec=2,
+    # ),
+    # DatabaseSourceExporter(
+    #     db_table="candidates",
+    #     duplicate_protocol="replace",
+    # ),
     SourceWriter(output_dir_name="dbop"),
     # EdgeCandidatesMask(edge_boundary_size=100)
     # FilterCandidates(),

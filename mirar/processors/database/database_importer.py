@@ -68,7 +68,7 @@ class BaseImageDatabaseImporter(BaseDatabaseImporter, BaseImageProcessor):
         for i, image in enumerate(batch):
             query_constraints = self.get_constraints(image)
 
-            res = self.pg_user.import_from_db(
+            res = import_from_db(
                 db_name=self.db_name,
                 db_table=self.db_table,
                 db_constraints=query_constraints,
@@ -130,19 +130,6 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseImporter):
         return query_constraints
 
 
-# def update_dataframe_with_single_match(
-#     candidate_table: pd.DataFrame, results: list[dict]
-# ) -> pd.DataFrame:
-#     for res in results:
-#         assert len(res) < 1
-#
-#     keys = results[0].keys()
-#     for key in keys:
-#         candidate_table[key] = [x[0][key] for x in results]
-#
-#     return candidate_table
-
-
 class DatabaseDataframeImporter(BaseDatabaseImporter, BaseSourceProcessor, ABC):
     """
     Base Class for dataframe DB importers
@@ -159,41 +146,6 @@ class DatabaseDataframeImporter(BaseDatabaseImporter, BaseSourceProcessor, ABC):
         self.output_alias_map = output_alias_map
         self.max_num_results = max_num_results
         super().__init__(**kwargs)
-
-    # def _apply_to_candidates(
-    #     self,
-    #     batch: SourceBatch,
-    # ) -> SourceBatch:
-    #
-    #     for source_table in batch:
-    #         candidate_table = source_table.get_data()
-    #         results = []
-    #         for ind in range(len(candidate_table)):
-    #             cand = candidate_table.loc[ind]
-    #             (
-    #                 query_columns,
-    #                 comparison_values,
-    #                 comparison_types,
-    #             ) = self.get_constraints(cand)
-    #             res = import_from_db(
-    #                 db_name=self.db_name,
-    #                 db_table=self.db_table,
-    #                 columns=query_columns,
-    #                 accepted_values=comparison_values,
-    #                 comparison_types=comparison_types,
-    #                 db_output_columns=self.db_output_columns,
-    #                 output_alias_map=self.output_alias_map,
-    #                 db_user=self.db_user,
-    #                 password=self.db_password,
-    #                 max_num_results=self.max_num_results,
-    #             )
-    #             results.append(res)
-    #         new_df = self.update_dataframe(candidate_table, results)
-    #         source_table.set_data(new_df)
-    #     return batch
-    #
-    # def get_constraints(self, batch: SourceBatch):
-    #     raise NotImplementedError
 
 
 class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseSourceProcessor):
@@ -263,7 +215,7 @@ class DatabaseCrossmatchImporter(DatabaseDataframeImporter, BaseSourceProcessor)
             for ind in range(len(candidate_table)):
                 cand = candidate_table.loc[ind]
                 query_constraints = self.get_source_constraints(cand)
-                res = self.pg_user.crossmatch_with_database(
+                res = crossmatch_with_database(
                     db_name=self.db_name,
                     db_table=self.db_table,
                     db_output_columns=self.db_output_columns,

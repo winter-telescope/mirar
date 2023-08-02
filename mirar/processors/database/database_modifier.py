@@ -14,6 +14,7 @@ from mirar.processors.database.database_importer import (
     BaseDatabaseImporter,
     BaseImageDatabaseImporter,
 )
+from mirar.database.postgres_utils import get_sequence_key_names_from_table
 
 logger = logging.getLogger(__name__)
 

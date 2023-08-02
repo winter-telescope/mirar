@@ -29,7 +29,7 @@ from mirar.paths import (
     RAW_IMG_KEY,
     TARGET_KEY,
 )
-from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
+from mirar.processors.database.database_exporter import DatabaseImageExporter
 
 logger = logging.getLogger(__name__)
 
