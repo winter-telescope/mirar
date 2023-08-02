@@ -133,8 +133,7 @@ class BaseReferenceGenerator:
 
         logger.debug(f"Saving reference image to {output_path}")
         ref_hdu.header[BASE_NAME_KEY] = os.path.basename(output_path)
-        ref_hdu.header[LATEST_SAVE_KEY] = output_path.as_posix()
-        ref_hdu.header[RAW_IMG_KEY] = output_path.as_posix()
+        ref_hdu.header[RAW_IMG_KEY] = os.path.basename(output_path)
         ref_hdu.header[OBSCLASS_KEY] = "REF"
         ref_hdu.header[TARGET_KEY] = image[TARGET_KEY]
         ref_hdu.header[PROC_FAIL_KEY] = False
@@ -148,6 +147,18 @@ class BaseReferenceGenerator:
 
         ref_hdu.data[ref_hdu.data == 0] = np.nan  # pylint: disable=no-member
 
+        ref_image = Image(header=ref_hdu.header, data=ref_hdu.data)
+
+        # Reference images should have all the core fields
+        try:
+            check_image_has_core_fields(ref_image)
+        except MissingCoreFieldError as err:
+            raise ReferenceGenerationError from err
+
+        if self.write_image:
+            ref_hdu.header[LATEST_SAVE_KEY] = output_path.as_posix()
+            save_hdu_as_fits(ref_hdu, output_path)
+
         if ref_weight_hdu is not None:
             output_weight_path = Path(
                 str(self.get_output_path(output_dir, base_name)).replace(".fits", "")
@@ -155,19 +166,13 @@ class BaseReferenceGenerator:
             )
             output_weight_path.unlink(missing_ok=True)
             ref_weight_hdu.header[BASE_NAME_KEY] = os.path.basename(output_weight_path)
-            ref_weight_hdu.header[LATEST_SAVE_KEY] = output_weight_path.as_posix()
-
-            save_hdu_as_fits(ref_weight_hdu, output_weight_path)
-            ref_hdu.header[LATEST_WEIGHT_SAVE_KEY] = output_weight_path.as_posix()
-
-        # Reference images should have all the core fields
-        try:
-            check_image_has_core_fields(Image(header=ref_hdu.header, data=ref_hdu.data))
-        except MissingCoreFieldError as err:
-            raise ReferenceGenerationError from err
-
-        save_hdu_as_fits(ref_hdu, output_path)
-        ref_image = Image(header=ref_hdu.header, data=ref_hdu.data)
+            ref_weight_hdu.header[OBSCLASS_KEY] = "WEIGHT"
+            ref_weight_hdu.header[TARGET_KEY] = image[TARGET_KEY]
+            ref_weight_hdu.header[PROC_FAIL_KEY] = False
+            if self.write_image:
+                ref_weight_hdu.header[LATEST_SAVE_KEY] = output_weight_path.as_posix()
+                save_hdu_as_fits(ref_weight_hdu, output_weight_path)
+                ref_hdu.header[LATEST_WEIGHT_SAVE_KEY] = output_weight_path.as_posix()
 
         if self.write_to_db:
             dbexporter = DatabaseImageExporter(
