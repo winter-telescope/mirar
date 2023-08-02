@@ -10,7 +10,7 @@ from pydantic import BaseModel, Extra, Field, root_validator, validator
 from sqlalchemy import Insert, Select, Table, Update, and_, inspect, select
 
 from mirar.database.engine import get_engine
-from mirar.database.postgres_utils import get_sequence_key_names_from_table
+from mirar.database.utils import get_sequence_key_names_from_table
 
 logger = logging.getLogger(__name__)
 

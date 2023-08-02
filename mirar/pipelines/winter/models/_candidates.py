@@ -7,14 +7,14 @@ from typing import ClassVar
 
 from pydantic import Field
 from sqlalchemy import (  # event,
+    VARCHAR,
+    Boolean,
     Column,
     DateTime,
-    Boolean,
     Float,
     ForeignKey,
     Integer,
     Sequence,
-    VARCHAR
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
