@@ -299,6 +299,7 @@ class WFAUQuery(BaseWFCAMQuery):
                 [],
             )
             for ind, crd in enumerate(query_crds):
+                logger.debug(f"Running query {ind}/{len(query_crds)}")
                 crd = query_crds[ind]
                 # Need to add a cache and check there.
                 imagepaths, query_exists = [], False
@@ -419,7 +420,8 @@ def download_wfcam_archive_images(
     )
 
     imagepaths = []
-    for url in url_list:
+    for url_ind, url in enumerate(url_list):
+        logger.debug(f"Downloading {url_ind}/{len(url_list)}")
         local_imagepaths = []
         if use_local_database:
             # Check if the image exists locally.
