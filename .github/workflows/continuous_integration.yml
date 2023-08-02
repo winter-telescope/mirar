@@ -72,7 +72,9 @@ jobs:
       # Set up database
       - name: postgres
         run: |
-          sudo apt-get install postgresql postgresql-server-dev-all
+          sudo apt-get install postgresql
+          sudo apt-get install postgresql-common
+          sudo apt-get install postgresql-server-dev-all
           sudo service postgresql restart
           sudo -u postgres psql -c "create user runner; grant all privileges on database postgres to runner; ALTER USER runner WITH SUPERUSER;"
           git clone https://github.com/segasai/q3c.git
