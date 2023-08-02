@@ -23,6 +23,8 @@ class DBQueryConstraints:
         self.accepted_values = []
         self.comparison_types = []
 
+        self.q3c_query = None
+
         if not isinstance(columns, list):
             columns = [columns]
         if not isinstance(accepted_values, list):
@@ -66,6 +68,34 @@ class DBQueryConstraints:
         self.accepted_values.append(accepted_values)
         self.comparison_types.append(comparison_type)
 
+    def add_q3c_constraint(
+        self,
+        ra: float,
+        dec: float,
+        crossmatch_radius_arcsec: float,
+        ra_field_name: str = "ra",
+        dec_field_name: str = "dec",
+    ):
+        """
+        Add a q3c constraint
+
+        :param ra: ra of source
+        :param dec: dec of source
+        :param crossmatch_radius_arcsec: crossmatch radius in arcsec
+        :param ra_field_name: ra field name in database
+        :param dec_field_name: dec field name in database
+        :return: None
+        """
+
+        crossmatch_radius_deg = crossmatch_radius_arcsec / 3600.0
+
+        constraints = (
+            f"q3c_radial_query({ra_field_name},{dec_field_name},"
+            f"{ra},{dec},{crossmatch_radius_deg}) "
+        )
+
+        self.q3c_query = constraints
+
     def __add__(self, other):
         new = self.__class__(self.columns, self.accepted_values, self.comparison_types)
         for args in other:
@@ -92,6 +122,10 @@ class DBQueryConstraints:
         :return: sql string
         """
         constraints = []
+
+        if self.q3c_query is not None:
+            constraints.append(self.q3c_query)
+
         for i, column in enumerate(self.columns):
             if self.comparison_types[i] == "between":
                 constraints.append(

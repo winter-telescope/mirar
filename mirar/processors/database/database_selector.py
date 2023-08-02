@@ -78,7 +78,7 @@ class BaseImageDatabaseSelector(BaseDatabaseSelector, BaseImageProcessor):
 
             res = select_from_table(
                 db_model=self.db_table,
-                db_constraints=query_constraints,
+                db_constraints=query_constraints.parse_constraints(),
                 output_columns=self.db_output_columns,
             )
 
@@ -198,7 +198,7 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
                 candidate_table[f"{key}{num + 1}"] = [x[num][key] for x in results]
         return candidate_table
 
-    def get_source_constraints(self, cand: pd.DataFrame) -> None | DBQueryConstraints:
+    def get_source_constraints(self, cand: pd.DataFrame) -> DBQueryConstraints:
         """
         Get db query constraints for a single source
 
@@ -220,10 +220,9 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
                 cand = candidate_table.loc[ind]
                 query_constraints = self.get_source_constraints(cand)
 
-                # FIXME: q3c
                 res = select_from_table(
                     db_model=self.db_table,
-                    db_constraints=query_constraints,
+                    db_constraints=query_constraints.parse_constraints(),
                     output_columns=self.db_output_columns,
                 )
                 results.append(res)
