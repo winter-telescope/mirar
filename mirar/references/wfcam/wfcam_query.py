@@ -102,6 +102,9 @@ class BaseWFCAMQuery:
         self.filter_name = filter_name
 
     def run_query(self, image: Image):
+        """
+        Run the query for the given image
+        """
         raise NotImplementedError
 
 
@@ -311,7 +314,6 @@ class WFAUQuery(BaseWFCAMQuery):
                     )
                     logger.debug(f"Found {len(imagepaths)} images locally.")
                     query_exists = len(imagepaths) > 0
-                    print(crd, query_exists)
 
                     # If no query found, check if the coordinates overlap with any of
                     # the component images present in the database. This is a hack to

@@ -18,7 +18,7 @@ class RefComponentsTable(WinterBase):
 
     __tablename__ = "refcomponents"
 
-    compid = Column(Integer, primary_key=True)
+    compid = Column(Double, primary_key=True, autoincrement=False)
     queries: Mapped["RefQueriesTable"] = relationship(back_populates="components")
     qry_ra = Column(Float)
     qry_dec = Column(Float)
@@ -53,7 +53,7 @@ class RefComponent(BaseDB):
     """
 
     sql_model: ClassVar = RefComponentsTable
-
+    compid: int = Field(ge=0)
     qry_ra: float = ra_field
     qry_dec: float = dec_field
     savepath: str = Field(min_length=1)
