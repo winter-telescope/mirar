@@ -5,13 +5,10 @@ import logging
 from abc import ABC
 from typing import Type
 
+from mirar.database.base_model import BaseDB
+from mirar.database.constants import POSTGRES_DUPLICATE_PROTOCOLS
+from mirar.database.user import PostgresAdmin, PostgresUser
 from mirar.processors.base_processor import BaseProcessor
-from mirar.processors.sqldatabase.base_model import BaseDB
-from mirar.processors.sqldatabase.postgres import (
-    POSTGRES_DUPLICATE_PROTOCOLS,
-    PostgresAdmin,
-    PostgresUser,
-)
 
 logger = logging.getLogger(__name__)
 

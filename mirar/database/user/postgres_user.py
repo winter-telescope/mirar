@@ -10,26 +10,22 @@ import psycopg
 from psycopg import errors
 from psycopg.rows import Row
 from pydantic import ValidationError
-from sqlalchemy import DDL, inspect, text
+from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy_utils import create_database, database_exists
 
 from mirar.data import DataBlock
-from mirar.errors import ProcessorError
-from mirar.processors.database.constraints import DBQueryConstraints
-from mirar.processors.sqldatabase.base_model import BaseDB
-from mirar.processors.sqldatabase.postgres_utils import (
-    ADMIN_PASSWORD,
-    ADMIN_USER,
+from mirar.database.base_model import BaseDB
+from mirar.database.constants import POSTGRES_DUPLICATE_PROTOCOLS
+from mirar.database.engine import get_engine
+from mirar.database.user.credentials import (
     DB_PASSWORD,
     DB_PASSWORD_KEY,
     DB_USER,
     DB_USER_KEY,
-    PG_ADMIN_PWD_KEY,
-    PG_ADMIN_USER_KEY,
-    POSTGRES_DUPLICATE_PROTOCOLS,
 )
-from mirar.utils.sql import get_engine
+from mirar.errors import ProcessorError
+from mirar.processors.database.constraints import DBQueryConstraints
 
 logger = logging.getLogger(__name__)
 
@@ -494,48 +490,3 @@ class PostgresUser:
         assert len(res) <= 1, "More than one extension found"
 
         return len(res) == 1
-
-
-class PostgresAdmin(PostgresUser):
-    """
-    An Admin postgres user, with additional functionality for creatying new users
-    """
-
-    user_env_varaiable = PG_ADMIN_USER_KEY
-    pass_env_variable = PG_ADMIN_PWD_KEY
-
-    def __init__(self, db_user: str = ADMIN_USER, db_password: str = ADMIN_PASSWORD):
-        super().__init__(db_user=db_user, db_password=db_password)
-
-    def create_new_user(self, new_db_user: str, new_password: str):
-        """
-        Create a new postgres user
-
-        :param new_db_user: new username
-        :param new_password: new user password
-        :return: None
-        """
-        engine = self.get_engine(db_name="postgres")
-        with engine.connect() as conn:
-            command = DDL(
-                f"CREATE ROLE {new_db_user} WITH password '{new_password}' CREATEDB NOCREATEROLE LOGIN;"
-            )
-            conn.execute(command)
-            conn.commit()
-
-    def create_extension(self, extension_name: str, db_name: str):
-        """
-        Function to create new extension for database
-
-        :param extension_name: name of extension to create
-        :param db_name: name of database to create extension in
-        :return: None
-        """
-
-        engine = self.get_engine(db_name=db_name)
-        with engine.connect() as conn:
-            command = DDL(f"CREATE EXTENSION IF NOT EXISTS {extension_name};")
-            conn.execute(command)
-            conn.commit()
-
-        assert self.has_extension(extension_name=extension_name, db_name=db_name)

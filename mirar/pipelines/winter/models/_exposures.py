@@ -17,19 +17,13 @@ from sqlalchemy import (  # event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
 from mirar.pipelines.winter.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.winter.models._filters import FiltersTable, fid_field
 from mirar.pipelines.winter.models._img_type import ImgTypesTable
 from mirar.pipelines.winter.models._nights import Night, NightsTable
 from mirar.pipelines.winter.models._programs import ProgramsTable, default_program
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import (
-    BaseDB,
-    alt_field,
-    az_field,
-    dec_field,
-    ra_field,
-)
 
 logger = logging.getLogger(__name__)
 

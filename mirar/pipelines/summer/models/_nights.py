@@ -7,8 +7,8 @@ from typing import ClassVar
 from sqlalchemy import DATE, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB, date_field
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB, date_field
 
 
 class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods

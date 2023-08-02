@@ -19,19 +19,13 @@ from sqlalchemy import (  # event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
 from mirar.pipelines.summer.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.summer.models._filters import FiltersTable, fid_field
 from mirar.pipelines.summer.models._img_type import ImgTypesTable
 from mirar.pipelines.summer.models._nights import Night, NightsTable
 from mirar.pipelines.summer.models._programs import ProgramsTable, default_program
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import (
-    BaseDB,
-    alt_field,
-    az_field,
-    dec_field,
-    ra_field,
-)
 
 logger = logging.getLogger(__name__)
 

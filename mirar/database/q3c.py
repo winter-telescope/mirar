@@ -5,7 +5,7 @@ import logging
 
 from sqlalchemy import DDL
 
-from mirar.processors.sqldatabase.postgres import PostgresUser
+from mirar.database.user import PostgresUser
 
 logger = logging.getLogger(__name__)
 

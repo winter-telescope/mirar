@@ -7,9 +7,9 @@ from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB
 from mirar.pipelines.winter.constants import winter_filters_map
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import BaseDB
 
 fid_field: int = Field(ge=0)
 

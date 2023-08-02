@@ -8,9 +8,9 @@ from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Double, Float, ForeignKey, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from mirar.database.base_model import BaseDB
 from mirar.pipelines.winter.models._exposures import Exposure
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import BaseDB
 
 
 class RawTable(WinterBase):  # pylint: disable=too-few-public-methods

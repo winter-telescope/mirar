@@ -9,10 +9,8 @@ import numpy as np
 from pydantic import BaseModel, Extra, Field, root_validator, validator
 from sqlalchemy import Insert, Select, Table, Update, and_, inspect, select
 
-from mirar.processors.sqldatabase.postgres_utils import (
-    get_sequence_key_names_from_table,
-)
-from mirar.utils.sql import get_engine
+from mirar.database.engine import get_engine
+from mirar.database.postgres_utils import get_sequence_key_names_from_table
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +108,8 @@ class BaseDB(PydanticBase):
         list of sequence keys
         """
         sequence_key_names = get_sequence_key_names_from_table(
-            db_name=self.sql_model.db_name, db_table=self.sql_model.__tablename__
+            db_name=self.sql_model.db_name,
+            db_table=self.sql_model.__tablename__,
         )
         sequence_keys = self.get_table_keys_from_names(key_names=sequence_key_names)
         return sequence_keys

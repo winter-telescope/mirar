@@ -10,9 +10,9 @@ from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 from wintertoo.data import summer_fields
 
+from mirar.database.base_model import BaseDB, _exists, dec_field, ra_field
+from mirar.database.engine import get_engine
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB, _exists, dec_field, ra_field
-from mirar.utils.sql import get_engine
 
 DEFAULT_FIELD = 999999999
 

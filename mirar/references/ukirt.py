@@ -19,6 +19,7 @@ from astrosurveyutils.surveys import MOCSurvey
 
 from mirar.data import Image, ImageBatch
 from mirar.data.utils import get_corners_ra_dec_from_header, get_image_center_wcs_coords
+from mirar.database.base_model import BaseDB
 from mirar.errors import ProcessorError
 from mirar.io import open_fits
 from mirar.paths import (
@@ -33,7 +34,6 @@ from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.base_processor import ImageHandler
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from mirar.references.base_reference_generator import BaseReferenceGenerator
 

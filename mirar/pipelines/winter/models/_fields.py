@@ -10,9 +10,9 @@ from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 from wintertoo.data import winter_fields
 
+from mirar.database.base_model import BaseDB, _exists, dec_field, ra_field
+from mirar.database.engine import get_engine
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import BaseDB, _exists, dec_field, ra_field
-from mirar.utils.sql import get_engine
 
 DEFAULT_FIELD = 999999999
 

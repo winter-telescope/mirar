@@ -7,8 +7,8 @@ from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB
 
 summer_filters_map = {"u": 1, "g": 2, "r": 3, "i": 4}
 fid_field: int = Field(ge=0)

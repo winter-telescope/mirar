@@ -11,6 +11,7 @@ from astropy.io import fits
 from astropy.time import Time
 
 from mirar.data import Image, ImageBatch
+from mirar.database.base_model import BaseDB
 from mirar.errors import ProcessorError
 from mirar.io import (
     MissingCoreFieldError,
@@ -28,7 +29,6 @@ from mirar.paths import (
     RAW_IMG_KEY,
     TARGET_KEY,
 )
-from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 
 logger = logging.getLogger(__name__)

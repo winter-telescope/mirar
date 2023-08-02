@@ -8,9 +8,9 @@ from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Double, ForeignKey, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from mirar.database.base_model import BaseDB
 from mirar.pipelines.summer.models._exposures import Exposure
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB
 
 
 class RawTable(SummerBase):  # pylint: disable=too-few-public-methods

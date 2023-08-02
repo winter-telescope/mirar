@@ -7,6 +7,10 @@ from typing import Union
 from psycopg import OperationalError
 from sqlalchemy.orm import DeclarativeBase
 
+from mirar.database.base_model import BaseTable
+from mirar.database.engine import get_engine
+from mirar.database.q3c import create_q3c_extension
+from mirar.database.user import DB_PASSWORD, DB_USER, PostgresAdmin, PostgresUser
 from mirar.pipelines.winter.models._astrometry_stats import (
     AstrometryStat,
     AstrometryStatsTable,
@@ -54,17 +58,6 @@ from mirar.pipelines.winter.models._subdets import (
     populate_subdets,
 )
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import BaseTable
-from mirar.processors.sqldatabase.postgres import (
-    ADMIN_PASSWORD,
-    ADMIN_USER,
-    DB_PASSWORD,
-    DB_USER,
-    PostgresAdmin,
-    PostgresUser,
-)
-from mirar.processors.sqldatabase.q3c import create_q3c_extension
-from mirar.utils.sql import get_engine
 
 logger = logging.getLogger(__name__)
 

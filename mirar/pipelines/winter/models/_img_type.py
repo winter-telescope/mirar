@@ -7,8 +7,8 @@ from pydantic import Field
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import BaseDB
 
 ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "NULL"]
 itid_dict = {}

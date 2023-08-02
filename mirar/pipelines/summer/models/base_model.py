@@ -3,7 +3,7 @@ Base class for models
 """
 from sqlalchemy.orm import DeclarativeBase
 
-from mirar.processors.sqldatabase.base_model import BaseTable
+from mirar.database.base_model import BaseTable
 
 DB_NAME = "summer"
 

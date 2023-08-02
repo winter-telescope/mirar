@@ -1,8 +1,8 @@
 """
 Models for database and pydantic dataclass models
 """
-from typing import Type
 
+from mirar.database.user import DB_USER
 from mirar.pipelines.summer.models._exposures import Exposure, ExposuresTable
 from mirar.pipelines.summer.models._fields import (
     DEFAULT_FIELD,
@@ -40,7 +40,6 @@ from mirar.pipelines.summer.models._subdets import (
 )
 from mirar.pipelines.summer.models.base_model import SummerBase
 from mirar.pipelines.winter.models import setup_database
-from mirar.processors.sqldatabase.postgres_utils import DB_USER
 
 # def setup_database(base: Type[BaseTable]):
 #     """

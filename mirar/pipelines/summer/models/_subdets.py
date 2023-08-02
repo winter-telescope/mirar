@@ -7,9 +7,9 @@ from pydantic import Field
 from sqlalchemy import Column, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB, _exists
+from mirar.database.engine import get_engine
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB, _exists
-from mirar.utils.sql import get_engine
 
 DEFAULT_FIELD = 999999999
 

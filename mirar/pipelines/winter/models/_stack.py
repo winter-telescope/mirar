@@ -8,8 +8,8 @@ from pydantic import Field, validator
 from sqlalchemy import REAL, VARCHAR, Column, Double, Integer, Sequence  # event,
 from sqlalchemy.orm import relationship
 
+from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import BaseDB, dec_field, ra_field
 
 
 class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
