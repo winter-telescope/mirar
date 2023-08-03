@@ -2,7 +2,6 @@
 Module with functions to load raw and processed summer images
 """
 import logging
-import os
 import warnings
 from pathlib import Path
 
@@ -88,7 +87,7 @@ def load_raw_summer_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.He
         header["BZERO"] = 0
 
         header[LATEST_SAVE_KEY] = path.as_posix()
-        header[RAW_IMG_KEY] = path
+        header[RAW_IMG_KEY] = path.as_posix()
 
         data = data * 1.0  # pylint: disable=no-member
 
@@ -97,7 +96,7 @@ def load_raw_summer_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.He
 
         header[PROC_HISTORY_KEY] = ""
 
-        base_name = os.path.basename(path)
+        base_name = path.name
         header[BASE_NAME_KEY] = base_name
 
         pipeline_version = __version__
