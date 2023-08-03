@@ -93,6 +93,8 @@ def open_fits(path: str | Path, **fits_open_kwargs) -> tuple[np.ndarray, fits.He
     :param path: path of fits file
     :return: tuple containing image data and image header
     """
+    if isinstance(path, str):
+        path = Path(path)
     with fits.open(path, memmap=False, **fits_open_kwargs) as img:
         hdu = img.pop(0)
         hdu.verify("silentfix+ignore")
@@ -103,7 +105,7 @@ def open_fits(path: str | Path, **fits_open_kwargs) -> tuple[np.ndarray, fits.He
         header[BASE_NAME_KEY] = Path(path).name
 
     if RAW_IMG_KEY not in header.keys():
-        header[RAW_IMG_KEY] = path
+        header[RAW_IMG_KEY] = path.as_posix()
 
     return data, header
 
@@ -142,6 +144,9 @@ def open_raw_image(
     :param open_f: function to open the raw image
     :return: Image object
     """
+    if isinstance(path, str):
+        path = Path(path)
+
     data, header = open_f(path, **fits_open_kwargs)
 
     new_img = Image(data.astype(np.float64), header)
