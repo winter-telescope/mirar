@@ -119,6 +119,8 @@ def save_fits(
     :param path: path
     :return: None
     """
+    if isinstance(path, str):
+        path = Path(path)
     check_image_has_core_fields(image)
     data = image.get_data()
     header = image.get_header()
