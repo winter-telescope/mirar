@@ -1,3 +1,8 @@
+"""
+Utility functions for WFCAM
+"""
+from pathlib import Path
+
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -6,6 +11,7 @@ from astrosurveyutils.surveys import MOCSurvey
 
 from mirar.data import Image
 from mirar.data.utils import get_corners_ra_dec_from_header, get_image_center_wcs_coords
+from mirar.io import open_mef_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
@@ -20,10 +26,6 @@ from mirar.paths import (
 
 MULTIFRAME_ID_KEY = "MFID"
 EXTENSION_ID_KEY = "XTNSNID"
-LX_KEY = "LX"
-LY_KEY = "LY"
-HX_KEY = "HX"
-HY_KEY = "HY"
 COMPID_KEY = "COMPID"
 
 QUERY_RA_KEY = "QRY_RA"
@@ -112,32 +114,24 @@ def combine_headers(primary_header: fits.Header, header_to_append: fits.Header):
 
 def make_wfcam_image_from_hdulist(
     ukirt_hdulist: [fits.hdu.image.PrimaryHDU, fits.hdu.image.ImageHDU],
-    url: str,
+    multiframeid: int,
+    extension_id: int,
+    ukirt_filename: str,
 ) -> Image:
     """
     Function to convert a ukirt image with two headers to a single header image
     Args:
         :param ukirt_hdulist: HDUList with two headers
-        :param url: URL of the image
+        :param multiframeid: multiframeid of UKIRT image
+        :param extension_id: extension id of UKIRT image
+        :param ukirt_filename: filename of UKIRT image
     Returns:
         :return: Image object
     """
     assert len(ukirt_hdulist) == 2
     # combined_header = ukirt_hdulist[1].header.copy()
 
-    (
-        ukirt_filename,
-        multiframeid,
-        extension_id,
-        frame_lx,
-        frame_hx,
-        frame_ly,
-        frame_hy,
-    ) = get_wfcam_file_identifiers_from_url(url)
-    basename = (
-        f"{multiframeid}_{extension_id}_{frame_lx}_"
-        f"{frame_hx}_{frame_ly}_{frame_hy}.fits"
-    )
+    basename = f"{multiframeid}_{extension_id}.fits"
 
     combined_header = combine_headers(
         primary_header=ukirt_hdulist[1].header,
@@ -175,10 +169,6 @@ def make_wfcam_image_from_hdulist(
     image.header["DEC1_1"] = dec1_1
     image.header[MULTIFRAME_ID_KEY] = multiframeid
     image.header[EXTENSION_ID_KEY] = extension_id
-    image.header[LX_KEY] = frame_lx
-    image.header[HX_KEY] = frame_hx
-    image.header[LY_KEY] = frame_ly
-    image.header[HY_KEY] = frame_hy
 
     image.header["UKIRPATH"] = ukirt_filename
     image.header[ZP_KEY] = image.header["MAGZPT"]
@@ -216,3 +206,15 @@ def get_wfcam_file_identifiers_from_url(url: str) -> list:
         int(frame_ly),
         int(frame_hy),
     ]
+
+
+def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
+    """
+    Opens a compressed fits file and returns the data and header
+    Args:
+        :param path: path to the compressed fits file
+    Returns:
+        :return: data, header
+    """
+    _, extension_data_list, extension_header_list = open_mef_fits(path)
+    return extension_data_list[0], extension_header_list[0]

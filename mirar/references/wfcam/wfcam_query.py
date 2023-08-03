@@ -27,10 +27,6 @@ from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from mirar.references.wfcam.utils import (
     COMPID_KEY,
     EXTENSION_ID_KEY,
-    HX_KEY,
-    HY_KEY,
-    LX_KEY,
-    LY_KEY,
     MULTIFRAME_ID_KEY,
     QUERY_DEC_KEY,
     QUERY_FILT_KEY,
@@ -56,6 +52,12 @@ class WFAURefError(ProcessorError):
 class NotinWFCAMError(ProcessorError):
     """
     Error when the coordinates are not in WFAU footprint
+    """
+
+
+class WFAUQueryDBError(ProcessorError):
+    """
+    Error related to the databases while querying
     """
 
 
@@ -122,8 +124,8 @@ class WFAUQuery(BaseWFCAMQuery):
     table entry of the image downloaded).
     b. components_db_table : This table stores the details of the individual downloaded
     images. The following columns are required - compid (primary_key),
-    savepath (saved path) , mfid (multiframeid), xtnsnid (extension_id), lx,
-    ly, hx, hy (paramters used to uniquely identify a WFCAM image).
+    savepath (saved path) , mfid (multiframeid), xtnsnid (extension_id),
+    (paramters used to uniquely identify a WFCAM image).
     It is recommended to use the database model files from
     mirar/pipelines/winter/models/ref_queries.py and
     mirar/pipelines/winter/models/ref_components.py to set up the tables in your
@@ -162,21 +164,23 @@ class WFAUQuery(BaseWFCAMQuery):
     ):
         """
         Parameters:
-            :param query_coords_function: Function to use to get the query coordinates from the
-            header.
-            :param use_db_for_component_queries: Whether to use local databases to perform
-            queries. This is useful if you want to reduce the number of queries to the
+            :param query_coords_function: Function to use to get the query coordinates
+            from the header.
+            :param use_db_for_component_queries: Whether to use local databases to
+            perform queries. This is useful if you want to reduce the number of queries
+            to the
             online database. If set, the code assumes that you are storing the
             individual images in a `components_db_table` and also the details of every
             query to a `query_db_table`.
             :param components_db_table: Table with the details of the individual WFCAM
             single extension images. The following keys need to be present in the db, as
             they uniquely determine a WFCAM image:
-            mfid, xtnsnid, lx, hx, ly, hy, compid the primary key should be compid.
+            mfid, xtnsnid, compid the primary key should be compid.
             query_db_table: Table with the details of the queries to the WFCAM database.
             The following keys need to be present in the db : qry_ra, qry_dec,
             qry_filt and compid.
-            :param skip_online_query: Whether to skip the online query and only use the local
+            :param skip_online_query: Whether to skip the online query and only use the
+            local
             databases.
         """
         super().__init__(
@@ -204,10 +208,6 @@ class WFAUQuery(BaseWFCAMQuery):
             required_components_db_keys = [
                 MULTIFRAME_ID_KEY.lower(),
                 EXTENSION_ID_KEY.lower(),
-                LX_KEY.lower(),
-                HX_KEY.lower(),
-                LY_KEY.lower(),
-                HY_KEY.lower(),
                 COMPID_KEY.lower(),
             ]
             for key in required_components_db_keys:
@@ -446,26 +446,22 @@ def download_wfcam_archive_images(
     for url_ind, url in enumerate(url_list):
         logger.debug(f"Downloading {url_ind}/{len(url_list)}")
         local_imagepaths = []
+        (
+            ukirt_filename,
+            multiframe_id,
+            extension_id,
+            _,
+            _,
+            _,
+            _,
+        ) = get_wfcam_file_identifiers_from_url(url)
+
         if use_local_database:
             # Check if the image exists locally.
-            (
-                _,
-                multiframe_id,
-                extension_id,
-                frame_lx,
-                frame_hx,
-                frame_ly,
-                frame_hy,
-            ) = get_wfcam_file_identifiers_from_url(url)
-
             local_imagepaths = check_multiframe_exists_locally(
                 db_table=components_table,
                 multiframe_id=multiframe_id,
                 extension_id=extension_id,
-                frame_lx=frame_lx,
-                frame_hx=frame_hx,
-                frame_ly=frame_ly,
-                frame_hy=frame_hy,
             )
 
         image_exists_locally = len(local_imagepaths) > 0
@@ -486,8 +482,10 @@ def download_wfcam_archive_images(
             # UKIRT ref images are stored as multiHDU files, need to combine the
             # hdus so no info from the headers is lost. This also adds in core_fields.
             wfcam_image = make_wfcam_image_from_hdulist(
-                wfcam_img_hdulist,
-                url=url,
+                ukirt_hdulist=wfcam_img_hdulist,
+                ukirt_filename=ukirt_filename,
+                multiframeid=multiframe_id,
+                extension_id=extension_id,
             )
             imagepath = get_output_path(
                 wfcam_image[BASE_NAME_KEY], dir_root=save_dir_path.as_posix()
@@ -557,7 +555,11 @@ def check_query_exists_locally(
                 comparators=["__eq__"],
             )
             if len(comp_results) == 0:
-                raise ValueError(f"Component {compid} not found in database")
+                raise WFAUQueryDBError(
+                    f"Component {compid} not found in database, but "
+                    "a query corresponding to it exists. The query"
+                    "table is likely out of sync with the component"
+                )
             savepaths.append(Path(comp_results[0][0]))
     return savepaths
 
@@ -593,10 +595,6 @@ def check_multiframe_exists_locally(
     db_table: Type[BaseDB],
     multiframe_id: int,
     extension_id: int,
-    frame_lx: int,
-    frame_hx: int,
-    frame_ly: int,
-    frame_hy: int,
 ) -> list[Path]:
     """
     Function to query database to check if a multiframe exists locally
@@ -604,10 +602,6 @@ def check_multiframe_exists_locally(
         :param db_table: table with multiframe details
         :param multiframe_id: multiframe id
         :param extension_id: extension id
-        :param frame_lx: frame lx
-        :param frame_hx: frame hx
-        :param frame_ly: frame ly
-        :param frame_hy: frame hy
 
     Returns:
         :return: list of savepaths
@@ -617,20 +611,12 @@ def check_multiframe_exists_locally(
         compare_values=[
             multiframe_id,
             extension_id,
-            frame_lx,
-            frame_hx,
-            frame_ly,
-            frame_hy,
         ],
         compare_keys=[
             MULTIFRAME_ID_KEY.lower(),
             EXTENSION_ID_KEY.lower(),
-            LX_KEY.lower(),
-            HX_KEY.lower(),
-            LY_KEY.lower(),
-            HY_KEY.lower(),
         ],
-        comparators=["__eq__", "__eq__", "__eq__", "__eq__", "__eq__", "__eq__"],
+        comparators=["__eq__", "__eq__"],
     )
     logger.debug(results)
     if len(results) == 0:
