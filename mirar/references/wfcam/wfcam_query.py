@@ -35,6 +35,7 @@ from mirar.references.wfcam.utils import (
     get_query_coordinates_from_header,
     get_wfcam_file_identifiers_from_url,
     make_wfcam_image_from_hdulist,
+    open_compressed_wfcam_fits,
 )
 
 logger = logging.getLogger(__name__)
@@ -650,3 +651,58 @@ class UKIRTOnlineQuery(WFAUQuery):
             :return: query class
         """
         return UkidssClass()
+
+
+class WFCAMLocalQuery(BaseWFCAMQuery):
+    """
+    Class to query the WFCAM local database.
+    This is a subclass of the WFAUQuery.
+    """
+
+    def __init__(
+        self,
+        filter_name: str,
+        components_db_table: Type[BaseDB],
+        query_overlapping_images: Callable[
+            [float, float, str, Type[BaseDB]], list[Path]
+        ] = get_locally_existing_overlap_images,
+        num_query_points: int = 4,
+        query_coords_function: Callable[
+            [fits.Header, int], tuple[list[float], list[float]]
+        ] = get_query_coordinates_from_header,
+    ):
+        super().__init__(
+            filter_name=filter_name,
+            num_query_points=num_query_points,
+            query_coords_function=query_coords_function,
+        )
+        self.components_db_table = components_db_table
+        self.query_overlapping_images = query_overlapping_images
+
+    def run_query(self, image: Image) -> ImageBatch:
+        """
+        Function to run the query
+        """
+        # get the query coordinates
+        query_coords = self.query_coords_function(image.header, self.num_query_points)
+        logger.debug(f"Query coords: {query_coords}")
+        # get the overlapping images
+
+        imagepaths = []
+        for ra, dec in zip(query_coords[0], query_coords[1]):
+            overlapping_imagepaths = self.query_overlapping_images(
+                ra,
+                dec,
+                self.filter_name,
+                self.components_db_table,
+            )
+            imagepaths.append(overlapping_imagepaths)
+
+        imagepaths = list(set(imagepaths))
+
+        wfcam_images = [
+            open_raw_image(path=x, open_f=open_compressed_wfcam_fits)
+            for x in imagepaths
+        ]
+
+        return ImageBatch(wfcam_images)
