@@ -3,6 +3,8 @@ This file contains the configuration for the winter pipeline.
 """
 from pathlib import Path
 
+from fastavro.schema import load_schema
+
 from mirar.processors.utils.cal_hunter import CalRequirement
 
 PIPELINE_NAME = "winter"
@@ -54,8 +56,6 @@ swarp_config_path = winter_file_dir.joinpath("config.swarp")
 scamp_config_path = winter_file_dir.joinpath("astrom.scamp")
 winter_mask_path = winter_file_dir.joinpath("winter_mask.fits")
 
-winter_candidate_config = winter_file_dir.joinpath("candidates.sql")
-
 psfex_path = winter_file_dir.joinpath("photom.psfex")
 
 winter_cal_requirements = [
@@ -65,3 +65,6 @@ winter_cal_requirements = [
 ]
 
 winter_avro_schema_path = winter_file_dir.joinpath("avro_schema/winter.alert.avsc")
+winter_avro_schema = load_schema(winter_avro_schema_path)
+winter_prv_schema = winter_avro_schema["__named_schemas"]["winter.alert.prv_candidate"]
+prv_candidate_cols = [x["name"] for x in winter_prv_schema["fields"]]

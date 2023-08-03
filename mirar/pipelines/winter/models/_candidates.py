@@ -2,31 +2,25 @@
 Models for the 'candidates' table
 """
 import logging
-from datetime import date, datetime
 from typing import ClassVar
 
-from pydantic import Field
-from sqlalchemy import (  # event,
-    VARCHAR,
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    Sequence,
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pydantic import Field, validator
+from sqlalchemy import VARCHAR, Boolean, Column, Float, ForeignKey, Integer, Sequence
+from sqlalchemy.orm import Mapped, mapped_column
 
-from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
-from mirar.pipelines.winter.models._fields import FieldsTable, fieldid_field
-from mirar.pipelines.winter.models._filters import FiltersTable, fid_field
-from mirar.pipelines.winter.models._img_type import ImgTypesTable
-from mirar.pipelines.winter.models._nights import Night, NightsTable
+from mirar.database.base_model import BaseDB, dec_field, ra_field
+from mirar.pipelines.winter.models._diff import DiffsTable
+from mirar.pipelines.winter.models._fields import fieldid_field
+from mirar.pipelines.winter.models._filters import fid_field
 from mirar.pipelines.winter.models._programs import ProgramsTable, default_program
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 logger = logging.getLogger(__name__)
+
+CANDIDATE_PREFIX = "WNTR"
+NAME_START = "aaaaa"
+
+min_name_length = len(CANDIDATE_PREFIX) + len(NAME_START) + 2
 
 
 class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
@@ -37,16 +31,26 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     __tablename__ = "candidates"
     __table_args__ = {"extend_existing": True}
 
+    # extra avro_path, diff img foreign key etc
+
+    # Core fields
     candid = Column(
         Integer,
         Sequence(name="candidates_uexpid_seq", start=1, increment=1),
         unique=True,
         autoincrement=True,
+        primary_key=True,
     )
-
+    objectid = Column(VARCHAR(40), nullable=False, unique=True)
+    deprecated = Column(Boolean, nullable=False, default=False)
     jd = Column(Float, nullable=False)
-    diffmaglim = Column(Float, nullable=False)
+
+    # Image properties
+
+    diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))
+
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
+    exptime = Column(Float, nullable=False)
 
     progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
 
@@ -54,33 +58,48 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     fieldid: Mapped[int] = mapped_column(ForeignKey("fields.fieldid"))
 
-    xpos = Column(Float, nullable=True)
-    ypos = Column(Float, nullable=True)
+    # Positional properties
 
     ra = Column(Float)
     dec = Column(Float)
     ra_column_name = "ra"
     dec_column_name = "dec"
 
+    # Zero point properties
+
+    magzpsci = Column(Float, nullable=False)
+    magzpsciunc = Column(Float, nullable=False)
+    magzpscirms = Column(Float, nullable=False)
+
+    # Photometry properties
+
+    diffmaglim = Column(Float, nullable=False)
+
     magpsf = Column(Float, nullable=False)
     sigmapsf = Column(Float, nullable=False)
+    chipsf = Column(Float, nullable=False)
+
     magap = Column(Float, nullable=False)
     sigmagap = Column(Float, nullable=False)
+
     magapbig = Column(Float, nullable=False)
     sigmagapbig = Column(Float, nullable=False)
 
-    distnr = Column(Float, nullable=False)
-    magnr = Column(Float, nullable=False)
-    sigmagnr = Column(Float, nullable=False)
-    chinr = Column(Float, nullable=False)
-    sharpnr = Column(Float, nullable=False)
+    magdiff = Column(Float, nullable=False)
+    magfromlim = Column(Float, nullable=False)
+
+    # Diagnostic properties
+
+    distnr = Column(Float, nullable=True)
+    magnr = Column(Float, nullable=True)
+    sigmagnr = Column(Float, nullable=True)
+
+    xpos = Column(Float, nullable=True)
+    ypos = Column(Float, nullable=True)
 
     sky = Column(Float, nullable=False)
-    magdiff = Column(Float, nullable=False)
     fwhm = Column(Float, nullable=False)
-    classtar = Column(Float, nullable=False)
     mindtoedge = Column(Float, nullable=False)
-    magfromlim = Column(Float, nullable=False)
     seeratio = Column(Float, nullable=False)
     aimage = Column(Float, nullable=False)
     bimage = Column(Float, nullable=False)
@@ -89,49 +108,81 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     elong = Column(Float, nullable=False)
     nneg = Column(Integer, nullable=False)
     nbad = Column(Integer, nullable=False)
+    sumrat = Column(Float, nullable=False)
+
+    # Diff/ZOGY properties
+
+    dsnrms = Column(Float, nullable=False)
+    ssnrms = Column(Float, nullable=False)
+    dsdiff = Column(Float, nullable=False)
+
+    scorr = Column(Float, nullable=False)
+
+    # Real/bogus properties
 
     rb = Column(Float, nullable=True)
     rbversion = Column(Float, nullable=True)
+
+    # Solar system properties
 
     ssdistnr = Column(Float, nullable=True)
     ssmagnr = Column(Float, nullable=True)
     ssnamenr = Column(VARCHAR(40), nullable=True)
 
-    psra1 = Column(Float, nullable=True)
-    psdec1 = Column(Float, nullable=True)
-    psobjid1 = Column(VARCHAR(40), nullable=True)
-
-    jdstarthist = Column(Float, nullable=False)
-    jdendhist = Column(Float, nullable=False)
-
-    scorr = Column(Float, nullable=False)
+    # ToO
 
     tooflag = Column(Boolean, nullable=False)
 
-    nightdate: Mapped[int] = mapped_column(ForeignKey("nights.nightdate"))
+    # Cross-match properties
 
-    utctime = Column(DateTime(timezone=True))
+    # Ps1 properties
 
-    ExpTime = Column(Float, nullable=False)
-    expMJD = Column(Float, nullable=False)
-    airmass = Column(Float)
-    tempture = Column(Float, default=-999)
-    windspd = Column(Float, default=-999)
-    Dewpoint = Column(Float, default=-999)
-    Humidity = Column(Float, default=-999)
-    Pressure = Column(Float, default=-999)
+    psobjectid1 = Column(VARCHAR(40), nullable=True)
+    sgmag1 = Column(Float, nullable=True)
+    srmag1 = Column(Float, nullable=True)
+    simag1 = Column(Float, nullable=True)
+    szmag1 = Column(Float, nullable=True)
+    distpsnr1 = Column(Float, nullable=True)
+    sgscore1 = Column(Float, nullable=True)
 
-    Moonaz = Column(Float, default=-999)
-    Moonalt = Column(Float, default=-999)
-    Sunalt = Column(Float, default=-999)
+    psobjectid2 = Column(VARCHAR(40), nullable=True)
+    sgmag2 = Column(Float, nullable=True)
+    srmag2 = Column(Float, nullable=True)
+    simag2 = Column(Float, nullable=True)
+    szmag2 = Column(Float, nullable=True)
+    distpsnr2 = Column(Float, nullable=True)
+    sgscore2 = Column(Float, nullable=True)
 
-    altitude = Column(Float)
-    azimuth = Column(Float)
+    psobjectid3 = Column(VARCHAR(40), nullable=True)
+    sgmag3 = Column(Float, nullable=True)
+    srmag3 = Column(Float, nullable=True)
+    simag3 = Column(Float, nullable=True)
+    szmag3 = Column(Float, nullable=True)
+    distpsnr3 = Column(Float, nullable=True)
 
-    raw: Mapped["RawTable"] = relationship(back_populates="candidate_ids")
+    # 2Mass properties
 
+    tmjmag1 = Column(Float, nullable=True)
+    tmhmag1 = Column(Float, nullable=True)
+    tmkmag1 = Column(Float, nullable=True)
+    tmobjectid1 = Column(VARCHAR(40), nullable=True)
 
-default_unknown_field = Field(default=-999)
+    tmjmag2 = Column(Float, nullable=True)
+    tmhmag2 = Column(Float, nullable=True)
+    tmkmag2 = Column(Float, nullable=True)
+    tmobjectid2 = Column(VARCHAR(40), nullable=True)
+
+    tmjmag3 = Column(Float, nullable=True)
+    tmhmag3 = Column(Float, nullable=True)
+    tmkmag3 = Column(Float, nullable=True)
+    tmobjectid3 = Column(VARCHAR(40), nullable=True)
+
+    # Gaia properties
+
+    neargaia = Column(Float, nullable=True)
+    neargaiabright = Column(Float, nullable=True)
+    maggaia = Column(Float, nullable=True)
+    maggaiabright = Column(Float, nullable=True)
 
 
 class Candidate(BaseDB):
@@ -141,21 +192,104 @@ class Candidate(BaseDB):
 
     sql_model: ClassVar = CandidatesTable
 
-    expid: int = Field(ge=0)
-    fid: int = fid_field
-    nightdate: date = Field()  # FIXME : why different to obsdate?
-    fieldid: int = fieldid_field
-    itid: int = Field(ge=0)
-    progname: str = Field(min_length=1)
+    objectid: str = Field(min_length=min_name_length)
+    deprecated: bool = Field(default=False)
 
-    utctime: datetime = Field()
-    ExpTime: float = Field(ge=0)
-    expMJD: float = Field(ge=59000)
+    jd: float = Field(ge=0)
+
+    diffid: int = Field(ge=0)
+
+    fid: int = fid_field
+    exptime: float = Field(ge=0)
+
+    progname: str = Field(min_length=8)
+
+    isdiffpos: bool = Field(default=True)
+
+    fieldid: int = fieldid_field
 
     ra: float = ra_field
     dec: float = dec_field
-    altitude: float = alt_field
-    azimuth: float = az_field
+
+    magpsf: float = Field()
+    sigmapsf: float = Field(ge=0)
+    chipsf: float = Field(ge=0)
+
+    magap: float = Field()
+    sigmagap: float = Field(ge=0)
+
+    magapbig: float = Field()
+    sigmagapbig: float = Field(ge=0)
+
+    magdiff: float = Field()
+    magfromlim: float = Field()
+
+    distnr: float | None = Field(ge=0, default=None)
+    magnr: float | None = Field(ge=0, default=None)
+    sigmagnr: float | None = Field(ge=0, default=None)
+
+    xpos: float | None = Field(ge=0, default=None)
+    ypos: float | None = Field(ge=0, default=None)
+
+    sky: float = Field(ge=0)
+    fwhm: float = Field(ge=0)
+    mindtoedge: float = Field(ge=0)
+    seeratio: float = Field(ge=0)
+    aimage: float = Field(ge=0)
+    bimage: float = Field(ge=0)
+    aimagerat: float = Field(ge=0)
+    bimagerat: float = Field(ge=0)
+    elong: float = Field(ge=0)
+    nneg: int = Field(ge=0)
+    nbad: int = Field(ge=0)
+    sumrat: float = Field(ge=0)
+
+    dsnrms: float = Field(ge=0)
+    ssnrms: float = Field(ge=0)
+    dsdiff: float = Field(ge=0)
+
+    scorr: float = Field(ge=0)
+
+    rb: float | None = Field(ge=0, default=None)
+    rbversion: float | None = Field(ge=0, default=None)
+
+    ssdistnr: float | None = Field(ge=0, default=None)
+    ssmagnr: float | None = Field(ge=0, default=None)
+    ssnamenr: str | None = Field(min_length=min_name_length, default=None)
+
+    tooflag: bool = Field(default=False)
+
+    objectidps1: str | None = Field(min_length=min_name_length, default=None)
+    objectidps2: str | None = Field(min_length=min_name_length, default=None)
+    objectidps3: str | None = Field(min_length=min_name_length, default=None)
+
+    sgmag1: float | None = Field(ge=0, default=None)
+    srmag1: float | None = Field(ge=0, default=None)
+    simag1: float | None = Field(ge=0, default=None)
+    szmag1: float | None = Field(ge=0, default=None)
+    sgscore1: float | None = Field(ge=0, default=None)
+    distpsnr1: float | None = Field(ge=0, default=None)
+
+    sgmag2: float | None = Field(ge=0, default=None)
+    srmag2: float | None = Field(ge=0, default=None)
+    simag2: float | None = Field(ge=0, default=None)
+    szmag2: float | None = Field(ge=0, default=None)
+    sgscore2: float | None = Field(ge=0, default=None)
+    distpsnr2: float | None = Field(ge=0, default=None)
+
+    sgmag3: float | None = Field(ge=0, default=None)
+    srmag3: float | None = Field(ge=0, default=None)
+    simag3: float | None = Field(ge=0, default=None)
+    szmag3: float | None = Field(ge=0, default=None)
+    sgscore3: float | None = Field(ge=0, default=None)
+    distpsnr3: float | None = Field(ge=0, default=None)
+
+    neargaia: float | None = Field(ge=0, default=None)
+    neargaiabright: float | None = Field(ge=0, default=None)
+    maggaia: float | None = Field(default=None)
+    maggaiabright: float | None = Field(default=None)
+
+    # TODO jd validate
 
     def insert_entry(self, returning_key_names=None) -> tuple:
         """
@@ -163,25 +297,20 @@ class Candidate(BaseDB):
 
         :return: None
         """
-        night = Night(nightdate=self.nightdate)
-        logger.debug(f"Searched for night {self.nightdate}")
-        if not night.exists():
-            night.insert_entry()
 
         if not ProgramsTable().exists(values=self.progname, keys="progname"):
-            default_progname = ProgramsTable().select_query(
-                select_keys="progname",
-                compare_values=[default_program.progname],
-                compare_keys=["progname"],
-            )[0][0]
-            self.progname = default_progname
+            self.progname = default_program.progname
 
         return self._insert_entry()
 
-    def exists(self) -> bool:
+    @validator("diffid")
+    @classmethod
+    def validate_diffid(cls, field_value: int):
         """
-        Checks if the pydantic-ified data exists the corresponding sql database
+        Ensure that expid exists in exposures table
 
-        :return: bool
+        :param field_value: field value
+        :return: field value
         """
-        return self.sql_model().exists(values=self.expid, keys="expid")
+        assert DiffsTable.exists(keys="diffid", values=field_value)
+        return field_value

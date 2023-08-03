@@ -16,6 +16,13 @@ from mirar.pipelines.winter.models._astrometry_stats import (
     AstrometryStat,
     AstrometryStatsTable,
 )
+from mirar.pipelines.winter.models._candidates import (
+    CANDIDATE_PREFIX,
+    NAME_START,
+    Candidate,
+    CandidatesTable,
+)
+from mirar.pipelines.winter.models._diff import Diff, DiffsTable
 from mirar.pipelines.winter.models._exposures import Exposure, ExposuresTable
 from mirar.pipelines.winter.models._fields import (
     DEFAULT_FIELD,

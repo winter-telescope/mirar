@@ -168,13 +168,14 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
         order_field_name: Optional[str] = None,
         order_ascending: bool = False,
         query_dist: bool = False,
+        q3c_bool: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.xmatch_radius_arcsec = crossmatch_radius_arcsec
         self.ra_field_name = ra_field_name
         self.dec_field_name = dec_field_name
-        self.q3c = q3c_bool
+        self.q3c_bool = q3c_bool
         self.user_defined_constraints = user_defined_constraints
         self.order_field_name = order_field_name
         self.order_ascending = order_ascending
@@ -223,7 +224,7 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
 
                 res = select_from_table(
                     db_model=self.db_table,
-                    db_constraints=query_constraints.parse_constraints(),
+                    db_constraints=query_constraints,
                     output_columns=self.db_output_columns,
                 )
                 results.append(res)

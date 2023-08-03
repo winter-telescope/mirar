@@ -13,6 +13,7 @@ from mirar.paths import (
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
+    prv_candidate_cols,
     psfex_path,
     scamp_config_path,
     sextractor_anet_config,
@@ -46,8 +47,12 @@ from mirar.pipelines.winter.load_winter_image import (
     load_winter_mef_image,
 )
 from mirar.pipelines.winter.models import (
+    CANDIDATE_PREFIX,
     DEFAULT_FIELD,
+    NAME_START,
     AstrometryStat,
+    Candidate,
+    Diff,
     Exposure,
     Raw,
     Stack,
@@ -361,6 +366,7 @@ imsub = [
     ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
     # ImageSaver(output_dir_name="prezogy"),
     ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
+    DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
     ImageSaver(output_dir_name="diffs"),
 ]
 
@@ -393,26 +399,28 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
-    # DatabaseHistoryImporter(
-    #     crossmatch_radius_arcsec=2.0,
-    #     time_field_name="jd",
-    #     history_duration_days=500.0,
-    #     db_name="winter",
-    #     db_table="candidates",
-    #     # db_output_columns=candidate_colnames,
-    #     q3c_bool=False,
-    # ),
-    # CandidateNamer(
-    #     db_name="winter",
-    #     db_table="candidates",
-    #     base_name="WNTR",
-    #     name_start="aaaaa",
-    #     xmatch_radius_arcsec=2,
-    # ),
+    DatabaseHistorySelector(
+        crossmatch_radius_arcsec=2.0,
+        time_field_name="jd",
+        history_duration_days=500.0,
+        db_table=Candidate,
+        db_output_columns=prv_candidate_cols,
+        q3c_bool=False,
+    ),
+    CandidateNamer(
+        db_table=Candidate,
+        base_name=CANDIDATE_PREFIX,
+        name_start=NAME_START,
+        xmatch_radius_arcsec=2,
+    ),
     # DatabaseSourceExporter(
     #     db_table="candidates",
     #     duplicate_protocol="replace",
     # ),
+    DatabaseSourceInserter(
+        db_table=Candidate,
+        duplicate_protocol="fail",
+    ),
     SourceWriter(output_dir_name="preavro"),
     IPACAvroExporter(
         topic_prefix="winter",

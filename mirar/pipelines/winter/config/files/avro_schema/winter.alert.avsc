@@ -6,14 +6,14 @@
     "fields": [
         {"name": "schemavsn", "type": "string", "doc": "schema version used", "default": "0.1"},
         {"name": "publisher", "type": "string", "doc": "origin of alert packet", "default": "WINTER-mirar"},
-        {"name": "objectId", "type": "string"},
+        {"name": "objectid", "type": "string"},
         {"name": "candid", "type": "long"},
         {"name": "candidate", "type": "winter.alert.candidate", "doc": "candidate information"},
         {"name": "prv_candidates", "type": [{
             "type": "array",
             "items": "winter.alert.prv_candidate"}, "null"]},
-        {"name": "cutoutScience", "type": "bytes", "doc": "science cutout image [gzipped fits bytestream]"},
-        {"name": "cutoutTemplate", "type": "bytes", "doc": "cutout of template image [gzipped fits bytestream]"},
-        {"name": "cutoutDifference", "type": "bytes", "doc": "difference image cutout [gzipped fits bytestream]"}
+        {"name": "cutout_science", "type": "bytes", "doc": "science cutout image [gzipped fits bytestream]"},
+        {"name": "cutout_template", "type": "bytes", "doc": "cutout of template image [gzipped fits bytestream]"},
+        {"name": "cutout_difference", "type": "bytes", "doc": "difference image cutout [gzipped fits bytestream]"}
         ]
 }

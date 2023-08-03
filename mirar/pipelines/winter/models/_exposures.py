@@ -84,6 +84,7 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     dec_column_name = "dec"
 
     raw: Mapped["RawTable"] = relationship(back_populates="exposure_ids")
+    diff: Mapped["DiffsTable"] = relationship(back_populates="exposure_ids")
 
 
 default_unknown_field = Field(default=-999)
@@ -134,12 +135,7 @@ class Exposure(BaseDB):
             night.insert_entry()
 
         if not ProgramsTable().exists(values=self.progname, keys="progname"):
-            default_progname = ProgramsTable().select_query(
-                select_keys="progname",
-                compare_values=[default_program.progname],
-                compare_keys=["progname"],
-            )[0][0]
-            self.progname = default_progname
+            self.progname = default_program.progname
 
         return self._insert_entry()
 

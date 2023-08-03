@@ -29,6 +29,7 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     stackid = Column(Double, primary_key=True, autoincrement=False)
 
     raw = relationship("RawTable", back_populates="stacks")
+    diff = relationship("DiffsTable", back_populates="stack_id")
     # procid = Column(Double, primary_key=True, autoincrement=False)
 
     # rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)

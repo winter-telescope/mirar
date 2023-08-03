@@ -10,8 +10,8 @@ import pandas as pd
 
 from mirar.data import Image, ImageBatch
 from mirar.database.constraints import DBQueryConstraints
-from mirar.database.utils import get_sequence_key_names_from_table
 from mirar.database.transactions import update_database_entry
+from mirar.database.utils import get_sequence_key_names_from_table
 from mirar.processors.database.database_selector import (
     BaseDatabaseSelector,
     BaseImageDatabaseSelector,
