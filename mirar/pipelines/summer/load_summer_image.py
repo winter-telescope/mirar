@@ -31,7 +31,7 @@ from mirar.pipelines.summer.models import DEFAULT_FIELD
 logger = logging.getLogger(__name__)
 
 
-def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_summer_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
     """
     Function to load a raw summer image and add/modify the required headers
     Args:
@@ -40,6 +40,8 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
     Returns: [image data, image header]
 
     """
+    if isinstance(path, str):
+        path = Path(path)
     data, header = open_fits(path)
 
     with warnings.catch_warnings():
@@ -85,7 +87,7 @@ def load_raw_summer_fits(path: str) -> tuple[np.array, astropy.io.fits.Header]:
         header["TELDEC"] = tel_crd.dec.deg
         header["BZERO"] = 0
 
-        header[LATEST_SAVE_KEY] = path
+        header[LATEST_SAVE_KEY] = path.as_posix()
         header[RAW_IMG_KEY] = path
 
         data = data * 1.0  # pylint: disable=no-member
