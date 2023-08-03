@@ -8,7 +8,7 @@ import copy
 import logging
 import warnings
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 import numpy as np
 from astropy.io import fits
@@ -123,8 +123,8 @@ def save_fits(
     data = image.get_data()
     header = image.get_header()
     if header is not None:
-        header[LATEST_SAVE_KEY] = path
-    logger.debug(f"Saving to {path}")
+        header[LATEST_SAVE_KEY] = path.as_posix()
+    logger.debug(f"Saving to {path.as_posix()}")
     save_to_path(data, header, path)
 
 
