@@ -39,6 +39,10 @@ class SwarpError(ProcessorError):
     """Error relating to swarp"""
 
 
+class SwarpWarning(UserWarning):
+    """Warning relating to swarp"""
+
+
 class Swarp(BaseImageProcessor):
     """
     Processor to apply Swarp
@@ -205,13 +209,16 @@ class Swarp(BaseImageProcessor):
                 logger.error(err)
                 raise SwarpError(err)
 
-            logger.warning(
+            warnings.warn(
                 "You are choosing to run Swarp without combining the image. "
                 "This causes swarp to output an intermediate image, "
-                "with possibly incorrect FLXSCALE values. Make sure you have thought "
-                "this through. Please consider running with combine=True, "
-                "it almost always gives the same result as running it without, "
-                "but will have FLXSCALE in headers that make sense."
+                "with possibly incorrect FLXSCALE values. You only want to run this"
+                "if you want to cut your original image to match with the dimensions "
+                "of a second image. If this is not your motive, please consider "
+                "running with combine=True, it almost always gives the same result "
+                "as running it without, but will have FLXSCALE in headers that make "
+                "sense.",
+                SwarpWarning,
             )
             output_image_path = swarp_output_dir.joinpath(
                 Path(batch[0][BASE_NAME_KEY]).with_suffix(".resamp.fits").name,
@@ -370,6 +377,8 @@ class Swarp(BaseImageProcessor):
                 shutil.copy(temp_output_image_weight_path, output_image_weight_path)
                 # temp_output_image_path.rename(output_image_path)
                 # temp_output_image_weight_path.rename(output_image_weight_path)
+                temp_files.append(temp_output_image_path)
+                temp_files.append(temp_output_image_weight_path)
             else:
                 err = (
                     f"Swarp seems to have misbehaved, "

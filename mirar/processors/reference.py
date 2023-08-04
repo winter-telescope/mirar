@@ -4,6 +4,7 @@ reference images.
 """
 import logging
 import os.path
+import warnings
 from collections.abc import Callable
 from pathlib import Path
 
@@ -20,7 +21,7 @@ from mirar.paths import (
 )
 from mirar.processors.astromatic.psfex.psfex import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
-from mirar.processors.astromatic.swarp.swarp import Swarp
+from mirar.processors.astromatic.swarp.swarp import Swarp, SwarpWarning
 from mirar.processors.base_processor import BaseImageProcessor
 from mirar.references.base_reference_generator import BaseReferenceGenerator
 
@@ -131,7 +132,9 @@ class ProcessReference(BaseImageProcessor):
             )
 
             ref_resampler.set_night(night_sub_dir=self.night_sub_dir)
-            resampled_ref_img = ref_resampler.apply(ImageBatch(ref_image))[0]
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", SwarpWarning)
+                resampled_ref_img = ref_resampler.apply(ImageBatch(ref_image))[0]
 
             resampled_ref_path = output_dir.joinpath(resampled_ref_img.get_name())
             self.save_fits(resampled_ref_img, resampled_ref_path)
@@ -163,7 +166,9 @@ class ProcessReference(BaseImageProcessor):
             )
             sci_resampler.set_night(night_sub_dir=self.night_sub_dir)
 
-            resampled_sci_image = sci_resampler.apply(ImageBatch([image]))[0]
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", SwarpWarning)
+                resampled_sci_image = sci_resampler.apply(ImageBatch([image]))[0]
 
             # Detect source in reference image, and save as catalog
 
