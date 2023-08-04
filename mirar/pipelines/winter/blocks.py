@@ -10,6 +10,7 @@ from mirar.paths import (
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
     TARGET_KEY,
+    ZP_KEY,
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
@@ -31,9 +32,8 @@ from mirar.pipelines.winter.generator import (
     winter_astrostat_catalog_purifier,
     winter_fourier_filtered_image_generator,
     winter_photometric_catalog_generator,
-    winter_refbuild_reference_generator,
     winter_reference_generator,
-    winter_reference_image_resampler,
+    winter_reference_image_resampler_for_zogy,
     winter_reference_psfex,
     winter_reference_sextractor,
     winter_stackid_annotator,
@@ -134,7 +134,7 @@ load_ref = [
 ]
 
 refbuild = [
-    GetReferenceImage(ref_image_generator=winter_refbuild_reference_generator),
+    GetReferenceImage(ref_image_generator=winter_reference_generator),
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
@@ -350,22 +350,29 @@ photcal_and_export = [
 load_stack = [
     ImageLoader(input_sub_dir="final"),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    # ImageSelector(
+    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_0.fits_stack.fits")
+    # ),
 ]
 
 imsub = [
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
-        swarp_resampler=winter_reference_image_resampler,
+        swarp_resampler=winter_reference_image_resampler_for_zogy,
         sextractor=winter_reference_sextractor,
         ref_psfex=winter_reference_psfex,
     ),
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     # ImageSaver(output_dir_name="presubtract"),
-    ZOGYPrepare(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
+    ZOGYPrepare(
+        output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
+    ),
     # ImageSaver(output_dir_name="prezogy"),
-    ZOGY(output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO"),
+    ZOGY(
+        output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
+    ),
     ImageSaver(output_dir_name="diffs"),
 ]
 

@@ -19,6 +19,8 @@ import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
 from astropy.io import fits
 
+from mirar.io import open_raw_image
+
 logger = logging.getLogger(__name__)
 
 pyfftw.interfaces.cache.enable()
@@ -61,8 +63,8 @@ def pyzogy(
     """
 
     # Load the new and ref images into memory
-    with fits.open(new_image_path) as img_f:
-        new = img_f[0].data  # pylint: disable=no-member
+    new_image = open_raw_image(new_image_path)
+    new = new_image.get_data()
 
     with fits.open(ref_image_path) as ref_f:
         ref = ref_f[0].data  # pylint: disable=no-member

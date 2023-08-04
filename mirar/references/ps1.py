@@ -6,7 +6,6 @@ import logging
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
-from astropy.time import Time
 from astropy.wcs import WCS
 
 from mirar.data import Image
@@ -81,7 +80,7 @@ class PS1Ref(BaseReferenceGenerator):
             url.append(full_url)
         return url
 
-    def get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
+    def _get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
         header = image.get_header()
 
         nx, ny = header["NAXIS1"], header["NAXIS2"]
@@ -105,13 +104,15 @@ class PS1Ref(BaseReferenceGenerator):
         with fits.open(fitsurl[0]) as hdul:
             ref_hdu = hdul[0].copy()
 
-        ref_hdu.header.rename_keyword("PC001001", "PC1_1")
-        ref_hdu.header.rename_keyword("PC001002", "PC1_2")
-        ref_hdu.header.rename_keyword("PC002001", "PC2_1")
-        ref_hdu.header.rename_keyword("PC002002", "PC2_2")
+        ref_hdu.header.rename_keyword("PC001001", "PC1_1")  # pylint: disable=no-member
+        ref_hdu.header.rename_keyword("PC001002", "PC1_2")  # pylint: disable=no-member
+        ref_hdu.header.rename_keyword("PC002001", "PC2_1")  # pylint: disable=no-member
+        ref_hdu.header.rename_keyword("PC002002", "PC2_2")  # pylint: disable=no-member
 
-        ref_hdu.header["GAIN"] = ref_hdu.header["CELL.GAIN"]
-        ref_hdu.header["ZP"] = ref_hdu.header["FPA.ZP"]
-        del ref_hdu.header["HISTORY"]
+        ref_hdu.header["GAIN"] = ref_hdu.header[  # pylint: disable=no-member
+            "CELL.GAIN"
+        ]
+        ref_hdu.header["ZP"] = ref_hdu.header["FPA.ZP"]  # pylint: disable=no-member
+        del ref_hdu.header["HISTORY"]  # pylint: disable=no-member
 
         return ref_hdu, None

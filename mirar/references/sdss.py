@@ -24,7 +24,7 @@ class SDSSRef(BaseReferenceGenerator):
 
     abbreviation = "sdss_ref_lookup"
 
-    def get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
+    def _get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
         header = image.get_header()
 
         nx, ny = header["NAXIS1"], header["NAXIS2"]

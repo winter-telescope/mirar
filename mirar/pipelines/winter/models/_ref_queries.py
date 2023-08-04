@@ -19,9 +19,9 @@ class RefQueriesTable(WinterBase):
     __tablename__ = "refqueries"
 
     queryid = Column(Integer, primary_key=True)
-    query_ra = Column(Float)
-    query_dec = Column(Float)
-    query_filt = Column(VARCHAR(10))
+    qry_ra = Column(Float)
+    qry_dec = Column(Float)
+    qry_filt = Column(VARCHAR(10))
     compid: Mapped[int] = mapped_column(ForeignKey("refcomponents.compid"))
     components: Mapped["RefComponentsTable"] = relationship(back_populates="queries")
 
@@ -33,9 +33,9 @@ class RefQuery(BaseDB):
 
     sql_model: ClassVar = RefQueriesTable
 
-    query_ra: float = ra_field
-    query_dec: float = dec_field
-    query_filt: str = Field(min_length=1)
+    qry_ra: float = ra_field
+    qry_dec: float = dec_field
+    qry_filt: str = Field(min_length=1)
     compid: int = Field(ge=0)
 
     def exists(self) -> bool:
@@ -45,6 +45,6 @@ class RefQuery(BaseDB):
         :return: bool
         """
         return self.sql_model().exists(
-            values=[self.query_ra, self.query_dec, self.query_filt],
-            keys=["query_ra", "query_dec", "query_filt"],
+            values=[self.qry_ra, self.qry_dec, self.qry_filt],
+            keys=["qry_ra", "qry_dec", "qry_filt"],
         )

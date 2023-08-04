@@ -3,7 +3,9 @@ Functions to get image coordinates from WCS
 """
 import logging
 
+from astropy import units as u
 from astropy.io import fits
+from astropy.units import Quantity
 from astropy.wcs import WCS
 
 from mirar.data import Image
@@ -90,3 +92,18 @@ def write_regions_file(
         regions_f.write(f"{system}\n")
         for ind, x in enumerate(x_coords):
             regions_f.write(f"CIRCLE({x},{y_coords[ind]},{region_radius})\n")
+
+
+def get_image_dims_from_header(header: fits.Header) -> (Quantity, Quantity):
+    """
+    Get image dimensions from the header
+    Args:
+        header:
+
+    Returns:
+
+    """
+    nx, ny = header["NAXIS1"], header["NAXIS2"]
+    dx, dy = header["CD1_1"], header["CD2_2"]
+    img_dims = (dx * nx * u.deg, dy * ny * u.deg)
+    return img_dims
