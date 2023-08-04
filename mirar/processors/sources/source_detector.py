@@ -19,6 +19,7 @@ from mirar.paths import (
     LATEST_SAVE_KEY,
     NORM_PSFEX_KEY,
     REF_IMG_KEY,
+    SCI_IMG_KEY,
     UNC_IMG_KEY,
     XPOS_KEY,
     YPOS_KEY,
@@ -197,9 +198,8 @@ class SourceDetector(BaseSourceGenerator):
                 gain=1.0,
             )
 
-            sci_image_path = os.path.join(
-                self.get_sub_output_dir(), image[BASE_NAME_KEY]
-            )
+            sci_image_path = os.path.join(self.get_sub_output_dir(), image[SCI_IMG_KEY])
+
             ref_image_path = os.path.join(self.get_sub_output_dir(), image[REF_IMG_KEY])
             srcs_table = self.generate_candidates_table(
                 diff=image,
