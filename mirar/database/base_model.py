@@ -191,29 +191,6 @@ class BaseDB(PydanticBase):
         logger.debug(f"Return result {result}")
         return result
 
-    def get_sequence_keys(self) -> list:
-        """
-        Get sequence column instances of the sql_model table
-        Returns:
-        list of sequence keys
-        """
-        sequence_key_names = get_sequence_key_names_from_table(
-            db_name=self.sql_model.db_name,
-            db_table=self.sql_model.__tablename__,
-        )
-        sequence_keys = self.get_table_keys_from_names(key_names=sequence_key_names)
-        return sequence_keys
-
-    def get_table_keys_from_names(self, key_names: list | np.ndarray) -> list:
-        """
-        Function to get column instances from names of sql table columns
-        Args:
-            key_names:
-        Returns:
-            list
-        """
-        return [self.sql_model.__dict__[x] for x in key_names]
-
     def _update_entry(self, update_key_names=None) -> pd.DataFrame:
         """
         Update database entry
@@ -268,7 +245,6 @@ class BaseDB(PydanticBase):
         Returns:
             boolean
         """
-
         db_constraints = DBQueryConstraints(
             columns=keys, accepted_values=values, comparison_types="="
         )

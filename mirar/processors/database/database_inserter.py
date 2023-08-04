@@ -7,8 +7,6 @@ from abc import ABC
 import numpy as np
 
 from mirar.data import ImageBatch, SourceBatch
-from mirar.database.errors import DataBaseError
-from mirar.database.transactions import _insert_in_table
 from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor

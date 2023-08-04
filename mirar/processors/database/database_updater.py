@@ -8,7 +8,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from mirar.data import Image, ImageBatch
+from mirar.data import ImageBatch
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import _update_database_entry
 from mirar.database.utils import get_sequence_key_names_from_table
@@ -42,40 +42,10 @@ class ImageDatabaseUpdater(BaseDatabaseUpdater, BaseImageDatabaseSelector, ABC):
         batch: ImageBatch,
     ) -> ImageBatch:
         for image in batch:
-            query_constraints = self.get_constraints(image)
-
             val_dict = {key.lower(): image[key] for key in image.keys()}
-
             new = self.db_table(**val_dict)
-
-            update_dict = self.get_export_dict(image)
-            new.update_entry(update_keys=list(update_dict.keys()))
-
-            # res = new.update_entry()
-            #
-            # assert len(res) == 1
-            #
-            #
-            #
-            # _update_database_entry(
-            #     update_dict=update_dict,
-            #     db_constraints=query_constraints,
-            #     sql_table=self.db_table,
-            # )
-
+            new.update_entry(update_keys=self.db_alter_columns)
         return batch
-
-    def get_export_dict(self, image: Image) -> dict:
-        """
-        Create a dictionary to export the relevant fields to a database from an image
-
-        :param image: Image to export
-        :return: Dictionary of keys/values to export
-        """
-        new = {}
-        for key in self.db_alter_columns:
-            new[key] = image[key]
-        return new
 
 
 class ImageSequenceDatabaseUpdater(ImageDatabaseUpdater):
@@ -91,7 +61,7 @@ class ImageSequenceDatabaseUpdater(ImageDatabaseUpdater):
         """
         Function to get the constraints for a database query
 
-        :param data: Image to get constraints for
+        :param data: Image
         :return: Constraints for a database query
         """
         if self.sequence_key is None:
@@ -132,6 +102,7 @@ class ImageSequenceDatabaseUpdaterList(ImageSequenceDatabaseUpdater):
         batch: ImageBatch,
     ) -> ImageBatch:
         for image in batch:
+
             try:
                 data_array = [
                     [int(y) for y in image[x.lower()].split(",")]
@@ -149,16 +120,11 @@ class ImageSequenceDatabaseUpdaterList(ImageSequenceDatabaseUpdater):
             )
             logger.debug(data_df)
 
-            update_dict = self.get_export_dict(image)
+            #  Fixme I think this doesn't work
 
             for ind in range(len(data_df)):
                 row = data_df.iloc[ind]
-                query_constraints = self.get_constraints(row)
-
-                _update_database_entry(
-                    update_dict=update_dict,
-                    db_constraints=query_constraints,
-                    sql_table=self.db_table,
-                )
+                new = self.db_table(**row.to_dict())
+                new.update_entry(update_keys=self.db_alter_columns)
 
         return batch

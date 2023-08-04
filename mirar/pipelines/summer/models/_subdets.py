@@ -8,7 +8,7 @@ from sqlalchemy import Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
 from mirar.database.base_model import BaseDB
-from mirar.database.transactions import check_table_exists
+from mirar.database.transactions import is_populated
 from mirar.pipelines.summer.models.base_model import SummerBase
 
 DEFAULT_FIELD = 999999999
@@ -55,7 +55,7 @@ def populate_subdets(ndetectors: int = 1, nxtot: int = 1, nytot: int = 1):
     :param nytot: Number of splits in y direction
     :return: None
     """
-    if not check_table_exists(SubdetsTable):
+    if not is_populated(SubdetsTable):
         for ndetector in range(ndetectors):
             for nx in range(nxtot):
                 for ny in range(nytot):

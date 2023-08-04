@@ -107,5 +107,5 @@ class Proc(BaseDB):
         Returns:
 
         """
-        assert Raw.sql_model().exists(keys="rawid", values=field_value)
+        assert Raw._exists(keys="rawid", values=field_value)
         return field_value

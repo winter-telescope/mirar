@@ -12,7 +12,7 @@ from wintertoo.data import summer_fields
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.database.engine import get_engine
-from mirar.database.transactions import check_table_exists
+from mirar.database.transactions import is_populated
 from mirar.pipelines.summer.models.base_model import SummerBase
 
 DEFAULT_FIELD = 999999999
@@ -60,7 +60,7 @@ def populate_fields():
     """
 
     engine = get_engine(db_name=FieldsTable.db_name)
-    if not check_table_exists(FieldsTable):
+    if not is_populated(FieldsTable):
         chunk = 10000
 
         summer_fields["fieldid"] = summer_fields["ID"]

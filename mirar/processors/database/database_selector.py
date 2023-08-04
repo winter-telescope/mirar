@@ -27,12 +27,10 @@ class BaseDatabaseSelector(BaseDatabaseProcessor, ABC):
         self,
         *args,
         boolean_match_key: Optional[str] = None,
-        q3c_bool: bool = False,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.boolean_match_key = boolean_match_key
-        self.q3c_bool = q3c_bool
 
 
 def update_header_with_single_match(data: DataBlock, res: list[dict]) -> DataBlock:
@@ -188,11 +186,17 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
         """
         raise NotImplementedError()
 
-    def get_source_constraints(self, cand: pd.Series) -> DBQueryConstraints:
+    def get_source_constraints(self, source: pd.Series) -> DBQueryConstraints:
+        """
+        Apply constraints to a single source, using q3c
+        
+        :param source: Source
+        :return: DBQueryConstraints
+        """
         query_constraints = DBQueryConstraints()
         query_constraints.add_q3c_constraint(
-            ra=cand["ra"],
-            dec=cand["dec"],
+            ra=source["ra"],
+            dec=source["dec"],
             ra_field_name=self.ra_field_name,
             dec_field_name=self.dec_field_name,
             crossmatch_radius_arcsec=self.xmatch_radius_arcsec,

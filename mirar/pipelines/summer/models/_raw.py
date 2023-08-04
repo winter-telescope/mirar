@@ -77,5 +77,5 @@ class Raw(BaseDB):
         Returns:
 
         """
-        assert Exposure.sql_model().exists(keys="uexpid", values=field_value)
+        assert Exposure._exists(keys="uexpid", values=field_value)
         return field_value

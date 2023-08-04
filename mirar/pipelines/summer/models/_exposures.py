@@ -6,6 +6,7 @@ import logging
 from datetime import date, datetime
 from typing import ClassVar
 
+import pandas as pd
 from pydantic import Field
 from sqlalchemy import (  # event,
     VARCHAR,
@@ -24,7 +25,7 @@ from mirar.pipelines.summer.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.summer.models._filters import FiltersTable, fid_field
 from mirar.pipelines.summer.models._img_type import ImgTypesTable
 from mirar.pipelines.summer.models._nights import Night, NightsTable
-from mirar.pipelines.summer.models._programs import ProgramsTable, default_program
+from mirar.pipelines.summer.models._programs import Program, default_program
 from mirar.pipelines.summer.models.base_model import SummerBase
 
 logger = logging.getLogger(__name__)
@@ -149,7 +150,7 @@ class Exposure(BaseDB):
     altitude: float = alt_field
     azimuth: float = az_field
 
-    def insert_entry(self, returning_key_names=None) -> tuple:
+    def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
 
@@ -160,14 +161,8 @@ class Exposure(BaseDB):
             night.insert_entry()
 
         logger.debug(f"puid: {self.puid}")
-        if not ProgramsTable().exists(values=self.puid, keys="puid"):
-            default_puid = ProgramsTable().select_query(
-                compare_values=default_program.progname,
-                compare_keys="progname",
-                select_keys="puid",
-            )[0][0]
-            logger.debug(f"Found progid {default_puid}")
-            self.puid = default_puid
+        if not Program._exists(values=self.puid, keys="puid"):
+            self.puid = 0
 
         return self._insert_entry()
 
@@ -177,4 +172,4 @@ class Exposure(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.expid, keys="expid")
+        return self._exists(values=self.expid, keys="expid")
