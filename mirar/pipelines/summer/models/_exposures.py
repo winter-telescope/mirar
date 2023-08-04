@@ -65,26 +65,26 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
 
     timeutc = Column(DateTime(timezone=True))
 
-    AExpTime = Column(Float, nullable=False)
-    expMJD = Column(Float, nullable=False)
+    aexptime = Column(Float, nullable=False)
+    expmjd = Column(Float, nullable=False)
     airmass = Column(Float)
     shutopen = Column(DateTime(timezone=True))
     shutclsd = Column(DateTime(timezone=True))
     tempture = Column(Float, default=-999)
     windspd = Column(Float, default=-999)
-    Dewpoint = Column(Float, default=-999)
-    Humidity = Column(Float, default=-999)
-    Pressure = Column(Float, default=-999)
-    Moonra = Column(Float, default=-999)
-    Moondec = Column(Float, default=-999)
-    Moonillf = Column(Float, default=-999)
-    Moonphas = Column(Float, default=-999)
-    Moonaz = Column(Float, default=-999)
-    Moonalt = Column(Float, default=-999)
-    Sunaz = Column(Float, default=-999)
-    Sunalt = Column(Float, default=-999)
-    Detsoft = Column(VARCHAR(50), default="unknown")
-    Detfirm = Column(VARCHAR(50), default="unknown")
+    dewpoint = Column(Float, default=-999)
+    humidity = Column(Float, default=-999)
+    pressure = Column(Float, default=-999)
+    moonra = Column(Float, default=-999)
+    moondec = Column(Float, default=-999)
+    moonillf = Column(Float, default=-999)
+    moonphas = Column(Float, default=-999)
+    moonaz = Column(Float, default=-999)
+    moonalt = Column(Float, default=-999)
+    sunaz = Column(Float, default=-999)
+    sunalt = Column(Float, default=-999)
+    detsoft = Column(VARCHAR(50), default="unknown")
+    detfirm = Column(VARCHAR(50), default="unknown")
     ra = Column(Float)
     dec = Column(Float)
     altitude = Column(Float)
@@ -125,26 +125,26 @@ class Exposure(BaseDB):
     puid: int = Field(ge=0)
 
     timeutc: datetime = Field()
-    AExpTime: float = Field(ge=0)
-    expMJD: float = Field(ge=59000)
+    aexptime: float = Field(ge=0)
+    expmjd: float = Field(ge=59000)
     airmass: float = Field(ge=1.0)
     shutopen: datetime = Field()
     shutclsd: datetime = Field()
     tempture: float = default_unknown_field
     windspd: float = default_unknown_field
-    Dewpoint: float = default_unknown_field
-    Humidity: float = default_unknown_field
-    Pressure: float = default_unknown_field
-    Moonra: float = Field(ge=0.0, le=360.0, default=None)
-    Moondec: float = Field(title="Dec (degrees)", ge=-90.0, le=90, default=None)
-    Moonillf: float = default_unknown_field
-    Moonphas: float = default_unknown_field
-    Moonaz: float = default_unknown_field
-    Moonalt: float = default_unknown_field
-    Sunaz: float = default_unknown_field
-    Sunalt: float = default_unknown_field
-    Detfirm: str = Field(default="unknown")
-    Detsoft: str = Field(default="unknown")
+    dewpoint: float = default_unknown_field
+    humidity: float = default_unknown_field
+    pressure: float = default_unknown_field
+    moonra: float = Field(ge=0.0, le=360.0, default=None)
+    moondec: float = Field(title="Dec (degrees)", ge=-90.0, le=90, default=None)
+    moonillf: float = default_unknown_field
+    moonphas: float = default_unknown_field
+    moonaz: float = default_unknown_field
+    moonalt: float = default_unknown_field
+    sunaz: float = default_unknown_field
+    sunalt: float = default_unknown_field
+    detfirm: str = Field(default="unknown")
+    detsoft: str = Field(default="unknown")
     ra: float = ra_field
     dec: float = dec_field
     altitude: float = alt_field
