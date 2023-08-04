@@ -42,7 +42,7 @@ class Filter(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.fid, keys="fid")
+        return self._exists(values=self.fid, keys="fid")
 
     @validator("fid")
     @classmethod

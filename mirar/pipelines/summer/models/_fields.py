@@ -10,8 +10,9 @@ from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 from wintertoo.data import summer_fields
 
-from mirar.database.base_model import BaseDB, _exists, dec_field, ra_field
+from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.database.engine import get_engine
+from mirar.database.transactions import check_table_exists
 from mirar.pipelines.summer.models.base_model import SummerBase
 
 DEFAULT_FIELD = 999999999
@@ -59,7 +60,7 @@ def populate_fields():
     """
 
     engine = get_engine(db_name=FieldsTable.db_name)
-    if not _exists(Select(FieldsTable), engine=engine):
+    if not check_table_exists(FieldsTable):
         chunk = 10000
 
         summer_fields["fieldid"] = summer_fields["ID"]

@@ -5,7 +5,7 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import VARCHAR, Column, Double, Float, ForeignKey, Integer, Sequence
+from sqlalchemy import VARCHAR, BigInteger, Column, Float, ForeignKey, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.database.base_model import BaseDB
@@ -22,9 +22,12 @@ class RawTable(WinterBase):  # pylint: disable=too-few-public-methods
     __table_args__ = {"extend_existing": True}
 
     urawid = Column(
-        Integer, Sequence(start=1, name="raw_urawid_seq"), autoincrement=True
+        Integer,
+        Sequence(start=1, name="raw_urawid_seq"),
+        autoincrement=True,
+        primary_key=True,
     )
-    rawid = Column(Double, primary_key=True, unique=True, autoincrement=False)
+    rawid = Column(BigInteger, primary_key=False, unique=True, autoincrement=False)
 
     uexpid: Mapped[int] = mapped_column(ForeignKey("exposures.uexpid"))
     exposure_ids: Mapped["ExposuresTable"] = relationship(back_populates="raw")
@@ -82,5 +85,5 @@ class Raw(BaseDB):
         Returns:
 
         """
-        assert Exposure.sql_model().exists(keys="uexpid", values=field_value)
+        assert Exposure._exists(keys="uexpid", values=field_value)
         return field_value

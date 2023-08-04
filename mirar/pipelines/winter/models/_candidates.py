@@ -5,14 +5,23 @@ import logging
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import VARCHAR, Boolean, Column, Float, ForeignKey, Integer, Sequence
+from sqlalchemy import (
+    VARCHAR,
+    BigInteger,
+    Boolean,
+    Column,
+    Float,
+    ForeignKey,
+    Integer,
+    Sequence,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.pipelines.winter.models._diff import DiffsTable
 from mirar.pipelines.winter.models._fields import fieldid_field
 from mirar.pipelines.winter.models._filters import fid_field
-from mirar.pipelines.winter.models._programs import ProgramsTable, default_program
+from mirar.pipelines.winter.models._programs import prog_field
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 logger = logging.getLogger(__name__)
@@ -35,19 +44,19 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     # Core fields
     candid = Column(
-        Integer,
-        Sequence(name="candidates_uexpid_seq", start=1, increment=1),
+        BigInteger,
+        Sequence(name="candidates_candid_seq", start=1, increment=1),
         unique=True,
         autoincrement=True,
         primary_key=True,
     )
-    objectid = Column(VARCHAR(40), nullable=False, unique=True)
+    objectid = Column(VARCHAR(40), nullable=False, unique=False)
     deprecated = Column(Boolean, nullable=False, default=False)
     jd = Column(Float, nullable=False)
 
     # Image properties
 
-    diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))
+    # diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))  #FIXME
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
     exptime = Column(Float, nullable=False)
@@ -67,26 +76,26 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     # Zero point properties
 
-    magzpsci = Column(Float, nullable=False)
-    magzpsciunc = Column(Float, nullable=False)
-    magzpscirms = Column(Float, nullable=False)
+    magzpsci = Column(Float, nullable=True)
+    magzpsciunc = Column(Float, nullable=True)
+    magzpscirms = Column(Float, nullable=True)
 
     # Photometry properties
 
-    diffmaglim = Column(Float, nullable=False)
+    diffmaglim = Column(Float, nullable=True)
 
     magpsf = Column(Float, nullable=False)
     sigmapsf = Column(Float, nullable=False)
-    chipsf = Column(Float, nullable=False)
+    chipsf = Column(Float, nullable=True)
 
-    magap = Column(Float, nullable=False)
-    sigmagap = Column(Float, nullable=False)
+    magap = Column(Float, nullable=True)
+    sigmagap = Column(Float, nullable=True)
 
-    magapbig = Column(Float, nullable=False)
-    sigmagapbig = Column(Float, nullable=False)
+    magapbig = Column(Float, nullable=True)
+    sigmagapbig = Column(Float, nullable=True)
 
-    magdiff = Column(Float, nullable=False)
-    magfromlim = Column(Float, nullable=False)
+    magdiff = Column(Float, nullable=True)
+    magfromlim = Column(Float, nullable=True)
 
     # Diagnostic properties
 
@@ -97,24 +106,24 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     xpos = Column(Float, nullable=True)
     ypos = Column(Float, nullable=True)
 
-    sky = Column(Float, nullable=False)
+    sky = Column(Float, nullable=True)
     fwhm = Column(Float, nullable=False)
-    mindtoedge = Column(Float, nullable=False)
-    seeratio = Column(Float, nullable=False)
+    mindtoedge = Column(Float, nullable=True)
+    seeratio = Column(Float, nullable=True)
     aimage = Column(Float, nullable=False)
     bimage = Column(Float, nullable=False)
     aimagerat = Column(Float, nullable=False)
     bimagerat = Column(Float, nullable=False)
     elong = Column(Float, nullable=False)
-    nneg = Column(Integer, nullable=False)
-    nbad = Column(Integer, nullable=False)
-    sumrat = Column(Float, nullable=False)
+    nneg = Column(Integer, nullable=True)
+    nbad = Column(Integer, nullable=True)
+    sumrat = Column(Float, nullable=True)
 
     # Diff/ZOGY properties
 
-    dsnrms = Column(Float, nullable=False)
-    ssnrms = Column(Float, nullable=False)
-    dsdiff = Column(Float, nullable=False)
+    dsnrms = Column(Float, nullable=True)
+    ssnrms = Column(Float, nullable=True)
+    dsdiff = Column(Float, nullable=True)
 
     scorr = Column(Float, nullable=False)
 
@@ -159,6 +168,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     simag3 = Column(Float, nullable=True)
     szmag3 = Column(Float, nullable=True)
     distpsnr3 = Column(Float, nullable=True)
+    sgscore3 = Column(Float, nullable=True)
 
     # 2Mass properties
 
@@ -197,12 +207,12 @@ class Candidate(BaseDB):
 
     jd: float = Field(ge=0)
 
-    diffid: int = Field(ge=0)
+    # diffid: int | None = Field(ge=0, default=None) # D
 
     fid: int = fid_field
     exptime: float = Field(ge=0)
 
-    progname: str = Field(min_length=8)
+    progname: str = Field(min_length=8, max_length=8, example="2020A000")
 
     isdiffpos: bool = Field(default=True)
 
@@ -211,18 +221,24 @@ class Candidate(BaseDB):
     ra: float = ra_field
     dec: float = dec_field
 
+    magzpsci: float | None = Field(default=None)
+    magzpsciunc: float | None = Field(ge=0, default=None)
+    magzpscirms: float | None = Field(ge=0, default=None)
+
+    diffmaglim: float | None = Field(default=None)
+
     magpsf: float = Field()
     sigmapsf: float = Field(ge=0)
-    chipsf: float = Field(ge=0)
+    chipsf: float | None = Field(ge=0, default=None)
 
-    magap: float = Field()
-    sigmagap: float = Field(ge=0)
+    magap: float | None = Field(default=None)
+    sigmagap: float | None = Field(ge=0, default=None)
 
-    magapbig: float = Field()
-    sigmagapbig: float = Field(ge=0)
+    magapbig: float | None = Field(default=None)
+    sigmagapbig: float | None = Field(ge=0, default=None)
 
-    magdiff: float = Field()
-    magfromlim: float = Field()
+    magdiff: float | None = Field(default=None)
+    magfromlim: float | None = Field(default=None)
 
     distnr: float | None = Field(ge=0, default=None)
     magnr: float | None = Field(ge=0, default=None)
@@ -231,22 +247,22 @@ class Candidate(BaseDB):
     xpos: float | None = Field(ge=0, default=None)
     ypos: float | None = Field(ge=0, default=None)
 
-    sky: float = Field(ge=0)
+    sky: float | None = Field(ge=0, default=None)
     fwhm: float = Field(ge=0)
-    mindtoedge: float = Field(ge=0)
-    seeratio: float = Field(ge=0)
+    mindtoedge: float | None = Field(ge=0, default=None)
+    seeratio: float | None = Field(ge=0, default=None)
     aimage: float = Field(ge=0)
     bimage: float = Field(ge=0)
     aimagerat: float = Field(ge=0)
     bimagerat: float = Field(ge=0)
     elong: float = Field(ge=0)
-    nneg: int = Field(ge=0)
-    nbad: int = Field(ge=0)
-    sumrat: float = Field(ge=0)
+    nneg: int | None = Field(ge=0, default=None)
+    nbad: int | None = Field(ge=0, default=None)
+    sumrat: float | None = Field(ge=0, default=None)
 
-    dsnrms: float = Field(ge=0)
-    ssnrms: float = Field(ge=0)
-    dsdiff: float = Field(ge=0)
+    dsnrms: float | None = Field(ge=0, default=None)
+    ssnrms: float | None = Field(ge=0, default=None)
+    dsdiff: float | None = Field(ge=0, default=None)
 
     scorr: float = Field(ge=0)
 
@@ -259,9 +275,9 @@ class Candidate(BaseDB):
 
     tooflag: bool = Field(default=False)
 
-    objectidps1: str | None = Field(min_length=min_name_length, default=None)
-    objectidps2: str | None = Field(min_length=min_name_length, default=None)
-    objectidps3: str | None = Field(min_length=min_name_length, default=None)
+    psobjectid1: str | None = Field(min_length=min_name_length, default=None)
+    psobjectid2: str | None = Field(min_length=min_name_length, default=None)
+    psobjectid3: str | None = Field(min_length=min_name_length, default=None)
 
     sgmag1: float | None = Field(ge=0, default=None)
     srmag1: float | None = Field(ge=0, default=None)
@@ -291,26 +307,26 @@ class Candidate(BaseDB):
 
     # TODO jd validate
 
-    def insert_entry(self, returning_key_names=None) -> tuple:
-        """
-        Insert the pydantic-ified data into the corresponding sql database
+    # def insert_entry(self, returning_key_names=None) -> tuple:  # FIXME
+    #     """
+    #     Insert the pydantic-ified data into the corresponding sql database
+    #
+    #     :return: None
+    #     """
+    #
+    #     if not ProgramsTable().exists(values=self.progname, keys="progname"):
+    #         self.progname = default_program.progname
+    #
+    #     return self._insert_entry()
 
-        :return: None
-        """
-
-        if not ProgramsTable().exists(values=self.progname, keys="progname"):
-            self.progname = default_program.progname
-
-        return self._insert_entry()
-
-    @validator("diffid")
-    @classmethod
-    def validate_diffid(cls, field_value: int):
-        """
-        Ensure that expid exists in exposures table
-
-        :param field_value: field value
-        :return: field value
-        """
-        assert DiffsTable.exists(keys="diffid", values=field_value)
-        return field_value
+    # @validator("diffid") # FIXME
+    # @classmethod
+    # def validate_diffid(cls, field_value: int):
+    #     """
+    #     Ensure that expid exists in exposures table
+    #
+    #     :param field_value: field value
+    #     :return: field value
+    #     """
+    #     assert DiffsTable.exists(keys="diffid", values=field_value)
+    #     return field_value

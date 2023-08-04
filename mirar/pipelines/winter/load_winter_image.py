@@ -148,6 +148,12 @@ def clean_header(header: fits.Header) -> fits.Header:
     if header["PROGNAME"] == "":
         header["PROGNAME"] = default_program.progname
 
+    if len(header["PROGNAME"]) != 8:
+        logger.warning(
+            f"PROGNAME {header['PROGNAME']} is not 8 characters long. Replacing with default."
+        )
+        header["PROGNAME"] = default_program.progname
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
         header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")

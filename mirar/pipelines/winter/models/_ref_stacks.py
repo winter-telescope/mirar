@@ -64,7 +64,7 @@ class RefStack(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(
+        return self._exists(
             values=[self.ra_cent, self.dec_cent], keys=["ra_cent", "dec_cent"]
         )
 

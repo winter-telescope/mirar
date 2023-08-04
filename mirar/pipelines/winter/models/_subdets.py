@@ -7,8 +7,9 @@ from pydantic import Field
 from sqlalchemy import Column, Integer, Select
 from sqlalchemy.orm import Mapped, relationship
 
-from mirar.database.base_model import BaseDB, _exists
+from mirar.database.base_model import BaseDB
 from mirar.database.engine import get_engine
+from mirar.database.transactions import is_populated
 from mirar.pipelines.winter.constants import subdets
 from mirar.pipelines.winter.models.base_model import WinterBase
 
@@ -52,8 +53,7 @@ def populate_subdets():
     Creates entries in the database based on number of detectors and splits
 
     """
-    engine = get_engine(db_name=SubdetsTable.db_name)
-    if not _exists(Select(SubdetsTable), engine=engine):
+    if not is_populated(SubdetsTable):
         for _, row in subdets.iterrows():
             new = Subdet(
                 boardid=row["boardid"],

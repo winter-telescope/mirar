@@ -3,17 +3,20 @@ Module containing a processor for assigning names to sources
 """
 import logging
 
+import numpy as np
 from astropy.time import Time
+from sqlalchemy import select, text
 
 from mirar.data import SourceBatch
-from mirar.paths import CAND_NAME_KEY
-from mirar.processors.base_processor import BaseSourceProcessor
-from mirar.processors.database import BaseDatabaseProcessor
+from mirar.database.transactions.select import run_select, select_from_table
+from mirar.paths import CAND_NAME_KEY, SOURCE_HISTORY_KEY
+from mirar.processors.database import DatabaseHistorySelector
+from mirar.processors.database.database_selector import DatabaseSourceSelector
 
 logger = logging.getLogger(__name__)
 
 
-class CandidateNamer(BaseDatabaseProcessor, BaseSourceProcessor):
+class CandidateNamer(DatabaseSourceSelector):
     """Processor to sequentially assign names to sources, of the form a, aa, aba..."""
 
     base_key = "namer"
@@ -31,7 +34,7 @@ class CandidateNamer(BaseDatabaseProcessor, BaseSourceProcessor):
         date_field: str = "jd",
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(db_output_columns=[db_name_field], **kwargs)
         self.db_name_field = db_name_field
         self.db_order_field = db_order_field
         self.base_name = base_name
@@ -86,18 +89,18 @@ class CandidateNamer(BaseDatabaseProcessor, BaseSourceProcessor):
         """
         cand_year = Time(cand_jd, format="jd").datetime.year % 1000
         if last_name is None:
-            query = (
-                f'SELECT "{self.db_name_field}" FROM {self.db_table} '
-                f"ORDER BY {self.db_order_field} desc LIMIT 1;"
+            res = run_select(
+                query=select(getattr(self.db_table.sql_model, self.db_name_field))
+                .order_by(text(f"{self.db_order_field} desc"))
+                .limit(1),
+                sql_table=self.db_table.sql_model,
             )
-
-            res = self.pg_user.execute_query(query, db_name=self.db_name)
 
             if len(res) == 0:
                 name = self.base_name + str(cand_year) + self.name_start
                 return name
 
-            last_name = res[0][0]
+            last_name = res[CAND_NAME_KEY].iloc[0]
             logger.debug(res)
 
         last_year = int(last_name[len(self.base_name) : len(self.base_name) + 2])
@@ -110,54 +113,45 @@ class CandidateNamer(BaseDatabaseProcessor, BaseSourceProcessor):
         logger.debug(f"Assigning name: {name}")
         return name
 
-    def is_detected_previously(self, ra_deg: float, dec_deg: float) -> tuple[bool, str]:
-        """
-        Checks whether a source has been detected previously
-
-        :param ra_deg: ra (deg)
-        :param dec_deg: dec (deg)
-        :return: boolean whether a source has been detected previously
-        """
-        name = self.pg_user.crossmatch_with_database(
-            db_name=self.db_name,
-            db_table=self.db_table,
-            db_output_columns=[self.db_name_field],
-            num_limit=1,
-            ra=ra_deg,
-            dec=dec_deg,
-            crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
-        )  # [0]
-        return len(name) > 0, name
-
     def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
         for source_table in batch:
-            candidate_table = source_table.get_data()
+            sources = source_table.get_data()
+
+            assert (
+                SOURCE_HISTORY_KEY in sources.columns
+            ), "No candidate history in source table"
 
             names = []
             lastname = None
-            for ind in range(len(candidate_table)):
-                cand = candidate_table.loc[ind]
-                if len(cand["prv_candidates"]) > 0:
-                    cand_name = cand["prv_candidates"][0][self.db_name_field]
+            for _, source in sources.iterrows():
+                if len(source[SOURCE_HISTORY_KEY]) > 0:
+                    source_name = source[SOURCE_HISTORY_KEY].iloc[0][self.db_name_field]
 
                 else:
-                    prv_det, prv_name = self.is_detected_previously(
-                        cand["ra"], cand["dec"]
+                    source_name = self.get_next_name(
+                        source[self.date_field], last_name=lastname
                     )
+                    lastname = source_name
+                names.append(source_name)
 
-                    if prv_det:
-                        cand_name = prv_name
-                    else:
-                        cand_name = self.get_next_name(
-                            cand[self.date_field], last_name=lastname
-                        )
-                    lastname = cand_name
-                names.append(cand_name)
-
-            candidate_table[self.db_name_field] = names
-            source_table.set_data(candidate_table)
+            sources[self.db_name_field] = names
+            source_table.set_data(sources)
 
         return batch
+
+    def check_prerequisites(
+        self,
+    ):
+        check = np.sum(
+            [isinstance(x, DatabaseHistorySelector) for x in self.preceding_steps]
+        )
+        if check < 1:
+            err = (
+                f"{self.__module__} requires {DatabaseHistorySelector} as a prerequisite. "
+                f"However, the following steps were found: {self.preceding_steps}."
+            )
+            logger.error(err)
+            raise ValueError(err)

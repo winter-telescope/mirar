@@ -5,6 +5,7 @@ from mirar.catalog.kowalski import PS1, TMASS
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
+    CAND_NAME_KEY,
     DITHER_N_KEY,
     EXPTIME_KEY,
     MAX_DITHER_KEY,
@@ -404,7 +405,7 @@ process_candidates = [
         time_field_name="jd",
         history_duration_days=500.0,
         db_table=Candidate,
-        db_output_columns=prv_candidate_cols,
+        db_output_columns=prv_candidate_cols + [CAND_NAME_KEY],
         q3c_bool=False,
     ),
     CandidateNamer(

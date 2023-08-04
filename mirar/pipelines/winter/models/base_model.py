@@ -6,7 +6,7 @@ from datetime import date
 from pydantic import Field
 from sqlalchemy.orm import DeclarativeBase
 
-from mirar.database.base_model import BaseTable
+from mirar.database.base_table import BaseTable
 
 DB_NAME = "winter"
 

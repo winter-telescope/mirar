@@ -7,7 +7,7 @@ from typing import Type, Union
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase
 
-from mirar.database.base_model import BaseTable
+from mirar.database.base_table import BaseTable
 from mirar.database.credentials import DB_PASSWORD, DB_USER
 from mirar.database.engine import get_engine
 from mirar.database.q3c import create_q3c_extension
@@ -128,7 +128,7 @@ def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
 if DB_USER is not None:
     setup_database(db_base=WinterBase)
 
-    for table in [ExposuresTable]:
+    for table in [ExposuresTable, CandidatesTable]:
         set_up_q3c(db_name=WinterBase.db_name, db_table=table)
 
     populate_fields()

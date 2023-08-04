@@ -7,7 +7,8 @@ from abc import ABC
 import numpy as np
 
 from mirar.data import ImageBatch, SourceBatch
-from mirar.database.transactions import insert_in_table
+from mirar.database.errors import DataBaseError
+from mirar.database.transactions import _insert_in_table
 from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
@@ -46,14 +47,15 @@ class DatabaseImageInserter(BaseDatabaseInserter, BaseImageProcessor):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         for image in batch:
-            primary_keys, primary_key_values = insert_in_table(
-                image,
-                db_table=self.db_table,
-                duplicate_protocol=self.duplicate_protocol,
-            )
+            val_dict = {key.lower(): image[key] for key in image.keys()}
 
-            for ind, key in enumerate(primary_keys):
-                image[key] = primary_key_values[ind]
+            new = self.db_table(**val_dict)
+            res = new.insert_entry()
+
+            assert len(res) == 1
+
+            for key in res.columns:
+                image[key] = res[key].iloc[0]
         return batch
 
 
@@ -65,18 +67,21 @@ class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
     def _apply_to_sources(self, batch: SourceBatch) -> SourceBatch:
         for source_list in batch:
             candidate_table = source_list.get_data()
+            metadata = source_list.get_metadata()
 
             primary_key_dict = {}
             for _, candidate_row in candidate_table.iterrows():
-                primary_keys, primary_key_values = insert_in_table(
-                    candidate_row.to_dict(),
-                    db_table=self.db_table,
+                # Use metadata and row, but for any duplicated keys,
+                # use the value in the candidate row rather than metadata
+                super_dict = {key.lower(): val for key, val in metadata.items()}
+                super_dict.update(
+                    {key.lower(): val for key, val in candidate_row.to_dict().items()}
                 )
-                for ind, key in enumerate(primary_keys):
-                    if key not in primary_key_dict:
-                        primary_key_dict[key] = [primary_key_values[ind]]
-                    else:
-                        primary_key_dict[key].append(primary_key_values[ind])
+
+                new = self.db_table(**super_dict)
+                res = new.insert_entry()
+
+                assert len(res) == 1
 
             for key, val in primary_key_dict.items():
                 candidate_table[key] = val
@@ -117,15 +122,19 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
 
         image = batch[0]
         logger.debug(f"Trying to export {[image[x] for x in column_names]}")
-        primary_keys, primary_key_values = insert_in_table(
-            image,
-            db_table=self.db_table,
-            duplicate_protocol=self.duplicate_protocol,
-        )
 
-        for ind, key in enumerate(primary_keys):
+        val_dict = {key.lower(): image[key] for key in image.keys()}
+
+        new = self.db_table(**val_dict)
+        res = new.insert_entry()
+
+        assert len(res) == 1
+
+        for key in res.columns:
+            val = res[key].iloc[0]
             for image in batch:
-                image[key] = primary_key_values[ind]
+                image[key] = val
+
         return batch
 
     def check_prerequisites(

@@ -6,10 +6,18 @@ from datetime import date
 from typing import ClassVar, Type
 
 import numpy as np
+import pandas as pd
+from psycopg import errors
 from pydantic import BaseModel, Extra, Field, root_validator, validator
-from sqlalchemy import Insert, Select, Table, Update, and_, inspect, select
+from sqlalchemy import Column, Insert, Table, Update, inspect
+from sqlalchemy.exc import IntegrityError
 
+from mirar.database.constants import POSTGRES_DUPLICATE_PROTOCOLS
+from mirar.database.constraints import DBQueryConstraints
 from mirar.database.engine import get_engine
+from mirar.database.transactions import select_from_table
+from mirar.database.transactions.insert import _insert_in_table
+from mirar.database.transactions.update import _update_database_entry
 from mirar.database.utils import get_sequence_key_names_from_table
 
 logger = logging.getLogger(__name__)
@@ -25,7 +33,7 @@ class PydanticBase(BaseModel):
         Config
         """
 
-        extra = Extra.forbid
+        extra = Extra.ignore
 
 
 class BaseDB(PydanticBase):
@@ -62,40 +70,122 @@ class BaseDB(PydanticBase):
             raise ValueError(err)
         return value
 
-    def _insert_entry(self, returning_key_names: list = None) -> tuple:
+    def _insert_entry(
+        self,
+        returning_key_names: str | list[str] = None,
+        duplicate_protocol: str = "ignore",
+    ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
-        :return: sequence_key_names, sequence_key_values of the updated entry
+
+        :return: sequence_key dataframe
         """
+
+        assert duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
+
+        primary_key_name = self.get_primary_key()
+
         if returning_key_names is None:
-            returning_keys = self.get_sequence_keys()
-        else:
-            if not isinstance(returning_key_names, list):
-                returning_key_names = [returning_key_names]
+            returning_key_names = self.get_primary_key()
 
-            returning_keys = self.get_table_keys_from_names(returning_key_names)
+        if not isinstance(returning_key_names, list):
+            returning_key_names = [returning_key_names]
 
-        logger.debug(f"Returning keys {returning_keys}")
-        stmt = Insert(self.sql_model).values(**self.dict()).returning(*returning_keys)
-        engine = get_engine(db_name=self.sql_model.db_name)
-        with engine.connect() as conn:
-            res = conn.execute(stmt)
-            conn.commit()
+        try:
+            res = _insert_in_table(
+                new_entry=self.dict(),
+                sql_table=self.sql_model,
+                returning_keys=returning_key_names,
+            )
+        except IntegrityError as exc:
+            if not isinstance(exc.orig, errors.UniqueViolation):
+                raise exc
 
-        if len(returning_keys) == 0:
-            returning_values = []
-        else:
-            returning_values = res.fetchall()[0]
-        logger.debug(returning_values)
+            db_name = self.sql_model.db_name
 
-        returning_key_names = [x.key for x in returning_keys]
-        assert len(returning_values) == len(returning_key_names)
-        return returning_key_names, returning_values
+            if duplicate_protocol == "fail":
+                err = (
+                    f"Duplicate error, entry with {self.dict()} "
+                    f"already exists in {self.sql_model.name}."
+                )
+                logger.error(err)
+                raise errors.UniqueViolation from exc
 
-    def insert_entry(self, returning_key_names: str | list = None):
+            elif duplicate_protocol == "ignore":
+                logger.debug(
+                    f"Found duplicate entry in - "
+                    f"{str(exc)}."
+                    f"Ignoring, no new entry made."
+                )
+
+                present_unique_keys = self.get_available_unique_keys()
+
+                assert len(present_unique_keys) > 0
+
+                constraints = DBQueryConstraints(
+                    columns=[x.name for x in present_unique_keys],
+                    accepted_values=[self.dict()[x.name] for x in present_unique_keys],
+                )
+
+                res = select_from_table(
+                    sql_table=self.sql_model,
+                    db_constraints=constraints,
+                    output_columns=returning_key_names,
+                )
+
+            elif duplicate_protocol == "replace":
+                logger.debug(f"Conflict at {exc.orig.diag.constraint_name}")
+                logger.debug(
+                    f"Found duplicate entry in {db_name} - "
+                    f"{str(exc)}."
+                    f"Replacing with a new entry."
+                )
+                res = self.update_entry(
+                    primary_key_val=primary_key_name,
+                    returning_key_names=returning_key_names,
+                )
+
+            else:
+                raise ValueError(
+                    f"duplicate_protocol {duplicate_protocol} not recognized"
+                )
+
+        return res
+
+    def get_primary_key(self) -> str:
+        """
+        Get the primary key of the table
+        Returns:
+        primary key
+        """
+        primary_key = inspect(self.sql_model).primary_key[0]
+        return primary_key.name
+
+    def get_unique_keys(self) -> list[Column]:
+        """
+        Get the unique key of the table
+        Returns:
+        unique key
+        """
+        cols = [x for x in self.sql_model.__table__.columns if x.unique]
+        return cols
+
+    def get_available_unique_keys(self) -> list[Column]:
+        """
+        Get the unique keys of the table which are present in the data
+
+        :return: unique keys
+        """
+        return [x for x in self.get_unique_keys() if x.name in self.dict()]
+
+    def insert_entry(
+        self, returning_key_names: str | list[str] | None = None
+    ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
-        :return: sequence_key_names, sequence_key_values of the updated entry
+
+        :param returning_key_names: names of the keys to return
+        :return: dataframe of the sequence keys
         """
         result = self._insert_entry(returning_key_names=returning_key_names)
         logger.debug(f"Return result {result}")
@@ -124,7 +214,7 @@ class BaseDB(PydanticBase):
         """
         return [self.sql_model.__dict__[x] for x in key_names]
 
-    def _update_entry(self, primary_key_val, update_key_names=None) -> tuple:
+    def _update_entry(self, update_key_names=None) -> pd.DataFrame:
         """
         Update database entry
         Args:
@@ -133,43 +223,29 @@ class BaseDB(PydanticBase):
         Returns:
             sequence_key_names, sequence_key_values of the updated entry
         """
-        primary_key = inspect(self.sql_model).primary_key[0]
 
-        if update_key_names is None:
-            update_key_names = [x for x in self.dict() if x != primary_key.name]
+        available_unique_keys = self.get_available_unique_keys()
 
-        update_keys = self.get_table_keys_from_names(update_key_names)
-        update_vals = [self.dict()[x] for x in update_key_names]
+        assert len(available_unique_keys) > 0
 
-        returning_keys = self.get_sequence_keys()
-
-        update_dict = {}
-        for x, key in enumerate(update_keys):
-            update_dict[key.key] = update_vals[x]
-
-        stmt = (
-            Update(self.sql_model)
-            .values(**update_dict)
-            .where(primary_key == primary_key_val)
-            .returning(*returning_keys)
+        constraints = DBQueryConstraints(
+            columns=[x.name for x in available_unique_keys],
+            accepted_values=[self.dict()[x.name] for x in available_unique_keys],
         )
 
-        logger.debug(stmt)
-        engine = get_engine(db_name=self.sql_model.db_name)
-        with engine.connect() as conn:
-            res = conn.execute(stmt)
-            conn.commit()
+        full_dict = self.dict()
 
-        if len(returning_keys) == 0:
-            returning_values = []
-        else:
-            returning_values = res.fetchall()[0]
-        returning_key_names = [x.key for x in returning_keys]
-        logger.debug(f"{returning_key_names}, {returning_values}")
-        assert len(returning_values) == len(returning_key_names)
-        return returning_key_names, returning_values
+        update_dict = {key: full_dict[key] for key in update_key_names}
 
-    def update_entry(self, primary_key_val, update_keys=None) -> tuple:
+        res = _update_database_entry(
+            update_dict=update_dict,
+            sql_table=self.sql_model,
+            db_constraints=constraints,
+            returning_key_names=self.get_primary_key(),
+        )
+        return res
+
+    def update_entry(self, update_keys=None) -> pd.DataFrame:
         """
         Wrapper to update database entry. Users should override this function.
         Args:
@@ -178,132 +254,10 @@ class BaseDB(PydanticBase):
         Returns:
             sequence_key_names, sequence_key_values of the updated entry
         """
-        return self._update_entry(primary_key_val, update_keys)
+        return self._update_entry(update_keys)
 
-
-class BaseTable:
-    """
-    Parent class for database tables. Tables should inherit from this
-    and DeclarativeBase.
-    """
-
-    @property
-    def __tablename__(self):
-        raise NotImplementedError
-
-    @property
-    def db_name(self):
-        """
-        Name of the database.
-        :return: None
-        """
-        raise NotImplementedError
-
-    def get_primary_key(self) -> str:
-        """
-        Function to get primary key of table
-        Returns:
-        primary key
-        """
-        return inspect(self.__class__).primary_key[0].name
-
-    def construct_select_statement(
-        self,
-        compare_values: list,
-        select_keys: str | list[str] = None,
-        compare_keys: str | list[str] = None,
-        comparators: str | list = None,
-    ):
-        """
-        Function to construct a select statement
-        Args:
-            compare_values: Values to compare
-            select_keys: Keys to select. If None, defaults to primary key
-            compare_keys: Keys to compare. If None, defaults to primary key
-            comparators: Comparators : '__eq__', '__gt__', '__lt__', etc.
-            If not specified, defaults to '__eq__
-        Returns:
-        """
-
-        if compare_keys is None:
-            compare_keys = [self.get_primary_key()]
-        else:
-            if not isinstance(compare_keys, list):
-                compare_keys = [compare_keys]
-            if not isinstance(compare_values, list):
-                compare_values = [compare_values]
-            assert len(compare_keys) == len(compare_values)
-            columns = inspect(self.__class__).mapper.column_attrs
-            column_names = [c.key for c in columns]
-            for key in compare_keys:
-                if key not in column_names:
-                    err = f"{self.__tablename__} has no column {key}"
-                    raise ValueError(err)
-
-        if comparators is None:
-            comparators = ["__eq__"] * len(compare_keys)
-
-        if not isinstance(comparators, list):
-            comparators = [comparators]
-
-        assert len(compare_keys) == len(comparators)
-
-        logger.debug(
-            f"Checking if {compare_keys} {comparators} {compare_values} "
-            f"exists in {self.__tablename__}"
-        )
-
-        if select_keys is None:
-            select_items = [self.__class__]
-        else:
-            if not isinstance(select_keys, list):
-                select_keys = [select_keys]
-            select_items = [getattr(self.__class__, k) for k in select_keys]
-        stmt = select(*select_items).where(
-            and_(
-                *[
-                    getattr(self.__class__, key).__getattribute__(comparator)(value)
-                    for key, comparator, value in zip(
-                        compare_keys, comparators, compare_values
-                    )
-                ]
-            )
-        )
-
-        return stmt
-
-    def select_query(
-        self,
-        compare_values: list,
-        select_keys: str | list[str] = None,
-        compare_keys: str | list[str] = None,
-        comparators: str | list[str] = None,
-    ):
-        """
-        Run a select query
-        Args:
-            compare_values: Values to compare
-            select_keys: Keys to select. If None, defaults to primary key
-            compare_keys: Keys to compare. If None, defaults to primary key
-            comparators: Comparators : '__eq__', '__gt__', '__lt__', etc.
-            If None, defaults to '__eq__
-
-        Returns:
-            result of select query
-        """
-        engine = get_engine(db_name=self.db_name)
-        stmt = self.construct_select_statement(
-            compare_values=compare_values,
-            select_keys=select_keys,
-            compare_keys=compare_keys,
-            comparators=comparators,
-        )
-        with engine.connect() as conn:
-            res = conn.execute(stmt)
-            conn.commit()
-        return res.fetchall()
-
-    def exists(self, values, keys: str | list = None) -> bool:
+    @classmethod
+    def _exists(cls, values, keys: str | list = None) -> bool:
         """
         Function to query a table and see whether an entry with key==value exists.
         If key is None, key will default to the table's primary key.
@@ -314,38 +268,16 @@ class BaseTable:
         Returns:
             boolean
         """
-        if not isinstance(keys, list):
-            keys = [keys]
 
-        if not isinstance(values, list):
-            values = [values]
-        assert len(values) == len(keys)
-        engine = get_engine(db_name=self.db_name)
-
-        logger.debug(f"Checking if {keys}=={values} exists in {self.__tablename__}")
-        stmt = self.construct_select_statement(
-            compare_values=values, compare_keys=keys, comparators=["__eq__"] * len(keys)
+        db_constraints = DBQueryConstraints(
+            columns=keys, accepted_values=values, comparison_types="="
         )
-        return _exists(stmt, engine=engine)
 
-
-def _execute(stmt, engine):
-    """
-    Checks if the pydantic-ified data exists the corresponding sql database
-    :return: bool
-    """
-    with engine.connect() as conn:
-        with conn.begin():
-            res = conn.execute(stmt).fetchall()
-    return res
-
-
-def _exists(stmt: Select, engine) -> bool:
-    """
-    Checks if the pydantic-ified data exists the corresponding sql database
-    :return: bool
-    """
-    return len(_execute(stmt, engine)) > 0
+        match = select_from_table(
+            db_constraints=db_constraints,
+            sql_table=cls.sql_model,
+        )
+        return len(match) > 0
 
 
 ra_field: float = Field(title="RA (degrees)", ge=0.0, le=360.0)

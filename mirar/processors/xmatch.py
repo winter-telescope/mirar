@@ -53,7 +53,7 @@ class XMatch(BaseSourceProcessor):
                 for num in range(self.catalog.num_sources):
                     colname = catalog.column_names[key]
                     candidate_table[colname + f"{num + 1}"] = np.array(
-                        np.zeros(len(candidate_table)) - 99,
+                        np.nan,
                         dtype=catalog.column_dtypes[colname],
                     )
             nmatch_colname = f"nmtch{self.catalog.abbreviation}"
@@ -66,6 +66,8 @@ class XMatch(BaseSourceProcessor):
                         candidate_table.at[query_ind, colname] = result[key]
 
                 candidate_table.at[query_ind, nmatch_colname] = len(results)
+
+            candidate_table = candidate_table.replace({np.nan: None})
 
             source_list.set_data(candidate_table)
 

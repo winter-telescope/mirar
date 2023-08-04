@@ -79,6 +79,6 @@ class RefComponent(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(
+        return self._exists(
             values=[self.query_ra, self.query_dec], keys=["query_ra", "query_dec"]
         )

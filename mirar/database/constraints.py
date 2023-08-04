@@ -15,9 +15,13 @@ class DBQueryConstraints:
 
     def __init__(
         self,
-        columns: str | list[str],
-        accepted_values: str | int | float | list[str | float | int | list],
-        comparison_types: Optional[str | list[str]] = None,
+        columns: str | list[str] | None = None,
+        accepted_values: str
+        | int
+        | float
+        | list[str | float | int | list]
+        | None = None,
+        comparison_types: str | list[str] | None = None,
     ):
         self.columns = []
         self.accepted_values = []
@@ -25,23 +29,27 @@ class DBQueryConstraints:
 
         self.q3c_query = None
 
-        if not isinstance(columns, list):
-            columns = [columns]
-        if not isinstance(accepted_values, list):
-            accepted_values = [accepted_values]
+        if columns is None:
+            assert accepted_values is None
 
-        assert len(columns) == len(accepted_values)
+        else:
+            if not isinstance(columns, list):
+                columns = [columns]
+            if not isinstance(accepted_values, list):
+                accepted_values = [accepted_values]
 
-        if comparison_types is None:
-            comparison_types = ["="] * len(accepted_values)
-        assert len(comparison_types) == len(accepted_values)
+            assert len(columns) == len(accepted_values)
 
-        for i, column in enumerate(columns):
-            self.add_constraint(
-                column=column,
-                accepted_values=accepted_values[i],
-                comparison_type=comparison_types[i],
-            )
+            if comparison_types is None:
+                comparison_types = ["="] * len(accepted_values)
+            assert len(comparison_types) == len(accepted_values)
+
+            for i, column in enumerate(columns):
+                self.add_constraint(
+                    column=column,
+                    accepted_values=accepted_values[i],
+                    comparison_type=comparison_types[i],
+                )
 
     def add_constraint(
         self,
@@ -134,7 +142,7 @@ class DBQueryConstraints:
                 )
             else:
                 constraints.append(
-                    f"{column} {self.comparison_types[i]} {self.accepted_values[i]}"
+                    f"{column} {self.comparison_types[i]} '{self.accepted_values[i]}'"
                 )
 
         return " AND ".join(constraints)

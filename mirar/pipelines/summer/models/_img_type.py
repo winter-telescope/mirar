@@ -43,7 +43,7 @@ class ImgType(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.itid, keys="itid")
+        return self._exists(values=self.itid, keys="itid")
 
 
 def populate_itid():

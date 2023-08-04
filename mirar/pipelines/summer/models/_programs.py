@@ -105,7 +105,7 @@ class Program(BaseDB, ProgramCredentials):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.progname, keys="progname")
+        return self._exists(values=self.progname, keys="progname")
 
 
 default_program = Program(

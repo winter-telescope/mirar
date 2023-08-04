@@ -10,7 +10,7 @@ import pandas as pd
 
 from mirar.data import Image, ImageBatch
 from mirar.database.constraints import DBQueryConstraints
-from mirar.database.transactions import update_database_entry
+from mirar.database.transactions import _update_database_entry
 from mirar.database.utils import get_sequence_key_names_from_table
 from mirar.processors.database.database_selector import (
     BaseDatabaseSelector,
@@ -44,13 +44,24 @@ class ImageDatabaseUpdater(BaseDatabaseUpdater, BaseImageDatabaseSelector, ABC):
         for image in batch:
             query_constraints = self.get_constraints(image)
 
-            update_dict = self.get_export_dict(image)
+            val_dict = {key.lower(): image[key] for key in image.keys()}
 
-            update_database_entry(
-                update_dict=update_dict,
-                db_constraints=query_constraints,
-                db_model=self.db_table,
-            )
+            new = self.db_table(**val_dict)
+
+            update_dict = self.get_export_dict(image)
+            new.update_entry(update_keys=list(update_dict.keys()))
+
+            # res = new.update_entry()
+            #
+            # assert len(res) == 1
+            #
+            #
+            #
+            # _update_database_entry(
+            #     update_dict=update_dict,
+            #     db_constraints=query_constraints,
+            #     sql_table=self.db_table,
+            # )
 
         return batch
 
@@ -144,10 +155,10 @@ class ImageSequenceDatabaseUpdaterList(ImageSequenceDatabaseUpdater):
                 row = data_df.iloc[ind]
                 query_constraints = self.get_constraints(row)
 
-                update_database_entry(
+                _update_database_entry(
                     update_dict=update_dict,
                     db_constraints=query_constraints,
-                    db_model=self.db_table,
+                    sql_table=self.db_table,
                 )
 
         return batch

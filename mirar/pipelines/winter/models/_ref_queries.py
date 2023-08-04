@@ -44,7 +44,7 @@ class RefQuery(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(
+        return self._exists(
             values=[self.query_ra, self.query_dec, self.query_filt],
             keys=["query_ra", "query_dec", "query_filt"],
         )

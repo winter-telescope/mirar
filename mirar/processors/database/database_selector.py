@@ -11,6 +11,7 @@ import pandas as pd
 from mirar.data import DataBlock, Image, ImageBatch, SourceBatch
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
+from mirar.paths import SOURCE_HISTORY_KEY
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 
@@ -77,8 +78,8 @@ class BaseImageDatabaseSelector(BaseDatabaseSelector, BaseImageProcessor):
             query_constraints = self.get_constraints(image)
 
             res = select_from_table(
-                db_model=self.db_table,
-                db_constraints=query_constraints.parse_constraints(),
+                sql_table=self.db_table,
+                db_constraints=query_constraints,
                 output_columns=self.db_output_columns,
             )
 
@@ -160,29 +161,23 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
     def __init__(
         self,
         crossmatch_radius_arcsec: float,
-        user_defined_constraints: Optional[
-            Callable[[pd.DataFrame], DBQueryConstraints]
-        ] = None,
         ra_field_name: str = "ra",
         dec_field_name: str = "dec",
         order_field_name: Optional[str] = None,
         order_ascending: bool = False,
         query_dist: bool = False,
-        q3c_bool: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.xmatch_radius_arcsec = crossmatch_radius_arcsec
         self.ra_field_name = ra_field_name
         self.dec_field_name = dec_field_name
-        self.q3c_bool = q3c_bool
-        self.user_defined_constraints = user_defined_constraints
         self.order_field_name = order_field_name
         self.order_ascending = order_ascending
         self.query_dist = query_dist
 
     def update_dataframe(
-        self, candidate_table: pd.DataFrame, results: list[list[dict]]
+        self, candidate_table: pd.DataFrame, results: list[pd.DataFrame]
     ) -> pd.DataFrame:
         """
         Update a dataframe with db results
@@ -191,25 +186,19 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
         :param results: results from db query
         :return: updated dataframe
         """
-        assert len(results) == len(candidate_table)
-        keys = results[0][0].keys()
-        for num in range(len(results[0])):
-            for key in keys:
-                candidate_table[f"{key}{num + 1}"] = [x[num][key] for x in results]
-        return candidate_table
+        raise NotImplementedError()
 
-    def get_source_constraints(self, cand: pd.DataFrame) -> DBQueryConstraints:
-        """
-        Get db query constraints for a single source
+    def get_source_constraints(self, cand: pd.Series) -> DBQueryConstraints:
+        query_constraints = DBQueryConstraints()
+        query_constraints.add_q3c_constraint(
+            ra=cand["ra"],
+            dec=cand["dec"],
+            ra_field_name=self.ra_field_name,
+            dec_field_name=self.dec_field_name,
+            crossmatch_radius_arcsec=self.xmatch_radius_arcsec,
+        )
 
-        :param cand: single source
-        :return: db constraint
-        """
-
-        print(self.q3c_bool)
-        raise
-
-        return self.user_defined_constraints(cand)
+        return query_constraints
 
     def _apply_to_sources(
         self,
@@ -218,15 +207,15 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
         for source_table in batch:
             candidate_table = source_table.get_data()
             results = []
-            for ind in range(len(candidate_table)):
-                cand = candidate_table.loc[ind]
+            for _, cand in candidate_table.iterrows():
                 query_constraints = self.get_source_constraints(cand)
 
                 res = select_from_table(
-                    db_model=self.db_table,
+                    sql_table=self.db_table.sql_model,
                     db_constraints=query_constraints,
                     output_columns=self.db_output_columns,
                 )
+
                 results.append(res)
             new_table = self.update_dataframe(candidate_table, results)
             source_table.set_data(new_table)
@@ -242,11 +231,9 @@ class DatabaseHistorySelector(DatabaseCrossmatchSelector):
         self,
         history_duration_days: float,
         time_field_name: str = "jd",
-        history_key: str = "prv_candidates",
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.history_key = history_key
         self.history_duration_days = history_duration_days
         self.time_field_name = time_field_name
         logger.info(f"Update db is {self.update_dataframe}")
@@ -254,7 +241,7 @@ class DatabaseHistorySelector(DatabaseCrossmatchSelector):
     def update_dataframe(
         self,
         candidate_table: pd.DataFrame,
-        results: list[list[dict]],
+        results: list[pd.DataFrame],
     ) -> pd.DataFrame:
         """
         Update a pandas dataframe with the number of previous detections
@@ -264,17 +251,6 @@ class DatabaseHistorySelector(DatabaseCrossmatchSelector):
         :return: updated pandas dataframe
         """
         assert len(results) == len(candidate_table)
-        candidate_table[self.history_key] = results
+        candidate_table[SOURCE_HISTORY_KEY] = results
+
         return candidate_table
-
-    def get_source_constraints(self, cand: pd.DataFrame) -> DBQueryConstraints:
-        t_detection = float(cand[self.time_field_name])
-
-        query_constraints = DBQueryConstraints(
-            columns=self.time_field_name,
-            accepted_values=t_detection - self.history_duration_days,
-            comparison_types=">",
-        )
-        if self.user_defined_constraints is not None:
-            query_constraints += self.user_defined_constraints(cand)
-        return query_constraints

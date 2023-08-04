@@ -251,10 +251,11 @@ def aper_photometry(
     # error = calc_total_error(data, bkg_error, effective_gain)
     # phot_table = aperture_photometry(diff_cutout - bkg, aperture, error=error)
     # counts_err = phot_table['aperture_sum_err'][0]
-    error = np.sqrt(np.sum(aperture_unc_data**2))
+    error = np.sqrt(np.sum(aperture_unc_data**2.0))
     phot_table = aperture_photometry(image_cutout - bkg, aperture)
     counts = phot_table["aperture_sum"][0]
     counts_err = error
+    assert counts_err > 0.0
     return counts, counts_err
 
 

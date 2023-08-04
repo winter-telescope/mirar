@@ -95,4 +95,4 @@ class AstrometryStat(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.rawid, keys="rawid")
+        return self._exists(values=self.rawid, keys="rawid")
