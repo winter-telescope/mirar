@@ -12,7 +12,7 @@ from sqlalchemy import (
     VARCHAR,
     Column,
     DateTime,
-    Double,
+    BigInteger,
     Float,
     ForeignKey,
     Integer,
@@ -45,7 +45,7 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
         unique=True,
         autoincrement=True,
     )
-    expid = Column(Double, primary_key=True, unique=True, autoincrement=False)
+    expid = Column(BigInteger, primary_key=True, unique=True, autoincrement=False)
     # Deterministic ID of exposure
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))

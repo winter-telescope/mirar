@@ -72,5 +72,5 @@ class Diff(BaseDB):
         :param field_value: field value
         :return: field value
         """
-        assert Exposure.sql_model().exists(keys="uexpid", values=field_value)
+        assert Exposure._exists(keys="uexpid", values=field_value)
         return field_value

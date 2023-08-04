@@ -46,7 +46,7 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
         autoincrement=True,
         primary_key=True,
     )
-    expid = Column(Integer, primary_key=False, unique=True, autoincrement=False)
+    expid = Column(BigInteger, primary_key=False, unique=True, autoincrement=False)
     # Deterministic ID of exposure
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
