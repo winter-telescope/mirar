@@ -103,7 +103,7 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT)
             current_path = os.path.join(current_dir, file)
             output_path = os.path.join(output_dir, file)
 
-            logger.info(f"File saved to {output_path}")
+            logger.debug(f"File saved to {output_path}")
 
             shutil.move(current_path, output_path)
 
