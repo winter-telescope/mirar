@@ -11,6 +11,7 @@ in order to set these relevant header paths.
 import logging
 import os
 from collections.abc import Callable
+from copy import copy
 from pathlib import Path
 
 import astropy.table
@@ -32,6 +33,7 @@ from mirar.paths import (
     RAW_IMG_KEY,
     REF_IMG_KEY,
     REF_PSF_KEY,
+    SCI_IMG_KEY,
     UNC_IMG_KEY,
     core_fields,
     get_output_dir,
@@ -402,8 +404,6 @@ class ZOGY(ZOGYPrepare):
                 dy=ast_unc_y,
             )
 
-            diff = Image(data=diff_data, header=image.get_header())
-
             diff_image_path = Path(sci_image_path).with_suffix(".diff.fits")
             diff_psf_path = diff_image_path.with_suffix(".psf")
 
@@ -424,15 +424,17 @@ class ZOGY(ZOGYPrepare):
             _, diff_rms_median, _ = sigma_clipped_stats(diff_rms_data)
             diff_rms_path = diff_image_path.with_suffix(".unc.fits")
 
-            image["DIFFIMG"] = diff_image_path.as_posix()
-            image["DIFFPSF"] = diff_psf_path.as_posix()
-            image["DIFFSCR"] = scorr_image_path.as_posix()
-            image["DIFFUNC"] = diff_rms_path.as_posix()
+            diff = Image(data=diff_data, header=copy(image.get_header()))
+
+            diff["DIFFIMG"] = diff_image_path.as_posix()
+            diff["DIFFPSF"] = diff_psf_path.as_posix()
+            diff["DIFFSCR"] = scorr_image_path.as_posix()
+            diff["DIFFUNC"] = diff_rms_path.as_posix()
             noise = np.sqrt(
                 np.nansum(np.square(diff_psf_data) * np.square(diff_rms_median))
             ) / np.nansum(np.square(diff_psf_data))
-            image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
-                image[self.sci_zp_header_key]
+            diff["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
+                diff[self.sci_zp_header_key]
             )
             key_map = {
                 "SCORMEAN": scorr_mean,
@@ -442,7 +444,7 @@ class ZOGY(ZOGYPrepare):
             for key, value in key_map.items():
                 if np.isnan(value):
                     value = -999.0
-                image[key] = value
+                diff[key] = value
 
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
 
@@ -460,18 +462,18 @@ class ZOGY(ZOGYPrepare):
             )
 
             scorr = Image(scorr_data, header=image.header.copy())
-            scorr[LATEST_WEIGHT_SAVE_KEY] = image["SCORMASK"]
+            scorr[LATEST_WEIGHT_SAVE_KEY] = diff["SCORMASK"]
 
             self.save_fits(image=scorr, path=self.get_path(scorr_image_path))
 
             self.save_fits(
-                image=Image(data=diff_rms_data, header=image.get_header()),
+                image=Image(data=diff_rms_data, header=copy(image.get_header())),
                 path=self.get_path(diff_rms_path),
             )
 
             diff[BASE_NAME_KEY] = diff_image_path.name
             diff[NORM_PSFEX_KEY] = diff_psf_path.as_posix()
             diff[UNC_IMG_KEY] = diff_rms_path.as_posix()
-
+            diff[SCI_IMG_KEY] = image[BASE_NAME_KEY]
             diff_batch.append(diff)
         return diff_batch
