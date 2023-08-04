@@ -26,7 +26,7 @@ class AstrometryStatsTable(WinterBase):  # pylint: disable=too-few-public-method
     __tablename__ = "astrometry_stats"
     __table_args__ = {"extend_existing": True}
 
-    rawid = mapped_column(ForeignKey("raw.rawid"), primary_key=True)
+    rawid = mapped_column(ForeignKey("raw.rawid"), primary_key=True, unique=True)
     astrom_raw_ids: Mapped["RawTable"] = relationship(back_populates="astrometry")
     crval1 = Column(Float)
     crval2 = Column(Float)

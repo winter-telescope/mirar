@@ -10,12 +10,12 @@ import pandas as pd
 
 from mirar.data import ImageBatch
 from mirar.database.constraints import DBQueryConstraints
-from mirar.database.transactions import _update_database_entry
 from mirar.database.utils import get_sequence_key_names_from_table
 from mirar.processors.database.database_selector import (
     BaseDatabaseSelector,
     BaseImageDatabaseSelector,
 )
+from mirar.processors.database.database_inserter import DatabaseImageInserter, DatabaseSourceInserter
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,20 @@ class ImageDatabaseUpdater(BaseDatabaseUpdater, BaseImageDatabaseSelector, ABC):
         batch: ImageBatch,
     ) -> ImageBatch:
         for image in batch:
-            val_dict = {key.lower(): image[key] for key in image.keys()}
+            val_dict = self.generate_value_dict(image)
             new = self.db_table(**val_dict)
             new.update_entry(update_keys=self.db_alter_columns)
         return batch
+
+    @staticmethod
+    def generate_value_dict(image):
+        """
+        Get the value dictionary for an image
+
+        :param image: Image
+        :return: Value dictionary
+        """
+        return DatabaseImageInserter.generate_value_dict(image)
 
 
 class ImageSequenceDatabaseUpdater(ImageDatabaseUpdater):
@@ -120,10 +130,15 @@ class ImageSequenceDatabaseUpdaterList(ImageSequenceDatabaseUpdater):
             )
             logger.debug(data_df)
 
+            value_dict = self.generate_value_dict(image)
+
             #  Fixme I think this doesn't work
 
             for ind in range(len(data_df)):
                 row = data_df.iloc[ind]
+
+                print(row)
+
                 new = self.db_table(**row.to_dict())
                 new.update_entry(update_keys=self.db_alter_columns)
 

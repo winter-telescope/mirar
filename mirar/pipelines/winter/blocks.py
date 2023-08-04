@@ -406,7 +406,6 @@ process_candidates = [
         history_duration_days=500.0,
         db_table=Candidate,
         db_output_columns=prv_candidate_cols + [CAND_NAME_KEY],
-        q3c_bool=False,
     ),
     CandidateNamer(
         db_table=Candidate,
