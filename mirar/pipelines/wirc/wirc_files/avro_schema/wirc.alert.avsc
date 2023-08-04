@@ -6,7 +6,7 @@
     "fields": [
         {"name": "schemavsn", "type": "string", "doc": "schema version used", "default": "0.1"},
         {"name": "publisher", "type": "string", "doc": "origin of alert packet", "default":  "WIRC-mirar"},
-        {"name": "objectId", "type": "string"},
+        {"name": "objectid", "type": "string"},
         {"name": "candid", "type": "long"},
         {"name": "candidate", "type": "wirc.alert.candidate", "doc": "candidate information"},
         {"name": "prv_candidates", "type": [{
