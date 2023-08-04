@@ -28,7 +28,7 @@ def run_select(
     with engine.connect() as conn:
         res = pd.read_sql(query, conn, columns=columns)
 
-    if columns is not None:
+    if (columns is not None) & len(res) > 0:
         res = res[columns]
 
     return res

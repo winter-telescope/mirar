@@ -1,11 +1,9 @@
 """
 Module for DBQueryConstraints to carefully specify postgres query constraints
 """
-from typing import Optional
-
 import numpy as np
 
-POSTGRES_ACCEPTED_COMPARISONS = ["=", "<", ">", "between"]
+POSTGRES_ACCEPTED_COMPARISONS = ["=", "<", ">", "<=", ">=", "between", "<>", "!="]
 
 
 class DBQueryConstraints:
@@ -137,12 +135,13 @@ class DBQueryConstraints:
         for i, column in enumerate(self.columns):
             if self.comparison_types[i] == "between":
                 constraints.append(
-                    f"{column} between {self.accepted_values[i][0]} "
+                    f"{column.lower()} between {self.accepted_values[i][0]} "
                     f"and {self.accepted_values[i][1]}"
                 )
             else:
                 constraints.append(
-                    f"{column} {self.comparison_types[i]} '{self.accepted_values[i]}'"
+                    f"{column.lower()} {self.comparison_types[i]} "
+                    f"'{self.accepted_values[i]}'"
                 )
 
         return " AND ".join(constraints)
