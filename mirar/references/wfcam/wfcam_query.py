@@ -596,6 +596,7 @@ def get_locally_existing_overlap_images(
     )
 
     logger.debug(results)
+    savepaths = []
     if len(results) > 0:
         savepaths = [Path(x) for x in results["savepath"].tolist()]
     return savepaths

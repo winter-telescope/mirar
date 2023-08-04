@@ -1,6 +1,7 @@
 """
 Module for WINTER data reduction
 """
+# pylint: disable=duplicate-code
 from mirar.catalog.kowalski import PS1, TMASS
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
@@ -419,10 +420,6 @@ process_candidates = [
         name_start=NAME_START,
         xmatch_radius_arcsec=2,
     ),
-    # DatabaseSourceExporter(
-    #     db_table="candidates",
-    #     duplicate_protocol="replace",
-    # ),
     DatabaseSourceInserter(
         db_table=Candidate,
         duplicate_protocol="fail",

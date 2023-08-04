@@ -1,8 +1,9 @@
 """
 Models for database and pydantic dataclass models
 """
-
+# pylint: disable=duplicate-code
 from mirar.database.credentials import DB_USER
+from mirar.database.setup import setup_database
 from mirar.pipelines.summer.models._diff import Diff, DiffTable
 from mirar.pipelines.summer.models._exposures import Exposure, ExposuresTable
 from mirar.pipelines.summer.models._fields import (
@@ -40,7 +41,6 @@ from mirar.pipelines.summer.models._subdets import (
     populate_subdets,
 )
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.pipelines.winter.models import setup_database
 
 if DB_USER is not None:
     setup_database(SummerBase)

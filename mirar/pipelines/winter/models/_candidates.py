@@ -18,10 +18,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
-from mirar.pipelines.winter.models._diff import DiffsTable
+from mirar.pipelines.winter.models._diff import Diff
 from mirar.pipelines.winter.models._fields import fieldid_field
 from mirar.pipelines.winter.models._filters import fid_field
-from mirar.pipelines.winter.models._programs import prog_field
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 CANDIDATE_PREFIX = "WNTR"
 NAME_START = "aaaaa"
 
-min_name_length = len(CANDIDATE_PREFIX) + len(NAME_START) + 2
+MIN_NAME_LENGTH = len(CANDIDATE_PREFIX) + len(NAME_START) + 2
 
 
 class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
@@ -56,7 +55,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     # Image properties
 
-    # diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))  #FIXME
+    diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))  # FIXME
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
     exptime = Column(Float, nullable=False)
@@ -202,7 +201,7 @@ class Candidate(BaseDB):
 
     sql_model: ClassVar = CandidatesTable
 
-    objectid: str = Field(min_length=min_name_length)
+    objectid: str = Field(min_length=MIN_NAME_LENGTH)
     deprecated: bool = Field(default=False)
 
     jd: float = Field(ge=0)
@@ -271,62 +270,63 @@ class Candidate(BaseDB):
 
     ssdistnr: float | None = Field(ge=0, default=None)
     ssmagnr: float | None = Field(ge=0, default=None)
-    ssnamenr: str | None = Field(min_length=min_name_length, default=None)
+    ssnamenr: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
 
     tooflag: bool = Field(default=False)
 
-    psobjectid1: str | None = Field(min_length=min_name_length, default=None)
-    psobjectid2: str | None = Field(min_length=min_name_length, default=None)
-    psobjectid3: str | None = Field(min_length=min_name_length, default=None)
+    psobjectid1: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
+    psobjectid2: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
+    psobjectid3: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
 
-    sgmag1: float | None = Field(ge=0, default=None)
-    srmag1: float | None = Field(ge=0, default=None)
-    simag1: float | None = Field(ge=0, default=None)
-    szmag1: float | None = Field(ge=0, default=None)
+    sgmag1: float | None = Field(default=None)
+    srmag1: float | None = Field(default=None)
+    simag1: float | None = Field(default=None)
+    szmag1: float | None = Field(default=None)
     sgscore1: float | None = Field(ge=0, default=None)
     distpsnr1: float | None = Field(ge=0, default=None)
 
-    sgmag2: float | None = Field(ge=0, default=None)
-    srmag2: float | None = Field(ge=0, default=None)
-    simag2: float | None = Field(ge=0, default=None)
-    szmag2: float | None = Field(ge=0, default=None)
+    sgmag2: float | None = Field(default=None)
+    srmag2: float | None = Field(default=None)
+    simag2: float | None = Field(default=None)
+    szmag2: float | None = Field(default=None)
     sgscore2: float | None = Field(ge=0, default=None)
     distpsnr2: float | None = Field(ge=0, default=None)
 
-    sgmag3: float | None = Field(ge=0, default=None)
-    srmag3: float | None = Field(ge=0, default=None)
-    simag3: float | None = Field(ge=0, default=None)
-    szmag3: float | None = Field(ge=0, default=None)
+    sgmag3: float | None = Field(default=None)
+    srmag3: float | None = Field(default=None)
+    simag3: float | None = Field(default=None)
+    szmag3: float | None = Field(default=None)
     sgscore3: float | None = Field(ge=0, default=None)
     distpsnr3: float | None = Field(ge=0, default=None)
+
+    tmjmag1: float | None = Field(default=None)
+    tmhmag1: float | None = Field(default=None)
+    tmkmag1: float | None = Field(default=None)
+    tmobjectid1: str | None = Field(default=None)
+
+    tmjmag2: float | None = Field(default=None)
+    tmhmag2: float | None = Field(default=None)
+    tmkmag2: float | None = Field(default=None)
+    tmobjectid2: str | None = Field(default=None)
+
+    tmjmag3: float | None = Field(default=None)
+    tmhmag3: float | None = Field(default=None)
+    tmkmag3: float | None = Field(default=None)
+    tmobjectid3: str | None = Field(default=None)
 
     neargaia: float | None = Field(ge=0, default=None)
     neargaiabright: float | None = Field(ge=0, default=None)
     maggaia: float | None = Field(default=None)
     maggaiabright: float | None = Field(default=None)
 
-    # TODO jd validate
+    @validator("diffid")
+    @classmethod
+    def validate_diffid(cls, field_value: int):
+        """
+        Ensure that expid exists in exposures table
 
-    # def insert_entry(self, returning_key_names=None) -> tuple:  # FIXME
-    #     """
-    #     Insert the pydantic-ified data into the corresponding sql database
-    #
-    #     :return: None
-    #     """
-    #
-    #     if not ProgramsTable().exists(values=self.progname, keys="progname"):
-    #         self.progname = default_program.progname
-    #
-    #     return self._insert_entry()
-
-    # @validator("diffid") # FIXME
-    # @classmethod
-    # def validate_diffid(cls, field_value: int):
-    #     """
-    #     Ensure that expid exists in exposures table
-    #
-    #     :param field_value: field value
-    #     :return: field value
-    #     """
-    #     assert DiffsTable.exists(keys="diffid", values=field_value)
-    #     return field_value
+        :param field_value: field value
+        :return: field value
+        """
+        assert Diff._exists(keys="diffid", values=field_value)
+        return field_value

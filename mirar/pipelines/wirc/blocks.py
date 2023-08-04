@@ -1,8 +1,10 @@
 """
 Module containing standard processing blocks for WIRC
 """
+# pylint: disable=duplicate-code
 from mirar.catalog.kowalski import PS1, TMASS
 from mirar.paths import (
+    CAND_NAME_KEY,
     FITS_MASK_KEY,
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
@@ -31,6 +33,11 @@ from mirar.pipelines.wirc.wirc_files import (
     wirc_avro_schema_path,
     wirc_mask_path,
 )
+from mirar.pipelines.wirc.wirc_files.models import (
+    CANDIDATE_PREFIX,
+    NAME_START,
+    Candidate,
+)
 from mirar.processors.astromatic import Scamp, Sextractor, Swarp
 from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.astromatic.scamp.scamp import SCAMP_HEADER_KEY
@@ -41,6 +48,8 @@ from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.avro import IPACAvroExporter, SendToFritz
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
+from mirar.processors.database.database_inserter import DatabaseSourceInserter
+from mirar.processors.database.database_selector import DatabaseHistorySelector
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import (
     MaskAboveThreshold,
@@ -60,7 +69,7 @@ from mirar.processors.photometry.psf_photometry import (
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
-from mirar.processors.sources import SourceDetector, SourceWriter
+from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
@@ -232,7 +241,21 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
-    SourceWriter(output_dir_name="dbop"),
+    DatabaseHistorySelector(
+        crossmatch_radius_arcsec=2.0,
+        time_field_name="jd",
+        history_duration_days=500.0,
+        db_table=Candidate,
+        db_output_columns=[CAND_NAME_KEY],
+    ),
+    CandidateNamer(
+        db_table=Candidate,
+        base_name=CANDIDATE_PREFIX,
+        name_start=NAME_START,
+        xmatch_radius_arcsec=2,
+    ),
+    DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="fail")
+    # SourceWriter(output_dir_name="dbop"),
     # EdgeCandidatesMask(edge_boundary_size=100)
     # FilterCandidates(),
 ]

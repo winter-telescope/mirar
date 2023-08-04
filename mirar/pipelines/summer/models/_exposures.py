@@ -1,14 +1,13 @@
 """
 Models for the 'exposures' table
 """
-# from mirar.utils.sql import create_q3c_extension
 import logging
 from datetime import date, datetime
 from typing import ClassVar
 
 import pandas as pd
 from pydantic import Field
-from sqlalchemy import (  # event,
+from sqlalchemy import (
     VARCHAR,
     Column,
     DateTime,
@@ -25,7 +24,7 @@ from mirar.pipelines.summer.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.summer.models._filters import FiltersTable, fid_field
 from mirar.pipelines.summer.models._img_type import ImgTypesTable
 from mirar.pipelines.summer.models._nights import Night, NightsTable
-from mirar.pipelines.summer.models._programs import Program, default_program
+from mirar.pipelines.summer.models._programs import Program
 from mirar.pipelines.summer.models.base_model import SummerBase
 
 logger = logging.getLogger(__name__)
@@ -97,16 +96,6 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
     diff: Mapped["DiffTable"] = relationship(back_populates="exposure_ids")
 
 
-# @event.listens_for(target=RawTable.__table__, identifier="after_create")
-# def raw_q3c(tbl, conn, *args, **kw):
-#     create_q3c_extension(
-#         conn=conn,
-#         __tablename__=RawTable.__tablename__,
-#         ra_column_name=RawTable.ra_column_name,
-#         dec_column_name=RawTable.dec_column_name,
-#     )
-
-
 default_unknown_field = Field(default=-999)
 
 
@@ -162,7 +151,7 @@ class Exposure(BaseDB):
 
         logger.debug(f"puid: {self.puid}")
         if not Program._exists(values=self.puid, keys="puid"):
-            self.puid = 0
+            self.puid = 1
 
         return self._insert_entry()
 
