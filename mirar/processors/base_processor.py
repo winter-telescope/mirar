@@ -22,11 +22,11 @@ from mirar.errors import (
     NoncriticalProcessingError,
     ProcessorError,
 )
-from mirar.io import check_image_has_core_fields, open_fits, save_to_path
+from mirar.io import open_fits, save_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     CAL_OUTPUT_SUB_DIR,
-    LATEST_SAVE_KEY,
+    LATEST_WEIGHT_SAVE_KEY,
     PACKAGE_NAME,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
@@ -319,14 +319,7 @@ class ImageHandler:
         :param path: path
         :return: None
         """
-        path = str(path)
-        check_image_has_core_fields(image)
-        data = image.get_data()
-        header = image.get_header()
-        if header is not None:
-            header[LATEST_SAVE_KEY] = path
-        logger.debug(f"Saving to {path}")
-        save_to_path(data, header, path)
+        save_fits(image, path)
 
     def save_mask_image(self, image: Image, img_path: Path) -> Path:
         """
@@ -341,6 +334,11 @@ class ImageHandler:
         header = image.get_header()
 
         mask = image.get_mask()
+        if LATEST_WEIGHT_SAVE_KEY in image.header:
+            weight_data = self.open_fits(
+                image.header[LATEST_WEIGHT_SAVE_KEY]
+            ).get_data()
+            mask = mask * weight_data
         self.save_fits(Image(mask.astype(float), header), mask_path)
 
         return mask_path

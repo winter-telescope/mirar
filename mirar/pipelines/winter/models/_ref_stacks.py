@@ -4,7 +4,7 @@ Module to make reference stacks table
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import VARCHAR, Column, Double, Float, Integer
+from sqlalchemy import VARCHAR, BigInteger, Column, Float, Integer
 
 from mirar.database.base_model import BaseDB
 from mirar.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
@@ -17,7 +17,7 @@ class RefStacksTable(WinterBase):
 
     __tablename__ = "refstacks"
 
-    stackid = Column(Double, primary_key=True, autoincrement=False)
+    stackid = Column(BigInteger, primary_key=True, autoincrement=False)
     ra_cent = Column(Float)
     dec_cent = Column(Float)
     ra0_0 = Column(Float)
@@ -32,6 +32,8 @@ class RefStacksTable(WinterBase):
     subdetid = Column(Integer, nullable=True, default=None)
     filter = Column(VARCHAR(10))
     savepath = Column(VARCHAR(255), unique=True)
+    zp = Column(Float)
+    zpstd = Column(Float)
 
 
 class RefStack(BaseDB):
@@ -53,6 +55,8 @@ class RefStack(BaseDB):
     ra1_1: float = ra_field
     dec1_1: float = dec_field
     filter: str = Field(min_length=1)
+    zp: float = Field(ge=0)
+    zpstd: float = Field(ge=0)
 
     fieldid: int = Field(ge=0, default=None, nullable=True)
     subdetid: int = Field(ge=0, default=None, nullable=True)
@@ -67,6 +71,3 @@ class RefStack(BaseDB):
         return self._exists(
             values=[self.ra_cent, self.dec_cent], keys=["ra_cent", "dec_cent"]
         )
-
-    def insert_entry(self, returning_keys=None):
-        return self._insert_entry(returning_key_names=returning_keys)

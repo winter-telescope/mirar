@@ -15,7 +15,7 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning, AstropyWarning
 
 from mirar.data import Image
-from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY, core_fields
+from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, RAW_IMG_KEY, core_fields
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,9 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     :param path: path of fits file
     :return: tuple containing image data and image header
     """
-    with fits.open(path, memmap=False) as img:
+    if isinstance(path, str):
+        path = Path(path)
+    with fits.open(path, memmap=False, ignore_missing_simple=True) as img:
         hdu = img.pop(0)
         hdu.verify("silentfix+ignore")
         data = hdu.data
@@ -103,9 +105,31 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
         header[BASE_NAME_KEY] = Path(path).name
 
     if RAW_IMG_KEY not in header.keys():
-        header[RAW_IMG_KEY] = path
+        header[RAW_IMG_KEY] = path.as_posix()
 
     return data, header
+
+
+def save_fits(
+    image: Image,
+    path: str | Path,
+):
+    """
+    Save an Image to path
+
+    :param image: Image to save
+    :param path: path
+    :return: None
+    """
+    if isinstance(path, str):
+        path = Path(path)
+    check_image_has_core_fields(image)
+    data = image.get_data()
+    header = image.get_header()
+    if header is not None:
+        header[LATEST_SAVE_KEY] = path.as_posix()
+    logger.debug(f"Saving to {path.as_posix()}")
+    save_to_path(data, header, path)
 
 
 def open_raw_image(
@@ -119,6 +143,9 @@ def open_raw_image(
     :param open_f: function to open the raw image
     :return: Image object
     """
+    if isinstance(path, str):
+        path = Path(path)
+
     data, header = open_f(path)
 
     new_img = Image(data.astype(np.float64), header)
@@ -292,10 +319,14 @@ def check_image_has_core_fields(img: Image):
         if key not in img.keys():
             if BASE_NAME_KEY in img.keys():
                 msg = f"({img[BASE_NAME_KEY]}) "
-
-            err = (
-                f"New image {msg}is missing the core field {key}. "
-                f"Available fields are {list(img.keys())}."
-            )
+                err = (
+                    f"New image {msg}is missing the core field {key}. "
+                    f"Available fields are {list(img.keys())}."
+                )
+            else:
+                err = (
+                    f"New image is missing the core field {BASE_NAME_KEY}. Available "
+                    f"fields are {list(img.keys())}."
+                )
             logger.error(err)
             raise MissingCoreFieldError(err)

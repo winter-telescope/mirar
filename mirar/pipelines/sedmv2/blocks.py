@@ -18,6 +18,7 @@ from mirar.pipelines.sedmv2.generator import (
     sedmv2_reference_image_resampler,
     sedmv2_reference_psfex,
     sedmv2_reference_sextractor,
+    sedmv2_zogy_catalogs_purifier,
 )
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.processors import BiasCalibrator, FlatCalibrator
@@ -44,11 +45,7 @@ from mirar.processors.utils import (
 
 # from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.header_annotate import HeaderEditor
-from mirar.processors.zogy.zogy import (
-    ZOGY,
-    ZOGYPrepare,
-    default_sedmv2_catalog_purifier,
-)
+from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
     MEFLoader(
@@ -218,7 +215,7 @@ subtract = [
     ZOGYPrepare(
         output_sub_dir="subtract",
         sci_zp_header_key="ZP_AUTO",
-        catalog_purifier=default_sedmv2_catalog_purifier,
+        catalog_purifier=sedmv2_zogy_catalogs_purifier,
     ),
     ZOGY(output_sub_dir="subtract"),
 ]

@@ -17,6 +17,7 @@ from mirar.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
     wirc_reference_sextractor,
+    wirc_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from mirar.pipelines.wirc.wirc_files import (
@@ -40,8 +41,6 @@ from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.avro import IPACAvroExporter, SendToFritz
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.database.database_inserter import DatabaseSourceInserter
-from mirar.processors.database.database_selector import DatabaseHistorySelector
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import (
     MaskAboveThreshold,
@@ -61,7 +60,7 @@ from mirar.processors.photometry.psf_photometry import (
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
-from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
+from mirar.processors.sources import SourceDetector, SourceWriter
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
@@ -179,7 +178,7 @@ subtract = [
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     ZOGYPrepare(output_sub_dir="subtract"),
-    ZOGY(output_sub_dir="subtract"),
+    ZOGY(output_sub_dir="subtract", catalog_purifier=wirc_zogy_catalogs_purifier),
 ]
 
 image_photometry = [
@@ -233,25 +232,6 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
-    # DatabaseHistoryImporter(
-    #     crossmatch_radius_arcsec=2.0,
-    #     time_field_name="jd",
-    #     history_duration_days=500.0,
-    #     db_name="wirc",
-    #     db_table="candidates",
-    #     db_output_columns=[], # FIXME
-    #     q3c_bool=False,
-    # ),
-    # CandidateNamer(
-    #     db_table="candidates",
-    #     base_name="WIRC",
-    #     name_start="aaaaa",
-    #     xmatch_radius_arcsec=2,
-    # ),
-    # DatabaseSourceExporter(
-    #     db_table="candidates",
-    #     duplicate_protocol="replace",
-    # ),
     SourceWriter(output_dir_name="dbop"),
     # EdgeCandidatesMask(edge_boundary_size=100)
     # FilterCandidates(),

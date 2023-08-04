@@ -131,4 +131,15 @@ class BaseKowalskiXMatch(BaseXMatchCatalog, ABC):
             self.kowalski = get_kowalski()
         logger.debug("Querying kowalski")
         data = self.near_query_kowalski(coords)
+        data = self.update_data(data)
+        return data
+
+    @staticmethod
+    def update_data(data: dict) -> dict:
+        """
+        For a given catalog, update the data with any extra information
+
+        :param data: kowalski data
+        :return: updated data
+        """
         return data

@@ -138,7 +138,9 @@ def summer_reference_image_resampler(**kwargs) -> Swarp:
     :param kwargs: kwargs
     :return: Swarp processor
     """
-    return Swarp(swarp_config_path=swarp_config_path, cache=True, **kwargs)
+    return Swarp(
+        swarp_config_path=swarp_config_path, cache=True, subtract_bkg=True, **kwargs
+    )
 
 
 def summer_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
@@ -170,3 +172,29 @@ def summer_reference_psfex(output_sub_dir: str, norm_fits: bool) -> PSFex:
         output_sub_dir=output_sub_dir,
         norm_fits=norm_fits,
     )
+
+
+def summer_zogy_catalogs_purifier(sci_catalog: Table, ref_catalog: Table):
+    """
+    :param sci_catalog: science catalog
+    :param ref_catalog: reference catalog
+    :return: good_sci_sources, good_ref_sources
+    """
+    # Need to do this because the summer data is typically much
+    # shallower than the PS1 data, and only the brightest
+    # sources in PS1 xmatch to it.
+    good_sci_sources = (
+        (sci_catalog["FLAGS"] == 0)
+        & (sci_catalog["SNR_WIN"] > 5)
+        & (sci_catalog["FWHM_WORLD"] < 4.0 / 3600)
+        & (sci_catalog["FWHM_WORLD"] > 0.5 / 3600)
+        & (sci_catalog["SNR_WIN"] < 1000)
+    )
+
+    good_ref_sources = (
+        (ref_catalog["SNR_WIN"] > 5)
+        & (ref_catalog["FWHM_WORLD"] < 5.0 / 3600)
+        & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
+    )
+
+    return good_sci_sources, good_ref_sources

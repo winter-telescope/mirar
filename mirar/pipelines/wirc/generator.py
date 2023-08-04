@@ -5,6 +5,8 @@ yield e.g catalog for astrometric calibrations
 import logging
 import os
 
+from astropy.table import Table
+
 from mirar.catalog import Gaia2Mass
 from mirar.data import Image
 from mirar.pipelines.wirc.wirc_files import (
@@ -89,7 +91,10 @@ def wirc_reference_image_generator(
 def wirc_reference_image_resampler(**kwargs) -> Swarp:
     """Returns a SWarp resampler for WIRC"""
     return Swarp(
-        swarp_config_path=wirc_file_dir.joinpath("config.swarp"), cache=True, **kwargs
+        swarp_config_path=wirc_file_dir.joinpath("config.swarp"),
+        cache=True,
+        subtract_bkg=True,
+        **kwargs
     )
 
 
@@ -110,3 +115,30 @@ def wirc_reference_psfex(output_sub_dir: str, norm_fits: bool) -> PSFex:
         output_sub_dir=output_sub_dir,
         norm_fits=norm_fits,
     )
+
+
+def wirc_zogy_catalogs_purifier(
+    sci_catalog: Table, ref_catalog: Table
+) -> (Table, Table):
+    """
+    Function to purify the photometric catalog
+    :param sci_catalog:
+    :param ref_catalog:
+    :return: sci_catalog, ref_catalog
+    """
+    good_sci_sources = (
+        (sci_catalog["FLAGS"] == 0)
+        & (sci_catalog["SNR_WIN"] > 5)
+        & (sci_catalog["FWHM_WORLD"] < 4.0 / 3600)
+        & (sci_catalog["FWHM_WORLD"] > 0.5 / 3600)
+        & (sci_catalog["SNR_WIN"] < 1000)
+    )
+
+    good_ref_sources = (
+        (ref_catalog["FLAGS"] == 0)
+        & (ref_catalog["SNR_WIN"] > 5)
+        & (ref_catalog["FWHM_WORLD"] < 5.0 / 3600)
+        & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
+        & (ref_catalog["SNR_WIN"] < 1000)
+    )
+    return good_sci_sources, good_ref_sources

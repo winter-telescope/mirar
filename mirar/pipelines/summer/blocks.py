@@ -25,6 +25,7 @@ from mirar.pipelines.summer.generator import (
     summer_reference_image_resampler,
     summer_reference_psfex,
     summer_reference_sextractor,
+    summer_zogy_catalogs_purifier,
 )
 from mirar.pipelines.summer.load_summer_image import (
     load_proc_summer_image,
@@ -50,11 +51,7 @@ from mirar.processors.utils import ImageBatcher, ImageLoader, ImageSaver, ImageS
 from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.header_annotate import HeaderEditor
 from mirar.processors.utils.simulate_realtime import RealtimeImageSimulator
-from mirar.processors.zogy.zogy import (
-    ZOGY,
-    ZOGYPrepare,
-    default_summer_catalog_purifier,
-)
+from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
     ImageLoader(load_image=load_raw_summer_image),
@@ -217,7 +214,7 @@ subtract = [
         output_sub_dir="subtract",
         sci_zp_header_key="ZP_AUTO",
         ref_zp_header_key="ZP",
-        catalog_purifier=default_summer_catalog_purifier,
+        catalog_purifier=summer_zogy_catalogs_purifier,
     ),
     ZOGY(output_sub_dir="subtract"),
 ]

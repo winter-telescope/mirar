@@ -27,7 +27,7 @@ class WIRCRef(BaseReferenceGenerator):
         self.object_name = object_name
         self.images_directory_path = images_directory_path
 
-    def get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
+    def _get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
         full_imagelist = np.array(
             glob(
                 f"{self.images_directory_path}/{self.object_name}/"
