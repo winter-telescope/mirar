@@ -10,9 +10,9 @@ import pandas as pd
 from pydantic import Field
 from sqlalchemy import (
     VARCHAR,
+    BigInteger,
     Column,
     DateTime,
-    BigInteger,
     Float,
     ForeignKey,
     Integer,
