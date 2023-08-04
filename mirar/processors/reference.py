@@ -170,6 +170,10 @@ class ProcessReference(BaseImageProcessor):
                 warnings.simplefilter("ignore", SwarpWarning)
                 resampled_sci_image = sci_resampler.apply(ImageBatch([image]))[0]
 
+            self.save_fits(
+                resampled_sci_image, output_dir.joinpath(resampled_sci_image.get_name())
+            )
+
             # Detect source in reference image, and save as catalog
 
             ref_sextractor = self.sextractor(
