@@ -86,7 +86,7 @@ def save_mef_to_path(data_list, header_list, primary_header, path):
     hdulist.writeto(path, overwrite=True)
 
 
-def open_fits(path: str | Path, **fits_open_kwargs) -> tuple[np.ndarray, fits.Header]:
+def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     """
     Function to open a fits file saved to <path>
 
@@ -95,7 +95,7 @@ def open_fits(path: str | Path, **fits_open_kwargs) -> tuple[np.ndarray, fits.He
     """
     if isinstance(path, str):
         path = Path(path)
-    with fits.open(path, memmap=False, **fits_open_kwargs) as img:
+    with fits.open(path, memmap=False, ignore_missing_simple=True) as img:
         hdu = img.pop(0)
         hdu.verify("silentfix+ignore")
         data = hdu.data
@@ -135,7 +135,6 @@ def save_fits(
 def open_raw_image(
     path: str | Path,
     open_f: Callable[[str | Path], tuple[np.ndarray, fits.Header]] = open_fits,
-    **fits_open_kwargs,
 ) -> Image:
     """
     Function to open a raw image as an Image object
@@ -147,7 +146,7 @@ def open_raw_image(
     if isinstance(path, str):
         path = Path(path)
 
-    data, header = open_f(path, **fits_open_kwargs)
+    data, header = open_f(path)
 
     new_img = Image(data.astype(np.float64), header)
 
