@@ -4,7 +4,7 @@ Module to make reference components table
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import VARCHAR, Column, Double, Float, Integer
+from sqlalchemy import VARCHAR, BigInteger, Column, Float, Integer
 from sqlalchemy.orm import Mapped, relationship
 
 from mirar.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
@@ -18,10 +18,10 @@ class RefComponentsTable(WinterBase):
 
     __tablename__ = "refcomponents"
 
-    compid = Column(Double, primary_key=True, autoincrement=False)
+    compid = Column(BigInteger, primary_key=True, autoincrement=False)
     queries: Mapped["RefQueriesTable"] = relationship(back_populates="components")
 
-    mfid = Column(Double)
+    mfid = Column(BigInteger)
     xtnsnid = Column(Integer)
     ra0_0 = Column(Float)
     dec0_0 = Column(Float)
