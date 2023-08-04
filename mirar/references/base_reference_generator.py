@@ -155,10 +155,6 @@ class BaseReferenceGenerator:
         except MissingCoreFieldError as err:
             raise ReferenceGenerationError from err
 
-        if self.write_image:
-            ref_hdu.header[LATEST_SAVE_KEY] = output_path.as_posix()
-            save_hdu_as_fits(ref_hdu, output_path)
-
         if ref_weight_hdu is not None:
             output_weight_path = Path(
                 str(self.get_output_path(output_dir, base_name)).replace(".fits", "")
@@ -173,6 +169,10 @@ class BaseReferenceGenerator:
                 ref_weight_hdu.header[LATEST_SAVE_KEY] = output_weight_path.as_posix()
                 save_hdu_as_fits(ref_weight_hdu, output_weight_path)
                 ref_hdu.header[LATEST_WEIGHT_SAVE_KEY] = output_weight_path.as_posix()
+
+        if self.write_image:
+            ref_hdu.header[LATEST_SAVE_KEY] = output_path.as_posix()
+            save_hdu_as_fits(ref_hdu, output_path)
 
         if self.write_to_db:
             dbexporter = DatabaseImageExporter(
