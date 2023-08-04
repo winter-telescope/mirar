@@ -10,6 +10,7 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.sedmv2.blocks import (
+    detrend_only,
     image_photometry,
     load_raw,
     process_stellar,
@@ -36,6 +37,7 @@ class SEDMv2Pipeline(Pipeline):
         "default": load_raw + process_stellar,
         "default_stellar": load_raw + process_stellar + image_photometry,
         "default_transient": load_raw + process_transient,  # +imsub,
+        "realtime": load_raw + detrend_only,  # +much more...
     }
 
     @staticmethod
