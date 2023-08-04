@@ -69,6 +69,10 @@ def pyzogy(
     with fits.open(ref_image_path) as ref_f:
         ref = ref_f[0].data  # pylint: disable=no-member
 
+    # Set nans to zero in new and ref images
+    new[np.isnan(new)] = 0.0
+    ref[np.isnan(ref)] = 0.0
+
     # Load the PSFs into memory
     with fits.open(new_psf_path) as img_psf_f:
         new_psf = img_psf_f[0].data  # pylint: disable=no-member
