@@ -1,6 +1,7 @@
 """
 Models for the 'candidates' table
 """
+#  pylint: disable=duplicate-code
 import logging
 from typing import ClassVar
 
@@ -65,9 +66,9 @@ class CandidatesTable(WircBase):  # pylint: disable=too-few-public-methods
 
     fid = Column(Integer, nullable=False)
 
-    diffimgname = Column(VARCHAR(255), nullable=False)
-    sciimgname = Column(VARCHAR(255), nullable=False)
-    refimgname = Column(VARCHAR(255), nullable=False)
+    diffimgname = Column(VARCHAR(255), nullable=True)
+    sciimgname = Column(VARCHAR(255), nullable=True)
+    refimgname = Column(VARCHAR(255), nullable=True)
 
     magpsf = Column(Float, nullable=False)
     sigmapsf = Column(Float, nullable=False)
@@ -114,9 +115,9 @@ class Candidate(BaseDB):
 
     fid: int = Field(ge=0)
 
-    diffimgname: str = Field(max_length=255)
-    sciimgname: str = Field(max_length=255)
-    refimgname: str = Field(max_length=255)
+    diffimgname: str | None = Field(max_length=255, default=None)
+    sciimgname: str | None = Field(max_length=255, default=None)
+    refimgname: str | None = Field(max_length=255, default=None)
 
     magpsf: float = Field()
     sigmapsf: float = Field(ge=0)

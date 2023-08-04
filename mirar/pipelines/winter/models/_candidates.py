@@ -206,7 +206,7 @@ class Candidate(BaseDB):
 
     jd: float = Field(ge=0)
 
-    # diffid: int | None = Field(ge=0, default=None) # D
+    diffid: int | None = Field(ge=0, default=None)
 
     fid: int = fid_field
     exptime: float = Field(ge=0)

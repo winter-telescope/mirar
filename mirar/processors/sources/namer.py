@@ -8,7 +8,7 @@ from astropy.time import Time
 from sqlalchemy import select, text
 
 from mirar.data import SourceBatch
-from mirar.database.transactions.select import run_select, select_from_table
+from mirar.database.transactions.select import run_select
 from mirar.paths import CAND_NAME_KEY, SOURCE_HISTORY_KEY
 from mirar.processors.database import DatabaseHistorySelector
 from mirar.processors.database.database_selector import DatabaseSourceSelector
@@ -128,7 +128,7 @@ class CandidateNamer(DatabaseSourceSelector):
             lastname = None
             for _, source in sources.iterrows():
                 if len(source[SOURCE_HISTORY_KEY]) > 0:
-                    source_name = source[SOURCE_HISTORY_KEY].iloc[0][self.db_name_field]
+                    source_name = source[SOURCE_HISTORY_KEY][0][self.db_name_field]
 
                 else:
                     source_name = self.get_next_name(
@@ -150,7 +150,8 @@ class CandidateNamer(DatabaseSourceSelector):
         )
         if check < 1:
             err = (
-                f"{self.__module__} requires {DatabaseHistorySelector} as a prerequisite. "
+                f"{self.__module__} requires {DatabaseHistorySelector} "
+                f"as a prerequisite. "
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)

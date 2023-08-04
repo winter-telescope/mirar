@@ -255,6 +255,9 @@ class DatabaseHistorySelector(DatabaseCrossmatchSelector):
         :return: updated pandas dataframe
         """
         assert len(results) == len(candidate_table)
-        candidate_table[SOURCE_HISTORY_KEY] = results
+
+        candidate_table[SOURCE_HISTORY_KEY] = [
+            x.to_dict(orient="records") for x in results
+        ]
 
         return candidate_table
