@@ -1,6 +1,7 @@
 """
 Models for the 'exposures' table
 """
+# pylint: disable=duplicate-code
 import logging
 from datetime import date, datetime
 from typing import ClassVar

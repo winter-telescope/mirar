@@ -1,6 +1,7 @@
 """
 Models for the 'proc' table
 """
+# pylint: disable=duplicate-code
 import os
 from typing import ClassVar
 

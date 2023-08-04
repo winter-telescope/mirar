@@ -1,6 +1,7 @@
 """
 Models for the 'field' table
 """
+# pylint: disable=duplicate-code
 import time
 from typing import ClassVar
 

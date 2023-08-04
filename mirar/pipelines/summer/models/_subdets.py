@@ -1,6 +1,7 @@
 """
 Models for the 'subdets' table
 """
+# pylint: disable=duplicate-code
 from typing import ClassVar
 
 from pydantic import Field

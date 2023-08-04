@@ -1,6 +1,7 @@
 """
 Models for the 'raw' table
 """
+# pylint: disable=duplicate-code
 import os
 from typing import ClassVar
 

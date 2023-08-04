@@ -1,6 +1,7 @@
 """
 Models for the 'program' table
 """
+# pylint: disable=duplicate-code
 from datetime import date
 from typing import ClassVar
 
