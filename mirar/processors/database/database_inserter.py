@@ -7,7 +7,7 @@ from abc import ABC
 import numpy as np
 import pandas as pd
 
-from mirar.data import ImageBatch, SourceBatch, Image
+from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor

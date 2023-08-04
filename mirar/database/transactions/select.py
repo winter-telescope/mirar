@@ -1,10 +1,8 @@
 """
 Module to select database entries
 """
-from typing import Type
-
 import pandas as pd
-from sqlalchemy import Select, Table, select, text
+from sqlalchemy import Select, text
 
 from mirar.database.base_table import BaseTable
 from mirar.database.constraints import DBQueryConstraints
@@ -51,7 +49,7 @@ def select_from_table(
     """
 
     res = run_select(
-        query=select(sql_table).where(text(db_constraints.parse_constraints())),
+        query=Select(sql_table).where(text(db_constraints.parse_constraints())),
         sql_table=sql_table,
         columns=output_columns,
     )

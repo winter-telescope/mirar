@@ -5,20 +5,17 @@ import logging
 from datetime import date
 from typing import ClassVar, Type
 
-import numpy as np
 import pandas as pd
 from psycopg import errors
 from pydantic import BaseModel, Extra, Field, root_validator, validator
-from sqlalchemy import Column, Insert, Table, Update, inspect
+from sqlalchemy import Column, Table, inspect
 from sqlalchemy.exc import IntegrityError
 
 from mirar.database.constants import POSTGRES_DUPLICATE_PROTOCOLS
 from mirar.database.constraints import DBQueryConstraints
-from mirar.database.engine import get_engine
 from mirar.database.transactions import select_from_table
 from mirar.database.transactions.insert import _insert_in_table
 from mirar.database.transactions.update import _update_database_entry
-from mirar.database.utils import get_sequence_key_names_from_table
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +80,6 @@ class BaseDB(PydanticBase):
 
         assert duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
 
-        primary_key_name = self.get_primary_key()
-
         if returning_key_names is None:
             returning_key_names = self.get_primary_key()
 
@@ -111,44 +106,36 @@ class BaseDB(PydanticBase):
                 logger.error(err)
                 raise errors.UniqueViolation from exc
 
-            elif duplicate_protocol == "ignore":
-                logger.debug(
-                    f"Found duplicate entry in - "
-                    f"{str(exc)}."
-                    f"Ignoring, no new entry made."
-                )
-
-                present_unique_keys = self.get_available_unique_keys()
-
-                assert len(present_unique_keys) > 0
-
-                constraints = DBQueryConstraints(
-                    columns=[x.name for x in present_unique_keys],
-                    accepted_values=[self.dict()[x.name] for x in present_unique_keys],
-                )
-
-                res = select_from_table(
-                    sql_table=self.sql_model,
-                    db_constraints=constraints,
-                    output_columns=returning_key_names,
-                )
-
-            elif duplicate_protocol == "replace":
+            if duplicate_protocol == "replace":
                 logger.debug(f"Conflict at {exc.orig.diag.constraint_name}")
                 logger.debug(
                     f"Found duplicate entry in {db_name} - "
                     f"{str(exc)}."
                     f"Replacing with a new entry."
                 )
-                res = self.update_entry(
-                    primary_key_val=primary_key_name,
-                    returning_key_names=returning_key_names,
-                )
+                self.update_entry()
 
             else:
-                raise ValueError(
-                    f"duplicate_protocol {duplicate_protocol} not recognized"
+                logger.debug(
+                    f"Found duplicate entry in - "
+                    f"{str(exc)}."
+                    f"Ignoring, no new entry made."
                 )
+
+            present_unique_keys = self.get_available_unique_keys()
+
+            assert len(present_unique_keys) > 0
+
+            constraints = DBQueryConstraints(
+                columns=[x.name for x in present_unique_keys],
+                accepted_values=[self.dict()[x.name] for x in present_unique_keys],
+            )
+
+            res = select_from_table(
+                sql_table=self.sql_model,
+                db_constraints=constraints,
+                output_columns=returning_key_names,
+            )
 
         return res
 
@@ -191,14 +178,13 @@ class BaseDB(PydanticBase):
         logger.debug(f"Return result {result}")
         return result
 
-    def _update_entry(self, update_key_names=None) -> pd.DataFrame:
+    def _update_entry(self, update_key_names: list[str] | str | None = None):
         """
         Update database entry
-        Args:
-            primary_key_val: value of primary key to find the db entry
-            update_key_names: names of keys to be updates, if None, will update all keys
-        Returns:
-            sequence_key_names, sequence_key_values of the updated entry
+
+        :param update_key_names: names of keys to be updates,
+            if None, will update all keys
+        :return: None
         """
 
         available_unique_keys = self.get_available_unique_keys()
@@ -214,13 +200,11 @@ class BaseDB(PydanticBase):
 
         update_dict = {key: full_dict[key] for key in update_key_names}
 
-        res = _update_database_entry(
+        _update_database_entry(
             update_dict=update_dict,
             sql_table=self.sql_model,
             db_constraints=constraints,
-            returning_key_names=self.get_primary_key(),
         )
-        return res
 
     def update_entry(self, update_keys=None) -> pd.DataFrame:
         """
@@ -231,7 +215,7 @@ class BaseDB(PydanticBase):
         Returns:
             sequence_key_names, sequence_key_values of the updated entry
         """
-        return self._update_entry(update_keys)
+        self._update_entry(update_keys)
 
     @classmethod
     def _exists(cls, values, keys: str | list = None) -> bool:

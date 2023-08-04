@@ -5,17 +5,17 @@ import logging
 from abc import ABC
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 from mirar.data import ImageBatch
 from mirar.database.constraints import DBQueryConstraints
+from mirar.database.transactions import select_from_table
 from mirar.database.utils import get_sequence_key_names_from_table
+from mirar.processors.database.database_inserter import DatabaseImageInserter
 from mirar.processors.database.database_selector import (
     BaseDatabaseSelector,
     BaseImageDatabaseSelector,
 )
-from mirar.processors.database.database_inserter import DatabaseImageInserter, DatabaseSourceInserter
 
 logger = logging.getLogger(__name__)
 
@@ -91,55 +91,47 @@ class ImageSequenceDatabaseUpdater(ImageDatabaseUpdater):
         return query_constraints
 
 
-class ImageSequenceDatabaseUpdaterList(ImageSequenceDatabaseUpdater):
+class ImageDatabaseManyUpdater(ImageSequenceDatabaseUpdater):
     """
     Processor to modify multiple entries specified by a list of sequences in an
     image database
     """
 
-    def __init__(self, sequence_key: Optional[str | list[str]], **kwargs):
+    def __init__(self, sequence_key: str, **kwargs):
         super().__init__(**kwargs)
-        self.sequence_key = sequence_key
-        if isinstance(self.sequence_key, str):
-            self.sequence_key = [self.sequence_key]
-        if self.sequence_key is None:
-            self.sequence_key = get_sequence_key_names_from_table(
-                self.db_table.sql_model.__tablename__, self.db_name
-            )
+        self.sequence_key = sequence_key.lower()
 
     def _apply_to_images(
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
         for image in batch:
-
             try:
-                data_array = [
-                    [int(y) for y in image[x.lower()].split(",")]
-                    for x in self.sequence_key
-                ]
+                unique_key_vals = [int(y) for y in image[self.sequence_key].split(",")]
             except ValueError as exc:
                 raise ValueError("Sequence keys must be integers") from exc
 
-            data_array_lens = [len(x) for x in data_array]
-            if len(set(data_array_lens)) > 1:
-                raise ValueError("All sequence keys must have the same length")
+            data_df = pd.DataFrame(unique_key_vals, columns=[self.sequence_key])
 
-            data_df = pd.DataFrame(
-                np.array(data_array).T, columns=[x.lower() for x in self.sequence_key]
-            )
-            logger.debug(data_df)
+            for _, row in data_df.iterrows():
+                constraints = DBQueryConstraints(
+                    columns=self.sequence_key, accepted_values=row[self.sequence_key]
+                )
 
-            value_dict = self.generate_value_dict(image)
+                old = select_from_table(
+                    db_constraints=constraints,
+                    sql_table=self.db_table.sql_model,
+                )
 
-            #  Fixme I think this doesn't work
+                assert (
+                    len(old) == 1
+                ), f"Multiple entries found for unique key {self.sequence_key}"
 
-            for ind in range(len(data_df)):
-                row = data_df.iloc[ind]
+                for key in self.db_alter_columns:
+                    old[key] = image[key]
 
-                print(row)
+                new = self.db_table(**old.to_dict(orient="records")[0])
 
-                new = self.db_table(**row.to_dict())
                 new.update_entry(update_keys=self.db_alter_columns)
 
         return batch

@@ -75,7 +75,7 @@ from mirar.processors.database.database_inserter import (
     DatabaseSourceInserter,
 )
 from mirar.processors.database.database_selector import DatabaseHistorySelector
-from mirar.processors.database.database_updater import ImageSequenceDatabaseUpdaterList
+from mirar.processors.database.database_updater import ImageDatabaseManyUpdater
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -339,7 +339,7 @@ photcal_and_export = [
     ),
     ImageSaver(output_dir_name="final"),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
-    ImageSequenceDatabaseUpdaterList(
+    ImageDatabaseManyUpdater(
         sequence_key="rawid",
         db_table=Raw,
         db_alter_columns="ustackid",

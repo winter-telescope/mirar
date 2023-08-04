@@ -189,7 +189,7 @@ class DatabaseCrossmatchSelector(DatabaseSourceSelector, BaseSourceProcessor):
     def get_source_constraints(self, source: pd.Series) -> DBQueryConstraints:
         """
         Apply constraints to a single source, using q3c
-        
+
         :param source: Source
         :return: DBQueryConstraints
         """
