@@ -62,6 +62,7 @@ def winter_wfau_component_image_stacker(**kwargs) -> Swarp:
         calculate_dims_in_swarp=True,
         subtract_bkg=True,
         center_type="ALL",
+        **kwargs,
     )
 
 
@@ -71,7 +72,7 @@ def winter_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
         **sextractor_reference_config,
         gain=gain,
         output_sub_dir=output_sub_dir,
-        cache=True,
+        cache=False,
     )
 
 
