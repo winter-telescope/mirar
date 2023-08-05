@@ -45,6 +45,7 @@ def unzip(zipped_list: list[str]) -> list[str]:
 def load_from_dir(
     input_dir: str | Path,
     open_f: Callable[[str | Path], Image | list[Image]],
+    skip_filenames: list[str] = None,
 ) -> ImageBatch:
     """
     Function to load all images in a directory
@@ -70,6 +71,11 @@ def load_from_dir(
     images = ImageBatch()
 
     for path in tqdm(img_list):
+        if skip_filenames is not None:
+            if any([ii in Path(path).name for ii in skip_filenames]):
+                logger.debug(f"Skipping file {path} because of set skip_filenames.")
+                continue
+
         if check_file_is_complete(path):
             image_list = open_f(path)
 
@@ -101,6 +107,7 @@ class ImageLoader(BaseImageProcessor):
         input_sub_dir: str = RAW_IMG_SUB_DIR,
         input_img_dir: str | Path = base_raw_dir,
         load_image: Callable[[str], Image | list[Image]] = None,
+        skip_filenames: list[str] = None,
     ):
         super().__init__()
         self.input_sub_dir = input_sub_dir
@@ -108,6 +115,7 @@ class ImageLoader(BaseImageProcessor):
         if load_image is None:
             load_image = self.default_load_image
         self.load_image = load_image
+        self.skip_filenames = skip_filenames
 
     def __str__(self):
         return (
@@ -123,6 +131,7 @@ class ImageLoader(BaseImageProcessor):
         return load_from_dir(
             input_dir,
             open_f=self.load_image,
+            skip_filenames=self.skip_filenames,
         )
 
 
