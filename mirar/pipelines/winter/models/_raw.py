@@ -13,12 +13,12 @@ from mirar.pipelines.winter.models._exposures import Exposure
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 
-class RawTable(WinterBase):  # pylint: disable=too-few-public-methods
+class RawsTable(WinterBase):  # pylint: disable=too-few-public-methods
     """
     Raw table in database
     """
 
-    __tablename__ = "raw"
+    __tablename__ = "raws"
     __table_args__ = {"extend_existing": True}
 
     urawid = Column(
@@ -38,14 +38,13 @@ class RawTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     savepath = Column(VARCHAR(255), unique=True)
 
-    # procstatus = Column(Integer, default=0)
     ustackid: Mapped[int] = mapped_column(ForeignKey("stacks.ustackid"), nullable=True)
     stacks: Mapped["StacksTable"] = relationship(back_populates="raw")
 
-    # proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
     astrometry: Mapped["AstrometryStatsTable"] = relationship(
         back_populates="astrom_raw_ids"
     )
+    diff: Mapped["DiffsTable"] = relationship(back_populates="raw_ids")
 
 
 class Raw(BaseDB):
@@ -53,7 +52,7 @@ class Raw(BaseDB):
     A pydantic model for a raw database entry
     """
 
-    sql_model: ClassVar = RawTable
+    sql_model: ClassVar = RawsTable
 
     rawid: int = Field(ge=0)
     uexpid: int = Field(ge=0)

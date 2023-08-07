@@ -268,15 +268,11 @@ def winter_reference_generator(image: Image):
         output_columns=["savepath"],
     )
 
-    ref_exists = False
     if len(db_results) > 0:
-        savepaths = [x[0] for x in db_results]
-        if os.path.exists(db_results["savepath"].iloc[0]):
-            ref_exists = True
-            logger.debug(f"Found reference image in database: {savepaths[0]}")
-
-    if ref_exists:
-        return RefFromPath(path=db_results["savepath"].iloc[0], filter_name=filtername)
+        savepath = db_results["savepath"].iloc[0]
+        if os.path.exists(savepath):
+            logger.debug(f"Found reference image in database: {savepath}")
+            return RefFromPath(path=savepath, filter_name=filtername)
 
     ukirt_query = UKIRTOnlineQuery(
         num_query_points=9,

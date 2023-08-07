@@ -9,7 +9,7 @@ from sqlalchemy import Column, Float, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
-from mirar.pipelines.winter.models._raw import RawTable
+from mirar.pipelines.winter.models._raw import RawsTable
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 logger = logging.getLogger(__name__)
@@ -23,8 +23,8 @@ class AstrometryStatsTable(WinterBase):  # pylint: disable=too-few-public-method
     __tablename__ = "astrometry_stats"
     __table_args__ = {"extend_existing": True}
 
-    rawid = mapped_column(ForeignKey("raw.rawid"), primary_key=True, unique=True)
-    astrom_raw_ids: Mapped["RawTable"] = relationship(back_populates="astrometry")
+    rawid = mapped_column(ForeignKey("raws.rawid"), primary_key=True, unique=True)
+    astrom_raw_ids: Mapped["RawsTable"] = relationship(back_populates="astrometry")
     crval1 = Column(Float)
     crval2 = Column(Float)
     crpix1 = Column(Float)

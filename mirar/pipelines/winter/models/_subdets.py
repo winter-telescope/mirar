@@ -4,16 +4,13 @@ Models for the 'subdets' table
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import Column, Integer, Select
+from sqlalchemy import Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
 from mirar.database.base_model import BaseDB
-from mirar.database.engine import get_engine
 from mirar.database.transactions import is_populated
 from mirar.pipelines.winter.constants import subdets
 from mirar.pipelines.winter.models.base_model import WinterBase
-
-DEFAULT_FIELD = 999999999
 
 
 class SubdetsTable(WinterBase):  # pylint: disable=too-few-public-methods
@@ -31,7 +28,7 @@ class SubdetsTable(WinterBase):  # pylint: disable=too-few-public-methods
     ny = Column(Integer)
     nytot = Column(Integer)
 
-    raw: Mapped["RawTable"] = relationship(back_populates="subdets")
+    raw: Mapped["RawsTable"] = relationship(back_populates="subdets")
 
 
 class Subdet(BaseDB):

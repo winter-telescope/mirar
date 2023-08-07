@@ -26,10 +26,6 @@ scamp_fp_path = wirc_file_dir.joinpath("scamp_fp.conf")
 
 swarp_sp_path = wirc_file_dir.joinpath("second_pass.swarp")
 
-wirc_candidate_schema_path = wirc_schema_dir.joinpath("candidates.sql")
-
-# candidate_colnames = get_column_names_from_schema(wirc_candidate_schema_path)
-
 sextractor_reference_config = {
     "config_path": wirc_file_dir.joinpath("photomCat.sex"),
     "parameter_path": wirc_file_dir.joinpath("photom.param"),

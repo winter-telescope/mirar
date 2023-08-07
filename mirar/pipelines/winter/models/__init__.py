@@ -47,7 +47,7 @@ from mirar.pipelines.winter.models._programs import (
     default_program,
     populate_programs,
 )
-from mirar.pipelines.winter.models._raw import Raw, RawTable
+from mirar.pipelines.winter.models._raw import Raw, RawsTable
 from mirar.pipelines.winter.models._ref_components import (
     RefComponent,
     RefComponentsTable,

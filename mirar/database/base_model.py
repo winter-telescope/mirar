@@ -75,6 +75,8 @@ class BaseDB(PydanticBase):
         """
         Insert the pydantic-ified data into the corresponding sql database
 
+        :param returning_key_names: names of keys to return
+        :param duplicate_protocol: protocol to follow if duplicate entry is found
         :return: sequence_key dataframe
         """
 
@@ -142,8 +144,8 @@ class BaseDB(PydanticBase):
     def get_primary_key(self) -> str:
         """
         Get the primary key of the table
-        Returns:
-        primary key
+
+        :return: primary key
         """
         primary_key = inspect(self.sql_model).primary_key[0]
         return primary_key.name
@@ -151,8 +153,8 @@ class BaseDB(PydanticBase):
     def get_unique_keys(self) -> list[Column]:
         """
         Get the unique key of the table
-        Returns:
-        unique key
+
+        :return: unique keys
         """
         cols = [x for x in self.sql_model.__table__.columns if x.unique]
         return cols
@@ -206,14 +208,12 @@ class BaseDB(PydanticBase):
             db_constraints=constraints,
         )
 
-    def update_entry(self, update_keys=None) -> pd.DataFrame:
+    def update_entry(self, update_keys=None):
         """
         Wrapper to update database entry. Users should override this function.
-        Args:
-            primary_key_val:
-            update_keys:
-        Returns:
-            sequence_key_names, sequence_key_values of the updated entry
+
+        :param update_keys: keys to update
+        :return: None
         """
         self._update_entry(update_keys)
 
@@ -222,12 +222,10 @@ class BaseDB(PydanticBase):
         """
         Function to query a table and see whether an entry with key==value exists.
         If key is None, key will default to the table's primary key.
-        Args:
-            values: = Value to match
-            keys: str = column name
 
-        Returns:
-            boolean
+        :param values: values to query
+        :param keys: keys to query
+        :return: True if entry exists, False otherwise
         """
         db_constraints = DBQueryConstraints(
             columns=keys, accepted_values=values, comparison_types="="

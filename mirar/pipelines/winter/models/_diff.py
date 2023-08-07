@@ -5,7 +5,7 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import VARCHAR, Column, Double, ForeignKey, Integer, Sequence
+from sqlalchemy import VARCHAR, Column, ForeignKey, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.database.base_model import BaseDB
@@ -21,16 +21,19 @@ class DiffsTable(WinterBase):  # pylint: disable=too-few-public-methods
     __tablename__ = "diffs"
     __table_args__ = {"extend_existing": True}
 
-    udiffid = Column(
+    diffid = Column(
         Integer,
         Sequence(start=1, name="diff_udiffid_seq"),
         autoincrement=True,
         unique=True,
+        primary_key=True,
     )
-    diffid = Column(Double, primary_key=True, autoincrement=False)
 
     uexpid: Mapped[int] = mapped_column(ForeignKey("exposures.uexpid"))
     exposure_ids: Mapped["ExposuresTable"] = relationship(back_populates="diff")
+
+    rawid: Mapped[int] = mapped_column(ForeignKey("raws.rawid"))
+    raw_ids: Mapped["RawsTable"] = relationship(back_populates="diff")
 
     stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))
     stack_id: Mapped["StacksTable"] = relationship(back_populates="diff")
