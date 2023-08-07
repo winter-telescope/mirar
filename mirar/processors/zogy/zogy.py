@@ -409,7 +409,9 @@ class ZOGY(ZOGYPrepare):
 
             scorr_image_path = Path(sci_image_path).with_suffix(".scorr.fits")
 
-            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(scorr_data)
+            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(
+                scorr_data, mask_value=np.nan
+            )
 
             logger.debug(
                 f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}"
@@ -421,7 +423,9 @@ class ZOGY(ZOGYPrepare):
             diff_rms_data = np.sqrt(
                 sci_rms_image.get_data() ** 2 + ref_rms_image.get_data() ** 2
             )
-            _, diff_rms_median, _ = sigma_clipped_stats(diff_rms_data)
+            _, diff_rms_median, _ = sigma_clipped_stats(
+                diff_rms_data[~np.isnan(diff_rms_data)], mask_value=np.nan
+            )
             diff_rms_path = diff_image_path.with_suffix(".unc.fits")
 
             diff = Image(data=diff_data, header=copy(image.get_header()))
@@ -433,6 +437,7 @@ class ZOGY(ZOGYPrepare):
             noise = np.sqrt(
                 np.nansum(np.square(diff_psf_data) * np.square(diff_rms_median))
             ) / np.nansum(np.square(diff_psf_data))
+
             diff["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
                 diff[self.sci_zp_header_key]
             )
