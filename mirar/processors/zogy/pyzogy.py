@@ -65,13 +65,16 @@ def pyzogy(
     # Load the new and ref images into memory
     new_image = open_raw_image(new_image_path)
     new = new_image.get_data()
-
+    logger.debug(f"New image path: {new_image_path}")
     with fits.open(ref_image_path) as ref_f:
         ref = ref_f[0].data  # pylint: disable=no-member
 
     # Set nans to zero in new and ref images
-    new[np.isnan(new)] = 0.0
-    ref[np.isnan(ref)] = 0.0
+    new_nanmask = np.isnan(new)
+    ref_nanmask = np.isnan(ref)
+
+    new[new_nanmask] = 0.0
+    ref[ref_nanmask] = 0.0
 
     # Load the PSFs into memory
     with fits.open(new_psf_path) as img_psf_f:
@@ -125,15 +128,14 @@ def pyzogy(
         + ref_avg_unc**2 * np.abs(new_psf_hat**2)
         + 1e-8
     )
-    diff_hat = diff_hat_numerator / diff_hat_denominator
 
+    diff_hat = diff_hat_numerator / diff_hat_denominator
     # Flux-based zero point (Equation 15)
     flux_zero_point = 1.0 / np.sqrt(new_avg_unc**2 + ref_avg_unc**2)
 
     # Difference Image
     # TODO: Why is the flux_zero_point normalization in there?
     diff = np.real(fft.ifft2(diff_hat)) / flux_zero_point
-
     # Fourier Transform of PSF of Subtraction Image (Equation 14)
     diff_hat_psf = ref_psf_hat * new_psf_hat / flux_zero_point / diff_hat_denominator
 
@@ -141,7 +143,6 @@ def pyzogy(
     diff_psf = np.real(fft.ifft2(diff_hat_psf))
     diff_psf = fft.ifftshift(diff_psf)
     diff_psf = diff_psf[y_min:y_max, x_min:x_max]
-
     logger.debug(
         f"Max of diff PSF is "
         f"{np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape)}"
@@ -163,6 +164,9 @@ def pyzogy(
     with fits.open(ref_sigma_path) as ref_sigma_f:
         ref_sigma = ref_sigma_f[0].data  # pylint: disable=no-member
 
+    new_sigma[new_nanmask] = 0.0
+    ref_sigma[ref_nanmask] = 0.0
+
     # Sigma to variance
     new_variance = new_sigma**2
     ref_variance = ref_sigma**2
@@ -172,27 +176,27 @@ def pyzogy(
     ref_variance_hat = fft.fft2(ref_variance)
 
     # Equation 28
-    kr_hat = (
+    k_r_hat = (
         np.conj(ref_psf_hat) * np.abs(new_psf_hat**2) / (diff_hat_denominator**2)
     )
-    kr = np.real(fft.ifft2(kr_hat))
+    k_r = np.real(fft.ifft2(k_r_hat))
 
     # Equation 29
-    kn_hat = (
+    k_n_hat = (
         np.conj(new_psf_hat) * np.abs(ref_psf_hat**2) / (diff_hat_denominator**2)
     )
-    kn = np.real(fft.ifft2(kn_hat))
+    k_n = np.real(fft.ifft2(k_n_hat))
 
     # Noise in New Image: Equation 26
-    new_noise = np.real(fft.ifft2(new_variance_hat * fft.fft2(kn**2)))
+    new_noise = np.real(fft.ifft2(new_variance_hat * fft.fft2(k_n**2)))
 
     # Noise in Reference Image: Equation 27
-    ref_noise = np.real(fft.ifft2(ref_variance_hat * fft.fft2(kr**2)))
+    ref_noise = np.real(fft.ifft2(ref_variance_hat * fft.fft2(k_r**2)))
 
     # Astrometric Noise
     # Equation 31
     # TODO: Check axis (0/1) vs x/y coordinates
-    new_sigma = np.real(fft.ifft2(kn_hat * new_hat))
+    new_sigma = np.real(fft.ifft2(k_n_hat * new_hat))
     dsn_dx = new_sigma - np.roll(new_sigma, 1, axis=1)
     dsn_dy = new_sigma - np.roll(new_sigma, 1, axis=0)
 
@@ -200,7 +204,7 @@ def pyzogy(
     v_ast_s_n = dx**2 * dsn_dx**2 + dy**2 * dsn_dy**2
 
     # Equation 33
-    ref_sigma = np.real(fft.ifft2(kr_hat * ref_hat))
+    ref_sigma = np.real(fft.ifft2(k_r_hat * ref_hat))
     dsr_dx = ref_sigma - np.roll(ref_sigma, 1, axis=1)
     dsr_dy = ref_sigma - np.roll(ref_sigma, 1, axis=0)
 
@@ -209,5 +213,9 @@ def pyzogy(
 
     # Calculate Scorr
     s_corr = score / np.sqrt(new_noise + ref_noise + v_ast_s_n + v_ast_s_r)
+
+    # Set back nans before returning
+    diff[new_nanmask | ref_nanmask] = np.nan
+    s_corr[new_nanmask | ref_nanmask] = np.nan
 
     return diff, diff_psf, s_corr
