@@ -21,6 +21,7 @@ from mirar.processors.photometry.base_photometry import (
     BaseImagePhotometry,
     PSFPhotometry,
 )
+from mirar.processors.photometry.utils import get_mags_from_fluxes
 
 logger = logging.getLogger(__name__)
 
@@ -98,12 +99,15 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
             candidate_table["chipsf"] = minchi2s
             candidate_table["xshift"] = xshifts
             candidate_table["yshift"] = yshifts
-            candidate_table[MAG_PSF_KEY] = np.array(
-                candidate_table[self.zp_colname], dtype=float
-            ) - 2.5 * np.log10(candidate_table[PSF_FLUX_KEY])
-            candidate_table[MAGERR_PSF_KEY] = (
-                1.086 * candidate_table[PSF_FLUXUNC_KEY] / candidate_table[PSF_FLUX_KEY]
+
+            magnitudes, magnitudes_unc = get_mags_from_fluxes(
+                flux_list=fluxes,
+                fluxunc_list=fluxuncs,
+                zeropoint_list=np.array(candidate_table[self.zp_colname], dtype=float),
             )
+
+            candidate_table[MAG_PSF_KEY] = magnitudes
+            candidate_table[MAGERR_PSF_KEY] = magnitudes_unc
 
             source_table.set_data(candidate_table)
 

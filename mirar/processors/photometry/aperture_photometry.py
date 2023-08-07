@@ -18,6 +18,7 @@ from mirar.processors.photometry.base_photometry import (
     BaseCandidatePhotometry,
     BaseImagePhotometry,
 )
+from mirar.processors.photometry.utils import get_mags_from_fluxes
 
 
 class CandidateAperturePhotometry(BaseCandidatePhotometry):
@@ -73,12 +74,16 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
                 flux, fluxunc = all_fluxes[ind], all_fluxuncs[ind]
                 candidate_table[f"{APFLUX_PREFIX_KEY}{suffix}"] = flux
                 candidate_table[f"{APFLUXUNC_PREFIX_KEY}{suffix}"] = fluxunc
-                candidate_table[f"{APMAG_PREFIX_KEY}{suffix}"] = np.array(
-                    candidate_table[self.zp_colname], dtype=float
-                ) - 2.5 * np.log10(flux)
-                candidate_table[f"{APMAGUNC_PREFIX_KEY}{suffix}"] = (
-                    1.086 * fluxunc / flux
+
+                magnitudes, magnitudes_unc = get_mags_from_fluxes(
+                    flux_list=flux,
+                    fluxunc_list=fluxunc,
+                    zeropoint_list=np.array(
+                        candidate_table[self.zp_colname], dtype=float
+                    ),
                 )
+                candidate_table[f"{APMAG_PREFIX_KEY}{suffix}"] = magnitudes
+                candidate_table[f"{APMAGUNC_PREFIX_KEY}{suffix}"] = magnitudes_unc
 
             source_table.set_data(candidate_table)
 
@@ -131,9 +136,13 @@ class ImageAperturePhotometry(BaseImagePhotometry):
                 suffix = self.col_suffix_list[ind]
                 image[f"fluxap{suffix}"] = flux
                 image[f"fluxunc{suffix}"] = fluxunc
-                image[f"magap{suffix}"] = float(
-                    image[self.zp_colname]
-                ) - 2.5 * np.log10(flux)
-                image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
+                if flux <= 0:
+                    image[f"magap{suffix}"] = None
+                    image[f"magerrap{suffix}"] = None
+                else:
+                    image[f"magap{suffix}"] = float(
+                        image[self.zp_colname]
+                    ) - 2.5 * np.log10(flux)
+                    image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
 
         return batch
