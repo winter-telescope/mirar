@@ -207,9 +207,9 @@ def aper_photometry(
     if plot:
         if plotfilename is None:
             raise ValueError("Please provide a filename to save the plot to.")
-        fig, ax = plt.subplots()
+        fig, plot_ax = plt.subplots()
         mean, std = np.nanmean(image_cutout), np.nanstd(image_cutout)
-        ax.imshow(
+        plot_ax.imshow(
             image_cutout,
             interpolation="nearest",
             cmap="gray",
@@ -228,11 +228,11 @@ def aper_photometry(
         bkg_inner_annulus.set_edgecolor("red")
         bkg_outer_annulus.set_facecolor("none")
         bkg_outer_annulus.set_edgecolor("red")
-        ax.add_artist(circle)
-        ax.add_artist(bkg_inner_annulus)
-        ax.add_artist(bkg_outer_annulus)
-        ax.set_xlim(x_crd - 30, x_crd + 30)
-        ax.set_ylim(y_crd - 30, y_crd + 30)
+        plot_ax.add_artist(circle)
+        plot_ax.add_artist(bkg_inner_annulus)
+        plot_ax.add_artist(bkg_outer_annulus)
+        plot_ax.set_xlim(x_crd - 30, x_crd + 30)
+        plot_ax.set_ylim(y_crd - 30, y_crd + 30)
         plt.savefig(plotfilename)
         plt.close(fig)
 
