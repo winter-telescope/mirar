@@ -1,14 +1,15 @@
 """
 Models for the 'nights' table
 """
+# pylint: disable=duplicate-code
 from datetime import date
 from typing import ClassVar
 
 from sqlalchemy import DATE, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB, date_field
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB, date_field
 
 
 class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods
@@ -38,4 +39,4 @@ class Night(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.nightdate, keys="nightdate")
+        return self._exists(values=self.nightdate, keys="nightdate")

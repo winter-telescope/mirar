@@ -5,11 +5,11 @@ import os
 from typing import ClassVar
 
 from pydantic import Field, validator
-from sqlalchemy import REAL, VARCHAR, Column, Double, Integer, Sequence  # event,
+from sqlalchemy import REAL, VARCHAR, BigInteger, Column, Integer, Sequence  # event,
 from sqlalchemy.orm import relationship
 
+from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import BaseDB, dec_field, ra_field
 
 
 class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
@@ -25,10 +25,12 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
         Sequence(start=1, name="stacks_ustackid_seq"),
         autoincrement=True,
         unique=True,
+        primary_key=True,
     )
-    stackid = Column(Double, primary_key=True, autoincrement=False)
+    stackid = Column(BigInteger, primary_key=False, unique=True, autoincrement=False)
 
-    raw = relationship("RawTable", back_populates="stacks")
+    raw = relationship("RawsTable", back_populates="stacks")
+    diff = relationship("DiffsTable", back_populates="stack_id")
     # procid = Column(Double, primary_key=True, autoincrement=False)
 
     # rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)

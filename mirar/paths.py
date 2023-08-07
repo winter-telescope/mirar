@@ -274,9 +274,6 @@ MAG_PSF_KEY = "magpsf"
 MAGERR_PSF_KEY = "sigmapsf"
 XPOS_KEY = "xpos"
 YPOS_KEY = "ypos"
-CAND_NAME_KEY = "objectId"
-CAND_RA_KEY = "ra"
-CAND_DEC_KEY = "dec"
 FITS_MASK_KEY = "MASKFITS"
 sextractor_checkimg_keys = {
     "BACKGROUND": "BKGPT",
@@ -307,6 +304,11 @@ core_fields = [
     RAW_IMG_KEY,
     BASE_NAME_KEY,
 ]
+
+CAND_NAME_KEY = "objectid"
+CAND_RA_KEY = "ra"
+CAND_DEC_KEY = "dec"
+SOURCE_HISTORY_KEY = "prv_candidates"
 
 MONITOR_EMAIL_KEY = "WATCHDOG_EMAIL"
 MONITOR_PASSWORD_KEY = "WATCHDOG_EMAIL_PASSWORD"

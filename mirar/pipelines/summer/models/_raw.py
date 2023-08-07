@@ -1,6 +1,7 @@
 """
 Models for the 'raw' table
 """
+# pylint: disable=duplicate-code
 import os
 from typing import ClassVar
 
@@ -8,9 +9,9 @@ from pydantic import Field, validator
 from sqlalchemy import VARCHAR, Column, Double, ForeignKey, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from mirar.database.base_model import BaseDB
 from mirar.pipelines.summer.models._exposures import Exposure
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB
 
 
 class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
@@ -77,5 +78,5 @@ class Raw(BaseDB):
         Returns:
 
         """
-        assert Exposure.sql_model().exists(keys="uexpid", values=field_value)
+        assert Exposure._exists(keys="uexpid", values=field_value)
         return field_value

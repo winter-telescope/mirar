@@ -9,9 +9,9 @@ from pathlib import Path
 
 from astropy.io import fits
 
+from mirar.database.user import PostgresUser
 from mirar.paths import LATEST_SAVE_KEY, base_output_dir, get_output_dir
 from mirar.pipelines.winter.models import RefComponent
-from mirar.processors.sqldatabase.postgres import PostgresUser
 
 logger = logging.getLogger(__name__)
 

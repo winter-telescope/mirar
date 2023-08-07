@@ -7,8 +7,8 @@ from pydantic import Field
 from sqlalchemy import VARCHAR, BigInteger, Column, Float, Integer
 from sqlalchemy.orm import Mapped, relationship
 
-from mirar.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
-from mirar.processors.sqldatabase.base_model import BaseDB
+from mirar.database.base_model import BaseDB, dec_field, ra_field
+from mirar.pipelines.winter.models.base_model import WinterBase
 
 
 class RefComponentsTable(WinterBase):
@@ -71,7 +71,4 @@ class RefComponent(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(
-            values=[self.mfid, self.xtnsnid],
-            keys=["mfid", "xtnsnid"],
-        )
+        return self._exists(values=[self.mfid, self.xtnsnid], keys=["mfid", "xtnsnid"])

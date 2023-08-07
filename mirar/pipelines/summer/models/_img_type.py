@@ -1,14 +1,15 @@
 """
 Models for the 'itid' table
 """
+# pylint: disable=duplicate-code
 from typing import ClassVar
 
 from pydantic import Field
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB
 
 ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "NULL"]
 DEFAULT_ITID = 5
@@ -43,7 +44,7 @@ class ImgType(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.itid, keys="itid")
+        return self._exists(values=self.itid, keys="itid")
 
 
 def populate_itid():

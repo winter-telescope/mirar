@@ -33,7 +33,7 @@ EXPECTED_HEADER_VALUES = {
 EXPECTED_DATAFRAME_VALUES = {
     "magpsf": [16.957492],
     "magap": [17.014131],
-    "objectId": ["ZTF21aagppzg"],
+    "objectid": ["ZTF21aagppzg"],
 }
 test_fp_configuration = (
     [

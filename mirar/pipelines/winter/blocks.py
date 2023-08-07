@@ -1,10 +1,12 @@
 """
 Module for WINTER data reduction
 """
+# pylint: disable=duplicate-code
 from mirar.catalog.kowalski import PS1, TMASS
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
+    CAND_NAME_KEY,
     DITHER_N_KEY,
     EXPTIME_KEY,
     MAX_DITHER_KEY,
@@ -14,6 +16,7 @@ from mirar.paths import (
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
+    prv_candidate_cols,
     psfex_path,
     scamp_config_path,
     sextractor_anet_config,
@@ -24,8 +27,8 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_config,
     swarp_config_path,
     winter_avro_schema_path,
-    winter_candidate_config,
 )
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_generator,
     winter_astrometry_sextractor_catalog_purifier,
@@ -46,10 +49,12 @@ from mirar.pipelines.winter.load_winter_image import (
     load_winter_mef_image,
 )
 from mirar.pipelines.winter.models import (
+    CANDIDATE_PREFIX,
     DEFAULT_FIELD,
-    NXSPLIT,
-    NYSPLIT,
+    NAME_START,
     AstrometryStat,
+    Candidate,
+    Diff,
     Exposure,
     Raw,
     Stack,
@@ -65,10 +70,13 @@ from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.avro import IPACAvroExporter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.database.database_exporter import DatabaseDataframeExporter
-from mirar.processors.database.database_importer import DatabaseHistoryImporter
-from mirar.processors.database.database_modifier import ModifyImageDatabaseSeqList
-from mirar.processors.database.utils import get_column_names_from_schema
+from mirar.processors.database.database_inserter import (
+    DatabaseImageBatchInserter,
+    DatabaseImageInserter,
+    DatabaseSourceInserter,
+)
+from mirar.processors.database.database_selector import DatabaseHistorySelector
+from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -85,10 +93,6 @@ from mirar.processors.sources import (
     SourceWriter,
 )
 from mirar.processors.split import SUB_ID_KEY, SplitImage
-from mirar.processors.sqldatabase.database_exporter import (
-    DatabaseImageBatchExporter,
-    DatabaseImageExporter,
-)
 from mirar.processors.utils import (
     CustomImageModifier,
     HeaderAnnotator,
@@ -151,7 +155,7 @@ load_raw = [
 
 extract_all = [
     ImageBatcher("UTCTIME"),
-    DatabaseImageBatchExporter(db_table=Exposure, duplicate_protocol="ignore"),
+    DatabaseImageBatchInserter(db_table=Exposure, duplicate_protocol="ignore"),
     ImageSelector((OBSCLASS_KEY, ["dark", "science"])),
 ]
 
@@ -213,7 +217,7 @@ mask_and_split = [
 
 save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
-    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
+    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -300,7 +304,7 @@ validate_astrometry = [
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
-    DatabaseImageExporter(db_table=AstrometryStat, duplicate_protocol="ignore"),
+    DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="ignore"),
 ]
 
 stack_dithers = [
@@ -335,12 +339,10 @@ photcal_and_export = [
         cache=True,
     ),
     ImageSaver(output_dir_name="final"),
-    DatabaseImageExporter(db_table=Stack, duplicate_protocol="replace", q3c_bool=False),
-    ModifyImageDatabaseSeqList(
-        db_name="winter",
-        schema_path="fake_placeholder_path.sql",
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
+    ImageDatabaseMultiEntryUpdater(
         sequence_key="rawid",
-        db_table=Raw.sql_model.__tablename__,
+        db_table=Raw,
         db_alter_columns="ustackid",
     ),
 ]
@@ -373,7 +375,7 @@ imsub = [
     ZOGY(
         output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
     ),
-    ImageSaver(output_dir_name="diffs"),
+    DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
 ]
 
 detect_candidates = [
@@ -393,8 +395,8 @@ detect_candidates = [
     ),
     SourceWriter(output_dir_name="candidates"),
 ]
-
-candidate_colnames = get_column_names_from_schema(winter_candidate_config)
+#
+# candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
 load_candidates = [
     SourceLoader(input_dir_name="candidates"),
@@ -405,29 +407,22 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
-    DatabaseHistoryImporter(
+    DatabaseHistorySelector(
         crossmatch_radius_arcsec=2.0,
         time_field_name="jd",
         history_duration_days=500.0,
-        db_name="winter",
-        db_table="candidates",
-        db_output_columns=candidate_colnames,
-        schema_path=winter_candidate_config,
-        q3c_bool=False,
+        db_table=Candidate,
+        db_output_columns=prv_candidate_cols + [CAND_NAME_KEY],
     ),
     CandidateNamer(
-        db_name="winter",
-        db_table="candidates",
-        base_name="WNTR",
-        name_start="aaaaa",
+        db_table=Candidate,
+        base_name=CANDIDATE_PREFIX,
+        name_start=NAME_START,
         xmatch_radius_arcsec=2,
-        schema_path=winter_candidate_config,
     ),
-    DatabaseDataframeExporter(
-        db_name="winter",
-        db_table="candidates",
-        schema_path=winter_candidate_config,
-        duplicate_protocol="replace",
+    DatabaseSourceInserter(
+        db_table=Candidate,
+        duplicate_protocol="fail",
     ),
     SourceWriter(output_dir_name="preavro"),
     IPACAvroExporter(

@@ -6,8 +6,8 @@ from typing import ClassVar
 from pydantic import Field
 from sqlalchemy import VARCHAR, BigInteger, Column, Float, Integer
 
-from mirar.pipelines.winter.models.base_model import WinterBase, dec_field, ra_field
-from mirar.processors.sqldatabase.base_model import BaseDB
+from mirar.database.base_model import BaseDB, dec_field, ra_field
+from mirar.pipelines.winter.models.base_model import WinterBase
 
 
 class RefStacksTable(WinterBase):
@@ -68,9 +68,6 @@ class RefStack(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(
+        return self._exists(
             values=[self.ra_cent, self.dec_cent], keys=["ra_cent", "dec_cent"]
         )
-
-    def insert_entry(self, returning_keys=None):
-        return self._insert_entry(returning_key_names=returning_keys)

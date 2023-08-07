@@ -10,6 +10,8 @@ from astropy.table import Table
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.vizier import PS1
 from mirar.data import Image
+from mirar.database.constraints import DBQueryConstraints
+from mirar.database.transactions import select_from_table
 from mirar.paths import SATURATE_KEY, get_output_dir
 from mirar.pipelines.winter.config import (
     psfex_path,
@@ -255,22 +257,22 @@ def winter_reference_generator(image: Image):
     subdetid = int(image[SUB_ID_KEY])
     logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
 
-    db_results = RefStack.sql_model().select_query(
-        select_keys=["savepath"],
-        compare_keys=["fieldid", SUB_ID_KEY.lower()],
-        compare_values=[fieldid, subdetid],
-        comparators=["__eq__", "__eq__"],
+    constraints = DBQueryConstraints(
+        columns=["fieldid", SUB_ID_KEY.lower()],
+        accepted_values=[fieldid, subdetid],
     )
 
-    ref_exists = False
-    if len(db_results) > 0:
-        savepaths = [x[0] for x in db_results]
-        if os.path.exists(savepaths[0]):
-            ref_exists = True
-            logger.debug(f"Found reference image in database: {savepaths[0]}")
+    db_results = select_from_table(
+        db_constraints=constraints,
+        sql_table=RefStack.sql_model,
+        output_columns=["savepath"],
+    )
 
-    if ref_exists:
-        return RefFromPath(path=savepaths[0], filter_name=filtername)
+    if len(db_results) > 0:
+        savepath = db_results["savepath"].iloc[0]
+        if os.path.exists(savepath):
+            logger.debug(f"Found reference image in database: {savepath}")
+            return RefFromPath(path=savepath, filter_name=filtername)
 
     ukirt_query = UKIRTOnlineQuery(
         num_query_points=9,

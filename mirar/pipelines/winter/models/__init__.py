@@ -1,15 +1,23 @@
 """
 Models for database and pydantic dataclass models
 """
-from typing import Union
+import logging
 
-from sqlalchemy.orm import DeclarativeBase
-
-from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
+from mirar.database.base_table import BaseTable
+from mirar.database.credentials import DB_USER
+from mirar.database.q3c import create_q3c_extension
+from mirar.database.setup import setup_database
 from mirar.pipelines.winter.models._astrometry_stats import (
     AstrometryStat,
     AstrometryStatsTable,
 )
+from mirar.pipelines.winter.models._candidates import (
+    CANDIDATE_PREFIX,
+    NAME_START,
+    Candidate,
+    CandidatesTable,
+)
+from mirar.pipelines.winter.models._diff import Diff, DiffsTable
 from mirar.pipelines.winter.models._exposures import Exposure, ExposuresTable
 from mirar.pipelines.winter.models._fields import (
     DEFAULT_FIELD,
@@ -39,7 +47,7 @@ from mirar.pipelines.winter.models._programs import (
     default_program,
     populate_programs,
 )
-from mirar.pipelines.winter.models._raw import Raw, RawTable
+from mirar.pipelines.winter.models._raw import Raw, RawsTable
 from mirar.pipelines.winter.models._ref_components import (
     RefComponent,
     RefComponentsTable,
@@ -53,47 +61,31 @@ from mirar.pipelines.winter.models._subdets import (
     populate_subdets,
 )
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.database.postgres import (
-    ADMIN_PASSWORD,
-    ADMIN_USER,
-    DB_PASSWORD,
-    DB_USER,
-    PostgresAdmin,
-)
-from mirar.processors.sqldatabase.base_model import BaseTable
-from mirar.utils.sql import get_engine
+
+logger = logging.getLogger(__name__)
 
 
-def setup_database(base: Union[DeclarativeBase, BaseTable]):
+def set_up_q3c(db_name: str, db_table: BaseTable):
     """
-    Function to setup database
-    Args:
-        base:
-    Returns:
+    Function to setup q3c extension for a given table in db
+
+    :param db_name: Name of database
+    :param db_table: Table to setup q3c extension for
+    :return:
     """
-    if DB_USER is not None:
-        db_name = base.db_name
-        admin_engine = get_engine(
-            db_name=db_name, db_user=ADMIN_USER, db_password=ADMIN_PASSWORD
-        )
-
-        pg_admin = PostgresAdmin()
-
-        if not pg_admin.check_if_db_exists(db_name=db_name):
-            pg_admin.create_db(db_name=db_name)
-
-        base.metadata.create_all(
-            admin_engine
-        )  # extensions need to be created as a superuser
-
-        if not pg_admin.check_if_user_exists(user_name=DB_USER):
-            pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
-
-        pg_admin.grant_privileges(db_name=db_name, db_user=DB_USER)
+    create_q3c_extension(
+        db_name=db_name,
+        table_name=db_table.__tablename__,
+        ra_column_name=db_table.ra_column_name,
+        dec_column_name=db_table.dec_column_name,
+    )
 
 
 if DB_USER is not None:
-    setup_database(base=WinterBase)
+    setup_database(db_base=WinterBase)
+
+    for table in [ExposuresTable, CandidatesTable]:
+        set_up_q3c(db_name=WinterBase.db_name, db_table=table)
 
     populate_fields()
     populate_itid()

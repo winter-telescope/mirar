@@ -1,6 +1,7 @@
 """
 Models for the 'program' table
 """
+# pylint: disable=duplicate-code
 from datetime import date
 from typing import ClassVar
 
@@ -8,8 +9,8 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB, date_field
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import BaseDB, date_field
 from mirar.utils.security import generate_key
 
 LEN_PROG_KEY = 60
@@ -105,7 +106,7 @@ class Program(BaseDB, ProgramCredentials):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.progname, keys="progname")
+        return self._exists(values=self.progname, keys="progname")
 
 
 default_program = Program(

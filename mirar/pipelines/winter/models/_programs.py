@@ -8,8 +8,8 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
+from mirar.database.base_model import BaseDB, date_field
 from mirar.pipelines.winter.models.base_model import WinterBase
-from mirar.processors.sqldatabase.base_model import BaseDB, date_field
 from mirar.utils.security import generate_key
 
 LEN_PROG_KEY = 60
@@ -40,12 +40,15 @@ class ProgramsTable(WinterBase):  # pylint: disable=too-few-public-methods
     exposures: Mapped["ExposuresTable"] = relationship(back_populates="program_name")
 
 
+prog_field: str = Field(min_length=8, max_length=8, example="2020A000")
+
+
 class ProgramCredentials(BaseModel):
     """
     Program credentials to access a program
     """
 
-    progname: str = Field(min_length=8, max_length=8, example="2020A000")
+    progname: str = prog_field
     prog_key: str = Field(
         min_length=LEN_PROG_KEY,
         max_length=LEN_PROG_KEY,
@@ -105,7 +108,7 @@ class Program(BaseDB, ProgramCredentials):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.progname, keys="progname")
+        return self._exists(values=self.progname, keys="progname")
 
 
 default_program = Program(

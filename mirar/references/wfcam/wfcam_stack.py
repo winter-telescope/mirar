@@ -20,12 +20,12 @@ from typing import Type
 import numpy as np
 
 from mirar.data import Image, ImageBatch
+from mirar.database.base_model import BaseDB
 from mirar.paths import BASE_NAME_KEY, ZP_KEY, ZP_STD_KEY
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.base_processor import ImageHandler
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.references.base_reference_generator import BaseStackReferenceGenerator
 from mirar.references.wfcam.wfcam_query import BaseWFCAMQuery
 

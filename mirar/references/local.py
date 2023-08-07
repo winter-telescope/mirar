@@ -8,8 +8,8 @@ from typing import Type
 from astropy.io import fits
 
 from mirar.data import Image
+from mirar.database.base_model import BaseDB
 from mirar.paths import LATEST_WEIGHT_SAVE_KEY
-from mirar.processors.sqldatabase.base_model import BaseDB
 from mirar.references.base_reference_generator import BaseReferenceGenerator
 
 logger = logging.getLogger(__name__)

@@ -19,11 +19,13 @@ from astrosurveyutils.surveys import MOCSurvey
 
 from mirar.data import Image, ImageBatch
 from mirar.data.utils import get_image_center_wcs_coords
+from mirar.database.base_model import BaseDB
+from mirar.database.constraints import DBQueryConstraints
+from mirar.database.transactions import select_from_table
 from mirar.errors import ProcessorError
 from mirar.io import open_raw_image, save_fits
 from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, get_output_dir, get_output_path
-from mirar.processors.sqldatabase.base_model import BaseDB
-from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
+from mirar.processors.database import DatabaseImageInserter
 from mirar.references.wfcam.utils import (
     COMPID_KEY,
     EXTENSION_ID_KEY,
@@ -194,6 +196,7 @@ class WFAUQuery(BaseWFCAMQuery):
         self.query_db_table = query_db_table
         self.use_db_for_component_queries = use_db_for_component_queries
         self.skip_online_query = skip_online_query
+        self.dbexporter = DatabaseImageInserter(db_table=self.query_db_table)
 
         if self.use_db_for_component_queries:
             if self.components_db_table is None:
@@ -360,8 +363,7 @@ class WFAUQuery(BaseWFCAMQuery):
                     for img in downloaded_images:
                         img[QUERY_RA_KEY] = crd.ra.deg
                         img[QUERY_DEC_KEY] = crd.dec.deg
-                    dbexporter = DatabaseImageExporter(db_table=self.query_db_table)
-                    _ = dbexporter.apply(ImageBatch(downloaded_images))
+                    self.dbexporter.apply(ImageBatch(downloaded_images))
 
                 qexists_list = [query_exists] * len(imagepaths)
                 ra_list, dec_list = [crd.ra.deg] * len(imagepaths), [crd.dec.deg] * len(
@@ -412,7 +414,6 @@ def download_wfcam_archive_images(
     use_local_database: bool = False,
     components_table: Type[BaseDB] = None,
     duplicate_protocol: str = "ignore",
-    q3c_bool: bool = False,
 ) -> list[Path]:
     """
     Download the image from UKIRT server. Optionally, check if the image exists locally
@@ -497,10 +498,9 @@ def download_wfcam_archive_images(
             wfcam_image[LATEST_SAVE_KEY] = imagepath.as_posix()
 
             if use_local_database:
-                dbexporter = DatabaseImageExporter(
+                dbexporter = DatabaseImageInserter(
                     db_table=components_table,
                     duplicate_protocol=duplicate_protocol,
-                    q3c_bool=q3c_bool,
                 )
                 wfcam_db_batch = dbexporter.apply(ImageBatch([wfcam_image]))
                 wfcam_image = wfcam_db_batch[0]
@@ -532,28 +532,31 @@ def check_query_exists_locally(
     Returns:
         :return: list of savepaths
     """
-    results = query_table.sql_model().select_query(
-        select_keys=COMPID_KEY.lower(),
-        compare_values=[query_ra, query_dec, query_filt],
-        compare_keys=[
-            QUERY_RA_KEY.lower(),
-            QUERY_DEC_KEY.lower(),
-            QUERY_FILT_KEY.lower(),
-        ],
-        comparators=["__eq__", "__eq__", "__eq__"],
+
+    constraints = DBQueryConstraints(
+        columns=[QUERY_RA_KEY, QUERY_DEC_KEY, QUERY_FILT_KEY],
+        accepted_values=[query_ra, query_dec, query_filt],
     )
+    results = select_from_table(
+        db_constraints=constraints,
+        sql_table=query_table.sql_model,
+        output_columns=[COMPID_KEY],
+    )
+
     logger.debug(results)
     savepaths = []
-    # TODO - run a joint query to get the savepaths
     if len(results) > 0:
         savepaths = []
         compids = [x[0] for x in results]
         for compid in compids:
-            comp_results = components_table.sql_model().select_query(
-                select_keys="savepath",
-                compare_values=[compid],
-                compare_keys=[COMPID_KEY.lower()],
-                comparators=["__eq__"],
+            constraints = DBQueryConstraints(
+                columns=[COMPID_KEY],
+                accepted_values=[compid],
+            )
+            comp_results = select_from_table(
+                db_constraints=constraints,
+                sql_table=components_table.sql_model,
+                output_columns=["savepath"],
             )
             if len(comp_results) == 0:
                 raise WFAUQueryDBError(
@@ -561,7 +564,7 @@ def check_query_exists_locally(
                     "a query corresponding to it exists. The query"
                     "table is likely out of sync with the component"
                 )
-            savepaths.append(Path(comp_results[0][0]))
+            savepaths.append(Path(comp_results["savepath"].iloc[0].value))
     return savepaths
 
 
@@ -579,16 +582,23 @@ def get_locally_existing_overlap_images(
     Returns:
         :return: list of savepaths
     """
-    savepaths = []
-    results = components_table.sql_model().select_query(
-        select_keys=["savepath"],
-        compare_values=[query_ra, query_ra, query_dec, query_dec, query_filt],
-        compare_keys=["ra0_0", "ra1_1", "dec0_0", "dec1_1", "filter"],
-        comparators=["__le__", "__ge__", "__ge__", "__le__", "__eq__"],
+
+    constraints = DBQueryConstraints(
+        columns=["ra0_0", "ra1_1", "dec0_0", "dec1_1", "filter"],
+        accepted_values=[query_ra, query_ra, query_dec, query_dec, query_filt],
+        comparison_types=["<=", ">=", ">=", "<=", "="],
     )
+
+    results = select_from_table(
+        db_constraints=constraints,
+        sql_table=components_table.sql_model,
+        output_columns=["savepath"],
+    )
+
     logger.debug(results)
+    savepaths = []
     if len(results) > 0:
-        savepaths = [Path(x[0]) for x in results]
+        savepaths = [Path(x) for x in results["savepath"].tolist()]
     return savepaths
 
 
@@ -607,23 +617,23 @@ def check_multiframe_exists_locally(
     Returns:
         :return: list of savepaths
     """
-    results = db_table.sql_model().select_query(
-        select_keys=["savepath"],
-        compare_values=[
-            multiframe_id,
-            extension_id,
-        ],
-        compare_keys=[
-            MULTIFRAME_ID_KEY.lower(),
-            EXTENSION_ID_KEY.lower(),
-        ],
-        comparators=["__eq__", "__eq__"],
+
+    db_constraints = DBQueryConstraints(
+        columns=[MULTIFRAME_ID_KEY.lower(), EXTENSION_ID_KEY.lower()],
+        accepted_values=[multiframe_id, extension_id],
     )
+
+    results = select_from_table(
+        db_constraints=db_constraints,
+        sql_table=db_table.sql_model,
+        output_columns=["savepath"],
+    )
+
     logger.debug(results)
     if len(results) == 0:
         savepaths = []
     else:
-        savepaths = [Path(x[0]) for x in results]
+        savepaths = [Path(x) for x in results["savepath"].tolist()]
     return savepaths
 
 

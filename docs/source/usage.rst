@@ -38,7 +38,7 @@ Alternatively, you can check via the code:
 .. doctest::
 
     >>> from mirar.pipelines import Pipeline
-        >>> print([x for x in Pipeline.pipelines.keys()])
-        ['sedmv2', 'summer', 'wirc', 'winter']
-    >>> print([x for x in Pipeline.pipelines.keys()])
-    ['sedmv2', 'summer', 'wirc', 'winter']
+        >>> print(sorted([x for x in Pipeline.pipelines.keys()]))
+        ['sedmv2', 'summer', 'winter', 'wirc']
+    >>> print(sorted([x for x in Pipeline.pipelines.keys()]))
+    ['sedmv2', 'summer', 'winter', 'wirc']

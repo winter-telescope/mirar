@@ -4,13 +4,11 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~mirar.pipelines.summer.summer_pipeline.SummerPipeline`.
 """
+# pylint: disable=duplicate-code
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import BASE_NAME_KEY, GAIN_KEY, OBSCLASS_KEY, core_fields
 from mirar.pipelines.summer.config import (
-    DB_NAME,
-    PIPELINE_NAME,
     SUMMER_PIXEL_SCALE,
-    get_summer_schema_path,
     psfex_config_path,
     scamp_path,
     sextractor_astrometry_config,
@@ -34,16 +32,14 @@ from mirar.pipelines.summer.load_summer_image import (
     load_proc_summer_image,
     load_raw_summer_image,
 )
-from mirar.pipelines.summer.models import Exposure, Proc, Raw
+from mirar.pipelines.summer.models import Diff, Exposure, Proc, Raw
 from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor, Swarp
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
-from mirar.processors.database.database_exporter import (
-    DatabaseImageExporter as PSQLDatabaseImageExporter,
-)
-from mirar.processors.database.database_modifier import ModifyImageDatabaseSeq
+from mirar.processors.database.database_inserter import DatabaseImageInserter
+from mirar.processors.database.database_updater import ImageSequenceDatabaseUpdater
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
@@ -52,7 +48,6 @@ from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import SourceWriter
 from mirar.processors.sources.source_detector import SourceDetector
 from mirar.processors.sources.utils import RegionsWriter
-from mirar.processors.sqldatabase.database_exporter import DatabaseImageExporter
 from mirar.processors.utils import ImageBatcher, ImageLoader, ImageSaver, ImageSelector
 from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.header_annotate import HeaderEditor
@@ -117,13 +112,12 @@ load_processed = [
 
 export_raw = [
     # ImageSelector(("BASENAME", "SUMMER_20220402_214324_Camera0.fits")),
-    DatabaseImageExporter(
+    DatabaseImageInserter(
         db_table=Exposure,
         duplicate_protocol="replace",
-        q3c_bool=False,
     ),
     MaskPixelsFromPath(mask_path=summer_mask_path),
-    DatabaseImageExporter(db_table=Raw, duplicate_protocol="replace", q3c_bool=False),
+    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
     ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
 ]
 
@@ -188,18 +182,11 @@ process_raw = [
         # additional_headers=["PROCIMG"],
         write_mask=True,
     ),
-    HeaderEditor(edit_keys="procflag", values=1),
-    # PSQLDatabaseImageExporter(
-    #     db_name=DB_NAME,
-    #     db_table="proc",  # FIXME
-    #     schema_path=get_summer_schema_path("proc"),
-    #     duplicate_protocol="replace",
-    # ),
-    DatabaseImageExporter(db_table=Proc, duplicate_protocol="replace", q3c_bool=False),
-    ModifyImageDatabaseSeq(
-        db_name=DB_NAME,
-        db_table="raw",  # FIXME
-        schema_path=get_summer_schema_path("raw"),
+    HeaderEditor(edit_keys="procstatus", values=1),
+    DatabaseImageInserter(db_table=Proc, duplicate_protocol="replace"),
+    ImageSequenceDatabaseUpdater(
+        # db_name=DB_NAME,
+        db_table=Raw,
         db_alter_columns="procstatus",
     ),
 ]
@@ -234,10 +221,8 @@ subtract = [
 ]
 
 export_diff_to_db = [
-    PSQLDatabaseImageExporter(
-        db_name=PIPELINE_NAME,  # FIXME
-        db_table="diff",
-        schema_path=get_summer_schema_path("diff"),
+    DatabaseImageInserter(
+        db_table=Diff,
     ),
 ]
 

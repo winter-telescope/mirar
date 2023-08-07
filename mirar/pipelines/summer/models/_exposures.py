@@ -1,17 +1,18 @@
 """
 Models for the 'exposures' table
 """
-# from mirar.utils.sql import create_q3c_extension
+# pylint: disable=duplicate-code
 import logging
 from datetime import date, datetime
 from typing import ClassVar
 
+import pandas as pd
 from pydantic import Field
-from sqlalchemy import (  # event,
+from sqlalchemy import (
     VARCHAR,
+    BigInteger,
     Column,
     DateTime,
-    Double,
     Float,
     ForeignKey,
     Integer,
@@ -19,19 +20,13 @@ from sqlalchemy import (  # event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
 from mirar.pipelines.summer.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.summer.models._filters import FiltersTable, fid_field
 from mirar.pipelines.summer.models._img_type import ImgTypesTable
 from mirar.pipelines.summer.models._nights import Night, NightsTable
-from mirar.pipelines.summer.models._programs import ProgramsTable, default_program
+from mirar.pipelines.summer.models._programs import Program
 from mirar.pipelines.summer.models.base_model import SummerBase
-from mirar.processors.sqldatabase.base_model import (
-    BaseDB,
-    alt_field,
-    az_field,
-    dec_field,
-    ra_field,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +44,9 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
         Sequence(name="exposures_uexpid_seq", start=1, increment=1),
         unique=True,
         autoincrement=True,
+        primary_key=True,
     )
-    expid = Column(Double, primary_key=True, unique=True, autoincrement=False)
+    expid = Column(BigInteger, unique=True, autoincrement=False)
     # Deterministic ID of exposure
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
@@ -70,26 +66,26 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
 
     timeutc = Column(DateTime(timezone=True))
 
-    AExpTime = Column(Float, nullable=False)
-    expMJD = Column(Float, nullable=False)
+    aexptime = Column(Float, nullable=False)
+    expmjd = Column(Float, nullable=False)
     airmass = Column(Float)
     shutopen = Column(DateTime(timezone=True))
     shutclsd = Column(DateTime(timezone=True))
     tempture = Column(Float, default=-999)
     windspd = Column(Float, default=-999)
-    Dewpoint = Column(Float, default=-999)
-    Humidity = Column(Float, default=-999)
-    Pressure = Column(Float, default=-999)
-    Moonra = Column(Float, default=-999)
-    Moondec = Column(Float, default=-999)
-    Moonillf = Column(Float, default=-999)
-    Moonphas = Column(Float, default=-999)
-    Moonaz = Column(Float, default=-999)
-    Moonalt = Column(Float, default=-999)
-    Sunaz = Column(Float, default=-999)
-    Sunalt = Column(Float, default=-999)
-    Detsoft = Column(VARCHAR(50), default="unknown")
-    Detfirm = Column(VARCHAR(50), default="unknown")
+    dewpoint = Column(Float, default=-999)
+    humidity = Column(Float, default=-999)
+    pressure = Column(Float, default=-999)
+    moonra = Column(Float, default=-999)
+    moondec = Column(Float, default=-999)
+    moonillf = Column(Float, default=-999)
+    moonphas = Column(Float, default=-999)
+    moonaz = Column(Float, default=-999)
+    moonalt = Column(Float, default=-999)
+    sunaz = Column(Float, default=-999)
+    sunalt = Column(Float, default=-999)
+    detsoft = Column(VARCHAR(50), default="unknown")
+    detfirm = Column(VARCHAR(50), default="unknown")
     ra = Column(Float)
     dec = Column(Float)
     altitude = Column(Float)
@@ -99,16 +95,7 @@ class ExposuresTable(SummerBase):  # pylint: disable=too-few-public-methods
     dec_column_name = "dec"
 
     raw: Mapped["RawTable"] = relationship(back_populates="exposure_ids")
-
-
-# @event.listens_for(target=RawTable.__table__, identifier="after_create")
-# def raw_q3c(tbl, conn, *args, **kw):
-#     create_q3c_extension(
-#         conn=conn,
-#         __tablename__=RawTable.__tablename__,
-#         ra_column_name=RawTable.ra_column_name,
-#         dec_column_name=RawTable.dec_column_name,
-#     )
+    diff: Mapped["DiffTable"] = relationship(back_populates="exposure_ids")
 
 
 default_unknown_field = Field(default=-999)
@@ -129,32 +116,32 @@ class Exposure(BaseDB):
     puid: int = Field(ge=0)
 
     timeutc: datetime = Field()
-    AExpTime: float = Field(ge=0)
-    expMJD: float = Field(ge=59000)
+    aexptime: float = Field(ge=0)
+    expmjd: float = Field(ge=59000)
     airmass: float = Field(ge=1.0)
     shutopen: datetime = Field()
     shutclsd: datetime = Field()
     tempture: float = default_unknown_field
     windspd: float = default_unknown_field
-    Dewpoint: float = default_unknown_field
-    Humidity: float = default_unknown_field
-    Pressure: float = default_unknown_field
-    Moonra: float = Field(ge=0.0, le=360.0, default=None)
-    Moondec: float = Field(title="Dec (degrees)", ge=-90.0, le=90, default=None)
-    Moonillf: float = default_unknown_field
-    Moonphas: float = default_unknown_field
-    Moonaz: float = default_unknown_field
-    Moonalt: float = default_unknown_field
-    Sunaz: float = default_unknown_field
-    Sunalt: float = default_unknown_field
-    Detfirm: str = Field(default="unknown")
-    Detsoft: str = Field(default="unknown")
+    dewpoint: float = default_unknown_field
+    humidity: float = default_unknown_field
+    pressure: float = default_unknown_field
+    moonra: float = Field(ge=0.0, le=360.0, default=None)
+    moondec: float = Field(title="Dec (degrees)", ge=-90.0, le=90, default=None)
+    moonillf: float = default_unknown_field
+    moonphas: float = default_unknown_field
+    moonaz: float = default_unknown_field
+    moonalt: float = default_unknown_field
+    sunaz: float = default_unknown_field
+    sunalt: float = default_unknown_field
+    detfirm: str = Field(default="unknown")
+    detsoft: str = Field(default="unknown")
     ra: float = ra_field
     dec: float = dec_field
     altitude: float = alt_field
     azimuth: float = az_field
 
-    def insert_entry(self, returning_key_names=None) -> tuple:
+    def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
 
@@ -165,14 +152,8 @@ class Exposure(BaseDB):
             night.insert_entry()
 
         logger.debug(f"puid: {self.puid}")
-        if not ProgramsTable().exists(values=self.puid, keys="puid"):
-            default_puid = ProgramsTable().select_query(
-                compare_values=default_program.progname,
-                compare_keys="progname",
-                select_keys="puid",
-            )[0][0]
-            logger.debug(f"Found progid {default_puid}")
-            self.puid = default_puid
+        if not Program._exists(values=self.puid, keys="puid"):
+            self.puid = 1
 
         return self._insert_entry()
 
@@ -182,4 +163,4 @@ class Exposure(BaseDB):
 
         :return: bool
         """
-        return self.sql_model().exists(values=self.expid, keys="expid")
+        return self._exists(values=self.expid, keys="expid")

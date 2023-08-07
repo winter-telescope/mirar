@@ -5,11 +5,12 @@ import logging
 from abc import ABC
 
 import numpy as np
+import pandas as pd
 
-from mirar.data import ImageBatch, SourceBatch
+from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
-from mirar.processors.sqldatabase.base_database_processor import BaseDatabaseProcessor
+from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 from mirar.processors.utils.image_selector import ImageBatcher
 
 logger = logging.getLogger(__name__)
@@ -21,12 +22,12 @@ class ImageBatchDatabaseExporterError(BaseProcessorError):
     """
 
 
-class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
+class BaseDatabaseInserter(BaseDatabaseProcessor, ABC):
     """
-    Base class for DB exporters
+    Base class for DB inserter
     """
 
-    base_key = "dbexporter"
+    base_key = "dbinserter"
     max_n_cpu = 1
 
     def __str__(self):
@@ -38,57 +39,78 @@ class BaseDatabaseExporter(BaseDatabaseProcessor, ABC):
         )
 
 
-class DatabaseImageExporter(BaseDatabaseExporter, BaseImageProcessor):
+class DatabaseImageInserter(BaseDatabaseInserter, BaseImageProcessor):
     """
     Processor for exporting images to a database
     """
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         for image in batch:
-            primary_keys, primary_key_values = self.pg_user.export_to_db(
-                image,
-                db_table=self.db_table,
-                duplicate_protocol=self.duplicate_protocol,
-            )
+            val_dict = self.generate_value_dict(image)
 
-            for ind, key in enumerate(primary_keys):
-                image[key] = primary_key_values[ind]
+            new = self.db_table(**val_dict)
+            res = new.insert_entry()
+
+            assert len(res) == 1
+
+            for key in res.columns:
+                image[key] = res[key].iloc[0]
         return batch
 
+    @staticmethod
+    def generate_value_dict(image: Image) -> dict:
+        """
+        Generate a dictionary of lower case keys and values from an image
 
-class DatabaseDataframeExporter(BaseDatabaseExporter, BaseSourceProcessor):
+        :param image: Image
+        :return: Dictionary of lower case keys and values
+        """
+        return {key.lower(): image[key] for key in image.keys()}
+
+
+class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
     """
     Processor for exporting sources to a database
     """
 
     def _apply_to_sources(self, batch: SourceBatch) -> SourceBatch:
         for source_list in batch:
-            candidate_table = source_list.get_data()
+            source_table = source_list.get_data()
+            metadata = source_list.get_metadata()
 
             primary_key_dict = {}
-            for _, candidate_row in candidate_table.iterrows():
-                primary_keys, primary_key_values = self.pg_user.export_to_db(
-                    candidate_row.to_dict(),
-                    db_table=self.db_table,
-                )
-                for ind, key in enumerate(primary_keys):
-                    if key not in primary_key_dict:
-                        primary_key_dict[key] = [primary_key_values[ind]]
-                    else:
-                        primary_key_dict[key].append(primary_key_values[ind])
-                    # candidate_row[key] = primary_key_values[ind]
+            for _, source_row in source_table.iterrows():
+                super_dict = self.generate_super_dict(metadata, source_row)
 
-                # new_table = pd.concat([new_table,candidate_row])
-                # new_table.append(candidate_row, ignore_index=True)
+                new = self.db_table(**super_dict)
+                res = new.insert_entry()
+
+                assert len(res) == 1
+
             for key, val in primary_key_dict.items():
-                candidate_table[key] = val
+                source_table[key] = val
 
-            source_list.set_data(candidate_table)
+            source_list.set_data(source_table)
 
         return batch
 
+    @staticmethod
+    def generate_super_dict(metadata: dict, source_row: pd.Series) -> dict:
+        """
+        Generate a dictionary of metadata and candidate row, with lower case keys
 
-class DatabaseImageBatchExporter(DatabaseImageExporter):
+        :param metadata: Metadata for the source table
+        :param source_row: Individual row of the source table
+        :return: Combined dictionary
+        """
+        super_dict = {key.lower(): val for key, val in metadata.items()}
+        super_dict.update(
+            {key.lower(): val for key, val in source_row.to_dict().items()}
+        )
+        return super_dict
+
+
+class DatabaseImageBatchInserter(DatabaseImageInserter):
     """
     Processor for creating a single entry per batch of images in a database
     """
@@ -119,15 +141,19 @@ class DatabaseImageBatchExporter(DatabaseImageExporter):
 
         image = batch[0]
         logger.debug(f"Trying to export {[image[x] for x in column_names]}")
-        primary_keys, primary_key_values = self.pg_user.export_to_db(
-            image,
-            db_table=self.db_table,
-            duplicate_protocol=self.duplicate_protocol,
-        )
 
-        for ind, key in enumerate(primary_keys):
+        val_dict = {key.lower(): image[key] for key in image.keys()}
+
+        new = self.db_table(**val_dict)
+        res = new.insert_entry()
+
+        assert len(res) == 1
+
+        for key in res.columns:
+            val = res[key].iloc[0]
             for image in batch:
-                image[key] = primary_key_values[ind]
+                image[key] = val
+
         return batch
 
     def check_prerequisites(
