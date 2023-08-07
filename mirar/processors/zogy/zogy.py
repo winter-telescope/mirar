@@ -260,10 +260,10 @@ class ZOGYPrepare(BaseImageProcessor):
             )
 
             image_data = image.get_data()
-            image_data[image_mask] = 0.0
+            image_data[image_mask] = np.nan
             image.set_data(image_data)
             ref_data = ref_img.get_data()
-            ref_data[image_mask] = 0.0
+            ref_data[image_mask] = np.nan
             ref_img.set_data(ref_data)
 
             # Create S correlation ('scorr') weight image
@@ -311,12 +311,12 @@ class ZOGYPrepare(BaseImageProcessor):
             self.save_fits(image, path=sci_scaled_path)
 
             sci_rms = 0.5 * (
-                np.percentile(image_data[image_data != 0.0], 84.13)
-                - np.percentile(image_data[image_data != 0.0], 15.86)
+                np.percentile(image_data[~image_mask], 84.13)
+                - np.percentile(image_data[~image_mask], 15.86)
             )
             ref_rms = 0.5 * (
-                np.percentile(ref_data[ref_data != 0.0], 84.13)
-                - np.percentile(ref_data[ref_data != 0.0], 15.86)
+                np.percentile(ref_data[~image_mask], 84.13)
+                - np.percentile(ref_data[~image_mask], 15.86)
             )
             logger.debug(
                 f"Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}"
