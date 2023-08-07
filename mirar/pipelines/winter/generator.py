@@ -209,18 +209,6 @@ def winter_stackid_annotator(image: Image) -> Image:
     return image
 
 
-def winter_reference_stackid_generator(image: Image) -> int:
-    """
-    Generates a stack id for WINTER reference images
-    """
-    stackid = (
-        f"{str(image.header['FIELDID']).rjust(5, '0')}"
-        f"{str(image.header[SUB_ID_KEY]).rjust(2, '0')}"
-        f"{str(winter_filters_map[image.header['FILTER']])}"
-    )
-    return int(stackid)
-
-
 def winter_reference_stack_annotator(stacked_image: Image, image: Image) -> Image:
     """
     Generates a stack id for WINTER reference images
