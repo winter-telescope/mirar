@@ -91,7 +91,7 @@ class ImageSequenceDatabaseUpdater(ImageDatabaseUpdater):
         return query_constraints
 
 
-class ImageDatabaseManyUpdater(ImageSequenceDatabaseUpdater):
+class ImageDatabaseMultiEntryUpdater(ImageSequenceDatabaseUpdater):
     """
     Processor to modify multiple entries specified by a list of sequences in an
     image database
