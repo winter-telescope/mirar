@@ -16,6 +16,7 @@ from mirar.paths import (
     BASE_NAME_KEY,
     CAND_DEC_KEY,
     CAND_RA_KEY,
+    DIFF_IMG_KEY,
     LATEST_SAVE_KEY,
     NORM_PSFEX_KEY,
     REF_IMG_KEY,
@@ -142,9 +143,9 @@ class SourceDetector(BaseSourceGenerator):
         det_srcs["magzpsci"] = diff[ZP_KEY]
         diff_zp_unc = diff[f"{ZP_KEY}_STD"]
         det_srcs["magzpsciunc"] = diff_zp_unc
-        det_srcs["diffimname"] = diff[LATEST_SAVE_KEY]
-        det_srcs["sciimname"] = sci_resamp_image_path
-        det_srcs["refimname"] = ref_resamp_image_path
+        det_srcs[DIFF_IMG_KEY] = diff[LATEST_SAVE_KEY]
+        det_srcs[SCI_IMG_KEY] = sci_resamp_image_path
+        det_srcs[REF_IMG_KEY] = ref_resamp_image_path
         det_srcs[NORM_PSFEX_KEY] = diff_psf_path
         det_srcs[UNC_IMG_KEY] = diff_unc_path
         det_srcs[CAND_RA_KEY] = det_srcs["ALPHA_J2000"]
