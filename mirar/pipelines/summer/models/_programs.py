@@ -3,7 +3,7 @@ Models for the 'program' table
 """
 # pylint: disable=duplicate-code
 from datetime import date
-from typing import ClassVar, Self
+from typing import ClassVar
 
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
@@ -75,7 +75,7 @@ class Program(BaseDB, ProgramCredentials):
     progtitle: str = Field(min_length=1, example="A program title")
 
     @model_validator(mode="after")
-    def check_date(self) -> Self:
+    def check_date(self):
         """
         Ensure dates are correctly formatted
 
@@ -87,7 +87,7 @@ class Program(BaseDB, ProgramCredentials):
         return self
 
     @model_validator(mode="after")
-    def validate_time_allocation(self) -> Self:
+    def validate_time_allocation(self):
         """
         Ensure that time remaining has a sensible value
 
