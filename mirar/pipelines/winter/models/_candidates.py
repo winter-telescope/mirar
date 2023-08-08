@@ -4,7 +4,7 @@ Models for the 'candidates' table
 import logging
 from typing import ClassVar
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from sqlalchemy import (
     VARCHAR,
     BigInteger,
@@ -319,14 +319,14 @@ class Candidate(BaseDB):
     maggaia: float | None = Field(default=None)
     maggaiabright: float | None = Field(default=None)
 
-    @validator("diffid")
+    @field_validator("diffid")
     @classmethod
-    def validate_diffid(cls, field_value: int):
+    def validate_diffid(cls, diffid: int):
         """
-        Ensure that expid exists in exposures table
+        Ensure that diffid exists in exposures table
 
-        :param field_value: field value
-        :return: field value
+        :param diffid: value
+        :return: value
         """
-        assert Diff._exists(keys="diffid", values=field_value)
-        return field_value
+        assert Diff._exists(keys="diffid", values=diffid)
+        return diffid

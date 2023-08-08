@@ -4,7 +4,7 @@ Models for the 'filters' table
 # pylint: disable=duplicate-code
 from typing import ClassVar
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
@@ -45,17 +45,17 @@ class Filter(BaseDB):
         """
         return self._exists(values=self.fid, keys="fid")
 
-    @validator("fid")
+    @field_validator("fid")
     @classmethod
-    def validate_fid(cls, field_value):
+    def validate_fid(cls, filter_id):
         """
         Ensure that path exists
 
-        :param field_value: field value
+        :param filter_id: field value
         :return: field value
         """
-        assert field_value in list(summer_filters_map.values())
-        return field_value
+        assert filter_id in list(summer_filters_map.values())
+        return filter_id
 
 
 def populate_filters(filter_map: dict = None):

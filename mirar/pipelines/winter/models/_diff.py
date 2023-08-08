@@ -4,7 +4,7 @@ Models for the 'diff' table
 import os
 from typing import ClassVar
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from sqlalchemy import VARCHAR, Column, ForeignKey, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -54,26 +54,26 @@ class Diff(BaseDB):
     savepath: str = Field(min_length=1)
     procstatus: int = Field(ge=0, default=0)
 
-    @validator("savepath")
+    @field_validator("savepath")
     @classmethod
-    def validate_savepath(cls, field_value: str):
+    def validate_savepath(cls, savepath: str) -> str:
         """
         Ensure that path exists
 
-        :param field_value: field value
+        :param savepath: field value
         :return: field value
         """
-        assert os.path.exists(field_value)
-        return field_value
+        assert os.path.exists(savepath)
+        return savepath
 
-    @validator("uexpid")
+    @field_validator("uexpid")
     @classmethod
-    def validate_expid(cls, field_value: int):
+    def validate_expid(cls, uexpid: int) -> int:
         """
         Ensure that expid exists in exposures table
 
-        :param field_value: field value
+        :param uexpid: field value
         :return: field value
         """
-        assert Exposure._exists(keys="uexpid", values=field_value)
-        return field_value
+        assert Exposure._exists(keys="uexpid", values=uexpid)
+        return uexpid

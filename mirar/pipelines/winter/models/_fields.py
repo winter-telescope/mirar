@@ -5,14 +5,13 @@ import time
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import REAL, Column, Insert, Integer, Select
+from sqlalchemy import REAL, Column, Insert, Integer
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
 from wintertoo.data import winter_fields
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.database.engine import get_engine
-from mirar.database.transactions import check_table_exists
 from mirar.database.transactions.select import is_populated
 from mirar.pipelines.winter.models.base_model import WinterBase
 
@@ -35,7 +34,7 @@ class FieldsTable(WinterBase):  # pylint: disable=too-few-public-methods
     exposures: Mapped["ExposuresTable"] = relationship(back_populates="field")
 
 
-fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD, exclude={-99})
+fieldid_field: int = Field(ge=0, default=DEFAULT_FIELD)
 
 
 class FieldEntry(BaseDB):

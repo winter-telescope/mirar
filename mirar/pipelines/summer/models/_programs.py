@@ -3,9 +3,9 @@ Models for the 'program' table
 """
 # pylint: disable=duplicate-code
 from datetime import date
-from typing import ClassVar
+from typing import ClassVar, Self
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import CHAR, DATE, REAL, VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
@@ -74,31 +74,30 @@ class Program(BaseDB, ProgramCredentials):
     )
     progtitle: str = Field(min_length=1, example="A program title")
 
-    @validator("enddate")
-    @classmethod
-    def check_date(cls, field_value, values):
+    @model_validator(mode="after")
+    def check_date(self) -> Self:
         """
         Ensure dates are correctly formatted
 
+        :return: self
         """
-        startdate = values["startdate"]
-        assert field_value > startdate
-        return field_value
+        startdate = self.startdate
+        enddate = self.enddate
+        assert enddate > startdate
+        return self
 
-    @validator("hours_remaining")
-    @classmethod
-    def validate_time_allocation(cls, field_value, values):
+    @model_validator(mode="after")
+    def validate_time_allocation(self) -> Self:
         """
         Ensure that time remaining has a sensible value
 
-        :param field_value: field value
-        :param values: values
-        :return: field value
+        :return: self
         """
-        total_time = values["hours_allocated"]
-        assert not field_value > total_time
-        assert not field_value < 0.0
-        return field_value
+        total_time = self.hours_allocated
+        hours_remaining = self.hours_remaining
+        assert not hours_remaining > total_time
+        assert not hours_remaining < 0.0
+        return self
 
     def exists(self) -> bool:
         """

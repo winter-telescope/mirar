@@ -3,11 +3,18 @@ Module to define PSQL database tables using sqlalchemy
 """
 import logging
 from datetime import date
-from typing import ClassVar, Type
+from typing import Any, ClassVar, Type
 
 import pandas as pd
 from psycopg import errors
-from pydantic import BaseModel, Extra, Field, root_validator, validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FieldValidationInfo,
+    field_validator,
+    model_validator,
+)
 from sqlalchemy import Column, Table, inspect
 from sqlalchemy.exc import IntegrityError
 
@@ -25,12 +32,7 @@ class PydanticBase(BaseModel):
     Base code pydantic model (no extra colunns!)
     """
 
-    class Config:
-        """
-        Config
-        """
-
-        extra = Extra.ignore
+    model_config = ConfigDict(extra="ignore")
 
 
 class BaseDB(PydanticBase):
@@ -40,30 +42,32 @@ class BaseDB(PydanticBase):
 
     sql_model: ClassVar[Type[Table]]
 
-    @root_validator(pre=True)
-    def sql_model_exists_check(cls, values):
+    @model_validator(mode="before")
+    @classmethod
+    def sql_model_exists_check(cls, data: Any) -> Any:
         """
         Validator to ensure an sql model has been specified in the child class
-        :param values: values
-        :return: values
+        :param data: data to validate
+        :return: data
         """
 
         if "sql_model" not in cls.__annotations__:
             raise ValueError("sql model must be set in class")
-        return values
+        return data
 
-    @validator("*")
+    @field_validator("*")
     @classmethod
-    def validate_sql(cls, value, field):
+    def validate_sql(cls, value: Any, info: FieldValidationInfo) -> Any:
         """
         Validator to ensure that the field names of a pydantic model
         match the database table
+
         :param value: value
-        :param field: field
+        :param info: field info
         :return: value
         """
-        if field.name not in cls.sql_model.__table__.columns.keys():
-            err = f"Field '{field.name}' not duplicated in {cls.sql_model}"
+        if info.field_name not in cls.sql_model.__table__.columns.keys():
+            err = f"Field '{info.field_name}' not duplicated in {cls.sql_model}"
             raise ValueError(err)
         return value
 
@@ -90,7 +94,7 @@ class BaseDB(PydanticBase):
 
         try:
             res = _insert_in_table(
-                new_entry=self.dict(),
+                new_entry=self.model_dump(),
                 sql_table=self.sql_model,
                 returning_keys=returning_key_names,
             )
@@ -102,7 +106,7 @@ class BaseDB(PydanticBase):
 
             if duplicate_protocol == "fail":
                 err = (
-                    f"Duplicate error, entry with {self.dict()} "
+                    f"Duplicate error, entry with {self.model_dump()} "
                     f"already exists in {self.sql_model.name}."
                 )
                 logger.error(err)
@@ -130,7 +134,9 @@ class BaseDB(PydanticBase):
 
             constraints = DBQueryConstraints(
                 columns=[x.name for x in present_unique_keys],
-                accepted_values=[self.dict()[x.name] for x in present_unique_keys],
+                accepted_values=[
+                    self.model_dump()[x.name] for x in present_unique_keys
+                ],
             )
 
             res = select_from_table(
@@ -165,7 +171,7 @@ class BaseDB(PydanticBase):
 
         :return: unique keys
         """
-        return [x for x in self.get_unique_keys() if x.name in self.dict()]
+        return [x for x in self.get_unique_keys() if x.name in self.model_fields]
 
     def insert_entry(
         self, returning_key_names: str | list[str] | None = None
@@ -195,10 +201,10 @@ class BaseDB(PydanticBase):
 
         constraints = DBQueryConstraints(
             columns=[x.name for x in available_unique_keys],
-            accepted_values=[self.dict()[x.name] for x in available_unique_keys],
+            accepted_values=[self.model_dump()[x.name] for x in available_unique_keys],
         )
 
-        full_dict = self.dict()
+        full_dict = self.model_dump()
 
         update_dict = {key: full_dict[key] for key in update_key_names}
 
