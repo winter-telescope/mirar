@@ -5,10 +5,13 @@ yield e.g catalog for astrometric calibrations
 import logging
 import os
 
+import numpy as np
+import pandas as pd
 from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
 from mirar.data import Image
+from mirar.paths import DIFF_IMG_KEY, REF_IMG_KEY, SCI_IMG_KEY
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     sextractor_reference_config,
@@ -18,6 +21,43 @@ from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.references.wirc import WIRCRef
 
 logger = logging.getLogger(__name__)
+
+
+def filter_bad_wirc_candidates(src_df: pd.DataFrame):
+    """
+    Function to perform basic filtering to weed out bad WIRC candidates with None
+    magnitudes, to be added.
+    :param src_df: Source dataframe
+    :return: filtered dataframe
+    """
+    none_mask = (
+        src_df["sigmapsf"].isnull()
+        | src_df["magpsf"].isnull()
+        | src_df["magap"].isnull()
+        | src_df["sigmagap"].isnull()
+    )
+
+    mask = none_mask.values
+
+    # Needing to do this because the dataframe is big-endian
+    mask_inds = np.where(~mask)[0]
+    filtered_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(
+        drop=True
+    )
+    return filtered_df
+
+
+def wirc_source_table_annotator(src_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Function to update the source table with the keys required for the WIRC database
+    :param src_df: Source dataframe
+    :return: annotated dataframe
+    """
+    src_df["sciimgname"] = src_df[SCI_IMG_KEY]
+    src_df["refimgname"] = src_df[REF_IMG_KEY]
+    src_df["diffimgname"] = src_df[DIFF_IMG_KEY]
+
+    return src_df
 
 
 def wirc_photometric_img_catalog_purifier(catalog, image):
