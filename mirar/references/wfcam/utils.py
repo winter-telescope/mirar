@@ -173,7 +173,7 @@ def make_wfcam_image_from_hdulist(
     image.header["UKIRPATH"] = ukirt_filename
     image.header[ZP_KEY] = image.header["MAGZPT"]
     image.header[ZP_STD_KEY] = image.header["MAGZRR"]
-    image.header[COMPID_KEY] = f"{multiframeid}_{extension_id}"
+    image.header[COMPID_KEY] = int(f"{multiframeid}{extension_id}")
 
     if "SEEING" not in image.header.keys():
         image.header["SEEING"] = -99
