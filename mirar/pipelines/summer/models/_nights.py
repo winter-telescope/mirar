@@ -11,6 +11,8 @@ from sqlalchemy.orm import Mapped, relationship
 from mirar.database.base_model import BaseDB, date_field
 from mirar.pipelines.summer.models.base_model import SummerBase
 
+SUMMER_NIGHT_FORMAT = "%Y%m%d"
+
 
 class NightsTable(SummerBase):  # pylint: disable=too-few-public-methods
     """

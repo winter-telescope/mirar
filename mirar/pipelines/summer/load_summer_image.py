@@ -25,7 +25,7 @@ from mirar.paths import (
     TARGET_KEY,
     __version__,
 )
-from mirar.pipelines.summer.models import DEFAULT_FIELD
+from mirar.pipelines.summer.models import DEFAULT_FIELD, SUMMER_NIGHT_FORMAT
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ def load_raw_summer_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.He
 
         header["TIMEUTC"] = header["UTCISO"]
 
-        header["NIGHTDATE"] = obstime.to_datetime().strftime("%Y%m%d")
+        header["NIGHTDATE"] = obstime.to_datetime().strftime(SUMMER_NIGHT_FORMAT)
         header["EXPMJD"] = header["OBSMJD"]
         header["OBS-DATE"] = Time(header["OBSMJD"], format="mjd").isot
 

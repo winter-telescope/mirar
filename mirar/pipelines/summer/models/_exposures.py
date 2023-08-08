@@ -7,7 +7,7 @@ from datetime import date, datetime
 from typing import ClassVar
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, field_validator
 from sqlalchemy import (
     VARCHAR,
     BigInteger,
@@ -20,11 +20,22 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
+from mirar.database.base_model import (
+    BaseDB,
+    alt_field,
+    az_field,
+    date_field,
+    dec_field,
+    ra_field,
+)
 from mirar.pipelines.summer.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.summer.models._filters import FiltersTable, fid_field
 from mirar.pipelines.summer.models._img_type import ImgTypesTable
-from mirar.pipelines.summer.models._nights import Night, NightsTable
+from mirar.pipelines.summer.models._nights import (
+    SUMMER_NIGHT_FORMAT,
+    Night,
+    NightsTable,
+)
 from mirar.pipelines.summer.models._programs import Program
 from mirar.pipelines.summer.models.base_model import SummerBase
 
@@ -110,11 +121,10 @@ class Exposure(BaseDB):
 
     expid: int = Field(ge=0)
     fid: int = fid_field
-    nightdate: date = Field()  # FIXME : why different to obsdate?
+    nightdate: date = date_field
     fieldid: int = fieldid_field
     itid: int = Field(ge=0)
     puid: int = Field(ge=0)
-
     timeutc: datetime = Field()
     aexptime: float = Field(ge=0)
     expmjd: float = Field(ge=59000)
@@ -140,6 +150,17 @@ class Exposure(BaseDB):
     dec: float = dec_field
     altitude: float = alt_field
     azimuth: float = az_field
+
+    @field_validator("nightdate", mode="before")
+    @classmethod
+    def validate_fid(cls, nightdate: str) -> datetime:
+        """
+        Ensure that path exists
+
+        :param nightdate: str nightdate
+        :return: datetime nightdate
+        """
+        return datetime.strptime(nightdate, SUMMER_NIGHT_FORMAT)
 
     def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
         """

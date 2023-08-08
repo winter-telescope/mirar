@@ -3,7 +3,7 @@ Models for the 'filters' table
 """
 from typing import ClassVar
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
@@ -44,17 +44,17 @@ class Filter(BaseDB):
         """
         return self._exists(values=self.fid, keys="fid")
 
-    @validator("fid")
+    @field_validator("fid")
     @classmethod
-    def validate_fid(cls, field_value):
+    def validate_fid(cls, fid: int) -> int:
         """
         Ensure that path exists
 
-        :param field_value: field value
-        :return: field value
+        :param fid: filter id
+        :return: filter id
         """
-        assert field_value in list(winter_filters_map.values())
-        return field_value
+        assert fid in list(winter_filters_map.values())
+        return fid
 
 
 def populate_filters(filter_map: dict = None):

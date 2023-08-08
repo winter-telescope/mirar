@@ -23,7 +23,11 @@ from mirar.pipelines.summer.models._img_type import (
     ImgTypesTable,
     populate_itid,
 )
-from mirar.pipelines.summer.models._nights import Night, NightsTable
+from mirar.pipelines.summer.models._nights import (
+    SUMMER_NIGHT_FORMAT,
+    Night,
+    NightsTable,
+)
 from mirar.pipelines.summer.models._proc import Proc, ProcTable
 from mirar.pipelines.summer.models._programs import (
     DEFAULT_MAX_PRIORITY,

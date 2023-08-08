@@ -5,7 +5,7 @@ Models for the 'proc' table
 import os
 from typing import ClassVar
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from sqlalchemy import REAL, VARCHAR, Column, ForeignKey, Integer, Sequence  # event,
 from sqlalchemy.orm import Mapped, relationship
 
@@ -85,28 +85,26 @@ class Proc(BaseDB):
     zp_auto_std: float = Field(ge=0)
     maglim: float = Field()
 
-    @validator("savepath")
+    @field_validator("savepath")
     @classmethod
-    def validate_savepath(cls, field_value: str):
+    def validate_savepath(cls, savepath: str) -> str:
         """
         Ensure that path exists
 
-        :param field_value: field value
-        :return: field value
+        :param savepath: savepath
+        :return: savepath
         """
-        assert os.path.exists(field_value)
-        return field_value
+        assert os.path.exists(savepath)
+        return savepath
 
-    @validator("rawid")
+    @field_validator("rawid")
     @classmethod
-    def validate_expid(cls, field_value: int):
+    def validate_rawid(cls, rawid: int) -> int:
         """
         Ensure that rawid exists in exposures table
-        Args:
-            field_value: expid
 
-        Returns:
-
+        :param rawid: rawid
+        :return: rawid
         """
-        assert Raw._exists(keys="rawid", values=field_value)
-        return field_value
+        assert Raw._exists(keys="rawid", values=rawid)
+        return rawid
