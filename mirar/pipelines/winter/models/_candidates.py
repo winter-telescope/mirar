@@ -77,7 +77,6 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     magzpsci = Column(Float, nullable=True)
     magzpsciunc = Column(Float, nullable=True)
-    magzpscirms = Column(Float, nullable=True)
 
     # Photometry properties
 
@@ -222,12 +221,11 @@ class Candidate(BaseDB):
 
     magzpsci: float | None = Field(default=None)
     magzpsciunc: float | None = Field(ge=0, default=None)
-    magzpscirms: float | None = Field(ge=0, default=None)
 
     diffmaglim: float | None = Field(default=None)
 
-    magpsf: float = Field()
-    sigmapsf: float = Field(ge=0)
+    magpsf: float | None = Field(default=None)
+    sigmapsf: float | None = Field(default=None)
     chipsf: float | None = Field(ge=0, default=None)
 
     magap: float | None = Field(default=None)
