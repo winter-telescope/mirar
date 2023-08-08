@@ -28,6 +28,10 @@ class BadImageError(ProcessorError):
     """Exception for bad images"""
 
 
+class InvalidImage(ProcessorError):
+    """Image should be skipped"""
+
+
 def unzip(zipped_list: list[str]) -> list[str]:
     """
     Function to unzip a list of files?
@@ -71,17 +75,20 @@ def load_from_dir(
 
     for path in tqdm(img_list):
         if check_file_is_complete(path):
-            image_list = open_f(path)
+            try:
+                image_list = open_f(path)
 
-            if not isinstance(image_list, list):
-                image_list = [image_list]
+                if not isinstance(image_list, list):
+                    image_list = [image_list]
 
-            for image in image_list:
-                try:
-                    check_image_has_core_fields(image)
-                except MissingCoreFieldError as err:
-                    raise BadImageError(err) from err
-                images.append(image)
+                for image in image_list:
+                    try:
+                        check_image_has_core_fields(image)
+                    except MissingCoreFieldError as err:
+                        raise BadImageError(err) from err
+                    images.append(image)
+            except InvalidImage:
+                logger.debug(f"Image {path} is invalid. Skipping!")
         else:
             logger.warning(f"File {path} is not complete. Skipping!")
 
