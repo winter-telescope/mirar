@@ -10,7 +10,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from mirar.data import Image, ImageBatch
-from mirar.errors import ImageNotFoundError, ProcessorError
+from mirar.errors import ImageNotFoundError, NoncriticalProcessingError, ProcessorError
 from mirar.io import (
     MissingCoreFieldError,
     check_file_is_complete,
@@ -28,7 +28,7 @@ class BadImageError(ProcessorError):
     """Exception for bad images"""
 
 
-class InvalidImage(ProcessorError):
+class InvalidImage(NoncriticalProcessingError):
     """Image should be skipped"""
 
 
