@@ -149,7 +149,7 @@ image_photometry = [  # imported from wirc/blocks.py
         phot_cutout_size=100,
         target_ra_key="OBJRAD",
         target_dec_key="OBJDECD",
-        zp_colname="ZP_AUTO",
+        zp_key="ZP_AUTO",
     ),
     # Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
     # PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),

@@ -399,16 +399,13 @@ detect_candidates = [
         **sextractor_candidate_config,
         copy_image_keywords=["stackid", "progname"],
     ),
-    CandidatePSFPhotometry(
-        zp_colname="ZP",
-    ),
+    CandidatePSFPhotometry(),
     CandidateAperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
-        zp_colname="ZP",
     ),
     CustomSourceModifier(winter_candidate_annotator_filterer),
     SourceWriter(output_dir_name="candidates"),
