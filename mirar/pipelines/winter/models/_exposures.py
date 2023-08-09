@@ -88,7 +88,6 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     dec_column_name = "dec"
 
     raw: Mapped["RawsTable"] = relationship(back_populates="exposure_ids")
-    diff: Mapped["DiffsTable"] = relationship(back_populates="exposure_ids")
 
 
 default_unknown_field = Field(default=-999)
