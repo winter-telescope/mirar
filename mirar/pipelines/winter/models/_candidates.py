@@ -4,7 +4,9 @@ Models for the 'candidates' table
 import logging
 from typing import ClassVar
 
+import pandas as pd
 from pydantic import Field, field_validator
+
 from sqlalchemy import (
     VARCHAR,
     BigInteger,
@@ -15,12 +17,15 @@ from sqlalchemy import (
     Integer,
     Sequence,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.pipelines.winter.models._diff import Diff
+from mirar.database.base_model import BaseDB, dec_field, ra_field
+from mirar.database.constraints import DBQueryConstraints
+from mirar.database.transactions import select_from_table
 from mirar.pipelines.winter.models._fields import fieldid_field
 from mirar.pipelines.winter.models._filters import fid_field
+from mirar.pipelines.winter.models._programs import Program, default_program
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 logger = logging.getLogger(__name__)
@@ -56,6 +61,10 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     # Image properties
 
     diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))  # FIXME
+    diff_id: Mapped["DiffsTable"] = relationship(back_populates="candidates")
+
+    stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))  # FIXME
+    stack_id: Mapped["StacksTable"] = relationship(back_populates="candidates")
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
     exptime = Column(Float, nullable=False)
@@ -84,10 +93,11 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     magpsf = Column(Float, nullable=False)
     sigmapsf = Column(Float, nullable=False)
+
     chipsf = Column(Float, nullable=True)
 
-    magap = Column(Float, nullable=True)
-    sigmagap = Column(Float, nullable=True)
+    magap = Column(Float, nullable=False)
+    sigmagap = Column(Float, nullable=False)
 
     magapbig = Column(Float, nullable=True)
     sigmagapbig = Column(Float, nullable=True)
@@ -206,6 +216,7 @@ class Candidate(BaseDB):
     jd: float = Field(ge=0)
 
     diffid: int | None = Field(ge=0, default=None)
+    stackid: int = Field(ge=0)
 
     fid: int = fid_field
     exptime: float = Field(ge=0)
@@ -317,6 +328,7 @@ class Candidate(BaseDB):
     maggaia: float | None = Field(default=None)
     maggaiabright: float | None = Field(default=None)
 
+
     @field_validator("diffid")
     @classmethod
     def validate_diffid(cls, diffid: int):
@@ -328,3 +340,23 @@ class Candidate(BaseDB):
         """
         assert Diff._exists(keys="diffid", values=diffid)
         return diffid
+
+    def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
+        """
+        Insert the pydantic-ified data into the corresponding sql database
+
+        :return: None
+        """
+
+        prog_match = select_from_table(
+            DBQueryConstraints(columns="progname", accepted_values=self.progname),
+            sql_table=Program.sql_model,
+        )
+        if prog_match.empty:
+            logger.debug(
+                f"Program {self.progname} not found in database. "
+                f"Using default program {default_program.progname}"
+            )
+            self.progname = default_program.progname
+
+        return self._insert_entry(returning_key_names=returning_key_names)
