@@ -19,8 +19,6 @@ import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
 from astropy.io import fits
 
-from mirar.io import open_raw_image
-
 logger = logging.getLogger(__name__)
 
 pyfftw.interfaces.cache.enable()
@@ -28,8 +26,8 @@ pyfftw.interfaces.cache.set_keepalive_time(1.0)
 
 
 def pyzogy(
-    new_image_path: str | Path,
-    ref_image_path: str | Path,
+    new_data: np.ndarray,
+    ref_data: np.ndarray,
     new_psf_path: str | Path,
     ref_psf_path: str | Path,
     new_sigma_path: str | Path,
@@ -63,18 +61,18 @@ def pyzogy(
     """
 
     # Load the new and ref images into memory
-    new_image = open_raw_image(new_image_path)
-    new = new_image.get_data()
-    logger.debug(f"New image path: {new_image_path}")
-    with fits.open(ref_image_path) as ref_f:
-        ref = ref_f[0].data  # pylint: disable=no-member
+    # new_image = open_raw_image(new_image_path)
+    # new_data = new_image.get_data()
+    # logger.debug(f"New image path: {new_image_path}")
+    # with fits.open(ref_image_path) as ref_f:
+    #     ref_data = ref_f[0].data  # pylint: disable=no-member
 
     # Set nans to zero in new and ref images
-    new_nanmask = np.isnan(new)
-    ref_nanmask = np.isnan(ref)
+    new_nanmask = np.isnan(new_data)
+    ref_nanmask = np.isnan(ref_data)
 
-    new[new_nanmask] = 0.0
-    ref[ref_nanmask] = 0.0
+    new_data[new_nanmask] = 0.0
+    ref_data[ref_nanmask] = 0.0
 
     # Load the PSFs into memory
     with fits.open(new_psf_path) as img_psf_f:
@@ -89,13 +87,13 @@ def pyzogy(
     )
 
     # Place PSF at center of image with same size as new / reference
-    new_psf_big = np.zeros(new.shape)
-    ref_psf_big = np.zeros(ref.shape)
+    new_psf_big = np.zeros(new_data.shape)
+    ref_psf_big = np.zeros(ref_data.shape)
 
-    y_min = new.shape[0] // 2 - new_psf.shape[0] // 2
-    y_max = new.shape[0] // 2 + new_psf.shape[0] // 2 + 1
-    x_min = new.shape[1] // 2 - new_psf.shape[1] // 2
-    x_max = new.shape[1] // 2 + new_psf.shape[1] // 2 + 1
+    y_min = new_data.shape[0] // 2 - new_psf.shape[0] // 2
+    y_max = new_data.shape[0] // 2 + new_psf.shape[0] // 2 + 1
+    x_min = new_data.shape[1] // 2 - new_psf.shape[1] // 2
+    x_max = new_data.shape[1] // 2 + new_psf.shape[1] // 2 + 1
 
     new_psf_big[y_min:y_max, x_min:x_max] = new_psf
     ref_psf_big[y_min:y_max, x_min:x_max] = ref_psf
@@ -115,8 +113,8 @@ def pyzogy(
     )
 
     # Take all the Fourier Transforms
-    new_hat = fft.fft2(new)
-    ref_hat = fft.fft2(ref)
+    new_hat = fft.fft2(new_data)
+    ref_hat = fft.fft2(ref_data)
 
     new_psf_hat = fft.fft2(new_psf_big)
     ref_psf_hat = fft.fft2(ref_psf_big)
@@ -134,7 +132,6 @@ def pyzogy(
     flux_zero_point = 1.0 / np.sqrt(new_avg_unc**2 + ref_avg_unc**2)
 
     # Difference Image
-    # TODO: Why is the flux_zero_point normalization in there?
     diff = np.real(fft.ifft2(diff_hat)) / flux_zero_point
     # Fourier Transform of PSF of Subtraction Image (Equation 14)
     diff_hat_psf = ref_psf_hat * new_psf_hat / flux_zero_point / diff_hat_denominator
@@ -195,7 +192,6 @@ def pyzogy(
 
     # Astrometric Noise
     # Equation 31
-    # TODO: Check axis (0/1) vs x/y coordinates
     new_sigma = np.real(fft.ifft2(k_n_hat * new_hat))
     dsn_dx = new_sigma - np.roll(new_sigma, 1, axis=1)
     dsn_dy = new_sigma - np.roll(new_sigma, 1, axis=0)

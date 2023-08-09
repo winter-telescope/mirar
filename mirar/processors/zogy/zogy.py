@@ -9,7 +9,6 @@ In most cases, a processor chain will first require
 in order to set these relevant header paths.
 """
 import logging
-import os
 from collections.abc import Callable
 from copy import copy
 from pathlib import Path
@@ -28,12 +27,18 @@ from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
+    MAGLIM_KEY,
     NORM_PSFEX_KEY,
     OBSCLASS_KEY,
     RAW_IMG_KEY,
     REF_IMG_KEY,
-    REF_PSF_KEY,
+    RMS_COUNTS_KEY,
     SCI_IMG_KEY,
+    SCOR_IMG_KEY,
+    SCOR_MEAN_KEY,
+    SCOR_MEDIAN_KEY,
+    SCOR_STD_KEY,
+    SEXTRACTOR_HEADER_KEY,
     UNC_IMG_KEY,
     core_fields,
     get_output_dir,
@@ -239,17 +244,16 @@ class ZOGYPrepare(BaseImageProcessor):
         return rms_image
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-        for image in batch:
+        for image_ind, image in enumerate(batch):
             ref_img_path = image[REF_IMG_KEY]
             sci_img_path = image[BASE_NAME_KEY]
 
             ref_img = self.open_fits(self.get_path(ref_img_path))
 
-            ref_catalog_path = ref_img["SRCCAT"]  # convert to key
+            ref_catalog_path = ref_img[SEXTRACTOR_HEADER_KEY]
             ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
-            # change in Swarp too, also fix (get_mask/write_mask)?
 
-            sci_catalog_path = image["SRCCAT"]  # convert to key
+            sci_catalog_path = image[SEXTRACTOR_HEADER_KEY]
             sci_weight_path = image[LATEST_WEIGHT_SAVE_KEY]
 
             ref_weight_data = self.open_fits(self.get_path(ref_weight_path))
@@ -295,20 +299,11 @@ class ZOGYPrepare(BaseImageProcessor):
                 ref_img[self.ref_zp_header_key]
             ) + 2.5 * np.log10(flux_scale)
 
-            ref_scaled_path = ref_img_path.replace(".fits", ".scaled.fits")
-            self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
-
             logger.debug(
                 f"Zeropoints are reference : {ref_unscaled_zp}, "
                 f"scaled reference : {ref_img[self.ref_zp_header_key]} and "
                 f"science : {image[self.sci_zp_header_key]}"
             )
-
-            # Scale is 1 by construction for science image
-            sci_scaled_path = self.get_path(
-                sci_img_path.replace(".fits", ".scaled.fits")
-            )
-            self.save_fits(image, path=sci_scaled_path)
 
             sci_rms = 0.5 * (
                 np.percentile(image_data[~image_mask], 84.13)
@@ -326,28 +321,34 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_rms_image = self.get_rms_image(image, sci_rms)
             ref_rms_image = self.get_rms_image(ref_img, ref_rms)
 
-            sci_rms_path = sci_img_path + ".unc.fits"
-            ref_rms_path = ref_img_path + ".unc.fits"
+            sci_rms_path = self.get_path(sci_img_path + ".unc.fits")
+            ref_rms_path = self.get_path(ref_img_path + ".unc.fits")
 
-            self.save_fits(
-                sci_rms_image, path=os.path.join(self.get_path(sci_rms_path))
-            )
+            self.save_fits(sci_rms_image, path=sci_rms_path)
+            image[UNC_IMG_KEY] = sci_rms_path.as_posix()
 
-            self.save_fits(
-                ref_rms_image, path=os.path.join(self.get_path(ref_rms_path))
-            )
+            self.save_fits(ref_rms_image, path=ref_rms_path)
+            ref_img[UNC_IMG_KEY] = ref_rms_path.as_posix()
+            ref_img[RMS_COUNTS_KEY] = ref_rms
+            # Save scaled reference image
+            ref_scaled_path = ref_img_path.replace(".fits", ".scaled.fits")
+            self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
 
-            image["SCIRMS"] = sci_rms
-            image["REFRMS"] = ref_rms
+            # Scale is 1 by construction for science image
+            # sci_scaled_path = self.get_path(
+            #     sci_img_path.replace(".fits", ".scaled.fits")
+            # )
+            # self.save_fits(image, path=sci_scaled_path)
+
+            # Header keywords only required by ZOGY
+            image[RMS_COUNTS_KEY] = sci_rms
             image["ASTUNCX"] = ast_unc_x
             image["ASTUNCY"] = ast_unc_y
             image["REFFS"] = flux_scale
-            image["SCUNCPTH"] = str(sci_rms_path)
-            image["RFUNCPTH"] = str(ref_rms_path)
-            image["SCISCL"] = str(sci_scaled_path)
-            image["REFSCL"] = str(ref_scaled_path)
+            image[REF_IMG_KEY] = str(ref_scaled_path)
             image["SCORMASK"] = str(scorr_weight_path)
 
+            batch[image_ind] = image
         return batch
 
 
@@ -377,14 +378,15 @@ class ZOGY(ZOGYPrepare):
     ) -> ImageBatch:
         diff_batch = ImageBatch()
         for image in batch:
-            sci_image_path = self.get_path(image["SCISCL"])
-            ref_image_path = self.get_path(image["REFSCL"])
-            sci_rms = image["SCIRMS"]
-            ref_rms = image["REFRMS"]
+            ref_image_path = self.get_path(image[REF_IMG_KEY])
+            ref_image = self.open_fits(ref_image_path)
+
+            sci_rms = image[RMS_COUNTS_KEY]
+            ref_rms = ref_image[RMS_COUNTS_KEY]
             sci_psf_path = self.get_path(image[NORM_PSFEX_KEY])
-            ref_psf_path = self.get_path(image[REF_PSF_KEY])
-            sci_rms_path = self.get_path(image["SCUNCPTH"])
-            ref_rms_path = self.get_path(image["RFUNCPTH"])
+            ref_psf_path = self.get_path(ref_image[NORM_PSFEX_KEY])
+            sci_rms_path = image[UNC_IMG_KEY]
+            ref_rms_path = ref_image[UNC_IMG_KEY]
             ast_unc_x = image["ASTUNCX"]
             ast_unc_y = image["ASTUNCY"]
 
@@ -392,8 +394,8 @@ class ZOGY(ZOGYPrepare):
 
             logger.debug(f"Ast unc x is {ast_unc_x:.2f} and y is {ast_unc_y:.2f}")
             diff_data, diff_psf_data, scorr_data = pyzogy(
-                new_image_path=sci_image_path,
-                ref_image_path=ref_image_path,
+                new_data=image.get_data(),
+                ref_data=ref_image.get_data(),
                 new_psf_path=sci_psf_path,
                 ref_psf_path=ref_psf_path,
                 new_sigma_path=sci_rms_path,
@@ -404,6 +406,7 @@ class ZOGY(ZOGYPrepare):
                 dy=ast_unc_y,
             )
 
+            sci_image_path = self.get_path(image[BASE_NAME_KEY])
             diff_image_path = Path(sci_image_path).with_suffix(".diff.fits")
             diff_psf_path = diff_image_path.with_suffix(".psf")
 
@@ -430,25 +433,24 @@ class ZOGY(ZOGYPrepare):
 
             diff = Image(data=diff_data, header=copy(image.get_header()))
 
-            diff["DIFFIMG"] = diff_image_path.as_posix()
-            diff["DIFFPSF"] = diff_psf_path.as_posix()
-            diff["DIFFSCR"] = scorr_image_path.as_posix()
-            diff["DIFFUNC"] = diff_rms_path.as_posix()
+            diff[NORM_PSFEX_KEY] = diff_psf_path.as_posix()
+            diff[SCOR_IMG_KEY] = scorr_image_path.as_posix()
+            diff[UNC_IMG_KEY] = diff_rms_path.as_posix()
             noise = np.sqrt(
                 np.nansum(np.square(diff_psf_data) * np.square(diff_rms_median))
             ) / np.nansum(np.square(diff_psf_data))
 
-            diff["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
+            diff[MAGLIM_KEY] = -2.5 * np.log10(noise * 5) + float(
                 diff[self.sci_zp_header_key]
             )
             key_map = {
-                "SCORMEAN": scorr_mean,
-                "SCORMED": scorr_median,
-                "SCORSTD": scorr_std,
+                SCOR_MEAN_KEY: scorr_mean,
+                SCOR_MEDIAN_KEY: scorr_median,
+                SCOR_STD_KEY: scorr_std,
             }
             for key, value in key_map.items():
                 if np.isnan(value):
-                    value = -999.0
+                    value = None
                 diff[key] = value
 
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
@@ -482,3 +484,10 @@ class ZOGY(ZOGYPrepare):
             diff[SCI_IMG_KEY] = image[BASE_NAME_KEY]
             diff_batch.append(diff)
         return diff_batch
+
+    def check_prerequisites(
+        self,
+    ):
+        check = np.sum([isinstance(x, ZOGYPrepare) for x in self.preceding_steps])
+        if check != 1:
+            raise ValueError("ZOGYPrepare must be run before ZOGY")
