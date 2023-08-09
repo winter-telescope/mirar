@@ -11,7 +11,8 @@ from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
 from mirar.data import Image
-from mirar.paths import DIFF_IMG_KEY, REF_IMG_KEY, SCI_IMG_KEY
+from mirar.paths import DIFF_IMG_KEY, FILTER_KEY, MAGLIM_KEY, REF_IMG_KEY, SCI_IMG_KEY
+from mirar.pipelines.wirc.load_wirc_image import wirc_filter_dict
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     sextractor_reference_config,
@@ -23,40 +24,33 @@ from mirar.references.wirc import WIRCRef
 logger = logging.getLogger(__name__)
 
 
-def filter_bad_wirc_candidates(src_df: pd.DataFrame):
+def wirc_source_table_filter_annotator(src_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Function to perform basic filtering to weed out bad WIRC candidates with None
-    magnitudes, to be added.
+    Function to remove bad candidates with None in sigmapsf, magpsf, magap, sigmagap,
+    and update the source table with the keys required for the WIRC database
     :param src_df: Source dataframe
-    :return: filtered dataframe
+    :return: annotated dataframe
     """
     none_mask = (
-        src_df["sigmapsf"].isnull()
-        | src_df["magpsf"].isnull()
-        | src_df["magap"].isnull()
-        | src_df["sigmagap"].isnull()
+        src_df.loc[:, "sigmapsf"].isnull()
+        | src_df.loc[:, "magpsf"].isnull()
+        | src_df.loc[:, "magap"].isnull()
+        | src_df.loc[:, "sigmagap"].isnull()
     )
 
     mask = none_mask.values
 
     # Needing to do this because the dataframe is big-endian
     mask_inds = np.where(~mask)[0]
-    filtered_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(
-        drop=True
-    )
-    return filtered_df
+    src_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(drop=True)
 
-
-def wirc_source_table_annotator(src_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Function to update the source table with the keys required for the WIRC database
-    :param src_df: Source dataframe
-    :return: annotated dataframe
-    """
-    src_df["sciimgname"] = src_df[SCI_IMG_KEY]
-    src_df["refimgname"] = src_df[REF_IMG_KEY]
-    src_df["diffimgname"] = src_df[DIFF_IMG_KEY]
-
+    src_df.loc[:, "sciimgname"] = src_df.loc[:, SCI_IMG_KEY]
+    src_df.loc[:, "refimgname"] = src_df.loc[:, REF_IMG_KEY]
+    src_df.loc[:, "diffimgname"] = src_df.loc[:, DIFF_IMG_KEY]
+    src_df.loc[:, "fid"] = [wirc_filter_dict[x] for x in src_df.loc[:, FILTER_KEY]]
+    src_df.loc[:, "programid"] = src_df.loc[:, "progid"]
+    src_df.loc[:, "programpi"] = src_df.loc[:, "progpi"]
+    src_df.loc[:, "diffmaglim"] = src_df.loc[:, MAGLIM_KEY]
     return src_df
 
 
