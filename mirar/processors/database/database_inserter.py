@@ -78,7 +78,7 @@ class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
             source_table = source_list.get_data()
             metadata = source_list.get_metadata()
 
-            primary_key_dict = {}
+            primary_key_df = pd.DataFrame()
             for _, source_row in source_table.iterrows():
                 super_dict = self.generate_super_dict(metadata, source_row)
 
@@ -87,8 +87,12 @@ class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
 
                 assert len(res) == 1
 
-            for key, val in primary_key_dict.items():
-                source_table[key] = val
+                primary_key_df = pd.concat([primary_key_df, res], axis=0).reset_index(
+                    drop=True
+                )
+
+            for key in primary_key_df:
+                source_table[key] = primary_key_df[key]
 
             source_list.set_data(source_table)
 
