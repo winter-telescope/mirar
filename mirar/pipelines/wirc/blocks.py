@@ -12,7 +12,6 @@ from mirar.paths import (
     SATURATE_KEY,
 )
 from mirar.pipelines.wirc.generator import (
-    filter_bad_wirc_candidates,
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
     wirc_photometric_img_catalog_purifier,
@@ -20,7 +19,7 @@ from mirar.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
     wirc_reference_sextractor,
-    wirc_source_table_annotator,
+    wirc_source_table_filter_annotator,
     wirc_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
@@ -71,8 +70,7 @@ from mirar.processors.photometry.psf_photometry import (
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
-from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
-from mirar.processors.sources.source_filter import SourceFilterwithFunction
+from mirar.processors.sources import CandidateNamer, SourceWriter, ZOGYSourceDetector
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
 from mirar.processors.sources.source_table_modifier import CustomSourceModifier
 from mirar.processors.sources.utils import RegionsWriter
@@ -192,6 +190,7 @@ subtract = [
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     ZOGYPrepare(output_sub_dir="subtract"),
     ZOGY(output_sub_dir="subtract", catalog_purifier=wirc_zogy_catalogs_purifier),
+    ImageSaver(output_dir_name="diffs"),
 ]
 
 image_photometry = [
@@ -228,8 +227,11 @@ candidate_photometry = [
 ]
 
 detect_candidates = [
-    SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
-    CustomSourceModifier(modifier_function=wirc_source_table_annotator),
+    ZOGYSourceDetector(
+        output_sub_dir="subtract",
+        **sextractor_candidate_config,
+        copy_image_keywords=["PROGID", "PROGPI"],
+    ),
 ]
 
 process_candidates = [
@@ -242,8 +244,8 @@ process_candidates = [
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    SourceWriter(output_dir_name="candidates"),
-    SourceFilterwithFunction(filter_function=filter_bad_wirc_candidates),
+    # SourceWriter(output_dir_name="candidates"),
+    CustomSourceModifier(modifier_function=wirc_source_table_filter_annotator),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
@@ -260,8 +262,8 @@ process_candidates = [
         name_start=NAME_START,
         xmatch_radius_arcsec=2,
     ),
-    DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="fail")
-    # SourceWriter(output_dir_name="dbop"),
+    DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="fail"),
+    SourceWriter(output_dir_name="candidates"),
     # EdgeCandidatesMask(edge_boundary_size=100)
     # FilterCandidates(),
 ]
