@@ -49,7 +49,7 @@ from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
     MEFLoader(
-        input_sub_dir="raw",
+        input_sub_dir="",
         load_image=load_sedmv2_mef_image,
     ),
     ImageSaver(output_dir_name="loaded"),
