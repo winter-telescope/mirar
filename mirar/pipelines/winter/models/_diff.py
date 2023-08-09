@@ -4,12 +4,15 @@ Models for the 'diff' table
 import os
 from typing import ClassVar
 
+import pandas as pd
 from pydantic import Field, field_validator
-from sqlalchemy import VARCHAR, Column, ForeignKey, Integer, Sequence
+from sqlalchemy import VARCHAR, Column, Float, ForeignKey, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.database.base_model import BaseDB
-from mirar.pipelines.winter.models._exposures import Exposure
+from mirar.database.constraints import DBQueryConstraints
+from mirar.database.transactions.update import _update_database_entry
+from mirar.pipelines.winter.models._candidates import Candidate
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 
@@ -29,16 +32,17 @@ class DiffsTable(WinterBase):  # pylint: disable=too-few-public-methods
         primary_key=True,
     )
 
-    uexpid: Mapped[int] = mapped_column(ForeignKey("exposures.uexpid"))
-    exposure_ids: Mapped["ExposuresTable"] = relationship(back_populates="diff")
-
-    rawid: Mapped[int] = mapped_column(ForeignKey("raws.rawid"))
-    raw_ids: Mapped["RawsTable"] = relationship(back_populates="diff")
-
     stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))
     stack_id: Mapped["StacksTable"] = relationship(back_populates="diff")
 
+    scormean = Column(Float, nullable=True)
+    scormed = Column(Float, nullable=True)
+    scorstd = Column(Float, nullable=True)
+    maglim = Column(Float, nullable=True)
+    zp = Column(Float, nullable=True)
     savepath = Column(VARCHAR(255), unique=True)
+
+    candidates = relationship("CandidatesTable", back_populates="diff_id")
 
 
 class Diff(BaseDB):
@@ -48,11 +52,13 @@ class Diff(BaseDB):
 
     sql_model: ClassVar = DiffsTable
 
-    diffid: int = Field(ge=0)
-    uexpid: int = Field(ge=0)
-    qid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
-    procstatus: int = Field(ge=0, default=0)
+    stackid: int = Field(ge=0)
+    scormean: float | None = Field()
+    scormed: float | None = Field()
+    scorstd: float | None = Field(ge=0)
+    zp: float | None = Field()
+    maglim: float | None = Field()
 
     @field_validator("savepath")
     @classmethod
@@ -66,14 +72,23 @@ class Diff(BaseDB):
         assert os.path.exists(savepath)
         return savepath
 
-    @field_validator("uexpid")
-    @classmethod
-    def validate_expid(cls, uexpid: int) -> int:
+    def insert_entry(
+        self, returning_key_names: str | list[str] | None = None
+    ) -> pd.DataFrame:
         """
-        Ensure that expid exists in exposures table
+        Insert entry into database
+        :param returning_key_names: names of keys to return
+        :return: dataframe of inserted entries
+        """
+        dbconstraints = DBQueryConstraints()
+        dbconstraints.add_constraint(
+            column="stackid",
+            accepted_values=self.stackid,
+        )
+        _update_database_entry(
+            update_dict={"deprecated": True},
+            sql_table=Candidate.sql_model,
+            db_constraints=dbconstraints,
+        )
 
-        :param uexpid: field value
-        :return: field value
-        """
-        assert Exposure._exists(keys="uexpid", values=uexpid)
-        return uexpid
+        return self._insert_entry(returning_key_names=returning_key_names)
