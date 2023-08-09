@@ -11,7 +11,6 @@ from mirar.paths import (
     APFLUXUNC_PREFIX_KEY,
     APMAG_PREFIX_KEY,
     APMAGUNC_PREFIX_KEY,
-    ZP_KEY,
 )
 from mirar.processors.photometry.base_photometry import (
     AperturePhotometry,
@@ -34,7 +33,6 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
         aper_diameters: float | list[float] = 10.0,
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
-        zp_colname: str = ZP_KEY,
         col_suffix_list: str | list[str] = None,
         **kwargs,
     ):
@@ -48,7 +46,6 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
         self.col_suffix_list = col_suffix_list
         if self.col_suffix_list is None:
             self.col_suffix_list = self.aperture_photometer.aper_diameters
-        self.zp_colname = zp_colname
 
     def _apply_to_sources(
         self,
@@ -78,8 +75,9 @@ class CandidateAperturePhotometry(BaseCandidatePhotometry):
                 magnitudes, magnitudes_unc = get_mags_from_fluxes(
                     flux_list=flux,
                     fluxunc_list=fluxunc,
-                    zeropoint_list=np.array(
-                        candidate_table[self.zp_colname], dtype=float
+                    zeropoint_list=np.array(candidate_table[self.zp_key], dtype=float),
+                    zeropoint_unc_list=np.array(
+                        candidate_table[f"{self.zp_std_key}"], dtype=float
                     ),
                 )
                 candidate_table[f"{APMAG_PREFIX_KEY}{suffix}"] = magnitudes
@@ -103,7 +101,6 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         aper_diameters: float | list[float] = 10.0,
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
-        zp_colname: str = ZP_KEY,
         col_suffix_list: Optional[list[str]] = None,
         **kwargs,
     ):
@@ -117,8 +114,6 @@ class ImageAperturePhotometry(BaseImagePhotometry):
         self.col_suffix_list = col_suffix_list
         if self.col_suffix_list is None:
             self.col_suffix_list = self.aperture_photometer.aper_diameters
-
-        self.zp_colname = zp_colname
 
     def _apply_to_images(
         self,
@@ -136,13 +131,15 @@ class ImageAperturePhotometry(BaseImagePhotometry):
                 suffix = self.col_suffix_list[ind]
                 image[f"fluxap{suffix}"] = flux
                 image[f"fluxunc{suffix}"] = fluxunc
-                if flux <= 0:
-                    image[f"magap{suffix}"] = None
-                    image[f"magerrap{suffix}"] = None
-                else:
-                    image[f"magap{suffix}"] = float(
-                        image[self.zp_colname]
-                    ) - 2.5 * np.log10(flux)
-                    image[f"magerrap{suffix}"] = 1.086 * fluxunc / flux
+
+                magnitudes, magnitudes_unc = get_mags_from_fluxes(
+                    flux_list=[flux],
+                    fluxunc_list=[fluxunc],
+                    zeropoint_list=[float(image[self.zp_key])],
+                    zeropoint_unc_list=[float(image[self.zp_std_key])],
+                )
+
+                image[f"magap{suffix}"] = magnitudes[0]
+                image[f"magerrap{suffix}"] = magnitudes_unc[0]
 
         return batch
