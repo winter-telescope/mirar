@@ -14,13 +14,13 @@ from mirar.paths import (
 )
 from mirar.processors.photometry.base_photometry import (
     AperturePhotometry,
-    BaseCandidatePhotometry,
     BaseImagePhotometry,
+    BaseSourcePhotometry,
 )
 from mirar.processors.photometry.utils import get_mags_from_fluxes
 
 
-class CandidateAperturePhotometry(BaseCandidatePhotometry):
+class SourceAperturePhotometry(BaseSourcePhotometry):
     """
     Processor to run aperture photometry on all candidates in candidate table
     """

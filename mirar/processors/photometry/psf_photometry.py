@@ -16,8 +16,8 @@ from mirar.paths import (
 from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.base_processor import PrerequisiteError
 from mirar.processors.photometry.base_photometry import (
-    BaseCandidatePhotometry,
     BaseImagePhotometry,
+    BaseSourcePhotometry,
     PSFPhotometry,
 )
 from mirar.processors.photometry.utils import get_mags_from_fluxes
@@ -42,7 +42,7 @@ def check_psf_phot_prerequisites(processor):
         raise PrerequisiteError(err)
 
 
-class CandidatePSFPhotometry(BaseCandidatePhotometry):
+class SourcePSFPhotometry(BaseSourcePhotometry):
     """
     Processor to run PSF photometry on all candidates in candidate table
     """

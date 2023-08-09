@@ -28,11 +28,11 @@ from mirar.processors.csvlog import CSVLog
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import (
-    CandidateAperturePhotometry,
     ImageAperturePhotometry,
+    SourceAperturePhotometry,
 )
 from mirar.processors.photometry.psf_photometry import (  # ImagePSFPhotometry,
-    CandidatePSFPhotometry,
+    SourcePSFPhotometry,
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
@@ -162,14 +162,14 @@ image_photometry = [  # imported from wirc/blocks.py
 ]
 
 candidate_photometry = [  # imported from wirc/blocks.py
-    CandidateAperturePhotometry(
+    SourceAperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    CandidatePSFPhotometry(),
+    SourcePSFPhotometry(),
 ]
 
 

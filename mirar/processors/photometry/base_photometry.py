@@ -257,10 +257,12 @@ class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
         return int(np.round(x)), int(np.round(y))
 
 
-class BaseCandidatePhotometry(BasePhotometryProcessor, BaseSourceProcessor):
+class BaseSourcePhotometry(BasePhotometryProcessor, BaseSourceProcessor):
     """
     Processor to run photometry on a candidates table
     """
+
+    base_key = "base_source_photometry"
 
     def __init__(
         self,
