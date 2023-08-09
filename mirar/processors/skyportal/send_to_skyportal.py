@@ -5,7 +5,6 @@ import base64
 import gzip
 import io
 import logging
-import os
 import time
 from copy import deepcopy
 from datetime import datetime
@@ -25,134 +24,41 @@ from astropy.visualization import (
     LinearStretch,
     LogStretch,
 )
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
 
 from mirar.data import SourceBatch
 from mirar.paths import CAND_NAME_KEY, PACKAGE_NAME, __version__
 from mirar.processors.base_processor import BaseSourceProcessor
+from mirar.processors.skyportal.client import SkyportalClient
 
 matplotlib.use("agg")
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TIMEOUT = 5  # seconds
 
-
-class TimeoutHTTPAdapter(HTTPAdapter):
-    """
-    HTTP adapter that sets a default timeout for all requests.
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.timeout = DEFAULT_TIMEOUT
-        if "timeout" in kwargs:
-            self.timeout = kwargs["timeout"]
-            del kwargs["timeout"]
-        super().__init__(*args, **kwargs)
-
-    def send(self, request, *args, **kwargs):
-        """
-        Send a request with a default timeout.
-
-        :param request: request to send
-        :param args: args to pass to super().send
-        :param kwargs: kwargs to pass to super().send
-        :return: response from request
-        """
-        try:
-            timeout = kwargs.get("timeout")
-            if timeout is None:
-                kwargs["timeout"] = self.timeout
-            return super().send(request, *args, **kwargs)
-        except AttributeError:
-            kwargs["timeout"] = DEFAULT_TIMEOUT
-
-
-class SendToFritz(BaseSourceProcessor):
+class SkyportalSender(BaseSourceProcessor):
     """
     Processor for sending candidates to Fritz.
     """
 
-    base_key = "fritzsender"
+    base_key = "skyportalsender"
 
     def __init__(
         self,
-        base_name: str,
+        origin: str,
         group_ids: list[int],
         fritz_filter_id: int,
         instrument_id: int,
         stream_id: int,
         update_thumbnails: bool = True,
-        protocol: str = "http",
     ):
         super().__init__()
-        self.token = None
         self.group_ids = group_ids
         self.fritz_filter_id = fritz_filter_id
         self.instrument_id = instrument_id
-        self.origin = base_name  # used for sending updates to Fritz
+        self.origin = origin  # used for sending updates to Fritz
         self.stream_id = stream_id
-        self.protocol = protocol
         self.update_thumbnails = update_thumbnails
-
-        self._session = None
-        self.session_headers = None
-
-    def set_up_session(self):
-        """
-        Set up a session for sending requests to Fritz.
-
-        :return: None
-        """
-        # session to talk to SkyPortal/Fritz
-        self._session = requests.Session()
-        self.session_headers = {
-            "Authorization": f"token {self._get_fritz_token()}",
-            "User-Agent": "mirar",
-        }
-
-        retries = Retry(
-            total=5,
-            backoff_factor=2,
-            status_forcelist=[405, 429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH"],
-        )
-        adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
-        self._session.mount("https://", adapter)
-        self._session.mount("http://", adapter)
-
-    def get_session(self) -> requests.Session:
-        """
-        Wrapper for getting the session.
-        If the session is not set up, it will be set up.
-
-        :return: Session
-        """
-        if self._session is None:
-            self.set_up_session()
-
-        return self._session
-
-    @staticmethod
-    def _get_fritz_token():
-        """
-        Get Fritz token from environment variable.
-
-        :return: Fritz token
-        """
-        token_fritz = os.getenv("FRITZ_TOKEN")
-
-        if token_fritz is None:
-            err = (
-                "No Fritz token specified. Run 'export FRITZ_TOKEN=<token>' to "
-                "set. The Fritz token will need to be specified manually "
-                "for Fritz API queries."
-            )
-            logger.error(err)
-            raise ValueError(err)
-
-        return token_fritz
+        self.skyportal_client = SkyportalClient()
 
     def _apply_to_sources(
         self,
@@ -168,25 +74,6 @@ class SendToFritz(BaseSourceProcessor):
             candidate_table = source_table.get_data()
             self.make_alert(candidate_table)
         return batch
-
-    @staticmethod
-    def _get_author_id():
-        """
-        Fritz author id is used in update calls. Can be found
-
-        :return: Fritz author id
-        """
-        authid_fritz = os.getenv("FRITZ_AUTHID")
-
-        if authid_fritz is None:
-            err = (
-                "No Fritz author id specified. Run 'export FRITZ_AUTHID=<id>' to set. "
-                "Author id needs to be specified for updates sent by Fritz API queries."
-            )
-            logger.error(err)
-            raise ValueError(err)
-
-        return authid_fritz
 
     @staticmethod
     def read_input_df(candidate_df: pd.DataFrame):
@@ -218,52 +105,6 @@ class SendToFritz(BaseSourceProcessor):
 
         return all_candidates
 
-    def api(
-        self, method: str, endpoint: str, data: Optional[Mapping] = None
-    ) -> requests.Response:
-        """Make an API call to a SkyPortal instance
-
-        headers = {'Authorization': f'token {self.token}'}
-        response = requests.request(method, endpoint, json_dict=data, headers=headers)
-
-        :param method: HTTP method
-        :param endpoint: API endpoint
-        :param data: JSON data to send
-        :return: response from API call
-        """
-        method = method.lower()
-
-        session = self.get_session()
-
-        methods = {
-            "head": session.head,
-            "get": session.get,
-            "post": session.post,
-            "put": session.put,
-            "patch": session.patch,
-            "delete": session.delete,
-        }
-
-        if endpoint is None:
-            raise ValueError("Endpoint not specified")
-        if method not in ["head", "get", "post", "put", "patch", "delete"]:
-            raise ValueError(f"Unsupported method: {method}")
-
-        if method == "get":
-            response = methods[method](
-                f"{endpoint}",
-                params=data,
-                headers=self.session_headers,
-            )
-        else:
-            response = methods[method](
-                f"{endpoint}",
-                json=data,
-                headers=self.session_headers,
-            )
-
-        return response
-
     def alert_post_source(self, alert: dict, group_ids: Optional[list[int]] = None):
         """Add a new source to SkyPortal
 
@@ -285,7 +126,7 @@ class SendToFritz(BaseSourceProcessor):
         logger.debug(
             f"Saving {alert[CAND_NAME_KEY]} {alert['candid']} as a Source on SkyPortal"
         )
-        response = self.api("POST", "https://fritz.science/api/sources", data)
+        response = self.api("POST", "sources", data)
 
         if response.json()["status"] == "success":
             logger.debug(
@@ -299,6 +140,21 @@ class SendToFritz(BaseSourceProcessor):
             )
             logger.error(err)
             logger.error(response.json())
+
+    def api(
+        self, method: str, endpoint: str, data: Optional[Mapping] = None
+    ) -> requests.Response:
+        """Make an API call to a SkyPortal instance
+
+        headers = {'Authorization': f'token {self.token}'}
+        response = requests.request(method, endpoint, json_dict=data, headers=headers)
+
+        :param method: HTTP method
+        :param endpoint: API endpoint e.g sources
+        :param data: JSON data to send
+        :return: response from API call
+        """
+        return self.skyportal_client.api(method, endpoint, data)
 
     def alert_post_candidate(self, alert):
         """
@@ -321,7 +177,7 @@ class SendToFritz(BaseSourceProcessor):
         logger.debug(
             f"Posting metadata of {alert[CAND_NAME_KEY]} {alert['candid']} to SkyPortal"
         )
-        response = self.api("POST", "https://fritz.science/api/candidates", data)
+        response = self.api("POST", "candidates", data)
 
         if response.json()["status"] == "success":
             logger.debug(
@@ -417,7 +273,7 @@ class SendToFritz(BaseSourceProcessor):
                 f"Posting {instrument_type} thumbnail for {alert[CAND_NAME_KEY]} "
                 f"{alert['candid']} to SkyPortal",
             )
-            response = self.api("POST", "https://fritz.science/api/thumbnail", thumb)
+            response = self.api("POST", "thumbnail", thumb)
 
             if response.json()["status"] == "success":
                 logger.debug(
@@ -469,9 +325,7 @@ class SendToFritz(BaseSourceProcessor):
                 "ttype": fritz_key,
             }
 
-            response = self.api(
-                "POST", "https://fritz.science/api/thumbnail", data=data_payload
-            )
+            response = self.api("POST", "thumbnail", data=data_payload)
 
             if response.json()["status"] == "success":
                 logger.debug(
@@ -580,7 +434,7 @@ class SendToFritz(BaseSourceProcessor):
         )  # as diffmaglim is the 5-sigma depth
 
         # step 5: set the zeropoint and magnitude system
-        df_light_curve["zp"] = 23.9
+        df_light_curve["zp"] = 23.9  # FIXME
         df_light_curve["zpsys"] = "ab"
 
         # only "new" photometry requested?
@@ -619,9 +473,7 @@ class SendToFritz(BaseSourceProcessor):
                 f"Posting photometry of {alert[CAND_NAME_KEY]} {alert['candid']}, "
                 f"stream_id={self.stream_id} to SkyPortal"
             )
-            response = self.api(
-                "PUT", "https://fritz.science/api/photometry", photometry
-            )
+            response = self.api("PUT", "photometry", photometry)
             if response.json()["status"] == "success":
                 logger.debug(
                     f"Posted {alert[CAND_NAME_KEY]} photometry stream_id={self.stream_id} "
@@ -643,9 +495,7 @@ class SendToFritz(BaseSourceProcessor):
         }
         payload = {"origin": self.origin, "data": data, "group_ids": self.group_ids}
 
-        path = (
-            f"https://fritz.science/api/sources/{str(alert[CAND_NAME_KEY])}/annotations"
-        )
+        path = f"sources/{str(alert[CAND_NAME_KEY])}/annotations"
         response = self.api("POST", path, payload)
 
         if response.json()["status"] == "success":
@@ -660,8 +510,7 @@ class SendToFritz(BaseSourceProcessor):
         """Retrieve an annotation to check if it exists already."""
         response = self.api(
             "GET",
-            f"https://fritz.science/api/sources/"
-            f"{str(alert[CAND_NAME_KEY])}/annotations",
+            f"sources/{str(alert[CAND_NAME_KEY])}/annotations",
         )
 
         if response.json()["status"] == "success":
@@ -706,7 +555,7 @@ class SendToFritz(BaseSourceProcessor):
             )
             response = self.api(
                 "PUT",
-                f"https://fritz.science/api/sources/{alert[CAND_NAME_KEY]}"
+                f"sources/{alert[CAND_NAME_KEY]}"
                 f"/annotations/{existing_annotations[self.origin]['annotation_id']}",
                 new_annotation,
             )
@@ -731,9 +580,7 @@ class SendToFritz(BaseSourceProcessor):
         """
         # check if candidate exists in SkyPortal
         logger.debug(f"Checking if {alert[CAND_NAME_KEY]} is candidate in SkyPortal")
-        response = self.api(
-            "HEAD", f"https://fritz.science/api/candidates/{alert[CAND_NAME_KEY]}"
-        )
+        response = self.api("HEAD", f"candidates/{alert[CAND_NAME_KEY]}")
         is_candidate = response.status_code == 200
         logger.debug(
             f"{alert[CAND_NAME_KEY]} {'is' if is_candidate else 'is not'} "
@@ -742,9 +589,7 @@ class SendToFritz(BaseSourceProcessor):
 
         # check if source exists in SkyPortal
         logger.debug(f"Checking if {alert[CAND_NAME_KEY]} is source in SkyPortal")
-        response = self.api(
-            "HEAD", f"https://fritz.science/api/sources/{alert[CAND_NAME_KEY]}"
-        )
+        response = self.api("HEAD", f"sources/{alert[CAND_NAME_KEY]}")
         is_source = response.status_code == 200
         logger.debug(
             f"{alert[CAND_NAME_KEY]} "
@@ -786,7 +631,7 @@ class SendToFritz(BaseSourceProcessor):
                 )
                 response = self.api(
                     "GET",
-                    f"https://fritz.science/api/sources/{alert[CAND_NAME_KEY]}/groups",
+                    f"sources/{alert[CAND_NAME_KEY]}/groups",
                 )
                 if response.json()["status"] == "success":
                     existing_groups = response.json()["data"]
@@ -808,7 +653,7 @@ class SendToFritz(BaseSourceProcessor):
             if self.update_thumbnails:
                 self.alert_post_thumbnails(alert)
 
-        logger.debug(f"SendToFritz Manager complete for {alert[CAND_NAME_KEY]}")
+        logger.debug(f"SendToSkyportal Manager complete for {alert[CAND_NAME_KEY]}")
 
     def make_alert(self, candidate_df: pd.DataFrame):
         """
@@ -825,6 +670,6 @@ class SendToFritz(BaseSourceProcessor):
             self.alert_skyportal_manager(cand)
 
         t_1 = time.time()
-        logger.info(
+        logger.debug(
             f"Took {(t_1 - t_0):.2f} seconds to Fritz process {num_cands} candidates."
         )

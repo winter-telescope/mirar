@@ -45,7 +45,7 @@ from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkim
 from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.astrometry.utils import AstrometryFromFile
-from mirar.processors.avro import IPACAvroExporter, SendToFritz
+from mirar.processors.avro import IPACAvroExporter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_inserter import DatabaseSourceInserter
@@ -69,6 +69,7 @@ from mirar.processors.photometry.psf_photometry import (
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
+from mirar.processors.skyportal import SkyportalSender
 from mirar.processors.sources import CandidateNamer, SourceDetector, SourceWriter
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
 from mirar.processors.sources.utils import RegionsWriter
@@ -265,8 +266,8 @@ package_candidates = [
         base_name="WIRC",
         avro_schema_path=wirc_avro_schema_path,
     ),
-    SendToFritz(
-        base_name="WIRCTEST",
+    SkyportalSender(
+        origin="WIRCTEST",
         group_ids=[1431],
         fritz_filter_id=74,
         instrument_id=5,
