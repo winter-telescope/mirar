@@ -13,6 +13,7 @@ from mirar.paths import (
     OBSCLASS_KEY,
     TARGET_KEY,
     ZP_KEY,
+    ZP_STD_KEY,
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
@@ -33,6 +34,8 @@ from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_generator,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
+    winter_candidate_annotator_filterer,
+    winter_candidate_avro_fields_calculator,
     winter_fourier_filtered_image_generator,
     winter_photometric_catalog_generator,
     winter_reference_generator,
@@ -88,9 +91,10 @@ from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import SkyFlatCalibrator
 from mirar.processors.sources import (
     CandidateNamer,
-    SourceDetector,
+    CustomSourceModifier,
     SourceLoader,
     SourceWriter,
+    ZOGYSourceDetector,
 )
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.utils import (
@@ -355,6 +359,9 @@ load_stack = [
     # ImageSelector(
     #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1.fits_stack.fits")
     # ),
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
+    HeaderAnnotator(input_keys=["ZP_AUTO"], output_key=ZP_KEY),
+    HeaderAnnotator(input_keys=["ZP_AUTO_STD"], output_key=ZP_STD_KEY),
 ]
 
 imsub = [
@@ -379,9 +386,11 @@ imsub = [
 ]
 
 detect_candidates = [
-    HeaderAnnotator(input_keys=["ZP_AUTO"], output_key="ZP"),
-    HeaderAnnotator(input_keys=["ZP_AUTO_STD"], output_key="ZP_STD"),
-    SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
+    ZOGYSourceDetector(
+        output_sub_dir="subtract",
+        **sextractor_candidate_config,
+        copy_image_keywords=["stackid", "progname"],
+    ),
     CandidatePSFPhotometry(
         zp_colname="ZP",
     ),
@@ -393,6 +402,7 @@ detect_candidates = [
         col_suffix_list=["", "big"],
         zp_colname="ZP",
     ),
+    CustomSourceModifier(winter_candidate_annotator_filterer),
     SourceWriter(output_dir_name="candidates"),
 ]
 #
@@ -420,6 +430,7 @@ process_candidates = [
         name_start=NAME_START,
         xmatch_radius_arcsec=2,
     ),
+    CustomSourceModifier(modifier_function=winter_candidate_avro_fields_calculator),
     DatabaseSourceInserter(
         db_table=Candidate,
         duplicate_protocol="fail",
