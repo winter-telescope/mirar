@@ -27,8 +27,13 @@ class CustomSourceModifier(BaseSourceProcessor):
         return "Processor to modify a source dataframe based on a function."
 
     def _apply_to_sources(self, batch: SourceBatch) -> SourceBatch:
+        modified_batch = SourceBatch()
         for source_list in batch:
             candidate_table = source_list.get_data()
             modified_table = self.modifier_function(candidate_table)
-            source_list.set_data(modified_table)
-        return batch
+            if len(modified_table) == 0:
+                logger.warning("Modified source table is empty")
+            else:
+                source_list.set_data(modified_table)
+                modified_batch.append(source_list)
+        return modified_batch

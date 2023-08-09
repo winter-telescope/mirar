@@ -72,8 +72,6 @@ def generate_candidates_table(
 
     diff_path = diff[LATEST_SAVE_KEY]
 
-    if len(det_srcs) == 0:
-        return pd.DataFrame()
     logger.debug(f"Found {len(det_srcs)} candidates in image.")
 
     # Rename sextractor keys
