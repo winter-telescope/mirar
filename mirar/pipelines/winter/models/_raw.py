@@ -44,7 +44,6 @@ class RawsTable(WinterBase):  # pylint: disable=too-few-public-methods
     astrometry: Mapped["AstrometryStatsTable"] = relationship(
         back_populates="astrom_raw_ids"
     )
-    diff: Mapped["DiffsTable"] = relationship(back_populates="raw_ids")
 
 
 class Raw(BaseDB):
