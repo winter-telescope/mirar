@@ -12,13 +12,7 @@ import numpy as np
 from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch
-from mirar.paths import (
-    BASE_NAME_KEY,
-    NORM_PSFEX_KEY,
-    REF_IMG_KEY,
-    REF_PSF_KEY,
-    get_output_dir,
-)
+from mirar.paths import BASE_NAME_KEY, REF_IMG_KEY, get_output_dir
 from mirar.processors.astromatic.psfex.psfex import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp, SwarpWarning
@@ -196,15 +190,18 @@ class ProcessReference(BaseImageProcessor):
                 output_sub_dir=self.temp_output_subtract_dir, norm_fits=True
             )
 
-            resampled_ref_sextractor_img = ref_psfex.apply(
+            resampled_ref_sextractor_psfex_img = ref_psfex.apply(
                 ImageBatch(resampled_ref_sextractor_img)
             )[0]
 
+            # Save the final resampled, sextracted and psfexed reference image
+            self.save_fits(resampled_ref_sextractor_psfex_img, resampled_ref_path)
+
             # Copy over header keys from ref to sci
-            resampled_sci_image[REF_PSF_KEY] = resampled_ref_sextractor_img[
-                NORM_PSFEX_KEY
-            ]
-            resampled_sci_image[REF_IMG_KEY] = resampled_ref_sextractor_img[
+            # resampled_sci_image[REF_PSF_KEY] = resampled_ref_sextractor_img[
+            #     NORM_PSFEX_KEY
+            # ]
+            resampled_sci_image[REF_IMG_KEY] = resampled_ref_sextractor_psfex_img[
                 BASE_NAME_KEY
             ]
 
