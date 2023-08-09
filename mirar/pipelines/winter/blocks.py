@@ -13,7 +13,6 @@ from mirar.paths import (
     OBSCLASS_KEY,
     TARGET_KEY,
     ZP_KEY,
-    ZP_STD_KEY,
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
@@ -48,6 +47,7 @@ from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
     get_raw_winter_mask,
     load_stacked_winter_image,
+    load_test_stacked_winter_image,
     load_test_winter_image,
     load_winter_mef_image,
 )
@@ -353,15 +353,22 @@ photcal_and_export = [
 
 # Image subtraction
 
+load_test_stack = [
+    ImageLoader(
+        input_img_dir=get_test_data_dir(),
+        input_sub_dir="final",
+        load_image=load_test_stacked_winter_image,
+    ),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
+]
+
 load_stack = [
     ImageLoader(input_sub_dir="final"),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     # ImageSelector(
     #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1.fits_stack.fits")
     # ),
-    DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
-    HeaderAnnotator(input_keys=["ZP_AUTO"], output_key=ZP_KEY),
-    HeaderAnnotator(input_keys=["ZP_AUTO_STD"], output_key=ZP_STD_KEY),
 ]
 
 imsub = [
@@ -382,6 +389,7 @@ imsub = [
     ZOGY(
         output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
     ),
+    ImageSaver(output_dir_name="diffs"),
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
 ]
 

@@ -241,6 +241,9 @@ def winter_candidate_annotator_filterer(src_df: pd.DataFrame):
         drop=True
     )
 
+    if len(filtered_df) == 0:
+        filtered_df = pd.DataFrame(columns=src_df.columns)
+
     # Pipeline (db) specific keywords
     filtered_df.loc[:, "magzpsci"] = filtered_df.loc[:, ZP_KEY]
     filtered_df.loc[:, "magzpsciunc"] = filtered_df.loc[:, ZP_STD_KEY]
@@ -253,6 +256,7 @@ def winter_candidate_annotator_filterer(src_df: pd.DataFrame):
         filtered_df.loc[:, "programid"] = fits.getval(sci_resamp_image_path, "PROGID")
         filtered_df.loc[:, "fid"] = fits.getval(sci_resamp_image_path, "FID")
         filtered_df.loc[:, "deprecated"] = False
+
     return filtered_df
 
 
