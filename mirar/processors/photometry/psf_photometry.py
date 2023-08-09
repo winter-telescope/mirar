@@ -50,8 +50,8 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
 
     base_key = "PSFPHOTDF"
 
-    def __init__(self, zp_colname=ZP_KEY):
-        super().__init__()
+    def __init__(self, zp_colname=ZP_KEY, **kwargs):
+        super().__init__(**kwargs)
         self.zp_colname = zp_colname
 
     def get_psf_filename(self, row):
