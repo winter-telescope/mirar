@@ -15,7 +15,6 @@
 		{"name": "magpsf", "type": "float", "doc": "Magnitude from PSF-fit photometry [mag]"},
 		{"name": "sigmapsf", "type": "float", "doc": "1-sigma uncertainty in magpsf [mag]"},
 		{"name": "fwhm", "type": ["float", "null"], "doc": "Full Width Half Max assuming a Gaussian core, from SExtractor [pixels]"},
-		{"name": "scorr", "type": ["double", "null"], "doc": "Peak-pixel signal-to-noise ratio in point source matched-filtered detection image"},
-		{"name": "deprecated", "type": "boolean", "default": false, "doc": "Whether this candidate is superceded by a reprocessing"}
-                ]
+		{"name": "scorr", "type": ["double", "null"], "doc": "Peak-pixel signal-to-noise ratio in point source matched-filtered detection image"}
+		        ]
 }
