@@ -261,7 +261,6 @@ process_candidates = [
         db_table=Candidate,
         base_name=CANDIDATE_PREFIX,
         name_start=NAME_START,
-        xmatch_radius_arcsec=2,
     ),
     DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="fail"),
     SourceWriter(output_dir_name="candidates"),

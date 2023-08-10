@@ -36,6 +36,7 @@ from mirar.pipelines.winter.generator import (
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
     winter_fourier_filtered_image_generator,
+    winter_history_deprecated_constraint,
     winter_photometric_catalog_generator,
     winter_reference_generator,
     winter_reference_image_resampler_for_zogy,
@@ -78,7 +79,10 @@ from mirar.processors.database.database_inserter import (
     DatabaseImageInserter,
     DatabaseSourceInserter,
 )
-from mirar.processors.database.database_selector import DatabaseHistorySelector
+from mirar.processors.database.database_selector import (
+    CrossmatchSourceWithDatabase,
+    DatabaseHistorySelector,
+)
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
@@ -422,18 +426,24 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
+    CrossmatchSourceWithDatabase(
+        db_table=Candidate,
+        db_output_columns=[CAND_NAME_KEY],
+        crossmatch_radius_arcsec=2.0,
+        max_num_results=1,
+    ),
+    CandidateNamer(
+        db_table=Candidate,
+        base_name=CANDIDATE_PREFIX,
+        name_start=NAME_START,
+    ),
     DatabaseHistorySelector(
         crossmatch_radius_arcsec=2.0,
         time_field_name="jd",
         history_duration_days=500.0,
         db_table=Candidate,
         db_output_columns=prv_candidate_cols + [CAND_NAME_KEY],
-    ),
-    CandidateNamer(
-        db_table=Candidate,
-        base_name=CANDIDATE_PREFIX,
-        name_start=NAME_START,
-        xmatch_radius_arcsec=2,
+        additional_query_constraints=winter_history_deprecated_constraint,
     ),
     CustomSourceModifier(modifier_function=winter_candidate_avro_fields_calculator),
     DatabaseSourceInserter(
