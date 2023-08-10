@@ -24,6 +24,12 @@ logger = logging.getLogger(__name__)
 
 WIRC_NONLINEAR_LEVEL = 30000
 
+sncosmo_filters = {
+    "j": "cspjs",
+    "h": "csphs",
+    "ks": "cspk",
+}
+
 
 def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
     """
@@ -36,6 +42,9 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     if GAIN_KEY not in header.keys():
         header[GAIN_KEY] = 1.2
     header["FILTER"] = header["AFT"].split("__")[0]
+
+    header["sncosmofilter"] = sncosmo_filters[header["FILTER"].lower()]
+
     if "COADDS" in header.keys():
         header["DETCOADD"] = header["COADDS"]
     if SATURATE_KEY not in header:

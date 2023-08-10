@@ -82,6 +82,7 @@ class SourceDetector(BaseSourceGenerator):
         """
         Generate a candidates table from a difference image
 
+        :param diff: Difference image
         :param scorr_catalog_path: Path to the scorr catalog
         :param sci_resamp_image_path:
         :param ref_resamp_image_path:
@@ -138,8 +139,8 @@ class SourceDetector(BaseSourceGenerator):
 
         det_srcs[ZP_KEY] = diff[ZP_KEY]
         det_srcs[LATEST_SAVE_KEY] = diff[LATEST_SAVE_KEY]
-        det_srcs["magzpsci"] = diff[ZP_KEY]
-        diff_zp_unc = diff[f"{ZP_KEY}_STD"]
+        det_srcs["magzpsci"] = diff[ZP_KEY]  # FIXME
+        diff_zp_unc = diff[f"{ZP_KEY}_STD"]  # FIXME
         det_srcs["magzpsciunc"] = diff_zp_unc
         det_srcs["diffimname"] = diff[LATEST_SAVE_KEY]
         det_srcs["sciimname"] = sci_resamp_image_path

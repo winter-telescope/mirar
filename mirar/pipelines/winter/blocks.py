@@ -376,6 +376,11 @@ imsub = [
         output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
     ),
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
+    ImageSaver(output_dir_name="subtract"),
+]
+
+load_sub = [
+    ImageLoader(input_sub_dir="subtract"),
 ]
 
 detect_candidates = [

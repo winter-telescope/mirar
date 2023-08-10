@@ -262,6 +262,7 @@ process_candidates = [
 ]
 
 package_candidates = [
+    HeaderAnnotator(input_keys=["MJD-OBS"], output_key="mjd"),
     IPACAvroExporter(
         base_name="WIRC",
         avro_schema_path=wirc_avro_schema_path,

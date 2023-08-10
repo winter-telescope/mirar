@@ -25,8 +25,8 @@ from astropy.visualization import (
     LogStretch,
 )
 
-from mirar.data import SourceBatch
-from mirar.paths import CAND_NAME_KEY, PACKAGE_NAME, __version__
+from mirar.data import SourceBatch, SourceTable
+from mirar.paths import CAND_NAME_KEY, PACKAGE_NAME, SOURCE_HISTORY_KEY, __version__
 from mirar.processors.base_processor import BaseSourceProcessor
 from mirar.processors.skyportal.client import SkyportalClient
 
@@ -71,8 +71,7 @@ class SkyportalSender(BaseSourceProcessor):
         :return: SourceBatch after processing
         """
         for source_table in batch:
-            candidate_table = source_table.get_data()
-            self.make_alert(candidate_table)
+            self.export_candidates_to_skyportal(source_table)
         return batch
 
     @staticmethod
@@ -105,7 +104,7 @@ class SkyportalSender(BaseSourceProcessor):
 
         return all_candidates
 
-    def alert_post_source(self, alert: dict, group_ids: Optional[list[int]] = None):
+    def skyportal_post_source(self, alert: dict, group_ids: Optional[list[int]] = None):
         """Add a new source to SkyPortal
 
         :param alert: dict of source info
@@ -156,7 +155,7 @@ class SkyportalSender(BaseSourceProcessor):
         """
         return self.skyportal_client.api(method, endpoint, data)
 
-    def alert_post_candidate(self, alert):
+    def skyportal_post_candidate(self, alert):
         """
         Post a candidate on SkyPortal. Creates new candidate(s) (one per filter)
 
@@ -252,7 +251,7 @@ class SkyportalSender(BaseSourceProcessor):
 
         return thumbnail_dict
 
-    def alert_post_thumbnails(self, alert):
+    def skyportal_post_thumbnails(self, alert):
         """Post alert Science, Reference, and Subtraction thumbnails to SkyPortal
 
         :param alert: dict of source/candidate information
@@ -347,104 +346,51 @@ class SkyportalSender(BaseSourceProcessor):
         :param alert: candidate dictionary
         :param jd_start: date from which to start photometry from
         """
-        alert = deepcopy(alert)
-        top_level = [
-            "schemavsn",
-            "publisher",
-            CAND_NAME_KEY,
-            "candid",
-            "candidate",
-            "prv_candidates",
-            "cutoutScience",
-            "cutoutTemplate",
-            "cutoutDifference",
+
+        photometry_table = [
+            {
+                "mjd": alert["mjd"],
+                "mag": alert["magpsf"],
+                "magerr": alert["sigmapsf"],
+                "filter": alert["sncosmofilter"],
+                "ra": alert["ra"],
+                "dec": alert["dec"],
+            }
         ]
-        alert["candidate"] = {}
 
-        # (keys having value in 3.)
-        delete = [key for key in alert.keys() if key not in top_level]
+        if len(alert[SOURCE_HISTORY_KEY]) > 0:
+            prv_detections = pd.DataFrame.from_records(alert[SOURCE_HISTORY_KEY])
 
-        # delete the key/s
-        for key in delete:
-            alert["candidate"][key] = alert[key]
-            del alert[key]
+            for _, row in prv_detections.iterrows():
+                try:
+                    photometry_table.append(
+                        {
+                            "mjd": row["mjd"],
+                            "mag": row["magpsf"],
+                            "magerr": row["sigmapsf"],
+                            "filter": row["sncosmofilter"],
+                            "ra": row["ra"],
+                            "dec": row["dec"],
+                        }
+                    )
+                except KeyError:
+                    logger.warning(
+                        f"Missing photometry information for previous "
+                        f"detection of {alert[CAND_NAME_KEY]}"
+                    )
 
-        alert["candidate"] = [alert["candidate"]]
-        df_candidate = pd.DataFrame(alert["candidate"], index=[0])
+        df_photometry = pd.DataFrame(photometry_table)
 
-        df_prv_candidates = pd.DataFrame(alert["prv_candidates"])
+        df_photometry["magsys"] = "ab"
+        df_photometry["limiting_mag"] = 23.9
 
-        df_light_curve = pd.concat(
-            [df_candidate, df_prv_candidates], ignore_index=True, sort=False
-        )
+        df_photometry["obj_id"] = alert[CAND_NAME_KEY]
+        df_photometry["stream_ids"] = [int(self.stream_id)]
+        df_photometry["instrument_id"] = self.instrument_id
 
-        # note: WNTR (like PGIR) uses 2massj, which is not in sncosmo as of
-        # 20210803, cspjs seems to be close/good enough as an approximation
-        df_light_curve["filter"] = "cspjs"
+        return df_photometry
 
-        df_light_curve["magsys"] = "ab"
-        df_light_curve["mjd"] = df_light_curve["jd"] - 2400000.5
-
-        df_light_curve["mjd"] = df_light_curve["mjd"].astype(np.float64)
-        df_light_curve["magpsf"] = df_light_curve["magpsf"].astype(np.float32)
-        df_light_curve["sigmapsf"] = df_light_curve["sigmapsf"].astype(np.float32)
-
-        df_light_curve = (
-            df_light_curve.drop_duplicates(subset=["mjd", "magpsf"])
-            .reset_index(drop=True)
-            .sort_values(by=["mjd"])
-        )
-
-        # filter out bad data:
-        mask_good_diffmaglim = df_light_curve["diffmaglim"] > 0
-        df_light_curve = df_light_curve.loc[mask_good_diffmaglim]
-
-        # convert from mag to flux
-
-        # step 1: calculate the coefficient that determines whether the
-        # flux should be negative or positive
-        coeff = df_light_curve["isdiffpos"].apply(
-            lambda x: 1.0 if x in [True, 1, "y", "Y", "t", "1"] else -1.0
-        )
-
-        # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
-        # 23.9 (results in flux in uJy)
-        df_light_curve["flux"] = coeff * 10 ** (
-            -0.4 * (df_light_curve["magpsf"] - 23.9)
-        )
-
-        # step 3: separate detections from non detections
-        detected = np.isfinite(df_light_curve["magpsf"])
-        undetected = ~detected
-
-        # step 4: calculate the flux error
-        df_light_curve["fluxerr"] = None  # initialize the column
-
-        # step 4a: calculate fluxerr for detections using sigmapsf
-        df_light_curve.loc[detected, "fluxerr"] = np.abs(
-            df_light_curve.loc[detected, "sigmapsf"]
-            * df_light_curve.loc[detected, "flux"]
-            * np.log(10)
-            / 2.5
-        )
-
-        # step 4b: calculate fluxerr for non detections using diffmaglim
-        df_light_curve.loc[undetected, "fluxerr"] = (
-            10 ** (-0.4 * (df_light_curve.loc[undetected, "diffmaglim"] - 23.9)) / 5.0
-        )  # as diffmaglim is the 5-sigma depth
-
-        # step 5: set the zeropoint and magnitude system
-        df_light_curve["zp"] = 23.9  # FIXME
-        df_light_curve["zpsys"] = "ab"
-
-        # only "new" photometry requested?
-        if jd_start is not None:
-            w_after_jd = df_light_curve["jd"] > jd_start
-            df_light_curve = df_light_curve.loc[w_after_jd]
-
-        return df_light_curve
-
-    def alert_put_photometry(self, alert):
+    def skyportal_put_photometry(self, alert):
         """Send photometry to Fritz."""
         logger.debug(
             f"Making alert photometry of {alert[CAND_NAME_KEY]} {alert['candid']}"
@@ -452,23 +398,9 @@ class SkyportalSender(BaseSourceProcessor):
         df_photometry = self.make_photometry(alert)
 
         # post photometry
-        photometry = {
-            "obj_id": alert[CAND_NAME_KEY],
-            "stream_ids": [int(self.stream_id)],
-            "instrument_id": self.instrument_id,
-            "mjd": df_photometry["mjd"].tolist(),
-            "flux": df_photometry["flux"].tolist(),
-            "fluxerr": df_photometry["fluxerr"].tolist(),
-            "zp": df_photometry["zp"].tolist(),
-            "magsys": df_photometry["zpsys"].tolist(),
-            "filter": df_photometry["filter"].tolist(),
-            "ra": df_photometry["ra"].tolist(),
-            "dec": df_photometry["dec"].tolist(),
-        }
+        photometry = df_photometry.to_dict("list")
 
-        if (len(photometry.get("flux", ())) > 0) or (
-            len(photometry.get("fluxerr", ())) > 0
-        ):
+        if len(photometry) > 0:
             logger.debug(
                 f"Posting photometry of {alert[CAND_NAME_KEY]} {alert['candid']}, "
                 f"stream_id={self.stream_id} to SkyPortal"
@@ -486,8 +418,13 @@ class SkyportalSender(BaseSourceProcessor):
                 )
                 logger.error(response.json())
 
-    def alert_post_annotation(self, alert):
-        """Post an annotation. Works for both candidates and sources."""
+    def skyportal_post_annotation(self, alert):
+        """
+        Post an annotation. Works for both candidates and sources.
+
+        :param alert: alert data
+        :return: None
+        """
         data = {
             "chipsf": alert["chipsf"],
             "fwhm": alert["fwhm"],
@@ -506,21 +443,26 @@ class SkyportalSender(BaseSourceProcessor):
             )
             logger.error(response.json())
 
-    def alert_put_annotation(self, alert):
-        """Retrieve an annotation to check if it exists already."""
+    def skyportal_put_annotation(self, source):
+        """
+        Retrieve an annotation to check if it exists already.
+
+        :param source: detection data
+        :return: None
+        """
         response = self.api(
             "GET",
-            f"sources/{str(alert[CAND_NAME_KEY])}/annotations",
+            f"sources/{str(source[CAND_NAME_KEY])}/annotations",
         )
 
         if response.json()["status"] == "success":
-            logger.debug(f"Got {alert[CAND_NAME_KEY]} annotations from SkyPortal")
+            logger.debug(f"Got {source[CAND_NAME_KEY]} annotations from SkyPortal")
         else:
             logger.debug(
-                f"Failed to get {alert[CAND_NAME_KEY]} annotations from SkyPortal"
+                f"Failed to get {source[CAND_NAME_KEY]} annotations from SkyPortal"
             )
             logger.debug(response.json())
-            return False
+            return
 
         existing_annotations = {
             annotation["origin"]: {
@@ -532,48 +474,47 @@ class SkyportalSender(BaseSourceProcessor):
 
         # no previous annotation exists on SkyPortal for this object? just post then
         if self.origin not in existing_annotations:
-            self.alert_post_annotation(alert)
+            self.skyportal_post_annotation(source)
         # annotation from this(WNTR) origin exists
         else:
             # annotation data
             data = {
-                "fwhm": alert["fwhm"],
-                "scorr": alert["scorr"],
-                "chipsf": alert["chipsf"],
+                "fwhm": source["fwhm"],
+                "scorr": source["scorr"],
+                "chipsf": source["chipsf"],
             }
             new_annotation = {
                 "author_id": existing_annotations[self.origin]["author_id"],
-                "obj_id": alert[CAND_NAME_KEY],
+                "obj_id": source[CAND_NAME_KEY],
                 "origin": self.origin,
                 "data": data,
                 "group_ids": self.group_ids,
             }
 
             logger.debug(
-                f"Putting annotation for {alert[CAND_NAME_KEY]} {alert['candid']} "
+                f"Putting annotation for {source[CAND_NAME_KEY]} {source['candid']} "
                 f"to SkyPortal",
             )
             response = self.api(
                 "PUT",
-                f"sources/{alert[CAND_NAME_KEY]}"
+                f"sources/{source[CAND_NAME_KEY]}"
                 f"/annotations/{existing_annotations[self.origin]['annotation_id']}",
                 new_annotation,
             )
             if response.json()["status"] == "success":
                 logger.debug(
-                    f"Posted updated {alert[CAND_NAME_KEY]} annotation to SkyPortal"
+                    f"Posted updated {source[CAND_NAME_KEY]} annotation to SkyPortal"
                 )
             else:
                 logger.error(
-                    f"Failed to post updated {alert[CAND_NAME_KEY]} annotation "
+                    f"Failed to post updated {source[CAND_NAME_KEY]} annotation "
                     f"to SkyPortal"
                 )
                 logger.error(response.json())
 
-        return None
-
-    def alert_skyportal_manager(self, alert):
-        """Posts alerts to SkyPortal if criteria is met
+    def skyportal_candidate_exporter(self, alert):
+        """
+        Posts a candidate to SkyPortal.
 
         :param alert: _description_
         :type alert: _type_
@@ -581,6 +522,10 @@ class SkyportalSender(BaseSourceProcessor):
         # check if candidate exists in SkyPortal
         logger.debug(f"Checking if {alert[CAND_NAME_KEY]} is candidate in SkyPortal")
         response = self.api("HEAD", f"candidates/{alert[CAND_NAME_KEY]}")
+
+        if response.status_code not in [200, 404]:
+            response.raise_for_status()
+
         is_candidate = response.status_code == 200
         logger.debug(
             f"{alert[CAND_NAME_KEY]} {'is' if is_candidate else 'is not'} "
@@ -590,6 +535,10 @@ class SkyportalSender(BaseSourceProcessor):
         # check if source exists in SkyPortal
         logger.debug(f"Checking if {alert[CAND_NAME_KEY]} is source in SkyPortal")
         response = self.api("HEAD", f"sources/{alert[CAND_NAME_KEY]}")
+
+        if response.status_code not in [200, 404]:
+            response.raise_for_status()
+
         is_source = response.status_code == 200
         logger.debug(
             f"{alert[CAND_NAME_KEY]} "
@@ -599,28 +548,24 @@ class SkyportalSender(BaseSourceProcessor):
         # object does not exist in SkyPortal: neither cand nor source
         if (not is_candidate) and (not is_source):
             # post candidate
-            self.alert_post_candidate(alert)
+            self.skyportal_post_candidate(alert)
 
             # post annotations
-            self.alert_post_annotation(alert)
+            self.skyportal_post_annotation(alert)
 
             # post full light curve
-            self.alert_put_photometry(alert)
+            self.skyportal_put_photometry(alert)
 
             # post thumbnails
-            self.alert_post_thumbnails(alert)
-
-            # TODO autosave stuff, necessary?
+            self.skyportal_post_thumbnails(alert)
 
         # obj already exists in SkyPortal
         else:
-            # TODO passed_filters logic
-
             # post candidate with new filter ids
-            self.alert_post_candidate(alert)
+            self.skyportal_post_candidate(alert)
 
             # put (*not* post) annotations
-            self.alert_put_annotation(alert)
+            self.skyportal_put_annotation(alert)
 
             # exists in SkyPortal & already saved as a source
             if is_source:
@@ -639,37 +584,57 @@ class SkyportalSender(BaseSourceProcessor):
 
                     for existing_gid in existing_group_ids:
                         if existing_gid in self.group_ids:
-                            self.alert_post_source(alert, [existing_gid])
+                            self.skyportal_post_source(alert, [existing_gid])
                 else:
                     logger.error(
                         f"Failed to get source groups info on {alert[CAND_NAME_KEY]}"
                     )
             else:  # exists in SkyPortal but NOT saved as a source
-                self.alert_post_source(alert)
+                self.skyportal_post_source(alert)
 
             # post alert photometry in single call to /api/photometry
-            self.alert_put_photometry(alert)
+            self.skyportal_put_photometry(alert)
 
             if self.update_thumbnails:
-                self.alert_post_thumbnails(alert)
+                self.skyportal_post_thumbnails(alert)
 
         logger.debug(f"SendToSkyportal Manager complete for {alert[CAND_NAME_KEY]}")
 
-    def make_alert(self, candidate_df: pd.DataFrame):
+    def export_candidates_to_skyportal(self, source_table: SourceTable):
         """
-        Function to make an alert from a single row of a pandas DataFrame
+        Function to export individual sources as candidates in SkyPortal
 
-        :param candidate_df: Candidate DataFrame
+        :param source_table: Table containing the data to be processed
         :return: None
         """
+        candidate_df = source_table.get_data()
         t_0 = time.time()
-        all_cands = self.read_input_df(candidate_df)
-        num_cands = len(all_cands)
+        # all_cands = self.read_input_df(candidate_df)
+        # num_cands = len(all_cands)
 
-        for cand in all_cands:
-            self.alert_skyportal_manager(cand)
+        metadata = source_table.get_metadata()
+
+        for _, src in candidate_df.iterrows():
+            cand = self.generate_super_dict(metadata, src)
+            self.skyportal_candidate_exporter(deepcopy(cand))
 
         t_1 = time.time()
         logger.debug(
-            f"Took {(t_1 - t_0):.2f} seconds to Fritz process {num_cands} candidates."
+            f"Took {(t_1 - t_0):.2f} seconds to Skyportal process "
+            f"{len(candidate_df)} candidates."
         )
+
+    @staticmethod
+    def generate_super_dict(metadata: dict, source_row: pd.Series) -> dict:  # FIXME
+        """
+        Generate a dictionary of metadata and candidate row, with lower case keys
+
+        :param metadata: Metadata for the source table
+        :param source_row: Individual row of the source table
+        :return: Combined dictionary
+        """
+        super_dict = {key.lower(): val for key, val in metadata.items()}
+        super_dict.update(
+            {key.lower(): val for key, val in source_row.to_dict().items()}
+        )
+        return super_dict

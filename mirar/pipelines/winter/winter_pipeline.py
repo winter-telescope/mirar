@@ -15,6 +15,7 @@ from mirar.pipelines.winter.blocks import (
     imsub,
     load_candidates,
     load_stack,
+    load_sub,
     load_test,
     only_ref,
     photcal_stacks,
@@ -57,6 +58,7 @@ class WINTERPipeline(Pipeline):
         "imsub": load_stack + imsub,
         "detect_candidates": load_stack + imsub + detect_candidates,
         "process_candidates": load_candidates + process_candidates,
+        "debug_candidates": load_sub + detect_candidates + process_candidates,
     }
 
     non_linear_level = 40000.0
