@@ -51,7 +51,7 @@ class TestWinterImsubPipeline(BaseTestCase):
         Returns:
 
         """
-        self.logger.info("\n\n Testing winter pipeline \n\n")
+        self.logger.info("\n\n Testing winter imsub pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
