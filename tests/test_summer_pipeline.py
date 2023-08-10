@@ -69,6 +69,14 @@ class TestSummerPipeline(BaseTestCase):
 
         header = res[0][0].get_header()
 
+        print("New Results SUMMER:")
+        new_exp = "expected_zp = { \n"
+        for header_key in header:
+            if header_key in expected_zp:
+                new_exp += f'    "{header_key}": {header[header_key]}, \n'
+        new_exp += "}"
+        print(new_exp)
+
         for key, value in expected_zp.items():
             if isinstance(value, float):
                 self.assertAlmostEqual(value, header[key], places=2)
@@ -78,20 +86,3 @@ class TestSummerPipeline(BaseTestCase):
                 raise TypeError(
                     f"Type for value ({type(value)} is neither float not int."
                 )
-
-
-if __name__ == "__main__":
-    print("Calculating latest ZP dictionary")
-
-    new_res, new_errorstack = pipeline.reduce_images(
-        dataset=Dataset(ImageBatch()), catch_all_errors=False
-    )
-
-    new_header = new_res[0][0].get_header()
-
-    new_exp = "expected_zp = { \n"
-    for header_key in new_header.keys():
-        if "ZP_" in header_key:
-            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp += "}"
-    print(new_exp)
