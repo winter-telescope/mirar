@@ -385,7 +385,6 @@ def winter_reference_generator(image: Image):
     )
 
 
-
 def winter_fourier_filtered_image_generator(batch: ImageBatch) -> ImageBatch:
     """
     Generates a fourier filtered image for the winter data
