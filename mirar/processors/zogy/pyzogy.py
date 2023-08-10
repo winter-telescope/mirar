@@ -60,13 +60,6 @@ def pyzogy(
     s_corr: Corrected subtracted image
     """
 
-    # Load the new and ref images into memory
-    # new_image = open_raw_image(new_image_path)
-    # new_data = new_image.get_data()
-    # logger.debug(f"New image path: {new_image_path}")
-    # with fits.open(ref_image_path) as ref_f:
-    #     ref_data = ref_f[0].data  # pylint: disable=no-member
-
     # Set nans to zero in new and ref images
     new_nanmask = np.isnan(new_data)
     ref_nanmask = np.isnan(ref_data)

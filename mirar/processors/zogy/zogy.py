@@ -334,12 +334,6 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_scaled_path = ref_img_path.replace(".fits", ".scaled.fits")
             self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
 
-            # Scale is 1 by construction for science image
-            # sci_scaled_path = self.get_path(
-            #     sci_img_path.replace(".fits", ".scaled.fits")
-            # )
-            # self.save_fits(image, path=sci_scaled_path)
-
             # Header keywords only required by ZOGY
             image[RMS_COUNTS_KEY] = sci_rms
             image["ASTUNCX"] = ast_unc_x
