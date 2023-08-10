@@ -11,12 +11,13 @@ from astrosurveyutils.surveys import MOCSurvey
 
 from mirar.data import Image
 from mirar.data.utils import get_corners_ra_dec_from_header, get_image_center_wcs_coords
-from mirar.io import open_mef_fits
+from mirar.io import check_image_has_core_fields, open_mef_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
     EXPTIME_KEY,
     GAIN_KEY,
+    LATEST_SAVE_KEY,
     OBSCLASS_KEY,
     TIME_KEY,
     ZP_KEY,
@@ -131,7 +132,8 @@ def make_wfcam_image_from_hdulist(
     assert len(ukirt_hdulist) == 2
     # combined_header = ukirt_hdulist[1].header.copy()
 
-    basename = f"{multiframeid}_{extension_id}.fits"
+    # WFCAM convention of compressed file names.
+    basename = f"{multiframeid}_{extension_id}.fit"
 
     combined_header = combine_headers(
         primary_header=ukirt_hdulist[1].header,
@@ -167,6 +169,10 @@ def make_wfcam_image_from_hdulist(
     image.header["DEC1_0"] = dec1_0
     image.header["RA1_1"] = ra1_1
     image.header["DEC1_1"] = dec1_1
+    image.header["RAMIN"] = np.min([ra0_0, ra0_1, ra1_0, ra1_1])
+    image.header["RAMAX"] = np.max([ra0_0, ra0_1, ra1_0, ra1_1])
+    image.header["DECMIN"] = np.min([dec0_0, dec0_1, dec1_0, dec1_1])
+    image.header["DECMAX"] = np.max([dec0_0, dec0_1, dec1_0, dec1_1])
     image.header[MULTIFRAME_ID_KEY] = multiframeid
     image.header[EXTENSION_ID_KEY] = extension_id
 
@@ -208,6 +214,20 @@ def get_wfcam_file_identifiers_from_url(url: str) -> list:
     ]
 
 
+def open_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
+    """
+    Opens a wfcam fits file and returns the data and header
+    Args:
+        :param path: path to the fits file
+    Returns:
+        :return: data, header
+    """
+    with fits.open(path) as hdulist:
+        data = hdulist[0].data  # pylint: disable=no-member
+        header = hdulist[0].header  # pylint: disable=no-member
+    return data, header
+
+
 def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
     """
     Opens a compressed fits file and returns the data and header
@@ -218,3 +238,23 @@ def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
     """
     _, extension_data_list, extension_header_list = open_mef_fits(path)
     return extension_data_list[0], extension_header_list[0]
+
+
+def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
+    """
+    # TODO: Should we make this a general mirar utility?
+    Save an Image as a compressed fits image path
+    : image: Image to save
+    : path: path
+    """
+    if isinstance(path, str):
+        path = Path(path)
+    check_image_has_core_fields(image)
+    data = image.get_data()
+    header = image.get_header()
+    if header is None:
+        raise ValueError("Image has no header, cannot write to compressed fits.")
+    header[LATEST_SAVE_KEY] = path.as_posix()
+    compressed_hdu = fits.CompImageHDU(data, header=header)
+
+    compressed_hdu.writeto(path, overwrite=True)
