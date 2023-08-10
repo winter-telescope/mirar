@@ -5,8 +5,7 @@ import logging
 from typing import ClassVar
 
 import pandas as pd
-from pydantic import Field, field_validator
-
+from pydantic import Field
 from sqlalchemy import (
     VARCHAR,
     BigInteger,
@@ -19,7 +18,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from mirar.pipelines.winter.models._diff import Diff
 from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
@@ -154,7 +152,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     # Ps1 properties
 
-    psobjectid1 = Column(VARCHAR(40), nullable=True)
+    psobjectid1 = Column(BigInteger, nullable=True)
     sgmag1 = Column(Float, nullable=True)
     srmag1 = Column(Float, nullable=True)
     simag1 = Column(Float, nullable=True)
@@ -162,7 +160,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     distpsnr1 = Column(Float, nullable=True)
     sgscore1 = Column(Float, nullable=True)
 
-    psobjectid2 = Column(VARCHAR(40), nullable=True)
+    psobjectid2 = Column(BigInteger, nullable=True)
     sgmag2 = Column(Float, nullable=True)
     srmag2 = Column(Float, nullable=True)
     simag2 = Column(Float, nullable=True)
@@ -170,7 +168,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     distpsnr2 = Column(Float, nullable=True)
     sgscore2 = Column(Float, nullable=True)
 
-    psobjectid3 = Column(VARCHAR(40), nullable=True)
+    psobjectid3 = Column(BigInteger, nullable=True)
     sgmag3 = Column(Float, nullable=True)
     srmag3 = Column(Float, nullable=True)
     simag3 = Column(Float, nullable=True)
@@ -283,9 +281,9 @@ class Candidate(BaseDB):
 
     tooflag: bool = Field(default=False)
 
-    psobjectid1: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
-    psobjectid2: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
-    psobjectid3: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
+    psobjectid1: int | None = Field(default=None)
+    psobjectid2: int | None = Field(default=None)
+    psobjectid3: int | None = Field(default=None)
 
     sgmag1: float | None = Field(default=None)
     srmag1: float | None = Field(default=None)
@@ -327,19 +325,6 @@ class Candidate(BaseDB):
     neargaiabright: float | None = Field(ge=0, default=None)
     maggaia: float | None = Field(default=None)
     maggaiabright: float | None = Field(default=None)
-
-
-    @field_validator("diffid")
-    @classmethod
-    def validate_diffid(cls, diffid: int):
-        """
-        Ensure that diffid exists in exposures table
-
-        :param diffid: value
-        :return: value
-        """
-        assert Diff._exists(keys="diffid", values=diffid)
-        return diffid
 
     def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
         """
