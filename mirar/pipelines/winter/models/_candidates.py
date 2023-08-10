@@ -235,12 +235,12 @@ class Candidate(BaseDB):
 
     diffmaglim: float | None = Field(default=None)
 
-    magpsf: float | None = Field(default=None)
-    sigmapsf: float | None = Field(default=None)
+    magpsf: float = Field()
+    sigmapsf: float = Field()
     chipsf: float | None = Field(ge=0, default=None)
 
-    magap: float | None = Field(default=None)
-    sigmagap: float | None = Field(ge=0, default=None)
+    magap: float = Field()
+    sigmagap: float = Field(ge=0)
 
     magapbig: float | None = Field(default=None)
     sigmagapbig: float | None = Field(ge=0, default=None)
