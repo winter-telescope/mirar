@@ -300,8 +300,8 @@ def winter_candidate_avro_fields_calculator(src_df: pd.DataFrame) -> pd.DataFram
         nbads.append(np.sum(np.isnan(diff_stamp)))
         sumrat.append(np.sum(diff_stamp) / np.sum(np.abs(diff_stamp)))
 
-    src_df["nnegs"] = nnegs
-    src_df["nbads"] = nbads
+    src_df["nneg"] = nnegs
+    src_df["nbad"] = nbads
     src_df["sumrat"] = sumrat
 
     return src_df
