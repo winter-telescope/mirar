@@ -158,7 +158,7 @@ class BaseReferenceGenerator:
         if ref_weight_hdu is not None:
             output_weight_path = Path(
                 str(self.get_output_path(output_dir, base_name)).replace(".fits", "")
-                + "_ref_weight.fits"
+                + "_ref.weight.fits"
             )
             output_weight_path.unlink(missing_ok=True)
             ref_weight_hdu.header[BASE_NAME_KEY] = os.path.basename(output_weight_path)
