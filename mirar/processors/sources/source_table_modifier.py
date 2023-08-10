@@ -24,7 +24,10 @@ class CustomSourceModifier(BaseSourceProcessor):
         self.modifier_function = modifier_function
 
     def __str__(self) -> str:
-        return "Processor to modify a source dataframe based on a function."
+        return (
+            f"Processor to modify a source dataframe using the"
+            f" {self.modifier_function.__name__} function."
+        )
 
     def _apply_to_sources(self, batch: SourceBatch) -> SourceBatch:
         modified_batch = SourceBatch()
