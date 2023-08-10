@@ -51,7 +51,10 @@ from mirar.processors.avro import IPACAvroExporter, SendToFritz
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_inserter import DatabaseSourceInserter
-from mirar.processors.database.database_selector import DatabaseHistorySelector
+from mirar.processors.database.database_selector import (
+    CrossmatchSourceWithDatabase,
+    DatabaseHistorySelector,
+)
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import (
     MaskAboveThreshold,
@@ -250,17 +253,23 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
+    CrossmatchSourceWithDatabase(
+        db_table=Candidate,
+        db_output_columns=[CAND_NAME_KEY],
+        crossmatch_radius_arcsec=2.0,
+        max_num_results=1,
+    ),
+    CandidateNamer(
+        db_table=Candidate,
+        base_name=CANDIDATE_PREFIX,
+        name_start=NAME_START,
+    ),
     DatabaseHistorySelector(
         crossmatch_radius_arcsec=2.0,
         time_field_name="jd",
         history_duration_days=500.0,
         db_table=Candidate,
         db_output_columns=[CAND_NAME_KEY] + prv_candidate_cols,
-    ),
-    CandidateNamer(
-        db_table=Candidate,
-        base_name=CANDIDATE_PREFIX,
-        name_start=NAME_START,
     ),
     DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="fail"),
     SourceWriter(output_dir_name="candidates"),
