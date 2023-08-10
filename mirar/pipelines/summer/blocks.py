@@ -42,7 +42,7 @@ from mirar.processors.database.database_inserter import DatabaseImageInserter
 from mirar.processors.database.database_updater import ImageSequenceDatabaseUpdater
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import SourceAperturePhotometry
+from mirar.processors.photometry.aperture_photometry import AperturePhotometry
 from mirar.processors.photometry.psf_photometry import SourcePSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import SourceWriter
@@ -230,7 +230,7 @@ extract_candidates = [
     ZOGYSourceDetector(output_sub_dir="subtract", **sextractor_candidates_config),
     RegionsWriter(output_dir_name="candidates"),
     SourcePSFPhotometry(),
-    SourceAperturePhotometry(
+    AperturePhotometry(
         aper_diameters=[8, 40],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],

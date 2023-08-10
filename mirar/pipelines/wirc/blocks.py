@@ -61,14 +61,8 @@ from mirar.processors.mask import (
     WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import (
-    ImageAperturePhotometry,
-    SourceAperturePhotometry,
-)
-from mirar.processors.photometry.psf_photometry import (
-    ImagePSFPhotometry,
-    SourcePSFPhotometry,
-)
+from mirar.processors.photometry.aperture_photometry import AperturePhotometry
+from mirar.processors.photometry.psf_photometry import SourcePSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.skyportal import SkyportalSender
@@ -195,22 +189,6 @@ subtract = [
     ImageSaver(output_dir_name="diffs"),
 ]
 
-image_photometry = [
-    ImageAperturePhotometry(
-        aper_diameters=[16],
-        bkg_in_diameters=[25],
-        bkg_out_diameters=[40],
-        col_suffix_list=[""],
-        phot_cutout_size=100,
-        target_ra_key="TARGRA",
-        target_dec_key="TARGDEC",
-    ),
-    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
-    PSFex(config_path=psfex_path, output_sub_dir="photometry", norm_fits=True),
-    ImagePSFPhotometry(target_ra_key="TARGRA", target_dec_key="TARGDEC"),
-    ImageSaver(output_dir_name="photometry"),
-]
-
 export_candidates_from_header = [
     ForcedPhotometryCandidateTable(
         ra_header_key="TARGRA", dec_header_key="TARGDEC", name_header_key="TARGNAME"
@@ -218,7 +196,7 @@ export_candidates_from_header = [
 ]
 
 candidate_photometry = [
-    SourceAperturePhotometry(
+    AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
@@ -232,14 +210,13 @@ detect_candidates = [
     ZOGYSourceDetector(
         output_sub_dir="subtract",
         **sextractor_candidate_config,
-        copy_image_keywords=["PROGID", "PROGPI"],
     ),
 ]
 
 process_candidates = [
     RegionsWriter(output_dir_name="candidates"),
     SourcePSFPhotometry(),
-    SourceAperturePhotometry(
+    AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],

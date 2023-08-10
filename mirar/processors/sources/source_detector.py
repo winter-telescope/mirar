@@ -9,7 +9,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from astropy.io import fits
-from astropy.time import Time
 
 from mirar.data import Image, ImageBatch, SourceBatch, SourceTable
 from mirar.data.utils import encode_img
@@ -17,23 +16,15 @@ from mirar.paths import (
     BASE_NAME_KEY,
     CAND_DEC_KEY,
     CAND_RA_KEY,
-    DIFF_IMG_KEY,
-    EXPTIME_KEY,
-    FILTER_KEY,
-    JD_KEY,
     LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
-    MAGLIM_KEY,
     NORM_PSFEX_KEY,
     REF_IMG_KEY,
     SCI_IMG_KEY,
     SCOR_IMG_KEY,
-    TIME_KEY,
     UNC_IMG_KEY,
     XPOS_KEY,
     YPOS_KEY,
-    ZP_KEY,
-    ZP_STD_KEY,
     get_output_dir,
 )
 from mirar.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
@@ -51,9 +42,6 @@ def generate_candidates_table(
     sci_resamp_image_path: str | Path,
     ref_resamp_image_path: str | Path,
     diff_scorr_path: str | Path,
-    diff_psf_path: str | Path,
-    diff_unc_path: str | Path,
-    copy_image_keywords: str | list[str] = None,
 ) -> pd.DataFrame:
     """
     Generate a candidates table from a difference image
@@ -62,9 +50,6 @@ def generate_candidates_table(
     :param sci_resamp_image_path: Path to the resampled science image
     :param ref_resamp_image_path: Path to the resampled reference image
     :param diff_scorr_path: Path to the scorr image
-    :param diff_psf_path: Path to the psf image
-    :param diff_unc_path: Path to the uncertainty image
-    :param copy_image_keywords: Keywords to copy from the image header
     :return: Candidates table
     """
     det_srcs = get_table_from_ldac(scorr_catalog_path)
@@ -120,34 +105,12 @@ def generate_candidates_table(
         display_ref_ims.append(display_ref_bit)
         display_diff_ims.append(display_diff_bit)
 
-    det_srcs["cutoutScience"] = display_sci_ims
-    det_srcs["cutoutTemplate"] = display_ref_ims
-    det_srcs["cutoutDifference"] = display_diff_ims
-
-    # Standard mirar keywords copied from images
-    det_srcs[ZP_KEY] = diff[ZP_KEY]
-    det_srcs[ZP_STD_KEY] = diff[ZP_STD_KEY]
-    det_srcs[DIFF_IMG_KEY] = diff[LATEST_SAVE_KEY]
-    det_srcs[SCI_IMG_KEY] = sci_resamp_image_path
-    det_srcs[REF_IMG_KEY] = ref_resamp_image_path
-    det_srcs[NORM_PSFEX_KEY] = diff_psf_path
-    det_srcs[LATEST_SAVE_KEY] = diff[LATEST_SAVE_KEY]
-    det_srcs[UNC_IMG_KEY] = diff_unc_path
-    det_srcs[JD_KEY.lower()] = Time(fits.getval(sci_resamp_image_path, TIME_KEY)).jd
-    det_srcs[EXPTIME_KEY.lower()] = diff[EXPTIME_KEY]
-    det_srcs[MAGLIM_KEY] = diff[MAGLIM_KEY]
-    det_srcs[FILTER_KEY] = diff[FILTER_KEY]
+    det_srcs["cutout_science"] = display_sci_ims
+    det_srcs["cutout_template"] = display_ref_ims
+    det_srcs["cutout_difference"] = display_diff_ims
 
     # TODO - make isdiffpos a parameter
     det_srcs["isdiffpos"] = True
-
-    logger.info(f"Keywords to copy are {copy_image_keywords}")
-    # Any additional keywords to be copied from the image header
-    if copy_image_keywords is not None:
-        if isinstance(copy_image_keywords, str):
-            copy_image_keywords = [copy_image_keywords]
-        for keyword in copy_image_keywords:
-            det_srcs[keyword.lower()] = fits.getval(diff_path, keyword)
 
     return det_srcs
 
@@ -167,7 +130,6 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         cand_det_sextractor_nnw: str,
         cand_det_sextractor_params: str,
         output_sub_dir: str = "candidates",
-        copy_image_keywords: str | list[str] = None,
     ):
         super().__init__()
         self.output_sub_dir = output_sub_dir
@@ -175,9 +137,6 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         self.cand_det_sextractor_filter = cand_det_sextractor_filter
         self.cand_det_sextractor_nnw = cand_det_sextractor_nnw
         self.cand_det_sextractor_params = cand_det_sextractor_params
-        self.copy_image_keywords = copy_image_keywords
-        if isinstance(copy_image_keywords, str):
-            self.copy_image_keywords = [self.copy_image_keywords]
 
     def __str__(self) -> str:
         return (
@@ -205,10 +164,6 @@ class ZOGYSourceDetector(BaseSourceGenerator):
             diff_image_path = os.path.join(
                 self.get_sub_output_dir(), image[BASE_NAME_KEY]
             )
-            diff_psf_path = os.path.join(
-                self.get_sub_output_dir(), image[NORM_PSFEX_KEY]
-            )
-            diff_unc_path = os.path.join(self.get_sub_output_dir(), image[UNC_IMG_KEY])
 
             scorr_image = self.open_fits(scorr_image_path)
             scorr_mask_path = os.path.join(
@@ -237,9 +192,6 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                 sci_resamp_image_path=sci_image_path,
                 ref_resamp_image_path=ref_image_path,
                 diff_scorr_path=scorr_image_path,
-                diff_psf_path=diff_psf_path,
-                diff_unc_path=diff_unc_path,
-                copy_image_keywords=self.copy_image_keywords,
             )
 
             if len(srcs_table) > 0:
