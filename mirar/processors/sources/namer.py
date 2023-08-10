@@ -120,7 +120,7 @@ class CandidateNamer(BaseDatabaseSourceSelector):
 
             assert (
                 SOURCE_XMATCH_KEY in sources.columns
-            ), "No candidate history in source table"
+            ), "No candidate cross-match in source table"
 
             names = []
             lastname = None
