@@ -12,6 +12,7 @@ from astropy.table import Table
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.vizier import PS1
 from mirar.data import Image
+from mirar.data.utils.compress import decode_img
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.paths import (
@@ -287,6 +288,22 @@ def winter_candidate_avro_fields_calculator(src_df: pd.DataFrame) -> pd.DataFram
     src_df["cutout_science"] = src_df["cutoutScience"]
     src_df["cutout_template"] = src_df["cutoutTemplate"]
     src_df["cutout_difference"] = src_df["cutoutDifference"]
+    nnegs, nbads, sumrat = [], [], []
+    for _, src in src_df.iterrows():
+        diff_cutout_data = decode_img(src["cutout_difference"])
+        # Get central 5x5 pixels
+        nx, ny = diff_cutout_data.shape
+        diff_stamp = diff_cutout_data[
+            nx // 2 - 3 : nx // 2 + 2, ny // 2 - 3 : ny // 2 + 2
+        ]
+        nnegs.append(np.sum(diff_stamp < 0))
+        nbads.append(np.sum(np.isnan(diff_stamp)))
+        sumrat.append(np.sum(diff_stamp) / np.sum(np.abs(diff_stamp)))
+
+    src_df["nnegs"] = nnegs
+    src_df["nbads"] = nbads
+    src_df["sumrat"] = sumrat
+
     return src_df
 
 
