@@ -24,6 +24,7 @@ from mirar.pipelines.wirc.generator import (
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from mirar.pipelines.wirc.wirc_files import (
+    prv_candidate_cols,
     psfex_path,
     scamp_fp_path,
     sextractor_astrometry_config,
@@ -61,12 +62,12 @@ from mirar.processors.mask import (
 )
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import (
-    CandidateAperturePhotometry,
     ImageAperturePhotometry,
+    SourceAperturePhotometry,
 )
 from mirar.processors.photometry.psf_photometry import (
-    CandidatePSFPhotometry,
     ImagePSFPhotometry,
+    SourcePSFPhotometry,
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
@@ -216,14 +217,14 @@ export_candidates_from_header = [
 ]
 
 candidate_photometry = [
-    CandidateAperturePhotometry(
+    SourceAperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    CandidatePSFPhotometry(),
+    SourcePSFPhotometry(),
 ]
 
 detect_candidates = [
@@ -236,8 +237,8 @@ detect_candidates = [
 
 process_candidates = [
     RegionsWriter(output_dir_name="candidates"),
-    CandidatePSFPhotometry(),
-    CandidateAperturePhotometry(
+    SourcePSFPhotometry(),
+    SourceAperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
@@ -254,7 +255,7 @@ process_candidates = [
         time_field_name="jd",
         history_duration_days=500.0,
         db_table=Candidate,
-        db_output_columns=[CAND_NAME_KEY],
+        db_output_columns=[CAND_NAME_KEY] + prv_candidate_cols,
     ),
     CandidateNamer(
         db_table=Candidate,
