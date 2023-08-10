@@ -302,8 +302,8 @@ def winter_candidate_avro_fields_calculator(src_df: pd.DataFrame) -> pd.DataFram
         nbads.append(np.sum(np.isnan(diff_stamp)))
         sumrat.append(np.sum(diff_stamp) / np.sum(np.abs(diff_stamp)))
 
-    src_df["nnegs"] = nnegs
-    src_df["nbads"] = nbads
+    src_df["nneg"] = nnegs
+    src_df["nbad"] = nbads
     src_df["sumrat"] = sumrat
 
     return src_df
@@ -383,6 +383,11 @@ def winter_reference_generator(image: Image):
         references_base_subdir_name="winter/references",
         stack_image_annotator=winter_reference_stack_annotator,
     )
+
+
+winter_history_deprecated_constraint = DBQueryConstraints(
+    columns="deprecated", accepted_values="False", comparison_types="="
+)
 
 
 def winter_fourier_filtered_image_generator(batch: ImageBatch) -> ImageBatch:

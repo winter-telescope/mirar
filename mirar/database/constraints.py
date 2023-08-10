@@ -104,13 +104,18 @@ class DBQueryConstraints:
 
     def __add__(self, other):
         new = self.__class__(self.columns, self.accepted_values, self.comparison_types)
+        new.q3c_query = self.q3c_query
         for args in other:
             new.add_constraint(*args)
+            if other.q3c_query is not None:
+                new.add_q3c_constraint(*other.q3c_query)
         return new
 
     def __iadd__(self, other):
         for args in other:
             self.add_constraint(*args)
+            if other.q3c_query is not None:
+                self.add_q3c_constraint(*other.q3c_query)
         return self
 
     def __len__(self):

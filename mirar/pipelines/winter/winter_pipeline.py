@@ -59,6 +59,7 @@ class WINTERPipeline(Pipeline):
         "imsub": load_stack + imsub,
         "detect_candidates": load_stack + imsub + detect_candidates,
         "process_candidates": load_candidates + process_candidates,
+        "full_imsub": load_stack + imsub + detect_candidates + process_candidates,
     }
 
     non_linear_level = 40000.0

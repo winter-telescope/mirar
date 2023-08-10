@@ -9,14 +9,14 @@ from sqlalchemy import select, text
 
 from mirar.data import SourceBatch
 from mirar.database.transactions.select import run_select
-from mirar.paths import CAND_NAME_KEY, SOURCE_HISTORY_KEY
-from mirar.processors.database import DatabaseHistorySelector
-from mirar.processors.database.database_selector import DatabaseSourceSelector
+from mirar.paths import CAND_NAME_KEY, SOURCE_XMATCH_KEY
+from mirar.processors.database import CrossmatchSourceWithDatabase
+from mirar.processors.database.database_selector import BaseDatabaseSourceSelector
 
 logger = logging.getLogger(__name__)
 
 
-class CandidateNamer(DatabaseSourceSelector):
+class CandidateNamer(BaseDatabaseSourceSelector):
     """Processor to sequentially assign names to sources, of the form a, aa, aba..."""
 
     base_key = "namer"
@@ -27,7 +27,6 @@ class CandidateNamer(DatabaseSourceSelector):
     def __init__(
         self,
         base_name: str,
-        xmatch_radius_arcsec: float,
         name_start: str = "aaaaa",
         db_name_field: str = CAND_NAME_KEY,
         db_order_field: str = "candid",
@@ -40,7 +39,6 @@ class CandidateNamer(DatabaseSourceSelector):
         self.base_name = base_name
         self.name_start = name_start
         self.date_field = date_field
-        self.crossmatch_radius_arcsec = xmatch_radius_arcsec
 
     @staticmethod
     def increment_string(string: str):
@@ -121,14 +119,14 @@ class CandidateNamer(DatabaseSourceSelector):
             sources = source_table.get_data()
 
             assert (
-                SOURCE_HISTORY_KEY in sources.columns
-            ), "No candidate history in source table"
+                SOURCE_XMATCH_KEY in sources.columns
+            ), "No candidate cross-match in source table"
 
             names = []
             lastname = None
             for _, source in sources.iterrows():
-                if len(source[SOURCE_HISTORY_KEY]) > 0:
-                    source_name = source[SOURCE_HISTORY_KEY][0][self.db_name_field]
+                if len(source[SOURCE_XMATCH_KEY]) > 0:
+                    source_name = source[SOURCE_XMATCH_KEY][0][self.db_name_field]
 
                 else:
                     source_name = self.get_next_name(
@@ -146,11 +144,11 @@ class CandidateNamer(DatabaseSourceSelector):
         self,
     ):
         check = np.sum(
-            [isinstance(x, DatabaseHistorySelector) for x in self.preceding_steps]
+            [isinstance(x, CrossmatchSourceWithDatabase) for x in self.preceding_steps]
         )
         if check < 1:
             err = (
-                f"{self.__module__} requires {DatabaseHistorySelector} "
+                f"{self.__module__} requires {CrossmatchSourceWithDatabase} "
                 f"as a prerequisite. "
                 f"However, the following steps were found: {self.preceding_steps}."
             )

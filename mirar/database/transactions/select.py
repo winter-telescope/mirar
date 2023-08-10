@@ -38,6 +38,7 @@ def select_from_table(
     db_constraints: DBQueryConstraints,
     sql_table: BaseTable,
     output_columns: list[str] | None = None,
+    max_num_results: int | None = None,
 ) -> pd.DataFrame:
     """
     Select database entries
@@ -45,11 +46,14 @@ def select_from_table(
     :param db_constraints: database query constraints
     :param sql_table: database SQL table
     :param output_columns: columns to output (default: all)
+    :param max_num_results: maximum number of results to return (default: all)
     :return: results
     """
-
+    query = Select(sql_table).where(text(db_constraints.parse_constraints()))
+    if max_num_results is not None:
+        query = query.limit(max_num_results)
     res = run_select(
-        query=Select(sql_table).where(text(db_constraints.parse_constraints())),
+        query=query,
         sql_table=sql_table,
         columns=output_columns,
     )
