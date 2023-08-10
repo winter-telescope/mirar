@@ -33,6 +33,8 @@ from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_generator,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
+    winter_candidate_annotator_filterer,
+    winter_candidate_avro_fields_calculator,
     winter_fourier_filtered_image_generator,
     winter_photometric_catalog_generator,
     winter_reference_generator,
@@ -45,6 +47,7 @@ from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
     get_raw_winter_mask,
     load_stacked_winter_image,
+    load_test_stacked_winter_image,
     load_test_winter_image,
     load_winter_mef_image,
 )
@@ -82,15 +85,16 @@ from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskPixelsFromFunction,
 )
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import CandidateAperturePhotometry
-from mirar.processors.photometry.psf_photometry import CandidatePSFPhotometry
+from mirar.processors.photometry.aperture_photometry import SourceAperturePhotometry
+from mirar.processors.photometry.psf_photometry import SourcePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import SkyFlatCalibrator
 from mirar.processors.sources import (
     CandidateNamer,
-    SourceDetector,
+    CustomSourceModifier,
     SourceLoader,
     SourceWriter,
+    ZOGYSourceDetector,
 )
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.utils import (
@@ -349,11 +353,21 @@ photcal_and_export = [
 
 # Image subtraction
 
+load_test_stack = [
+    ImageLoader(
+        input_img_dir=get_test_data_dir(),
+        input_sub_dir="final",
+        load_image=load_test_stacked_winter_image,
+    ),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
+]
+
 load_stack = [
     ImageLoader(input_sub_dir="final"),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     # ImageSelector(
-    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_0.fits_stack.fits")
+    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1.fits_stack.fits")
     # ),
 ]
 
@@ -375,24 +389,25 @@ imsub = [
     ZOGY(
         output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
     ),
+    ImageSaver(output_dir_name="diffs"),
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
 ]
 
 detect_candidates = [
-    HeaderAnnotator(input_keys=["ZP_AUTO"], output_key="ZP"),
-    HeaderAnnotator(input_keys=["ZP_AUTO_STD"], output_key="ZP_STD"),
-    SourceDetector(output_sub_dir="subtract", **sextractor_candidate_config),
-    CandidatePSFPhotometry(
-        zp_colname="ZP",
+    ZOGYSourceDetector(
+        output_sub_dir="subtract",
+        **sextractor_candidate_config,
+        copy_image_keywords=["stackid", "progname"],
     ),
-    CandidateAperturePhotometry(
+    SourcePSFPhotometry(),
+    SourceAperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
-        zp_colname="ZP",
     ),
+    CustomSourceModifier(winter_candidate_annotator_filterer),
     SourceWriter(output_dir_name="candidates"),
 ]
 #
@@ -420,6 +435,7 @@ process_candidates = [
         name_start=NAME_START,
         xmatch_radius_arcsec=2,
     ),
+    CustomSourceModifier(modifier_function=winter_candidate_avro_fields_calculator),
     DatabaseSourceInserter(
         db_table=Candidate,
         duplicate_protocol="fail",

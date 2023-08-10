@@ -79,7 +79,7 @@ class TestWinterPipeline(BaseTestCase):
         print("New Results WINTER:")
         new_exp = "expected_zp = { \n"
         for header_key in header.keys():
-            if "ZP_" in header_key:
+            if header_key in expected_zp.keys():
                 new_exp += f'    "{header_key}": {header[header_key]}, \n'
         new_exp += "}"
         print(new_exp)

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from mirar.data import SourceBatch
-from mirar.paths import base_output_dir, get_output_path
+from mirar.paths import DIFF_IMG_KEY, base_output_dir, get_output_path
 from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class RegionsWriter(BaseSourceProcessor):
             started_regions_paths = []
             for ind in range(len(candidate_table)):
                 row = candidate_table.iloc[ind]
-                regions_basepath = os.path.basename(row["diffimname"]).replace(
+                regions_basepath = os.path.basename(row[DIFF_IMG_KEY]).replace(
                     ".fits", ".reg"
                 )
                 regions_path = get_output_path(

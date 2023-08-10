@@ -25,6 +25,8 @@ from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
     GAIN_KEY,
+    LATEST_SAVE_KEY,
+    LATEST_WEIGHT_SAVE_KEY,
     OBSCLASS_KEY,
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
@@ -150,7 +152,8 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     if len(header["PROGNAME"]) != 8:
         logger.warning(
-            f"PROGNAME {header['PROGNAME']} is not 8 characters long. Replacing with default."
+            f"PROGNAME {header['PROGNAME']} is not 8 characters long. "
+            f"Replacing with default."
         )
         header["PROGNAME"] = default_program.progname
 
@@ -225,6 +228,24 @@ def load_test_winter_image(
     image = open_raw_image(path)
     header = clean_header(image.header)
     image.set_header(header)
+    return image
+
+
+def load_test_stacked_winter_image(path: str | Path) -> Image:
+    """
+    Load test stacked WINTER image
+
+    :param path: Path to image
+    :return: Image object
+    """
+    if isinstance(path, str):
+        path = Path(path)
+    image = open_raw_image(path)
+
+    image[LATEST_SAVE_KEY] = path.as_posix()
+    weight_image_name = Path(image[LATEST_WEIGHT_SAVE_KEY]).name
+    weight_path = path.parent / "weight" / weight_image_name
+    image[LATEST_WEIGHT_SAVE_KEY] = weight_path.as_posix()
     return image
 
 

@@ -23,12 +23,12 @@ def make_cutouts(
     """
     Function to make cutouts
     Args:
-        image_paths: Path or list of paths to the images
-        position: (x,y) coordinates of the center of the cutouts
-        half_size: half_size of the square cutouts
+        :param: image_paths: Path or list of paths to the images
+        :param: position: (x,y) coordinates of the center of the cutouts
+        :param: half_size: half_size of the square cutouts
 
     Returns:
-        cutout_list: list of 2D numpy arrays
+        :return: cutout_list: list of 2D numpy arrays
     """
     if not isinstance(image_paths, list):
         image_paths = [image_paths]
@@ -91,29 +91,33 @@ def make_cutouts(
 
 def psf_photometry(
     image_cutout: np.array, image_unc_cutout: np.array, psfmodels: np.array
-):
+) -> tuple[float, float, float, float, float]:
     """
     Function to perform PSF photometry
     Args:
-        image_cutout:
-        image_unc_cutout:
-        psfmodels:
+        :param: image_cutout: 2D numpy array of the image cutout
+        :param: image_unc_cutout: 2D numpy array of the image uncertainty cutout
+        :param: psfmodels: 3D numpy array of the PSF models
 
     Returns:
-
+        :return: psf_fluxes: PSF flux
+        :return: psf_flux_uncs: PSF flux uncertainty
+        :return: chi2s: chi2 value
+        :return xshifts: xshift required to match PSF to the source
+        :return yshifts: yshift required to match PSF to the source
     """
     numpsfmodels = psfmodels.shape[2]
 
     chi2s, psf_fluxes, psf_flux_uncs = [], [], []
     for ind in range(numpsfmodels):
         psfmodel = psfmodels[:, :, ind]
-        psf_flux = np.sum(psfmodel * image_cutout) / np.sum(np.square(psfmodel))
+        psf_flux = np.nansum(psfmodel * image_cutout) / np.nansum(np.square(psfmodel))
         psf_flux_unc = np.sqrt(
-            np.sum(np.square(psfmodel) * np.square(image_unc_cutout))
-        ) / np.sum(np.square(psfmodel))
+            np.nansum(np.square(psfmodel) * np.square(image_unc_cutout))
+        ) / np.nansum(np.square(psfmodel))
         deg_freedom = np.size(image_cutout) - 1
         chi2 = (
-            np.sum(
+            np.nansum(
                 np.square(image_cutout - psfmodel * psf_flux)
                 / np.square(image_unc_cutout)
             )
@@ -176,8 +180,8 @@ def make_psf_shifted_array(psf_filename: str, cutout_size_psf_phot: int = 20):
 
 
 def aper_photometry(
-    image_cutout: np.array,
-    image_unc_cutout: np.array,
+    image_cutout: np.ndarray,
+    image_unc_cutout: np.ndarray,
     aper_diameter: float,
     bkg_in_diameter: float,
     bkg_out_diameter: float,
@@ -187,25 +191,25 @@ def aper_photometry(
     """
     Perform aperture photometry
     Args:
-        image_cutout:
-        image_unc_cutout:
-        aper_diameter:
-        bkg_in_diameter:
-        bkg_out_diameter:
-        plot: whether to plot the cutout
-        plotfilename: filename to save plot to
+        :param: image_cutout: np.ndarray of the image cutout
+        :param: image_unc_cutout: np.ndarray of the image uncertainty cutout
+        :param: aper_diameter: aperture diameter in pixels
+        :param: bkg_in_diameter: inner background annulus diameter in pixels
+        :param: bkg_out_diameter: outer background annulus diameter in pixels
+        :param: plot: whether to plot the cutout
+        :param: plotfilename: filename to save plot to
 
     Returns:
-
+        :return: aperture flux, aperture flux uncertainty
     """
     x_crd, y_crd = int(image_cutout.shape[0] / 2), int(image_cutout.shape[1] / 2)
-
+    image_cutout_mask = np.isnan(image_cutout)
     if plot:
         if plotfilename is None:
             raise ValueError("Please provide a filename to save the plot to.")
-        fig, ax = plt.subplots()
+        fig, plot_ax = plt.subplots()
         mean, std = np.nanmean(image_cutout), np.nanstd(image_cutout)
-        ax.imshow(
+        plot_ax.imshow(
             image_cutout,
             interpolation="nearest",
             cmap="gray",
@@ -224,11 +228,11 @@ def aper_photometry(
         bkg_inner_annulus.set_edgecolor("red")
         bkg_outer_annulus.set_facecolor("none")
         bkg_outer_annulus.set_edgecolor("red")
-        ax.add_artist(circle)
-        ax.add_artist(bkg_inner_annulus)
-        ax.add_artist(bkg_outer_annulus)
-        ax.set_xlim(x_crd - 30, x_crd + 30)
-        ax.set_ylim(y_crd - 30, y_crd + 30)
+        plot_ax.add_artist(circle)
+        plot_ax.add_artist(bkg_inner_annulus)
+        plot_ax.add_artist(bkg_outer_annulus)
+        plot_ax.set_xlim(x_crd - 30, x_crd + 30)
+        plot_ax.set_ylim(y_crd - 30, y_crd + 30)
         plt.savefig(plotfilename)
         plt.close(fig)
 
@@ -241,7 +245,7 @@ def aper_photometry(
     annulus_data = annulus_masks.multiply(image_cutout)
     mask = annulus_masks.data
     annulus_data_1d = annulus_data[mask > 0]
-    _, bkg_median, _ = sigma_clipped_stats(annulus_data_1d, sigma=2)
+    _, bkg_median, _ = sigma_clipped_stats(annulus_data_1d, sigma=2, mask_value=np.nan)
     bkg = np.zeros(image_cutout.shape) + bkg_median
     # bkg_error = np.zeros(image_cutout.shape) + bkg_std
 
@@ -251,13 +255,12 @@ def aper_photometry(
     # error = calc_total_error(data, bkg_error, effective_gain)
     # phot_table = aperture_photometry(diff_cutout - bkg, aperture, error=error)
     # counts_err = phot_table['aperture_sum_err'][0]
-    error = np.sqrt(np.nansum(aperture_unc_data**2.0))
-    phot_table = aperture_photometry(image_cutout - bkg, aperture)
+    error = np.sqrt(np.nansum(aperture_unc_data**2))
+    phot_table = aperture_photometry(
+        data=image_cutout - bkg, apertures=aperture, mask=image_cutout_mask
+    )
     counts = phot_table["aperture_sum"][0]
     counts_err = error
-
-    assert counts_err > 0.0
-
     return counts, counts_err
 
 
@@ -279,3 +282,39 @@ def get_rms_image(image: Image) -> Image:
     poisson_noise[poisson_noise < 0] = 0
     rms_image = Image(data=np.sqrt(poisson_noise + rms**2), header=image.get_header())
     return rms_image
+
+
+def get_mags_from_fluxes(
+    flux_list: list[float] | np.ndarray,
+    fluxunc_list: list[float] | np.ndarray,
+    zeropoint_list: list[float] | np.ndarray,
+    zeropoint_unc_list: list[float] | np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Convert fluxes and flux uncertainties to magnitudes and magnitude uncertainties
+
+    :param flux_list: List of fluxes
+    :param fluxunc_list: List of flux uncertainties
+    :param zeropoint_list: List of zeropoints
+    :param zeropoint_unc_list: List of zeropoint uncertainties
+    :return: magnitudes, magnitude uncertainties
+    """
+    assert len(flux_list) == len(fluxunc_list) == len(zeropoint_list)
+
+    if isinstance(flux_list, list):
+        flux_list = np.array(flux_list)
+    if isinstance(fluxunc_list, list):
+        fluxunc_list = np.array(fluxunc_list)
+    if isinstance(zeropoint_list, list):
+        zeropoint_list = np.array(zeropoint_list)
+    if isinstance(zeropoint_unc_list, list):
+        zeropoint_unc_list = np.array(zeropoint_unc_list)
+
+    magnitudes = zeropoint_list - 2.5 * np.log10(flux_list)
+    magnitudes_unc = 1.086 * fluxunc_list / flux_list
+
+    magnitudes_unc = np.sqrt(magnitudes_unc**2 + zeropoint_unc_list**2)
+    magnitudes = magnitudes.astype(object)
+    magnitudes_unc = magnitudes_unc.astype(object)
+    magnitudes[flux_list <= 0] = None
+    magnitudes_unc[flux_list <= 0] = None
+    return magnitudes, magnitudes_unc

@@ -18,7 +18,11 @@ from mirar.paths import (
     PROC_HISTORY_KEY,
     SATURATE_KEY,
     TARGET_KEY,
+    ZP_KEY,
+    ZP_STD_KEY,
 )
+
+wirc_filter_dict = {"J": 1, "H": 2, "Ks": 3}
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +64,8 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     header[PROC_HISTORY_KEY] = ""
     header[PROC_FAIL_KEY] = ""
 
-    filter_dict = {"J": 1, "H": 2, "Ks": 3}
-
     if "FILTERID" not in header.keys():
-        header["FILTERID"] = filter_dict[header["FILTER"]]
+        header["FILTERID"] = wirc_filter_dict[header["FILTER"]]
 
     header["FID"] = header["FILTERID"]
 
@@ -75,11 +77,11 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
         header["PROGID"] = 0
     if "ZP" not in header.keys():
         if "TMC_ZP" in header.keys():
-            header["ZP"] = float(header["TMC_ZP"])
-            header["ZP_std"] = float(header["TMC_ZPSD"])
+            header[ZP_KEY] = float(header["TMC_ZP"])
+            header[ZP_STD_KEY] = float(header["TMC_ZPSD"])
         if "ZP_AUTO" in header.keys():
-            header["ZP"] = float(header["ZP_AUTO"])
-            header["ZP_std"] = float(header["ZP_AUTO_std"])
+            header[ZP_KEY] = float(header["ZP_AUTO"])
+            header[ZP_STD_KEY] = float(header["ZP_AUTO_std"])
     data = data.astype(float)
     data[data == 0.0] = np.nan
     return data, header

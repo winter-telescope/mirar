@@ -6,7 +6,7 @@ import logging
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import VARCHAR, BigInteger, Column, Float, Integer, Sequence
+from sqlalchemy import VARCHAR, BigInteger, Boolean, Column, Float, Integer, Sequence
 from sqlalchemy.orm import DeclarativeBase
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
@@ -66,12 +66,12 @@ class CandidatesTable(WircBase):  # pylint: disable=too-few-public-methods
 
     fid = Column(Integer, nullable=False)
 
-    diffimgname = Column(VARCHAR(255), nullable=True)
-    sciimgname = Column(VARCHAR(255), nullable=True)
-    refimgname = Column(VARCHAR(255), nullable=True)
+    diffimgname = Column(VARCHAR(255), nullable=False)
+    sciimgname = Column(VARCHAR(255), nullable=False)
+    refimgname = Column(VARCHAR(255), nullable=False)
 
-    magpsf = Column(Float, nullable=False)
-    sigmapsf = Column(Float, nullable=False)
+    magpsf = Column(Float, nullable=True)
+    sigmapsf = Column(Float, nullable=True)
     chipsf = Column(Float, nullable=True)
 
     aimage = Column(Float, nullable=False)
@@ -89,12 +89,12 @@ class CandidatesTable(WircBase):  # pylint: disable=too-few-public-methods
 
     magzpsci = Column(Float, nullable=True)
     magzpsciunc = Column(Float, nullable=True)
-    magzpscirms = Column(Float, nullable=True)
 
     tmjmag1 = Column(Float, nullable=True)
     tmhmag1 = Column(Float, nullable=True)
     tmkmag1 = Column(Float, nullable=True)
     tmobjectid1 = Column(VARCHAR(25), nullable=True)
+    isdiffpos = Column(Boolean, nullable=False)
 
 
 class Candidate(BaseDB):
@@ -136,12 +136,13 @@ class Candidate(BaseDB):
 
     magzpsci: float | None = Field(default=None)
     magzpsciunc: float | None = Field(ge=0, default=None)
-    magzpscirms: float | None = Field(ge=0, default=None)
 
     tmjmag1: float | None = Field(default=None)
     tmhmag1: float | None = Field(default=None)
     tmkmag1: float | None = Field(default=None)
     tmobjectid1: str | None = Field(default=None)
+
+    isdiffpos: bool = Field(default=True)
 
 
 if DB_USER is not None:
