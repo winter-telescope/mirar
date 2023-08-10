@@ -71,7 +71,7 @@ class TestSummerPipeline(BaseTestCase):
 
         print("New Results SUMMER:")
         new_exp = "expected_zp = { \n"
-        for header_key in header:
+        for header_key in header.keys():
             if header_key in expected_zp:
                 new_exp += f'    "{header_key}": {header[header_key]}, \n'
         new_exp += "}"
