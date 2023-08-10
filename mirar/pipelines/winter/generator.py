@@ -383,6 +383,11 @@ def winter_reference_generator(image: Image):
     )
 
 
+winter_history_deprecated_constraint = DBQueryConstraints(
+    columns="deprecated", accepted_values="False", comparison_types="="
+)
+
+
 def winter_fourier_filtered_image_generator(image: Image) -> Image:
     """
     Generates a fourier filtered image for the winter data
