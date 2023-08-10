@@ -10,7 +10,7 @@
 		{"name": "programpi", "type": ["string", "null"], "doc": "Principal investigator attached to program ID"},
 		{"name": "programid", "type": "int", "doc": "Program ID: encodes either public, collab, or caltech mode"},
 		{"name": "candid", "type": "long", "doc": "Candidate ID from operations DB"},
-		{"name": "isdiffpos", "type": ["float"], "doc": "t or 1 => candidate is from positive (sci minus ref) subtraction; f or 0 => candidate is from negative (ref minus sci) subtraction"},
+		{"name": "isdiffpos", "type": "boolean", "doc": "true => candidate is from positive (sci minus ref) subtraction; f or 0 => candidate is from negative (ref minus sci) subtraction"},
 		{"name": "field", "type": ["int", "null"], "doc": "ZTF field ID"}, 
 		{"name": "xpos", "type": ["float", "null"], "doc": "x-image position of candidate [pixels]"},
 		{"name": "ypos", "type": ["float", "null"], "doc": "y-image position of candidate [pixels]"},
