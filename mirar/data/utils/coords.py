@@ -3,6 +3,7 @@ Functions to get image coordinates from WCS
 """
 import logging
 
+import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.units import Quantity
@@ -107,3 +108,19 @@ def get_image_dims_from_header(header: fits.Header) -> (Quantity, Quantity):
     dx, dy = header["CD1_1"], header["CD2_2"]
     img_dims = (dx * nx * u.deg, dy * ny * u.deg)
     return img_dims
+
+
+def check_coords_within_image(ra: float, dec: float, header: fits.Header) -> bool:
+    """
+    Check that the coordinates are within the image
+    Args:
+        :param ra: RA in decimal degrees
+        :param dec: Dec in decimal degrees
+        :param header: Image header with WCS info.
+    Returns:
+        :return: True if within image, False if not
+    """
+    wcs = WCS(header)
+    nx, ny = header["NAXIS1"], header["NAXIS2"]
+    x, y = wcs.all_world2pix(ra, dec, 0)
+    return np.invert((x < 0) | (x > nx) | (y < 0) | (y > ny))
