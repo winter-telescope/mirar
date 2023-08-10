@@ -27,10 +27,7 @@ from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import AperturePhotometry
-from mirar.processors.photometry.psf_photometry import (  # ImagePSFPhotometry,
-    SourcePSFPhotometry,
-)
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
     ImageBatcher,
@@ -166,7 +163,7 @@ candidate_photometry = [  # imported from wirc/blocks.py
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    SourcePSFPhotometry(),
+    PSFPhotometry(),
 ]
 
 

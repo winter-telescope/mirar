@@ -13,6 +13,7 @@ from queue import Queue
 from threading import Thread
 
 import numpy as np
+import pandas as pd
 from tqdm.auto import tqdm
 
 from mirar.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
@@ -515,3 +516,18 @@ class BaseSourceProcessor(BaseProcessor, ABC):
         batch: SourceBatch,
     ) -> SourceBatch:
         raise NotImplementedError
+
+    @staticmethod
+    def generate_super_dict(metadata: dict, source_row: pd.Series) -> dict:
+        """
+        Generate a dictionary of metadata and candidate row, with lower case keys
+
+        :param metadata: Metadata for the source table
+        :param source_row: Individual row of the source table
+        :return: Combined dictionary
+        """
+        super_dict = {key.lower(): val for key, val in metadata.items()}
+        super_dict.update(
+            {key.lower(): val for key, val in source_row.to_dict().items()}
+        )
+        return super_dict

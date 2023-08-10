@@ -9,7 +9,9 @@ from mirar.paths import (
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
     RAW_IMG_KEY,
+    REF_IMG_KEY,
     SATURATE_KEY,
+    SCI_IMG_KEY,
 )
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
@@ -64,8 +66,7 @@ from mirar.processors.mask import (
     WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import AperturePhotometry
-from mirar.processors.photometry.psf_photometry import SourcePSFPhotometry
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.skyportal import SkyportalSender
@@ -206,7 +207,7 @@ candidate_photometry = [
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    SourcePSFPhotometry(),
+    PSFPhotometry(),
 ]
 
 detect_candidates = [
@@ -218,7 +219,7 @@ detect_candidates = [
 
 process_candidates = [
     RegionsWriter(output_dir_name="candidates"),
-    SourcePSFPhotometry(),
+    PSFPhotometry(),
     AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
@@ -244,11 +245,13 @@ process_candidates = [
     ),
     DatabaseHistorySelector(
         crossmatch_radius_arcsec=2.0,
-        time_field_name="jd",
         history_duration_days=500.0,
         db_table=Candidate,
         db_output_columns=[CAND_NAME_KEY] + prv_candidate_cols,
     ),
+    HeaderAnnotator(input_keys=[LATEST_SAVE_KEY], output_key="diffimgname"),
+    HeaderAnnotator(input_keys=[SCI_IMG_KEY], output_key="sciimgname"),
+    HeaderAnnotator(input_keys=[REF_IMG_KEY], output_key="refimgname"),
     DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="fail"),
     SourceWriter(output_dir_name="candidates"),
     # EdgeCandidatesMask(edge_boundary_size=100)

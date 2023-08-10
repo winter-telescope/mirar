@@ -30,7 +30,7 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         name_start: str = "aaaaa",
         db_name_field: str = CAND_NAME_KEY,
         db_order_field: str = "candid",
-        date_field: str = "jd",
+        date_field: str = "JD",
         **kwargs,
     ):
         super().__init__(db_output_columns=[db_name_field], **kwargs)
@@ -124,14 +124,13 @@ class CandidateNamer(BaseDatabaseSourceSelector):
 
             names = []
             lastname = None
+
+            detection_time = source_table[self.date_field]
             for _, source in sources.iterrows():
                 if len(source[SOURCE_XMATCH_KEY]) > 0:
                     source_name = source[SOURCE_XMATCH_KEY][0][self.db_name_field]
-
                 else:
-                    source_name = self.get_next_name(
-                        source[self.date_field], last_name=lastname
-                    )
+                    source_name = self.get_next_name(detection_time, last_name=lastname)
                     lastname = source_name
                 names.append(source_name)
 

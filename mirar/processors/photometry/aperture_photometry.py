@@ -70,12 +70,14 @@ class AperturePhotometry(BasePhotometryProcessor):
         for source_table in batch:
             candidate_table = source_table.get_data()
 
+            metadata = source_table.get_metadata()
+
             all_fluxes, all_fluxuncs = [], []
 
             for cand_ind in range(len(candidate_table)):
                 row = candidate_table.iloc[cand_ind]
 
-                image_cutout, unc_image_cutout = self.generate_cutouts(row)
+                image_cutout, unc_image_cutout = self.generate_cutouts(row, metadata)
 
                 fluxes, fluxuncs = self.perform_photometry(
                     image_cutout=image_cutout, unc_image_cutout=unc_image_cutout
@@ -94,10 +96,8 @@ class AperturePhotometry(BasePhotometryProcessor):
                 magnitudes, magnitudes_unc = get_mags_from_fluxes(
                     flux_list=flux,
                     fluxunc_list=fluxunc,
-                    zeropoint_list=np.array(candidate_table[self.zp_key], dtype=float),
-                    zeropoint_unc_list=np.array(
-                        candidate_table[f"{self.zp_std_key}"], dtype=float
-                    ),
+                    zeropoint=source_table[self.zp_key],
+                    zeropoint_unc=source_table[self.zp_std_key],
                 )
                 candidate_table[f"{APMAG_PREFIX_KEY}{suffix}"] = magnitudes
                 candidate_table[f"{APMAGUNC_PREFIX_KEY}{suffix}"] = magnitudes_unc

@@ -99,11 +99,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
             tuple: 2D numpy arrays of the image cutout and uncertainty image cutout
         """
 
-        print(metadata)
-
-        temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(
-            data_item, metadata
-        )
+        temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(metadata)
         x, y = self.get_physical_coordinates(data_item)
         image_cutout, unc_image_cutout = make_cutouts(
             image_paths=[temp_imagename, temp_unc_imagename],
@@ -114,14 +110,8 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         temp_unc_imagename.unlink()
         return image_cutout, unc_image_cutout
 
-    def save_temp_image_uncimage(
-        self, data_item: pd.Series, metadata: dict
-    ) -> tuple[Path, Path]:
-        row = data_item
-
-        print(metadata.keys())
-
-        imagename = row[self.image_key]
+    def save_temp_image_uncimage(self, metadata: dict) -> tuple[Path, Path]:
+        imagename = metadata[self.image_key]
         image = Image(header=fits.getheader(imagename), data=fits.getdata(imagename))
 
         image_filename = self.save_temp_image(image)

@@ -71,14 +71,8 @@ class SkyportalClient:
             "User-Agent": "mirar",
         }
 
-        # retries = Retry(
-        #     total=5,
-        #     backoff_factor=2,
-        #     status_forcelist=[405, 429, 500, 502, 503, 504],
-        #     allowed_methods=["HEAD", "GET", "PUT", "POST", "PATCH"],
-        # )
         retries = Retry(
-            total=1,
+            total=5,
             backoff_factor=2,
             status_forcelist=[405, 429, 500, 502, 503, 504],
             allowed_methods=["HEAD", "GET", "PUT", "POST", "PATCH"],
@@ -151,11 +145,6 @@ class SkyportalClient:
             raise ValueError(f"Unsupported method: {method}")
 
         url = urljoin(self.base_url, endpoint)
-
-        print(method, url)
-
-        print(data)
-        print(self.session_headers)
 
         if method == "get":
             response = methods[method](

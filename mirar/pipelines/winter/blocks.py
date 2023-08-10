@@ -89,8 +89,7 @@ from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskPixelsFromFunction,
 )
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import AperturePhotometry
-from mirar.processors.photometry.psf_photometry import SourcePSFPhotometry
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import SkyFlatCalibrator
 from mirar.processors.sources import (
@@ -409,7 +408,7 @@ detect_candidates = [
         output_sub_dir="subtract",
         **sextractor_candidate_config,
     ),
-    SourcePSFPhotometry(),
+    PSFPhotometry(),
     AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,

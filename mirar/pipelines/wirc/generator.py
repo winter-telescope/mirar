@@ -11,8 +11,6 @@ from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
 from mirar.data import Image
-from mirar.paths import DIFF_IMG_KEY, FILTER_KEY, MAGLIM_KEY, REF_IMG_KEY, SCI_IMG_KEY
-from mirar.pipelines.wirc.load_wirc_image import wirc_filter_dict
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     sextractor_reference_config,
@@ -43,14 +41,6 @@ def wirc_source_table_filter_annotator(src_df: pd.DataFrame) -> pd.DataFrame:
     # Needing to do this because the dataframe is big-endian
     mask_inds = np.where(~mask)[0]
     src_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(drop=True)
-
-    src_df.loc[:, "sciimgname"] = src_df.loc[:, SCI_IMG_KEY]
-    src_df.loc[:, "refimgname"] = src_df.loc[:, REF_IMG_KEY]
-    src_df.loc[:, "diffimgname"] = src_df.loc[:, DIFF_IMG_KEY]
-    src_df.loc[:, "fid"] = [wirc_filter_dict[x] for x in src_df.loc[:, FILTER_KEY]]
-    src_df.loc[:, "programid"] = src_df.loc[:, "progid"]
-    src_df.loc[:, "programpi"] = src_df.loc[:, "progpi"]
-    src_df.loc[:, "diffmaglim"] = src_df.loc[:, MAGLIM_KEY]
     return src_df
 
 

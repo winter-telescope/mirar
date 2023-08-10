@@ -8,7 +8,6 @@
 		{"name": "diffmaglim", "type": ["float", "null"], "doc": "Expected 5-sigma mag limit in difference image based on global noise estimate [mag]"},
 		{"name": "fid", "type": "int", "doc": "Filter ID (0=Y; 1=J; 2=H; 3=K)"},
 		{"name": "programpi", "type": ["string", "null"], "doc": "Principal investigator attached to program ID"},
-		{"name": "programid", "type": "int", "doc": "Program ID: encodes either public, collab, or caltech mode"},
 		{"name": "candid", "type": "long", "doc": "Candidate ID from operations DB"},
 		{"name": "isdiffpos", "type": "boolean", "doc": "true => candidate is from positive (sci minus ref) subtraction; f or 0 => candidate is from negative (ref minus sci) subtraction"},
 		{"name": "field", "type": ["int", "null"], "doc": "ZTF field ID"}, 

@@ -66,6 +66,9 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     else:
         header["DATE-OBS"] = header["UTSHUT"]
         header["MJD-OBS"] = Time(header["UTSHUT"]).mjd
+
+    header["JD"] = Time(header["DATE-OBS"]).jd
+
     if COADD_KEY not in header.keys():
         logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
         header[COADD_KEY] = 1

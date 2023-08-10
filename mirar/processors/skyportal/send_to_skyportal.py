@@ -200,7 +200,7 @@ class SkyportalSender(BaseSourceProcessor):
         :return:
         """
         alert = deepcopy(alert)
-        cutout_data = alert[f"cutout{alert_packet_type}"]
+        cutout_data = alert[f"cutout_{alert_packet_type}"]
 
         with gzip.open(io.BytesIO(cutout_data), "rb") as cutout:
             with fits.open(
@@ -258,9 +258,9 @@ class SkyportalSender(BaseSourceProcessor):
         :return:
         """
         for ttype, instrument_type in [
-            ("new", "Science"),
-            ("ref", "Template"),
-            ("sub", "Difference"),
+            ("new", "science"),
+            ("ref", "template"),
+            ("sub", "difference"),
         ]:
             logger.debug(
                 f"Making {instrument_type} thumbnail for {alert[CAND_NAME_KEY]} "
@@ -623,18 +623,3 @@ class SkyportalSender(BaseSourceProcessor):
             f"Took {(t_1 - t_0):.2f} seconds to Skyportal process "
             f"{len(candidate_df)} candidates."
         )
-
-    @staticmethod
-    def generate_super_dict(metadata: dict, source_row: pd.Series) -> dict:  # FIXME
-        """
-        Generate a dictionary of metadata and candidate row, with lower case keys
-
-        :param metadata: Metadata for the source table
-        :param source_row: Individual row of the source table
-        :return: Combined dictionary
-        """
-        super_dict = {key.lower(): val for key, val in metadata.items()}
-        super_dict.update(
-            {key.lower(): val for key, val in source_row.to_dict().items()}
-        )
-        return super_dict

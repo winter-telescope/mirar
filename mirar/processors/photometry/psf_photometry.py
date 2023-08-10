@@ -20,7 +20,7 @@ from mirar.processors.photometry.utils import (
 logger = logging.getLogger(__name__)
 
 
-class SourcePSFPhotometry(BasePhotometryProcessor):
+class PSFPhotometry(BasePhotometryProcessor):
     """
     Processor to run PSF photometry on a source table
     """
@@ -63,9 +63,10 @@ class SourcePSFPhotometry(BasePhotometryProcessor):
 
             fluxes, fluxuncs, minchi2s, xshifts, yshifts = [], [], [], [], []
 
+            psf_filename = source_table[self.psf_file_key]
+
             for _, row in candidate_table.iterrows():
                 image_cutout, unc_image_cutout = self.generate_cutouts(row, metadata)
-                psf_filename = self.get_psf_filename(row)
                 (
                     flux,
                     fluxunc,
@@ -90,10 +91,8 @@ class SourcePSFPhotometry(BasePhotometryProcessor):
             magnitudes, magnitudes_unc = get_mags_from_fluxes(
                 flux_list=fluxes,
                 fluxunc_list=fluxuncs,
-                zeropoint_list=np.array(candidate_table[self.zp_key], dtype=float),
-                zeropoint_unc_list=np.array(
-                    candidate_table[self.zp_std_key], dtype=float
-                ),
+                zeropoint=source_table[self.zp_key],
+                zeropoint_unc=source_table[self.zp_std_key],
             )
 
             candidate_table[MAG_PSF_KEY] = magnitudes
