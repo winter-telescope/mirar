@@ -21,6 +21,7 @@ from mirar.paths import (
     XPOS_KEY,
     YPOS_KEY,
     ZP_KEY,
+    ZP_STD_KEY,
     base_output_dir,
     core_fields,
     get_output_path,
@@ -158,6 +159,7 @@ class ForcedPhotometryCandidateTable(SourceTablefromHeader):
             UNC_IMG_KEY,
             NORM_PSFEX_KEY,
             ZP_KEY,
+            ZP_STD_KEY,
         ]
         column_names_list = [
             CAND_RA_KEY,
@@ -167,6 +169,7 @@ class ForcedPhotometryCandidateTable(SourceTablefromHeader):
             UNC_IMG_KEY,
             NORM_PSFEX_KEY,
             ZP_KEY,
+            ZP_STD_KEY,
         ]
         super().__init__(
             header_keys_list=header_keys_list,

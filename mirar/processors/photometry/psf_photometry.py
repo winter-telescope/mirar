@@ -12,15 +12,15 @@ from mirar.paths import (
     NORM_PSFEX_KEY,
     PSF_FLUX_KEY,
     PSF_FLUXUNC_KEY,
-    ZP_KEY,
 )
 from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.base_processor import PrerequisiteError
 from mirar.processors.photometry.base_photometry import (
-    BaseCandidatePhotometry,
     BaseImagePhotometry,
+    BaseSourcePhotometry,
     PSFPhotometry,
 )
+from mirar.processors.photometry.utils import get_mags_from_fluxes
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +42,15 @@ def check_psf_phot_prerequisites(processor):
         raise PrerequisiteError(err)
 
 
-class CandidatePSFPhotometry(BaseCandidatePhotometry):
+class SourcePSFPhotometry(BaseSourcePhotometry):
     """
     Processor to run PSF photometry on all candidates in candidate table
     """
 
     base_key = "PSFPHOTDF"
 
-    def __init__(self, zp_colname=ZP_KEY):
-        super().__init__()
-        self.zp_colname = zp_colname
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def get_psf_filename(self, row):
         """
@@ -98,12 +97,18 @@ class CandidatePSFPhotometry(BaseCandidatePhotometry):
             candidate_table["chipsf"] = minchi2s
             candidate_table["xshift"] = xshifts
             candidate_table["yshift"] = yshifts
-            candidate_table[MAG_PSF_KEY] = np.array(
-                candidate_table[self.zp_colname], dtype=float
-            ) - 2.5 * np.log10(candidate_table[PSF_FLUX_KEY])
-            candidate_table[MAGERR_PSF_KEY] = (
-                1.086 * candidate_table[PSF_FLUXUNC_KEY] / candidate_table[PSF_FLUX_KEY]
+
+            magnitudes, magnitudes_unc = get_mags_from_fluxes(
+                flux_list=fluxes,
+                fluxunc_list=fluxuncs,
+                zeropoint_list=np.array(candidate_table[self.zp_key], dtype=float),
+                zeropoint_unc_list=np.array(
+                    candidate_table[self.zp_std_key], dtype=float
+                ),
             )
+
+            candidate_table[MAG_PSF_KEY] = magnitudes
+            candidate_table[MAGERR_PSF_KEY] = magnitudes_unc
 
             source_table.set_data(candidate_table)
 
@@ -125,12 +130,9 @@ class ImagePSFPhotometry(BaseImagePhotometry):
     def __init__(
         self,
         *args,
-        zp_colname: str = ZP_KEY,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-
-        self.zp_colname = zp_colname
 
     def get_psf_filename(self, image: Image):
         """
@@ -158,10 +160,16 @@ class ImagePSFPhotometry(BaseImagePhotometry):
                 image_cutout, unc_image_cutout
             )
 
+            magnitudes, magnitudes_unc = get_mags_from_fluxes(
+                flux_list=[flux],
+                fluxunc_list=[fluxunc],
+                zeropoint_list=[float(image[self.zp_key])],
+                zeropoint_unc_list=[float(image[self.zp_std_key])],
+            )
             image[PSF_FLUX_KEY] = flux
             image[PSF_FLUXUNC_KEY] = fluxunc
-            image[MAG_PSF_KEY] = -2.5 * np.log10(flux) + float(image[self.zp_colname])
-            image[MAGERR_PSF_KEY] = 1.086 * fluxunc / flux
+            image[MAG_PSF_KEY] = magnitudes[0]
+            image[MAGERR_PSF_KEY] = magnitudes_unc[0]
 
         return batch
 

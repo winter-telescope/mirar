@@ -232,7 +232,7 @@ def run_sextractor_single(
 def run_sextractor_dual(
     det_image: str,
     measure_image: str,
-    output_dir: str,
+    output_dir: str | Path,
     catalog_name: Optional[str] = None,
     config: str = default_config_path,
     parameters_name: str = default_param_path,

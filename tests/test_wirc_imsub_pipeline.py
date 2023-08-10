@@ -55,15 +55,28 @@ def reference_image_test_generator(
 
 
 EXPECTED_HEADER_VALUES = {
-    "SCORSTD": 1.081806800432295,
-    "SCORMED": -8.757084251543588e-05,
-    "SCORMEAN": -0.031172912552408068,
+    "SCORMEAN": -0.04392849749015427,
+    "SCORMED": -0.02331383704510348,
+    "SCORSTD": 1.25595271525748,
 }
 
 EXPECTED_DATAFRAME_VALUES = {
-    "magpsf": [19.319820, 19.242908, 17.197012, 17.514130],
-    "magap": [19.302467, 19.122576, 17.110327, 17.845793],
+    "magpsf": [
+        19.532174878440024,
+        19.37926219106463,
+        19.592829160635986,
+        17.551198868994298,
+        17.197011228688517,
+    ],
+    "magap": [
+        20.391746490573613,
+        18.8437585775724,
+        19.25446868459551,
+        17.74467203323279,
+        17.11032933773533,
+    ],
 }
+
 test_imsub_configuration = (
     [
         ImageLoader(
@@ -100,6 +113,9 @@ class TestWircImsubPipeline(BaseTestCase):
         self.logger.setLevel(logging.INFO)
 
     def test_pipeline(self):
+        """
+        Test the wirc imsub pipeline
+        """
         self.logger.info("\n\n Testing wirc imsub pipeline \n\n")
 
         res, _ = pipeline.reduce_images(
@@ -110,7 +126,7 @@ class TestWircImsubPipeline(BaseTestCase):
 
         candidates_table = res[0][0].get_data()
         diff_imgpath = get_output_path(
-            base_name=candidates_table.iloc[0]["diffimname"],
+            base_name=candidates_table.iloc[0]["diffimgname"],
             dir_root="subtract",
             sub_dir=NIGHT_NAME,
         )
@@ -126,7 +142,7 @@ class TestWircImsubPipeline(BaseTestCase):
                     f"Type for value ({type(value)} is neither float not int."
                 )
 
-        self.assertEqual(len(candidates_table), 4)
+        self.assertEqual(len(candidates_table), 5)
         for key, value in EXPECTED_DATAFRAME_VALUES.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):

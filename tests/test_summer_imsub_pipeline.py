@@ -10,10 +10,11 @@ from mirar.testing import BaseTestCase
 logger = logging.getLogger(__name__)
 
 expected_values = {
-    "SCORSTD": 1.0490024745298843,
-    "SCORMED": 0.0003960102347584023,
-    "SCORMEAN": -0.002868667351765475,
+    "SCORMEAN": -0.003193140695408728,
+    "SCORMED": 0.0005658697583316706,
+    "SCORSTD": 1.0565139735005666,
 }
+
 
 pipeline = SummerPipeline(night="20220815", selected_configurations=["test_imsub"])
 
@@ -40,6 +41,14 @@ class TestSummerImsubPipeline(BaseTestCase):
         self.assertEqual(len(res), 1)
 
         header = res[0][0].get_header()
+
+        print("New Results SUMMER imsub:")
+        new_exp = "expected_values = { \n"
+        for header_key in header.keys():
+            if header_key in expected_values.keys():
+                new_exp += f'    "{header_key}": {header[header_key]}, \n'
+        new_exp += "}"
+        print(new_exp)
 
         for key, value in expected_values.items():
             if isinstance(value, float):

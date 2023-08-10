@@ -20,6 +20,7 @@ from mirar.paths import (
     TARGET_KEY,
     __version__,
 )
+from mirar.processors.utils.image_loader import InvalidImage
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +157,17 @@ def load_raw_sedmv2_mef(
     """
     Load mef image
     """
+
+    sedmv2_ignore_files = [
+        "dark",
+        "sedm2",
+        "speccal",
+    ]
+
+    if any(ext in Path(path).name for ext in sedmv2_ignore_files):
+        logger.debug(f"Skipping unneeded SEDMv2 file {path}.")
+        raise InvalidImage
+
     header, split_data, split_headers = open_mef_fits(path)
 
     if "IMGTYPE" in header.keys():  # mode fritz

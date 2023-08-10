@@ -4,7 +4,8 @@ Models for the 'candidates' table
 import logging
 from typing import ClassVar
 
-from pydantic import Field, field_validator
+import pandas as pd
+from pydantic import Field
 from sqlalchemy import (
     VARCHAR,
     BigInteger,
@@ -15,12 +16,14 @@ from sqlalchemy import (
     Integer,
     Sequence,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
-from mirar.pipelines.winter.models._diff import Diff
+from mirar.database.constraints import DBQueryConstraints
+from mirar.database.transactions import select_from_table
 from mirar.pipelines.winter.models._fields import fieldid_field
 from mirar.pipelines.winter.models._filters import fid_field
+from mirar.pipelines.winter.models._programs import Program, default_program
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 logger = logging.getLogger(__name__)
@@ -56,6 +59,10 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     # Image properties
 
     diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))  # FIXME
+    diff_id: Mapped["DiffsTable"] = relationship(back_populates="candidates")
+
+    stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))  # FIXME
+    stack_id: Mapped["StacksTable"] = relationship(back_populates="candidates")
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
     exptime = Column(Float, nullable=False)
@@ -77,7 +84,6 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     magzpsci = Column(Float, nullable=True)
     magzpsciunc = Column(Float, nullable=True)
-    magzpscirms = Column(Float, nullable=True)
 
     # Photometry properties
 
@@ -85,10 +91,11 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     magpsf = Column(Float, nullable=False)
     sigmapsf = Column(Float, nullable=False)
+
     chipsf = Column(Float, nullable=True)
 
-    magap = Column(Float, nullable=True)
-    sigmagap = Column(Float, nullable=True)
+    magap = Column(Float, nullable=False)
+    sigmagap = Column(Float, nullable=False)
 
     magapbig = Column(Float, nullable=True)
     sigmagapbig = Column(Float, nullable=True)
@@ -145,7 +152,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     # Ps1 properties
 
-    psobjectid1 = Column(VARCHAR(40), nullable=True)
+    psobjectid1 = Column(BigInteger, nullable=True)
     sgmag1 = Column(Float, nullable=True)
     srmag1 = Column(Float, nullable=True)
     simag1 = Column(Float, nullable=True)
@@ -153,7 +160,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     distpsnr1 = Column(Float, nullable=True)
     sgscore1 = Column(Float, nullable=True)
 
-    psobjectid2 = Column(VARCHAR(40), nullable=True)
+    psobjectid2 = Column(BigInteger, nullable=True)
     sgmag2 = Column(Float, nullable=True)
     srmag2 = Column(Float, nullable=True)
     simag2 = Column(Float, nullable=True)
@@ -161,7 +168,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     distpsnr2 = Column(Float, nullable=True)
     sgscore2 = Column(Float, nullable=True)
 
-    psobjectid3 = Column(VARCHAR(40), nullable=True)
+    psobjectid3 = Column(BigInteger, nullable=True)
     sgmag3 = Column(Float, nullable=True)
     srmag3 = Column(Float, nullable=True)
     simag3 = Column(Float, nullable=True)
@@ -207,6 +214,7 @@ class Candidate(BaseDB):
     jd: float = Field(ge=0)
 
     diffid: int | None = Field(ge=0, default=None)
+    stackid: int = Field(ge=0)
 
     fid: int = fid_field
     exptime: float = Field(ge=0)
@@ -222,16 +230,15 @@ class Candidate(BaseDB):
 
     magzpsci: float | None = Field(default=None)
     magzpsciunc: float | None = Field(ge=0, default=None)
-    magzpscirms: float | None = Field(ge=0, default=None)
 
     diffmaglim: float | None = Field(default=None)
 
     magpsf: float = Field()
-    sigmapsf: float = Field(ge=0)
+    sigmapsf: float = Field()
     chipsf: float | None = Field(ge=0, default=None)
 
-    magap: float | None = Field(default=None)
-    sigmagap: float | None = Field(ge=0, default=None)
+    magap: float = Field()
+    sigmagap: float = Field(ge=0)
 
     magapbig: float | None = Field(default=None)
     sigmagapbig: float | None = Field(ge=0, default=None)
@@ -274,9 +281,9 @@ class Candidate(BaseDB):
 
     tooflag: bool = Field(default=False)
 
-    psobjectid1: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
-    psobjectid2: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
-    psobjectid3: str | None = Field(min_length=MIN_NAME_LENGTH, default=None)
+    psobjectid1: int | None = Field(default=None)
+    psobjectid2: int | None = Field(default=None)
+    psobjectid3: int | None = Field(default=None)
 
     sgmag1: float | None = Field(default=None)
     srmag1: float | None = Field(default=None)
@@ -319,14 +326,22 @@ class Candidate(BaseDB):
     maggaia: float | None = Field(default=None)
     maggaiabright: float | None = Field(default=None)
 
-    @field_validator("diffid")
-    @classmethod
-    def validate_diffid(cls, diffid: int):
+    def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
         """
-        Ensure that diffid exists in exposures table
+        Insert the pydantic-ified data into the corresponding sql database
 
-        :param diffid: value
-        :return: value
+        :return: None
         """
-        assert Diff._exists(keys="diffid", values=diffid)
-        return diffid
+
+        prog_match = select_from_table(
+            DBQueryConstraints(columns="progname", accepted_values=self.progname),
+            sql_table=Program.sql_model,
+        )
+        if prog_match.empty:
+            logger.debug(
+                f"Program {self.progname} not found in database. "
+                f"Using default program {default_program.progname}"
+            )
+            self.progname = default_program.progname
+
+        return self._insert_entry(returning_key_names=returning_key_names)

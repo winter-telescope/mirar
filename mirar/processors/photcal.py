@@ -15,7 +15,7 @@ from astropy.table import Table
 from mirar.catalog.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
 from mirar.errors import ProcessorError
-from mirar.paths import ZP_KEY, ZP_NSTARS_KEY, ZP_STD_KEY, get_output_dir
+from mirar.paths import MAGLIM_KEY, ZP_KEY, ZP_NSTARS_KEY, ZP_STD_KEY, get_output_dir
 from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkimg_map
 from mirar.processors.astrometry.validate import get_fwhm
 from mirar.processors.base_catalog_xmatch_processor import (
@@ -295,7 +295,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
 
                 for ind, diam in enumerate(aperture_diameters):
                     image[f"MAGLIM_{int(diam)}"] = limmags[ind]
-                image["MAGLIM"] = limmags[-1]
+                image[MAGLIM_KEY] = limmags[-1]
 
                 image[ZP_KEY] = image["ZP_AUTO"]
                 image[ZP_STD_KEY] = image["ZP_AUTO_STD"]

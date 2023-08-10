@@ -443,5 +443,9 @@ class Swarp(BaseImageProcessor):
             for temp_file in temp_files:
                 temp_file.unlink()
                 logger.debug(f"Deleted temporary file {temp_file}")
+            # Remove the output file made by Swarp, as we are passing along the image
+            # we made. Also, the Swarp output image does not have any of the header
+            # keywords we added above.
+            output_image_path.unlink()
 
         return ImageBatch([new_image])

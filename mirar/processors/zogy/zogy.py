@@ -9,8 +9,8 @@ In most cases, a processor chain will first require
 in order to set these relevant header paths.
 """
 import logging
-import os
 from collections.abc import Callable
+from copy import copy
 from pathlib import Path
 
 import astropy.table
@@ -27,11 +27,18 @@ from mirar.errors import ProcessorError
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
+    MAGLIM_KEY,
     NORM_PSFEX_KEY,
     OBSCLASS_KEY,
     RAW_IMG_KEY,
     REF_IMG_KEY,
-    REF_PSF_KEY,
+    RMS_COUNTS_KEY,
+    SCI_IMG_KEY,
+    SCOR_IMG_KEY,
+    SCOR_MEAN_KEY,
+    SCOR_MEDIAN_KEY,
+    SCOR_STD_KEY,
+    SEXTRACTOR_HEADER_KEY,
     UNC_IMG_KEY,
     core_fields,
     get_output_dir,
@@ -237,17 +244,16 @@ class ZOGYPrepare(BaseImageProcessor):
         return rms_image
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-        for image in batch:
+        for image_ind, image in enumerate(batch):
             ref_img_path = image[REF_IMG_KEY]
             sci_img_path = image[BASE_NAME_KEY]
 
             ref_img = self.open_fits(self.get_path(ref_img_path))
 
-            ref_catalog_path = ref_img["SRCCAT"]  # convert to key
+            ref_catalog_path = ref_img[SEXTRACTOR_HEADER_KEY]
             ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
-            # change in Swarp too, also fix (get_mask/write_mask)?
 
-            sci_catalog_path = image["SRCCAT"]  # convert to key
+            sci_catalog_path = image[SEXTRACTOR_HEADER_KEY]
             sci_weight_path = image[LATEST_WEIGHT_SAVE_KEY]
 
             ref_weight_data = self.open_fits(self.get_path(ref_weight_path))
@@ -258,10 +264,10 @@ class ZOGYPrepare(BaseImageProcessor):
             )
 
             image_data = image.get_data()
-            image_data[image_mask] = 0.0
+            image_data[image_mask] = np.nan
             image.set_data(image_data)
             ref_data = ref_img.get_data()
-            ref_data[image_mask] = 0.0
+            ref_data[image_mask] = np.nan
             ref_img.set_data(ref_data)
 
             # Create S correlation ('scorr') weight image
@@ -293,28 +299,19 @@ class ZOGYPrepare(BaseImageProcessor):
                 ref_img[self.ref_zp_header_key]
             ) + 2.5 * np.log10(flux_scale)
 
-            ref_scaled_path = ref_img_path.replace(".fits", ".scaled.fits")
-            self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
-
             logger.debug(
                 f"Zeropoints are reference : {ref_unscaled_zp}, "
                 f"scaled reference : {ref_img[self.ref_zp_header_key]} and "
                 f"science : {image[self.sci_zp_header_key]}"
             )
 
-            # Scale is 1 by construction for science image
-            sci_scaled_path = self.get_path(
-                sci_img_path.replace(".fits", ".scaled.fits")
-            )
-            self.save_fits(image, path=sci_scaled_path)
-
             sci_rms = 0.5 * (
-                np.percentile(image_data[image_data != 0.0], 84.13)
-                - np.percentile(image_data[image_data != 0.0], 15.86)
+                np.percentile(image_data[~image_mask], 84.13)
+                - np.percentile(image_data[~image_mask], 15.86)
             )
             ref_rms = 0.5 * (
-                np.percentile(ref_data[ref_data != 0.0], 84.13)
-                - np.percentile(ref_data[ref_data != 0.0], 15.86)
+                np.percentile(ref_data[~image_mask], 84.13)
+                - np.percentile(ref_data[~image_mask], 15.86)
             )
             logger.debug(
                 f"Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}"
@@ -324,28 +321,28 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_rms_image = self.get_rms_image(image, sci_rms)
             ref_rms_image = self.get_rms_image(ref_img, ref_rms)
 
-            sci_rms_path = sci_img_path + ".unc.fits"
-            ref_rms_path = ref_img_path + ".unc.fits"
+            sci_rms_path = self.get_path(sci_img_path + ".unc.fits")
+            ref_rms_path = self.get_path(ref_img_path + ".unc.fits")
 
-            self.save_fits(
-                sci_rms_image, path=os.path.join(self.get_path(sci_rms_path))
-            )
+            self.save_fits(sci_rms_image, path=sci_rms_path)
+            image[UNC_IMG_KEY] = sci_rms_path.as_posix()
 
-            self.save_fits(
-                ref_rms_image, path=os.path.join(self.get_path(ref_rms_path))
-            )
+            self.save_fits(ref_rms_image, path=ref_rms_path)
+            ref_img[UNC_IMG_KEY] = ref_rms_path.as_posix()
+            ref_img[RMS_COUNTS_KEY] = ref_rms
+            # Save scaled reference image
+            ref_scaled_path = ref_img_path.replace(".fits", ".scaled.fits")
+            self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
 
-            image["SCIRMS"] = sci_rms
-            image["REFRMS"] = ref_rms
+            # Header keywords only required by ZOGY
+            image[RMS_COUNTS_KEY] = sci_rms
             image["ASTUNCX"] = ast_unc_x
             image["ASTUNCY"] = ast_unc_y
             image["REFFS"] = flux_scale
-            image["SCUNCPTH"] = str(sci_rms_path)
-            image["RFUNCPTH"] = str(ref_rms_path)
-            image["SCISCL"] = str(sci_scaled_path)
-            image["REFSCL"] = str(ref_scaled_path)
+            image[REF_IMG_KEY] = str(ref_scaled_path)
             image["SCORMASK"] = str(scorr_weight_path)
 
+            batch[image_ind] = image
         return batch
 
 
@@ -375,14 +372,15 @@ class ZOGY(ZOGYPrepare):
     ) -> ImageBatch:
         diff_batch = ImageBatch()
         for image in batch:
-            sci_image_path = self.get_path(image["SCISCL"])
-            ref_image_path = self.get_path(image["REFSCL"])
-            sci_rms = image["SCIRMS"]
-            ref_rms = image["REFRMS"]
+            ref_image_path = self.get_path(image[REF_IMG_KEY])
+            ref_image = self.open_fits(ref_image_path)
+
+            sci_rms = image[RMS_COUNTS_KEY]
+            ref_rms = ref_image[RMS_COUNTS_KEY]
             sci_psf_path = self.get_path(image[NORM_PSFEX_KEY])
-            ref_psf_path = self.get_path(image[REF_PSF_KEY])
-            sci_rms_path = self.get_path(image["SCUNCPTH"])
-            ref_rms_path = self.get_path(image["RFUNCPTH"])
+            ref_psf_path = self.get_path(ref_image[NORM_PSFEX_KEY])
+            sci_rms_path = image[UNC_IMG_KEY]
+            ref_rms_path = ref_image[UNC_IMG_KEY]
             ast_unc_x = image["ASTUNCX"]
             ast_unc_y = image["ASTUNCY"]
 
@@ -390,8 +388,8 @@ class ZOGY(ZOGYPrepare):
 
             logger.debug(f"Ast unc x is {ast_unc_x:.2f} and y is {ast_unc_y:.2f}")
             diff_data, diff_psf_data, scorr_data = pyzogy(
-                new_image_path=sci_image_path,
-                ref_image_path=ref_image_path,
+                new_data=image.get_data(),
+                ref_data=ref_image.get_data(),
                 new_psf_path=sci_psf_path,
                 ref_psf_path=ref_psf_path,
                 new_sigma_path=sci_rms_path,
@@ -402,14 +400,15 @@ class ZOGY(ZOGYPrepare):
                 dy=ast_unc_y,
             )
 
-            diff = Image(data=diff_data, header=image.get_header())
-
+            sci_image_path = self.get_path(image[BASE_NAME_KEY])
             diff_image_path = Path(sci_image_path).with_suffix(".diff.fits")
             diff_psf_path = diff_image_path.with_suffix(".psf")
 
             scorr_image_path = Path(sci_image_path).with_suffix(".scorr.fits")
 
-            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(scorr_data)
+            scorr_mean, scorr_median, scorr_std = sigma_clipped_stats(
+                scorr_data, mask_value=np.nan
+            )
 
             logger.debug(
                 f"Scorr mean, median, STD is {scorr_mean}, {scorr_median}, {scorr_std}"
@@ -421,28 +420,32 @@ class ZOGY(ZOGYPrepare):
             diff_rms_data = np.sqrt(
                 sci_rms_image.get_data() ** 2 + ref_rms_image.get_data() ** 2
             )
-            _, diff_rms_median, _ = sigma_clipped_stats(diff_rms_data)
+            _, diff_rms_median, _ = sigma_clipped_stats(
+                diff_rms_data[~np.isnan(diff_rms_data)], mask_value=np.nan
+            )
             diff_rms_path = diff_image_path.with_suffix(".unc.fits")
 
-            image["DIFFIMG"] = diff_image_path.as_posix()
-            image["DIFFPSF"] = diff_psf_path.as_posix()
-            image["DIFFSCR"] = scorr_image_path.as_posix()
-            image["DIFFUNC"] = diff_rms_path.as_posix()
+            diff = Image(data=diff_data, header=copy(image.get_header()))
+
+            diff[NORM_PSFEX_KEY] = diff_psf_path.as_posix()
+            diff[SCOR_IMG_KEY] = scorr_image_path.as_posix()
+            diff[UNC_IMG_KEY] = diff_rms_path.as_posix()
             noise = np.sqrt(
                 np.nansum(np.square(diff_psf_data) * np.square(diff_rms_median))
             ) / np.nansum(np.square(diff_psf_data))
-            image["DIFFMLIM"] = -2.5 * np.log10(noise * 5) + float(
-                image[self.sci_zp_header_key]
+
+            diff[MAGLIM_KEY] = -2.5 * np.log10(noise * 5) + float(
+                diff[self.sci_zp_header_key]
             )
             key_map = {
-                "SCORMEAN": scorr_mean,
-                "SCORMED": scorr_median,
-                "SCORSTD": scorr_std,
+                SCOR_MEAN_KEY: scorr_mean,
+                SCOR_MEDIAN_KEY: scorr_median,
+                SCOR_STD_KEY: scorr_std,
             }
             for key, value in key_map.items():
                 if np.isnan(value):
-                    value = -999.0
-                image[key] = value
+                    value = None
+                diff[key] = value
 
             self.save_fits(image=diff, path=self.get_path(diff_image_path))
 
@@ -460,18 +463,25 @@ class ZOGY(ZOGYPrepare):
             )
 
             scorr = Image(scorr_data, header=image.header.copy())
-            scorr[LATEST_WEIGHT_SAVE_KEY] = image["SCORMASK"]
+            scorr[LATEST_WEIGHT_SAVE_KEY] = diff["SCORMASK"]
 
             self.save_fits(image=scorr, path=self.get_path(scorr_image_path))
 
             self.save_fits(
-                image=Image(data=diff_rms_data, header=image.get_header()),
+                image=Image(data=diff_rms_data, header=copy(image.get_header())),
                 path=self.get_path(diff_rms_path),
             )
 
             diff[BASE_NAME_KEY] = diff_image_path.name
             diff[NORM_PSFEX_KEY] = diff_psf_path.as_posix()
             diff[UNC_IMG_KEY] = diff_rms_path.as_posix()
-
+            diff[SCI_IMG_KEY] = image[BASE_NAME_KEY]
             diff_batch.append(diff)
         return diff_batch
+
+    def check_prerequisites(
+        self,
+    ):
+        check = np.sum([isinstance(x, ZOGYPrepare) for x in self.preceding_steps])
+        if check != 1:
+            raise ValueError("ZOGYPrepare must be run before ZOGY")

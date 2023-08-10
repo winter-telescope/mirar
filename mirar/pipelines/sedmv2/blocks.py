@@ -28,11 +28,11 @@ from mirar.processors.csvlog import CSVLog
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import (
-    CandidateAperturePhotometry,
     ImageAperturePhotometry,
+    SourceAperturePhotometry,
 )
 from mirar.processors.photometry.psf_photometry import (  # ImagePSFPhotometry,
-    CandidatePSFPhotometry,
+    SourcePSFPhotometry,
 )
 from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
@@ -49,7 +49,7 @@ from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
     MEFLoader(
-        input_sub_dir="raw",
+        input_sub_dir="",
         load_image=load_sedmv2_mef_image,
     ),
     ImageSaver(output_dir_name="loaded"),
@@ -149,7 +149,7 @@ image_photometry = [  # imported from wirc/blocks.py
         phot_cutout_size=100,
         target_ra_key="OBJRAD",
         target_dec_key="OBJDECD",
-        zp_colname="ZP_AUTO",
+        zp_key="ZP_AUTO",
     ),
     # Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
     # PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),
@@ -162,14 +162,14 @@ image_photometry = [  # imported from wirc/blocks.py
 ]
 
 candidate_photometry = [  # imported from wirc/blocks.py
-    CandidateAperturePhotometry(
+    SourceAperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    CandidatePSFPhotometry(),
+    SourcePSFPhotometry(),
 ]
 
 

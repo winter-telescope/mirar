@@ -17,6 +17,8 @@ from mirar.paths import (
     UNC_IMG_KEY,
     XPOS_KEY,
     YPOS_KEY,
+    ZP_KEY,
+    ZP_STD_KEY,
     get_output_dir,
 )
 from mirar.processors.base_processor import (
@@ -129,6 +131,8 @@ class BasePhotometryProcessor(BaseProcessor, ImageHandler):
         self,
         phot_cutout_size: int = 20,
         temp_output_sub_dir: str = "photometry",
+        zp_key: str = ZP_KEY,
+        zp_std_key: str = ZP_STD_KEY,
     ):
         """
         Args:
@@ -138,6 +142,8 @@ class BasePhotometryProcessor(BaseProcessor, ImageHandler):
         super().__init__()
         self.phot_cutout_size = phot_cutout_size
         self.temp_output_sub_dir = temp_output_sub_dir
+        self.zp_key = zp_key
+        self.zp_std_key = zp_std_key
 
     def save_temp_image_uncimage(
         self, data_item: Image | pd.Series
@@ -251,10 +257,12 @@ class BaseImagePhotometry(BasePhotometryProcessor, BaseImageProcessor):
         return int(np.round(x)), int(np.round(y))
 
 
-class BaseCandidatePhotometry(BasePhotometryProcessor, BaseSourceProcessor):
+class BaseSourcePhotometry(BasePhotometryProcessor, BaseSourceProcessor):
     """
     Processor to run photometry on a candidates table
     """
+
+    base_key = "base_source_photometry"
 
     def __init__(
         self,

@@ -6,7 +6,7 @@ import logging
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.io import open_fits
-from mirar.paths import LATEST_SAVE_KEY, get_output_path
+from mirar.paths import LATEST_SAVE_KEY, ZP_KEY, ZP_STD_KEY, get_output_path
 from mirar.pipelines.wirc.blocks import (
     candidate_photometry,
     export_candidates_from_header,
@@ -14,7 +14,7 @@ from mirar.pipelines.wirc.blocks import (
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
-from mirar.processors.utils.header_annotate import HeaderEditor
+from mirar.processors.utils.header_annotate import HeaderAnnotator, HeaderEditor
 from mirar.processors.utils.image_loader import ImageLoader
 from mirar.processors.utils.image_saver import ImageSaver
 from mirar.testing import BaseTestCase
@@ -27,14 +27,19 @@ NIGHT_NAME = "20210330"
 
 EXPECTED_HEADER_VALUES = {
     "MAGAP": 17.01042620967162,
-    "MAGPSF": 16.95749165408025,
+    "MAGPSF": 16.957491654080247,
+    "MAGERRAP": 0.05580721809850005,
+    "SIGMAPSF": 0.04793450626938275,
 }
 
 EXPECTED_DATAFRAME_VALUES = {
-    "magpsf": [16.957492],
-    "magap": [17.014131],
+    "magpsf": [16.95749166765038],
+    "magap": [17.014130826817812],
+    "sigmapsf": [0.04793450628321317],
+    "sigmagap": [0.055862250242806104],
     "objectid": ["ZTF21aagppzg"],
 }
+
 test_fp_configuration = (
     [
         ImageLoader(
@@ -46,6 +51,8 @@ test_fp_configuration = (
             edit_keys=["TARGRA", "TARGDEC", "TARGNAME"],
             values=[160.643041603707, 34.4374610722322, "ZTF21aagppzg"],
         ),
+        HeaderAnnotator(input_keys=["TMC_ZP"], output_key=ZP_KEY),
+        HeaderAnnotator(input_keys=["TMC_ZPSD"], output_key=ZP_STD_KEY),
     ]
     + image_photometry
     + [ImageSaver(output_dir_name="photom")]
@@ -70,6 +77,9 @@ class TestForcedPhot(BaseTestCase):
         self.logger.setLevel(logging.INFO)
 
     def test_pipeline(self):
+        """
+        Test the pipeline
+        """
         self.logger.info("\n\n Testing forced photometry \n\n")
 
         res, _ = pipeline.reduce_images(
