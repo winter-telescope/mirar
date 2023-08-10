@@ -6,7 +6,7 @@ import logging
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import VARCHAR, BigInteger, Column, Float, Integer, Sequence
+from sqlalchemy import VARCHAR, BigInteger, Boolean, Column, Float, Integer, Sequence
 from sqlalchemy.orm import DeclarativeBase
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
@@ -94,6 +94,7 @@ class CandidatesTable(WircBase):  # pylint: disable=too-few-public-methods
     tmhmag1 = Column(Float, nullable=True)
     tmkmag1 = Column(Float, nullable=True)
     tmobjectid1 = Column(VARCHAR(25), nullable=True)
+    isdiffpos = Column(Boolean, nullable=False)
 
 
 class Candidate(BaseDB):
@@ -118,8 +119,8 @@ class Candidate(BaseDB):
     sciimgname: str | None = Field(max_length=255, default=None)
     refimgname: str | None = Field(max_length=255, default=None)
 
-    magpsf: float | None = Field()
-    sigmapsf: float | None = Field(ge=0)
+    magpsf: float = Field()
+    sigmapsf: float = Field(ge=0)
     chipsf: float | None = Field(ge=0, default=None)
 
     aimage: float = Field(ge=0)
@@ -140,6 +141,8 @@ class Candidate(BaseDB):
     tmhmag1: float | None = Field(default=None)
     tmkmag1: float | None = Field(default=None)
     tmobjectid1: str | None = Field(default=None)
+
+    isdiffpos: bool = Field(default=True)
 
 
 if DB_USER is not None:
