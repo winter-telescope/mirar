@@ -3,11 +3,11 @@ Module to modify an image using a custom user-defined function
 """
 from typing import Callable
 
-from mirar.data import Image, ImageBatch
+from mirar.data import ImageBatch
 from mirar.processors.base_processor import BaseImageProcessor
 
 
-class CustomImageModifier(BaseImageProcessor):
+class CustomImageBatchModifier(BaseImageProcessor):
     """
     Class to modify an image using a custom user-defined function
     """
@@ -16,21 +16,20 @@ class CustomImageModifier(BaseImageProcessor):
 
     def __init__(
         self,
-        image_modifier: Callable[[Image], Image],
+        image_batch_modifier: Callable[[ImageBatch], ImageBatch],
     ):
         super().__init__()
-        self.image_modifier = image_modifier
+        self.image_batch_modifier = image_batch_modifier
 
     def __str__(self):
         return (
-            f"Processor to modify images using "
-            f"'{self.image_modifier.__name__}' function."
+            f"Processor to modify image batches using "
+            f"'{self.image_batch_modifier.__name__}' function."
         )
 
     def _apply_to_images(
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
-        for i, image in enumerate(batch):
-            batch[i] = self.image_modifier(image)
-        return batch
+        new_batch = self.image_batch_modifier(batch)
+        return new_batch

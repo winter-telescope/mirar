@@ -13,7 +13,7 @@ from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
-from mirar.data import Image
+from mirar.data import Image, ImageBatch
 from mirar.io import (
     open_fits,
     open_mef_fits,
@@ -292,49 +292,54 @@ def load_winter_mef_image(
     return images
 
 
-def annotate_winter_subdet_headers(image: Image) -> Image:
+def annotate_winter_subdet_headers(batch: ImageBatch) -> ImageBatch:
     """
     Annotate winter header with information on the subdetector
 
-    :param image: Image to annotate
-    :return: Image with updated header
+    :param batch: ImageBatch to annotate
+    :return: ImageBatch where images have the updated header
     """
-    data = image.get_data()
+    new_batch = []
+    for image in batch:
+        data = image.get_data()
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", AstropyWarning)
-        _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
-        image["MEDCOUNT"] = med
-        image["STDDEV"] = std
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", AstropyWarning)
+            _, med, std = sigma_clipped_stats(data, sigma=3.0, maxiters=5)
+            image["MEDCOUNT"] = med
+            image["STDDEV"] = std
 
-    subnx, subny, subnxtot, subnytot = (
-        image["SUBNX"],
-        image["SUBNY"],
-        image["SUBNXTOT"],
-        image["SUBNYTOT"],
-    )
+        subnx, subny, subnxtot, subnytot = (
+            image["SUBNX"],
+            image["SUBNY"],
+            image["SUBNXTOT"],
+            image["SUBNYTOT"],
+        )
 
-    mask = (
-        (subdets["nx"] == subnx)
-        & (subdets["ny"] == subny)
-        & (subdets["nxtot"] == subnxtot)
-        & (subdets["nytot"] == subnytot)
-        & (subdets["boardid"] == image["BOARD_ID"])
-    )
-    assert np.sum(mask) == 1, (
-        f"Subdet not found for nx={subnx}, ny={subny}, "
-        f"nxtot={subnxtot}, nytot={subnytot} and boardid={image['BOARD_ID']}"
-    )
-    image["SUBDETID"] = int(subdets[mask]["subdetid"].iloc[0])
-    image["RAWID"] = int(f"{image['EXPID']}_{str(image['SUBDETID']).rjust(2, '0')}")
-    image["USTACKID"] = None
+        mask = (
+            (subdets["nx"] == subnx)
+            & (subdets["ny"] == subny)
+            & (subdets["nxtot"] == subnxtot)
+            & (subdets["nytot"] == subnytot)
+            & (subdets["boardid"] == image["BOARD_ID"])
+        )
+        assert np.sum(mask) == 1, (
+            f"Subdet not found for nx={subnx}, ny={subny}, "
+            f"nxtot={subnxtot}, nytot={subnytot} and boardid={image['BOARD_ID']}"
+        )
+        image["SUBDETID"] = int(subdets[mask]["subdetid"].iloc[0])
+        image["RAWID"] = int(f"{image['EXPID']}_{str(image['SUBDETID']).rjust(2, '0')}")
+        image["USTACKID"] = None
 
-    if "DATASEC" in image.keys():
-        del image["DATASEC"]
+        if "DATASEC" in image.keys():
+            del image["DATASEC"]
 
-    # TODO: Write a little snippet to estimate the central RA/Dec from the pointing
-    #  RA/Dec, BOARD_ID, SUBCOORD, and PA
-    return image
+        # TODO: Write a little snippet to estimate the central RA/Dec from the pointing
+        #  RA/Dec, BOARD_ID, SUBCOORD, and PA
+
+        new_batch.append(image)
+    new_batch = ImageBatch(new_batch)
+    return new_batch
 
 
 def get_raw_winter_mask(image: Image) -> np.ndarray:

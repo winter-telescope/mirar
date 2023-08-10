@@ -98,7 +98,7 @@ from mirar.processors.sources import (
 )
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.utils import (
-    CustomImageModifier,
+    CustomImageBatchModifier,
     HeaderAnnotator,
     ImageBatcher,
     ImageDebatcher,
@@ -214,7 +214,7 @@ mask_and_split = [
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
-    CustomImageModifier(annotate_winter_subdet_headers),
+    CustomImageBatchModifier(annotate_winter_subdet_headers),
 ]
 
 # Save raw images
@@ -222,6 +222,10 @@ mask_and_split = [
 save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
+    CustomImageBatchModifier(winter_stackid_annotator),
+    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -259,7 +263,7 @@ flat_calibrate = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
-fourier_filter = [CustomImageModifier(winter_fourier_filtered_image_generator)]
+fourier_filter = [CustomImageBatchModifier(winter_fourier_filtered_image_generator)]
 
 astrometry = [
     ImageDebatcher(),
@@ -324,7 +328,6 @@ stack_dithers = [
         temp_output_sub_dir="stack_all",
         header_keys_to_combine=["RAWID"],
     ),
-    CustomImageModifier(winter_stackid_annotator),
     ImageSaver(output_dir_name="stack"),
 ]
 
