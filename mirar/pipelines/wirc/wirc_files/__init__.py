@@ -3,6 +3,8 @@ Module containing WIRC-specific paths
 """
 from pathlib import Path
 
+from fastavro.schema import load_schema
+
 wirc_file_dir = Path(__file__).parent.joinpath("files")
 wirc_schema_dir = Path(__file__).parent.joinpath("schema")
 
@@ -43,3 +45,6 @@ sextractor_candidate_config = {
 psfex_path = wirc_file_dir.joinpath("photom.psfex")
 
 wirc_avro_schema_path = Path(__file__).parent.joinpath("avro_schema/wirc.alert.avsc")
+wirc_avro_schema = load_schema(wirc_avro_schema_path)
+wirc_prv_schema = wirc_avro_schema["__named_schemas"]["wirc.alert.prv_candidate"]
+prv_candidate_cols = [x["name"] for x in wirc_prv_schema["fields"]]
