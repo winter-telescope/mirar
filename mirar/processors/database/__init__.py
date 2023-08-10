@@ -6,8 +6,8 @@ from mirar.processors.database.database_inserter import (
     DatabaseSourceInserter,
 )
 from mirar.processors.database.database_selector import (
-    DatabaseCrossmatchSelector,
+    BaseDatabaseSourceSelector,
+    CrossmatchSourceWithDatabase,
     DatabaseHistorySelector,
-    DatabaseSourceSelector,
 )
 from mirar.processors.database.database_updater import ImageDatabaseUpdater

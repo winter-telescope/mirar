@@ -36,6 +36,7 @@ from mirar.pipelines.winter.generator import (
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
     winter_fourier_filtered_image_generator,
+    winter_history_deprecated_constraint,
     winter_photometric_catalog_generator,
     winter_reference_generator,
     winter_reference_image_resampler_for_zogy,
@@ -78,7 +79,10 @@ from mirar.processors.database.database_inserter import (
     DatabaseImageInserter,
     DatabaseSourceInserter,
 )
-from mirar.processors.database.database_selector import DatabaseHistorySelector
+from mirar.processors.database.database_selector import (
+    CrossmatchSourceWithDatabase,
+    DatabaseHistorySelector,
+)
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
@@ -98,7 +102,7 @@ from mirar.processors.sources import (
 )
 from mirar.processors.split import SUB_ID_KEY, SplitImage
 from mirar.processors.utils import (
-    CustomImageModifier,
+    CustomImageBatchModifier,
     HeaderAnnotator,
     ImageBatcher,
     ImageDebatcher,
@@ -214,7 +218,7 @@ mask_and_split = [
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
-    CustomImageModifier(annotate_winter_subdet_headers),
+    CustomImageBatchModifier(annotate_winter_subdet_headers),
 ]
 
 # Save raw images
@@ -222,6 +226,10 @@ mask_and_split = [
 save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
+    CustomImageBatchModifier(winter_stackid_annotator),
+    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -259,7 +267,7 @@ flat_calibrate = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
-fourier_filter = [CustomImageModifier(winter_fourier_filtered_image_generator)]
+fourier_filter = [CustomImageBatchModifier(winter_fourier_filtered_image_generator)]
 
 astrometry = [
     ImageDebatcher(),
@@ -324,7 +332,6 @@ stack_dithers = [
         temp_output_sub_dir="stack_all",
         header_keys_to_combine=["RAWID"],
     ),
-    CustomImageModifier(winter_stackid_annotator),
     ImageSaver(output_dir_name="stack"),
 ]
 
@@ -416,7 +423,7 @@ detect_candidates = [
 #
 # candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
-load_candidates = [
+load_sources = [
     SourceLoader(input_dir_name="candidates"),
 ]
 
@@ -425,18 +432,24 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
+    CrossmatchSourceWithDatabase(
+        db_table=Candidate,
+        db_output_columns=[CAND_NAME_KEY],
+        crossmatch_radius_arcsec=2.0,
+        max_num_results=1,
+    ),
+    CandidateNamer(
+        db_table=Candidate,
+        base_name=CANDIDATE_PREFIX,
+        name_start=NAME_START,
+    ),
     DatabaseHistorySelector(
         crossmatch_radius_arcsec=2.0,
         time_field_name="jd",
         history_duration_days=500.0,
         db_table=Candidate,
         db_output_columns=prv_candidate_cols + [CAND_NAME_KEY],
-    ),
-    CandidateNamer(
-        db_table=Candidate,
-        base_name=CANDIDATE_PREFIX,
-        name_start=NAME_START,
-        xmatch_radius_arcsec=2,
+        additional_query_constraints=winter_history_deprecated_constraint,
     ),
     CustomSourceModifier(modifier_function=winter_candidate_avro_fields_calculator),
     DatabaseSourceInserter(
@@ -454,7 +467,6 @@ process_candidates = [
 
 # Combinations of different blocks, to be used in configurations
 process_and_stack = astrometry + validate_astrometry + stack_dithers
-candidates = process_candidates + package_candidates
 
 unpack_subset = (
     load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw

@@ -11,7 +11,7 @@ from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.vizier import PS1
-from mirar.data import Image
+from mirar.data import Image, ImageBatch
 from mirar.data.utils.compress import decode_img
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
@@ -207,16 +207,18 @@ def winter_astrometry_sextractor_catalog_purifier(catalog: Table, _) -> Table:
     return clean_catalog
 
 
-def winter_stackid_annotator(image: Image) -> Image:
+def winter_stackid_annotator(batch: ImageBatch) -> ImageBatch:
     """
-    Generates a stack id for WINTER images
+    Generates a stack id for WINTER images as the minimum of the RAWID of the
+    images for which the stack was requested.
 
-    :param image: Image
-    :return: stack id
+    :param batch: ImageBatch
+    :return: ImageBatch with stackid added to the header
     """
-    first_rawid = np.min([int(x) for x in image["RAWID"].split(",")])
-    image["STACKID"] = int(first_rawid)
-    return image
+    first_rawid = np.min([int(image["RAWID"]) for image in batch])
+    for image in batch:
+        image["STACKID"] = int(first_rawid)
+    return batch
 
 
 def winter_candidate_annotator_filterer(src_df: pd.DataFrame):
@@ -300,8 +302,8 @@ def winter_candidate_avro_fields_calculator(src_df: pd.DataFrame) -> pd.DataFram
         nbads.append(np.sum(np.isnan(diff_stamp)))
         sumrat.append(np.sum(diff_stamp) / np.sum(np.abs(diff_stamp)))
 
-    src_df["nnegs"] = nnegs
-    src_df["nbads"] = nbads
+    src_df["nneg"] = nnegs
+    src_df["nbad"] = nbads
     src_df["sumrat"] = sumrat
 
     return src_df
@@ -383,27 +385,35 @@ def winter_reference_generator(image: Image):
     )
 
 
-def winter_fourier_filtered_image_generator(image: Image) -> Image:
+winter_history_deprecated_constraint = DBQueryConstraints(
+    columns="deprecated", accepted_values="False", comparison_types="="
+)
+
+
+def winter_fourier_filtered_image_generator(batch: ImageBatch) -> ImageBatch:
     """
     Generates a fourier filtered image for the winter data
     """
-    # First, set the nans in the raw_data to the median value
-    raw_data = image.get_data()
-    replace_value = np.nanmedian(raw_data)  # 0.0
+    new_batch = []
+    for image in batch:
+        # First, set the nans in the raw_data to the median value
+        raw_data = image.get_data()
+        replace_value = np.nanmedian(raw_data)  # 0.0
 
-    mask = image.get_mask()  # 0 is masked, 1 is unmasked
+        mask = image.get_mask()  # 0 is masked, 1 is unmasked
 
-    raw_data[~mask] = replace_value
+        raw_data[~mask] = replace_value
 
-    filtered_data, sky_model = subtract_fourier_background_model(raw_data)
+        filtered_data, sky_model = subtract_fourier_background_model(raw_data)
 
-    # mask the data back
-    filtered_data[~mask] = np.nan
+        # mask the data back
+        filtered_data[~mask] = np.nan
 
-    image.set_data(filtered_data)
+        image.set_data(filtered_data)
 
-    # Update the header
-    image.header["MEDCOUNT"] = np.nanmedian(filtered_data)
-    image.header[SATURATE_KEY] -= np.nanmedian(sky_model)
-
-    return image
+        # Update the header
+        image.header["MEDCOUNT"] = np.nanmedian(filtered_data)
+        image.header[SATURATE_KEY] -= np.nanmedian(sky_model)
+        new_batch.append(image)
+    new_batch = ImageBatch(new_batch)
+    return new_batch
