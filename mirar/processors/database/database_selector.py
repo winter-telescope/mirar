@@ -148,7 +148,7 @@ class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC)
         **kwargs,
     ):
         self.db_output_columns = db_output_columns
-        self.max_num_results = max_num_results  # TODO: implement
+        self.max_num_results = max_num_results
         self.additional_query_constraints = additional_query_constraints
         super().__init__(**kwargs)
 
@@ -209,6 +209,7 @@ class CrossmatchSourceWithDatabase(BaseDatabaseSourceSelector, BaseSourceProcess
         order_field_name: Optional[str] = None,
         order_ascending: bool = False,
         query_dist: bool = False,
+        output_df_colname: str = SOURCE_XMATCH_KEY,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -218,6 +219,7 @@ class CrossmatchSourceWithDatabase(BaseDatabaseSourceSelector, BaseSourceProcess
         self.order_field_name = order_field_name
         self.order_ascending = order_ascending
         self.query_dist = query_dist
+        self.output_df_colname = output_df_colname
 
     def update_dataframe(
         self,
@@ -232,8 +234,7 @@ class CrossmatchSourceWithDatabase(BaseDatabaseSourceSelector, BaseSourceProcess
         :return: updated pandas dataframe
         """
         assert len(results) == len(candidate_table)
-
-        candidate_table[SOURCE_XMATCH_KEY] = [
+        candidate_table[self.output_df_colname] = [
             x.to_dict(orient="records") for x in results
         ]
 
@@ -277,27 +278,8 @@ class DatabaseHistorySelector(CrossmatchSourceWithDatabase):
         super().__init__(**kwargs)
         self.history_duration_days = history_duration_days
         self.time_field_name = time_field_name
+        self.output_df_colname = SOURCE_HISTORY_KEY
         logger.info(f"Update db is {self.update_dataframe}")
-
-    def update_dataframe(
-        self,
-        candidate_table: pd.DataFrame,
-        results: list[pd.DataFrame],
-    ) -> pd.DataFrame:
-        """
-        Update a pandas dataframe with the number of previous detections
-
-        :param candidate_table: Pandas dataframe
-        :param results: db query results
-        :return: updated pandas dataframe
-        """
-        assert len(results) == len(candidate_table)
-
-        candidate_table[SOURCE_HISTORY_KEY] = [
-            x.to_dict(orient="records") for x in results
-        ]
-
-        return candidate_table
 
     def get_constraints(self, source: pd.Series) -> DBQueryConstraints:
         query_constraints = self.get_source_crossmatch_constraints(source)
