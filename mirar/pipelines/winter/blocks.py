@@ -373,9 +373,9 @@ load_test_stack = [
 load_stack = [
     ImageLoader(input_sub_dir="final"),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
-    # ImageSelector(
-    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1.fits_stack.fits")
-    # ),
+    ImageSelector(
+        (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_2_0_0.fits_stack.fits")
+    ),
 ]
 
 imsub = [
