@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Callable, Type
 
 import numpy as np
+import pandas as pd
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
@@ -28,6 +29,7 @@ from mirar.errors import ProcessorError
 from mirar.io import open_raw_image
 from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, get_output_dir, get_output_path
 from mirar.processors.database import DatabaseImageInserter
+from mirar.references.wfcam.files import wfcam_undeprecated_compid_file
 from mirar.references.wfcam.utils import (
     COMPID_KEY,
     EXTENSION_ID_KEY,
@@ -425,6 +427,7 @@ def download_wfcam_archive_images(
     use_local_database: bool = False,
     components_table: Type[BaseDB] = None,
     duplicate_protocol: str = "ignore",
+    undeprecated_compids_file: Path = wfcam_undeprecated_compid_file,
 ) -> list[Path]:
     """
     Download the image from UKIRT server. Optionally, check if the image exists locally
@@ -441,6 +444,8 @@ def download_wfcam_archive_images(
     :param components_table: Table to use for the components database.
     :param duplicate_protocol: Protocol to follow if the image already exists locally.
     :param q3c_bool: Is q3c setup?
+    :param undeprecated_compids_file: Path to the file with the list of undeprecated
+    component ids.
     :return imagepaths: List of paths to the downloaded images.
     """
     # ukirt_query = UkidssClass()
@@ -468,6 +473,19 @@ def download_wfcam_archive_images(
             _,
             _,
         ) = get_wfcam_file_identifiers_from_url(url)
+
+        # Check if image is deprecated. If so, don't use it.
+        if undeprecated_compids_file is not None:
+            compid = int(f"{multiframe_id}{extension_id}")
+            undeprecated_compids = pd.read_csv(undeprecated_compids_file)[
+                "COMPID"
+            ].values
+            if compid not in undeprecated_compids:
+                logger.debug(
+                    f"File with multiframeid {multiframe_id} and "
+                    f"extension {extension_id} is deprecated. Skipping."
+                )
+                continue
 
         if use_local_database:
             # Check if the image exists locally.
