@@ -231,27 +231,21 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
         # step 1: calculate the coefficient that determines whether the
         # flux should be negative or positive
-        coeff = df_photometry["isdiffpos"].apply(lambda x: 1.0 if x else -1.0)
+        coeff = 1.0 if source["isdiffpos"] else -1.0
 
         # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
         # 23.9 (results in flux in uJy)
-        df_photometry["flux"] = coeff * 10 ** (-0.4 * (df_photometry["magpsf"] - 23.9))
-
-        # step 4: calculate the flux error
-        df_photometry["fluxerr"] = None  # initialize the column
+        df_photometry["flux"] = coeff * 10 ** (-0.4 * (df_photometry["mag"] - 23.9))
 
         # step 4a: calculate fluxerr for detections using sigmapsf
         df_photometry["fluxerr"] = (
-            df_photometry["sigmapsf"] * df_photometry["flux"] * np.log(10) / 2.5
+            df_photometry["magerr"] * df_photometry["flux"] * np.log(10) / 2.5
         )
 
         # step 5: set the zeropoint and magnitude system
         df_photometry["zp"] = 23.9
-        df_photometry["zpsys"] = "ab"
 
-        df_photometry["obj_id"] = source[CAND_NAME_KEY]
-        df_photometry["stream_ids"] = [int(self.stream_id)]
-        df_photometry["instrument_id"] = self.instrument_id
+        df_photometry.drop(columns=["mag", "magerr"], inplace=True)
 
         return df_photometry
 
@@ -262,10 +256,12 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         )
         df_photometry = self.make_photometry(alert)
 
-        # post photometry
-        photometry = df_photometry.to_dict("list")
+        if len(df_photometry) > 0:
+            photometry = df_photometry.to_dict("list")
+            photometry["obj_id"] = alert[CAND_NAME_KEY]
+            photometry["stream_ids"] = [int(self.stream_id)]
+            photometry["instrument_id"] = self.instrument_id
 
-        if len(photometry) > 0:
             logger.debug(
                 f"Posting photometry of {alert[CAND_NAME_KEY]} {alert['candid']}, "
                 f"stream_id={self.stream_id} to SkyPortal"
