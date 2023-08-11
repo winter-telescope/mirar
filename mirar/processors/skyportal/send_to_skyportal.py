@@ -1,36 +1,22 @@
 """
 Module for sending candidates to Fritz.
 """
-import base64
-import gzip
-import io
 import logging
-import time
 from copy import deepcopy
 from datetime import datetime
 from typing import Mapping, Optional
 
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
-from astropy.io import fits
-from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
-from astropy.visualization import (
-    AsymmetricPercentileInterval,
-    ImageNormalize,
-    LinearStretch,
-    LogStretch,
-)
 
 from mirar.data import SourceBatch, SourceTable
+from mirar.data.utils import decode_img
 from mirar.paths import CAND_NAME_KEY, PACKAGE_NAME, SOURCE_HISTORY_KEY, __version__
 from mirar.processors.base_processor import BaseSourceProcessor
 from mirar.processors.skyportal.client import SkyportalClient
-
-matplotlib.use("agg")
+from mirar.processors.skyportal.thumbnail import make_thumbnail
 
 logger = logging.getLogger(__name__)
 
@@ -73,36 +59,6 @@ class SkyportalSender(BaseSourceProcessor):
         for source_table in batch:
             self.export_candidates_to_skyportal(source_table)
         return batch
-
-    @staticmethod
-    def read_input_df(candidate_df: pd.DataFrame):
-        """Takes a DataFrame, which has multiple candidate
-        and creates list of dictionaries, each dictionary
-        representing a single candidate.
-
-        Args:
-            candidate_df (pandas.core.frame.DataFrame): dataframe of all candidates.
-
-        Returns:
-            (list[dict]): list of dictionaries, each a candidate.
-        """
-        all_candidates = []
-
-        for i in range(0, len(candidate_df)):
-            candidate = {}
-            for key in candidate_df.keys():
-                try:
-                    if isinstance(candidate_df.iloc[i].get(key), (list, str)):
-                        candidate[key] = candidate_df.iloc[i].get(key)
-                    else:
-                        # change to native python type
-                        candidate[key] = candidate_df.iloc[i].get(key).item()
-                except AttributeError:  # for IOBytes objs
-                    candidate[key] = candidate_df.iloc[i].get(key)
-
-            all_candidates.append(candidate)
-
-        return all_candidates
 
     def skyportal_post_source(self, alert: dict, group_ids: Optional[list[int]] = None):
         """Add a new source to SkyPortal
@@ -189,63 +145,31 @@ class SkyportalSender(BaseSourceProcessor):
             )
             logger.error(response.json())
 
-    def make_thumbnail(self, alert, skyportal_type: str, alert_packet_type: str):
+    def make_thumbnail(
+        self, source: pd.Series, skyportal_type: str, alert_packet_type: str
+    ):
         """
         Convert lossless FITS cutouts from ZTF-like alerts into PNGs.
         Make thumbnail for pushing to SkyPortal.
 
-        :param alert: ZTF-like alert packet/dict
+        :param source: ZTF-like alert packet/dict
         :param skyportal_type: <new|ref|sub> thumbnail type expected by SkyPortal
         :param alert_packet_type: <Science|Template|Difference> survey naming
         :return:
         """
-        alert = deepcopy(alert)
-        cutout_data = alert[f"cutout_{alert_packet_type}"]
+        source = deepcopy(source)
+        cutout_data = source[f"cutout_{alert_packet_type}"]
 
-        with gzip.open(io.BytesIO(cutout_data), "rb") as cutout:
-            with fits.open(
-                io.BytesIO(cutout.read()), ignore_missing_simple=True
-            ) as hdu:
-                image_data = hdu[0].data  # pylint: disable=no-member
+        linear_stretch = alert_packet_type.lower() in ["difference"]
 
-        buff = io.BytesIO()
-        plt.close("all")
-        fig = plt.figure()
-        fig.set_size_inches(4, 4, forward=False)
-        ax_1 = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-        ax_1.set_axis_off()
-        fig.add_axes(ax_1)
-
-        # replace nans with median:
-        img = np.array(image_data)
-        # replace dubiously large values
-        xl_mask = np.greater(np.abs(img), 1e20, where=~np.isnan(img))
-        if img[xl_mask].any():
-            img[xl_mask] = np.nan
-        if np.isnan(img).any():
-            median = float(np.nanmean(img.flatten()))
-            img = np.nan_to_num(img, nan=median)
-
-        norm = ImageNormalize(
-            img,
-            stretch=LinearStretch()
-            if alert_packet_type == "Difference"
-            else LogStretch(),
+        skyportal_thumbnal = make_thumbnail(
+            image_data=decode_img(cutout_data),
+            linear_stretch=linear_stretch,
         )
-        img_norm = norm(img)
-        normalizer = AsymmetricPercentileInterval(
-            lower_percentile=1, upper_percentile=100
-        )
-        vmin, vmax = normalizer.get_limits(img_norm)
-        ax_1.imshow(img_norm, cmap="bone", origin="lower", vmin=vmin, vmax=vmax)
-        plt.savefig(buff, dpi=42)
-
-        buff.seek(0)
-        plt.close("all")
 
         thumbnail_dict = {
-            "obj_id": alert[CAND_NAME_KEY],
-            "data": base64.b64encode(buff.read()).decode("utf-8"),
+            "obj_id": source[CAND_NAME_KEY],
+            "data": skyportal_thumbnal,
             "ttype": skyportal_type,
         }
 
@@ -286,80 +210,28 @@ class SkyportalSender(BaseSourceProcessor):
                 )
                 logger.error(response.json())
 
-    def upload_thumbnail(self, alert):
-        """Post new thumbnail to Fritz.
-
-        NOTE: this is the original WINTER method for sending thumbnails,
-        not full sized but higher contrast, similar to alert_make_thumbnail
-
-        Format of thumbnail payload:
-        { "obj_id": "string",  "data": "string",  "ttype": "string"}
-        """
-        fritz_to_cand = {"new": "SciBitIm", "ref": "RefBitIm", "sub": "DiffBitIm"}
-
-        for fritz_key, cand_key in fritz_to_cand.items():
-            cutout = alert[cand_key]
-
-            buffer = io.BytesIO()
-            plt.figure(figsize=(3, 3))
-            mean, median, std = sigma_clipped_stats(cutout)
-            plt.imshow(
-                cutout,
-                origin="lower",
-                cmap="gray",
-                vmin=mean - 1 * std,
-                vmax=median + 3 * std,
-            )
-            plt.xticks([])
-            plt.yticks([])
-
-            plt.savefig(buffer, format="png")
-
-            cutoutb64 = base64.b64encode(buffer.getvalue())
-            cutoutb64_string = cutoutb64.decode("utf8")
-
-            data_payload = {
-                "obj_id": alert[CAND_NAME_KEY],
-                "data": cutoutb64_string,
-                "ttype": fritz_key,
-            }
-
-            response = self.api("POST", "thumbnail", data=data_payload)
-
-            if response.json()["status"] == "success":
-                logger.debug(
-                    f"Posted {alert[CAND_NAME_KEY]} {alert['candid']} "
-                    f"{cand_key} cutout to SkyPortal"
-                )
-            else:
-                logger.error(
-                    f"Failed to post {alert[CAND_NAME_KEY]} {alert['candid']} "
-                    f"{cand_key} cutout to SkyPortal"
-                )
-                logger.error(response.json())
-
-    def make_photometry(self, alert, jd_start: Optional[float] = None):
+    def make_photometry(self, source: pd.Series) -> pd.DataFrame:
         """
         Make a de-duplicated pandas.DataFrame with photometry of alert[CAND_NAME_KEY]
         Modified from Kowalksi (https://github.com/dmitryduev/kowalski)
 
-        :param alert: candidate dictionary
-        :param jd_start: date from which to start photometry from
+        :param source: source row
+        :return: pandas.DataFrame with photometry
         """
 
         photometry_table = [
             {
-                "mjd": alert["mjd"],
-                "mag": alert["magpsf"],
-                "magerr": alert["sigmapsf"],
-                "filter": alert["sncosmofilter"],
-                "ra": alert["ra"],
-                "dec": alert["dec"],
+                "mjd": source["mjd"],
+                "mag": source["magpsf"],
+                "magerr": source["sigmapsf"],
+                "filter": source["sncosmofilter"],
+                "ra": source["ra"],
+                "dec": source["dec"],
             }
         ]
 
-        if len(alert[SOURCE_HISTORY_KEY]) > 0:
-            prv_detections = pd.DataFrame.from_records(alert[SOURCE_HISTORY_KEY])
+        if len(source[SOURCE_HISTORY_KEY]) > 0:
+            prv_detections = pd.DataFrame.from_records(source[SOURCE_HISTORY_KEY])
 
             for _, row in prv_detections.iterrows():
                 try:
@@ -376,15 +248,34 @@ class SkyportalSender(BaseSourceProcessor):
                 except KeyError:
                     logger.warning(
                         f"Missing photometry information for previous "
-                        f"detection of {alert[CAND_NAME_KEY]}"
+                        f"detection of {source[CAND_NAME_KEY]}"
                     )
 
         df_photometry = pd.DataFrame(photometry_table)
 
         df_photometry["magsys"] = "ab"
-        df_photometry["limiting_mag"] = 23.9
 
-        df_photometry["obj_id"] = alert[CAND_NAME_KEY]
+        # step 1: calculate the coefficient that determines whether the
+        # flux should be negative or positive
+        coeff = df_photometry["isdiffpos"].apply(lambda x: 1.0 if x else -1.0)
+
+        # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
+        # 23.9 (results in flux in uJy)
+        df_photometry["flux"] = coeff * 10 ** (-0.4 * (df_photometry["magpsf"] - 23.9))
+
+        # step 4: calculate the flux error
+        df_photometry["fluxerr"] = None  # initialize the column
+
+        # step 4a: calculate fluxerr for detections using sigmapsf
+        df_photometry["fluxerr"] = (
+            df_photometry["sigmapsf"] * df_photometry["flux"] * np.log(10) / 2.5
+        )
+
+        # step 5: set the zeropoint and magnitude system
+        df_photometry["zp"] = 23.9
+        df_photometry["zpsys"] = "ab"
+
+        df_photometry["obj_id"] = source[CAND_NAME_KEY]
         df_photometry["stream_ids"] = [int(self.stream_id)]
         df_photometry["instrument_id"] = self.instrument_id
 
@@ -408,8 +299,8 @@ class SkyportalSender(BaseSourceProcessor):
             response = self.api("PUT", "photometry", photometry)
             if response.json()["status"] == "success":
                 logger.debug(
-                    f"Posted {alert[CAND_NAME_KEY]} photometry stream_id={self.stream_id} "
-                    f"to SkyPortal"
+                    f"Posted {alert[CAND_NAME_KEY]} photometry "
+                    f"stream_id={self.stream_id} to SkyPortal"
                 )
             else:
                 logger.error(
@@ -608,9 +499,6 @@ class SkyportalSender(BaseSourceProcessor):
         :return: None
         """
         candidate_df = source_table.get_data()
-        t_0 = time.time()
-        # all_cands = self.read_input_df(candidate_df)
-        # num_cands = len(all_cands)
 
         metadata = source_table.get_metadata()
 
@@ -618,8 +506,4 @@ class SkyportalSender(BaseSourceProcessor):
             cand = self.generate_super_dict(metadata, src)
             self.skyportal_candidate_exporter(deepcopy(cand))
 
-        t_1 = time.time()
-        logger.debug(
-            f"Took {(t_1 - t_0):.2f} seconds to Skyportal process "
-            f"{len(candidate_df)} candidates."
-        )
+        logger.debug(f"Saved {len(candidate_df)} candidates to Skyportal")
