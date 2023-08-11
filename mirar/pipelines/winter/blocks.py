@@ -13,6 +13,7 @@ from mirar.paths import (
     OBSCLASS_KEY,
     TARGET_KEY,
     ZP_KEY,
+    ZP_STD_KEY,
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
@@ -376,6 +377,8 @@ load_stack = [
     ImageSelector(
         (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_2_0_0.fits_stack.fits")
     ),
+    HeaderAnnotator(input_keys=["ZP_AUTO"], output_key=ZP_KEY),
+    HeaderAnnotator(input_keys=["ZP_AUTO_STD"], output_key=ZP_STD_KEY),
 ]
 
 imsub = [
