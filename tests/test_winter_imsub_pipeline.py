@@ -14,15 +14,15 @@ logger = logging.getLogger(__name__)
 NIGHT_NAME = "20230726"
 
 EXPECTED_HEADER_VALUES = {
-    "SCORMEAN": -0.12623304077946793,
-    "SCORMED": -0.12742712645252582,
-    "SCORSTD": 1.287321968046026,
+    "SCORMEAN": -0.12368322492306351,
+    "SCORMED": -0.12509273600806523,
+    "SCORSTD": 1.2881531096254784,
+}
+EXPECTED_DATAFRAME_VALUES = {
+    "magpsf": [14.93305887365752, 12.52662796885793],
+    "magap": [14.85368864982879, 12.073671653301519],
 }
 
-EXPECTED_DATAFRAME_VALUES = {
-    "magpsf": [12.526769944888741],
-    "magap": [12.081012864096895],
-}
 
 pipeline = get_pipeline(
     instrument="winter", selected_configurations=["test_imsub"], night="20230726"
@@ -92,7 +92,7 @@ class TestWinterImsubPipeline(BaseTestCase):
                     f"Type for value ({type(value)} is neither float not int."
                 )
 
-        self.assertEqual(len(candidates_table), 1)
+        self.assertEqual(len(candidates_table), 2)
         for key, value in EXPECTED_DATAFRAME_VALUES.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):
