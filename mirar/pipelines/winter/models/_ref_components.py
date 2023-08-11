@@ -34,7 +34,7 @@ class RefComponentsTable(WinterBase):
     zp = Column(Float)
     zpstd = Column(Float)
     seeing = Column(Float)
-    
+
 
 class RefComponent(BaseDB):
     """
