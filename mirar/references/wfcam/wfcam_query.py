@@ -361,14 +361,15 @@ class WFAUQuery(BaseWFCAMQuery):
 
                 # Make an entry in the queries table
                 if self.use_db_for_component_queries & (not query_exists):
-                    downloaded_images = [
+                    queried_images = [
                         open_raw_image(imagepath, open_f=open_compressed_wfcam_fits)
                         for imagepath in imagepaths
                     ]
-                    for img in downloaded_images:
+                    for img in queried_images:
                         img[QUERY_RA_KEY] = crd.ra.deg
                         img[QUERY_DEC_KEY] = crd.dec.deg
-                    self.dbexporter.apply(ImageBatch(downloaded_images))
+                        img[QUERY_FILT_KEY] = self.filter_name
+                    self.dbexporter.apply(ImageBatch(queried_images))
 
                 qexists_list = [query_exists] * len(imagepaths)
                 ra_list, dec_list = [crd.ra.deg] * len(imagepaths), [crd.dec.deg] * len(
