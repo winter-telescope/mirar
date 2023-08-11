@@ -214,20 +214,6 @@ def get_wfcam_file_identifiers_from_url(url: str) -> list:
     ]
 
 
-def open_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
-    """
-    Opens a wfcam fits file and returns the data and header
-    Args:
-        :param path: path to the fits file
-    Returns:
-        :return: data, header
-    """
-    with fits.open(path) as hdulist:
-        data = hdulist[0].data  # pylint: disable=no-member
-        header = hdulist[0].header  # pylint: disable=no-member
-    return data, header
-
-
 def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
     """
     Opens a compressed fits file and returns the data and header
