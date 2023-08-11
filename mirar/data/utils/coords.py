@@ -14,7 +14,14 @@ from mirar.data import Image
 logger = logging.getLogger(__name__)
 
 
-def get_corners_ra_dec_from_header(header: fits.Header) -> list[tuple[float, float]]:
+def get_corners_ra_dec_from_header(
+    header: fits.Header,
+) -> [
+    tuple[float, float],
+    tuple[float, float],
+    tuple[float, float],
+    tuple[float, float],
+]:
     """
     Function to get corner RA/Dec of the image from the header
     Args:

@@ -228,7 +228,6 @@ def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
 
 def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
     """
-    # TODO: Should we make this a general mirar utility?
     Save an Image as a compressed fits image path
     : image: Image to save
     : path: path
