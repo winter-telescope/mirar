@@ -69,7 +69,7 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
-from mirar.processors.skyportal import SkyportalSender
+from mirar.processors.skyportal import SkyportalCandidateUploader
 from mirar.processors.sources import CandidateNamer, SourceWriter, ZOGYSourceDetector
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
 from mirar.processors.sources.source_table_modifier import CustomSourceModifier
@@ -264,7 +264,7 @@ package_candidates = [
         base_name="WIRC",
         avro_schema_path=wirc_avro_schema_path,
     ),
-    SkyportalSender(
+    SkyportalCandidateUploader(
         origin="WIRCTEST",
         group_ids=[1431],
         fritz_filter_id=74,
