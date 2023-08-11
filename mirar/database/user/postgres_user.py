@@ -11,6 +11,10 @@ from mirar.database.credentials import (
     DB_PASSWORD_KEY,
     DB_USER,
     DB_USER_KEY,
+    DB_HOSTNAME,
+    DB_NAME,
+    DB_PORT,
+    DB_SCHEMA
 )
 from mirar.database.engine import get_engine
 from mirar.database.errors import DataBaseError
@@ -23,12 +27,16 @@ class PostgresUser:
     Basic Postgres user class for executing functions
     """
 
-    user_env_varaiable = DB_USER_KEY
+    user_env_variable = DB_USER_KEY
     pass_env_variable = DB_PASSWORD_KEY
 
-    def __init__(self, db_user: str = DB_USER, db_password: str = DB_PASSWORD):
+    def __init__(self, db_user: str = DB_USER, db_password: str = DB_PASSWORD, db_hostname: str = DB_HOSTNAME, db_name: str = DB_NAME, db_port: int = DB_PORT, db_schema: str = DB_SCHEMA):
         self.db_user = db_user
         self.db_password = db_password
+        self.db_hostname = db_hostname
+        self.db_name = db_name
+        self.db_port = db_port
+        self.db_schema = db_schema
 
     def validate_credentials(self):
         """
@@ -39,7 +47,7 @@ class PostgresUser:
         if self.db_user is None:
             err = (
                 f"'db_user' is set as None. Please pass a db_user as an argument, "
-                f"or set the environment variable '{self.user_env_varaiable}'."
+                f"or set the environment variable '{self.user_env_variable}'."
             )
             logger.error(err)
             raise DataBaseError(err)
@@ -53,9 +61,11 @@ class PostgresUser:
             raise DataBaseError(err)
 
         engine = get_engine(
-            db_name="postgres",
+            db_name=self.db_name,
             db_user=self.db_user,
             db_password=self.db_password,
+            db_hostname=self.db_hostname,
+            db_port=self.db_port
         )
 
         with engine.connect() as conn:

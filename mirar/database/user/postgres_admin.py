@@ -8,6 +8,10 @@ from mirar.database.credentials import (
     ADMIN_USER,
     PG_ADMIN_PWD_KEY,
     PG_ADMIN_USER_KEY,
+    DB_HOSTNAME,
+    DB_NAME,
+    DB_PORT,
+    DB_SCHEMA
 )
 from mirar.database.engine import get_engine
 from mirar.database.user.postgres_user import PostgresUser
@@ -18,11 +22,11 @@ class PostgresAdmin(PostgresUser):
     An Admin postgres user, with additional functionality for creatying new users
     """
 
-    user_env_varaiable = PG_ADMIN_USER_KEY
+    user_env_variable = PG_ADMIN_USER_KEY
     pass_env_variable = PG_ADMIN_PWD_KEY
 
-    def __init__(self, db_user: str = ADMIN_USER, db_password: str = ADMIN_PASSWORD):
-        super().__init__(db_user=db_user, db_password=db_password)
+    def __init__(self, db_user: str = ADMIN_USER, db_password: str = ADMIN_PASSWORD, db_hostname: str = DB_HOSTNAME, db_name: str = DB_NAME, db_port: int = DB_PORT, db_schema: str = DB_SCHEMA):
+        super().__init__(db_user=db_user, db_password=db_password, db_hostname=db_hostname, db_name=db_name, db_port=db_port, db_schema=db_schema)
 
     def create_new_user(self, new_db_user: str, new_password: str):
         """
@@ -33,9 +37,12 @@ class PostgresAdmin(PostgresUser):
         :return: None
         """
         engine = get_engine(
-            db_name="postgres",
+            db_name=self.db_name,
             db_user=self.db_user,
             db_password=self.db_password,
+            db_hostname=self.db_hostname,
+            db_port=self.db_port,
+            db_schema=self.db_schema
         )
         with engine.connect() as conn:
             command = DDL(
