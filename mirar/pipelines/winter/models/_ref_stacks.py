@@ -56,7 +56,7 @@ class RefStack(BaseDB):
     ra1_1: float = ra_field
     dec1_1: float = dec_field
     filter: str = Field(min_length=1)
-    coadds: int = Field(ge=0)
+    coadds: int = Field(ge=1)
     zp: float = Field(ge=0)
     zpstd: float = Field(ge=0)
 
