@@ -9,9 +9,9 @@ import astropy.table
 
 from mirar.data import Image
 from mirar.data.utils import get_image_center_wcs_coords
+from mirar.errors import ProcessorError
 from mirar.paths import BASE_NAME_KEY, REF_CAT_PATH_KEY
 from mirar.utils.ldac_tools import get_table_from_ldac, save_table_as_ldac
-from mirar.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +63,14 @@ class BaseCatalog(ABCatalog, ABC):
     """
 
     def __init__(
-        self, *args, min_mag: float, max_mag: float, filter_name: str,
-            cache_catalog_locally: bool = False,
-            catalog_cachepath_key: str = REF_CAT_PATH_KEY,
-            **kwargs
+        self,
+        *args,
+        min_mag: float,
+        max_mag: float,
+        filter_name: str,
+        cache_catalog_locally: bool = False,
+        catalog_cachepath_key: str = REF_CAT_PATH_KEY,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.min_mag = min_mag
@@ -110,8 +114,10 @@ class BaseCatalog(ABCatalog, ABC):
 
         if self.cache_catalog_locally:
             if self.catalog_cachepath_key not in image.header:
-                err = f"Catalog caching requested, but " \
-                      f"{self.catalog_cachepath_key} not found in image header"
+                err = (
+                    f"Catalog caching requested, but "
+                    f"{self.catalog_cachepath_key} not found in image header"
+                )
                 raise CatalogCacheError(err)
             catalog_save_path = Path(image[self.catalog_cachepath_key])
             catalog_save_path.unlink(missing_ok=True)
