@@ -17,7 +17,6 @@ from mirar.paths import (
     copy_temp_file,
     get_astrometry_keys,
     get_output_dir,
-    get_temp_path,
     get_untemp_path,
 )
 from mirar.processors.astromatic.sextractor.sextractor import (
@@ -83,7 +82,7 @@ def write_scamp_header_to_image(image: Image):
         if k in image_header.keys():
             del image_header[k]
 
-    for k in scamp_header.keys():
+    for k in scamp_header:
         if k in ["HISTORY", "COMMENT"]:
             continue
 
@@ -144,10 +143,7 @@ class Scamp(BaseImageProcessor):
 
         ref_catalog = self.ref_catalog_generator(batch[0])
 
-        cat_path = copy_temp_file(
-            output_dir=scamp_output_dir,
-            file_path=ref_catalog.write_catalog(batch[0], output_dir=scamp_output_dir),
-        )
+        ref_cat_path = ref_catalog.write_catalog(batch[0], output_dir=scamp_output_dir)
 
         scamp_image_list_path = scamp_output_dir.joinpath(
             Path(batch[0][BASE_NAME_KEY]).name + "_scamp_list.txt",
@@ -155,29 +151,27 @@ class Scamp(BaseImageProcessor):
 
         logger.debug(f"Writing file list to {scamp_image_list_path}")
 
-        temp_files = [scamp_image_list_path]
+        temp_files = [scamp_image_list_path, ref_cat_path]
 
         out_files = []
 
         with open(scamp_image_list_path, "w", encoding="utf8") as img_list_f:
             for image in batch:
-                temp_cat_path = copy_temp_file(
+                temp_sextractor_cat_path = copy_temp_file(
                     output_dir=scamp_output_dir, file_path=image[SEXTRACTOR_HEADER_KEY]
                 )
+                img_list_f.write(f"{temp_sextractor_cat_path}\n")
+                temp_files += [temp_sextractor_cat_path]
 
-                temp_img_path = get_temp_path(scamp_output_dir, image[BASE_NAME_KEY])
-                self.save_fits(image, temp_img_path)
-                temp_mask_path = self.save_mask_image(image, temp_img_path)
-                img_list_f.write(f"{temp_cat_path}\n")
-                temp_files += [temp_cat_path, temp_img_path, temp_mask_path]
-
-                out_path = Path(os.path.splitext(temp_cat_path)[0]).with_suffix(".head")
+                out_path = Path(
+                    os.path.splitext(temp_sextractor_cat_path)[0]
+                ).with_suffix(".head")
                 out_files.append(out_path)
         num_files = len(batch)
         run_scamp(
             scamp_list_path=scamp_image_list_path,
             scamp_config_path=self.scamp_config,
-            ast_ref_cat_path=cat_path,
+            ast_ref_cat_path=ref_cat_path,
             output_dir=scamp_output_dir,
             timeout_seconds=30.0 * num_files,
         )
