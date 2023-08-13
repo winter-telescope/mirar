@@ -73,7 +73,7 @@ def convert_table_to_ldac(tbl: astropy.table.Table) -> astropy.io.fits.HDUList:
     return new_hdulist
 
 
-def save_table_as_ldac(tbl: astropy.table.Table, file_path: str, **kwargs):
+def save_table_as_ldac(tbl: astropy.table.Table, file_path: str | Path, **kwargs):
     """
     Save a table as a fits LDAC file
 
