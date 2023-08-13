@@ -31,6 +31,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_generator,
+    winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_candidate_annotator_filterer,
@@ -38,6 +39,7 @@ from mirar.pipelines.winter.generator import (
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_photometric_catalog_generator,
+    winter_photometric_ref_catalog_namer,
     winter_reference_generator,
     winter_reference_image_resampler_for_zogy,
     winter_reference_psfex,
@@ -282,7 +284,7 @@ astrometry = [
         search_radius_deg=1.0,
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
-        timeout=120,
+        timeout=30,
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
@@ -293,6 +295,7 @@ astrometry = [
         output_sub_dir="scamp",
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
     ),
+    CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
     Scamp(
         scamp_config_path=scamp_config_path,
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
@@ -310,7 +313,7 @@ validate_astrometry = [
         output_sub_dir="astrostats",
     ),
     AstrometryStatsWriter(
-        ref_catalog_generator=winter_photometric_catalog_generator,
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         image_catalog_purifier=winter_astrostat_catalog_purifier,
         write_regions=True,
         cache=True,
@@ -343,6 +346,7 @@ photcal_and_export = [
         output_sub_dir="phot",
         checkimage_type="BACKGROUND_RMS",
     ),
+    CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
     PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
         temp_output_sub_dir="phot",
