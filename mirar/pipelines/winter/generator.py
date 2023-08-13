@@ -251,7 +251,7 @@ def winter_photometric_ref_catalog_namer(batch: ImageBatch) -> ImageBatch:
     Function to name the reference catalog to use for WINTER astrometry
     """
     winter_reference_catalog_dir = get_output_dir(
-        dir_root="astrometric", sub_dir="winter/reference_catalogs"
+        dir_root="photometric", sub_dir="winter/reference_catalogs"
     )
     winter_reference_catalog_dir.mkdir(exist_ok=True, parents=True)
     for ind, image in enumerate(batch):
