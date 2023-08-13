@@ -140,7 +140,7 @@ def winter_photometric_catalog_generator(
             search_radius_arcmin=search_radius_arcmin,
             filter_name=filter_name,
             snr_threshold=20,
-            save_catalog_locally=True,
+            cache_catalog_locally=True,
         )
 
     if filter_name in ["Y"]:
@@ -149,7 +149,7 @@ def winter_photometric_catalog_generator(
             max_mag=20,
             search_radius_arcmin=search_radius_arcmin,
             filter_name=filter_name.lower(),
-            save_catalog_locally=True,
+            cache_catalog_locally=True,
         )
 
     err = f"Filter {filter_name} not recognised"
@@ -215,7 +215,7 @@ def winter_astrometric_ref_catalog_generator(image) -> Gaia2Mass | CatalogFromFi
             logger.debug(f"Loading reference catalog from {ref_cat_path}")
             return CatalogFromFile(catalog_path=ref_cat_path)
     return Gaia2Mass(
-        min_mag=7, max_mag=20, search_radius_arcmin=20, save_catalog_locally=True
+        min_mag=7, max_mag=20, search_radius_arcmin=20, cache_catalog_locally=True
     )
 
 
