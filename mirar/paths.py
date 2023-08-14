@@ -309,8 +309,12 @@ TARGET_KEY = "TARGET"
 DITHER_N_KEY = "DITHNUM"
 MAX_DITHER_KEY = "NUMDITHS"
 FILTER_KEY = "FILTER"
+STACKED_COMPONENT_IMAGES_KEY = "STCKCMPT"
 
 FITS_MASK_KEY = "MASKFITS"
+
+# Key for a reference catalog path
+REF_CAT_PATH_KEY = "RFCTPATH"
 
 sextractor_checkimg_keys = {
     "BACKGROUND": "BKGPT",
@@ -318,7 +322,6 @@ sextractor_checkimg_keys = {
     "MINIBACKGROUND": "MINIBKG",
     "MINIBACK_RMS": "MINIBGRM",
 }
-STACKED_COMPONENT_IMAGES_KEY = "STCKCMPT"
 
 core_fields = [
     OBSCLASS_KEY,
