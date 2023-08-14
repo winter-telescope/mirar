@@ -11,7 +11,7 @@ from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.vizier import PS1
-from mirar.data import Image, ImageBatch
+from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.data.utils.compress import decode_img
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
@@ -221,92 +221,102 @@ def winter_stackid_annotator(batch: ImageBatch) -> ImageBatch:
     return batch
 
 
-def winter_candidate_annotator_filterer(src_df: pd.DataFrame):
+def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatch:
     """
     Function to perform basic filtering to weed out bad WIRC candidates with None
     magnitudes, to be added.
-    :param src_df: Source dataframe
-    :return: filtered dataframe
+    :param source_batch: Source batch
+    :return: updated batch
     """
 
-    none_mask = (
-        src_df["sigmapsf"].isnull()
-        | src_df["magpsf"].isnull()
-        | src_df["magap"].isnull()
-        | src_df["sigmagap"].isnull()
-    )
+    new_batch = SourceBatch([])
 
-    mask = none_mask.values
+    for source in source_batch:
+        src_df = source.get_data()
 
-    # Needing to do this because the dataframe is big-endian
-    mask_inds = np.where(~mask)[0]
-    filtered_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(
-        drop=True
-    )
+        none_mask = (
+            src_df["sigmapsf"].isnull()
+            | src_df["magpsf"].isnull()
+            | src_df["magap"].isnull()
+            | src_df["sigmagap"].isnull()
+        )
 
-    if len(filtered_df) == 0:
-        filtered_df = pd.DataFrame(columns=src_df.columns)
+        mask = none_mask.values
 
-    # Pipeline (db) specific keywords
-    filtered_df.loc[:, "magzpsci"] = filtered_df.loc[:, ZP_KEY]
-    filtered_df.loc[:, "magzpsciunc"] = filtered_df.loc[:, ZP_STD_KEY]
-    filtered_df.loc[:, "diffmaglim"] = filtered_df.loc[:, MAGLIM_KEY]
+        # Needing to do this because the dataframe is big-endian
+        mask_inds = np.where(~mask)[0]
+        filtered_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(
+            drop=True
+        )
 
-    if len(filtered_df) > 0:
-        sci_resamp_image_path = filtered_df.loc[0, SCI_IMG_KEY]
-        filtered_df.loc[:, "field"] = fits.getval(sci_resamp_image_path, "FIELDID")
-        filtered_df.loc[:, "programpi"] = fits.getval(sci_resamp_image_path, "PROGPI")
-        filtered_df.loc[:, "programid"] = fits.getval(sci_resamp_image_path, "PROGID")
-        filtered_df.loc[:, "fid"] = fits.getval(sci_resamp_image_path, "FID")
-        filtered_df.loc[:, "deprecated"] = False
+        if len(filtered_df) == 0:
+            filtered_df = pd.DataFrame(columns=src_df.columns)
 
-    return filtered_df
+        # Pipeline (db) specific keywords
+        source["magzpsci"] = source[ZP_KEY]
+        source["magzpsciunc"] = source[ZP_STD_KEY]
+        source["diffmaglim"] = source[MAGLIM_KEY]
+        source["programpi"] = source["PROGPI"]
+        source["programid"] = source["PROGID"]
+        source["field"] = source["FIELDID"]
+
+        source.set_data(filtered_df)
+        new_batch.append(source)
+
+    return new_batch
 
 
-def winter_candidate_avro_fields_calculator(src_df: pd.DataFrame) -> pd.DataFrame:
+def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> SourceBatch:
     """
     Function to calculate the AVRO fields for WINTER
     """
-    hist_dfs = [
-        pd.DataFrame(src_df["prv_candidates"].loc[x]) for x in range(len(src_df))
-    ]
 
-    jdstarthists, jdendhists = [], []
-    for ind, hist_df in enumerate(hist_dfs):
-        if len(hist_df) == 0:
-            jdstarthists.append(src_df.loc[ind]["jd"])
-            jdendhists.append(src_df.loc[ind]["jd"])
-        else:
-            jdstarthists.append(hist_df["jd"].min())
-            jdendhists.append(hist_df["jd"].max())
-    src_df["jdstarthist"] = jdstarthists
-    src_df["jdendhist"] = jdendhists
-    src_df["ndethist"] = [len(x) for x in hist_dfs]
-    src_df["magdiff"] = src_df["magpsf"] - src_df["magap"]
-    src_df["magfromlim"] = src_df["diffmaglim"] - src_df["magpsf"]
-    src_df["d_to_x"] = src_df["NAXIS1"] - src_df["xpos"]
-    src_df["d_to_y"] = src_df["NAXIS2"] - src_df["ypos"]
-    src_df["mindtoedge"] = src_df[["xpos", "ypos", "d_to_x", "d_to_y"]].min(axis=1)
-    src_df["cutout_science"] = src_df["cutoutScience"]
-    src_df["cutout_template"] = src_df["cutoutTemplate"]
-    src_df["cutout_difference"] = src_df["cutoutDifference"]
-    nnegs, nbads, sumrat = [], [], []
-    for _, src in src_df.iterrows():
-        diff_cutout_data = decode_img(src["cutout_difference"])
-        # Get central 5x5 pixels
-        nx, ny = diff_cutout_data.shape
-        diff_stamp = diff_cutout_data[
-            nx // 2 - 3 : nx // 2 + 2, ny // 2 - 3 : ny // 2 + 2
+    new_batch = SourceBatch([])
+
+    for source in source_table:
+        src_df = source.get_data()
+
+        src_df["magdiff"] = src_df["magpsf"] - src_df["magap"]
+        src_df["magfromlim"] = source["diffmaglim"] - src_df["magpsf"]
+
+        hist_dfs = [
+            pd.DataFrame(src_df["prv_candidates"].loc[x]) for x in range(len(src_df))
         ]
-        nnegs.append(np.sum(diff_stamp < 0))
-        nbads.append(np.sum(np.isnan(diff_stamp)))
-        sumrat.append(np.sum(diff_stamp) / np.sum(np.abs(diff_stamp)))
 
-    src_df["nneg"] = nnegs
-    src_df["nbad"] = nbads
-    src_df["sumrat"] = sumrat
+        jdstarthists, jdendhists = [], []
+        for ind, hist_df in enumerate(hist_dfs):
+            if len(hist_df) == 0:
+                jdstarthists.append(source["JD"])
+                jdendhists.append(source["JD"])
+            else:
+                jdstarthists.append(hist_df["jd"].min())
+                jdendhists.append(hist_df["jd"].max())
+        src_df["jdstarthist"] = min(jdstarthists)
+        src_df["jdendhist"] = max(jdendhists)
+        src_df["ndethist"] = [len(x) for x in hist_dfs]
+        src_df["d_to_x"] = src_df["NAXIS1"] - src_df["xpos"]
+        src_df["d_to_y"] = src_df["NAXIS2"] - src_df["ypos"]
+        src_df["mindtoedge"] = src_df[["xpos", "ypos", "d_to_x", "d_to_y"]].min(axis=1)
+        nnegs, nbads, sumrat = [], [], []
+        for _, src in src_df.iterrows():
+            diff_cutout_data = decode_img(src["cutout_difference"])
+            # Get central 5x5 pixels
+            nx, ny = diff_cutout_data.shape
+            diff_stamp = diff_cutout_data[
+                nx // 2 - 3 : nx // 2 + 2, ny // 2 - 3 : ny // 2 + 2
+            ]
+            nnegs.append(np.sum(diff_stamp < 0))
+            nbads.append(np.sum(np.isnan(diff_stamp)))
+            sumrat.append(np.sum(diff_stamp) / np.sum(np.abs(diff_stamp)))
 
-    return src_df
+        src_df["nneg"] = nnegs
+        src_df["nbad"] = nbads
+        src_df["sumrat"] = sumrat
+
+        source.set_data(src_df)
+        new_batch.append(source)
+
+    return new_batch
 
 
 def winter_reference_stack_annotator(stacked_image: Image, image: Image) -> Image:

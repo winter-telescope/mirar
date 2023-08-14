@@ -279,6 +279,11 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
         :return: ref image HDU, ref weight HDU
         """
         component_image_batch = self.get_component_images(image)
+
+        if not len(component_image_batch) > 0:
+            raise ReferenceGenerationError(
+                "No component images found for reference image"
+            )
         resampler = self.image_resampler_generator()
 
         resampler.set_night(night_sub_dir=self.references_base_subdir_name)

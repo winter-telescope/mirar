@@ -11,4 +11,4 @@ from mirar.processors.sources.source_table_builder import (
     SourceTablefromCoordinates,
     SourceTablefromHeader,
 )
-from mirar.processors.sources.source_table_modifier import CustomSourceModifier
+from mirar.processors.sources.source_table_modifier import CustomSourceTableModifier

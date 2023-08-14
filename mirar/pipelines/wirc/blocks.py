@@ -72,7 +72,7 @@ from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.skyportal import SkyportalCandidateUploader
 from mirar.processors.sources import CandidateNamer, SourceWriter, ZOGYSourceDetector
 from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
-from mirar.processors.sources.source_table_modifier import CustomSourceModifier
+from mirar.processors.sources.source_table_modifier import CustomSourceTableModifier
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
     HeaderAnnotator,
@@ -228,7 +228,7 @@ process_candidates = [
         col_suffix_list=["", "big"],
     ),
     # SourceWriter(output_dir_name="candidates"),
-    CustomSourceModifier(modifier_function=wirc_source_table_filter_annotator),
+    CustomSourceTableModifier(modifier_function=wirc_source_table_filter_annotator),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),

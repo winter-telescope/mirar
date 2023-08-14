@@ -61,6 +61,7 @@ def clean_header(header: fits.Header) -> fits.Header:
     date_t = Time(header["UTCTIME"])
 
     header["MJD-OBS"] = date_t.mjd
+    header["JD"] = date_t.jd
     header["DATE-OBS"] = date_t.isot
 
     header[OBSCLASS_KEY] = header["OBSTYPE"].lower()

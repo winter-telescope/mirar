@@ -4,22 +4,20 @@ Module for modifying a source table.
 import logging
 from typing import Callable
 
-import pandas as pd
-
 from mirar.data import SourceBatch
 from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class CustomSourceModifier(BaseSourceProcessor):
+class CustomSourceTableModifier(BaseSourceProcessor):
     """
     Class to modify a source table based on a function
     """
 
     base_key = "custom_source_modifier"
 
-    def __init__(self, modifier_function: Callable[[pd.DataFrame], pd.DataFrame]):
+    def __init__(self, modifier_function: Callable[[SourceBatch], SourceBatch]):
         super().__init__()
         self.modifier_function = modifier_function
 
@@ -30,13 +28,5 @@ class CustomSourceModifier(BaseSourceProcessor):
         )
 
     def _apply_to_sources(self, batch: SourceBatch) -> SourceBatch:
-        modified_batch = SourceBatch()
-        for source_list in batch:
-            candidate_table = source_list.get_data()
-            modified_table = self.modifier_function(candidate_table)
-            if len(modified_table) == 0:
-                logger.warning("Modified source table is empty")
-            else:
-                source_list.set_data(modified_table)
-                modified_batch.append(source_list)
+        modified_batch = self.modifier_function(batch)
         return modified_batch

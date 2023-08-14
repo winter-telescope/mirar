@@ -94,7 +94,7 @@ from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sky import SkyFlatCalibrator
 from mirar.processors.sources import (
     CandidateNamer,
-    CustomSourceModifier,
+    CustomSourceTableModifier,
     SourceLoader,
     SourceWriter,
     ZOGYSourceDetector,
@@ -118,11 +118,31 @@ build_test = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
+    ImageBatcher("UTCTIME"),
+    CSVLog(
+        export_keys=[
+            "UTCTIME",
+            "PROGNAME",
+            DITHER_N_KEY,
+            MAX_DITHER_KEY,
+            "FILTER",
+            EXPTIME_KEY,
+            OBSCLASS_KEY,
+            "BOARD_ID",
+            "BASENAME",
+            TARGET_KEY,
+            "RADEG",
+            "DECDEG",
+            "T_ROIC",
+            "FIELDID",
+        ]
+    ),
     ImageSelector(
         ("BOARD_ID", "4"),
         (OBSCLASS_KEY, ["dark", "science"]),
         (EXPTIME_KEY, "120.0"),
-        ("FIELDID", ["9767", str(DEFAULT_FIELD)]),
+        ("filter", ["dark", "J"]),
+        ("FIELDID", ["3944", str(DEFAULT_FIELD)]),
     ),
     ImageSaver("testdata", output_dir=get_test_data_dir()),
 ]
@@ -187,7 +207,7 @@ csvlog = [
     ),
 ]
 
-select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
+select_split_subset = [ImageSelector(("SUBCOORD", "0_1"))]
 
 # Optional subset selection
 BOARD_ID = 4
@@ -416,7 +436,7 @@ detect_candidates = [
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    CustomSourceModifier(winter_candidate_annotator_filterer),
+    CustomSourceTableModifier(winter_candidate_annotator_filterer),
     SourceWriter(output_dir_name="candidates"),
 ]
 #
@@ -441,6 +461,7 @@ process_candidates = [
         db_table=Candidate,
         base_name=CANDIDATE_PREFIX,
         name_start=NAME_START,
+        date_field="JD",
     ),
     DatabaseHistorySelector(
         crossmatch_radius_arcsec=2.0,
@@ -450,7 +471,9 @@ process_candidates = [
         db_output_columns=prv_candidate_cols + [CAND_NAME_KEY],
         additional_query_constraints=winter_history_deprecated_constraint,
     ),
-    CustomSourceModifier(modifier_function=winter_candidate_avro_fields_calculator),
+    CustomSourceTableModifier(
+        modifier_function=winter_candidate_avro_fields_calculator
+    ),
     DatabaseSourceInserter(
         db_table=Candidate,
         duplicate_protocol="fail",
