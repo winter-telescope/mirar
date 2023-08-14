@@ -264,11 +264,11 @@ class Candidate(BaseDB):
     elong: float = Field(ge=0)
     nneg: int | None = Field(ge=0, default=None)
     nbad: int | None = Field(ge=0, default=None)
-    sumrat: float | None = Field(ge=0, default=None)
+    sumrat: float | None = Field(default=None)
 
-    dsnrms: float | None = Field(ge=0, default=None)
-    ssnrms: float | None = Field(ge=0, default=None)
-    dsdiff: float | None = Field(ge=0, default=None)
+    dsnrms: float | None = Field(default=None)
+    ssnrms: float | None = Field(default=None)
+    dsdiff: float | None = Field(default=None)
 
     scorr: float = Field(ge=0)
 
