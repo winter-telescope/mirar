@@ -284,7 +284,7 @@ astrometry = [
         search_radius_deg=1.0,
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
-        timeout=30,
+        timeout=120,
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
