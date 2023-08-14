@@ -40,7 +40,7 @@ def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
     Function to filter WFAU images based on zeropoints and seeing.
     The images are filtered to remove images with wildly different zeropoints (more than
     0.4 mag from the median zeropoint)
-    and seeing < 0 or > 2.5 arcsec.
+    and seeing <= 0 or > 3.5 arcsec.
     Args:
         :param image_batch: ImageBatch
 
@@ -61,7 +61,7 @@ def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
     median_mag_zp = np.median(mag_zps)
     seeings = np.array([x["SEEING"] for x in image_batch])
     zpmask = np.abs(mag_zps - median_mag_zp) < 0.4
-    seeingmask = (seeings < 2.5) & (seeings > 0)
+    seeingmask = (seeings < 3.5 / 0.4) & (seeings > 0)
 
     image_array = image_array[zpmask & seeingmask]
 

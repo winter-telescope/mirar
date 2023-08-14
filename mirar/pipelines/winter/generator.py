@@ -3,6 +3,7 @@ Module with generators for WINTER pipeline
 """
 import logging
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,6 +11,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
+from mirar.catalog.base_catalog import CatalogFromFile
 from mirar.catalog.vizier import PS1
 from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.data.utils.compress import decode_img
@@ -17,6 +19,7 @@ from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.paths import (
     MAGLIM_KEY,
+    REF_CAT_PATH_KEY,
     SATURATE_KEY,
     SCI_IMG_KEY,
     ZP_KEY,
@@ -47,6 +50,7 @@ from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 logger = logging.getLogger(__name__)
 
 
+# Swarp generators
 def winter_reference_image_resampler_for_zogy(**kwargs) -> Swarp:
     """
     Generates a resampler for reference images
@@ -107,13 +111,21 @@ def winter_astrostat_catalog_purifier(catalog: Table, image: Image) -> Table:
     )
 
 
-def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
+def winter_photometric_catalog_generator(
+    image: Image,
+) -> Gaia2Mass | PS1 | CatalogFromFile:
     """
     Function to crossmatch WIRC to GAIA/2mass for photometry
 
     :param image: Image
     :return: catalogue
     """
+    if REF_CAT_PATH_KEY in image.header:
+        ref_cat_path = Path(image[REF_CAT_PATH_KEY])
+        if ref_cat_path.exists():
+            logger.debug(f"Loading reference catalog from {ref_cat_path}")
+            return CatalogFromFile(catalog_path=ref_cat_path)
+
     filter_name = image["FILTER"]
     search_radius_arcmin = (
         np.max([image["NAXIS1"], image["NAXIS2"]])
@@ -128,6 +140,7 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
             search_radius_arcmin=search_radius_arcmin,
             filter_name=filter_name,
             snr_threshold=20,
+            cache_catalog_locally=True,
         )
 
     if filter_name in ["Y"]:
@@ -136,6 +149,7 @@ def winter_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
             max_mag=20,
             search_radius_arcmin=search_radius_arcmin,
             filter_name=filter_name.lower(),
+            cache_catalog_locally=True,
         )
 
     err = f"Filter {filter_name} not recognised"
@@ -188,13 +202,64 @@ def ref_sextractor(image: Image):
     )
 
 
-def winter_astrometric_ref_catalog_generator(_) -> Gaia2Mass:
+def winter_astrometric_ref_catalog_generator(image) -> Gaia2Mass | CatalogFromFile:
     """
     Function to generate a reference catalog for WINTER astrometry
 
     :return: catalogue
     """
-    return Gaia2Mass(min_mag=7, max_mag=20, search_radius_arcmin=20)
+    if REF_CAT_PATH_KEY in image.header:
+        ref_cat_path = Path(image[REF_CAT_PATH_KEY])
+        logger.debug(f"Looking for local reference catalog at {ref_cat_path}")
+        if ref_cat_path.exists():
+            logger.debug(f"Loading reference catalog from {ref_cat_path}")
+            return CatalogFromFile(catalog_path=ref_cat_path)
+    return Gaia2Mass(
+        min_mag=7, max_mag=20, search_radius_arcmin=20, cache_catalog_locally=True
+    )
+
+
+def winter_ref_catalog_namer(image: Image, output_dir: Path) -> Path:
+    """
+    Function to name the reference catalog to use for WINTER astrometry
+    """
+    output_dir.mkdir(exist_ok=True, parents=True)
+    ref_cat_path = (
+        output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}"
+        f"_{image['FILTER']}.ldac.cat"
+    )
+    return ref_cat_path
+
+
+def winter_astrometric_ref_catalog_namer(batch: ImageBatch) -> ImageBatch:
+    """
+    Function to name the reference catalog to use for WINTER astrometry
+    """
+    winter_reference_catalog_dir = get_output_dir(
+        dir_root="astrometric", sub_dir="winter/reference_catalogs"
+    )
+    for ind, image in enumerate(batch):
+        image[REF_CAT_PATH_KEY] = winter_ref_catalog_namer(
+            image, winter_reference_catalog_dir
+        ).as_posix()
+        batch[ind] = image
+    return batch
+
+
+def winter_photometric_ref_catalog_namer(batch: ImageBatch) -> ImageBatch:
+    """
+    Function to name the reference catalog to use for WINTER astrometry
+    """
+    winter_reference_catalog_dir = get_output_dir(
+        dir_root="photometric", sub_dir="winter/reference_catalogs"
+    )
+    winter_reference_catalog_dir.mkdir(exist_ok=True, parents=True)
+    for ind, image in enumerate(batch):
+        image[REF_CAT_PATH_KEY] = winter_ref_catalog_namer(
+            image, winter_reference_catalog_dir
+        ).as_posix()
+        batch[ind] = image
+    return batch
 
 
 def winter_astrometry_sextractor_catalog_purifier(catalog: Table, _) -> Table:

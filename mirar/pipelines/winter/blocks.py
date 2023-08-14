@@ -31,6 +31,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_generator,
+    winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_candidate_annotator_filterer,
@@ -38,6 +39,7 @@ from mirar.pipelines.winter.generator import (
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_photometric_catalog_generator,
+    winter_photometric_ref_catalog_namer,
     winter_reference_generator,
     winter_reference_image_resampler_for_zogy,
     winter_reference_psfex,
@@ -312,6 +314,7 @@ astrometry = [
         output_sub_dir="scamp",
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
     ),
+    CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
     Scamp(
         scamp_config_path=scamp_config_path,
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
@@ -329,7 +332,7 @@ validate_astrometry = [
         output_sub_dir="astrostats",
     ),
     AstrometryStatsWriter(
-        ref_catalog_generator=winter_photometric_catalog_generator,
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         image_catalog_purifier=winter_astrostat_catalog_purifier,
         write_regions=True,
         cache=True,
@@ -362,6 +365,7 @@ photcal_and_export = [
         output_sub_dir="phot",
         checkimage_type="BACKGROUND_RMS",
     ),
+    CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
     PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
         temp_output_sub_dir="phot",
@@ -390,10 +394,10 @@ load_test_stack = [
 ]
 
 load_stack = [
-    ImageLoader(input_sub_dir="final"),
+    ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     # ImageSelector(
-    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1.fits_stack.fits")
+    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1_stack.fits")
     # ),
 ]
 
