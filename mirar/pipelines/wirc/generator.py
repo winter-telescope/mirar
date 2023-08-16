@@ -10,7 +10,7 @@ import pandas as pd
 from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
-from mirar.data import Image
+from mirar.data import Image, SourceBatch
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     sextractor_reference_config,
@@ -22,26 +22,35 @@ from mirar.references.wirc import WIRCRef
 logger = logging.getLogger(__name__)
 
 
-def wirc_source_table_filter_annotator(src_df: pd.DataFrame) -> pd.DataFrame:
+def wirc_source_table_filter_annotator(source_table: SourceBatch) -> SourceBatch:
     """
     Function to remove bad candidates with None in sigmapsf, magpsf, magap, sigmagap,
     and update the source table with the keys required for the WIRC database
-    :param src_df: Source dataframe
-    :return: annotated dataframe
+    :param source_table: source table
+    :return: updated source table
     """
-    none_mask = (
-        src_df.loc[:, "sigmapsf"].isnull()
-        | src_df.loc[:, "magpsf"].isnull()
-        | src_df.loc[:, "magap"].isnull()
-        | src_df.loc[:, "sigmagap"].isnull()
-    )
 
-    mask = none_mask.values
+    new_batch = SourceBatch([])
 
-    # Needing to do this because the dataframe is big-endian
-    mask_inds = np.where(~mask)[0]
-    src_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(drop=True)
-    return src_df
+    for source in source_table:
+        src_df = source.get_data()
+        none_mask = (
+            src_df.loc[:, "sigmapsf"].isnull()
+            | src_df.loc[:, "magpsf"].isnull()
+            | src_df.loc[:, "magap"].isnull()
+            | src_df.loc[:, "sigmagap"].isnull()
+        )
+
+        mask = none_mask.values
+
+        # Needing to do this because the dataframe is big-endian
+        mask_inds = np.where(~mask)[0]
+        src_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(drop=True)
+
+        source.set_data(src_df)
+        new_batch.append(source)
+
+    return new_batch
 
 
 def wirc_photometric_img_catalog_purifier(catalog, image):
