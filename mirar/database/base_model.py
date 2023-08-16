@@ -223,11 +223,19 @@ class BaseDB(PydanticBase):
                 db_constraints=constraints,
             )
         else:
+            print(available_unique_keys)
             for key in available_unique_keys:
                 constraints = DBQueryConstraints(
                     columns=[key.name],
                     accepted_values=[full_dict[key.name]],
                 )
+                res = select_from_table(
+                    sql_table=self.sql_model,
+                    db_constraints=constraints,
+                    output_columns=[primary_key],
+                )
+                print(res, len(res))
+
                 _update_database_entry(
                     update_dict=update_dict,
                     sql_table=self.sql_model,
