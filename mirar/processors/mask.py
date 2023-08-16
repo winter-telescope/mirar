@@ -11,12 +11,19 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch
+from mirar.errors.exceptions import ProcessorError
 from mirar.paths import BASE_NAME_KEY, FITS_MASK_KEY, get_output_dir
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
 
 MASK_VALUE = np.nan
+
+
+class TooManyMaskedPixelsError(ProcessorError):
+    """
+    Error for when too many pixels in an image are masked
+    """
 
 
 class BaseMask(BaseImageProcessor):
