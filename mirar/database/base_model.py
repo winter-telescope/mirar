@@ -168,9 +168,23 @@ class BaseDB(PydanticBase):
                     res = select_from_table(
                         sql_table=self.sql_model,
                         db_constraints=constr,
-                        output_columns=returning_key_names,
+                        output_columns=[key.name],
                     )
                     print(key, res)
+
+                print("Joint")
+                constr = DBQueryConstraints(
+                    columns=[x.name for x in present_unique_keys],
+                    accepted_values=[
+                        self.model_dump()[x.name] for x in present_unique_keys
+                    ],
+                )
+                res = select_from_table(
+                    sql_table=self.sql_model,
+                    db_constraints=constr,
+                    output_columns=None,
+                )
+                print("Joint", res)
 
                 raise ValueError(
                     f"Multiple unique keys found ({present_unique_keys}, cannot return key"
