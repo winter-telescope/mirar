@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from mirar.paths import PACKAGE_NAME, base_code_dir
+from mirar.utils.execute_cmd import run_local
 
 logger = logging.getLogger(__name__)
 
@@ -57,24 +58,30 @@ def update_test_data():
     :return: None
     """
     if not os.path.isdir(test_data_dir):
-        cmd = f"git clone {TEST_DATA_URL} {test_data_dir} --depth=1"
+        cmd = (
+            f"git clone -b {TEST_DATA_TAG} --single-branch "
+            f"{TEST_DATA_URL} {test_data_dir}"
+        )
 
         logger.info(f"No test data found. Downloading. Executing: {cmd}")
 
-        os.system(cmd)
+        run_local(cmd)
 
     else:
-        cmds = [f"git -C {test_data_dir} checkout main", f"git -C {test_data_dir} pull"]
-
+        cmds = [
+            (
+                f"git -C {test_data_dir} fetch origin "
+                f"refs/tags/{TEST_DATA_TAG}:refs/tags/{TEST_DATA_TAG}"
+            ),
+            (
+                f"git -C {test_data_dir} checkout "
+                f"tags/{TEST_DATA_TAG} -b {TEST_DATA_TAG}",
+            ),
+        ]
         for cmd in cmds:
             logger.info(f"Trying to update test data. Executing: {cmd}")
-            os.system(cmd)
+            run_local(cmd)
 
-    fix_version_cmd = f"git -C {test_data_dir} checkout -d tags/{TEST_DATA_TAG}"
-
-    logger.info(f"Checkout out correct test data commit. Executing: {fix_version_cmd}")
-
-    os.system(fix_version_cmd)
     os.environ[COMPLETED_CHECK_BOOL] = "True"
 
 
