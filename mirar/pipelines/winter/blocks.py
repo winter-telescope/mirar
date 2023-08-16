@@ -65,7 +65,7 @@ from mirar.pipelines.winter.models import (
     Raw,
     Stack,
 )
-from mirar.pipelines.winter.rejector import (
+from mirar.pipelines.winter.validator import (
     masked_images_rejector,
     poor_astrometric_quality_rejector,
 )
