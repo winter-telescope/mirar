@@ -179,6 +179,8 @@ class BaseDB(PydanticBase):
                         self.model_dump()[x.name] for x in present_unique_keys
                     ],
                 )
+
+                print(constr.parse_constraints())
                 res = select_from_table(
                     sql_table=self.sql_model,
                     db_constraints=constr,
