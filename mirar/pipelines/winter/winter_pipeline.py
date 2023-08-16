@@ -83,7 +83,7 @@ class WINTERPipeline(Pipeline):
 
     @staticmethod
     def _load_raw_image(path: str) -> Image | list[Image]:
-        return open_mef_image(path, load_raw_winter_mef)
+        return open_mef_image(path, load_raw_winter_mef, extension_key="BOARD_ID")
 
     @staticmethod
     def download_raw_images_for_night(night: str):
