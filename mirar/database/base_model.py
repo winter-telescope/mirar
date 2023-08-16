@@ -195,24 +195,44 @@ class BaseDB(PydanticBase):
         :return: None
         """
 
+        full_dict = self.model_dump()
+        update_dict = {key: full_dict[key] for key in update_key_names}
+
         available_unique_keys = self.get_available_unique_keys()
 
         assert len(available_unique_keys) > 0
 
-        constraints = DBQueryConstraints(
-            columns=[x.name for x in available_unique_keys],
-            accepted_values=[self.model_dump()[x.name] for x in available_unique_keys],
-        )
+        primary_key = self.get_primary_key()
+        if primary_key in available_unique_keys:
+            constraints = DBQueryConstraints(
+                columns=[primary_key],
+                accepted_values=[full_dict[primary_key]],
+            )
 
-        full_dict = self.model_dump()
+            res = select_from_table(
+                sql_table=self.sql_model,
+                db_constraints=constraints,
+                output_columns=[primary_key],
+            )
+            print(res)
+            assert len(res) == 1
 
-        update_dict = {key: full_dict[key] for key in update_key_names}
-
-        _update_database_entry(
-            update_dict=update_dict,
-            sql_table=self.sql_model,
-            db_constraints=constraints,
-        )
+            _update_database_entry(
+                update_dict=update_dict,
+                sql_table=self.sql_model,
+                db_constraints=constraints,
+            )
+        else:
+            for key in available_unique_keys:
+                constraints = DBQueryConstraints(
+                    columns=[key.name],
+                    accepted_values=[full_dict[key.name]],
+                )
+                _update_database_entry(
+                    update_dict=update_dict,
+                    sql_table=self.sql_model,
+                    db_constraints=constraints,
+                )
 
     def update_entry(self, update_keys=None):
         """
