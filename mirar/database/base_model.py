@@ -135,7 +135,6 @@ class BaseDB(PydanticBase):
             assert len(present_unique_keys) > 0
 
             if len(present_unique_keys) == 1:
-
                 constraints = DBQueryConstraints(
                     columns=[x.name for x in present_unique_keys],
                     accepted_values=[
@@ -160,7 +159,22 @@ class BaseDB(PydanticBase):
                 )
             else:
                 print(present_unique_keys)
-                raise ValueError(f"Multiple unique keys found ({present_unique_keys}, cannot return key")
+
+                for key in present_unique_keys:
+                    constr = DBQueryConstraints(
+                        columns=[key.name],
+                        accepted_values=[self.model_dump()[key.name]],
+                    )
+                    res = select_from_table(
+                        sql_table=self.sql_model,
+                        db_constraints=constr,
+                        output_columns=returning_key_names,
+                    )
+                    print(key, res)
+
+                raise ValueError(
+                    f"Multiple unique keys found ({present_unique_keys}, cannot return key"
+                )
 
         return res
 
