@@ -51,8 +51,6 @@ class DatabaseImageInserter(BaseDatabaseInserter, BaseImageProcessor):
             new = self.db_table(**val_dict)
             res = new.insert_entry()
 
-            print("insert", res)
-
             assert len(res) == 1
 
             for key in res.columns:
