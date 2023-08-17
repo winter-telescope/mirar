@@ -89,9 +89,11 @@ jobs:
 
       # Flag if this is not the main repository, so can skip tests if missing tokens.
       - name: Flag that tests can be skipped.
-        if: ${{ github.repository != "winter-telescope/mirar" }}
+        shell: bash -el {0}
+        if: ${{ github.repository != 'winter-telescope/mirar' }}
         env:
           SKIP_TEST_IF_NO_TOKEN: "True"
+        run: echo "Skipping instead of failing tests that require tokens as github.repository is not 'winter-telescope/mirar'"
 
       # Runs a set of commands using the runners shell
       - name: Test the code
