@@ -145,12 +145,16 @@ class BaseDB(PydanticBase):
                     output_columns=returning_key_names,
                 )
 
-                if res is None:
-                    res = new_res
-                elif not new_res.equals(res):
-                    raise ValueError(
-                        f"Multiple matches found: {new_res} and {res}"
-                    ) from exc
+                if len(new_res) > 1:
+                    if res is None:
+                        res = new_res
+                    elif not new_res.equals(res):
+                        raise ValueError(
+                            f"Multiple matches found: {new_res} and {res}"
+                        ) from exc
+
+            if res is None:
+                raise ValueError("No results found") from exc
 
         return res
 
