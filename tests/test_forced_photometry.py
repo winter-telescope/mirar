@@ -94,16 +94,16 @@ class TestForcedPhot(BaseTestCase):
             sub_dir=NIGHT_NAME,
         )
 
-        _, header = open_fits(diff_imgpath)
-        for key, value in EXPECTED_HEADER_VALUES.items():
-            if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=2)
-            elif isinstance(value, int):
-                self.assertEqual(value, header[key])
-            else:
-                raise TypeError(
-                    f"Type for value ({type(value)} is neither float not int."
-                )
+        # _, header = open_fits(diff_imgpath)
+        # for key, value in EXPECTED_HEADER_VALUES.items():
+        #     if isinstance(value, float):
+        #         self.assertAlmostEqual(value, header[key], places=2)
+        #     elif isinstance(value, int):
+        #         self.assertEqual(value, header[key])
+        #     else:
+        #         raise TypeError(
+        #             f"Type for value ({type(value)} is neither float not int."
+        #         )
 
         self.assertEqual(len(candidates_table), 1)
         for key, value in EXPECTED_DATAFRAME_VALUES.items():

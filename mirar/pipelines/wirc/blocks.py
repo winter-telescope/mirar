@@ -216,6 +216,22 @@ detect_candidates = [
         **sextractor_candidate_config,
     ),
 ]
+#
+image_photometry = [
+    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
+    PSFex(config_path=psfex_path, output_sub_dir="photometry", norm_fits=True),
+    ImageSaver(output_dir_name="photometry"),
+    # AperturePhotometry(
+    #     aper_diameters=[16],
+    #     bkg_in_diameters=[25],
+    #     bkg_out_diameters=[40],
+    #     col_suffix_list=[""],
+    #     phot_cutout_size=100,
+    #     target_ra_key="TARGRA",
+    #     target_dec_key="TARGDEC",
+    # ),
+    # PSFPhotometry(),
+]
 
 process_candidates = [
     RegionsWriter(output_dir_name="candidates"),
