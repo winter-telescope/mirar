@@ -281,7 +281,7 @@ dark_calibrate = [
 flat_calibrate = [
     ImageBatcher(["BOARD_ID", "FILTER", EXPTIME_KEY, "SUBCOORD"]),
     SkyFlatCalibrator(cache_sub_dir="skycals"),
-    ImageSaver(output_dir_name="skyflatcal"),
+    # ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
