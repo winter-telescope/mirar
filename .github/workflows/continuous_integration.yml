@@ -2,7 +2,7 @@
 
 name: CI
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
@@ -22,7 +22,7 @@ jobs:
   ci:
     # The type of runner that the job will run on
     runs-on: ubuntu-22.04
-    
+
     # Specify the python versions to test
     strategy:
       matrix:
@@ -88,6 +88,12 @@ jobs:
         run: |
           poetry run make -C docs/ doctest
 
+      # Flag if this is not the main repository, so can skip tests if missing tokens.
+      - name: Flag that tests can be skipped.
+        if: ${{ github.repository != "winter-telescope/mirar" }}
+        env:
+          SKIP_TEST_IF_NO_TOKEN: "True"
+
       # Runs a set of commands using the runners shell
       - name: Test the code
         shell: bash -el {0}
@@ -119,8 +125,9 @@ jobs:
       # Build a tarball and push to Pypi if tagged with new version
       - name: Build and publish
         shell: bash -el {0}
-        if: ${{ startsWith(github.ref, 'refs/tags/') && success() && matrix.python-version == 3.11}}
-        run: |
-          poetry publish -n --build
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
+        # Only run if secrets.PYPI_API_TOKEN exists.
+        if: ${{ startsWith(github.ref, 'refs/tags/') && success() && matrix.python-version == 3.11 && env.POETRY_PYPI_TOKEN_PYPI != ''}}
+        run: |
+          poetry publish -n --build
