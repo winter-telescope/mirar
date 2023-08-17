@@ -147,7 +147,7 @@ class BaseDB(PydanticBase):
 
                 if res is None:
                     res = new_res
-                elif new_res != res:
+                elif not new_res.equals(res):
                     raise ValueError(
                         f"Multiple matches found: {new_res} and {res}"
                     ) from exc
