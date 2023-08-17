@@ -47,7 +47,7 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
     above 1.0 arcsec
     3. Rejects images with median FWHM above 6.0 arcsec
     """
-    scamp_astrrms_threshold_arcsec = 0.3
+    scamp_astrrms_threshold_arcsec = 0.5
     astrometric_unc_threshold_arcsec = 1.0
     fwhm_threshold_arcsec = 6.0
     for image in batch:
