@@ -145,7 +145,7 @@ class BaseDB(PydanticBase):
                     output_columns=returning_key_names,
                 )
 
-                if len(new_res) > 1:
+                if len(new_res) > 0:
                     if res is None:
                         res = new_res
                     elif not new_res.equals(res):
