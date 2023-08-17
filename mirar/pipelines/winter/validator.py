@@ -4,9 +4,15 @@ Module to reject images based on quality criteria
 import numpy as np
 
 from mirar.data import ImageBatch
+from mirar.errors.exceptions import ProcessorError
 from mirar.processors.astrometry.validate import PoorAstrometryError, PoorFWHMError
-from mirar.processors.mask import TooManyMaskedPixelsError
 from mirar.processors.split import SUB_ID_KEY
+
+
+class TooManyMaskedPixelsError(ProcessorError):
+    """
+    Error for when too many pixels in an image are masked
+    """
 
 
 def masked_images_rejector(batch: ImageBatch) -> ImageBatch:
