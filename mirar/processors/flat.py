@@ -142,9 +142,12 @@ class FlatCalibrator(ProcessorWithCache):
 
         master_flat = np.nanmedian(flats, axis=2)
 
+        print(f"Flat exptimes are {flat_exptimes}")
         master_flat_image = Image(master_flat, header=images[0].get_header())
         master_flat_image[COADD_KEY] = n_frames
-        master_flat_image["INDIVEXP"] = ",".join(np.unique(flat_exptimes))
+        master_flat_image["INDIVEXP"] = ",".join(
+            [str(x) for x in np.unique(flat_exptimes)]
+        )
         return master_flat_image
 
 
