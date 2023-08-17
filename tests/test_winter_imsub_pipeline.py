@@ -2,6 +2,8 @@
 Tests for WINTER image subtraction
 """
 import logging
+import os
+import unittest
 
 from mirar.data import Dataset, ImageBatch
 from mirar.io import open_raw_image
@@ -44,6 +46,17 @@ class TestWinterImsubPipeline(BaseTestCase):
         """
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
+        self.check_tokens()
+
+    def check_tokens(self):
+        """Checks if tests should be skipped if required tokens don't exist.
+        :raises unittest.SkipTest: If missing token skip.
+        """
+        if os.environ.get("SKIP_TEST_IF_NO_TOKEN") == "True":
+            if os.environ.get("FRITZ_TOKEN") is None:
+                raise unittest.SkipTest("No Fritz token, skipping test")
+            if os.environ.get("KOWALSKI_TOKEN") is None:
+                raise unittest.SkipTest("No Kowalski token, skipping test")
 
     def test_pipeline(self):
         """
