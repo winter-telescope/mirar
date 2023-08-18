@@ -53,9 +53,9 @@ class TestWinterImsubPipeline(BaseTestCase):
         :raises unittest.SkipTest: If missing token skip.
         """
         if os.environ.get("SKIP_TEST_IF_NO_TOKEN") == "True":
-            if os.environ.get("FRITZ_TOKEN") is None:
+            if os.environ.get("FRITZ_TOKEN", default="") == "":
                 raise unittest.SkipTest("No Fritz token, skipping test")
-            if os.environ.get("KOWALSKI_TOKEN") is None:
+            if os.environ.get("KOWALSKI_TOKEN", default="") == "":
                 raise unittest.SkipTest("No Kowalski token, skipping test")
 
     def test_pipeline(self):

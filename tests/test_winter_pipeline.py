@@ -2,8 +2,6 @@
 Tests for WINTER reduction
 """
 import logging
-import os
-import unittest
 
 from mirar.data import Dataset, ImageBatch
 from mirar.pipelines import get_pipeline
