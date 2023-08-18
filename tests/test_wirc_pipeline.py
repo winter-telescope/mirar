@@ -3,7 +3,6 @@ Module to test WIRC pipeline
 """
 import logging
 import os
-import unittest
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
