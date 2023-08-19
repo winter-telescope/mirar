@@ -131,7 +131,8 @@ class FlatCalibrator(ProcessorWithCache):
                     f"Masking {np.sum(mask)} pixels in flat {img[BASE_NAME_KEY]}"
                 )
                 data[mask] = np.nan
-                flat_exptimes.append(img["EXPTIME"])
+
+            flat_exptimes.append(img["EXPTIME"])
 
             median = np.nanmedian(
                 data[self.x_min : self.x_max, self.y_min : self.y_max]
@@ -144,6 +145,7 @@ class FlatCalibrator(ProcessorWithCache):
 
         master_flat_image = Image(master_flat, header=images[0].get_header())
         master_flat_image[COADD_KEY] = n_frames
+
         master_flat_image["INDIVEXP"] = ",".join(
             [str(x) for x in np.unique(flat_exptimes)]
         )
