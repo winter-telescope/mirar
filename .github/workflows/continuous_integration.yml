@@ -72,6 +72,7 @@ jobs:
       # Set up database
       - name: postgres
         run: |
+          sudo apt-get update
           sudo apt-get install postgresql
           sudo apt-get install postgresql-common
           sudo apt-get install postgresql-server-dev-14
