@@ -10,7 +10,6 @@ from astropy.table import Table
 
 from mirar.data import Image, ImageBatch
 from mirar.data.utils import write_regions_file
-from mirar.errors import ProcessorError
 from mirar.io import open_fits
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -226,6 +225,20 @@ class AstrometryNet(BaseImageProcessor):
                 y_image_key=self.y_image_key,
                 sort_key_name=self.sort_key_name,
             )
+
+            anet_output_filees_basepath = new_img_path.as_posix().replace(".fits", "")
+            for suffix in [
+                ".axy",
+                "-objs.png",
+                "-ngc.png",
+                "-indx.png",
+                "-indx.xyls",
+                ".corr",
+                ".rdls",
+                ".match",
+                ".solved",
+            ]:
+                temp_files.append(Path(f"{anet_output_filees_basepath}{suffix}"))
 
             if self.write_regions:
                 coords_file = anet_out_dir.joinpath(
