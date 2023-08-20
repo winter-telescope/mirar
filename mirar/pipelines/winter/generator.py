@@ -17,6 +17,7 @@ from mirar.data import Image, ImageBatch
 from mirar.data.utils.compress import decode_img
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
+from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
     MAGLIM_KEY,
     REF_CAT_PATH_KEY,
@@ -48,6 +49,10 @@ from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 
 logger = logging.getLogger(__name__)
+
+
+class ReductionQualityError(ProcessorError):
+    """Error raised when the quality of the reduction is too poor"""
 
 
 # Swarp generators
