@@ -5,7 +5,7 @@ import logging
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
-from mirar.pipelines.sedmv2.blocks import process_stellar, image_photometry
+from mirar.pipelines.sedmv2.blocks import image_photometry, process_stellar
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
 from mirar.processors.utils import MEFLoader  # MultiExtParser
