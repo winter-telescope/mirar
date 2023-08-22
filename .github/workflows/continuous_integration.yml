@@ -32,9 +32,6 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
 
-      - name: Check if environment variable is set
-        run: echo "SKIP_TEST_IF_NO_TOKEN = $SKIP_TEST_IF_NO_TOKEN"
-
       - uses: actions/checkout@v3
 
       - uses: conda-incubator/setup-miniconda@v2
