@@ -1,7 +1,6 @@
 """Test suite for ..module::mirar.monitor module"""
 import logging
 import os
-import unittest
 
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.monitor.base_monitor import Monitor
@@ -29,12 +28,21 @@ class TestMonitor(BaseTestCase):
         self.check_tokens()
 
     def check_tokens(self):
-        """Checks if tests should be skipped if required email doesn't exist.
-        :raises unittest.SkipTest: If missing email skip.
+        """If required tokens do not exist raise an error.
+        :raises RuntimeError: If missing token.
         """
-        if os.environ.get("SKIP_TEST_IF_NO_TOKEN") == "True":
-            if os.environ.get("WATCHDOG_EMAIL", default="") == "":
-                raise unittest.SkipTest("No Watchdog email, skipping test")
+        if os.environ.get("WATCHDOG_EMAIL", default="") == "":
+            raise RuntimeError(
+                "No email sender. Set environment variable WATCHDOG_EMAIL to test."
+            )
+        if os.environ.get("WATCHDOG_EMAIL_PASSWORD", default="") == "":
+            raise RuntimeError(
+                "No email password. Set environment variable WATCHDOG_EMAIL_PASSWORD to test."
+            )
+        if os.environ.get("WATCHDOG_EMAIL_RECIPIENTS", default="") == "":
+            raise RuntimeError(
+                "No email recipients. Set environment variable WATCHDOG_EMAIL_RECIPIENTS to test."
+            )
 
     def test_monitor(self):
         """Function to test ..class::Monitor realtime processing"""

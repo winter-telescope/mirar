@@ -28,10 +28,6 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11"]
 
-    # Flag if this is not the main repository, so can skip tests if missing tokens.
-    env:
-      SKIP_TEST_IF_NO_TOKEN: ${{ github.repository != 'winter-telescope/mirar' && 'True' || 'False' }}
-
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it

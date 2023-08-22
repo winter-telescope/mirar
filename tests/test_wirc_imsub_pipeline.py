@@ -3,7 +3,6 @@ Tests for image subtraction with WIRC
 """
 import logging
 import os
-import unittest
 
 from astropy.io import fits
 
@@ -116,14 +115,17 @@ class TestWircImsubPipeline(BaseTestCase):
         self.check_tokens()
 
     def check_tokens(self):
-        """Checks if tests should be skipped if required tokens don't exist.
-        :raises unittest.SkipTest: If missing token skip.
+        """If required tokens do not exist raise an error.
+        :raises RuntimeError: If missing token.
         """
-        if os.environ.get("SKIP_TEST_IF_NO_TOKEN") == "True":
-            if os.environ.get("FRITZ_TOKEN", default="") == "":
-                raise unittest.SkipTest("No Fritz token, skipping test")
-            if os.environ.get("KOWALSKI_TOKEN", default="") == "":
-                raise unittest.SkipTest("No Kowalski token, skipping test")
+        if os.environ.get("FRITZ_TOKEN", default="") == "":
+            raise RuntimeError(
+                "No Fritz token. Set environment variable FRITZ_TOKEN to test."
+            )
+        if os.environ.get("KOWALSKI_TOKEN", default="") == "":
+            raise RuntimeError(
+                "No Kowalski token. Set environment variable KOWALSKI_TOKEN to test."
+            )
 
     def test_pipeline(self):
         """
