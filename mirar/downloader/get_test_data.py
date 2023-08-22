@@ -17,7 +17,7 @@ test_data_dir = base_code_dir.parent.joinpath(
 )
 
 
-TEST_DATA_TAG = "v0.1.14"
+TEST_DATA_TAG = "v0.1.14b"
 
 COMPLETED_CHECK_BOOL = f"{PACKAGE_NAME}_testdata_check"
 NEED_TEST_DATA = "TESTDATA_CHECK"
