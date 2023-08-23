@@ -47,3 +47,5 @@ PALOMAR_LOC = coords.EarthLocation(
     height=1696.0,
 )
 palomar_observer = astroplan.Observer(location=PALOMAR_LOC)
+
+WINTER_CONDENSATION_KEY = "CONDENS"
