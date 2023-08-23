@@ -31,12 +31,12 @@ def clean_science_header(
     """
     function to modify the primary header of an SEDMv2 science file
     :param header: original primary header of science file
-    :param split_headers: the remaining headers,one for each extension of MEF
+    :param split_headers: the remaining headers, one for each extension of MEF
     :param is_mode0: True if observed in SEDMv2 observation mode 0
-    :return: modified header
+    :return: modified primary header
     """
     if is_mode0:
-        # bulk of information is not stored in primary header for mode0
+        # main information is not stored in primary header for mode0
         informative_hdr = split_headers[0]
     else:
         informative_hdr = header
@@ -50,12 +50,12 @@ def clean_science_header(
     header["TELRA"] = informative_hdr["TELRAD"]
     header["TELDEC"] = informative_hdr["TELDECD"]
 
+    # gain
     if GAIN_KEY in informative_hdr:
         if header[GAIN_KEY] == 0.0:
             header[GAIN_KEY] = 1.0
     else:
         header[GAIN_KEY] = 1.0
-
     for ext in split_headers:
         if GAIN_KEY in ext:
             if ext[GAIN_KEY] == 0.0:
