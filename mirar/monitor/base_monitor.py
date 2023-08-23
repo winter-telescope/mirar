@@ -222,25 +222,35 @@ class Monitor:
         :param new_calibration_image: new image
         :return: None
         """
-        self.new_cals.append(new_calibration_image)
         cal_requirements = copy.deepcopy(self.cal_requirements)
-        cal_requirements = [
-            x
-            for x in update_requirements(cal_requirements, self.new_cals)
-            if not x.success
-        ]
 
-        cal_requirements = update_requirements(cal_requirements, self.archival_cals)
-        new_archival_cals = ImageBatch()
+        # Check if new calibration image is required
 
-        for archival_cal in self.archival_cals:
-            for req in cal_requirements:
-                for batch in req.data.values():
-                    if archival_cal in batch:
-                        if archival_cal not in new_archival_cals:
-                            new_archival_cals.append(archival_cal)
+        for req in cal_requirements:
+            req.check_images(ImageBatch([new_calibration_image]))
+            for batch in req.data.values():
+                if new_calibration_image in batch:
+                    self.new_cals.append(new_calibration_image)
 
-        self.archival_cals = new_archival_cals
+        # If cal is required, update the archival cals
+
+        if new_calibration_image in self.new_cals:
+            cal_requirements = [
+                x
+                for x in update_requirements(cal_requirements, self.archival_cals)
+                if not x.success
+            ]
+
+            new_archival_cals = ImageBatch()
+
+            for archival_cal in self.archival_cals:
+                for req in cal_requirements:
+                    for batch in req.data.values():
+                        if archival_cal in batch:
+                            if archival_cal not in new_archival_cals:
+                                new_archival_cals.append(archival_cal)
+
+            self.archival_cals = new_archival_cals
 
     def summarise_errors(
         self,
