@@ -65,6 +65,10 @@ from mirar.pipelines.winter.models import (
     Raw,
     Stack,
 )
+from mirar.pipelines.winter.validator import (
+    masked_images_rejector,
+    poor_astrometric_quality_rejector,
+)
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
@@ -260,6 +264,26 @@ save_raw = [
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked"),
+    ImageBatcher("UTCTIME"),
+    CSVLog(
+        export_keys=[
+            "UTCTIME",
+            "PROGNAME",
+            DITHER_N_KEY,
+            MAX_DITHER_KEY,
+            "FILTER",
+            EXPTIME_KEY,
+            OBSCLASS_KEY,
+            "BOARD_ID",
+            "BASENAME",
+            TARGET_KEY,
+            "RADEG",
+            "DECDEG",
+            "T_ROIC",
+            "FIELDID",
+            "MEDCOUNT",
+        ]
+    ),
 ]
 
 # Detrend blocks
@@ -269,7 +293,7 @@ dark_calibrate = [
     ImageBatcher(["BOARD_ID", EXPTIME_KEY, "SUBCOORD"]),
     DarkCalibrator(cache_sub_dir="calibration"),
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    # ImageSaver(output_dir_name="darkcal"),
+    ImageSaver(output_dir_name="darkcal"),
     ImageDebatcher(),
 ]
 
@@ -339,6 +363,7 @@ validate_astrometry = [
         crossmatch_radius_arcsec=5.0,
     ),
     DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="ignore"),
+    CustomImageBatchModifier(poor_astrometric_quality_rejector),
 ]
 
 stack_dithers = [
@@ -355,6 +380,7 @@ stack_dithers = [
         header_keys_to_combine=["RAWID"],
     ),
     ImageSaver(output_dir_name="stack"),
+    CustomImageBatchModifier(masked_images_rejector),
 ]
 
 photcal_and_export = [

@@ -7,7 +7,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from astropy.io import fits
 from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
@@ -17,11 +16,11 @@ from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.data.utils.compress import decode_img
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
+from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
     MAGLIM_KEY,
     REF_CAT_PATH_KEY,
     SATURATE_KEY,
-    SCI_IMG_KEY,
     ZP_KEY,
     ZP_STD_KEY,
     get_output_dir,
@@ -48,6 +47,10 @@ from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 
 logger = logging.getLogger(__name__)
+
+
+class ReductionQualityError(ProcessorError):
+    """Error raised when the quality of the reduction is too poor"""
 
 
 # Swarp generators
@@ -349,7 +352,7 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
         ]
 
         jdstarthists, jdendhists = [], []
-        for ind, hist_df in enumerate(hist_dfs):
+        for _, hist_df in enumerate(hist_dfs):
             if len(hist_df) == 0:
                 jdstarthists.append(source["JD"])
                 jdendhists.append(source["JD"])

@@ -8,7 +8,14 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.paths import BASE_NAME_KEY, EXPTIME_KEY, OBSCLASS_KEY, SATURATE_KEY
+from mirar.paths import (
+    BASE_NAME_KEY,
+    COADD_KEY,
+    EXPTIME_KEY,
+    OBSCLASS_KEY,
+    SATURATE_KEY,
+    STACKED_COMPONENT_IMAGES_KEY,
+)
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -93,17 +100,19 @@ class DarkCalibrator(ProcessorWithCache):
 
         darks = np.zeros((nx, ny, n_frames))
 
-        individual_dark_exptimes = []
+        individual_dark_exptimes, imagenames_key = [], []
         for i, img in enumerate(dark_images):
             dark_exptime = img[EXPTIME_KEY]
             darks[:, :, i] = img.get_data() / dark_exptime
             individual_dark_exptimes.append(str(dark_exptime))
+            imagenames_key.append(img[BASE_NAME_KEY])
 
         logger.debug(f"Median combining {n_frames} darks")
         master_dark_header = dark_images[0].get_header()
         master_dark_header[EXPTIME_KEY] = 1.0
-        master_dark_header["NCOMBINE"] = n_frames
+        master_dark_header[COADD_KEY] = n_frames
         master_dark_header["INDIVEXP"] = ",".join(individual_dark_exptimes)
+        master_dark_header[STACKED_COMPONENT_IMAGES_KEY] = ",".join(imagenames_key)
         master_dark = Image(np.nanmedian(darks, axis=2), header=master_dark_header)
 
         return master_dark

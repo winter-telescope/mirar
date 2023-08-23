@@ -12,6 +12,7 @@ from mirar.pipelines.sedmv2.config import (  # sextractor_reference_config,
     sextractor_photometry_config,
     swarp_config_path,
 )
+from mirar.pipelines.sedmv2.config.constants import SEDMV2_PIXEL_SCALE
 from mirar.pipelines.sedmv2.generator import (
     sedmv2_photometric_catalog_generator,
     sedmv2_reference_image_generator,
@@ -135,16 +136,34 @@ process_stellar = reduce + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
     # ImageSelector(("OBSTYPE", "SCIENCE")),
-    # ImageAperturePhotometry(
-    #     aper_diameters=[6, 16],
-    #     bkg_in_diameters=[9, 19],  # FIXME
-    #     bkg_out_diameters=[16, 34],
-    #     col_suffix_list=None,  # [""],
-    #     phot_cutout_size=100,
-    #     target_ra_key="OBJRAD",
-    #     target_dec_key="OBJDECD",
-    #     zp_key="ZP_AUTO",
-    # ),
+    AperturePhotometry(
+        aper_diameters=[
+            2 / SEDMV2_PIXEL_SCALE,
+            3 / SEDMV2_PIXEL_SCALE,
+            4 / SEDMV2_PIXEL_SCALE,
+            5 / SEDMV2_PIXEL_SCALE,
+            10 / SEDMV2_PIXEL_SCALE,
+        ],
+        bkg_in_diameters=[
+            2.5 / SEDMV2_PIXEL_SCALE,
+            3.5 / SEDMV2_PIXEL_SCALE,
+            4.5 / SEDMV2_PIXEL_SCALE,
+            5.5 / SEDMV2_PIXEL_SCALE,
+            10.5 / SEDMV2_PIXEL_SCALE,
+        ],
+        bkg_out_diameters=[
+            5.5 / SEDMV2_PIXEL_SCALE,
+            8.6 / SEDMV2_PIXEL_SCALE,
+            9.5 / SEDMV2_PIXEL_SCALE,
+            10.6 / SEDMV2_PIXEL_SCALE,
+            15.6 / SEDMV2_PIXEL_SCALE,
+        ],
+        col_suffix_list=["2", "3", "4", "5", "10"],
+        phot_cutout_size=100,
+        target_ra_key="OBJRAD",
+        target_dec_key="OBJDECD",
+        zp_key="ZP_AUTO",
+    ),
     # Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
     # PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),
     # ImagePSFPhotometry(
