@@ -78,10 +78,12 @@ def get_maglim(
 
     zeropoint = np.array(zeropoint, dtype=float)
     aperture_radius_pixels = np.array(aperture_radius_pixels, dtype=float)
+    logger.debug(aperture_radius_pixels)
     bkg_rms_image = fits.getdata(bkg_rms_image_path)
     bkg_rms_med = np.nanmedian(bkg_rms_image)
-    noise = bkg_rms_med * np.sqrt(np.pi * aperture_radius_pixels)
+    noise = bkg_rms_med * np.sqrt(np.pi * aperture_radius_pixels**2)
     maglim = -2.5 * np.log10(5 * noise) + zeropoint
+    logger.debug(f"Calculated maglim: {maglim}")
     return maglim
 
 
@@ -278,7 +280,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                     except ValueError:
                         continue
 
-                aperture_diameters.append(med_fwhm_pix)
+                aperture_diameters.append(med_fwhm_pix * 2)
                 zp_values.append(image["ZP_AUTO"])
 
                 if sextractor_checkimg_map["BACKGROUND_RMS"] in image.header.keys():
@@ -293,8 +295,8 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                 else:
                     limmags = [-99] * len(aperture_diameters)
 
-                for ind, diam in enumerate(aperture_diameters):
-                    image[f"MAGLIM_{int(diam)}"] = limmags[ind]
+                for ind, diam in enumerate(aperture_diameters[:-1]):
+                    image[f"MAGLIM_{np.rint(diam)}"] = limmags[ind]
                 image[MAGLIM_KEY] = limmags[-1]
 
                 image[ZP_KEY] = image["ZP_AUTO"]
