@@ -28,14 +28,17 @@ from mirar.pipelines.winter.config import (
     swarp_config_path,
     winter_avro_schema_path,
 )
-from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT, WINTER_CONDENSATION_KEY
 from mirar.pipelines.winter.generator import (
+    select_winter_flat_images,
     winter_astrometric_ref_catalog_generator,
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
+    winter_condensation_identifier,
+    winter_flat_selector_annotator,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_photometric_catalog_generator,
@@ -90,6 +93,7 @@ from mirar.processors.database.database_selector import (
     DatabaseHistorySelector,
 )
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
+from mirar.processors.flat import FlatCalibrator
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -98,7 +102,6 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry.aperture_photometry import SourceAperturePhotometry
 from mirar.processors.photometry.psf_photometry import SourcePSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
-from mirar.processors.sky import SkyFlatCalibrator
 from mirar.processors.sources import (
     CandidateNamer,
     CustomSourceModifier,
@@ -113,6 +116,7 @@ from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
+    ImageRejector,
     ImageSaver,
     ImageSelector,
     MEFLoader,
@@ -197,11 +201,11 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 4
+BOARD_ID = 2
 select_subset = [
     ImageSelector(
-        ("EXPTIME", "120.0"),
-        ("FIELDID", ["3944", "999999999", "6124"]),
+        # ("EXPTIME", "120.0"),
+        # ("FIELDID", ["3944", "999999999", "6124"]),
         ("BOARD_ID", str(BOARD_ID)),
         ("FILTER", ["dark", "J"]),
     ),
@@ -274,13 +278,21 @@ dark_calibrate = [
     ImageBatcher(["BOARD_ID", EXPTIME_KEY, "SUBCOORD"]),
     DarkCalibrator(cache_sub_dir="calibration"),
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    ImageSaver(output_dir_name="darkcal"),
     ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "UTCTIME"]),
+    CustomImageBatchModifier(winter_flat_selector_annotator),
+    CustomImageBatchModifier(winter_condensation_identifier),
+    # ImageSaver(output_dir_name="darkcal"),
+    ImageRejector((WINTER_CONDENSATION_KEY, "True")),
 ]
 
 flat_calibrate = [
-    ImageBatcher(["BOARD_ID", "FILTER", EXPTIME_KEY, "SUBCOORD"]),
-    SkyFlatCalibrator(cache_sub_dir="skycals"),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", "SUBCOORD"]),
+    # SkyFlatCalibrator(cache_sub_dir="skycals"),
+    FlatCalibrator(
+        cache_sub_dir="flatcal", select_flat_images=select_winter_flat_images
+    ),
     # ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
@@ -291,6 +303,7 @@ flat_calibrate = [
     ),
     SextractorBkgSubtractor(),
     ImageSaver(output_dir_name="skysub"),
+    ImageSelector(("FIELDID", str(8948))),
 ]
 
 fourier_filter = [CustomImageBatchModifier(winter_fourier_filtered_image_generator)]
@@ -340,7 +353,7 @@ validate_astrometry = [
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         image_catalog_purifier=winter_astrostat_catalog_purifier,
         write_regions=True,
-        cache=True,
+        cache=False,
         crossmatch_radius_arcsec=5.0,
     ),
     DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="ignore"),
@@ -357,7 +370,7 @@ stack_dithers = [
         subtract_bkg=False,
         cache=False,
         center_type="ALL",
-        temp_output_sub_dir="stack_all",
+        temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
     ),
     ImageSaver(output_dir_name="stack"),
