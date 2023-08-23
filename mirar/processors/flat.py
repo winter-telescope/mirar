@@ -13,6 +13,7 @@ from mirar.errors import ImageNotFoundError
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
+    EXPTIME_KEY,
     FLAT_FRAME_KEY,
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
@@ -138,7 +139,7 @@ class FlatCalibrator(ProcessorWithCache):
                 )
                 data[mask] = np.nan
 
-            flat_exptimes.append(img["EXPTIME"])
+            flat_exptimes.append(img[EXPTIME_KEY])
 
             median = np.nanmedian(
                 data[self.x_min : self.x_max, self.y_min : self.y_max]
