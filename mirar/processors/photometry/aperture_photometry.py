@@ -94,10 +94,10 @@ class AperturePhotometry(BasePhotometryProcessor):
                 candidate_table[f"{APFLUXUNC_PREFIX_KEY}{suffix}"] = fluxunc
 
                 magnitudes, magnitudes_unc = get_mags_from_fluxes(
-                    flux_list=flux,
-                    fluxunc_list=fluxunc,
-                    zeropoint=source_table[self.zp_key],
-                    zeropoint_unc=source_table[self.zp_std_key],
+                    flux_list=np.array(flux, dtype=float),
+                    fluxunc_list=np.array(fluxunc, dtype=float),
+                    zeropoint=float(source_table[self.zp_key]),
+                    zeropoint_unc=float(source_table[self.zp_std_key]),
                 )
                 candidate_table[f"{APMAG_PREFIX_KEY}{suffix}"] = magnitudes
                 candidate_table[f"{APMAGUNC_PREFIX_KEY}{suffix}"] = magnitudes_unc

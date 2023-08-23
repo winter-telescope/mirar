@@ -43,8 +43,8 @@ class ForcedPhotometryDetector(BaseSourceGenerator):
             header = image.get_header()
 
             new_dict = {
-                self.ra_header_key: image[self.ra_header_key],
-                self.dec_header_key: image[self.dec_header_key],
+                CAND_RA_KEY: image[self.ra_header_key],
+                CAND_DEC_KEY: image[self.dec_header_key],
             }
 
             if self.calculate_image_coordinates:
@@ -57,8 +57,6 @@ class ForcedPhotometryDetector(BaseSourceGenerator):
                 new_dict[YPOS_KEY] = y
 
             src_table = pd.DataFrame([new_dict])
-
-            print(src_table)
 
             metadata = self.get_metadata(image)
 

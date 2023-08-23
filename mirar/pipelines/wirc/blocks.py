@@ -70,8 +70,12 @@ from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.skyportal import SkyportalCandidateUploader
-from mirar.processors.sources import CandidateNamer, SourceWriter, ZOGYSourceDetector
-from mirar.processors.sources.source_table_builder import ForcedPhotometryDetector
+from mirar.processors.sources import (
+    CandidateNamer,
+    ForcedPhotometryDetector,
+    SourceWriter,
+    ZOGYSourceDetector,
+)
 from mirar.processors.sources.source_table_modifier import CustomSourceTableModifier
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (

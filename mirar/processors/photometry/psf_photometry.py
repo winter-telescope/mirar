@@ -89,10 +89,10 @@ class PSFPhotometry(BasePhotometryProcessor):
             candidate_table["yshift"] = yshifts
 
             magnitudes, magnitudes_unc = get_mags_from_fluxes(
-                flux_list=fluxes,
-                fluxunc_list=fluxuncs,
-                zeropoint=source_table[self.zp_key],
-                zeropoint_unc=source_table[self.zp_std_key],
+                flux_list=np.array(fluxes, dtype=float),
+                fluxunc_list=np.array(fluxuncs, dtype=float),
+                zeropoint=float(source_table[self.zp_key]),
+                zeropoint_unc=float(source_table[self.zp_std_key]),
             )
 
             candidate_table[MAG_PSF_KEY] = magnitudes

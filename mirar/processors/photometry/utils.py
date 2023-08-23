@@ -285,8 +285,8 @@ def get_rms_image(image: Image) -> Image:
 
 
 def get_mags_from_fluxes(
-    flux_list: list[float] | np.ndarray,
-    fluxunc_list: list[float] | np.ndarray,
+    flux_list: np.ndarray[float],
+    fluxunc_list: np.ndarray[float],
     zeropoint: float,
     zeropoint_unc: float,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -299,11 +299,6 @@ def get_mags_from_fluxes(
     :return: magnitudes, magnitude uncertainties
     """
     assert len(flux_list) == len(fluxunc_list)
-
-    if isinstance(flux_list, list):
-        flux_list = np.array(flux_list)
-    if isinstance(fluxunc_list, list):
-        fluxunc_list = np.array(fluxunc_list)
 
     magnitudes = zeropoint - 2.5 * np.log10(flux_list)
     magnitudes_unc = 1.086 * fluxunc_list / flux_list
