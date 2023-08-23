@@ -44,6 +44,7 @@ from mirar.processors.base_catalog_xmatch_processor import (
 )
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
+from mirar.processors.utils.image_selector import select_from_images
 from mirar.references.local import RefFromPath
 from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
@@ -487,3 +488,71 @@ def winter_fourier_filtered_image_generator(batch: ImageBatch) -> ImageBatch:
         new_batch.append(image)
     new_batch = ImageBatch(new_batch)
     return new_batch
+
+
+def winter_flat_selector_annotator(batch: ImageBatch) -> ImageBatch:
+    """
+    Selects the flat for the winter data
+    """
+    for image in batch:
+        image["MEDCOUNT"] = np.nanmedian(image.get_data())
+        image["WNTRFLAT"] = image["MEDCOUNT"] > 3000
+
+    return batch
+
+
+def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
+    """
+    Selects the flat for the winter data
+    """
+    # Select the flat
+    return select_from_images(images, key="WNTRFLAT", target_values=["True"])
+
+
+def winter_condensation_identifier(images: ImageBatch) -> ImageBatch:
+    """
+    Identifies images possibly affected by condensation
+    """
+    for image in images:
+        data = image.get_data()
+        vmedian = np.nanmedian(data, axis=1)
+        x_inds = np.arange(len(vmedian))
+        nanmask = np.invert(np.isnan(vmedian))
+        boardid = image.header["BOARD_ID"]
+        if boardid == 0:
+            # I don't see condensation on boardid 0, presumably because it is at a
+            # higher temperature ?
+            image["CONDENS"] = False
+        elif boardid == 1:
+            wavmask = nanmask & (x_inds > 20) & (x_inds < 1050)
+            polydegs = np.polyfit(x=x_inds[wavmask], y=vmedian[wavmask], deg=2)
+            image["CONDENS"] = polydegs[0] > 0.0
+        elif boardid == 2:
+            polydegs = np.polyfit(x=x_inds[nanmask], y=vmedian[nanmask], deg=6)
+            interp_vals = np.polyval(polydegs, x_inds[nanmask])
+            x_min = np.nanargmin(interp_vals)
+            image["CONDENS"] = 100 < x_min
+        elif boardid == 3:
+            polydegs = np.polyfit(x=x_inds[nanmask], y=vmedian[nanmask], deg=3)
+            interp_vals = np.polyval(polydegs, x_inds[nanmask])
+            norm_amp = np.ptp(interp_vals) / np.nanmedian(interp_vals)
+            image["CONDENS"] = norm_amp > 0.15
+        elif boardid == 4:
+            polydegs = np.polyfit(x=x_inds[nanmask], y=vmedian[nanmask], deg=2)
+            image["CONDENS"] = polydegs[0] > 0.0
+        elif boardid == 5:
+            if image["SUBCOORD"] == "0_0":
+                wavmask = nanmask & (x_inds > 20) & (x_inds < 1050)
+                polydegs = np.polyfit(x=x_inds[wavmask], y=vmedian[wavmask], deg=1)
+                post_linear_trend_removal = vmedian[wavmask] / np.polyval(
+                    polydegs, x_inds[wavmask]
+                )
+                image["CONDENS"] = np.ptp(post_linear_trend_removal) > 0.2
+            else:
+                wavmask = nanmask & (x_inds > 700) & (x_inds < 1050)
+                polydegs = np.polyfit(x=x_inds[wavmask], y=vmedian[wavmask], deg=1)
+                post_linear_trend_removal = vmedian[wavmask] / np.polyval(
+                    polydegs, x_inds[wavmask]
+                )
+                image["CONDENS"] = np.ptp(post_linear_trend_removal) > 0.15
+    return images
