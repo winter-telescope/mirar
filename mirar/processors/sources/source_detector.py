@@ -199,11 +199,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                 srcs_table["X_SHAPE"] = x_shape
                 srcs_table["Y_SHAPE"] = y_shape
 
-            metadata = {}
-
-            for key in image.keys():
-                if key != "COMMENT":
-                    metadata[key] = image[key]
+            metadata = self.get_metadata(image)
 
             if len(srcs_table) == 0:
                 msg = f"No sources found in image {image[BASE_NAME_KEY]}"

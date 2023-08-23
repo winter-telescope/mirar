@@ -58,6 +58,9 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
     def save_temp_image(self, image) -> Path:
         """
         Save a temporary image and return its path
+
+        :param image: Image object
+        :return: Path to the temporary image
         """
         photometry_out_temp_dir = get_output_dir(
             self.temp_output_sub_dir, self.night_sub_dir
@@ -72,6 +75,9 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         """
         Create an uncertainty image from the image and return the filenames of the
         image and uncertainty image
+
+        :param image: Image object
+        :return: Path to the uncertainty image
         """
         photometry_out_temp_dir = get_output_dir(
             self.temp_output_sub_dir, self.night_sub_dir
@@ -111,6 +117,12 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         return image_cutout, unc_image_cutout
 
     def save_temp_image_uncimage(self, metadata: dict) -> tuple[Path, Path]:
+        """
+        Function to save the image and uncertainty image to temporary files
+
+        :param metadata: Metadata dictionary
+        :return: Tuple of image and uncertainty image filenames
+        """
         imagename = metadata[self.image_key]
         image = Image(header=fits.getheader(imagename), data=fits.getdata(imagename))
 
@@ -119,7 +131,13 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
 
         return image_filename, unc_filename
 
-    def get_physical_coordinates(self, data_item: pd.Series):
+    def get_physical_coordinates(self, data_item: pd.Series) -> tuple[int, int]:
+        """
+        Get the physical coordinates of the source from the data item
+
+        :param data_item: Series from the data table
+        :return: X and Y coordinates of the source
+        """
         row = data_item
         x, y = row[self.xpos_key], row[self.ypos_key]
         return int(x), int(y)

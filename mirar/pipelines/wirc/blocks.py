@@ -71,7 +71,7 @@ from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.skyportal import SkyportalCandidateUploader
 from mirar.processors.sources import CandidateNamer, SourceWriter, ZOGYSourceDetector
-from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
+from mirar.processors.sources.source_table_builder import ForcedPhotometryDetector
 from mirar.processors.sources.source_table_modifier import CustomSourceTableModifier
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
@@ -194,9 +194,7 @@ subtract = [
 ]
 
 export_candidates_from_header = [
-    ForcedPhotometryCandidateTable(
-        ra_header_key="TARGRA", dec_header_key="TARGDEC", name_header_key="TARGNAME"
-    ),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
 ]
 
 candidate_photometry = [
@@ -205,7 +203,7 @@ candidate_photometry = [
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
-        col_suffix_list=["", "big"],
+        # col_suffix_list=["", "big"],
     ),
     PSFPhotometry(),
 ]
@@ -241,7 +239,7 @@ process_candidates = [
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
-        col_suffix_list=["", "big"],
+        # col_suffix_list=["", "big"],
     ),
     # SourceWriter(output_dir_name="candidates"),
     CustomSourceTableModifier(modifier_function=wirc_source_table_filter_annotator),
