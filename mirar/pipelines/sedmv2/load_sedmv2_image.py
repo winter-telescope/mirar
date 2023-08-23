@@ -26,24 +26,31 @@ logger = logging.getLogger(__name__)
 
 
 def clean_science_header(
-    header: fits.Header, split_headers: list[fits.Header]
+    header: fits.Header, split_headers: list[fits.Header], is_mode0: bool
 ) -> tuple[fits.Header, list[fits.Header]]:
     """
     function to modify the primary header of an SEDMv2 science file
     :param header: original primary header of science file
+    :param split_headers: the remaining headers,one for each extension of MEF
+    :param is_mode0: True if observed in SEDMv2 observation mode 0
     :return: modified header
     """
+    if is_mode0:
+        # bulk of information is not stored in primary header for mode0
+        informative_hdr = split_headers[0]
+    else:
+        informative_hdr = header
 
     header[OBSCLASS_KEY] = "science"
     header[TARGET_KEY] = "science"
 
     # positions
-    header["RA"] = header["RAD"]
-    header["DEC"] = header["DECD"]
-    header["TELRA"] = header["TELRAD"]
-    header["TELDEC"] = header["TELDECD"]
+    header["RA"] = informative_hdr["RAD"]
+    header["DEC"] = informative_hdr["DECD"]
+    header["TELRA"] = informative_hdr["TELRAD"]
+    header["TELDEC"] = informative_hdr["TELDECD"]
 
-    if GAIN_KEY in header:
+    if GAIN_KEY in informative_hdr:
         if header[GAIN_KEY] == 0.0:
             header[GAIN_KEY] = 1.0
     else:
@@ -57,37 +64,24 @@ def clean_science_header(
             ext[GAIN_KEY] = 1.0
 
     # filters
-    header["FILTERID"] = header["FILTER"].split(" ")[1][0]
-    header["FILTER"] = header["FILTERID"]
+    header["FILTERID"] = informative_hdr["FILTER"].split(" ")[1][0]
+    header["FILTER"] = informative_hdr["FILTERID"]
 
     # keys, IDs ("core fields")
     header[PROC_HISTORY_KEY] = ""
     header["PROCFLAG"] = 0
     header[PROC_FAIL_KEY] = ""
-    # header["OBSID"] = 0
     header["PROGID"] = int(3)  # sedmv2's ID
-    # header["FIELDID"] = 999999999
     header["COADDS"] = 1
-    # header["BZERO"] = 0
 
-    if not isinstance(header["OBJECTID"], str):
-        if isinstance(header["QCOMMENT"], str):
-            header["OBJECTID"] = header["QCOMMENT"].split("_")[0]
+    if not isinstance(informative_hdr["OBJECTID"], str):
+        if isinstance(informative_hdr["QCOMMENT"], str):
+            header["OBJECTID"] = informative_hdr["QCOMMENT"].split("_")[0]
 
-    if not "EXPTIME" in header:
-        header["EXPTIME"] = header["EXPOSURE"]
-
-    # times
-    # orig_dateobs = header["DATE-OBS"]
-    # header["DATE-OBS"] = convert_to_UTC(orig_dateobs) # this is the date of entire obs
-    # whereas utc in individual headers is for
-    # header["UTCTIME"] = header["UTC"]
-    # header["TIMEUTC"] = header["UTCTIME"]
-    # header["OBSDATE"] = int(header["UTC"].split("_")[0])
-    # header["NIGHT"] = int(Time(header["DATE"], format="isot").jd)
-    ## - int(Time("2018-01-01", format="iso").jd)  # integer value, night 1, night 2...
-    # header["EXPMJD"] = header["OBSDATE"]
-    # header["DATE-OBS"] = header["OBSDATE"]
+    if not "EXPTIME" in informative_hdr:
+        header["EXPTIME"] = informative_hdr[
+            "EXPOSURE"
+        ]  # be weary - exposure is not always reliable
 
     return header, split_headers
 
@@ -170,18 +164,20 @@ def load_raw_sedmv2_mef(
 
     header, split_data, split_headers = open_mef_fits(path)
 
-    if "IMGTYPE" in header.keys():  # mode fritz
+    if "IMGTYPE" in header.keys():  # all modes except mode0
         check_header = header
         skip_first = True
+        is_mode0 = False
     else:  # mode0
         check_header = split_headers[0]
-        skip_first = False
+        skip_first = False  # there is only 1 extension in mode0
+        is_mode0 = True
 
     if check_header["IMGTYPE"] == "object":
         if skip_first:
             split_data = split_data[1:]
             split_headers = split_headers[1:]
-        header, split_headers = clean_science_header(header, split_headers)
+        header, split_headers = clean_science_header(header, split_headers, is_mode0)
     elif check_header["IMGTYPE"] in ["flat", "bias"]:
         header, split_headers = clean_cal_header(header, split_headers[0], path)
     else:
