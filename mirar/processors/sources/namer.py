@@ -10,6 +10,7 @@ from sqlalchemy import select, text
 from mirar.data import SourceBatch
 from mirar.database.transactions.select import run_select
 from mirar.paths import CAND_NAME_KEY, SOURCE_XMATCH_KEY
+from mirar.processors.base_processor import PrerequisiteError
 from mirar.processors.database import CrossmatchSourceWithDatabase
 from mirar.processors.database.database_selector import BaseDatabaseSourceSelector
 
@@ -152,4 +153,4 @@ class CandidateNamer(BaseDatabaseSourceSelector):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError(err)
+            raise PrerequisiteError(err)

@@ -18,17 +18,15 @@ from mirar.paths import (
     CAND_RA_KEY,
     LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
-    NORM_PSFEX_KEY,
     REF_IMG_KEY,
     SCI_IMG_KEY,
     SCOR_IMG_KEY,
-    UNC_IMG_KEY,
     XPOS_KEY,
     YPOS_KEY,
     get_output_dir,
 )
 from mirar.processors.astromatic.sextractor.sourceextractor import run_sextractor_dual
-from mirar.processors.base_processor import BaseSourceGenerator
+from mirar.processors.base_processor import BaseSourceGenerator, PrerequisiteError
 from mirar.processors.photometry.utils import make_cutouts
 from mirar.processors.zogy.zogy import ZOGY
 from mirar.utils.ldac_tools import get_table_from_ldac
@@ -215,4 +213,4 @@ class ZOGYSourceDetector(BaseSourceGenerator):
     def check_prerequisites(self):
         check = np.sum([isinstance(x, ZOGY) for x in self.preceding_steps])
         if check != 1:
-            raise ValueError("ZOGY must be run before ZOGYSourceDetector")
+            raise PrerequisiteError("ZOGY must be run before ZOGYSourceDetector")

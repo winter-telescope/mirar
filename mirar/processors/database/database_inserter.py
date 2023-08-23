@@ -9,7 +9,11 @@ import pandas as pd
 
 from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.errors.exceptions import BaseProcessorError
-from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
+from mirar.processors.base_processor import (
+    BaseImageProcessor,
+    BaseSourceProcessor,
+    PrerequisiteError,
+)
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 from mirar.processors.utils.image_selector import ImageBatcher
 
@@ -155,4 +159,4 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError
+            raise PrerequisiteError(err)

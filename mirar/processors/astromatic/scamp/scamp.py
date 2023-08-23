@@ -23,7 +23,7 @@ from mirar.processors.astromatic.sextractor.sextractor import (
     SEXTRACTOR_HEADER_KEY,
     Sextractor,
 )
-from mirar.processors.base_processor import BaseImageProcessor
+from mirar.processors.base_processor import BaseImageProcessor, PrerequisiteError
 from mirar.utils import execute
 
 logger = logging.getLogger(__name__)
@@ -205,4 +205,4 @@ class Scamp(BaseImageProcessor):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError
+            raise PrerequisiteError(err)
