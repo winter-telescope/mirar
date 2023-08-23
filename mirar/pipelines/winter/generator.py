@@ -20,6 +20,7 @@ from mirar.database.transactions import select_from_table
 from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
     MAGLIM_KEY,
+    OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
     SATURATE_KEY,
     SCI_IMG_KEY,
@@ -506,7 +507,15 @@ def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
     Selects the flat for the winter data
     """
     # Select the flat
-    return select_from_images(images, key="WNTRFLAT", target_values=["True"])
+    flat_images = select_from_images(images, key="WNTRFLAT", target_values=["True"])
+
+    if len(flat_images) == 0:
+        # To enable current version of realtime processing?
+        logger.warning("No good flat images found, using all images in batch")
+        flat_images = select_from_images(
+            images, key=OBSCLASS_KEY, target_values="science"
+        )
+    return flat_images
 
 
 def winter_condensation_identifier(images: ImageBatch) -> ImageBatch:
