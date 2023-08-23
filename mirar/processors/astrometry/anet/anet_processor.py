@@ -237,6 +237,7 @@ class AstrometryNet(BaseImageProcessor):
                 ".rdls",
                 ".match",
                 ".solved",
+                ".wcs",
             ]:
                 temp_files.append(Path(f"{anet_output_filees_basepath}{suffix}"))
 
