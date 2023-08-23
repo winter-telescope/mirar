@@ -23,6 +23,12 @@ from mirar.processors.utils.image_selector import select_from_images
 logger = logging.getLogger(__name__)
 
 
+class MissingFlatError(ImageNotFoundError):
+    """
+    Error for when a dark image is missing
+    """
+
+
 def default_select_flat(
     images: ImageBatch,
 ) -> ImageBatch:
@@ -98,7 +104,7 @@ class FlatCalibrator(ProcessorWithCache):
         if n_frames == 0:
             err = f"Found {n_frames} suitable flats in batch"
             logger.error(err)
-            raise ImageNotFoundError(err)
+            raise MissingFlatError(err)
 
         nx, ny = images[0].get_data().shape
 
