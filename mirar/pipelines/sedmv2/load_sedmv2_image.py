@@ -25,7 +25,7 @@ from mirar.processors.utils.image_loader import InvalidImage
 logger = logging.getLogger(__name__)
 
 
-def clean_science_header(
+def clean_science_header(  # pylint: disable=too-many-branches
     header: fits.Header, split_headers: list[fits.Header], is_mode0: bool
 ) -> tuple[fits.Header, list[fits.Header]]:
     """
@@ -65,7 +65,10 @@ def clean_science_header(
 
     # filters
     header["FILTERID"] = informative_hdr["FILTER"].split(" ")[1][0]
-    header["FILTER"] = informative_hdr["FILTERID"]
+    header["FILTER"] = header["FILTERID"]
+    if is_mode0:
+        informative_hdr["FILTER"] = header["FILTER"]
+        informative_hdr["FILTERID"] = header["FILTERID"]
 
     # keys, IDs ("core fields")
     header[PROC_HISTORY_KEY] = ""
@@ -104,9 +107,10 @@ def clean_cal_header(
     if hdr0["IMGTYPE"] == "flat":
         filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
         hdr0["FILTERID"] = filt
-        hdr0["FILTER"] = f"SDSS {filt}' (Chroma)"
+        hdr0["FILTER"] = filt  # f"SDSS {filt}'"  #f"SDSS {filt}' (Chroma)"
     if hdr0["IMGTYPE"] == "bias":
-        hdr0["FILTER"] = "SDSS g"  # arbitrary filter for bias
+        hdr0["FILTER"] = "g"  # arbitrary filter for bias
+        hdr0["FILTERID"] = "g"  # arbitrary filter for bias
 
     hdr0["SOURCE"] = "None"
     hdr0["COADDS"] = 1
