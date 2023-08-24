@@ -30,6 +30,7 @@ from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
+from mirar.processors.sources import ForcedPhotometryDetector
 from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
@@ -37,7 +38,7 @@ from mirar.processors.utils import (
     ImageSelector,
     MEFLoader,
 )
-from mirar.processors.sources import ForcedPhotometryDetector
+
 # from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.header_annotate import HeaderEditor
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
@@ -135,10 +136,7 @@ parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 process_stellar = reduce + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
-    ForcedPhotometryDetector(
-        ra_header_key="OBJRAD",
-        dec_header_key="OBJDECD"
-    ),
+    ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
     AperturePhotometry(
         aper_diameters=[
             2 / SEDMV2_PIXEL_SCALE,
