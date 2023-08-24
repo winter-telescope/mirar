@@ -83,6 +83,7 @@ def get_maglim(
     bkg_rms_med = np.nanmedian(bkg_rms_image)
     noise = bkg_rms_med * np.sqrt(np.pi * aperture_radius_pixels**2)
     maglim = -2.5 * np.log10(5 * noise) + zeropoint
+    logger.debug(f"Aperture radii: {aperture_radius_pixels}")
     logger.debug(f"Calculated maglim: {maglim}")
     return maglim
 
@@ -164,14 +165,21 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         apertures = self.get_sextractor_apertures()  # aperture diameters
         zeropoints = []
 
+        outlier_thresh_list = [1.5, 2, 3]
         for i, aperture in enumerate(apertures):
             offsets = np.ma.array(
                 matched_ref_cat["magnitude"] - matched_img_cat["MAG_APER"][:, i]
             )
-            cl_offset = sigma_clip(offsets)
-            num_stars = np.sum(np.invert(cl_offset.mask))
+            for outlier_thresh in outlier_thresh_list:
+                cl_offset = sigma_clip(offsets, sigma=outlier_thresh)
+                num_stars = np.sum(np.invert(cl_offset.mask))
 
-            zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets)
+                zp_mean, zp_med, zp_std = sigma_clipped_stats(
+                    offsets, sigma=outlier_thresh
+                )
+
+                if num_stars > self.num_matches_threshold:
+                    break
 
             check = [np.isnan(x) for x in [zp_mean, zp_med, zp_std]]
             if np.sum(check) > 0:
@@ -195,14 +203,19 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             }
             zeropoints.append(zero_dict)
 
-        offsets = np.ma.array(
-            matched_ref_cat["magnitude"] - matched_img_cat["MAG_AUTO"]
-        )
-        cl_offset = sigma_clip(offsets, sigma=3)
-        num_stars = np.sum(np.invert(cl_offset.mask))
-        zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets, sigma=3)
-        zero_auto_mag_cat = matched_ref_cat["magnitude"][np.invert(cl_offset.mask)]
-        zero_auto_mag_img = matched_img_cat["MAG_AUTO"][np.invert(cl_offset.mask)]
+        for outlier_thresh in outlier_thresh_list:
+            offsets = np.ma.array(
+                matched_ref_cat["magnitude"] - matched_img_cat["MAG_AUTO"]
+            )
+            cl_offset = sigma_clip(offsets, sigma=outlier_thresh)
+            num_stars = np.sum(np.invert(cl_offset.mask))
+            zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets, sigma=outlier_thresh)
+            zero_auto_mag_cat = matched_ref_cat["magnitude"][np.invert(cl_offset.mask)]
+            zero_auto_mag_img = matched_img_cat["MAG_AUTO"][np.invert(cl_offset.mask)]
+
+            if num_stars > self.num_matches_threshold:
+                break
+
         zeropoints.append(
             {
                 "diameter": "AUTO",
