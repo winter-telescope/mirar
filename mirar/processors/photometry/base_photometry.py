@@ -38,20 +38,20 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         temp_output_sub_dir: str = "photometry",
         zp_key: str = ZP_KEY,
         zp_std_key: str = ZP_STD_KEY,
-        image_colname=LATEST_SAVE_KEY,
-        unc_image_colname=UNC_IMG_KEY,
-        psf_file_colname=NORM_PSFEX_KEY,
-        x_colname=XPOS_KEY,
-        y_colname=YPOS_KEY,
+        img_key: str = LATEST_SAVE_KEY,
+        unc_image_key: str = UNC_IMG_KEY,
+        psf_file_key: str = NORM_PSFEX_KEY,
+        x_colname: str = XPOS_KEY,
+        y_colname: str = YPOS_KEY,
     ):
         super().__init__()
         self.phot_cutout_size = phot_cutout_size
         self.temp_output_sub_dir = temp_output_sub_dir
         self.zp_key = zp_key
         self.zp_std_key = zp_std_key
-        self.image_key = image_colname
-        self.unc_image_key = unc_image_colname
-        self.psf_file_key = psf_file_colname
+        self.image_key = img_key
+        self.unc_image_key = unc_image_key
+        self.psf_file_key = psf_file_key
         self.xpos_key = x_colname
         self.ypos_key = y_colname
 
