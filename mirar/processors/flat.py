@@ -5,6 +5,7 @@ import logging
 import os.path
 import sys
 from collections.abc import Callable
+from copy import copy
 
 import numpy as np
 
@@ -150,7 +151,7 @@ class FlatCalibrator(ProcessorWithCache):
 
         master_flat = np.nanmedian(flats, axis=2)
 
-        master_flat_image = Image(master_flat, header=images[0].get_header())
+        master_flat_image = Image(master_flat, header=copy(images[0].get_header()))
         master_flat_image[COADD_KEY] = n_frames
 
         master_flat_image["INDIVEXP"] = ",".join(

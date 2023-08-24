@@ -3,6 +3,7 @@ Module for applying dark corrections
 """
 import logging
 from collections.abc import Callable
+from copy import copy
 
 import numpy as np
 
@@ -108,7 +109,7 @@ class DarkCalibrator(ProcessorWithCache):
             imagenames_key.append(img[BASE_NAME_KEY])
 
         logger.debug(f"Median combining {n_frames} darks")
-        master_dark_header = dark_images[0].get_header()
+        master_dark_header = copy(dark_images[0].get_header())
         master_dark_header[EXPTIME_KEY] = 1.0
         master_dark_header[COADD_KEY] = n_frames
         master_dark_header["INDIVEXP"] = ",".join(individual_dark_exptimes)
