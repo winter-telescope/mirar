@@ -62,13 +62,15 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
         ):
             raise PoorAstrometryError(
                 f"RMS astrometric error from Scamp "
-                f"({image['ASTRRMS1']}, {image['ASTRRMS2']}) is above threshold"
+                f"({image['ASTRRMS1']*3600}, {image['ASTRRMS2']*3600})"
+                f"arcsec is above threshold {scamp_astrrms_threshold_arcsec} arcsec"
             )
 
         if image["ASTUNC"] > astrometric_unc_threshold_arcsec / 3600:
             raise PoorAstrometryError(
                 f"Uncertainty in astrometric solution from Scamp "
-                f"({image['ASTUNC']}) is above threshold"
+                f"({image['ASTUNC']*3600}) arcsec is above threshold "
+                f"{astrometric_unc_threshold_arcsec} arcsec"
             )
 
         if image["FWHM_MED"] > fwhm_threshold_arcsec:
