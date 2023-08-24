@@ -280,11 +280,11 @@ dark_calibrate = [
     DarkCalibrator(cache_sub_dir="calibration"),
     ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "UTCTIME"]),
+    ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     CustomImageBatchModifier(winter_flat_selector_annotator),
-    CustomImageBatchModifier(winter_condensation_identifier),
+    # CustomImageBatchModifier(winter_condensation_identifier),
     # ImageSaver(output_dir_name="darkcal"),
-    ImageRejector((WINTER_CONDENSATION_KEY, "True")),
+    # ImageRejector((WINTER_CONDENSATION_KEY, "True")),
 ]
 
 flat_calibrate = [
