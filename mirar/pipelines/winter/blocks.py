@@ -304,7 +304,7 @@ flat_calibrate = [
     ),
     SextractorBkgSubtractor(),
     ImageSaver(output_dir_name="skysub"),
-    ImageSelector(("FIELDID", str(8948))),
+    # ImageSelector(("FIELDID", str(8948))),
 ]
 
 fourier_filter = [CustomImageBatchModifier(winter_fourier_filtered_image_generator)]
