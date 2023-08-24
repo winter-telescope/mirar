@@ -81,6 +81,7 @@ from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.avro import IPACAvroExporter
+from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_inserter import (
@@ -391,6 +392,9 @@ photcal_and_export = [
         temp_output_sub_dir="phot",
         write_regions=True,
         cache=True,
+    ),
+    CatalogLimitingMagnitudeCalculator(
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
     ImageSaver(output_dir_name="final"),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
