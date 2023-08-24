@@ -91,6 +91,14 @@ def get_maglim(
 class PhotCalibrator(BaseProcessorWithCrossMatch):
     """
     Photometric calibrator processor
+
+    Attributes:
+        num_matches_threshold: minimum number of matches required for
+        photometric calibration
+        outlier_rejection_threshold: float or list of floats to use as number of sigmas
+        for outlier rejection. If a ist is provided, the list is sorted and stepped
+        through in order with increasing thresholds until the specified
+        number of matches is reached.
     """
 
     base_key = "photcalibrator"
@@ -106,6 +114,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         crossmatch_radius_arcsec: float = 1.0,
         write_regions: bool = False,
         cache: bool = False,
+        outlier_rejection_threshold: float | list[float] = 3.0,
     ):
         super().__init__(
             ref_catalog_generator=ref_catalog_generator,
@@ -117,6 +126,10 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             required_parameters=REQUIRED_PARAMETERS,
         )
         self.num_matches_threshold = num_matches_threshold
+        self.outlier_rejection_threshold = outlier_rejection_threshold
+        if isinstance(outlier_rejection_threshold, float):
+            self.outlier_rejection_threshold = [outlier_rejection_threshold]
+        self.outlier_rejection_threshold = np.sort(self.outlier_rejection_threshold)
 
     def __str__(self) -> str:
         return "Processor to perform photometric calibration."
@@ -165,12 +178,11 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         apertures = self.get_sextractor_apertures()  # aperture diameters
         zeropoints = []
 
-        outlier_thresh_list = [1.5, 2, 3]
         for i, aperture in enumerate(apertures):
             offsets = np.ma.array(
                 matched_ref_cat["magnitude"] - matched_img_cat["MAG_APER"][:, i]
             )
-            for outlier_thresh in outlier_thresh_list:
+            for outlier_thresh in self.outlier_rejection_threshold:
                 cl_offset = sigma_clip(offsets, sigma=outlier_thresh)
                 num_stars = np.sum(np.invert(cl_offset.mask))
 
@@ -203,7 +215,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             }
             zeropoints.append(zero_dict)
 
-        for outlier_thresh in outlier_thresh_list:
+        for outlier_thresh in self.outlier_rejection_threshold:
             offsets = np.ma.array(
                 matched_ref_cat["magnitude"] - matched_img_cat["MAG_AUTO"]
             )
