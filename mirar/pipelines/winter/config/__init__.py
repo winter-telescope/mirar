@@ -39,7 +39,7 @@ sextractor_anet_config = {
 }
 
 sextractor_reference_config = {
-    "config_path": winter_file_dir.joinpath("photomCat.sex"),
+    "config_path": winter_file_dir.joinpath("candidate_detection.sex"),
     "parameter_path": winter_file_dir.joinpath("photom.param"),
     "filter_path": winter_file_dir.joinpath("default.conv"),
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
