@@ -99,7 +99,9 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
 
         self.assertEqual(len(res), 29)
 
-        header = res[0][0].get_header()
+        new = res[0][0]
+
+        header = new.get_meta()
 
         new_exp = "expected_zp = { \n"  # pylint: disable=C0103
         for header_key in header.keys():
