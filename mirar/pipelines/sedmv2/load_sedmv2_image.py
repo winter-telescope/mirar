@@ -12,6 +12,7 @@ from mirar.data import Image
 from mirar.io import open_mef_fits, open_mef_image
 from mirar.paths import (
     BASE_NAME_KEY,
+    EXPTIME_KEY,
     GAIN_KEY,
     OBSCLASS_KEY,
     PROC_FAIL_KEY,
@@ -74,8 +75,8 @@ def clean_science_header(
         if isinstance(header["QCOMMENT"], str):
             header["OBJECTID"] = header["QCOMMENT"].split("_")[0]
 
-    if not "EXPTIME" in header:
-        header["EXPTIME"] = header["EXPOSURE"]
+    if EXPTIME_KEY not in header:
+        header[EXPTIME_KEY] = header["EXPOSURE"]
 
     # times
     # orig_dateobs = header["DATE-OBS"]
@@ -144,6 +145,9 @@ def clean_cal_header(
         "20221223_023123.072011",
         "2022-12-23T02:31:23.073",
     ]  # can these be changed? shortened?
+
+    if EXPTIME_KEY not in hdr1:
+        hdr1[EXPTIME_KEY] = hdr1["EXPOSURE"]
 
     for count, key in enumerate(req_headers):
         hdr0[key] = default_vals[count]
