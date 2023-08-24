@@ -392,6 +392,7 @@ photcal_and_export = [
         temp_output_sub_dir="phot",
         write_regions=True,
         cache=True,
+        outlier_rejection_threshold=[1.5, 2.0, 3.0],
     ),
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
