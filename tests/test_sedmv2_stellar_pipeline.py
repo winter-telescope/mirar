@@ -35,24 +35,24 @@ expected_zp = {
 
 
 expected_ap_phot = {
-    "FLUXAP2": -10.440357798826348,
-    "FLUXUNC2": 205.54719177533997,
-    "FLUXAP3": 185.81936010251917,
-    "FLUXUNC3": 310.73759182222466,
-    "MAGAP3": 21.336715504439553,
-    "magerrap3": 1.8965330652977908,
-    "FLUXAP4": 288.53853734268324,
-    "FLUXUNC4": 412.89523151752974,
-    "MAGAP4": 20.85893334004581,
-    "magerrap4": 1.6473637846943183,
-    "FLUXAP5": 164.94609445952742,
-    "FLUXUNC5": 513.6055760247314,
-    "MAGAP5": 21.466087812602073,
-    "magerrap5": 3.425448357780633,
-    "FLUXAP10": 804.3668543646124,
-    "fluxunc10": 1027.5301316831465,
-    "MAGAP10": 19.745807489218134,
-    "magerrap10": 1.4910821986784057,
+    "fluxap2": -10.440357798826348,
+    "fluxuncap2": 205.54719177533997,
+    "fluxap3": 185.81936010251917,
+    "fluxuncap3": 310.73759182222466,
+    "magap3": 21.336715504439553,
+    "sigmagap3": 1.8965330652977908,
+    "fluxap4": 288.53853734268324,
+    "fluxuncap4": 412.89523151752974,
+    "magap4": 20.85893334004581,
+    "sigmagap4": 1.6473637846943183,
+    "fluxap5": 164.94609445952742,
+    "fluxuncap5": 513.6055760247314,
+    "magap5": 21.466087812602073,
+    "sigmagap5": 3.425448357780633,
+    "fluxap10": 804.3668543646124,
+    "fluxuncap10": 1027.5301316831465,
+    "magap10": 19.745807489218134,
+    "sigmagap10": 1.4910821986784057,
 }
 
 test_configuration = (
@@ -101,20 +101,13 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
 
         new = res[0][0]
 
-        header = new.get_meta()
+        header = new.get_metadata()
 
         new_exp = "expected_zp = { \n"  # pylint: disable=C0103
-        for header_key in header.keys():
-            if "ZP_" in header_key:
-                new_exp += f'    "{header_key}": {header[header_key]}, \n'
+        for header_key in expected_zp.keys():
+            new_exp += f'    "{header_key}": {header[header_key]}, \n'
         new_exp += "}"
         print(new_exp)
-
-        full_header = "\n FULL HEADER: \n \n"
-        for header_key in header.keys():
-            full_header += f'    "{header_key}": {header[header_key]}, \n'
-        full_header += "\n \n \n"
-        print(full_header)
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
@@ -126,15 +119,28 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
                     f"Type for value ({type(value)} is neither float not int."
                 )
 
-        for key, value in expected_ap_phot.items():
-            if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=2)
-            elif isinstance(value, int):
-                self.assertEqual(value, header[key])
-            else:
-                raise TypeError(
-                    f"Type for value ({type(value)} is neither float not int."
-                )
+        source_table = new.get_data()
+
+        assert len(source_table) == 1
+
+        print(source_table.iloc[0])
+
+        new_row = "expected_ap_phot = { \n"  # pylint: disable=C0103
+        for header_key in expected_ap_phot.keys():
+            new_row += f'    "{header_key}": {source_table.iloc[0][header_key]}, \n'
+        new_row += "}"
+        print(new_row)
+
+        for _, row in source_table.iterrows():
+            for key, value in expected_ap_phot.items():
+                if isinstance(value, float):
+                    self.assertAlmostEqual(value, row[key], places=2)
+                elif isinstance(value, int):
+                    self.assertEqual(value, row[key])
+                else:
+                    raise TypeError(
+                        f"Type for value ({type(value)} is neither float not int."
+                    )
 
 
 if __name__ == "__main__":

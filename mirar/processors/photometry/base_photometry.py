@@ -100,6 +100,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         then deletes the temporary files.
         Args:
             data_item: pandas DataFrame Series or astropy fits Header
+            metadata: Metadata dictionary
 
         Returns:
             tuple: 2D numpy arrays of the image cutout and uncertainty image cutout
@@ -124,6 +125,10 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         :return: Tuple of image and uncertainty image filenames
         """
         imagename = metadata[self.image_key]
+
+        print(self.image_key)
+        print(imagename)
+
         image = Image(header=fits.getheader(imagename), data=fits.getdata(imagename))
 
         image_filename = self.save_temp_image(image)

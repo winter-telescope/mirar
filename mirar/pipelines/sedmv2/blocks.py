@@ -136,6 +136,7 @@ parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 process_stellar = reduce + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
+    ImageSaver(output_dir_name="photometry"),
     ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
     AperturePhotometry(
         aper_diameters=[
