@@ -2,6 +2,7 @@
 Module to reject images based on quality criteria
 """
 import numpy as np
+from astropy.io import fits
 
 from mirar.data import ImageBatch
 from mirar.errors.exceptions import ProcessorError
@@ -12,6 +13,12 @@ from mirar.processors.split import SUB_ID_KEY
 class TooManyMaskedPixelsError(ProcessorError):
     """
     Error for when too many pixels in an image are masked
+    """
+
+
+class CondensationError(ProcessorError):
+    """
+    Error for when an image is affected by condensed
     """
 
 
@@ -66,3 +73,37 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
         if image["FWHM_MED"] > fwhm_threshold_arcsec:
             raise PoorFWHMError(f"FWHM ({image['FWHM_MED']}) is above threshold")
     return batch
+
+
+def is_condensation_in_image(data: np.ndarray, header: fits.Header) -> bool:
+    """
+    Checks if a WINTER image is affected by condensation
+    """
+    vmedian = np.nanmedian(data, axis=1)
+    x_inds = np.arange(len(vmedian))
+    nanmask = np.invert(np.isnan(vmedian))
+    wavmask = nanmask & (x_inds > 20) & (x_inds < 1070)
+    boardid = header["BOARD_ID"]
+
+    condensed = False
+    if boardid in [1, 2, 3, 4, 5]:
+        polydegs = np.polyfit(x=x_inds[wavmask], y=vmedian[wavmask], deg=1)
+        interp1d_vals = np.polyval(polydegs, x_inds[wavmask])
+        post_linear_trend_removal = vmedian[wavmask] / interp1d_vals
+        pdeg2 = np.polyfit(x=x_inds[wavmask], y=post_linear_trend_removal, deg=2)
+        interp2 = np.polyval(pdeg2, x_inds[wavmask])
+
+        condensed = (pdeg2[0] > 0) & (np.ptp(interp2) > 0.1)
+
+    return condensed
+
+
+def winter_condensation_rejector(images: ImageBatch) -> ImageBatch:
+    """
+    Rejects images possibly affected by condensation
+    """
+    assert len(images) == 1
+    for image in images:
+        if is_condensation_in_image(data=image.get_data(), header=image.header):
+            raise CondensationError("Image is affected by condensation")
+    return images
