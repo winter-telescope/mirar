@@ -51,6 +51,13 @@ def default_image_sextractor_catalog_purifier(
 class BaseProcessorWithCrossMatch(BaseImageProcessor):
     """
     Photometric calibrator processor
+    Attributes:
+        ref_catalog_generator: function to generate reference catalog
+        temp_output_sub_dir: subdirectory to store temporary files
+        sextractor_catalog_purifier: function to purify photometric catalog
+        crossmatch_radius_arcsec: crossmatch radius in arcsec
+        write_regions: whether to write regions file
+        cache: whether to cache the temporary files made by this processor
     """
 
     base_key = "astrometrystatswriter"
