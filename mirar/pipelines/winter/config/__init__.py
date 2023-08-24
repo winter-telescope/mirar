@@ -46,7 +46,7 @@ sextractor_reference_config = {
 }
 
 sextractor_candidate_config = {
-    "cand_det_sextractor_config": winter_file_dir.joinpath("photomCat.sex"),
+    "cand_det_sextractor_config": winter_file_dir.joinpath("candidate_detection.sex"),
     "cand_det_sextractor_nnw": winter_file_dir.joinpath("default.nnw"),
     "cand_det_sextractor_filter": winter_file_dir.joinpath("default.conv"),
     "cand_det_sextractor_params": winter_file_dir.joinpath("Scorr.param"),
