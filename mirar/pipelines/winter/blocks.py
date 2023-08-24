@@ -28,7 +28,7 @@ from mirar.pipelines.winter.config import (
     swarp_config_path,
     winter_avro_schema_path,
 )
-from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT, WINTER_CONDENSATION_KEY
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     select_winter_flat_images,
     winter_astrometric_ref_catalog_generator,
@@ -37,8 +37,6 @@ from mirar.pipelines.winter.generator import (
     winter_astrostat_catalog_purifier,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
-    winter_condensation_identifier,
-    winter_flat_selector_annotator,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_photometric_catalog_generator,
@@ -71,6 +69,7 @@ from mirar.pipelines.winter.models import (
 from mirar.pipelines.winter.validator import (
     masked_images_rejector,
     poor_astrometric_quality_rejector,
+    winter_condensation_rejector,
 )
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.background_subtractor import (
@@ -117,7 +116,6 @@ from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
-    ImageRejector,
     ImageSaver,
     ImageSelector,
     MEFLoader,
@@ -281,10 +279,8 @@ dark_calibrate = [
     ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
-    CustomImageBatchModifier(winter_flat_selector_annotator),
-    # CustomImageBatchModifier(winter_condensation_identifier),
-    # ImageSaver(output_dir_name="darkcal"),
-    # ImageRejector((WINTER_CONDENSATION_KEY, "True")),
+    CustomImageBatchModifier(winter_condensation_rejector),
+    # ImageSaver(output_dir_name="darkcal")
 ]
 
 flat_calibrate = [
