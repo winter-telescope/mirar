@@ -7,13 +7,13 @@ from sqlalchemy import text
 from sqlalchemy_utils import create_database, database_exists
 
 from mirar.database.credentials import (
-    DB_PASSWORD,
-    DB_PASSWORD_KEY,
-    DB_USER,
-    DB_USER_KEY,
     DB_HOSTNAME,
     DB_NAME,
+    DB_PASSWORD,
+    DB_PASSWORD_KEY,
     DB_PORT,
+    DB_USER,
+    DB_USER_KEY,
 )
 from mirar.database.engine import get_engine
 from mirar.database.errors import DataBaseError

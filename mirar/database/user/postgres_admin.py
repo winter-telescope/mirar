@@ -6,11 +6,11 @@ from sqlalchemy.sql.ddl import DDL
 from mirar.database.credentials import (
     ADMIN_PASSWORD,
     ADMIN_USER,
-    PG_ADMIN_PWD_KEY,
-    PG_ADMIN_USER_KEY,
     DB_HOSTNAME,
     DB_NAME,
     DB_PORT,
+    PG_ADMIN_PWD_KEY,
+    PG_ADMIN_USER_KEY,
 )
 from mirar.database.engine import get_engine
 from mirar.database.user.postgres_user import PostgresUser
