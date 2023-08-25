@@ -333,6 +333,7 @@ core_fields = [
     PROC_FAIL_KEY,
     RAW_IMG_KEY,
     BASE_NAME_KEY,
+    EXPTIME_KEY,
 ]
 
 MONITOR_EMAIL_KEY = "WATCHDOG_EMAIL"

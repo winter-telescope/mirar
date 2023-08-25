@@ -21,9 +21,9 @@ from mirar.paths import (
 )
 from mirar.processors.astromatic.sextractor.sextractor import (
     SEXTRACTOR_HEADER_KEY,
-    Sextractor,
+    check_sextractor_prerequisite,
 )
-from mirar.processors.base_processor import BaseImageProcessor, PrerequisiteError
+from mirar.processors.base_processor import BaseImageProcessor
 from mirar.utils import execute
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ def write_scamp_header_to_image(image: Image):
     """
     headerfile = image[SCAMP_HEADER_KEY]
     image_header = image.get_header()
-    with open(headerfile, "r") as header_f:
+    with open(headerfile, "r") as header_f:  # pylint: disable=unspecified-encoding
         scamp_header_data = header_f.read()
 
     scamp_header = fits.Header()
@@ -198,11 +198,4 @@ class Scamp(BaseImageProcessor):
     def check_prerequisites(
         self,
     ):
-        check = np.sum([isinstance(x, Sextractor) for x in self.preceding_steps])
-        if check < 1:
-            err = (
-                f"{self.__module__} requires {Sextractor} as a prerequisite. "
-                f"However, the following steps were found: {self.preceding_steps}."
-            )
-            logger.error(err)
-            raise PrerequisiteError(err)
+        check_sextractor_prerequisite(self)

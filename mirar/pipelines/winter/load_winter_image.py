@@ -366,6 +366,11 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:, 1970:] = 1.0
         mask[:55, :] = 1.0
         mask[:, :20] = 1.0
+        mask[:475, 406:419] = 1.0
+        mask[350:352, :] = 1.0
+        mask[260:287, :66] = 1.0
+        mask[:, 1564:1567] = 1.0
+        mask[:, 1931:] = 1.0
 
     if header["BOARD_ID"] == 3:
         mask[1085:, :] = 1.0
@@ -378,11 +383,22 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[610:, :250] = 1.0
         # # There seems to be a dead spot in the middle of the image
         mask[503:518, 390:405] = 1.0
+
+        # Mask the edges with low sensitivity due to masking
         mask[:, 1948:] = 1.0
         mask[:, :61] = 1.0
         mask[:20, :] = 1.0
         mask[1060:, :] = 1.0
-        mask[:, 999:1002] = 1.0
+
+        # Mask a vertical strip
+        mask[:, 998:1002] = 1.0
+
+        # Mask the outage to the right
+        mask[145:, 1735:] = 1.0
+        mask[data > 40000] = 1.0
+
+        # Mask random vertical strip
+        mask[:, 1080:1085] = 1.0
 
     if header["BOARD_ID"] == 5:
         # Mask the outage in the top-right.
