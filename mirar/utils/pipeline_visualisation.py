@@ -16,6 +16,7 @@ from mirar.processors.base_processor import (
     BaseProcessor,
     BaseSourceGenerator,
     BaseSourceProcessor,
+    PrerequisiteError,
 )
 
 logger = logging.getLogger(__name__)
@@ -153,7 +154,15 @@ def iterate_flowify(
 
         for single_config in config_list:
             logger.info(f"Visualising {single_config} configuration")
-            flowify(
-                pipe.set_configuration(single_config),
-                get_save_path(pipeline, single_config),
-            )
+            try:
+                flowify(
+                    pipe.set_configuration(single_config),
+                    get_save_path(pipeline, single_config),
+                )
+            except PrerequisiteError as exc:
+                err = (
+                    f"Error for '{pipeline}' pipeline, "
+                    f"'{single_config}' configuration"
+                )
+                logger.error(err)
+                raise PrerequisiteError(err) from exc

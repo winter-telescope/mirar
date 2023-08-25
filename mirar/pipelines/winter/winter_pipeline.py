@@ -9,16 +9,13 @@ from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
     build_test,
-    candidates,
     csvlog,
     detect_candidates,
     detrend_unpacked,
     extract_all,
     full_reduction,
     imsub,
-    load_sources,
     load_stack,
-    load_sub,
     load_test,
     load_test_stack,
     mask_and_split,
@@ -54,7 +51,6 @@ class WINTERPipeline(Pipeline):
         "unpack_all": unpack_all,
         "detrend_unpacked": detrend_unpacked,
         "imsub": load_stack + imsub + detect_candidates,
-        "candidates": load_sources + candidates,
         "reduce": reduce,
         "reduce_unpacked": reduce_unpacked,
         "photcal_stacks": photcal_stacks,
@@ -75,7 +71,6 @@ class WINTERPipeline(Pipeline):
         "only_ref": only_ref,
         "realtime": realtime,
         "detect_candidates": load_stack + imsub + detect_candidates,
-        "debug_candidates": load_sub + detect_candidates + process_candidates,
         "full_imsub": load_stack + imsub + detect_candidates + process_candidates,
     }
 
