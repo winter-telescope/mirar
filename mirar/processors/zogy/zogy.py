@@ -43,7 +43,7 @@ from mirar.paths import (
     core_fields,
     get_output_dir,
 )
-from mirar.processors.base_processor import BaseImageProcessor
+from mirar.processors.base_processor import BaseImageProcessor, PrerequisiteError
 from mirar.processors.zogy.pyzogy import pyzogy
 from mirar.utils.ldac_tools import get_table_from_ldac
 
@@ -484,4 +484,4 @@ class ZOGY(ZOGYPrepare):
     ):
         check = np.sum([isinstance(x, ZOGYPrepare) for x in self.preceding_steps])
         if check != 1:
-            raise ValueError("ZOGYPrepare must be run before ZOGY")
+            raise PrerequisiteError("ZOGYPrepare must be run before ZOGY")

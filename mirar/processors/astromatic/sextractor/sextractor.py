@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Callable, Optional
 
+import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 
@@ -25,7 +26,11 @@ from mirar.processors.astromatic.sextractor.sourceextractor import (
     parse_checkimage,
     run_sextractor_single,
 )
-from mirar.processors.base_processor import BaseImageProcessor
+from mirar.processors.base_processor import (
+    BaseImageProcessor,
+    BaseProcessor,
+    PrerequisiteError,
+)
 from mirar.utils.ldac_tools import convert_table_to_ldac, get_table_from_ldac
 
 logger = logging.getLogger(__name__)
@@ -40,6 +45,20 @@ sextractor_checkimg_map = {
     "SEGMENTATION": "SEGMAP",
     "-BACKGROUND": "BKGSUB",
 }
+
+
+def check_sextractor_prerequisite(processor: BaseProcessor):
+    """
+    Check that the preceding steps of a given processor contain Sextractor
+    """
+    check = np.sum([isinstance(x, Sextractor) for x in processor.preceding_steps])
+    if check < 1:
+        err = (
+            f"{processor.__module__} requires {Sextractor} as a prerequisite. "
+            f"However, the following steps were found: {processor.preceding_steps}."
+        )
+        logger.error(err)
+        raise PrerequisiteError(err)
 
 
 class Sextractor(BaseImageProcessor):

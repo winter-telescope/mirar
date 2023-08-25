@@ -12,7 +12,9 @@ from mirar.data import Image, ImageBatch
 from mirar.data.utils.coords import write_regions_file
 from mirar.paths import SEXTRACTOR_HEADER_KEY, ZP_KEY
 from mirar.processors import BaseImageProcessor
-from mirar.processors.astromatic.sextractor.sextractor import Sextractor
+from mirar.processors.astromatic.sextractor.sextractor import (
+    check_sextractor_prerequisite,
+)
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
 )
@@ -106,11 +108,4 @@ class CatalogLimitingMagnitudeCalculator(BaseImageProcessor):
     def check_prerequisites(
         self,
     ):
-        check = np.sum([isinstance(x, Sextractor) for x in self.preceding_steps])
-        if check < 1:
-            err = (
-                f"{self.__module__} requires {Sextractor} as a prerequisite. "
-                f"However, the following steps were found: {self.preceding_steps}."
-            )
-            logger.error(err)
-            raise ValueError
+        check_sextractor_prerequisite(self)
