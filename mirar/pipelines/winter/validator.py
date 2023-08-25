@@ -79,7 +79,7 @@ def is_condensation_in_image(image: Image) -> bool:
     Checks if a WINTER image is affected by condensation
     """
     data = image.get_data()
-    header = image.header
+    header = image.get_header()
     vmedian = np.nanmedian(data, axis=1)
     x_inds = np.arange(len(vmedian))
     nanmask = np.invert(np.isnan(vmedian))
