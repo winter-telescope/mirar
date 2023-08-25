@@ -26,7 +26,7 @@ ASTREFERR_KEYS         ra_errdeg, dec_errdeg #e_RAJ2000, e_DEJ2000
 ASTREFMAG_KEY          phot_rp_mean_mag            # Local ref.cat. magnitude parameter
 ASTREFMAGERR_KEY       phot_rp_mean_mag_error          # Local ref.cat. mag. error parameter
 ASTREFOBSDATE_KEY      ref_epoch         # Local ref.cat. obs. date parameter
-ASTREFMAG_LIMITS       -99.0,99.0      # Select magnitude range in ASTREF_BAND
+ASTREFMAG_LIMITS       0,14.0      # Select magnitude range in ASTREF_BAND
 SAVE_REFCATALOG        N               # Save ref catalogs in FITS-LDAC format?
 REFOUT_CATPATH         .               # Save path for reference catalogs
 
@@ -49,14 +49,14 @@ PIXSCALE_MAXERR        1.01             # Max scale-factor uncertainty
 POSANGLE_MAXERR        90               # Max position-angle uncertainty (deg)
 POSITION_MAXERR        2             # Max positional uncertainty (arcmin)
 MATCH_RESOL            0               # Matching resolution (arcsec); 0=auto
-MATCH_FLIPPED          N               # Allow matching with flipped axes?
+MATCH_FLIPPED          Y               # Allow matching with flipped axes?
 MOSAIC_TYPE            UNCHANGED       # UNCHANGED, SAME_CRVAL, SHARE_PROJAXIS,
                                        # FIX_FOCALPLANE or LOOSE
 FIXFOCALPLANE_NMIN     1               # Min number of dets for FIX_FOCALPLANE
 
 #---------------------------- Cross-identification ----------------------------
 
-CROSSID_RADIUS         5.0             # Cross-id initial radius (arcsec)
+CROSSID_RADIUS         15.0             # Cross-id initial radius (arcsec)
 
 #---------------------------- Astrometric solution ----------------------------
 
