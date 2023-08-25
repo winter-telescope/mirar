@@ -15,7 +15,7 @@ PG_ADMIN_PWD_KEY = "PG_ADMIN_PWD"
 
 DB_USER = os.getenv(DB_USER_KEY)
 DB_PASSWORD = os.getenv(DB_PASSWORD_KEY)
-DB_HOSTNAME = os.getenv(DB_HOSTNAME_KEY, "127.0.0.1")
+DB_HOSTNAME = os.getenv(DB_HOSTNAME_KEY, "localhost")
 DB_NAME = os.getenv(DB_NAME_KEY, "postgres")
 DB_PORT = os.getenv(DB_PORT_KEY, 5432)
 DB_SCHEMA = os.getenv(DB_SCHEMA_KEY, "public")
