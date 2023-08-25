@@ -2,9 +2,8 @@
 Module to reject images based on quality criteria
 """
 import numpy as np
-from astropy.io import fits
 
-from mirar.data import ImageBatch
+from mirar.data import Image, ImageBatch
 from mirar.errors.exceptions import ProcessorError
 from mirar.processors.astrometry.validate import PoorAstrometryError, PoorFWHMError
 from mirar.processors.split import SUB_ID_KEY
@@ -75,10 +74,12 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
     return batch
 
 
-def is_condensation_in_image(data: np.ndarray, header: fits.Header) -> bool:
+def is_condensation_in_image(image: Image) -> bool:
     """
     Checks if a WINTER image is affected by condensation
     """
+    data = image.get_data()
+    header = image.header
     vmedian = np.nanmedian(data, axis=1)
     x_inds = np.arange(len(vmedian))
     nanmask = np.invert(np.isnan(vmedian))
@@ -104,6 +105,6 @@ def winter_condensation_rejector(images: ImageBatch) -> ImageBatch:
     """
     assert len(images) == 1
     for image in images:
-        if is_condensation_in_image(data=image.get_data(), header=image.header):
+        if is_condensation_in_image(image):
             raise CondensationError("Image is affected by condensation")
     return images
