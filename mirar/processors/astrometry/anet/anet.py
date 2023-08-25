@@ -72,6 +72,7 @@ def run_astrometry_net_single(
         f"--new-fits {newname} "
         f"--overwrite "
         f"--out {basename} "  # use this base name for outputs (instead of 'temp_...')
+        f"--use-source-extractor "
     )
 
     if scale_bounds is not None:

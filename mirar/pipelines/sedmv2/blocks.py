@@ -88,7 +88,6 @@ reduce = [
         scale_units="degw",
         downsample=2,
         timeout=60,
-        use_sextractor=True,
     ),
     ImageSaver(output_dir_name="a-net-solved", write_mask=True),
     Sextractor(
