@@ -14,7 +14,6 @@ from mirar.database.credentials import (
     DB_HOSTNAME,
     DB_NAME,
     DB_PORT,
-    DB_SCHEMA
 )
 from mirar.database.engine import get_engine
 from mirar.database.errors import DataBaseError
@@ -30,13 +29,19 @@ class PostgresUser:
     user_env_variable = DB_USER_KEY
     pass_env_variable = DB_PASSWORD_KEY
 
-    def __init__(self, db_user: str = DB_USER, db_password: str = DB_PASSWORD, db_hostname: str = DB_HOSTNAME, db_name: str = DB_NAME, db_port: int = DB_PORT, db_schema: str = DB_SCHEMA):
+    def __init__(
+        self,
+        db_user: str = DB_USER,
+        db_password: str = DB_PASSWORD,
+        db_hostname: str = DB_HOSTNAME,
+        db_name: str = DB_NAME,
+        db_port: int = DB_PORT,
+    ):
         self.db_user = db_user
         self.db_password = db_password
         self.db_hostname = db_hostname
         self.db_name = db_name
         self.db_port = db_port
-        self.db_schema = db_schema
 
     def validate_credentials(self):
         """
@@ -65,7 +70,7 @@ class PostgresUser:
             db_user=self.db_user,
             db_password=self.db_password,
             db_hostname=self.db_hostname,
-            db_port=self.db_port
+            db_port=self.db_port,
         )
 
         with engine.connect() as conn:
@@ -92,7 +97,7 @@ class PostgresUser:
         db_name: str,
     ) -> bool:
         """
-        Function to create q3c extension and index on table
+        Function to check if q3c extension exists
 
         :param extension_name: name of extension to check
         :param db_name: name of database to check
@@ -107,5 +112,29 @@ class PostgresUser:
             res = conn.execute(command).all()
 
         assert len(res) <= 1, "More than one extension found"
+
+        return len(res) == 1
+
+    @staticmethod
+    def has_schema(
+        schema_name: str,
+        db_name: str,
+    ) -> bool:
+        """
+        Function to check if schema exists and user can access.
+
+        :param extension_name: name of schema to check
+        :param db_name: name of database to check
+        :return: boolean extension exists
+        """
+
+        engine = get_engine(db_name=db_name)
+        with engine.connect() as conn:
+            command = text(
+                f"SELECT schema_name FROM information_schema.schemata WHERE schema_name='{schema_name}'"
+            )
+            res = conn.execute(command).all()
+
+        assert len(res) <= 1, "More than one schema found"
 
         return len(res) == 1

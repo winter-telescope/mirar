@@ -24,8 +24,8 @@ def send_gmail(
     email_recipients: str | list[str],
     email_subject: str,
     email_text: str,
-    email_sender: str = os.getenv("WATCHDOG_EMAIL"),
-    email_password: str = os.getenv("WATCHDOG_EMAIL_PASSWORD"),
+    email_sender: str = os.environ.get("WATCHDOG_EMAIL"),
+    email_password: str = os.environ.get("WATCHDOG_EMAIL_PASSWORD"),
     attachments: Optional[str | list[str]] = None,
     auto_compress: bool = True,
 ):

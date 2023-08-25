@@ -141,7 +141,7 @@ class SendToFritz(BaseSourceProcessor):
 
         :return: Fritz token
         """
-        token_fritz = os.getenv("FRITZ_TOKEN")
+        token_fritz = os.environ.get("FRITZ_TOKEN")
 
         if token_fritz is None:
             err = (
@@ -176,7 +176,7 @@ class SendToFritz(BaseSourceProcessor):
 
         :return: Fritz author id
         """
-        authid_fritz = os.getenv("FRITZ_AUTHID")
+        authid_fritz = os.environ.get("FRITZ_AUTHID")
 
         if authid_fritz is None:
             err = (
