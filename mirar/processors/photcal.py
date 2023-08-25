@@ -78,16 +78,27 @@ def get_maglim(
 
     zeropoint = np.array(zeropoint, dtype=float)
     aperture_radius_pixels = np.array(aperture_radius_pixels, dtype=float)
+    logger.debug(aperture_radius_pixels)
     bkg_rms_image = fits.getdata(bkg_rms_image_path)
     bkg_rms_med = np.nanmedian(bkg_rms_image)
-    noise = bkg_rms_med * np.sqrt(np.pi * aperture_radius_pixels)
+    noise = bkg_rms_med * np.sqrt(np.pi * aperture_radius_pixels**2)
     maglim = -2.5 * np.log10(5 * noise) + zeropoint
+    logger.debug(f"Aperture radii: {aperture_radius_pixels}")
+    logger.debug(f"Calculated maglim: {maglim}")
     return maglim
 
 
 class PhotCalibrator(BaseProcessorWithCrossMatch):
     """
     Photometric calibrator processor
+
+    Attributes:
+        num_matches_threshold: minimum number of matches required for
+        photometric calibration
+        outlier_rejection_threshold: float or list of floats to use as number of sigmas
+        for outlier rejection. If a ist is provided, the list is sorted and stepped
+        through in order with increasing thresholds until the specified
+        number of matches is reached.
     """
 
     base_key = "photcalibrator"
@@ -103,6 +114,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         crossmatch_radius_arcsec: float = 1.0,
         write_regions: bool = False,
         cache: bool = False,
+        outlier_rejection_threshold: float | list[float] = 3.0,
     ):
         super().__init__(
             ref_catalog_generator=ref_catalog_generator,
@@ -114,6 +126,10 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             required_parameters=REQUIRED_PARAMETERS,
         )
         self.num_matches_threshold = num_matches_threshold
+        self.outlier_rejection_threshold = outlier_rejection_threshold
+        if isinstance(outlier_rejection_threshold, float):
+            self.outlier_rejection_threshold = [outlier_rejection_threshold]
+        self.outlier_rejection_threshold = np.sort(self.outlier_rejection_threshold)
 
     def __str__(self) -> str:
         return "Processor to perform photometric calibration."
@@ -166,10 +182,16 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             offsets = np.ma.array(
                 matched_ref_cat["magnitude"] - matched_img_cat["MAG_APER"][:, i]
             )
-            cl_offset = sigma_clip(offsets)
-            num_stars = np.sum(np.invert(cl_offset.mask))
+            for outlier_thresh in self.outlier_rejection_threshold:
+                cl_offset = sigma_clip(offsets, sigma=outlier_thresh)
+                num_stars = np.sum(np.invert(cl_offset.mask))
 
-            zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets)
+                zp_mean, zp_med, zp_std = sigma_clipped_stats(
+                    offsets, sigma=outlier_thresh
+                )
+
+                if num_stars > self.num_matches_threshold:
+                    break
 
             check = [np.isnan(x) for x in [zp_mean, zp_med, zp_std]]
             if np.sum(check) > 0:
@@ -193,14 +215,19 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             }
             zeropoints.append(zero_dict)
 
-        offsets = np.ma.array(
-            matched_ref_cat["magnitude"] - matched_img_cat["MAG_AUTO"]
-        )
-        cl_offset = sigma_clip(offsets, sigma=3)
-        num_stars = np.sum(np.invert(cl_offset.mask))
-        zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets, sigma=3)
-        zero_auto_mag_cat = matched_ref_cat["magnitude"][np.invert(cl_offset.mask)]
-        zero_auto_mag_img = matched_img_cat["MAG_AUTO"][np.invert(cl_offset.mask)]
+        for outlier_thresh in self.outlier_rejection_threshold:
+            offsets = np.ma.array(
+                matched_ref_cat["magnitude"] - matched_img_cat["MAG_AUTO"]
+            )
+            cl_offset = sigma_clip(offsets, sigma=outlier_thresh)
+            num_stars = np.sum(np.invert(cl_offset.mask))
+            zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets, sigma=outlier_thresh)
+            zero_auto_mag_cat = matched_ref_cat["magnitude"][np.invert(cl_offset.mask)]
+            zero_auto_mag_img = matched_img_cat["MAG_AUTO"][np.invert(cl_offset.mask)]
+
+            if num_stars > self.num_matches_threshold:
+                break
+
         zeropoints.append(
             {
                 "diameter": "AUTO",
@@ -278,7 +305,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                     except ValueError:
                         continue
 
-                aperture_diameters.append(med_fwhm_pix)
+                aperture_diameters.append(med_fwhm_pix * 2)
                 zp_values.append(image["ZP_AUTO"])
 
                 if sextractor_checkimg_map["BACKGROUND_RMS"] in image.header.keys():
@@ -293,8 +320,8 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                 else:
                     limmags = [-99] * len(aperture_diameters)
 
-                for ind, diam in enumerate(aperture_diameters):
-                    image[f"MAGLIM_{int(diam)}"] = limmags[ind]
+                for ind, diam in enumerate(aperture_diameters[:-1]):
+                    image[f"MAGLIM_{np.rint(diam)}"] = limmags[ind]
                 image[MAGLIM_KEY] = limmags[-1]
 
                 image[ZP_KEY] = image["ZP_AUTO"]

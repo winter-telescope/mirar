@@ -20,6 +20,7 @@ from mirar.database.transactions import select_from_table
 from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
     MAGLIM_KEY,
+    OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
     SATURATE_KEY,
     SCI_IMG_KEY,
@@ -44,6 +45,7 @@ from mirar.processors.base_catalog_xmatch_processor import (
 )
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
+from mirar.processors.utils.image_selector import select_from_images
 from mirar.references.local import RefFromPath
 from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
@@ -487,3 +489,24 @@ def winter_fourier_filtered_image_generator(batch: ImageBatch) -> ImageBatch:
         new_batch.append(image)
     new_batch = ImageBatch(new_batch)
     return new_batch
+
+
+def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
+    """
+    Selects the flat for the winter data
+    """
+    flat_images = []
+    for image in images:
+        image["MEDCOUNT"] = np.nanmedian(image.get_data())
+        if image["MEDCOUNT"] > 3000:
+            flat_images.append(image)
+
+    flat_images = ImageBatch(flat_images)
+
+    if len(flat_images) == 0:
+        # To enable current version of realtime processing?
+        logger.warning("No good flat images found, using all images in batch")
+        flat_images = select_from_images(
+            images, key=OBSCLASS_KEY, target_values="science"
+        )
+    return flat_images
