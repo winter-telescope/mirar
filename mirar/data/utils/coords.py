@@ -87,7 +87,7 @@ def write_regions_file(
     y_coords: list[float],
     system: str = "image",
     region_radius: float = 5,
-    text: list = None,
+    text: list | None = None,
 ):
     """
     Function to write a regions file
@@ -105,7 +105,7 @@ def write_regions_file(
     logger.debug(f"Writing regions path to {regions_path}")
     if text is not None:
         assert len(text) == len(x_coords) == len(y_coords), (
-            "Text must be same length as coordinates, found len(text) = "
+            "Text must be same size as coordinates, found len(text) = "
             f"{len(text)}, len(x_coords) = {len(x_coords)}, len(y_coords) = "
             f"{len(y_coords)}"
         )
