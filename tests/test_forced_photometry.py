@@ -30,9 +30,9 @@ EXPECTED_HEADER_VALUES = {
 
 EXPECTED_DATAFRAME_VALUES = {
     "magpsf": [16.95749166765038],
-    "magap16": [17.014130826817812],
+    "magap": [17.014130826817812],
     "sigmapsf": [0.04793450628321317],
-    "sigmagap16": [0.055862250242806104],
+    "sigmagap": [0.055862250242806104],
 }
 
 test_fp_configuration = (
