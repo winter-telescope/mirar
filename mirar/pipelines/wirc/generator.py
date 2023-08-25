@@ -34,6 +34,9 @@ def wirc_source_table_filter_annotator(source_table: SourceBatch) -> SourceBatch
 
     for source in source_table:
         src_df = source.get_data()
+
+        print(list(src_df.columns))
+
         none_mask = (
             src_df.loc[:, "sigmapsf"].isnull()
             | src_df.loc[:, "magpsf"].isnull()

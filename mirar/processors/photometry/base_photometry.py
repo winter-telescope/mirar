@@ -126,9 +126,6 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         """
         imagename = metadata[self.image_key]
 
-        print(self.image_key)
-        print(imagename)
-
         image = Image(header=fits.getheader(imagename), data=fits.getdata(imagename))
 
         image_filename = self.save_temp_image(image)

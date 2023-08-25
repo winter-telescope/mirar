@@ -139,6 +139,8 @@ class TestWircImsubPipeline(BaseTestCase):
 
         source_table = res[0][0]
 
+        print(list(source_table.get_data().columns))
+
         for key, value in EXPECTED_HEADER_VALUES.items():
             if isinstance(value, float):
                 self.assertAlmostEqual(value, source_table[key], places=2)

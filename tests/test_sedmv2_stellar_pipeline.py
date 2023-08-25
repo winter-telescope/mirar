@@ -123,8 +123,6 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
 
         assert len(source_table) == 1
 
-        print(source_table.iloc[0])
-
         new_row = "expected_ap_phot = { \n"  # pylint: disable=C0103
         for header_key in expected_ap_phot.keys():
             new_row += f'    "{header_key}": {source_table.iloc[0][header_key]}, \n'
