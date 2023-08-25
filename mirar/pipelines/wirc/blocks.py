@@ -207,7 +207,7 @@ candidate_photometry = [
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
-        # col_suffix_list=["", "big"],
+        col_suffix_list=["", "big"],
     ),
     PSFPhotometry(),
 ]
@@ -243,7 +243,7 @@ process_candidates = [
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
-        # col_suffix_list=["", "big"],
+        col_suffix_list=["", "big"],
     ),
     # SourceWriter(output_dir_name="candidates"),
     CustomSourceTableModifier(modifier_function=wirc_source_table_filter_annotator),
