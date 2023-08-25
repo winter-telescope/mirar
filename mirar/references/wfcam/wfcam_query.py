@@ -4,28 +4,32 @@ You can either query the online WFAU archive, or query a local database to get
 component images.
 """
 import logging
+import warnings
 from pathlib import Path
 from typing import Callable, Type
 
 import numpy as np
+import pandas as pd
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.units import Quantity
+from astropy.wcs import FITSFixedWarning
 from astroquery.ukidss import UkidssClass
 from astroquery.utils.commons import FileContainer
 from astroquery.wfau import BaseWFAUClass
 from astrosurveyutils.surveys import MOCSurvey
 
 from mirar.data import Image, ImageBatch
-from mirar.data.utils import get_image_center_wcs_coords
+from mirar.data.utils import check_coords_within_image, get_image_center_wcs_coords
 from mirar.database.base_model import BaseDB
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.errors import ProcessorError
-from mirar.io import open_raw_image, save_fits
+from mirar.io import open_raw_image
 from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, get_output_dir, get_output_path
 from mirar.processors.database import DatabaseImageInserter
+from mirar.references.wfcam.files import wfcam_undeprecated_compid_file
 from mirar.references.wfcam.utils import (
     COMPID_KEY,
     EXTENSION_ID_KEY,
@@ -38,6 +42,7 @@ from mirar.references.wfcam.utils import (
     get_wfcam_file_identifiers_from_url,
     make_wfcam_image_from_hdulist,
     open_compressed_wfcam_fits,
+    save_wfcam_as_compressed_fits,
 )
 
 logger = logging.getLogger(__name__)
@@ -89,7 +94,8 @@ class BaseWFCAMQuery:
         :param num_query_points: Number of points to use to define the query region. The
             image is divided into np.sqrt(num_query_points) x np.sqrt(num_query_points)
             regions.
-        :param query_coords_function: Function to get the query coordinates from the header.
+        :param query_coords_function: Function to get the query coordinates from the
+        header.
             The function should take a header and the number of query points as input,
             and return a list of tuples of coordinates.
         :param component_image_subdir: Subdirectory to save component images to.
@@ -357,13 +363,15 @@ class WFAUQuery(BaseWFCAMQuery):
 
                 # Make an entry in the queries table
                 if self.use_db_for_component_queries & (not query_exists):
-                    downloaded_images = [
-                        open_raw_image(imagepath) for imagepath in imagepaths
+                    queried_images = [
+                        open_raw_image(imagepath, open_f=open_compressed_wfcam_fits)
+                        for imagepath in imagepaths
                     ]
-                    for img in downloaded_images:
+                    for img in queried_images:
                         img[QUERY_RA_KEY] = crd.ra.deg
                         img[QUERY_DEC_KEY] = crd.dec.deg
-                    self.dbexporter.apply(ImageBatch(downloaded_images))
+                        img[QUERY_FILT_KEY] = self.filter_name
+                    self.dbexporter.apply(ImageBatch(queried_images))
 
                 qexists_list = [query_exists] * len(imagepaths)
                 ra_list, dec_list = [crd.ra.deg] * len(imagepaths), [crd.dec.deg] * len(
@@ -390,7 +398,12 @@ class WFAUQuery(BaseWFCAMQuery):
             err = "No image found at the given coordinates in the UKIRT database"
             raise WFCAMRefNotFoundError(err)
 
-        wfcam_images = ImageBatch([open_raw_image(url) for url in wfcam_image_paths])
+        wfcam_images = ImageBatch(
+            [
+                open_raw_image(url, open_f=open_compressed_wfcam_fits)
+                for url in wfcam_image_paths
+            ]
+        )
 
         return wfcam_images
 
@@ -414,6 +427,7 @@ def download_wfcam_archive_images(
     use_local_database: bool = False,
     components_table: Type[BaseDB] = None,
     duplicate_protocol: str = "ignore",
+    undeprecated_compids_file: Path = wfcam_undeprecated_compid_file,
 ) -> list[Path]:
     """
     Download the image from UKIRT server. Optionally, check if the image exists locally
@@ -430,6 +444,8 @@ def download_wfcam_archive_images(
     :param components_table: Table to use for the components database.
     :param duplicate_protocol: Protocol to follow if the image already exists locally.
     :param q3c_bool: Is q3c setup?
+    :param undeprecated_compids_file: Path to the file with the list of undeprecated
+    component ids.
     :return imagepaths: List of paths to the downloaded images.
     """
     # ukirt_query = UkidssClass()
@@ -457,6 +473,19 @@ def download_wfcam_archive_images(
             _,
             _,
         ) = get_wfcam_file_identifiers_from_url(url)
+
+        # Check if image is deprecated. If so, don't use it.
+        if undeprecated_compids_file is not None:
+            compid = int(f"{multiframe_id}{extension_id}")
+            undeprecated_compids = pd.read_csv(undeprecated_compids_file)[
+                "COMPID"
+            ].values
+            if compid not in undeprecated_compids:
+                logger.debug(
+                    f"File with multiframeid {multiframe_id} and "
+                    f"extension {extension_id} is deprecated. Skipping."
+                )
+                continue
 
         if use_local_database:
             # Check if the image exists locally.
@@ -505,8 +534,8 @@ def download_wfcam_archive_images(
                 wfcam_db_batch = dbexporter.apply(ImageBatch([wfcam_image]))
                 wfcam_image = wfcam_db_batch[0]
 
-            save_fits(wfcam_image, imagepath)
-            logger.debug(f"Saved UKIRT image to {local_imagepaths}")
+            save_wfcam_as_compressed_fits(wfcam_image, imagepath)
+            logger.debug(f"Saved UKIRT image to {imagepath}")
 
         imagepaths.append(imagepath)
 
@@ -534,20 +563,27 @@ def check_query_exists_locally(
     """
 
     constraints = DBQueryConstraints(
-        columns=[QUERY_RA_KEY, QUERY_DEC_KEY, QUERY_FILT_KEY],
-        accepted_values=[query_ra, query_dec, query_filt],
+        columns=[QUERY_FILT_KEY],
+        accepted_values=[query_filt],
+    )
+    constraints.add_q3c_constraint(
+        ra=query_ra,
+        dec=query_dec,
+        crossmatch_radius_arcsec=10.0,
+        ra_field_name=QUERY_RA_KEY,
+        dec_field_name=QUERY_DEC_KEY,
     )
     results = select_from_table(
         db_constraints=constraints,
         sql_table=query_table.sql_model,
-        output_columns=[COMPID_KEY],
+        output_columns=[COMPID_KEY.lower()],
     )
 
     logger.debug(results)
     savepaths = []
     if len(results) > 0:
         savepaths = []
-        compids = [x[0] for x in results]
+        compids = results[COMPID_KEY.lower()].tolist()
         for compid in compids:
             constraints = DBQueryConstraints(
                 columns=[COMPID_KEY],
@@ -564,7 +600,7 @@ def check_query_exists_locally(
                     "a query corresponding to it exists. The query"
                     "table is likely out of sync with the component"
                 )
-            savepaths.append(Path(comp_results["savepath"].iloc[0].value))
+            savepaths.append(Path(comp_results["savepath"].iloc[0]))
     return savepaths
 
 
@@ -583,12 +619,26 @@ def get_locally_existing_overlap_images(
         :return: list of savepaths
     """
 
-    constraints = DBQueryConstraints(
-        columns=["ra0_0", "ra1_1", "dec0_0", "dec1_1", "filter"],
-        accepted_values=[query_ra, query_ra, query_dec, query_dec, query_filt],
-        comparison_types=["<=", ">=", ">=", "<=", "="],
-    )
-
+    # Get around RA=0/360 issue
+    if (query_ra > 0.46) & (query_ra < 359.57):
+        constraints = DBQueryConstraints(
+            columns=["ramin", "ramax", "decmin", "decmax", "filter"],
+            accepted_values=[
+                (0.46, query_ra),
+                (query_ra, 359.57),
+                query_dec,
+                query_dec,
+                query_filt,
+            ],
+            comparison_types=["between", "between", "<=", ">=", "="],
+        )
+    else:
+        constraints = DBQueryConstraints(
+            columns=["ramin", "ramax", "decmin", "decmax", "filter"],
+            accepted_values=[query_ra, query_ra, query_dec, query_dec, query_filt],
+            comparison_types=[">=", "<=", ">=", "<=", "="],
+        )
+    logger.debug(f"Constraints: {constraints.parse_constraints()}")
     results = select_from_table(
         db_constraints=constraints,
         sql_table=components_table.sql_model,
@@ -599,6 +649,18 @@ def get_locally_existing_overlap_images(
     savepaths = []
     if len(results) > 0:
         savepaths = [Path(x) for x in results["savepath"].tolist()]
+        # Confirm that the coordinates are in the image
+        logger.debug(f"Checking WCS of {len(savepaths)} images for overlap")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", FITSFixedWarning)
+            savepaths = [
+                x
+                for x in savepaths
+                if check_coords_within_image(
+                    header=fits.getheader(x, 1), ra=query_ra, dec=query_dec
+                )
+            ]
+        logger.debug(f"{len(savepaths)} images confirmed to overlap")
     return savepaths
 
 
@@ -661,58 +723,3 @@ class UKIRTOnlineQuery(WFAUQuery):
             :return: query class
         """
         return UkidssClass()
-
-
-class WFCAMLocalQuery(BaseWFCAMQuery):
-    """
-    Class to query the WFCAM local database.
-    This is a subclass of the WFAUQuery.
-    """
-
-    def __init__(
-        self,
-        filter_name: str,
-        components_db_table: Type[BaseDB],
-        query_overlapping_images: Callable[
-            [float, float, str, Type[BaseDB]], list[Path]
-        ] = get_locally_existing_overlap_images,
-        num_query_points: int = 4,
-        query_coords_function: Callable[
-            [fits.Header, int], tuple[list[float], list[float]]
-        ] = get_query_coordinates_from_header,
-    ):
-        super().__init__(
-            filter_name=filter_name,
-            num_query_points=num_query_points,
-            query_coords_function=query_coords_function,
-        )
-        self.components_db_table = components_db_table
-        self.query_overlapping_images = query_overlapping_images
-
-    def run_query(self, image: Image) -> ImageBatch:
-        """
-        Function to run the query
-        """
-        # get the query coordinates
-        query_coords = self.query_coords_function(image.header, self.num_query_points)
-        logger.debug(f"Query coords: {query_coords}")
-        # get the overlapping images
-
-        imagepaths = []
-        for ra, dec in zip(query_coords[0], query_coords[1]):
-            overlapping_imagepaths = self.query_overlapping_images(
-                ra,
-                dec,
-                self.filter_name,
-                self.components_db_table,
-            )
-            imagepaths.append(overlapping_imagepaths)
-
-        imagepaths = list(set(imagepaths))
-
-        wfcam_images = [
-            open_raw_image(path=x, open_f=open_compressed_wfcam_fits)
-            for x in imagepaths
-        ]
-
-        return ImageBatch(wfcam_images)

@@ -10,7 +10,13 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
-from mirar.paths import BASE_NAME_KEY, FLAT_FRAME_KEY, LATEST_SAVE_KEY, OBSCLASS_KEY
+from mirar.paths import (
+    BASE_NAME_KEY,
+    COADD_KEY,
+    FLAT_FRAME_KEY,
+    LATEST_SAVE_KEY,
+    OBSCLASS_KEY,
+)
 from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWithCache
 from mirar.processors.utils.image_selector import select_from_images
 
@@ -98,6 +104,7 @@ class FlatCalibrator(ProcessorWithCache):
 
         flats = np.zeros((nx, ny, n_frames))
 
+        flat_exptimes = []
         for i, img in enumerate(images):
             data = img.get_data()
 
@@ -124,6 +131,7 @@ class FlatCalibrator(ProcessorWithCache):
                     f"Masking {np.sum(mask)} pixels in flat {img[BASE_NAME_KEY]}"
                 )
                 data[mask] = np.nan
+                flat_exptimes.append(img["EXPTIME"])
 
             median = np.nanmedian(
                 data[self.x_min : self.x_max, self.y_min : self.y_max]
@@ -134,7 +142,12 @@ class FlatCalibrator(ProcessorWithCache):
 
         master_flat = np.nanmedian(flats, axis=2)
 
-        return Image(master_flat, header=images[0].get_header())
+        master_flat_image = Image(master_flat, header=images[0].get_header())
+        master_flat_image[COADD_KEY] = n_frames
+        master_flat_image["INDIVEXP"] = ",".join(
+            [str(x) for x in np.unique(flat_exptimes)]
+        )
+        return master_flat_image
 
 
 class SkyFlatCalibrator(FlatCalibrator):

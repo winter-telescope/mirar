@@ -25,6 +25,9 @@ class RefQueriesTable(WinterBase):
     compid: Mapped[int] = mapped_column(ForeignKey("refcomponents.compid"))
     components: Mapped["RefComponentsTable"] = relationship(back_populates="queries")
 
+    ra_column_name = "qry_ra"
+    dec_column_name = "qry_dec"
+
 
 class RefQuery(BaseDB):
     """

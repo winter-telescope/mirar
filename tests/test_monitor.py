@@ -1,5 +1,6 @@
 """Test suite for ..module::mirar.monitor module"""
 import logging
+import os
 
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.monitor.base_monitor import Monitor
@@ -24,6 +25,24 @@ class TestMonitor(BaseTestCase):
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
+        self.check_tokens()
+
+    def check_tokens(self):
+        """If required tokens do not exist raise an error.
+        :raises RuntimeError: If missing token.
+        """
+        if os.environ.get("WATCHDOG_EMAIL", default="") == "":
+            raise RuntimeError(
+                "No email sender. Set environment variable WATCHDOG_EMAIL to test."
+            )
+        if os.environ.get("WATCHDOG_EMAIL_PASSWORD", default="") == "":
+            raise RuntimeError(
+                "No email password. Set environment variable WATCHDOG_EMAIL_PASSWORD to test."
+            )
+        if os.environ.get("WATCHDOG_EMAIL_RECIPIENTS", default="") == "":
+            raise RuntimeError(
+                "No email recipients. Set environment variable WATCHDOG_EMAIL_RECIPIENTS to test."
+            )
 
     def test_monitor(self):
         """Function to test ..class::Monitor realtime processing"""

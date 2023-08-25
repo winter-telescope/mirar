@@ -132,18 +132,29 @@ class BaseDB(PydanticBase):
 
             assert len(present_unique_keys) > 0
 
-            constraints = DBQueryConstraints(
-                columns=[x.name for x in present_unique_keys],
-                accepted_values=[
-                    self.model_dump()[x.name] for x in present_unique_keys
-                ],
-            )
+            res = None
 
-            res = select_from_table(
-                sql_table=self.sql_model,
-                db_constraints=constraints,
-                output_columns=returning_key_names,
-            )
+            for key in present_unique_keys:
+                constraint = DBQueryConstraints(
+                    columns=[key.name],
+                    accepted_values=[self.model_dump()[key.name]],
+                )
+                new_res = select_from_table(
+                    sql_table=self.sql_model,
+                    db_constraints=constraint,
+                    output_columns=returning_key_names,
+                )
+
+                if len(new_res) > 0:
+                    if res is None:
+                        res = new_res
+                    elif not new_res.equals(res):
+                        raise ValueError(
+                            f"Multiple matches found: {new_res} and {res}"
+                        ) from exc
+
+            if res is None:
+                raise ValueError("No results found") from exc
 
         return res
 

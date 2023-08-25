@@ -31,6 +31,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_generator,
+    winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_candidate_annotator_filterer,
@@ -38,6 +39,7 @@ from mirar.pipelines.winter.generator import (
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_photometric_catalog_generator,
+    winter_photometric_ref_catalog_namer,
     winter_reference_generator,
     winter_reference_image_resampler_for_zogy,
     winter_reference_psfex,
@@ -62,6 +64,10 @@ from mirar.pipelines.winter.models import (
     Exposure,
     Raw,
     Stack,
+)
+from mirar.pipelines.winter.validator import (
+    masked_images_rejector,
+    poor_astrometric_quality_rejector,
 )
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.background_subtractor import (
@@ -239,6 +245,26 @@ save_raw = [
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked"),
+    ImageBatcher("UTCTIME"),
+    CSVLog(
+        export_keys=[
+            "UTCTIME",
+            "PROGNAME",
+            DITHER_N_KEY,
+            MAX_DITHER_KEY,
+            "FILTER",
+            EXPTIME_KEY,
+            OBSCLASS_KEY,
+            "BOARD_ID",
+            "BASENAME",
+            TARGET_KEY,
+            "RADEG",
+            "DECDEG",
+            "T_ROIC",
+            "FIELDID",
+            "MEDCOUNT",
+        ]
+    ),
 ]
 
 # Detrend blocks
@@ -248,7 +274,7 @@ dark_calibrate = [
     ImageBatcher(["BOARD_ID", EXPTIME_KEY, "SUBCOORD"]),
     DarkCalibrator(cache_sub_dir="calibration"),
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    # ImageSaver(output_dir_name="darkcal"),
+    ImageSaver(output_dir_name="darkcal"),
     ImageDebatcher(),
 ]
 
@@ -293,6 +319,7 @@ astrometry = [
         output_sub_dir="scamp",
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
     ),
+    CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
     Scamp(
         scamp_config_path=scamp_config_path,
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
@@ -310,13 +337,14 @@ validate_astrometry = [
         output_sub_dir="astrostats",
     ),
     AstrometryStatsWriter(
-        ref_catalog_generator=winter_photometric_catalog_generator,
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         image_catalog_purifier=winter_astrostat_catalog_purifier,
         write_regions=True,
         cache=True,
         crossmatch_radius_arcsec=5.0,
     ),
     DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="ignore"),
+    CustomImageBatchModifier(poor_astrometric_quality_rejector),
 ]
 
 stack_dithers = [
@@ -333,6 +361,7 @@ stack_dithers = [
         header_keys_to_combine=["RAWID"],
     ),
     ImageSaver(output_dir_name="stack"),
+    CustomImageBatchModifier(masked_images_rejector),
 ]
 
 photcal_and_export = [
@@ -343,6 +372,7 @@ photcal_and_export = [
         output_sub_dir="phot",
         checkimage_type="BACKGROUND_RMS",
     ),
+    CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
     PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
         temp_output_sub_dir="phot",
@@ -371,10 +401,10 @@ load_test_stack = [
 ]
 
 load_stack = [
-    ImageLoader(input_sub_dir="final"),
+    ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     # ImageSelector(
-    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1.fits_stack.fits")
+    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1_stack.fits")
     # ),
 ]
 

@@ -2,6 +2,7 @@
 Tests for WINTER image subtraction
 """
 import logging
+import os
 
 from mirar.data import Dataset, ImageBatch
 from mirar.io import open_raw_image
@@ -14,15 +15,15 @@ logger = logging.getLogger(__name__)
 NIGHT_NAME = "20230726"
 
 EXPECTED_HEADER_VALUES = {
-    "SCORMEAN": -0.12623304077946793,
-    "SCORMED": -0.12742712645252582,
-    "SCORSTD": 1.287321968046026,
+    "SCORMEAN": -0.13625905938349483,
+    "SCORMED": -0.13512726465303718,
+    "SCORSTD": 1.3021071256299737,
+}
+EXPECTED_DATAFRAME_VALUES = {
+    "magpsf": [12.173105476828795],
+    "magap": [12.062389584233465],
 }
 
-EXPECTED_DATAFRAME_VALUES = {
-    "magpsf": [12.526769944888741],
-    "magap": [12.081012864096895],
-}
 
 pipeline = get_pipeline(
     instrument="winter", selected_configurations=["test_imsub"], night="20230726"
@@ -44,6 +45,20 @@ class TestWinterImsubPipeline(BaseTestCase):
         """
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
+        self.check_tokens()
+
+    def check_tokens(self):
+        """If required tokens do not exist raise an error.
+        :raises RuntimeError: If missing token.
+        """
+        if os.environ.get("FRITZ_TOKEN", default="") == "":
+            raise RuntimeError(
+                "No Fritz token. Set environment variable FRITZ_TOKEN to test."
+            )
+        if os.environ.get("KOWALSKI_TOKEN", default="") == "":
+            raise RuntimeError(
+                "No Kowalski token. Set environment variable KOWALSKI_TOKEN to test."
+            )
 
     def test_pipeline(self):
         """

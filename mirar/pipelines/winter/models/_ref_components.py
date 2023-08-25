@@ -23,16 +23,12 @@ class RefComponentsTable(WinterBase):
 
     mfid = Column(BigInteger)
     xtnsnid = Column(Integer)
-    ra0_0 = Column(Float)
-    dec0_0 = Column(Float)
-    ra0_1 = Column(Float)
-    dec0_1 = Column(Float)
-    ra1_0 = Column(Float)
-    dec1_0 = Column(Float)
-    ra1_1 = Column(Float)
-    dec1_1 = Column(Float)
     ra_cent = Column(Float)
     dec_cent = Column(Float)
+    ramin = Column(Float)
+    ramax = Column(Float)
+    decmin = Column(Float)
+    decmax = Column(Float)
     savepath = Column(VARCHAR(255), unique=True)
     filter = Column(VARCHAR(10))
     zp = Column(Float)
@@ -50,14 +46,10 @@ class RefComponent(BaseDB):
     savepath: str = Field(min_length=1)
     mfid: int = Field(ge=0)
     xtnsnid: int = Field(ge=0)
-    ra0_0: float = ra_field
-    dec0_0: float = dec_field
-    ra0_1: float = ra_field
-    dec0_1: float = dec_field
-    ra1_0: float = ra_field
-    dec1_0: float = dec_field
-    ra1_1: float = ra_field
-    dec1_1: float = dec_field
+    ramin: float = ra_field
+    ramax: float = ra_field
+    decmin: float = dec_field
+    decmax: float = dec_field
     ra_cent: float = ra_field
     dec_cent: float = dec_field
     filter: str = Field(min_length=1)

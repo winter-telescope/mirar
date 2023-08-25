@@ -25,6 +25,18 @@ class AstrometryValidateCrossmatchError(ProcessorError):
     """
 
 
+class PoorAstrometryError(ProcessorError):
+    """
+    Error for when the astrometry is poor
+    """
+
+
+class PoorFWHMError(ProcessorError):
+    """
+    Error for when the FWHM is poor
+    """
+
+
 logger = logging.getLogger(__name__)
 
 # All the Sextractor parameters required for this script to run
@@ -100,18 +112,23 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
         for image in batch:
             ref_cat, _, cleaned_img_cat = self.setup_catalogs(image)
             if len(cleaned_img_cat) == 0:
-                warn = "No sources found after cleaning catalog"
-                logger.warning(warn)
-                fwhm_med, fwhm_std, med_fwhm_pix = -999, -999, -999
-            else:
-                fwhm_med, _, fwhm_std, med_fwhm_pix, _, _ = get_fwhm(cleaned_img_cat)
+                err = "No good sources found after cleaning the image catalog"
+                logger.error(err)
+                raise AstrometryValidateCrossmatchError(err)
 
-                if np.isnan(fwhm_med):
-                    fwhm_med = -999
-                if np.isnan(fwhm_std):
-                    fwhm_std = -999
-                if np.isnan(med_fwhm_pix):
-                    med_fwhm_pix = -999
+            if len(ref_cat) == 0:
+                err = "Reference catalog has no sources"
+                logger.error(err)
+                raise AstrometryValidateCrossmatchError(err)
+
+            fwhm_med, _, fwhm_std, med_fwhm_pix, _, _ = get_fwhm(cleaned_img_cat)
+
+            if np.isnan(fwhm_med):
+                fwhm_med = -999
+            if np.isnan(fwhm_std):
+                fwhm_std = -999
+            if np.isnan(med_fwhm_pix):
+                med_fwhm_pix = -999
 
             logger.debug(f"FWHM_MED: {fwhm_med}, {len(cleaned_img_cat)}")
             image["FWHM_MED"] = fwhm_med
@@ -121,17 +138,24 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
             image.header["ASTUNC"] = -999.0
             image.header["ASTFIELD"] = -999.0
 
-            if (len(ref_cat) > 0) & (len(cleaned_img_cat) > 0):
-                _, _, d2d = self.xmatch_catalogs(
-                    ref_cat=ref_cat,
-                    image_cat=cleaned_img_cat,
-                    crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
-                )
+            _, _, d2d = self.xmatch_catalogs(
+                ref_cat=ref_cat,
+                image_cat=cleaned_img_cat,
+                crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
+            )
 
-                if len(d2d) > 0:
-                    image.header["ASTUNC"] = np.nanmedian(d2d.value)
-                    image.header["ASTFIELD"] = np.arctan(
-                        image.header["CD1_2"] / image.header["CD1_1"]
-                    ) * (180 / np.pi)
+            if len(d2d) > 0:
+                image.header["ASTUNC"] = np.nanmedian(d2d.value)
+                image.header["ASTFIELD"] = np.arctan(
+                    image.header["CD1_2"] / image.header["CD1_1"]
+                ) * (180 / np.pi)
+
+            else:
+                err = (
+                    f"No crossmatch found within "
+                    f"radius {self.crossmatch_radius_arcsec} arcsec"
+                )
+                logger.error(err)
+                raise AstrometryValidateCrossmatchError(err)
 
         return batch
