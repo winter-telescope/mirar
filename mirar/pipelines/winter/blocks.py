@@ -411,6 +411,13 @@ photcal_and_export = [
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
+    AstrometryStatsWriter(
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+        image_catalog_purifier=winter_astrostat_catalog_purifier,
+        write_regions=True,
+        cache=False,
+        crossmatch_radius_arcsec=5.0,
+    ),
     ImageSaver(output_dir_name="final"),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
     ImageDatabaseMultiEntryUpdater(

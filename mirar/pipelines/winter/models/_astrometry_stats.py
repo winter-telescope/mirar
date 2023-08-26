@@ -34,6 +34,7 @@ class AstrometryStatsTable(WinterBase):  # pylint: disable=too-few-public-method
     cd2_1 = Column(Float)
     cd2_2 = Column(Float)
     astunc = Column(Float)
+    astunc95 = Column(Float)
     astfield = Column(Float)
     fwhm_med = Column(Float)
     fwhm_std = Column(Float)
@@ -67,6 +68,7 @@ class AstrometryStat(BaseDB):
     cd2_1: float = default_unknown_field
     cd2_2: float = default_unknown_field
     astunc: float = default_unknown_field
+    astunc95: float = default_unknown_field
     astfield: float = default_unknown_field
     fwhm_med: float = default_unknown_field
     fwhm_std: float = default_unknown_field
