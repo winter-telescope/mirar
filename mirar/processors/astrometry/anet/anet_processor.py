@@ -66,6 +66,7 @@ class AstrometryNet(BaseImageProcessor):
         sort_key_name: str = "MAG_AUTO",
         use_weight: bool = True,
         write_regions: bool = True,
+        cache: bool = False,
     ):
         """
         :param output_sub_dir: subdirectory to output astrometry.net results
@@ -122,6 +123,8 @@ class AstrometryNet(BaseImageProcessor):
         )
 
         self.write_regions = write_regions
+
+        self.cache = cache
 
     def __str__(self) -> str:
         return (
@@ -280,12 +283,14 @@ class AstrometryNet(BaseImageProcessor):
 
             batch[i] = Image(data=data, header=hdr)
 
-            for temp_file in temp_files:
+            if not self.cache:
+                for temp_file in temp_files:
+                    temp_file.unlink(missing_ok=True)
+                    logger.debug(f"Deleted temporary file {temp_file}")
+
+        if not self.cache:
+            for temp_file in sextractor_temp_files:
                 temp_file.unlink(missing_ok=True)
                 logger.debug(f"Deleted temporary file {temp_file}")
-
-        for temp_file in sextractor_temp_files:
-            temp_file.unlink(missing_ok=True)
-            logger.debug(f"Deleted temporary file {temp_file}")
 
         return batch
