@@ -297,8 +297,8 @@ dark_calibrate = [
     ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    ImageSaver(output_dir_name="darkcal"),
     CustomImageBatchModifier(winter_condensation_rejector),
-    # ImageSaver(output_dir_name="darkcal")
 ]
 
 flat_calibrate = [
@@ -308,7 +308,7 @@ flat_calibrate = [
     FlatCalibrator(
         cache_sub_dir="flatcal", select_flat_images=select_winter_flat_images
     ),
-    # ImageSaver(output_dir_name="skyflatcal"),
+    ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
@@ -337,6 +337,7 @@ astrometry = [
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
         timeout=120,
+        cache=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
@@ -353,7 +354,7 @@ astrometry = [
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         copy_scamp_header_to_image=True,
     ),
-    ImageSaver(output_dir_name="post-scamp"),
+    ImageSaver(output_dir_name="post_scamp"),
 ]
 
 validate_astrometry = [
