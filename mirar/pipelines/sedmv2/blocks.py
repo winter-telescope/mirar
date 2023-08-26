@@ -88,7 +88,6 @@ reduce = [
         downsample=2,
         timeout=60,
         use_sextractor=True,
-        use_weight=False,
     ),
     ImageSaver(output_dir_name="a-net-solved", write_mask=True),
     Sextractor(
