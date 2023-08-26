@@ -10,6 +10,7 @@ from astropy.table import Table
 
 from mirar.data import Image, ImageBatch
 from mirar.data.utils import write_regions_file
+from mirar.errors.exceptions import ProcessorError
 from mirar.io import open_fits
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -26,12 +27,17 @@ from mirar.processors.astromatic.sextractor.settings import (
 )
 from mirar.processors.astrometry.anet.anet import (
     ASTROMETRY_TIMEOUT,
-    AstrometryNetError,
     run_astrometry_net_single,
 )
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
+
+
+class AstrometryNetNoSolvedError(ProcessorError):
+    """
+    Class for errors in astrometry.net
+    """
 
 
 class AstrometryNet(BaseImageProcessor):
@@ -262,7 +268,7 @@ class AstrometryNet(BaseImageProcessor):
             solved_path = new_img_path.with_suffix(".solved")
 
             if not solved_path.exists():
-                raise AstrometryNetError(
+                raise AstrometryNetNoSolvedError(
                     f"AstrometryNet did not run successfully - no output "
                     f"file {solved_path} found."
                 )
