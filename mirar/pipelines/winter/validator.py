@@ -131,7 +131,6 @@ def winter_dark_oversubtraction_rejector(images: ImageBatch) -> ImageBatch:
     """
     assert len(images) == 1
     logger.info(f"Raw image names are : {images.get_raw_image_names()}")
-    logger.info(f"Raw image names are : {[image['RAWPATH'] for image in images]}")
     median_sky_counts_threshold_per_sec = 1000.0 / 120.0
     for image in images:
         data = image.get_data()
