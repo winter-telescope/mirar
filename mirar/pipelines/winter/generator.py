@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from astropy.table import Table
 from astropy.time import Time
+from astropy.wcs import NoConvergence
 
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.base_catalog import CatalogFromFile
@@ -128,9 +129,18 @@ def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool
     # local reference catalog
     local_ref_cat = get_table_from_ldac(ref_cat_path)
 
-    srcs_in_image = check_coords_within_image(
-        ra=local_ref_cat["ra"], dec=local_ref_cat["dec"], header=image.get_header()
-    )
+    try:
+        srcs_in_image = check_coords_within_image(
+            ra=local_ref_cat["ra"], dec=local_ref_cat["dec"], header=image.get_header()
+        )
+    except NoConvergence:
+        logger.debug(
+            f"Reference catalog {ref_cat_path} does not overlap with image."
+            "It is so off, that WCS failed to converge on a solution for "
+            "the pixels in the image."
+        )
+        return False
+
     num_srcs_in_image = np.sum(srcs_in_image)
 
     cat_overlaps = num_srcs_in_image > len(local_ref_cat) * 0.5
