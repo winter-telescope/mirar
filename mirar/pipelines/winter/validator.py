@@ -5,6 +5,7 @@ import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors.exceptions import ProcessorError
+from mirar.paths import EXPTIME_KEY
 from mirar.processors.astrometry.validate import PoorAstrometryError, PoorFWHMError
 from mirar.processors.split import SUB_ID_KEY
 
@@ -18,6 +19,12 @@ class TooManyMaskedPixelsError(ProcessorError):
 class CondensationError(ProcessorError):
     """
     Error for when an image is affected by condensed
+    """
+
+
+class DarkOverSubtractionError(ProcessorError):
+    """
+    Error for when an image is affected by dark over-subtraction
     """
 
 
@@ -65,7 +72,7 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
         if image["ASTUNC"] > astrometric_unc_threshold_arcsec / 3600:
             raise PoorAstrometryError(
                 f"Uncertainty in astrometric solution from Scamp "
-                f"({image['ASTUNC']*3600}) arcsec is above threshold "
+                f"({image['ASTUNC'] * 3600}) arcsec is above threshold "
                 f"{astrometric_unc_threshold_arcsec} arcsec"
             )
 
@@ -107,4 +114,22 @@ def winter_condensation_rejector(images: ImageBatch) -> ImageBatch:
     for image in images:
         if is_condensation_in_image(image):
             raise CondensationError("Image is affected by condensation")
+    return images
+
+
+def winter_dark_oversubtraction_rejector(images: ImageBatch) -> ImageBatch:
+    """
+    Rejects images possibly affected by dark oversubtraction
+    """
+    assert len(images) == 1
+    median_sky_counts_threshold_per_sec = 1000.0 / 120.0
+    for image in images:
+        data = image.get_data()
+        if np.nanmedian(data) < 0:
+            raise DarkOverSubtractionError(
+                f"Dark-subtracted image has lower than expected median"
+                f"counts for exposure time {image[EXPTIME_KEY]}."
+                f"Threshold : {median_sky_counts_threshold_per_sec * image['EXPTIME']},"
+                f" got: {np.nanmedian(data)}"
+            )
     return images
