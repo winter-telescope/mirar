@@ -9,8 +9,10 @@ from mirar.paths import (
     CAND_NAME_KEY,
     DITHER_N_KEY,
     EXPTIME_KEY,
+    LATEST_SAVE_KEY,
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
+    RAW_IMG_KEY,
     TARGET_KEY,
     ZP_KEY,
     base_output_dir,
@@ -69,6 +71,7 @@ from mirar.pipelines.winter.validator import (
     masked_images_rejector,
     poor_astrometric_quality_rejector,
     winter_condensation_rejector,
+    winter_dark_oversubtraction_rejector,
 )
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.background_subtractor import (
@@ -257,6 +260,7 @@ save_raw = [
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     CustomImageBatchModifier(winter_stackid_annotator),
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -298,6 +302,7 @@ dark_calibrate = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     ImageSaver(output_dir_name="darkcal"),
+    CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
     CustomImageBatchModifier(winter_condensation_rejector),
 ]
 
