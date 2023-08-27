@@ -1,6 +1,8 @@
 """
 Module to reject images based on quality criteria
 """
+import logging
+
 import numpy as np
 
 from mirar.data import Image, ImageBatch
@@ -8,6 +10,8 @@ from mirar.errors.exceptions import ProcessorError
 from mirar.paths import EXPTIME_KEY
 from mirar.processors.astrometry.validate import PoorAstrometryError, PoorFWHMError
 from mirar.processors.split import SUB_ID_KEY
+
+logger = logging.getLogger(__name__)
 
 
 class TooManyMaskedPixelsError(ProcessorError):
@@ -126,6 +130,7 @@ def winter_dark_oversubtraction_rejector(images: ImageBatch) -> ImageBatch:
     Rejects images possibly affected by dark oversubtraction
     """
     assert len(images) == 1
+    logger.info(f"Raw image names are : {images.get_raw_image_names()}")
     median_sky_counts_threshold_per_sec = 1000.0 / 120.0
     for image in images:
         data = image.get_data()
