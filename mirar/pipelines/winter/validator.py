@@ -53,7 +53,8 @@ def masked_images_rejector(batch: ImageBatch) -> ImageBatch:
         frac_masked = np.sum(~mask) / mask.size
         if frac_masked > subdet_nan_limits[image.header[SUB_ID_KEY]]:
             raise TooManyMaskedPixelsError(
-                f"Fraction of masked pixels ({frac_masked}) is above threshold"
+                f"Fraction of masked pixels ({frac_masked}) is above threshold "
+                f"{subdet_nan_limits[image.header[SUB_ID_KEY]]}"
             )
     return batch
 
@@ -77,7 +78,10 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
             )
 
         if image["FWHM_MED"] > fwhm_threshold_arcsec:
-            raise PoorFWHMError(f"FWHM ({image['FWHM_MED']}) is above threshold")
+            raise PoorFWHMError(
+                f"FWHM ({image['FWHM_MED']}) is above threshold"
+                f" {fwhm_threshold_arcsec} arcsec."
+            )
     return batch
 
 
