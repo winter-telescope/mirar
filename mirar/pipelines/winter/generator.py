@@ -15,6 +15,7 @@ from mirar.catalog.base_catalog import CatalogFromFile
 from mirar.catalog.vizier import PS1
 from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.data.utils.compress import decode_img
+from mirar.data.utils.coords import check_coords_within_image
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.errors.exceptions import ProcessorError
@@ -49,6 +50,7 @@ from mirar.processors.utils.image_selector import select_from_images
 from mirar.references.local import RefFromPath
 from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
+from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +120,27 @@ def winter_astrostat_catalog_purifier(catalog: Table, image: Image) -> Table:
     )
 
 
+def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool:
+    """
+    Returns a function that returns the local reference catalog
+    """
+    # Check if there is enough overlap between the image and the
+    # local reference catalog
+    local_ref_cat = get_table_from_ldac(ref_cat_path)
+
+    srcs_in_image = check_coords_within_image(
+        ra=local_ref_cat["ra"], dec=local_ref_cat["dec"], header=image.get_header()
+    )
+    num_srcs_in_image = np.sum(srcs_in_image)
+
+    cat_overlaps = num_srcs_in_image > len(local_ref_cat) * 0.5
+    if not cat_overlaps:
+        logger.debug(
+            "More than 50% of the local reference catalog is outside the image."
+        )
+    return cat_overlaps
+
+
 def winter_photometric_catalog_generator(
     image: Image,
 ) -> Gaia2Mass | PS1 | CatalogFromFile:
@@ -130,8 +153,16 @@ def winter_photometric_catalog_generator(
     if REF_CAT_PATH_KEY in image.header:
         ref_cat_path = Path(image[REF_CAT_PATH_KEY])
         if ref_cat_path.exists():
-            logger.debug(f"Loading reference catalog from {ref_cat_path}")
-            return CatalogFromFile(catalog_path=ref_cat_path)
+            # Check if there is enough overlap between the image and the
+            # local reference catalog
+            if check_winter_local_catalog_overlap(ref_cat_path, image):
+                logger.debug(f"Loading reference catalog from {ref_cat_path}")
+                return CatalogFromFile(catalog_path=ref_cat_path)
+
+            logger.debug(
+                "More than 50% of the local reference catalog is "
+                "outside the image. Requerying."
+            )
 
     filter_name = image["FILTER"]
     search_radius_arcmin = (
@@ -219,10 +250,27 @@ def winter_astrometric_ref_catalog_generator(image) -> Gaia2Mass | CatalogFromFi
         ref_cat_path = Path(image[REF_CAT_PATH_KEY])
         logger.debug(f"Looking for local reference catalog at {ref_cat_path}")
         if ref_cat_path.exists():
-            logger.debug(f"Loading reference catalog from {ref_cat_path}")
-            return CatalogFromFile(catalog_path=ref_cat_path)
+            # Check if there is enough overlap between the image and the
+            # local reference catalog
+            if check_winter_local_catalog_overlap(ref_cat_path, image):
+                logger.debug(f"Loading reference catalog from {ref_cat_path}")
+                return CatalogFromFile(catalog_path=ref_cat_path)
+
+            logger.debug(
+                "More than 50% of the local reference catalog is "
+                "outside the image. Requerying."
+            )
+
+    search_radius_arcmin = (
+        np.max([image["NAXIS1"], image["NAXIS2"]])
+        * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
+        * 60
+    ) / 2.0
     return Gaia2Mass(
-        min_mag=7, max_mag=20, search_radius_arcmin=20, cache_catalog_locally=True
+        min_mag=7,
+        max_mag=20,
+        search_radius_arcmin=search_radius_arcmin,
+        cache_catalog_locally=True,
     )
 
 
