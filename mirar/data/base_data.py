@@ -51,7 +51,7 @@ class DataBlock:
 
         :return: List of path strings
         """
-        return self.raw_img_list
+        return [Path(x) for x in self[RAW_IMG_KEY].split(",")]  # self.raw_img_list
 
 
 class PseudoList:
