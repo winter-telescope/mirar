@@ -21,6 +21,8 @@ matplotlib.use("agg")
 
 logger = logging.getLogger(__name__)
 
+SNCOSMO_KEY = "sncosmof"
+
 
 class SkyportalSourceUploader(BaseSourceProcessor):
     """
@@ -198,7 +200,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
                 "mjd": source["mjd"],
                 "mag": source["magpsf"],
                 "magerr": source["sigmapsf"],
-                "filter": source["sncosmofilter"],
+                "filter": source[SNCOSMO_KEY],
                 "ra": source["ra"],
                 "dec": source["dec"],
             }
@@ -214,7 +216,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
                             "mjd": row["mjd"],
                             "mag": row["magpsf"],
                             "magerr": row["sigmapsf"],
-                            "filter": row["sncosmofilter"],
+                            "filter": row[SNCOSMO_KEY],
                             "ra": row["ra"],
                             "dec": row["dec"],
                         }

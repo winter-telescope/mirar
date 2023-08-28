@@ -147,7 +147,7 @@ build_test = [
         ]
     ),
     ImageSelector(
-        ("BOARD_ID", "4"),
+        ("BOARD_ID", "2"),
         (OBSCLASS_KEY, ["dark", "science"]),
         (EXPTIME_KEY, "120.0"),
         ("filter", ["dark", "J"]),
