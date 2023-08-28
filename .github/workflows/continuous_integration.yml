@@ -102,7 +102,7 @@ jobs:
           PG_ADMIN_USER: runner
           PG_ADMIN_PWD: ""
           DB_USER: runner
-          DB_PWD: ""
+          DB_PWD: runner_password
           WATCHDOG_EMAIL: ${{ secrets.WATCHDOG_EMAIL }}
           WATCHDOG_EMAIL_PASSWORD: ${{ secrets.WATCHDOG_EMAIL_PASSWORD }}
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}
