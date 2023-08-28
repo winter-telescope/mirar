@@ -51,7 +51,6 @@ from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
     get_raw_winter_mask,
     load_stacked_winter_image,
-    load_test_stacked_winter_image,
     load_test_winter_image,
     load_winter_mef_image,
 )
@@ -422,16 +421,6 @@ photcal_and_export = [
 ]
 
 # Image subtraction
-
-load_test_stack = [
-    ImageLoader(
-        input_img_dir=get_test_data_dir(),
-        input_sub_dir="final",
-        load_image=load_test_stacked_winter_image,
-    ),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
-    DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
-]
 
 load_stack = [
     ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
