@@ -37,7 +37,12 @@ from mirar.pipelines.winter.config import (
 )
 from mirar.pipelines.winter.constants import winter_filters_map
 from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
-from mirar.pipelines.winter.models import RefComponent, RefQuery, RefStack
+from mirar.pipelines.winter.models import (
+    DEFAULT_FIELD,
+    RefComponent,
+    RefQuery,
+    RefStack,
+)
 from mirar.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
@@ -289,10 +294,17 @@ def winter_ref_catalog_namer(image: Image, output_dir: Path) -> Path:
     Function to name the reference catalog to use for WINTER astrometry
     """
     output_dir.mkdir(exist_ok=True, parents=True)
-    ref_cat_path = (
-        output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}"
-        f"_{image['FILTER']}.ldac.cat"
-    )
+    if image["FIELDID"] != DEFAULT_FIELD:
+        ref_cat_path = (
+            output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}"
+            f"_{image['FILTER']}.ldac.cat"
+        )
+    else:
+        ref_cat_path = (
+            output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}_"
+            f"{image['TARGNAME']}_{image[TIME_KEY]}"
+            f"_{image['FILTER']}.ldac.cat"
+        )
     return ref_cat_path
 
 
@@ -574,7 +586,11 @@ def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
 
     if len(flat_images) == 0:
         # To enable current version of realtime processing?
-        logger.warning("No good flat images found, using all images in batch")
+        logger.warning(
+            "No good flat images found, using all images in batch."
+            f"The filter and subdetid of the first image in batch is "
+            f" {images[0]['FILTER']} and {images[0][SUB_ID_KEY]}"
+        )
         flat_images = select_from_images(
             images, key=OBSCLASS_KEY, target_values="science"
         )
