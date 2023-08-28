@@ -26,7 +26,7 @@ def get_engine(
     print(f"{db_hostname}")
 
     return create_engine(
-        f"postgresql+psycopg://{db_user}:{db_password}@{db_hostname}/{db_name}",
+        f"postgresql+psycopg://{db_user}:{db_password}@{db_hostname}:{db_port}/{db_name}",
         future=True,
         poolclass=NullPool,
     )
