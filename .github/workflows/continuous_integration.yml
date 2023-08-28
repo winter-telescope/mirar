@@ -83,6 +83,11 @@ jobs:
           make -C q3c
           sudo make -C q3c install
 
+      # Check database
+      - name: check database settings
+        run: |
+          psql -h localhost -d postgres -U runner -c 'SELECT 1;'
+
       # First make sure the doc tests are up to date
       - name: Run doc tests
         shell: bash -el {0}
