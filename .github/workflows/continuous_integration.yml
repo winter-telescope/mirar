@@ -78,7 +78,7 @@ jobs:
           sudo apt-get install postgresql-common
           sudo apt-get install postgresql-server-dev-14
           sudo service postgresql restart
-          sudo -u postgres psql -c "create user runner; grant all privileges on database postgres to runner; ALTER USER runner WITH SUPERUSER;"
+          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runner_password'; GRANT ALL PRIVILEGES ON DATABASE postgres TO runner; ALTER USER runner WITH SUPERUSER;"
           git clone https://github.com/segasai/q3c.git
           make -C q3c
           sudo make -C q3c install
@@ -86,7 +86,7 @@ jobs:
       # Check database
       - name: check database settings
         run: |
-          psql -h localhost -d postgres -U runner -c 'SELECT 1;'
+          psql postgresql://runner:runner_password@localhost:5432/postgres -c 'SELECT 1;'
 
       # First make sure the doc tests are up to date
       - name: Run doc tests
