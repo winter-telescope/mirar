@@ -437,7 +437,7 @@ photcal_and_export = [
 
 load_stack = [
     ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
     # ImageSelector(
     #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1_stack.fits")
     # ),
