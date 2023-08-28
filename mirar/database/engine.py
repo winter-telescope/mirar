@@ -23,7 +23,9 @@ def get_engine(
     :param db_port: port of db
     :return: sqlalchemy engine
     """
-    print(f"{db_hostname}")
+    print(
+        f"postgresql+psycopg://{db_user}:{db_password}@{db_hostname}:{db_port}/{db_name}"
+    )
 
     return create_engine(
         f"postgresql+psycopg://{db_user}:{db_password}@{db_hostname}:{db_port}/{db_name}",
