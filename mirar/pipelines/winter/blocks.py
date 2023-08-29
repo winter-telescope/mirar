@@ -194,7 +194,7 @@ load_raw = [
 extract_all = [
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchInserter(db_table=Exposure, duplicate_protocol="ignore"),
-    ImageSelector((OBSCLASS_KEY, ["dark", "science"])),
+    ImageSelector((OBSCLASS_KEY, ["dark", "science", "flat"])),
 ]
 
 csvlog = [
