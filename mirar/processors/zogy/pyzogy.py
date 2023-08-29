@@ -77,6 +77,7 @@ def pyzogy(
     logger.debug(
         f"Max of small PSF is "
         f"{np.unravel_index(np.argmax(new_psf, axis=None), new_psf.shape)}"
+        f"PSF path is {new_psf_path.as_posix()}"
     )
 
     # Place PSF at center of image with same size as new / reference
@@ -94,6 +95,7 @@ def pyzogy(
     logger.debug(
         f"Max of big PSF is "
         f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
+        f"PSF path is {new_psf_path.as_posix()}"
     )
 
     # Shift the PSF to the origin, so that it will not introduce a shift
@@ -103,6 +105,7 @@ def pyzogy(
     logger.debug(
         f"Max of big PSF shift is "
         f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
+        f"PSF path is {new_psf_path.as_posix()}"
     )
 
     # Take all the Fourier Transforms
@@ -136,6 +139,7 @@ def pyzogy(
     logger.debug(
         f"Max of diff PSF is "
         f"{np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape)}"
+        f"PSF path is {new_psf_path.as_posix()}"
     )
 
     # Fourier Transform of Score Image (Equation 17)

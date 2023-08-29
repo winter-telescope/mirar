@@ -93,8 +93,6 @@ class ZOGYPrepare(BaseImageProcessor):
 
     base_key = "ZOGYPREP"
 
-    max_n_cpu = 1
-
     def __init__(
         self,
         output_sub_dir: str = "sub",
