@@ -298,7 +298,7 @@ dark_calibrate = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", EXPTIME_KEY, "SUBCOORD"]),
     DarkCalibrator(cache_sub_dir="calibration_darks"),
-    ImageSelector((OBSCLASS_KEY, ["science"])),
+    ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     ImageSaver(output_dir_name="darkcal"),
