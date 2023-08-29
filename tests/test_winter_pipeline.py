@@ -10,53 +10,39 @@ from mirar.testing import BaseTestCase
 logger = logging.getLogger(__name__)
 
 expected_zp = {
-    "ZP_2.0": 24.11035919189453,
-    "ZP_2.0_std": 0.03795776143670082,
-    "ZP_2.0_nstars": 23,
-    "ZP_3.0": 24.618452072143555,
-    "ZP_3.0_std": 0.02989865280687809,
-    "ZP_3.0_nstars": 22,
-    "ZP_4.0": 24.83037567138672,
-    "ZP_4.0_std": 0.024005483835935593,
-    "ZP_4.0_nstars": 18,
-    "ZP_5.0": 24.888044357299805,
-    "ZP_5.0_std": 0.03897009789943695,
-    "ZP_5.0_nstars": 22,
-    "ZP_6.0": 24.914031982421875,
-    "ZP_6.0_std": 0.04439741000533104,
-    "ZP_6.0_nstars": 24,
-    "ZP_7.0": 24.910863876342773,
-    "ZP_7.0_std": 0.056104876101017,
-    "ZP_7.0_nstars": 25,
-    "ZP_8.0": 24.896026611328125,
-    "ZP_8.0_std": 0.052887771278619766,
-    "ZP_8.0_nstars": 24,
-    "ZP_AUTO": 24.91974449157715,
-    "ZP_AUTO_std": 0.044717829674482346,
-    "ZP_AUTO_nstars": 21,
-    "SCORMEAN": 0.017224874268454884,
-    "SCORMED": 0.014726609007903662,
-    "SCORSTD": 1.2294695354674363,
+    "ZP_2.0": 23.98996925354004,
+    "ZP_2.0_std": 0.03564070165157318,
+    "ZP_2.0_nstars": 30,
+    "ZP_3.0": 24.477495193481445,
+    "ZP_3.0_std": 0.04281936213374138,
+    "ZP_3.0_nstars": 31,
+    "ZP_4.0": 24.63871955871582,
+    "ZP_4.0_std": 0.04711835831403732,
+    "ZP_4.0_nstars": 32,
+    "ZP_5.0": 24.724422454833984,
+    "ZP_5.0_std": 0.0430118553340435,
+    "ZP_5.0_nstars": 30,
+    "ZP_6.0": 24.78891944885254,
+    "ZP_6.0_std": 0.03930766507983208,
+    "ZP_6.0_nstars": 27,
+    "ZP_7.0": 24.79821014404297,
+    "ZP_7.0_std": 0.04727752134203911,
+    "ZP_7.0_nstars": 30,
+    "ZP_8.0": 24.81728744506836,
+    "ZP_8.0_std": 0.05584121495485306,
+    "ZP_8.0_nstars": 32,
+    "ZP_AUTO": 24.794212341308594,
+    "ZP_AUTO_std": 0.043879956007003784,
+    "ZP_AUTO_nstars": 29,
+    "SCORMEAN": -0.1324857697402311,
+    "SCORMED": -0.1305649672434809,
+    "SCORSTD": 1.3039875768136526,
+}
+expected_dataframe_values = {
+    "magpsf": [12.110608868454948],
+    "magap": [12.020240804368768],
 }
 
-expected_dataframe_values = {
-    "magpsf": [
-        13.45081731465378,
-        13.58264248927471,
-        16.442835390011275,
-        13.651407374516433,
-        13.4514507223608,
-        13.451014251336805,
-    ],
-    "magap": [
-        11.433320883682018,
-        12.039888596367417,
-        12.662222810044911,
-        11.50348045890572,
-        11.518537933186485,
-        11.436219364257235,
-    ],
-}
 
 pipeline = get_pipeline(
     instrument="winter", selected_configurations=["test"], night="20230726"
@@ -124,7 +110,7 @@ class TestWinterPipeline(BaseTestCase):
 
         candidates_table = source_table.get_data()
 
-        self.assertEqual(len(candidates_table), 6)
+        self.assertEqual(len(candidates_table), 1)
         for key, value in expected_dataframe_values.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):

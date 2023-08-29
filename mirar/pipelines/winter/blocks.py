@@ -215,7 +215,7 @@ csvlog = [
     ),
 ]
 
-select_split_subset = [ImageSelector(("SUBCOORD", "0_1"))]
+select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
 BOARD_ID = 2
