@@ -26,7 +26,10 @@ from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.base_processor import ImageHandler
 from mirar.processors.photcal import PhotCalibrator
-from mirar.references.base_reference_generator import BaseStackReferenceGenerator
+from mirar.references.base_reference_generator import (
+    BaseStackReferenceGenerator,
+    ReferenceGenerationError,
+)
 from mirar.references.wfcam.wfcam_query import BaseWFCAMQuery
 
 logger = logging.getLogger(__name__)
@@ -123,7 +126,13 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
         """
         wfau_images = self.wfcam_query.run_query(image)
 
-        wfau_images = self.filter_images(wfau_images)
+        if len(wfau_images) > 0:
+            wfau_images = self.filter_images(wfau_images)
+
+        if len(wfau_images) == 0:
+            raise ReferenceGenerationError(
+                f"No good WFAU images found for {image[BASE_NAME_KEY]}"
+            )
 
         # change BASENAME to gel well with parallel processing
         for ind, ref_img in enumerate(wfau_images):

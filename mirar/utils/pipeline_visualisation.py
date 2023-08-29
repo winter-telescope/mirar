@@ -16,6 +16,7 @@ from mirar.processors.base_processor import (
     BaseProcessor,
     BaseSourceGenerator,
     BaseSourceProcessor,
+    PrerequisiteError,
 )
 
 logger = logging.getLogger(__name__)
@@ -68,7 +69,7 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
         elif isinstance(processor, BaseSourceProcessor):
             class_kwargs = {"color": "red"}
         else:
-            raise Exception(f"processor type ({type(processor)} not recognised")
+            raise ValueError(f"processor type ({type(processor)} not recognised")
 
         if i < len(processor_list) - 1:
             arrowprops = {
@@ -144,13 +145,24 @@ def iterate_flowify(
             night=str(datetime.now()).split(" ", maxsplit=1)[0].replace("-", ""),
         )
 
+        logger.info(f"Visualising {pipeline} pipeline")
+
         if config is None:
             config_list = pipe.all_pipeline_configurations.keys()
         else:
             config_list = pipe.selected_configurations
 
         for single_config in config_list:
-            flowify(
-                pipe.set_configuration(single_config),
-                get_save_path(pipeline, single_config),
-            )
+            logger.info(f"Visualising {single_config} configuration")
+            try:
+                flowify(
+                    pipe.set_configuration(single_config),
+                    get_save_path(pipeline, single_config),
+                )
+            except PrerequisiteError as exc:
+                err = (
+                    f"Error for '{pipeline}' pipeline, "
+                    f"'{single_config}' configuration"
+                )
+                logger.error(err)
+                raise PrerequisiteError(err) from exc

@@ -68,8 +68,12 @@ class IPACAvroExporter(BaseAvroExporter):
             key = field["name"]
             if key in row.keys():
                 new[key] = row[key]
+            elif key.upper() in row.keys():
+                new[key] = row[key.upper()]
             elif key in metadata.keys():
                 new[key] = metadata[key]
+            elif key.upper() in metadata.keys():
+                new[key] = metadata[key.upper()]
 
         return new
 

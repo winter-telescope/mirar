@@ -291,7 +291,7 @@ MAGERR_PSF_KEY = "sigmapsf"
 XPOS_KEY = "xpos"
 YPOS_KEY = "ypos"
 APFLUX_PREFIX_KEY = "fluxap"
-APFLUXUNC_PREFIX_KEY = "fluxucap"
+APFLUXUNC_PREFIX_KEY = "fluxuncap"
 APMAG_PREFIX_KEY = "magap"
 APMAGUNC_PREFIX_KEY = "sigmagap"
 

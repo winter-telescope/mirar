@@ -115,9 +115,9 @@ class Candidate(BaseDB):
 
     fid: int = Field(ge=0)
 
-    diffimgname: str | None = Field(max_length=255, default=None)
-    sciimgname: str | None = Field(max_length=255, default=None)
-    refimgname: str | None = Field(max_length=255, default=None)
+    diffimgname: str = Field(max_length=255)
+    sciimgname: str = Field(max_length=255)
+    refimgname: str = Field(max_length=255)
 
     magpsf: float = Field()
     sigmapsf: float = Field(ge=0)

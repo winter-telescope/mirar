@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from mirar.data import SourceBatch, SourceTable
-from mirar.paths import DIFF_IMG_KEY, base_output_dir, get_output_dir, get_output_path
+from mirar.paths import BASE_NAME_KEY, base_output_dir, get_output_dir, get_output_path
 from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
@@ -60,11 +60,10 @@ class SourceWriter(BaseSourceProcessor):
         )
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        for source_list in batch:
-            source_table = source_list.get_data()
+        for source_table in batch:
             assert len(source_table) > 0, "Source table is empty"
 
-            old = Path(source_table.loc[0][DIFF_IMG_KEY])
+            old = Path(source_table[BASE_NAME_KEY])
             base_path = old.parent / f"{old.stem}{SOURCE_SUFFIX}"
 
             pkl_path = get_output_path(
@@ -76,6 +75,6 @@ class SourceWriter(BaseSourceProcessor):
 
             logger.debug(f"Writing SourceTable to {pkl_path}")
 
-            save_source_table(source_list, pkl_path)
+            save_source_table(source_table, pkl_path)
 
         return batch

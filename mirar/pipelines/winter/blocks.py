@@ -51,7 +51,6 @@ from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
     get_raw_winter_mask,
     load_stacked_winter_image,
-    load_test_stacked_winter_image,
     load_test_winter_image,
     load_winter_mef_image,
 )
@@ -99,12 +98,11 @@ from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskPixelsFromFunction,
 )
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import SourceAperturePhotometry
-from mirar.processors.photometry.psf_photometry import SourcePSFPhotometry
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.sources import (
     CandidateNamer,
-    CustomSourceModifier,
+    CustomSourceTableModifier,
     SourceLoader,
     SourceWriter,
     ZOGYSourceDetector,
@@ -128,11 +126,31 @@ build_test = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
+    ImageBatcher("UTCTIME"),
+    CSVLog(
+        export_keys=[
+            "UTCTIME",
+            "PROGNAME",
+            DITHER_N_KEY,
+            MAX_DITHER_KEY,
+            "FILTER",
+            EXPTIME_KEY,
+            OBSCLASS_KEY,
+            "BOARD_ID",
+            "BASENAME",
+            TARGET_KEY,
+            "RADEG",
+            "DECDEG",
+            "T_ROIC",
+            "FIELDID",
+        ]
+    ),
     ImageSelector(
-        ("BOARD_ID", "4"),
+        ("BOARD_ID", "2"),
         (OBSCLASS_KEY, ["dark", "science"]),
         (EXPTIME_KEY, "120.0"),
-        ("FIELDID", ["9767", str(DEFAULT_FIELD)]),
+        ("filter", ["dark", "J"]),
+        ("FIELDID", ["3944", str(DEFAULT_FIELD)]),
     ),
     ImageSaver("testdata", output_dir=get_test_data_dir()),
 ]
@@ -404,16 +422,6 @@ photcal_and_export = [
 
 # Image subtraction
 
-load_test_stack = [
-    ImageLoader(
-        input_img_dir=get_test_data_dir(),
-        input_sub_dir="final",
-        load_image=load_test_stacked_winter_image,
-    ),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
-    DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
-]
-
 load_stack = [
     ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
@@ -442,29 +450,32 @@ imsub = [
     ),
     ImageSaver(output_dir_name="diffs"),
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
+    ImageSaver(output_dir_name="subtract"),
 ]
 
+load_sub = [
+    ImageLoader(input_sub_dir="subtract"),
+]
 detect_candidates = [
     ZOGYSourceDetector(
         output_sub_dir="subtract",
         **sextractor_candidate_config,
-        copy_image_keywords=["stackid", "progname"],
     ),
-    SourcePSFPhotometry(),
-    SourceAperturePhotometry(
+    PSFPhotometry(),
+    AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    CustomSourceModifier(winter_candidate_annotator_filterer),
+    CustomSourceTableModifier(winter_candidate_annotator_filterer),
     SourceWriter(output_dir_name="candidates"),
 ]
 #
 # candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
-load_candidates = [
+load_sources = [
     SourceLoader(input_dir_name="candidates"),
 ]
 
@@ -492,7 +503,9 @@ process_candidates = [
         db_output_columns=prv_candidate_cols + [CAND_NAME_KEY],
         additional_query_constraints=winter_history_deprecated_constraint,
     ),
-    CustomSourceModifier(modifier_function=winter_candidate_avro_fields_calculator),
+    CustomSourceTableModifier(
+        modifier_function=winter_candidate_avro_fields_calculator
+    ),
     DatabaseSourceInserter(
         db_table=Candidate,
         duplicate_protocol="fail",

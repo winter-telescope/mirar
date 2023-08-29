@@ -12,11 +12,12 @@ from mirar.pipelines.winter.blocks import (
     csvlog,
     detect_candidates,
     detrend_unpacked,
+    extract_all,
+    full_reduction,
     imsub,
-    load_candidates,
     load_stack,
     load_test,
-    load_test_stack,
+    mask_and_split,
     only_ref,
     photcal_stacks,
     process_candidates,
@@ -25,6 +26,8 @@ from mirar.pipelines.winter.blocks import (
     reduce_unpacked,
     refbuild,
     reftest,
+    save_raw,
+    select_split_subset,
     unpack_all,
     unpack_subset,
 )
@@ -46,19 +49,26 @@ class WINTERPipeline(Pipeline):
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
         "detrend_unpacked": detrend_unpacked,
+        "imsub": load_stack + imsub + detect_candidates,
         "reduce": reduce,
         "reduce_unpacked": reduce_unpacked,
         "photcal_stacks": photcal_stacks,
         "buildtest": build_test,
-        "test": load_test + csvlog + realtime,
-        "test_imsub": load_test_stack + imsub + detect_candidates + process_candidates,
+        "test": load_test
+        + csvlog
+        + extract_all
+        + mask_and_split
+        + select_split_subset
+        + save_raw
+        + full_reduction
+        + imsub
+        + detect_candidates
+        + process_candidates,
         "refbuild": refbuild,
         "reftest": reftest,
         "only_ref": only_ref,
         "realtime": realtime,
-        "imsub": load_stack + imsub,
         "detect_candidates": load_stack + imsub + detect_candidates,
-        "process_candidates": load_candidates + process_candidates,
         "full_imsub": load_stack + imsub + detect_candidates + process_candidates,
     }
 

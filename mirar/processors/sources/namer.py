@@ -9,7 +9,8 @@ from sqlalchemy import select, text
 
 from mirar.data import SourceBatch
 from mirar.database.transactions.select import run_select
-from mirar.paths import CAND_NAME_KEY, SOURCE_XMATCH_KEY
+from mirar.paths import CAND_NAME_KEY, SOURCE_XMATCH_KEY, TIME_KEY
+from mirar.processors.base_processor import PrerequisiteError
 from mirar.processors.database import CrossmatchSourceWithDatabase
 from mirar.processors.database.database_selector import BaseDatabaseSourceSelector
 
@@ -30,7 +31,6 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         name_start: str = "aaaaa",
         db_name_field: str = CAND_NAME_KEY,
         db_order_field: str = "candid",
-        date_field: str = "jd",
         **kwargs,
     ):
         super().__init__(db_output_columns=[db_name_field], **kwargs)
@@ -38,7 +38,6 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         self.db_order_field = db_order_field
         self.base_name = base_name
         self.name_start = name_start
-        self.date_field = date_field
 
     @staticmethod
     def increment_string(string: str):
@@ -77,15 +76,15 @@ class CandidateNamer(BaseDatabaseSourceSelector):
 
         return new_string
 
-    def get_next_name(self, cand_jd: float, last_name: str = None) -> str:
+    def get_next_name(self, detection_time: Time, last_name: str = None) -> str:
         """
         Function to get a new candidate name
 
-        :param cand_jd: jd of detection
+        :param detection_time: detection time (Astropy Time object)
         :param last_name: last name
         :return: new name
         """
-        cand_year = Time(cand_jd, format="jd").datetime.year % 1000
+        cand_year = detection_time.datetime.year % 1000
         if last_name is None:
             res = run_select(
                 query=select(getattr(self.db_table.sql_model, self.db_name_field))
@@ -124,14 +123,13 @@ class CandidateNamer(BaseDatabaseSourceSelector):
 
             names = []
             lastname = None
+
+            detection_time = Time(source_table[TIME_KEY])
             for _, source in sources.iterrows():
                 if len(source[SOURCE_XMATCH_KEY]) > 0:
                     source_name = source[SOURCE_XMATCH_KEY][0][self.db_name_field]
-
                 else:
-                    source_name = self.get_next_name(
-                        source[self.date_field], last_name=lastname
-                    )
+                    source_name = self.get_next_name(detection_time, last_name=lastname)
                     lastname = source_name
                 names.append(source_name)
 
@@ -153,4 +151,4 @@ class CandidateNamer(BaseDatabaseSourceSelector):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError(err)
+            raise PrerequisiteError(err)

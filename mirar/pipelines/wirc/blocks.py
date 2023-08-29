@@ -9,7 +9,9 @@ from mirar.paths import (
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
     RAW_IMG_KEY,
+    REF_IMG_KEY,
     SATURATE_KEY,
+    SCI_IMG_KEY,
 )
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
@@ -47,7 +49,7 @@ from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkim
 from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.astrometry.utils import AstrometryFromFile
-from mirar.processors.avro import IPACAvroExporter, SendToFritz
+from mirar.processors.avro import IPACAvroExporter
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_inserter import DatabaseSourceInserter
@@ -64,19 +66,17 @@ from mirar.processors.mask import (
     WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import (
-    ImageAperturePhotometry,
-    SourceAperturePhotometry,
-)
-from mirar.processors.photometry.psf_photometry import (
-    ImagePSFPhotometry,
-    SourcePSFPhotometry,
-)
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
-from mirar.processors.sources import CandidateNamer, SourceWriter, ZOGYSourceDetector
-from mirar.processors.sources.source_table_builder import ForcedPhotometryCandidateTable
-from mirar.processors.sources.source_table_modifier import CustomSourceModifier
+from mirar.processors.skyportal import SkyportalCandidateUploader
+from mirar.processors.sources import (
+    CandidateNamer,
+    ForcedPhotometryDetector,
+    SourceWriter,
+    ZOGYSourceDetector,
+)
+from mirar.processors.sources.source_table_modifier import CustomSourceTableModifier
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
     HeaderAnnotator,
@@ -197,51 +197,48 @@ subtract = [
     ImageSaver(output_dir_name="diffs"),
 ]
 
-image_photometry = [
-    ImageAperturePhotometry(
-        aper_diameters=[16],
-        bkg_in_diameters=[25],
-        bkg_out_diameters=[40],
-        col_suffix_list=[""],
-        phot_cutout_size=100,
-        target_ra_key="TARGRA",
-        target_dec_key="TARGDEC",
-    ),
-    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
-    PSFex(config_path=psfex_path, output_sub_dir="photometry", norm_fits=True),
-    ImagePSFPhotometry(target_ra_key="TARGRA", target_dec_key="TARGDEC"),
-    ImageSaver(output_dir_name="photometry"),
-]
-
 export_candidates_from_header = [
-    ForcedPhotometryCandidateTable(
-        ra_header_key="TARGRA", dec_header_key="TARGDEC", name_header_key="TARGNAME"
-    ),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
 ]
 
 candidate_photometry = [
-    SourceAperturePhotometry(
+    AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    SourcePSFPhotometry(),
+    PSFPhotometry(),
 ]
 
 detect_candidates = [
     ZOGYSourceDetector(
         output_sub_dir="subtract",
         **sextractor_candidate_config,
-        copy_image_keywords=["PROGID", "PROGPI"],
     ),
+]
+#
+image_photometry = [
+    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
+    PSFex(config_path=psfex_path, output_sub_dir="photometry", norm_fits=True),
+    ImageSaver(output_dir_name="photometry"),
+    # AperturePhotometry(
+    #     aper_diameters=[16],
+    #     bkg_in_diameters=[25],
+    #     bkg_out_diameters=[40],
+    #     col_suffix_list=[""],
+    #     phot_cutout_size=100,
+    #     target_ra_key="TARGRA",
+    #     target_dec_key="TARGDEC",
+    # ),
+    # PSFPhotometry(),
 ]
 
 process_candidates = [
     RegionsWriter(output_dir_name="candidates"),
-    SourcePSFPhotometry(),
-    SourceAperturePhotometry(
+    PSFPhotometry(),
+    AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
@@ -249,7 +246,7 @@ process_candidates = [
         col_suffix_list=["", "big"],
     ),
     # SourceWriter(output_dir_name="candidates"),
-    CustomSourceModifier(modifier_function=wirc_source_table_filter_annotator),
+    CustomSourceTableModifier(modifier_function=wirc_source_table_filter_annotator),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
@@ -266,11 +263,13 @@ process_candidates = [
     ),
     DatabaseHistorySelector(
         crossmatch_radius_arcsec=2.0,
-        time_field_name="jd",
         history_duration_days=500.0,
         db_table=Candidate,
         db_output_columns=[CAND_NAME_KEY] + prv_candidate_cols,
     ),
+    HeaderAnnotator(input_keys=[LATEST_SAVE_KEY], output_key="diffimgname"),
+    HeaderAnnotator(input_keys=[SCI_IMG_KEY], output_key="sciimgname"),
+    HeaderAnnotator(input_keys=[REF_IMG_KEY], output_key="refimgname"),
     DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="fail"),
     SourceWriter(output_dir_name="candidates"),
     # EdgeCandidatesMask(edge_boundary_size=100)
@@ -278,12 +277,13 @@ process_candidates = [
 ]
 
 package_candidates = [
+    HeaderAnnotator(input_keys=["MJD-OBS"], output_key="mjd"),
     IPACAvroExporter(
         base_name="WIRC",
         avro_schema_path=wirc_avro_schema_path,
     ),
-    SendToFritz(
-        base_name="WIRCTEST",
+    SkyportalCandidateUploader(
+        origin="WIRCTEST",
         group_ids=[1431],
         fritz_filter_id=74,
         instrument_id=5,

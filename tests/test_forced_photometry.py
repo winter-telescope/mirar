@@ -5,8 +5,7 @@ import logging
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
-from mirar.io import open_fits
-from mirar.paths import LATEST_SAVE_KEY, ZP_KEY, ZP_STD_KEY, get_output_path
+from mirar.paths import ZP_KEY, ZP_STD_KEY
 from mirar.pipelines.wirc.blocks import (
     candidate_photometry,
     export_candidates_from_header,
@@ -26,10 +25,7 @@ test_data_dir = get_test_data_dir()
 NIGHT_NAME = "20210330"
 
 EXPECTED_HEADER_VALUES = {
-    "MAGAP": 17.01042620967162,
-    "MAGPSF": 16.957491654080247,
-    "MAGERRAP": 0.05580721809850005,
-    "SIGMAPSF": 0.04793450626938275,
+    "TARGNAME": "ZTF21aagppzg",
 }
 
 EXPECTED_DATAFRAME_VALUES = {
@@ -37,7 +33,6 @@ EXPECTED_DATAFRAME_VALUES = {
     "magap": [17.014130826817812],
     "sigmapsf": [0.04793450628321317],
     "sigmagap": [0.055862250242806104],
-    "objectid": ["ZTF21aagppzg"],
 }
 
 test_fp_configuration = (
@@ -87,57 +82,33 @@ class TestForcedPhot(BaseTestCase):
         )
         self.assertEqual(len(res), 1)
 
-        candidates_table = res[0][0].get_data()
-        diff_imgpath = get_output_path(
-            base_name=candidates_table.iloc[0][LATEST_SAVE_KEY],
-            dir_root="photom",
-            sub_dir=NIGHT_NAME,
-        )
+        new = res[0][0]
 
-        _, header = open_fits(diff_imgpath)
+        source_table = new.get_data()
+        metadata = new.get_metadata()
+
+        print("Got the following values:")
+
+        new_header = "expected_header_values = { \n"
+        for key in EXPECTED_HEADER_VALUES:
+            new_header += f'    "{key}": {metadata[key]}, \n'
+        new_header += "}"
+        print(new_header)
+
+        new_src_table = "expected_dataframe_values = { \n"
+        for key in EXPECTED_DATAFRAME_VALUES:
+            new_src_table += f'    "{key}": {list(source_table[key])}, \n'
+        new_src_table += "}"
+        print(new_src_table)
+
         for key, value in EXPECTED_HEADER_VALUES.items():
-            if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=2)
-            elif isinstance(value, int):
-                self.assertEqual(value, header[key])
+            if isinstance(value, str):
+                self.assertEqual(value, metadata[key])
             else:
-                raise TypeError(
-                    f"Type for value ({type(value)} is neither float not int."
-                )
+                self.assertAlmostEqual(value, metadata[key], delta=0.05)
 
-        self.assertEqual(len(candidates_table), 1)
+        self.assertEqual(len(source_table), 1)
+
         for key, value in EXPECTED_DATAFRAME_VALUES.items():
-            if isinstance(value, list):
-                for ind, val in enumerate(value):
-                    self.assertAlmostEqual(
-                        candidates_table.iloc[ind][key], val, delta=0.05
-                    )
-
-
-if __name__ == "__main__":
-    print("Calculating latest forced phot dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images(
-        dataset=Dataset(ImageBatch()), catch_all_errors=False
-    )
-    new_candidates_table = new_res[0][0].get_data()
-    new_diff_imgpath = get_output_path(
-        base_name=new_candidates_table.iloc[0][LATEST_SAVE_KEY],
-        dir_root="photom",
-        sub_dir="20210330",
-    )
-    _, new_header = open_fits(new_diff_imgpath)
-
-    NEW_EXP_HEADER = "expected_header_values = { \n"
-    for key in EXPECTED_HEADER_VALUES:
-        NEW_EXP_HEADER += f'    "{key}": {new_header[key]}, \n'
-    NEW_EXP_HEADER += "}"
-    print(NEW_EXP_HEADER)
-
-    NEW_EXP_DATAFRAME = "expected_dataframe_values = { \n"
-    for key in EXPECTED_DATAFRAME_VALUES:
-        NEW_EXP_DATAFRAME += f'    "{key}": {list(new_candidates_table[key])}, \n'
-    NEW_EXP_DATAFRAME += "}"
-    print(NEW_EXP_DATAFRAME)
+            for i, row in source_table.iterrows():
+                self.assertAlmostEqual(row[key], value[i], delta=0.05)

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from mirar.data import SourceBatch
-from mirar.paths import DIFF_IMG_KEY, base_output_dir, get_output_path
+from mirar.paths import BASE_NAME_KEY, base_output_dir, get_output_path
 from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
@@ -44,28 +44,21 @@ class RegionsWriter(BaseSourceProcessor):
         for source_list in batch:
             candidate_table = source_list.get_data()
 
-            started_regions_paths = []
-            for ind in range(len(candidate_table)):
-                row = candidate_table.iloc[ind]
-                regions_basepath = os.path.basename(row[DIFF_IMG_KEY]).replace(
-                    ".fits", ".reg"
-                )
-                regions_path = get_output_path(
-                    regions_basepath,
-                    dir_root=self.output_dir_name,
-                    sub_dir=self.night_sub_dir,
-                    output_dir=self.output_dir,
-                )
+            regions_basepath = os.path.basename(source_list[BASE_NAME_KEY]).replace(
+                ".fits", ".reg"
+            )
+            regions_path = get_output_path(
+                regions_basepath,
+                dir_root=self.output_dir_name,
+                sub_dir=self.night_sub_dir,
+                output_dir=self.output_dir,
+            )
 
-                regions_path.parent.mkdir(parents=True, exist_ok=True)
+            regions_path.parent.mkdir(parents=True, exist_ok=True)
 
-                if regions_path not in started_regions_paths:
-                    logger.debug(f"Writing regions path to {regions_path}")
-                    with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
-                        regions_f.write("image\n")
-                    started_regions_paths.append(regions_path)
-
-                with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
+            with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
+                regions_f.write("image\n")
+                for _, row in candidate_table.iterrows():
                     regions_f.write(
                         f"CIRCLE({row['X_IMAGE']},{row['Y_IMAGE']},"
                         f"{self.region_pix_radius})\n"

@@ -32,7 +32,7 @@ class BaseDatabaseSelector(BaseDatabaseProcessor, ABC):
         super().__init__(*args, **kwargs)
         self.boolean_match_key = boolean_match_key
 
-    def get_constraints(self, data: DataBlock) -> None | DBQueryConstraints:
+    def get_constraints(self, data: dict) -> None | DBQueryConstraints:
         """
         Get db query constraints for a given datablock object
 
@@ -107,7 +107,7 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseSelector):
         super().__init__(*args, **kwargs)
         self.db_query_columns = db_query_columns
 
-    def get_accepted_values(self, data: DataBlock) -> list[str | float | int]:
+    def get_accepted_values(self, data: dict) -> list[str | float | int]:
         """
         Get list of accepted values for crossmatch query
 
@@ -117,7 +117,7 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseSelector):
         accepted_values = [data[x.upper()] for x in self.db_query_columns]
         return accepted_values
 
-    def get_constraints(self, data: DataBlock) -> DBQueryConstraints:
+    def get_constraints(self, data: dict) -> DBQueryConstraints:
         """
         Get db query constraints for a datablock
 
@@ -169,10 +169,12 @@ class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC)
         batch: SourceBatch,
     ) -> SourceBatch:
         for source_table in batch:
+            metadata = source_table.get_metadata()
             candidate_table = source_table.get_data()
             results = []
-            for _, cand in candidate_table.iterrows():
-                query_constraints = self.get_constraints(cand)
+            for _, source in candidate_table.iterrows():
+                super_dict = self.generate_super_dict(metadata, source)
+                query_constraints = self.get_constraints(super_dict)
                 logger.debug(
                     f"Query constraints: " f"{query_constraints.parse_constraints()}"
                 )

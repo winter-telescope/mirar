@@ -13,6 +13,7 @@ from queue import Queue
 from threading import Thread
 
 import numpy as np
+import pandas as pd
 from tqdm.auto import tqdm
 
 from mirar.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
@@ -471,6 +472,12 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
         self.master_image_path = Path(master_image_path)
 
     def get_cache_path(self, images: ImageBatch) -> Path:
+        """
+        Gets path for saving/loading cached image
+
+        :param images: Images to process
+        :return: Path to cached image
+        """
         return self.master_image_path
 
 
@@ -496,6 +503,21 @@ class BaseSourceGenerator(CleanupProcessor, ImageHandler, ABC):
     def _apply_to_images(self, batch: ImageBatch) -> SourceBatch:
         raise NotImplementedError
 
+    def get_metadata(self, image: Image) -> dict:
+        """
+        Get metadata from image
+
+        :param image: Image to get metadata from
+        :return: Metadata dictionary
+        """
+        metadata = {}
+
+        for key in image.keys():
+            if key != "COMMENT":
+                metadata[key] = image[key]
+
+        return metadata
+
 
 class BaseSourceProcessor(BaseProcessor, ABC):
     """
@@ -515,3 +537,18 @@ class BaseSourceProcessor(BaseProcessor, ABC):
         batch: SourceBatch,
     ) -> SourceBatch:
         raise NotImplementedError
+
+    @staticmethod
+    def generate_super_dict(metadata: dict, source_row: pd.Series) -> dict:
+        """
+        Generate a dictionary of metadata and candidate row, with lower case keys
+
+        :param metadata: Metadata for the source table
+        :param source_row: Individual row of the source table
+        :return: Combined dictionary
+        """
+        super_dict = {key.lower(): val for key, val in metadata.items()}
+        super_dict.update(
+            {key.lower(): val for key, val in source_row.to_dict().items()}
+        )
+        return super_dict

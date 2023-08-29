@@ -285,34 +285,25 @@ def get_rms_image(image: Image) -> Image:
 
 
 def get_mags_from_fluxes(
-    flux_list: list[float] | np.ndarray,
-    fluxunc_list: list[float] | np.ndarray,
-    zeropoint_list: list[float] | np.ndarray,
-    zeropoint_unc_list: list[float] | np.ndarray,
+    flux_list: np.ndarray[float],
+    fluxunc_list: np.ndarray[float],
+    zeropoint: float,
+    zeropoint_unc: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Convert fluxes and flux uncertainties to magnitudes and magnitude uncertainties
 
     :param flux_list: List of fluxes
     :param fluxunc_list: List of flux uncertainties
-    :param zeropoint_list: List of zeropoints
-    :param zeropoint_unc_list: List of zeropoint uncertainties
+    :param zeropoint: Zeropoint
+    :param zeropoint_unc: Zeropoint uncertainties
     :return: magnitudes, magnitude uncertainties
     """
-    assert len(flux_list) == len(fluxunc_list) == len(zeropoint_list)
+    assert len(flux_list) == len(fluxunc_list)
 
-    if isinstance(flux_list, list):
-        flux_list = np.array(flux_list)
-    if isinstance(fluxunc_list, list):
-        fluxunc_list = np.array(fluxunc_list)
-    if isinstance(zeropoint_list, list):
-        zeropoint_list = np.array(zeropoint_list)
-    if isinstance(zeropoint_unc_list, list):
-        zeropoint_unc_list = np.array(zeropoint_unc_list)
-
-    magnitudes = zeropoint_list - 2.5 * np.log10(flux_list)
+    magnitudes = zeropoint - 2.5 * np.log10(flux_list)
     magnitudes_unc = 1.086 * fluxunc_list / flux_list
 
-    magnitudes_unc = np.sqrt(magnitudes_unc**2 + zeropoint_unc_list**2)
+    magnitudes_unc = np.sqrt(magnitudes_unc**2 + zeropoint_unc**2)
     magnitudes = magnitudes.astype(object)
     magnitudes_unc = magnitudes_unc.astype(object)
     magnitudes[flux_list <= 0] = None

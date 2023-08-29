@@ -1,0 +1,2 @@
+from mirar.processors.photometry.aperture_photometry import AperturePhotometry
+from mirar.processors.photometry.psf_photometry import PSFPhotometry

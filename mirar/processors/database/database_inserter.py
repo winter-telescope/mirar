@@ -9,7 +9,11 @@ import pandas as pd
 
 from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.errors.exceptions import BaseProcessorError
-from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
+from mirar.processors.base_processor import (
+    BaseImageProcessor,
+    BaseSourceProcessor,
+    PrerequisiteError,
+)
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 from mirar.processors.utils.image_selector import ImageBatcher
 
@@ -97,21 +101,6 @@ class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
 
         return batch
 
-    @staticmethod
-    def generate_super_dict(metadata: dict, source_row: pd.Series) -> dict:
-        """
-        Generate a dictionary of metadata and candidate row, with lower case keys
-
-        :param metadata: Metadata for the source table
-        :param source_row: Individual row of the source table
-        :return: Combined dictionary
-        """
-        super_dict = {key.lower(): val for key, val in metadata.items()}
-        super_dict.update(
-            {key.lower(): val for key, val in source_row.to_dict().items()}
-        )
-        return super_dict
-
 
 class DatabaseImageBatchInserter(DatabaseImageInserter):
     """
@@ -170,4 +159,4 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError
+            raise PrerequisiteError(err)

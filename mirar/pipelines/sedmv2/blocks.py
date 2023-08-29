@@ -28,14 +28,9 @@ from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import (
-    ImageAperturePhotometry,
-    SourceAperturePhotometry,
-)
-from mirar.processors.photometry.psf_photometry import (  # ImagePSFPhotometry,
-    SourcePSFPhotometry,
-)
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
+from mirar.processors.sources import ForcedPhotometryDetector
 from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
@@ -141,8 +136,9 @@ parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 process_stellar = reduce + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
-    # ImageSelector(("OBSTYPE", "SCIENCE")),
-    ImageAperturePhotometry(
+    ImageSaver(output_dir_name="photometry"),
+    ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
+    AperturePhotometry(
         aper_diameters=[
             2 / SEDMV2_PIXEL_SCALE,
             3 / SEDMV2_PIXEL_SCALE,
@@ -166,29 +162,19 @@ image_photometry = [  # imported from wirc/blocks.py
         ],
         col_suffix_list=["2", "3", "4", "5", "10"],
         phot_cutout_size=100,
-        target_ra_key="OBJRAD",
-        target_dec_key="OBJDECD",
         zp_key="ZP_AUTO",
     ),
-    # Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
-    # PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),
-    # ImagePSFPhotometry(
-    #     target_ra_key="OBJRAD",
-    #     target_dec_key="OBJDECD",
-    #     zp_colname="ZP_AUTO",
-    # ),
-    ImageSaver(output_dir_name="photometry"),
 ]
 
 candidate_photometry = [  # imported from wirc/blocks.py
-    SourceAperturePhotometry(
+    AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    SourcePSFPhotometry(),
+    PSFPhotometry(),
 ]
 
 
