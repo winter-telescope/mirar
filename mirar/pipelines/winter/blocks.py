@@ -269,7 +269,7 @@ save_raw = [
 # Load from unpacked dir
 
 load_unpacked = [
-    ImageLoader(input_sub_dir="raw_unpacked"),
+    ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
     ImageBatcher("UTCTIME"),
     CSVLog(
         export_keys=[
