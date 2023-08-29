@@ -376,14 +376,15 @@ def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatc
     for source in source_batch:
         src_df = source.get_data()
 
-        none_mask = (
+        bad_sources_mask = (
             src_df["sigmapsf"].isnull()
             | src_df["magpsf"].isnull()
             | src_df["magap"].isnull()
             | src_df["sigmagap"].isnull()
+            | (src_df["fwhm"] <= 0)
         )
 
-        mask = none_mask.values
+        mask = bad_sources_mask.values
 
         # Needing to do this because the dataframe is big-endian
         mask_inds = np.where(~mask)[0]
