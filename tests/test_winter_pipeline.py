@@ -43,7 +43,6 @@ expected_dataframe_values = {
     "magap": [12.020240804368768],
 }
 
-
 pipeline = get_pipeline(
     instrument="winter", selected_configurations=["test"], night="20230726"
 )
