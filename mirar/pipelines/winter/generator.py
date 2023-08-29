@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from astropy.table import Table
+from astropy.time import Time
 
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.base_catalog import CatalogFromFile
@@ -22,6 +23,7 @@ from mirar.paths import (
     OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
     SATURATE_KEY,
+    TIME_KEY,
     ZP_KEY,
     ZP_STD_KEY,
     get_output_dir,
@@ -329,6 +331,7 @@ def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatc
         source["programpi"] = source["PROGPI"]
         source["programid"] = source["PROGID"]
         source["field"] = source["FIELDID"]
+        source["jd"] = Time(source[TIME_KEY]).jd
 
         source.set_data(filtered_df)
         new_batch.append(source)
@@ -356,8 +359,8 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
         jdstarthists, jdendhists = [], []
         for _, hist_df in enumerate(hist_dfs):
             if len(hist_df) == 0:
-                jdstarthists.append(source["JD"])
-                jdendhists.append(source["JD"])
+                jdstarthists.append(source["jd"])
+                jdendhists.append(source["jd"])
             else:
                 jdstarthists.append(hist_df["jd"].min())
                 jdendhists.append(hist_df["jd"].max())

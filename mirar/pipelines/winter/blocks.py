@@ -494,7 +494,6 @@ process_candidates = [
         db_table=Candidate,
         base_name=CANDIDATE_PREFIX,
         name_start=NAME_START,
-        date_field="JD",
     ),
     DatabaseHistorySelector(
         crossmatch_radius_arcsec=2.0,

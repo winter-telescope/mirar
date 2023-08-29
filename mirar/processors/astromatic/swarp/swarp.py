@@ -416,12 +416,7 @@ class Swarp(BaseImageProcessor):
 
         new_image["COADDS"] = sum(x["COADDS"] for x in batch)
         new_image[EXPTIME_KEY] = sum(x[EXPTIME_KEY] for x in batch)
-
-        for key in ["JD", "MJD", "DATE-OBS", "DATE-END", "MJD-OBS", TIME_KEY]:
-            if key in batch[0].keys():
-                new_image[key] = min(x[key] for x in batch)
-            elif key.lower in batch[0].keys():
-                new_image[key.lower()] = min(x[key.lower()] for x in batch)
+        new_image[TIME_KEY] = min(x[TIME_KEY] for x in batch)
 
         new_image[RAW_IMG_KEY] = ",".join([x[RAW_IMG_KEY] for x in batch])
 
