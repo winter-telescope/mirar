@@ -498,22 +498,25 @@ def winter_reference_generator(image: Image):
     subdetid = int(image[SUB_ID_KEY])
     logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
 
-    constraints = DBQueryConstraints(
-        columns=["fieldid", SUB_ID_KEY.lower()],
-        accepted_values=[fieldid, subdetid],
-    )
+    cache_ref_stack = False
+    if fieldid != DEFAULT_FIELD:
+        cache_ref_stack = True
+        constraints = DBQueryConstraints(
+            columns=["fieldid", SUB_ID_KEY.lower()],
+            accepted_values=[fieldid, subdetid],
+        )
 
-    db_results = select_from_table(
-        db_constraints=constraints,
-        sql_table=RefStack.sql_model,
-        output_columns=["savepath"],
-    )
+        db_results = select_from_table(
+            db_constraints=constraints,
+            sql_table=RefStack.sql_model,
+            output_columns=["savepath"],
+        )
 
-    if len(db_results) > 0:
-        savepath = db_results["savepath"].iloc[0]
-        if os.path.exists(savepath):
-            logger.debug(f"Found reference image in database: {savepath}")
-            return RefFromPath(path=savepath, filter_name=filtername)
+        if len(db_results) > 0:
+            savepath = db_results["savepath"].iloc[0]
+            if os.path.exists(savepath):
+                logger.debug(f"Found reference image in database: {savepath}")
+                return RefFromPath(path=savepath, filter_name=filtername)
 
     ukirt_query = UKIRTOnlineQuery(
         num_query_points=9,
@@ -528,9 +531,9 @@ def winter_reference_generator(image: Image):
         filter_name=filtername,
         wfcam_query=ukirt_query,
         image_resampler_generator=winter_wfau_component_image_stacker,
-        write_stacked_image=True,
+        write_stacked_image=cache_ref_stack,
         write_stack_sub_dir="winter/references/ref_stacks",
-        write_stack_to_db=True,
+        write_stack_to_db=cache_ref_stack,
         stacks_db_table=RefStack,
         component_image_sub_dir="components",
         references_base_subdir_name="winter/references",
