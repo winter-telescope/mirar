@@ -49,7 +49,7 @@ PIXSCALE_MAXERR        1.01             # Max scale-factor uncertainty
 POSANGLE_MAXERR        90               # Max position-angle uncertainty (deg)
 POSITION_MAXERR        2             # Max positional uncertainty (arcmin)
 MATCH_RESOL            0               # Matching resolution (arcsec); 0=auto
-MATCH_FLIPPED          Y               # Allow matching with flipped axes?
+MATCH_FLIPPED          N               # Allow matching with flipped axes?
 MOSAIC_TYPE            UNCHANGED       # UNCHANGED, SAME_CRVAL, SHARE_PROJAXIS,
                                        # FIX_FOCALPLANE or LOOSE
 FIXFOCALPLANE_NMIN     1               # Min number of dets for FIX_FOCALPLANE
@@ -71,8 +71,8 @@ DISTORT_KEYS           XWIN_IMAGE,YWIN_IMAGE # Cat. parameters or FITS keywords
 DISTORT_GROUPS         1,1             # Polynom group for each context key
 DISTORT_DEGREES        3               # Polynom degree for each group
 #FOCDISTORT_DEGREE      3              # Polynom degree for focal plane coords
-ASTREF_WEIGHT          1.0             # Relative weight of ref.astrom.cat.
-ASTRACCURACY_TYPE      SIGMA-PIXEL     # SIGMA-PIXEL, SIGMA-ARCSEC,
+#ASTREF_WEIGHT          1.0             # Relative weight of ref.astrom.cat.
+#ASTRACCURACY_TYPE      SIGMA-PIXEL     # SIGMA-PIXEL, SIGMA-ARCSEC,
                                        # or TURBULENCE-ARCSEC
 ASTRACCURACY_KEY       ASTRACCU        # FITS keyword for ASTR_ACCURACY param.
 ASTR_ACCURACY          0.01            # Astrom. uncertainty floor parameter
