@@ -3,7 +3,8 @@ Module for executing bash commands
 """
 import logging
 import os
-import shutil
+
+# import shutil
 import subprocess
 from pathlib import Path
 from subprocess import TimeoutExpired
@@ -99,13 +100,13 @@ def run_local(cmd: str, output_dir: str = ".", timeout: float = DEFAULT_TIMEOUT)
                 f"{new_files}"
             )
 
-        for file in new_files:
-            current_path = os.path.join(current_dir, file)
-            output_path = os.path.join(output_dir, file)
-
-            logger.debug(f"File saved to {output_path}")
-
-            shutil.move(current_path, output_path)
+        # for file in new_files:
+        #     current_path = os.path.join(current_dir, file)
+        #     output_path = os.path.join(output_dir, file)
+        #
+        #     logger.debug(f"File saved to {output_path}")
+        #
+        #     shutil.move(current_path, output_path)
 
     except subprocess.CalledProcessError as err:
         msg = (
