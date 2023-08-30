@@ -145,8 +145,10 @@ def pyzogy(
     # Fourier Transform of Score Image (Equation 17)
     score_hat = flux_zero_point * diff_hat * np.conj(diff_hat_psf)
 
+    logger.debug(f"Calculated score-hat image {new_psf_path.as_posix()}")
     # Score Image
     score = np.real(fft.ifft2(score_hat))
+    logger.debug(f"Calculated score image {new_psf_path.as_posix()}")
 
     # Now start calculating Scorr matrix (including all noise terms)
 
@@ -154,61 +156,82 @@ def pyzogy(
     # Load the sigma images into memory
     with fits.open(new_sigma_path) as img_sigma_f:
         new_sigma = img_sigma_f[0].data  # pylint: disable=no-member
+    logger.debug(f"Loaded new sigma image {new_psf_path.as_posix()}")
 
     with fits.open(ref_sigma_path) as ref_sigma_f:
         ref_sigma = ref_sigma_f[0].data  # pylint: disable=no-member
+    logger.debug(f"Loaded ref sigma image {new_psf_path.as_posix()}")
 
     new_sigma[new_nanmask] = 0.0
     ref_sigma[ref_nanmask] = 0.0
-
+    logger.debug(f"Set NaNs to zero in sigma images {new_psf_path.as_posix()}")
     # Sigma to variance
     new_variance = new_sigma**2
     ref_variance = ref_sigma**2
+    logger.debug(f"Calculated variance images {new_psf_path.as_posix()}")
 
     # Fourier Transform of variance images
     new_variance_hat = fft.fft2(new_variance)
     ref_variance_hat = fft.fft2(ref_variance)
+    logger.debug(
+        f"Calculated variance image Fourier transforms " f"{new_psf_path.as_posix()}"
+    )
 
     # Equation 28
     k_r_hat = (
         np.conj(ref_psf_hat) * np.abs(new_psf_hat**2) / (diff_hat_denominator**2)
     )
+    logger.debug(f"Calculated k_r_hat {new_psf_path.as_posix()}")
     k_r = np.real(fft.ifft2(k_r_hat))
+    logger.debug(f"Calculated k_r {new_psf_path.as_posix()}")
 
     # Equation 29
     k_n_hat = (
         np.conj(new_psf_hat) * np.abs(ref_psf_hat**2) / (diff_hat_denominator**2)
     )
+    logger.debug(f"Calculated k_n_hat {new_psf_path.as_posix()}")
     k_n = np.real(fft.ifft2(k_n_hat))
+    logger.debug(f"Calculated k_n {new_psf_path.as_posix()}")
 
     # Noise in New Image: Equation 26
     new_noise = np.real(fft.ifft2(new_variance_hat * fft.fft2(k_n**2)))
-
+    logger.debug(f"Calculated new noise {new_psf_path.as_posix()}")
     # Noise in Reference Image: Equation 27
     ref_noise = np.real(fft.ifft2(ref_variance_hat * fft.fft2(k_r**2)))
-
+    logger.debug(f"Calculated ref noise {new_psf_path.as_posix()}")
     # Astrometric Noise
     # Equation 31
     new_sigma = np.real(fft.ifft2(k_n_hat * new_hat))
+    logger.debug(f"Calculated new sigma {new_psf_path.as_posix()}")
     dsn_dx = new_sigma - np.roll(new_sigma, 1, axis=1)
+    logger.debug(f"Calculated dsn_dx {new_psf_path.as_posix()}")
     dsn_dy = new_sigma - np.roll(new_sigma, 1, axis=0)
+    logger.debug(f"Calculated dsn_dy {new_psf_path.as_posix()}")
 
     # Equation 30
     v_ast_s_n = dx**2 * dsn_dx**2 + dy**2 * dsn_dy**2
+    logger.debug(f"Calculated v_ast_s_n {new_psf_path.as_posix()}")
 
     # Equation 33
     ref_sigma = np.real(fft.ifft2(k_r_hat * ref_hat))
+    logger.debug(f"Calculated ref sigma {new_psf_path.as_posix()}")
     dsr_dx = ref_sigma - np.roll(ref_sigma, 1, axis=1)
+    logger.debug(f"Calculated dsr_dx {new_psf_path.as_posix()}")
     dsr_dy = ref_sigma - np.roll(ref_sigma, 1, axis=0)
+    logger.debug(f"Calculated dsr_dy {new_psf_path.as_posix()}")
 
     # Equation 32
     v_ast_s_r = dx**2 * dsr_dx**2 + dy**2 * dsr_dy**2
+    logger.debug(f"Calculated v_ast_s_r {new_psf_path.as_posix()}")
 
     # Calculate Scorr
     s_corr = score / np.sqrt(new_noise + ref_noise + v_ast_s_n + v_ast_s_r)
+    logger.debug(f"Calculated s_corr {new_psf_path.as_posix()}")
 
     # Set back nans before returning
     diff[new_nanmask | ref_nanmask] = np.nan
+    logger.debug(f"Set back nans in diff {new_psf_path.as_posix()}")
     s_corr[new_nanmask | ref_nanmask] = np.nan
+    logger.debug(f"Set back nans in s_corr {new_psf_path.as_posix()}")
 
     return diff, diff_psf, s_corr
