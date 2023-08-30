@@ -105,41 +105,61 @@ def pyzogy(
     logger.debug(
         f"Max of big PSF shift is "
         f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
-        f"PSF path is {new_psf_path.as_posix()}"
+        f"PSF path is {new_psf_path.as_posix()} with data shape {new_data.shape}"
+        f"and ref data shape {ref_data.shape}"
     )
 
     # Take all the Fourier Transforms
     new_hat = fft.fft2(new_data)
     ref_hat = fft.fft2(ref_data)
 
+    logger.debug(f"Calculated FFTs PSF path is {new_psf_path.as_posix()}")
     new_psf_hat = fft.fft2(new_psf_big)
     ref_psf_hat = fft.fft2(ref_psf_big)
 
+    logger.debug(f"Calculated PSF FFTs PSF path is {new_psf_path.as_posix()}")
     # Fourier Transform of Difference Image (Equation 13)
     diff_hat_numerator = ref_psf_hat * new_hat - new_psf_hat * ref_hat
+    logger.debug(f"Calculated diff_hat_numerator PSF path is {new_psf_path.as_posix()}")
     diff_hat_denominator = np.sqrt(
         new_avg_unc**2 * np.abs(ref_psf_hat**2)
         + ref_avg_unc**2 * np.abs(new_psf_hat**2)
         + 1e-8
     )
-
+    logger.debug(
+        f"Calculated diff_hat_denominator PSF path is " f"{new_psf_path.as_posix()}"
+    )
     diff_hat = diff_hat_numerator / diff_hat_denominator
+    logger.debug(f"Calculated diff_hat PSF path is {new_psf_path.as_posix()}")
     # Flux-based zero point (Equation 15)
     flux_zero_point = 1.0 / np.sqrt(new_avg_unc**2 + ref_avg_unc**2)
+    logger.debug(
+        f"Calculated flux_zero_point {flux_zero_point} "
+        f"PSF path is {new_psf_path.as_posix()}"
+    )
 
     # Difference Image
     diff = np.real(fft.ifft2(diff_hat)) / flux_zero_point
+    logger.debug(f"Calculated diff PSF path is {new_psf_path.as_posix()}")
+    fits.writeto(
+        filename=new_psf_path.with_suffix(".diff.fits"), data=diff, overwrite=True
+    )
+    logger.debug(f"Wrote diff PSF path is {new_psf_path.as_posix()}")
     # Fourier Transform of PSF of Subtraction Image (Equation 14)
     diff_hat_psf = ref_psf_hat * new_psf_hat / flux_zero_point / diff_hat_denominator
+    logger.debug(f"Calculated diff_hat_psf PSF path is {new_psf_path.as_posix()}")
 
     # PSF of Subtraction Image
     diff_psf = np.real(fft.ifft2(diff_hat_psf))
+    logger.debug(f"Calculated diff_psf PSF path is {new_psf_path.as_posix()}")
     diff_psf = fft.ifftshift(diff_psf)
+    logger.debug(f"Calculated diff_psf PSF path is {new_psf_path.as_posix()}")
     diff_psf = diff_psf[y_min:y_max, x_min:x_max]
     logger.debug(
         f"Max of diff PSF is "
         f"{np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape)}"
-        f"PSF path is {new_psf_path.as_posix()}"
+        f"PSF path is {new_psf_path.as_posix()} with data shape {new_data.shape}"
+        f"and ref data shape {ref_data.shape}"
     )
 
     # Fourier Transform of Score Image (Equation 17)
