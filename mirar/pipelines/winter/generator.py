@@ -382,6 +382,7 @@ def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatc
             | src_df["magap"].isnull()
             | src_df["sigmagap"].isnull()
             | (src_df["fwhm"] <= 0)
+            | (src_df["scorr"] < 0)
         )
 
         mask = bad_sources_mask.values

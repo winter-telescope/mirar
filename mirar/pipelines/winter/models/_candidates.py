@@ -270,7 +270,7 @@ class Candidate(BaseDB):
     ssnrms: float | None = Field(default=None)
     dsdiff: float | None = Field(default=None)
 
-    scorr: float = Field()
+    scorr: float = Field(ge=0)
 
     rb: float | None = Field(ge=0, default=None)
     rbversion: float | None = Field(ge=0, default=None)
