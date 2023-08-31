@@ -20,13 +20,13 @@ ASTREF_CATALOG         FILE          # NONE, FILE, USNO-A1,USNO-A2,USNO-B1,
 ASTREF_BAND            DEFAULT         # Photom. band for astr.ref.magnitudes
                                        # or DEFAULT, BLUEST, or REDDEST
 ASTREFCAT_NAME         astrefcat.cat   # Local astrometric reference catalogs
-ASTREFCENT_KEYS        ra, dec # Local ref.cat. centroid parameters
+ASTREFCENT_KEYS        ra,dec # Local ref.cat. centroid parameters
 ASTREFERR_KEYS         ra_errdeg,dec_errdeg # e_RAJ2000, e_DEJ2000
                                        # Local ref.cat. err. ellipse params
-ASTREFMAG_KEY          phot_rp_mean_mag            # Local ref.cat. magnitude parameter
-ASTREFMAGERR_KEY       phot_rp_mean_mag_error          # Local ref.cat. mag. error parameter
+ASTREFMAG_KEY          magnitude            # Local ref.cat. magnitude parameter
+ASTREFMAGERR_KEY       magnitude_err          # Local ref.cat. mag. error parameter
 ASTREFOBSDATE_KEY      ref_epoch         # Local ref.cat. obs. date parameter
-ASTREFMAG_LIMITS       -99.0,99.0      # Select magnitude range in ASTREF_BAND
+ASTREFMAG_LIMITS       0,15.0      # Select magnitude range in ASTREF_BAND
 SAVE_REFCATALOG        N               # Save ref catalogs in FITS-LDAC format?
 REFOUT_CATPATH         .               # Save path for reference catalogs
 
@@ -56,7 +56,7 @@ FIXFOCALPLANE_NMIN     1               # Min number of dets for FIX_FOCALPLANE
 
 #---------------------------- Cross-identification ----------------------------
 
-CROSSID_RADIUS         5.0             # Cross-id initial radius (arcsec)
+CROSSID_RADIUS         15.0             # Cross-id initial radius (arcsec)
 
 #---------------------------- Astrometric solution ----------------------------
 
@@ -69,8 +69,8 @@ CENTROIDERR_KEYS       ERRAWIN_IMAGE,ERRBWIN_IMAGE,ERRTHETAWIN_IMAGE
                                        # Cat. params for centroid err ellipse
 DISTORT_KEYS           XWIN_IMAGE,YWIN_IMAGE # Cat. parameters or FITS keywords
 DISTORT_GROUPS         1,1             # Polynom group for each context key
-DISTORT_DEGREES        3               # Polynom degree for each group
-FOCDISTORT_DEGREE      3               # Polynom degree for focal plane coords
+DISTORT_DEGREES        4               # Polynom degree for each group
+FOCDISTORT_DEGREE      4               # Polynom degree for focal plane coords
 #ASTREF_WEIGHT          1.0             # Relative weight of ref.astrom.cat.
 #ASTRACCURACY_TYPE      SIGMA-PIXEL     # SIGMA-PIXEL, SIGMA-ARCSEC,
                                        # or TURBULENCE-ARCSEC
