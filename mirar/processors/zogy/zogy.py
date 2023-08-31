@@ -354,6 +354,7 @@ class ZOGY(ZOGYPrepare):
     """
 
     base_key = "ZOGY"
+    max_n_cpu = 1
 
     def __init__(
         self,
