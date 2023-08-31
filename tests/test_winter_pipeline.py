@@ -9,7 +9,6 @@ from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
-<<<<<<< HEAD
 expected_zp = {
     "ZP_2.0": 23.98996925354004,
     "ZP_2.0_std": 0.03564070165157318,
