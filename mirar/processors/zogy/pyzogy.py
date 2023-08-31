@@ -153,7 +153,7 @@ def pyzogy(
     diff_psf = np.real(fft.ifft2(diff_hat_psf))
     logger.debug(f"Calculated diff_psf PSF path is {new_psf_path.as_posix()}")
     diff_psf = fft.ifftshift(diff_psf)
-    logger.debug(f"Calculated diff_psf PSF path is {new_psf_path.as_posix()}")
+    logger.debug(f"Shifted diff_psf PSF path is {new_psf_path.as_posix()}")
     diff_psf = diff_psf[y_min:y_max, x_min:x_max]
     logger.debug(
         f"Max of diff PSF is "
