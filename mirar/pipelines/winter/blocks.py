@@ -358,6 +358,7 @@ astrometry = [
         scamp_config_path=scamp_config_path,
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         copy_scamp_header_to_image=True,
+        cache=True,
     ),
     ImageSaver(output_dir_name="post_scamp"),
 ]
