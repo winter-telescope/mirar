@@ -69,8 +69,8 @@ CENTROIDERR_KEYS       ERRAWIN_IMAGE,ERRBWIN_IMAGE,ERRTHETAWIN_IMAGE
                                        # Cat. params for centroid err ellipse
 DISTORT_KEYS           XWIN_IMAGE,YWIN_IMAGE # Cat. parameters or FITS keywords
 DISTORT_GROUPS         1,1             # Polynom group for each context key
-DISTORT_DEGREES        3               # Polynom degree for each group
-#FOCDISTORT_DEGREE      3              # Polynom degree for focal plane coords
+DISTORT_DEGREES        4               # Polynom degree for each group
+FOCDISTORT_DEGREE      4               # Polynom degree for focal plane coords
 #ASTREF_WEIGHT          1.0             # Relative weight of ref.astrom.cat.
 #ASTRACCURACY_TYPE      SIGMA-PIXEL     # SIGMA-PIXEL, SIGMA-ARCSEC,
                                        # or TURBULENCE-ARCSEC
