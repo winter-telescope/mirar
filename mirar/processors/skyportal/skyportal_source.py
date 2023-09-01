@@ -35,17 +35,13 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         self,
         origin: str,
         group_ids: list[int],
-        # fritz_filter_id: int,
         instrument_id: int,
-        # stream_id: int,
         update_thumbnails: bool = False,
     ):
         super().__init__()
         self.group_ids = group_ids
-        # self.fritz_filter_id = fritz_filter_id
         self.instrument_id = instrument_id
         self.origin = origin  # used for sending updates to Fritz
-        # self.stream_id = stream_id
         self.update_thumbnails = update_thumbnails
         self.skyportal_client = SkyportalClient()
 
@@ -88,22 +84,13 @@ class SkyportalSourceUploader(BaseSourceProcessor):
             "origin": self.origin,
         }
 
-        logger.debug(
-            f"Saving {alert[CAND_NAME_KEY]} as a Source on SkyPortal"
-            # "{alert['candid']} as a Source on SkyPortal"
-        )
+        logger.debug(f"Saving {alert[CAND_NAME_KEY]} as a Source on SkyPortal")
         response = self.api("POST", "sources", data)
 
         if response.json()["status"] == "success":
-            logger.debug(
-                f"Saved {alert[CAND_NAME_KEY]} "  # {alert['candid']} "
-                f"as a Source on SkyPortal"
-            )
+            logger.debug(f"Saved {alert[CAND_NAME_KEY]} as a Source on SkyPortal")
         else:
-            err = (
-                f"Failed to save {alert[CAND_NAME_KEY]} "  # {alert['candid']} "
-                f"as a Source on SkyPortal"
-            )
+            err = f"Failed to save {alert[CAND_NAME_KEY]} as a Source on SkyPortal"
             logger.error(err)
             logger.error(response.json())
 
@@ -165,24 +152,22 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         ]:
             logger.debug(
                 f"Making {instrument_type} thumbnail for {alert[CAND_NAME_KEY]} "
-                # f"{alert['candid']}",
             )
             thumb = self.make_thumbnail(alert, ttype, instrument_type)
 
             logger.debug(
                 f"Posting {instrument_type} thumbnail for {alert[CAND_NAME_KEY]} "
-                # f"{alert['candid']} to SkyPortal",
             )
             response = self.api("POST", "thumbnail", thumb)
 
             if response.json()["status"] == "success":
                 logger.debug(
-                    f"Posted {alert[CAND_NAME_KEY]} "  # {alert['candid']} "
+                    f"Posted {alert[CAND_NAME_KEY]} "
                     f"{instrument_type} cutout to SkyPortal"
                 )
             else:
                 logger.error(
-                    f"Failed to post {alert[CAND_NAME_KEY]} "  # {alert['candid']} "
+                    f"Failed to post {alert[CAND_NAME_KEY]} "
                     f"{instrument_type} cutout to SkyPortal"
                 )
                 logger.error(response.json())
@@ -258,9 +243,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
     def skyportal_put_photometry(self, alert):
         """Send photometry to Fritz."""
-        logger.debug(
-            f"Making alert photometry of {alert[CAND_NAME_KEY]}"  # {alert['candid']}"
-        )
+        logger.debug(f"Making alert photometry of {alert[CAND_NAME_KEY]}")
         df_photometry = self.make_photometry(alert)
 
         if len(df_photometry) > 0:
@@ -269,19 +252,13 @@ class SkyportalSourceUploader(BaseSourceProcessor):
             photometry["instrument_id"] = self.instrument_id
             if hasattr(self, "stream_id"):
                 photometry["stream_ids"] = [int(self.stream_id)]
-            logger.debug(
-                f"Posting photometry of {alert[CAND_NAME_KEY]}, "
-                # "{alert['candid']}, "
-                f"to SkyPortal"
-            )
+            logger.debug(f"Posting photometry of {alert[CAND_NAME_KEY]} to SkyPortal")
             response = self.api("PUT", "photometry", photometry)
             if response.json()["status"] == "success":
-                logger.debug(
-                    f"Posted {alert[CAND_NAME_KEY]} photometry " f"to SkyPortal"
-                )
+                logger.debug(f"Posted {alert[CAND_NAME_KEY]} photometry to SkyPortal")
             else:
                 logger.error(
-                    f"Failed to post {alert[CAND_NAME_KEY]} photometry " f"to SkyPortal"
+                    f"Failed to post {alert[CAND_NAME_KEY]} photometry to SkyPortal"
                 )
                 logger.error(response.json())
 

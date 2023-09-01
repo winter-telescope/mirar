@@ -78,9 +78,7 @@ reduce = [
     MaskPixelsFromPath(mask_path=sedmv2_mask_path),
     BiasCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
-    ImageBatcher(
-        split_key="filterid"
-    ),  # maybe change back to filter after revising load func
+    ImageBatcher(split_key="filterid"),
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector((OBSCLASS_KEY, ["science"])),  # pylint: disable=duplicate-code
@@ -201,7 +199,6 @@ resample_transient = [
 ]
 
 transient_phot = [
-    # ImageSaver(output_dir_name="photometry"),
     PSFex(config_path=psfex_config_path, norm_fits=True),
     ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
     PSFPhotometry(),
@@ -232,7 +229,6 @@ transient_phot = [
     #        zp_key="ZP_AUTO",
     #    ),
     SourceWriter(output_dir_name="sourcetable"),
-    # then do fritz stuff
 ]
 
 upload_fritz = [
