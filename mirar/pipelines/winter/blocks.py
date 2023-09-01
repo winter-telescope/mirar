@@ -9,8 +9,10 @@ from mirar.paths import (
     CAND_NAME_KEY,
     DITHER_N_KEY,
     EXPTIME_KEY,
+    LATEST_SAVE_KEY,
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
+    RAW_IMG_KEY,
     TARGET_KEY,
     ZP_KEY,
     base_output_dir,
@@ -69,6 +71,7 @@ from mirar.pipelines.winter.validator import (
     masked_images_rejector,
     poor_astrometric_quality_rejector,
     winter_condensation_rejector,
+    winter_dark_oversubtraction_rejector,
 )
 from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.background_subtractor import (
@@ -191,7 +194,7 @@ load_raw = [
 extract_all = [
     ImageBatcher("UTCTIME"),
     DatabaseImageBatchInserter(db_table=Exposure, duplicate_protocol="ignore"),
-    ImageSelector((OBSCLASS_KEY, ["dark", "science"])),
+    ImageSelector((OBSCLASS_KEY, ["dark", "science", "flat"])),
 ]
 
 csvlog = [
@@ -237,16 +240,21 @@ select_ref = [
     ImageBatcher("STACKID"),
 ]
 
-# Split
-
-mask_and_split = [
+# mask
+mask = [
     ImageBatcher(BASE_NAME_KEY),
     # MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
+]
+
+# Split
+split = [
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
     CustomImageBatchModifier(annotate_winter_subdet_headers),
 ]
+
+mask_and_split = mask + split
 
 # Save raw images
 
@@ -257,6 +265,7 @@ save_raw = [
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     CustomImageBatchModifier(winter_stackid_annotator),
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -265,7 +274,7 @@ save_raw = [
 # Load from unpacked dir
 
 load_unpacked = [
-    ImageLoader(input_sub_dir="raw_unpacked"),
+    ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
     ImageBatcher("UTCTIME"),
     CSVLog(
         export_keys=[
@@ -293,12 +302,13 @@ load_unpacked = [
 dark_calibrate = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", EXPTIME_KEY, "SUBCOORD"]),
-    DarkCalibrator(cache_sub_dir="calibration"),
-    ImageSelector((OBSCLASS_KEY, ["science"])),
+    DarkCalibrator(cache_sub_dir="calibration_darks"),
+    ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    ImageSaver(output_dir_name="darkcal"),
+    CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
     CustomImageBatchModifier(winter_condensation_rejector),
-    # ImageSaver(output_dir_name="darkcal")
 ]
 
 flat_calibrate = [
@@ -306,9 +316,9 @@ flat_calibrate = [
     ImageBatcher(["BOARD_ID", "FILTER", "SUBCOORD"]),
     # SkyFlatCalibrator(cache_sub_dir="skycals"),
     FlatCalibrator(
-        cache_sub_dir="flatcal", select_flat_images=select_winter_flat_images
+        cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
     ),
-    # ImageSaver(output_dir_name="skyflatcal"),
+    ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
@@ -337,6 +347,7 @@ astrometry = [
         sextractor_config_path=sextractor_anet_config["config_path"],
         use_weight=True,
         timeout=120,
+        cache=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
@@ -352,8 +363,9 @@ astrometry = [
         scamp_config_path=scamp_config_path,
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         copy_scamp_header_to_image=True,
+        cache=True,
     ),
-    ImageSaver(output_dir_name="post-scamp"),
+    ImageSaver(output_dir_name="post_scamp"),
 ]
 
 validate_astrometry = [
@@ -411,6 +423,13 @@ photcal_and_export = [
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
+    AstrometryStatsWriter(
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+        image_catalog_purifier=winter_astrostat_catalog_purifier,
+        write_regions=True,
+        cache=False,
+        crossmatch_radius_arcsec=5.0,
+    ),
     ImageSaver(output_dir_name="final"),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
     ImageDatabaseMultiEntryUpdater(
@@ -424,13 +443,14 @@ photcal_and_export = [
 
 load_stack = [
     ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     # ImageSelector(
     #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1_stack.fits")
     # ),
 ]
 
 imsub = [
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -519,6 +539,12 @@ process_candidates = [
     ),
 ]
 
+# To make cals for focusing
+focus_subcoord = [
+    HeaderAnnotator(input_keys=["BOARD_ID"], output_key="SUBCOORD"),
+    HeaderAnnotator(input_keys=["BOARD_ID"], output_key="SUBDETID"),
+]
+
 # Combinations of different blocks, to be used in configurations
 process_and_stack = astrometry + validate_astrometry + stack_dithers
 
@@ -560,3 +586,13 @@ realtime = extract_all + mask_and_split + save_raw + full_reduction
 candidates = detect_candidates + process_candidates
 
 full = realtime + imsub
+
+focus_cals = (
+    load_raw
+    + extract_all
+    + mask
+    + focus_subcoord
+    + csvlog
+    + dark_calibrate
+    + flat_calibrate
+)

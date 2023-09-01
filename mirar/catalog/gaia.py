@@ -76,8 +76,6 @@ class Gaia2Mass(BaseCatalog):
             if val is None:
                 self.acceptable_ph_quals[filt] = ["A", "B", "C"]
 
-        logger.debug(f"Sextractor catalog path is {self.image_catalog_path}")
-
     def get_catalog(
         self,
         ra_deg: float,

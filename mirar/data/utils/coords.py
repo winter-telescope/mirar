@@ -134,7 +134,9 @@ def get_image_dims_from_header(header: fits.Header) -> (Quantity, Quantity):
     return img_dims
 
 
-def check_coords_within_image(ra: float, dec: float, header: fits.Header) -> bool:
+def check_coords_within_image(
+    ra: float | list[float], dec: float | list[float], header: fits.Header
+) -> list[bool]:
     """
     Check that the coordinates are within the image
     Args:
@@ -144,6 +146,10 @@ def check_coords_within_image(ra: float, dec: float, header: fits.Header) -> boo
     Returns:
         :return: True if within image, False if not
     """
+    if isinstance(ra, float):
+        ra = [ra]
+    if isinstance(dec, float):
+        dec = [dec]
     wcs = WCS(header)
     nx, ny = header["NAXIS1"], header["NAXIS2"]
     x, y = wcs.all_world2pix(ra, dec, 0)

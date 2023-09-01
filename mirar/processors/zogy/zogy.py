@@ -354,6 +354,7 @@ class ZOGY(ZOGYPrepare):
     """
 
     base_key = "ZOGY"
+    max_n_cpu = 1
 
     def __init__(
         self,
@@ -387,6 +388,7 @@ class ZOGY(ZOGYPrepare):
             # temp_files = [sci_image_path, ref_image_path, sci_rms_path, ref_rms_path]
 
             logger.debug(f"Ast unc x is {ast_unc_x:.2f} and y is {ast_unc_y:.2f}")
+            logger.debug(f"Running zogy on image {image[BASE_NAME_KEY]}")
             diff_data, diff_psf_data, scorr_data = pyzogy(
                 new_data=image.get_data(),
                 ref_data=ref_image.get_data(),

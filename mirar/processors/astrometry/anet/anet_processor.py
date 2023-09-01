@@ -10,6 +10,7 @@ from astropy.table import Table
 
 from mirar.data import Image, ImageBatch
 from mirar.data.utils import write_regions_file
+from mirar.errors.exceptions import ProcessorError
 from mirar.io import open_fits
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -26,12 +27,17 @@ from mirar.processors.astromatic.sextractor.settings import (
 )
 from mirar.processors.astrometry.anet.anet import (
     ASTROMETRY_TIMEOUT,
-    AstrometryNetError,
     run_astrometry_net_single,
 )
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
+
+
+class AstrometryNetNoSolvedError(ProcessorError):
+    """
+    Class for errors in astrometry.net
+    """
 
 
 class AstrometryNet(BaseImageProcessor):
@@ -60,6 +66,7 @@ class AstrometryNet(BaseImageProcessor):
         sort_key_name: str = "MAG_AUTO",
         use_weight: bool = True,
         write_regions: bool = True,
+        cache: bool = False,
     ):
         """
         :param output_sub_dir: subdirectory to output astrometry.net results
@@ -116,6 +123,8 @@ class AstrometryNet(BaseImageProcessor):
         )
 
         self.write_regions = write_regions
+
+        self.cache = cache
 
     def __str__(self) -> str:
         return (
@@ -262,7 +271,7 @@ class AstrometryNet(BaseImageProcessor):
             solved_path = new_img_path.with_suffix(".solved")
 
             if not solved_path.exists():
-                raise AstrometryNetError(
+                raise AstrometryNetNoSolvedError(
                     f"AstrometryNet did not run successfully - no output "
                     f"file {solved_path} found."
                 )
@@ -274,12 +283,14 @@ class AstrometryNet(BaseImageProcessor):
 
             batch[i] = Image(data=data, header=hdr)
 
-            for temp_file in temp_files:
+            if not self.cache:
+                for temp_file in temp_files:
+                    temp_file.unlink(missing_ok=True)
+                    logger.debug(f"Deleted temporary file {temp_file}")
+
+        if not self.cache:
+            for temp_file in sextractor_temp_files:
                 temp_file.unlink(missing_ok=True)
                 logger.debug(f"Deleted temporary file {temp_file}")
-
-        for temp_file in sextractor_temp_files:
-            temp_file.unlink(missing_ok=True)
-            logger.debug(f"Deleted temporary file {temp_file}")
 
         return batch

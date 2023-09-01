@@ -77,6 +77,7 @@ def pyzogy(
     logger.debug(
         f"Max of small PSF is "
         f"{np.unravel_index(np.argmax(new_psf, axis=None), new_psf.shape)}"
+        f"PSF path is {new_psf_path.as_posix()}"
     )
 
     # Place PSF at center of image with same size as new / reference
@@ -94,6 +95,7 @@ def pyzogy(
     logger.debug(
         f"Max of big PSF is "
         f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
+        f"PSF path is {new_psf_path.as_posix()}"
     )
 
     # Shift the PSF to the origin, so that it will not introduce a shift
@@ -103,6 +105,8 @@ def pyzogy(
     logger.debug(
         f"Max of big PSF shift is "
         f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
+        f"PSF path is {new_psf_path.as_posix()} with data shape {new_data.shape}"
+        f"and ref data shape {ref_data.shape}"
     )
 
     # Take all the Fourier Transforms
@@ -119,10 +123,13 @@ def pyzogy(
         + ref_avg_unc**2 * np.abs(new_psf_hat**2)
         + 1e-8
     )
-
     diff_hat = diff_hat_numerator / diff_hat_denominator
     # Flux-based zero point (Equation 15)
     flux_zero_point = 1.0 / np.sqrt(new_avg_unc**2 + ref_avg_unc**2)
+    logger.debug(
+        f"Calculated flux_zero_point {flux_zero_point} "
+        f"PSF path is {new_psf_path.as_posix()}"
+    )
 
     # Difference Image
     diff = np.real(fft.ifft2(diff_hat)) / flux_zero_point
@@ -136,6 +143,8 @@ def pyzogy(
     logger.debug(
         f"Max of diff PSF is "
         f"{np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape)}"
+        f"PSF path is {new_psf_path.as_posix()} with data shape {new_data.shape}"
+        f"and ref data shape {ref_data.shape}"
     )
 
     # Fourier Transform of Score Image (Equation 17)
@@ -156,7 +165,6 @@ def pyzogy(
 
     new_sigma[new_nanmask] = 0.0
     ref_sigma[ref_nanmask] = 0.0
-
     # Sigma to variance
     new_variance = new_sigma**2
     ref_variance = ref_sigma**2
@@ -179,10 +187,8 @@ def pyzogy(
 
     # Noise in New Image: Equation 26
     new_noise = np.real(fft.ifft2(new_variance_hat * fft.fft2(k_n**2)))
-
     # Noise in Reference Image: Equation 27
     ref_noise = np.real(fft.ifft2(ref_variance_hat * fft.fft2(k_r**2)))
-
     # Astrometric Noise
     # Equation 31
     new_sigma = np.real(fft.ifft2(k_n_hat * new_hat))
