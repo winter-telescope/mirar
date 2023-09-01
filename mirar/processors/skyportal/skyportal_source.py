@@ -1,5 +1,5 @@
 """
-Module for sending candidates to Fritz.
+Module for sending photometry to existing sources on Fritz.
 """
 import logging
 from copy import deepcopy
@@ -35,17 +35,17 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         self,
         origin: str,
         group_ids: list[int],
-        fritz_filter_id: int,
+        # fritz_filter_id: int,
         instrument_id: int,
-        stream_id: int,
+        # stream_id: int,
         update_thumbnails: bool = False,
     ):
         super().__init__()
         self.group_ids = group_ids
-        self.fritz_filter_id = fritz_filter_id
+        # self.fritz_filter_id = fritz_filter_id
         self.instrument_id = instrument_id
         self.origin = origin  # used for sending updates to Fritz
-        self.stream_id = stream_id
+        # self.stream_id = stream_id
         self.update_thumbnails = update_thumbnails
         self.skyportal_client = SkyportalClient()
 
@@ -54,7 +54,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         batch: SourceBatch,
     ) -> SourceBatch:
         """
-        Apply the processor to a batch of candidates.
+        Apply the processor to a batch of sources/candidates.
 
         :param batch: SourceBatch to process
         :return: SourceBatch after processing
@@ -89,18 +89,19 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         }
 
         logger.debug(
-            f"Saving {alert[CAND_NAME_KEY]} {alert['candid']} as a Source on SkyPortal"
+            f"Saving {alert[CAND_NAME_KEY]} as a Source on SkyPortal"
+            # "{alert['candid']} as a Source on SkyPortal"
         )
         response = self.api("POST", "sources", data)
 
         if response.json()["status"] == "success":
             logger.debug(
-                f"Saved {alert[CAND_NAME_KEY]} {alert['candid']} "
+                f"Saved {alert[CAND_NAME_KEY]} "  # {alert['candid']} "
                 f"as a Source on SkyPortal"
             )
         else:
             err = (
-                f"Failed to save {alert[CAND_NAME_KEY]} {alert['candid']} "
+                f"Failed to save {alert[CAND_NAME_KEY]} "  # {alert['candid']} "
                 f"as a Source on SkyPortal"
             )
             logger.error(err)
@@ -164,24 +165,24 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         ]:
             logger.debug(
                 f"Making {instrument_type} thumbnail for {alert[CAND_NAME_KEY]} "
-                f"{alert['candid']}",
+                # f"{alert['candid']}",
             )
             thumb = self.make_thumbnail(alert, ttype, instrument_type)
 
             logger.debug(
                 f"Posting {instrument_type} thumbnail for {alert[CAND_NAME_KEY]} "
-                f"{alert['candid']} to SkyPortal",
+                # f"{alert['candid']} to SkyPortal",
             )
             response = self.api("POST", "thumbnail", thumb)
 
             if response.json()["status"] == "success":
                 logger.debug(
-                    f"Posted {alert[CAND_NAME_KEY]} {alert['candid']} "
+                    f"Posted {alert[CAND_NAME_KEY]} "  # {alert['candid']} "
                     f"{instrument_type} cutout to SkyPortal"
                 )
             else:
                 logger.error(
-                    f"Failed to post {alert[CAND_NAME_KEY]} {alert['candid']} "
+                    f"Failed to post {alert[CAND_NAME_KEY]} "  # {alert['candid']} "
                     f"{instrument_type} cutout to SkyPortal"
                 )
                 logger.error(response.json())
@@ -206,26 +207,27 @@ class SkyportalSourceUploader(BaseSourceProcessor):
             }
         ]
 
-        if len(source[SOURCE_HISTORY_KEY]) > 0:
-            prv_detections = pd.DataFrame.from_records(source[SOURCE_HISTORY_KEY])
+        if SOURCE_HISTORY_KEY in source:
+            if len(source[SOURCE_HISTORY_KEY]) > 0:
+                prv_detections = pd.DataFrame.from_records(source[SOURCE_HISTORY_KEY])
 
-            for _, row in prv_detections.iterrows():
-                try:
-                    photometry_table.append(
-                        {
-                            "mjd": row["mjd"],
-                            "mag": row["magpsf"],
-                            "magerr": row["sigmapsf"],
-                            "filter": row[SNCOSMO_KEY],
-                            "ra": row["ra"],
-                            "dec": row["dec"],
-                        }
-                    )
-                except KeyError:
-                    logger.warning(
-                        f"Missing photometry information for previous "
-                        f"detection of {source[CAND_NAME_KEY]}"
-                    )
+                for _, row in prv_detections.iterrows():
+                    try:
+                        photometry_table.append(
+                            {
+                                "mjd": row["mjd"],
+                                "mag": row["magpsf"],
+                                "magerr": row["sigmapsf"],
+                                "filter": row[SNCOSMO_KEY],
+                                "ra": row["ra"],
+                                "dec": row["dec"],
+                            }
+                        )
+                    except KeyError:
+                        logger.warning(
+                            f"Missing photometry information for previous "
+                            f"detection of {source[CAND_NAME_KEY]}"
+                        )
 
         df_photometry = pd.DataFrame(photometry_table)
 
@@ -233,7 +235,10 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
         # step 1: calculate the coefficient that determines whether the
         # flux should be negative or positive
-        coeff = 1.0 if source["isdiffpos"] else -1.0
+        if "isdiffpos" in source:
+            coeff = 1.0 if source["isdiffpos"] else -1.0
+        else:
+            coeff = 1.0
 
         # step 2: calculate the flux normalized to an arbitrary AB zeropoint of
         # 23.9 (results in flux in uJy)
@@ -254,30 +259,29 @@ class SkyportalSourceUploader(BaseSourceProcessor):
     def skyportal_put_photometry(self, alert):
         """Send photometry to Fritz."""
         logger.debug(
-            f"Making alert photometry of {alert[CAND_NAME_KEY]} {alert['candid']}"
+            f"Making alert photometry of {alert[CAND_NAME_KEY]}"  # {alert['candid']}"
         )
         df_photometry = self.make_photometry(alert)
 
         if len(df_photometry) > 0:
             photometry = df_photometry.to_dict("list")
             photometry["obj_id"] = alert[CAND_NAME_KEY]
-            photometry["stream_ids"] = [int(self.stream_id)]
             photometry["instrument_id"] = self.instrument_id
-
+            if hasattr(self, "stream_id"):
+                photometry["stream_ids"] = [int(self.stream_id)]
             logger.debug(
-                f"Posting photometry of {alert[CAND_NAME_KEY]} {alert['candid']}, "
-                f"stream_id={self.stream_id} to SkyPortal"
+                f"Posting photometry of {alert[CAND_NAME_KEY]}, "
+                # "{alert['candid']}, "
+                f"to SkyPortal"
             )
             response = self.api("PUT", "photometry", photometry)
             if response.json()["status"] == "success":
                 logger.debug(
-                    f"Posted {alert[CAND_NAME_KEY]} photometry "
-                    f"stream_id={self.stream_id} to SkyPortal"
+                    f"Posted {alert[CAND_NAME_KEY]} photometry " f"to SkyPortal"
                 )
             else:
                 logger.error(
-                    f"Failed to post {alert[CAND_NAME_KEY]} photometry "
-                    f"stream_id={self.stream_id} to SkyPortal"
+                    f"Failed to post {alert[CAND_NAME_KEY]} photometry " f"to SkyPortal"
                 )
                 logger.error(response.json())
 
@@ -288,7 +292,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         :param alert: _description_
         :type alert: _type_
         """
-        # check if source exists in SkyPortal
+        # check if source exists in SkyPortal # pylint: disable=duplicate-code
         logger.debug(f"Checking if {alert[CAND_NAME_KEY]} is source in SkyPortal")
         response = self.api("HEAD", f"sources/{alert[CAND_NAME_KEY]}")
 

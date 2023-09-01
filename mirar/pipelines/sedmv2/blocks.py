@@ -239,9 +239,8 @@ upload_fritz = [
     SkyportalSourceUploader(
         origin="SEDMv2TEST",
         group_ids=[1423],
-        fritz_filter_id=74,  # wirc: 74
         instrument_id=1078,
-        stream_id=1005,  # wirc: 1005
+        update_thumbnails=False,
     )
 ]
 

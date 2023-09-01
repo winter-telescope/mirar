@@ -17,6 +17,17 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
     Processor for sending candidates to Fritz.
     """
 
+    def __init__(
+        self,
+        *args,
+        stream_id: int,
+        fritz_filter_id: int,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.stream_id = stream_id
+        self.fritz_filter_id = fritz_filter_id
+
     def skyportal_post_candidate(self, alert):
         """
         Post a candidate on SkyPortal. Creates new candidate(s) (one per filter)
@@ -187,6 +198,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             self.skyportal_post_annotation(alert)
 
             # post full light curve
+            logger.debug(f"Using stream_id={self.stream_id}")
             self.skyportal_put_photometry(alert)
 
             # post thumbnails
@@ -226,6 +238,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
                 self.skyportal_post_source(alert)
 
             # post alert photometry in single call to /api/photometry
+            logger.debug(f"Using stream_id={self.stream_id}")
             self.skyportal_put_photometry(alert)
 
             if self.update_thumbnails:

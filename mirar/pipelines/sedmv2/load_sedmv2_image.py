@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 from astropy.io import fits
+from astropy.time import Time
 
 from mirar.data import Image
 from mirar.io import open_mef_fits, open_mef_image
@@ -24,6 +25,8 @@ from mirar.paths import (
 from mirar.processors.utils.image_loader import InvalidImage
 
 logger = logging.getLogger(__name__)
+
+SNCOSMO_KEY = "sncosmof"
 
 
 def clean_science_header(  # pylint: disable=too-many-branches
@@ -64,10 +67,18 @@ def clean_science_header(  # pylint: disable=too-many-branches
         else:
             ext[GAIN_KEY] = 1.0
 
+    # time
+    header["MJD-OBS"] = date_obs_to_mjd(informative_hdr["DATE-OBS"])
+    header["MJD"] = header["MJD-OBS"]
+    header["DATE-OBS"] = Time(header["MJD-OBS"], format="mjd").isot
+
     # filters
     header["FILTERID"] = informative_hdr["FILTER"].split(" ")[1][0]
     header["FILTER"] = header["FILTERID"]
+    header[SNCOSMO_KEY] = "sdss" + header["FILTER"]
+
     if is_mode0:
+        informative_hdr["DATE-OBS"] = Time(header["MJD-OBS"], format="mjd").isot
         informative_hdr["FILTER"] = header["FILTER"]
         informative_hdr["FILTERID"] = header["FILTERID"]
 
@@ -211,3 +222,18 @@ def load_sedmv2_mef_image(
     :return: list of images
     """
     return open_mef_image(path, load_raw_sedmv2_mef)
+
+
+def date_obs_to_mjd(t_raw: str) -> str:
+    """
+    function to convert DATE-OBS from raw SEDMv2 headers into MJD
+    :param t_raw: date from SEDMv2 header
+    :return: time in MJD
+    example: 20230609_102119.377549 -> 60104.43147427719
+    """
+    ymd, hms = t_raw.split("_")
+    hour, mins, sec = hms[:2], hms[2:4], hms[4:]
+    date = ymd[:4] + "-" + ymd[4:6] + "-" + ymd[6:]
+    time = hour + ":" + mins + ":" + sec
+    t_mjd = Time(date + " " + time, format="iso").mjd
+    return t_mjd
