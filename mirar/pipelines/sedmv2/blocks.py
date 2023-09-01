@@ -240,8 +240,7 @@ upload_fritz = [
     )
 ]
 
-# process_transient = parse_transient + reduce + resample_transient + calibrate
-process_transient = reduce + resample_transient + calibrate + transient_phot
+process_transient = reduce + resample_transient + calibrate
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
