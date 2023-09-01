@@ -91,14 +91,12 @@ def clean_header(header: fits.Header) -> fits.Header:
     # Set up the target name
 
     targ_name = f"field_{header['FIELDID']}"
-    logger.debug(f"Target name: {targ_name}, {TARGET_KEY in header.keys()}")
     if ("SCHDNAME" in header.keys()) & ("OBHISTID" in header.keys()):
         if header["SCHDNAME"] != "":
             targ_name = f"{header['SCHDNAME']}_{header['OBHISTID']}"
     elif TARGET_KEY in header.keys():
         if header[TARGET_KEY] != "":
             targ_name = header[TARGET_KEY]
-    logger.debug(f"New Target name: {targ_name}")
     # If the observation is dark/bias/focus/pointing/flat, enforce TARGET_KEY is also
     # dark/bias as the TARGET_KEY is used for CalHunter. Currently they may not come
     # with the correct TARGET_KEY.
