@@ -13,6 +13,7 @@ from mirar.pipelines.winter.blocks import (
     detect_candidates,
     detrend_unpacked,
     extract_all,
+    focus_cals,
     full_reduction,
     imsub,
     load_stack,
@@ -71,6 +72,7 @@ class WINTERPipeline(Pipeline):
         "detect_candidates": load_stack + imsub + detect_candidates,
         "full_imsub": load_stack + imsub + detect_candidates + process_candidates,
         "full": reduce + imsub + detect_candidates + process_candidates,
+        "focus_cals": focus_cals,
     }
 
     non_linear_level = 40000.0

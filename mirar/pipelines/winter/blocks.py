@@ -240,16 +240,21 @@ select_ref = [
     ImageBatcher("STACKID"),
 ]
 
-# Split
-
-mask_and_split = [
+# mask
+mask = [
     ImageBatcher(BASE_NAME_KEY),
     # MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
+]
+
+# Split
+split = [
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
     CustomImageBatchModifier(annotate_winter_subdet_headers),
 ]
+
+mask_and_split = mask + split
 
 # Save raw images
 
@@ -534,6 +539,12 @@ process_candidates = [
     ),
 ]
 
+# To make cals for focusing
+focus_subcoord = [
+    HeaderAnnotator(input_keys=["BOARD_ID"], output_key="SUBCOORD"),
+    HeaderAnnotator(input_keys=["BOARD_ID"], output_key="SUBDETID"),
+]
+
 # Combinations of different blocks, to be used in configurations
 process_and_stack = astrometry + validate_astrometry + stack_dithers
 
@@ -575,3 +586,13 @@ realtime = extract_all + mask_and_split + save_raw + full_reduction
 candidates = detect_candidates + process_candidates
 
 full = realtime + imsub
+
+focus_cals = (
+    load_raw
+    + extract_all
+    + mask
+    + focus_subcoord
+    + csvlog
+    + dark_calibrate
+    + flat_calibrate
+)
