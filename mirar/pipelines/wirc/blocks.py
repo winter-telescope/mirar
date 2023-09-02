@@ -4,7 +4,6 @@ Module containing standard processing blocks for WIRC
 # pylint: disable=duplicate-code
 from mirar.catalog.kowalski import PS1, TMASS
 from mirar.paths import (
-    CAND_NAME_KEY,
     FITS_MASK_KEY,
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
@@ -12,6 +11,7 @@ from mirar.paths import (
     REF_IMG_KEY,
     SATURATE_KEY,
     SCI_IMG_KEY,
+    SOURCE_NAME_KEY,
 )
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
@@ -252,7 +252,7 @@ process_candidates = [
     SourceWriter(output_dir_name="kowalski"),
     CrossmatchSourceWithDatabase(
         db_table=Candidate,
-        db_output_columns=[CAND_NAME_KEY],
+        db_output_columns=[SOURCE_NAME_KEY],
         crossmatch_radius_arcsec=2.0,
         max_num_results=1,
     ),
@@ -265,7 +265,7 @@ process_candidates = [
         crossmatch_radius_arcsec=2.0,
         history_duration_days=500.0,
         db_table=Candidate,
-        db_output_columns=[CAND_NAME_KEY] + prv_candidate_cols,
+        db_output_columns=[SOURCE_NAME_KEY] + prv_candidate_cols,
     ),
     HeaderAnnotator(input_keys=[LATEST_SAVE_KEY], output_key="diffimgname"),
     HeaderAnnotator(input_keys=[SCI_IMG_KEY], output_key="sciimgname"),

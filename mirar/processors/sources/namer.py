@@ -9,7 +9,7 @@ from sqlalchemy import select, text
 
 from mirar.data import SourceBatch
 from mirar.database.transactions.select import run_select
-from mirar.paths import CAND_NAME_KEY, SOURCE_XMATCH_KEY, TIME_KEY
+from mirar.paths import SOURCE_NAME_KEY, SOURCE_XMATCH_KEY, TIME_KEY
 from mirar.processors.base_processor import PrerequisiteError
 from mirar.processors.database import CrossmatchSourceWithDatabase
 from mirar.processors.database.database_selector import BaseDatabaseSourceSelector
@@ -29,7 +29,7 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         self,
         base_name: str,
         name_start: str = "aaaaa",
-        db_name_field: str = CAND_NAME_KEY,
+        db_name_field: str = SOURCE_NAME_KEY,
         db_order_field: str = "candid",
         **kwargs,
     ):
@@ -97,7 +97,7 @@ class CandidateNamer(BaseDatabaseSourceSelector):
                 name = self.base_name + str(cand_year) + self.name_start
                 return name
 
-            last_name = res[CAND_NAME_KEY].iloc[0]
+            last_name = res[SOURCE_NAME_KEY].iloc[0]
             logger.debug(res)
 
         last_year = int(last_name[len(self.base_name) : len(self.base_name) + 2])

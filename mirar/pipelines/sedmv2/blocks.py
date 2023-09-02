@@ -30,7 +30,8 @@ from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
-from mirar.processors.sources import ForcedPhotometryDetector
+from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
+from mirar.processors.sources import ForcedPhotometryDetector, SourceWriter
 from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
@@ -75,9 +76,7 @@ reduce = [
     MaskPixelsFromPath(mask_path=sedmv2_mask_path),
     BiasCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
-    ImageBatcher(
-        split_key="filterid"
-    ),  # maybe change back to filter after revising load func
+    ImageBatcher(split_key="filterid"),
     FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector((OBSCLASS_KEY, ["science"])),  # pylint: disable=duplicate-code
@@ -197,7 +196,48 @@ resample_transient = [
     ),  # pylint: disable=duplicate-code
 ]
 
-# process_transient = parse_transient + reduce + resample_transient + calibrate
+transient_phot = [
+    PSFex(config_path=psfex_config_path, norm_fits=True),
+    ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
+    PSFPhotometry(),
+    # AperturePhotometry(  # arguments from Ben's blocks
+    #        aper_diameters=[
+    #            2 / SEDMV2_PIXEL_SCALE,
+    #            3 / SEDMV2_PIXEL_SCALE,
+    #            4 / SEDMV2_PIXEL_SCALE,
+    #            5 / SEDMV2_PIXEL_SCALE,
+    #            10 / SEDMV2_PIXEL_SCALE,
+    #        ],
+    #        bkg_in_diameters=[
+    #            2.5 / SEDMV2_PIXEL_SCALE,
+    #            3.5 / SEDMV2_PIXEL_SCALE,
+    #            4.5 / SEDMV2_PIXEL_SCALE,
+    #            5.5 / SEDMV2_PIXEL_SCALE,
+    #            10.5 / SEDMV2_PIXEL_SCALE,
+    #        ],
+    #        bkg_out_diameters=[
+    #           5.5 / SEDMV2_PIXEL_SCALE,
+    #           8.6 / SEDMV2_PIXEL_SCALE,
+    #            9.5 / SEDMV2_PIXEL_SCALE,
+    #            10.6 / SEDMV2_PIXEL_SCALE,
+    #            15.6 / SEDMV2_PIXEL_SCALE,
+    #        ],
+    #        col_suffix_list=["2", "3", "4", "5", "10"],
+    #        #phot_cutout_size=100,
+    #        zp_key="ZP_AUTO",
+    #    ),
+    SourceWriter(output_dir_name="sourcetable"),
+]
+
+upload_fritz = [
+    SkyportalSourceUploader(
+        origin="SEDMv2TEST",
+        group_ids=[1423],
+        instrument_id=1078,
+        update_thumbnails=False,
+    )
+]
+
 process_transient = reduce + resample_transient + calibrate
 
 subtract = [

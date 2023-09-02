@@ -6,13 +6,13 @@ from mirar.catalog.kowalski import PS1, TMASS
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
-    CAND_NAME_KEY,
     DITHER_N_KEY,
     EXPTIME_KEY,
     LATEST_SAVE_KEY,
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
     RAW_IMG_KEY,
+    SOURCE_NAME_KEY,
     TARGET_KEY,
     ZP_KEY,
     base_output_dir,
@@ -506,7 +506,7 @@ process_candidates = [
     SourceWriter(output_dir_name="kowalski"),
     CrossmatchSourceWithDatabase(
         db_table=Candidate,
-        db_output_columns=[CAND_NAME_KEY],
+        db_output_columns=[SOURCE_NAME_KEY],
         crossmatch_radius_arcsec=2.0,
         max_num_results=1,
     ),
@@ -520,7 +520,7 @@ process_candidates = [
         time_field_name="jd",
         history_duration_days=500.0,
         db_table=Candidate,
-        db_output_columns=prv_candidate_cols + [CAND_NAME_KEY],
+        db_output_columns=prv_candidate_cols + [SOURCE_NAME_KEY],
         additional_query_constraints=winter_history_deprecated_constraint,
     ),
     CustomSourceTableModifier(

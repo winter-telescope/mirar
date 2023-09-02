@@ -15,6 +15,8 @@ from mirar.pipelines.sedmv2.blocks import (
     load_raw,
     process_stellar,
     process_transient,
+    transient_phot,
+    upload_fritz,
 )
 from mirar.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_mef
@@ -38,6 +40,10 @@ class SEDMv2Pipeline(Pipeline):
         "default_stellar": load_raw + process_stellar + image_photometry,
         "default_transient": load_raw + process_transient,  # +imsub,
         "realtime": load_raw + detrend_only,  # +much more...
+        "transient_upload": load_raw
+        + process_transient
+        + transient_phot
+        + upload_fritz,
     }
 
     @staticmethod
