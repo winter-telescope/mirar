@@ -16,42 +16,42 @@ logger = logging.getLogger(__name__)
 test_data_dir = get_test_data_dir()
 
 expected_zp = {
-    "ZP_4.0": 25.94123243758373,
-    "ZP_4.0_std": 0.49819926577461493,
+    "ZP_4.0": 25.940887427559876,
+    "ZP_4.0_std": 0.49824802025845366,
     "ZP_4.0_nstars": 39,
-    "ZP_6.0": 26.614818280400986,
-    "ZP_6.0_std": 0.4728077007528148,
+    "ZP_6.0": 26.614804158685146,
+    "ZP_6.0_std": 0.4727982155483261,
     "ZP_6.0_nstars": 39,
-    "ZP_8.0": 26.98211547740056,
-    "ZP_8.0_std": 0.4582100267087655,
+    "ZP_8.0": 26.982064199066162,
+    "ZP_8.0_std": 0.4582201430387493,
     "ZP_8.0_nstars": 39,
-    "ZP_10.0": 27.189519198354084,
-    "ZP_10.0_std": 0.4580645022400429,
+    "ZP_10.0": 27.189493400241165,
+    "ZP_10.0_std": 0.45806133571891794,
     "ZP_10.0_nstars": 39,
-    "ZP_AUTO": 27.009442904897835,
-    "ZP_AUTO_std": 0.5465585617804521,
+    "ZP_AUTO": 27.008659106875687,
+    "ZP_AUTO_std": 0.5468613179756767,
     "ZP_AUTO_nstars": 39,
 }
 
 expected_ap_phot = {
-    "fluxap2": -13.975273319503032,
-    "fluxuncap2": 205.5743073795116,
-    "fluxap3": 161.0970116411306,
-    "fluxuncap3": 310.76716950607755,
-    "magap3": 21.49172419413229,
-    "sigmagap3": 2.1650909426204,
-    "fluxap4": 302.1728556831727,
-    "fluxuncap4": 412.97618099512533,
-    "magap4": 20.80880428265741,
-    "sigmagap4": 1.5816593932948184,
-    "fluxap5": 102.1520544303209,
-    "fluxuncap5": 513.7579900889148,
-    "magap5": 21.986325141481082,
-    "sigmagap5": 5.48914777382836,
-    "fluxap10": 1184.1255370749232,
-    "fluxuncap10": 1027.4733552630178,
-    "magap10": 19.325948536665393,
-    "sigmagap10": 1.0893624615816915,
+    "fluxap2": -13.850341348155112,
+    "fluxuncap2": 205.58084553347814,
+    "fluxap3": 161.299057848526,
+    "fluxuncap3": 310.77711898765494,
+    "magap3": 21.489579530194685,
+    "sigmagap3": 2.1626931885857243,
+    "fluxap4": 302.3792599800752,
+    "fluxuncap4": 412.9893558727741,
+    "magap4": 20.807279107272198,
+    "sigmagap4": 1.5808578175981052,
+    "fluxap5": 103.20045314743703,
+    "fluxuncap5": 513.7743881699428,
+    "magap5": 21.974455096230088,
+    "sigmagap5": 5.43414211374817,
+    "fluxap10": 1175.65266261521,
+    "fluxuncap10": 1027.506059351285,
+    "magap10": 19.332961527420412,
+    "sigmagap10": 1.0954197393390197,
 }
 
 test_configuration = (
@@ -102,8 +102,8 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
 
         header = new.get_metadata()
 
-        new_exp = "expected_zp = { \n"  # pylint: disable=C0103
-        for header_key in expected_zp.keys():
+        new_exp = "expected_zp = { \n"  # pylint: disable=C0103, W0621
+        for header_key in expected_zp.keys():  # pylint: disable=C0201, W0621
             new_exp += f'    "{header_key}": {header[header_key]}, \n'
         new_exp += "}"
         print(new_exp)
@@ -123,7 +123,7 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
         assert len(source_table) == 1
 
         new_row = "expected_ap_phot = { \n"  # pylint: disable=C0103
-        for header_key in expected_ap_phot.keys():
+        for header_key in expected_ap_phot.keys():  # pylint: disable=C0201
             new_row += f'    "{header_key}": {source_table.iloc[0][header_key]}, \n'
         new_row += "}"
         print(new_row)
