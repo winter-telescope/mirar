@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
 
 
-class AstrometryNetError(ProcessorError):
+class AstrometryNetExecutionError(ProcessorError):
     """
     Class for errors in astrometry.net
     """
@@ -125,6 +125,6 @@ def run_astrometry_net_single(
             if not os.path.isfile(img_path):
                 logger.debug("Second attempt failed.")
     except (ExecutionError, TimeoutExecutionError) as err:
-        raise AstrometryNetError(err) from err
+        raise AstrometryNetExecutionError(err) from err
 
     return img_path

@@ -1,12 +1,17 @@
 """
 Module to reject images based on quality criteria
 """
+import logging
+
 import numpy as np
 
 from mirar.data import Image, ImageBatch
 from mirar.errors.exceptions import ProcessorError
+from mirar.paths import EXPTIME_KEY
 from mirar.processors.astrometry.validate import PoorAstrometryError, PoorFWHMError
 from mirar.processors.split import SUB_ID_KEY
+
+logger = logging.getLogger(__name__)
 
 
 class TooManyMaskedPixelsError(ProcessorError):
@@ -18,6 +23,12 @@ class TooManyMaskedPixelsError(ProcessorError):
 class CondensationError(ProcessorError):
     """
     Error for when an image is affected by condensed
+    """
+
+
+class DarkOverSubtractionError(ProcessorError):
+    """
+    Error for when an image is affected by dark over-subtraction
     """
 
 
@@ -46,7 +57,8 @@ def masked_images_rejector(batch: ImageBatch) -> ImageBatch:
         frac_masked = np.sum(~mask) / mask.size
         if frac_masked > subdet_nan_limits[image.header[SUB_ID_KEY]]:
             raise TooManyMaskedPixelsError(
-                f"Fraction of masked pixels ({frac_masked}) is above threshold"
+                f"Fraction of masked pixels ({frac_masked}) is above threshold "
+                f"{subdet_nan_limits[image.header[SUB_ID_KEY]]}"
             )
     return batch
 
@@ -65,12 +77,15 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
         if image["ASTUNC"] > astrometric_unc_threshold_arcsec / 3600:
             raise PoorAstrometryError(
                 f"Uncertainty in astrometric solution from Scamp "
-                f"({image['ASTUNC']*3600}) arcsec is above threshold "
+                f"({image['ASTUNC'] * 3600}) arcsec is above threshold "
                 f"{astrometric_unc_threshold_arcsec} arcsec"
             )
 
         if image["FWHM_MED"] > fwhm_threshold_arcsec:
-            raise PoorFWHMError(f"FWHM ({image['FWHM_MED']}) is above threshold")
+            raise PoorFWHMError(
+                f"FWHM ({image['FWHM_MED']}) is above threshold"
+                f" {fwhm_threshold_arcsec} arcsec."
+            )
     return batch
 
 
@@ -107,4 +122,22 @@ def winter_condensation_rejector(images: ImageBatch) -> ImageBatch:
     for image in images:
         if is_condensation_in_image(image):
             raise CondensationError("Image is affected by condensation")
+    return images
+
+
+def winter_dark_oversubtraction_rejector(images: ImageBatch) -> ImageBatch:
+    """
+    Rejects images possibly affected by dark oversubtraction
+    """
+    assert len(images) == 1
+    median_sky_counts_threshold_per_sec = 1000.0 / 120.0
+    for image in images:
+        data = image.get_data()
+        if np.nanmedian(data) < median_sky_counts_threshold_per_sec * image["EXPTIME"]:
+            raise DarkOverSubtractionError(
+                f"Dark-subtracted image has lower than expected median"
+                f"counts for exposure time {image[EXPTIME_KEY]}."
+                f"Threshold : {median_sky_counts_threshold_per_sec * image['EXPTIME']},"
+                f" got: {np.nanmedian(data)}"
+            )
     return images

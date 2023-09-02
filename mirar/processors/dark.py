@@ -12,7 +12,9 @@ from mirar.errors import ImageNotFoundError
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
+    DARK_FRAME_KEY,
     EXPTIME_KEY,
+    LATEST_SAVE_KEY,
     OBSCLASS_KEY,
     SATURATE_KEY,
     STACKED_COMPONENT_IMAGES_KEY,
@@ -79,6 +81,7 @@ class DarkCalibrator(ProcessorWithCache):
                 image[SATURATE_KEY] -= (
                     np.nanmedian(master_dark.get_data()) * image[EXPTIME_KEY]
                 )
+            image[DARK_FRAME_KEY] = master_dark[LATEST_SAVE_KEY]
         return batch
 
     def make_image(

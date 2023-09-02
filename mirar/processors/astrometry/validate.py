@@ -137,6 +137,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
 
             image.header["ASTUNC"] = -999.0
             image.header["ASTFIELD"] = -999.0
+            image.header["ASTUNC95"] = -999.0
 
             _, _, d2d = self.xmatch_catalogs(
                 ref_cat=ref_cat,
@@ -146,6 +147,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
 
             if len(d2d) > 0:
                 image.header["ASTUNC"] = np.nanmedian(d2d.value)
+                image.header["ASTUNC95"] = np.percentile(d2d.value, 95)
                 image.header["ASTFIELD"] = np.arctan(
                     image.header["CD1_2"] / image.header["CD1_1"]
                 ) * (180 / np.pi)

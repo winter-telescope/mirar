@@ -658,7 +658,7 @@ def get_locally_existing_overlap_images(
                 for x in savepaths
                 if check_coords_within_image(
                     header=fits.getheader(x, 1), ra=query_ra, dec=query_dec
-                )
+                )[0]
             ]
         logger.debug(f"{len(savepaths)} images confirmed to overlap")
     return savepaths

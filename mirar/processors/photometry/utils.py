@@ -48,7 +48,7 @@ def make_cutouts(
         elif np.logical_and(
             x + half_size + 1 > x_image_size, y + half_size + 1 > y_image_size
         ):
-            cutout = data[y - half_size : y_image_size, x - half_size, x_image_size]
+            cutout = data[y - half_size : y_image_size, x - half_size : x_image_size]
             n_xpix = (half_size + x + 1) - x_image_size
             n_ypix = (half_size + y + 1) - y_image_size
             cutout = np.pad(cutout, ((0, n_ypix), (0, n_xpix)), "constant")

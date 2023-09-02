@@ -9,12 +9,14 @@ import numpy as np
 import pandas as pd
 from astropy.table import Table
 from astropy.time import Time
+from astropy.wcs import NoConvergence
 
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.base_catalog import CatalogFromFile
 from mirar.catalog.vizier import PS1
 from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.data.utils.compress import decode_img
+from mirar.data.utils.coords import check_coords_within_image
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.errors.exceptions import ProcessorError
@@ -35,7 +37,12 @@ from mirar.pipelines.winter.config import (
 )
 from mirar.pipelines.winter.constants import winter_filters_map
 from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
-from mirar.pipelines.winter.models import RefComponent, RefQuery, RefStack
+from mirar.pipelines.winter.models import (
+    DEFAULT_FIELD,
+    RefComponent,
+    RefQuery,
+    RefStack,
+)
 from mirar.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
@@ -49,6 +56,7 @@ from mirar.processors.utils.image_selector import select_from_images
 from mirar.references.local import RefFromPath
 from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
+from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +126,36 @@ def winter_astrostat_catalog_purifier(catalog: Table, image: Image) -> Table:
     )
 
 
+def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool:
+    """
+    Returns a function that returns the local reference catalog
+    """
+    # Check if there is enough overlap between the image and the
+    # local reference catalog
+    local_ref_cat = get_table_from_ldac(ref_cat_path)
+
+    try:
+        srcs_in_image = check_coords_within_image(
+            ra=local_ref_cat["ra"], dec=local_ref_cat["dec"], header=image.get_header()
+        )
+    except NoConvergence:
+        logger.debug(
+            f"Reference catalog {ref_cat_path} does not overlap with image."
+            "It is so off, that WCS failed to converge on a solution for "
+            "the pixels in the image."
+        )
+        return False
+
+    num_srcs_in_image = np.sum(srcs_in_image)
+
+    cat_overlaps = num_srcs_in_image > len(local_ref_cat) * 0.5
+    if not cat_overlaps:
+        logger.debug(
+            "More than 50% of the local reference catalog is outside the image."
+        )
+    return cat_overlaps
+
+
 def winter_photometric_catalog_generator(
     image: Image,
 ) -> Gaia2Mass | PS1 | CatalogFromFile:
@@ -130,8 +168,16 @@ def winter_photometric_catalog_generator(
     if REF_CAT_PATH_KEY in image.header:
         ref_cat_path = Path(image[REF_CAT_PATH_KEY])
         if ref_cat_path.exists():
-            logger.debug(f"Loading reference catalog from {ref_cat_path}")
-            return CatalogFromFile(catalog_path=ref_cat_path)
+            # Check if there is enough overlap between the image and the
+            # local reference catalog
+            if check_winter_local_catalog_overlap(ref_cat_path, image):
+                logger.debug(f"Loading reference catalog from {ref_cat_path}")
+                return CatalogFromFile(catalog_path=ref_cat_path)
+
+            logger.debug(
+                "More than 50% of the local reference catalog is "
+                "outside the image. Requerying."
+            )
 
     filter_name = image["FILTER"]
     search_radius_arcmin = (
@@ -219,10 +265,27 @@ def winter_astrometric_ref_catalog_generator(image) -> Gaia2Mass | CatalogFromFi
         ref_cat_path = Path(image[REF_CAT_PATH_KEY])
         logger.debug(f"Looking for local reference catalog at {ref_cat_path}")
         if ref_cat_path.exists():
-            logger.debug(f"Loading reference catalog from {ref_cat_path}")
-            return CatalogFromFile(catalog_path=ref_cat_path)
+            # Check if there is enough overlap between the image and the
+            # local reference catalog
+            if check_winter_local_catalog_overlap(ref_cat_path, image):
+                logger.debug(f"Loading reference catalog from {ref_cat_path}")
+                return CatalogFromFile(catalog_path=ref_cat_path)
+
+            logger.debug(
+                "More than 50% of the local reference catalog is "
+                "outside the image. Requerying."
+            )
+
+    search_radius_arcmin = (
+        np.max([image["NAXIS1"], image["NAXIS2"]])
+        * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
+        * 60
+    ) / 2.0
     return Gaia2Mass(
-        min_mag=7, max_mag=20, search_radius_arcmin=20, cache_catalog_locally=True
+        min_mag=7,
+        max_mag=20,
+        search_radius_arcmin=search_radius_arcmin,
+        cache_catalog_locally=True,
     )
 
 
@@ -231,10 +294,17 @@ def winter_ref_catalog_namer(image: Image, output_dir: Path) -> Path:
     Function to name the reference catalog to use for WINTER astrometry
     """
     output_dir.mkdir(exist_ok=True, parents=True)
-    ref_cat_path = (
-        output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}"
-        f"_{image['FILTER']}.ldac.cat"
-    )
+    if image["FIELDID"] != DEFAULT_FIELD:
+        ref_cat_path = (
+            output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}"
+            f"_{image['FILTER']}.ldac.cat"
+        )
+    else:
+        ref_cat_path = (
+            output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}_"
+            f"{image['TARGNAME']}_{image[TIME_KEY]}"
+            f"_{image['FILTER']}.ldac.cat"
+        )
     return ref_cat_path
 
 
@@ -306,14 +376,16 @@ def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatc
     for source in source_batch:
         src_df = source.get_data()
 
-        none_mask = (
+        bad_sources_mask = (
             src_df["sigmapsf"].isnull()
             | src_df["magpsf"].isnull()
             | src_df["magap"].isnull()
             | src_df["sigmagap"].isnull()
+            | (src_df["fwhm"] <= 0)
+            | (src_df["scorr"] < 0)
         )
 
-        mask = none_mask.values
+        mask = bad_sources_mask.values
 
         # Needing to do this because the dataframe is big-endian
         mask_inds = np.where(~mask)[0]
@@ -428,22 +500,25 @@ def winter_reference_generator(image: Image):
     subdetid = int(image[SUB_ID_KEY])
     logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
 
-    constraints = DBQueryConstraints(
-        columns=["fieldid", SUB_ID_KEY.lower()],
-        accepted_values=[fieldid, subdetid],
-    )
+    cache_ref_stack = False
+    if fieldid != DEFAULT_FIELD:
+        cache_ref_stack = True
+        constraints = DBQueryConstraints(
+            columns=["fieldid", SUB_ID_KEY.lower()],
+            accepted_values=[fieldid, subdetid],
+        )
 
-    db_results = select_from_table(
-        db_constraints=constraints,
-        sql_table=RefStack.sql_model,
-        output_columns=["savepath"],
-    )
+        db_results = select_from_table(
+            db_constraints=constraints,
+            sql_table=RefStack.sql_model,
+            output_columns=["savepath"],
+        )
 
-    if len(db_results) > 0:
-        savepath = db_results["savepath"].iloc[0]
-        if os.path.exists(savepath):
-            logger.debug(f"Found reference image in database: {savepath}")
-            return RefFromPath(path=savepath, filter_name=filtername)
+        if len(db_results) > 0:
+            savepath = db_results["savepath"].iloc[0]
+            if os.path.exists(savepath):
+                logger.debug(f"Found reference image in database: {savepath}")
+                return RefFromPath(path=savepath, filter_name=filtername)
 
     ukirt_query = UKIRTOnlineQuery(
         num_query_points=9,
@@ -458,9 +533,9 @@ def winter_reference_generator(image: Image):
         filter_name=filtername,
         wfcam_query=ukirt_query,
         image_resampler_generator=winter_wfau_component_image_stacker,
-        write_stacked_image=True,
+        write_stacked_image=cache_ref_stack,
         write_stack_sub_dir="winter/references/ref_stacks",
-        write_stack_to_db=True,
+        write_stack_to_db=cache_ref_stack,
         stacks_db_table=RefStack,
         component_image_sub_dir="components",
         references_base_subdir_name="winter/references",
@@ -516,7 +591,11 @@ def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
 
     if len(flat_images) == 0:
         # To enable current version of realtime processing?
-        logger.warning("No good flat images found, using all images in batch")
+        logger.warning(
+            "No good flat images found, using all images in batch."
+            f"The filter and subdetid of the first image in batch is "
+            f" {images[0]['FILTER']} and {images[0][SUB_ID_KEY]}"
+        )
         flat_images = select_from_images(
             images, key=OBSCLASS_KEY, target_values="science"
         )
