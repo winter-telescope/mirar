@@ -279,7 +279,7 @@ SCOR_MEDIAN_KEY = "SCORMED"
 SCOR_STD_KEY = "SCORSTD"
 
 # Source-related keys
-CAND_NAME_KEY = "objectid"
+SOURCE_NAME_KEY = "objectid"
 CAND_RA_KEY = "ra"
 CAND_DEC_KEY = "dec"
 SOURCE_HISTORY_KEY = "prv_candidates"

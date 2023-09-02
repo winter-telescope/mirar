@@ -20,13 +20,13 @@ from mirar.paths import (
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
     TARGET_KEY,
+    TIME_KEY,
     __version__,
 )
+from mirar.processors.skyportal.skyportal_source import SNCOSMO_KEY
 from mirar.processors.utils.image_loader import InvalidImage
 
 logger = logging.getLogger(__name__)
-
-SNCOSMO_KEY = "sncosmof"
 
 
 def clean_science_header(  # pylint: disable=too-many-branches
@@ -70,7 +70,7 @@ def clean_science_header(  # pylint: disable=too-many-branches
     # time
     header["MJD-OBS"] = date_obs_to_mjd(informative_hdr["DATE-OBS"])
     header["MJD"] = header["MJD-OBS"]
-    header["DATE-OBS"] = Time(header["MJD-OBS"], format="mjd").isot
+    header[TIME_KEY] = Time(header["MJD-OBS"], format="mjd").isot
 
     # filters
     header["FILTERID"] = informative_hdr["FILTER"].split(" ")[1][0]
@@ -78,7 +78,7 @@ def clean_science_header(  # pylint: disable=too-many-branches
     header[SNCOSMO_KEY] = "sdss" + header["FILTER"]
 
     if is_mode0:
-        informative_hdr["DATE-OBS"] = Time(header["MJD-OBS"], format="mjd").isot
+        informative_hdr[TIME_KEY] = Time(header["MJD-OBS"], format="mjd").isot
         informative_hdr["FILTER"] = header["FILTER"]
         informative_hdr["FILTERID"] = header["FILTERID"]
 

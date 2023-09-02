@@ -30,9 +30,7 @@ from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
-from mirar.processors.skyportal.skyportal_source import (  # SNCOSMO_KEY,
-    SkyportalSourceUploader,
-)
+from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
 from mirar.processors.sources import ForcedPhotometryDetector, SourceWriter
 from mirar.processors.utils import (
     ImageBatcher,

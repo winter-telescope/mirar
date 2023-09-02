@@ -6,7 +6,7 @@ from datetime import datetime
 
 from astropy.time import Time
 
-from mirar.paths import CAND_NAME_KEY, PACKAGE_NAME, __version__
+from mirar.paths import PACKAGE_NAME, SOURCE_NAME_KEY, __version__
 from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         """
 
         data = {
-            "id": alert[CAND_NAME_KEY],
+            "id": alert[SOURCE_NAME_KEY],
             "ra": alert["ra"],
             "dec": alert["dec"],
             "filter_ids": [self.fritz_filter_id],
@@ -47,17 +47,19 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         }
 
         logger.debug(
-            f"Posting metadata of {alert[CAND_NAME_KEY]} {alert['candid']} to SkyPortal"
+            f"Posting metadata of {alert[SOURCE_NAME_KEY]} "
+            f"{alert['candid']} to SkyPortal"
         )
         response = self.api("POST", "candidates", data)
 
         if response.json()["status"] == "success":
             logger.debug(
-                f"Posted {alert[CAND_NAME_KEY]} {alert['candid']} metadata to SkyPortal"
+                f"Posted {alert[SOURCE_NAME_KEY]} {alert['candid']} "
+                f"metadata to SkyPortal"
             )
         else:
             logger.error(
-                f"Failed to post {alert[CAND_NAME_KEY]} {alert['candid']} "
+                f"Failed to post {alert[SOURCE_NAME_KEY]} {alert['candid']} "
                 f"metadata to SkyPortal"
             )
             logger.error(response.json())
@@ -76,14 +78,14 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         }
         payload = {"origin": self.origin, "data": data, "group_ids": self.group_ids}
 
-        path = f"sources/{str(alert[CAND_NAME_KEY])}/annotations"
+        path = f"sources/{str(alert[SOURCE_NAME_KEY])}/annotations"
         response = self.api("POST", path, payload)
 
         if response.json()["status"] == "success":
-            logger.debug(f"Posted {alert[CAND_NAME_KEY]} annotation to SkyPortal")
+            logger.debug(f"Posted {alert[SOURCE_NAME_KEY]} annotation to SkyPortal")
         else:
             logger.error(
-                f"Failed to post {alert[CAND_NAME_KEY]} annotation to SkyPortal"
+                f"Failed to post {alert[SOURCE_NAME_KEY]} annotation to SkyPortal"
             )
             logger.error(response.json())
 
@@ -96,14 +98,14 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         """
         response = self.api(
             "GET",
-            f"sources/{str(source[CAND_NAME_KEY])}/annotations",
+            f"sources/{str(source[SOURCE_NAME_KEY])}/annotations",
         )
 
         if response.json()["status"] == "success":
-            logger.debug(f"Got {source[CAND_NAME_KEY]} annotations from SkyPortal")
+            logger.debug(f"Got {source[SOURCE_NAME_KEY]} annotations from SkyPortal")
         else:
             logger.debug(
-                f"Failed to get {source[CAND_NAME_KEY]} annotations from SkyPortal"
+                f"Failed to get {source[SOURCE_NAME_KEY]} annotations from SkyPortal"
             )
             logger.debug(response.json())
             return
@@ -129,29 +131,29 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             }
             new_annotation = {
                 "author_id": existing_annotations[self.origin]["author_id"],
-                "obj_id": source[CAND_NAME_KEY],
+                "obj_id": source[SOURCE_NAME_KEY],
                 "origin": self.origin,
                 "data": data,
                 "group_ids": self.group_ids,
             }
 
             logger.debug(
-                f"Putting annotation for {source[CAND_NAME_KEY]} {source['candid']} "
+                f"Putting annotation for {source[SOURCE_NAME_KEY]} {source['candid']} "
                 f"to SkyPortal",
             )
             response = self.api(
                 "PUT",
-                f"sources/{source[CAND_NAME_KEY]}"
+                f"sources/{source[SOURCE_NAME_KEY]}"
                 f"/annotations/{existing_annotations[self.origin]['annotation_id']}",
                 new_annotation,
             )
             if response.json()["status"] == "success":
                 logger.debug(
-                    f"Posted updated {source[CAND_NAME_KEY]} annotation to SkyPortal"
+                    f"Posted updated {source[SOURCE_NAME_KEY]} annotation to SkyPortal"
                 )
             else:
                 logger.error(
-                    f"Failed to post updated {source[CAND_NAME_KEY]} annotation "
+                    f"Failed to post updated {source[SOURCE_NAME_KEY]} annotation "
                     f"to SkyPortal"
                 )
                 logger.error(response.json())
@@ -164,28 +166,28 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         :type alert: _type_
         """
         # check if candidate exists in SkyPortal
-        logger.debug(f"Checking if {alert[CAND_NAME_KEY]} is candidate in SkyPortal")
-        response = self.api("HEAD", f"candidates/{alert[CAND_NAME_KEY]}")
+        logger.debug(f"Checking if {alert[SOURCE_NAME_KEY]} is candidate in SkyPortal")
+        response = self.api("HEAD", f"candidates/{alert[SOURCE_NAME_KEY]}")
 
         if response.status_code not in [200, 404]:
             response.raise_for_status()
 
         is_candidate = response.status_code == 200
         logger.debug(
-            f"{alert[CAND_NAME_KEY]} {'is' if is_candidate else 'is not'} "
+            f"{alert[SOURCE_NAME_KEY]} {'is' if is_candidate else 'is not'} "
             f"candidate in SkyPortal"
         )
 
         # check if source exists in SkyPortal
-        logger.debug(f"Checking if {alert[CAND_NAME_KEY]} is source in SkyPortal")
-        response = self.api("HEAD", f"sources/{alert[CAND_NAME_KEY]}")
+        logger.debug(f"Checking if {alert[SOURCE_NAME_KEY]} is source in SkyPortal")
+        response = self.api("HEAD", f"sources/{alert[SOURCE_NAME_KEY]}")
 
         if response.status_code not in [200, 404]:
             response.raise_for_status()
 
         is_source = response.status_code == 200
         logger.debug(
-            f"{alert[CAND_NAME_KEY]} "
+            f"{alert[SOURCE_NAME_KEY]} "
             f"{'is' if is_source else 'is not'} source in SkyPortal"
         )
 
@@ -217,11 +219,11 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
                 # get info on the corresponding groups:
                 logger.debug(
                     f"Getting source groups info on "
-                    f"{alert[CAND_NAME_KEY]} from SkyPortal",
+                    f"{alert[SOURCE_NAME_KEY]} from SkyPortal",
                 )
                 response = self.api(
                     "GET",
-                    f"sources/{alert[CAND_NAME_KEY]}/groups",
+                    f"sources/{alert[SOURCE_NAME_KEY]}/groups",
                 )
                 if response.json()["status"] == "success":
                     existing_groups = response.json()["data"]
@@ -232,7 +234,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
                             self.skyportal_post_source(alert, [existing_gid])
                 else:
                     logger.error(
-                        f"Failed to get source groups info on {alert[CAND_NAME_KEY]}"
+                        f"Failed to get source groups info on {alert[SOURCE_NAME_KEY]}"
                     )
             else:  # exists in SkyPortal but NOT saved as a source
                 self.skyportal_post_source(alert)
@@ -244,4 +246,4 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             if self.update_thumbnails:
                 self.skyportal_post_thumbnails(alert)
 
-        logger.debug(f"SendToSkyportal Manager complete for {alert[CAND_NAME_KEY]}")
+        logger.debug(f"SendToSkyportal Manager complete for {alert[SOURCE_NAME_KEY]}")
