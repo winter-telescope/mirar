@@ -557,7 +557,7 @@ unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
 full_reduction = (
     dark_calibrate
     + flat_calibrate
-    + ImageSelector(("FIELDID", "3944"))
+    + [ImageSelector(("FIELDID", "3944"))]
     + fourier_filter
     + process_and_stack
     + photcal_and_export
