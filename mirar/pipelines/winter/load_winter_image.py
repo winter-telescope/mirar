@@ -341,7 +341,7 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:20, :] = 1.0
 
     if header["BOARD_ID"] == 1:
-        pass
+        mask[1::2, 2::4] = 1.0
 
     if header["BOARD_ID"] == 2:
         mask[1060:, :] = 1.0
