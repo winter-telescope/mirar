@@ -319,28 +319,26 @@ flat_calibrate = [
         cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
     ),
     ImageSaver(output_dir_name="skyflatcal"),
-    [
-        ImageSelector(
-            (
-                TARGET_KEY,
-                [
-                    "field_3944",
-                    "field_8948",
-                    "too_targ1",
-                    "too_targ2",
-                    "ZTF23aaxufrf",
-                    "ZTF23aatekmu",
-                    "ZTF23aatekmu_offset",
-                    "timed_requests_08_17_2023_15_1692309852.db_26",
-                    "timed_requests_08_17_2023_15_1692309906.db_27",
-                    "timed_requests_08_28_2023_11_1693246008.db_8",
-                    "timed_requests_08_31_2023_22_1693544591.db_9",
-                    "timed_requests_08_31_2023_22_1693544591.db_10",
-                    "timed_requests_08_31_2023_22_1693544591.db_11",
-                ],
-            )
+    ImageSelector(
+        (
+            TARGET_KEY,
+            [
+                "field_3944",
+                "field_8948",
+                "too_targ1",
+                "too_targ2",
+                "ZTF23aaxufrf",
+                "ZTF23aatekmu",
+                "ZTF23aatekmu_offset",
+                "timed_requests_08_17_2023_15_1692309852.db_26",
+                "timed_requests_08_17_2023_15_1692309906.db_27",
+                "timed_requests_08_28_2023_11_1693246008.db_8",
+                "timed_requests_08_31_2023_22_1693544591.db_9",
+                "timed_requests_08_31_2023_22_1693544591.db_10",
+                "timed_requests_08_31_2023_22_1693544591.db_11",
+            ],
         )
-    ],
+    ),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
