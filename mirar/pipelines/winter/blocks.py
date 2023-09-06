@@ -221,7 +221,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 2
+BOARD_ID = 1
 select_subset = [
     ImageSelector(
         # ("EXPTIME", "120.0"),
@@ -566,7 +566,7 @@ photcal_stacks = [ImageLoader(input_sub_dir="stack")] + photcal_and_export
 
 reduce_unpacked = load_unpacked + full_reduction
 
-reduce = unpack_all + full_reduction
+reduce = unpack_all + [ImageSelector(("BOARD_ID", "1"))] + full_reduction
 
 reftest = (
     unpack_subset
