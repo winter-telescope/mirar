@@ -360,6 +360,10 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:55, :] = 1.0
         mask[:, :20] = 1.0
 
+        # Mask outages on top right and bottom right
+        mask[:180, 1725:] = 1.0
+        mask[1030:, 1800:] = 1.0
+
     if header["BOARD_ID"] == 4:
         # # Mask the region to the top left
         mask[610:, :250] = 1.0

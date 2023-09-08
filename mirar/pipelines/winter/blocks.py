@@ -400,8 +400,8 @@ stack_dithers = [
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
     ),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageSaver(output_dir_name="stack"),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
 ]
 
@@ -444,9 +444,6 @@ photcal_and_export = [
 
 load_stack = [
     ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
-    # ImageSelector(
-    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1_stack.fits")
-    # ),
 ]
 
 imsub = [
@@ -581,7 +578,9 @@ full_reduction = (
     + photcal_and_export
 )
 
-photcal_stacks = [ImageLoader(input_sub_dir="stack")] + photcal_and_export
+photcal_stacks = [
+    ImageLoader(input_sub_dir="stack", input_img_dir=base_output_dir)
+] + photcal_and_export
 
 reduce_unpacked = load_unpacked + full_reduction
 
