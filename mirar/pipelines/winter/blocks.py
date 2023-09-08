@@ -400,6 +400,7 @@ stack_dithers = [
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
     ),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageSaver(output_dir_name="stack"),
     CustomImageBatchModifier(masked_images_rejector),
 ]
@@ -538,6 +539,23 @@ process_candidates = [
         avro_schema_path=winter_avro_schema_path,
     ),
 ]
+
+# To make a mosaic by stacking all boards
+stack_boards = [
+    ImageBatcher(["STACKID"]),
+    Swarp(
+        swarp_config_path=swarp_config_path,
+        calculate_dims_in_swarp=True,
+        include_scamp=False,
+        subtract_bkg=False,
+        cache=False,
+        center_type="ALL",
+        temp_output_sub_dir="stack_mosaic",
+    ),
+]
+
+mosaic = load_stack + stack_boards
+
 
 # To make cals for focusing
 focus_subcoord = [
