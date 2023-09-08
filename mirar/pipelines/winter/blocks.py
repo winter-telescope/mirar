@@ -550,8 +550,9 @@ stack_boards = [
         subtract_bkg=False,
         cache=False,
         center_type="ALL",
-        temp_output_sub_dir="stack_mosaic",
+        temp_output_sub_dir="mosaic_weights",
     ),
+    ImageSaver(output_dir_name="mosaic"),
 ]
 
 mosaic = load_stack + stack_boards
