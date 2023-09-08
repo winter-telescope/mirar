@@ -542,7 +542,7 @@ process_candidates = [
 
 # To make a mosaic by stacking all boards
 stack_boards = [
-    ImageBatcher(["STACKID"]),
+    ImageBatcher([TARGET_KEY]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
