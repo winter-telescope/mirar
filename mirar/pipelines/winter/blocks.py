@@ -582,7 +582,7 @@ full_reduction = (
 
 photcal_stacks = [ImageLoader(input_sub_dir="stack")] + photcal_and_export
 
-reduce_unpacked = load_unpacked + [ImageSelector(("BOARD_ID", "4"))] + full_reduction
+reduce_unpacked = load_unpacked + full_reduction
 
 reduce = unpack_all + full_reduction
 
