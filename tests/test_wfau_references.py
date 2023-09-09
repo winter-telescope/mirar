@@ -34,7 +34,7 @@ pipeline = get_pipeline(
 )
 
 
-# @unittest.skip
+@unittest.skip("WFAU is down")
 class TestIRReferencePipeline(BaseTestCase):
     """
     Module for testing IR reference building pipeline
