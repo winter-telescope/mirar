@@ -160,7 +160,7 @@ image_photometry = [  # imported from wirc/blocks.py
             15.6 / SEDMV2_PIXEL_SCALE,
         ],
         col_suffix_list=["2", "3", "4", "5", "10"],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         zp_key="ZP_AUTO",
     ),
 ]
@@ -168,7 +168,7 @@ image_photometry = [  # imported from wirc/blocks.py
 candidate_photometry = [  # imported from wirc/blocks.py
     AperturePhotometry(
         aper_diameters=[16, 70],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],

@@ -479,10 +479,11 @@ detect_candidates = [
         output_sub_dir="subtract",
         **sextractor_candidate_config,
     ),
-    PSFPhotometry(),
+    PSFPhotometry(phot_cutout_half_size=10),
     AperturePhotometry(
+        temp_output_sub_dir="aper_photometry",
         aper_diameters=[16, 70],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],

@@ -231,7 +231,7 @@ extract_candidates = [
     PSFPhotometry(),
     AperturePhotometry(
         aper_diameters=[8, 40],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
