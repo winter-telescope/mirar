@@ -34,8 +34,20 @@ class PSFPhotometry(BasePhotometryProcessor):
     base_key = "PSFPHOT"
 
     def perform_photometry(
-        self, image_cutout: np.array, unc_image_cutout: np.array, psf_filename: Path
+        self,
+        image_cutout: np.array,
+        unc_image_cutout: np.array,
+        psf_filename: str | Path,
     ) -> tuple[float, float, float, float, float]:
+        """
+        Function to perform PSF photometry on a cutout
+        :param image_cutout: cutout of image
+        :param unc_image_cutout: cutout of uncertainty image
+        :param psf_filename: filename of psf file
+        :return: flux, fluxunc, minchi2, xshift, yshift
+        """
+        if not isinstance(psf_filename, Path):
+            psf_filename = Path(psf_filename)
         psfmodels = make_psf_shifted_array(
             psf_filename=psf_filename.as_posix(),
             cutout_size_psf_phot=int(image_cutout.shape[0] / 2),
