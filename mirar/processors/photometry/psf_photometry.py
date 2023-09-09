@@ -7,7 +7,13 @@ from pathlib import Path
 import numpy as np
 
 from mirar.data import SourceBatch
-from mirar.paths import MAG_PSF_KEY, MAGERR_PSF_KEY, PSF_FLUX_KEY, PSF_FLUXUNC_KEY
+from mirar.paths import (
+    MAG_PSF_KEY,
+    MAGERR_PSF_KEY,
+    PSF_FLUX_KEY,
+    PSF_FLUXUNC_KEY,
+    get_output_dir,
+)
 from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.base_processor import PrerequisiteError
 from mirar.processors.photometry.base_photometry import BasePhotometryProcessor
@@ -28,15 +34,30 @@ class PSFPhotometry(BasePhotometryProcessor):
     base_key = "PSFPHOT"
 
     def perform_photometry(
-        self, image_cutout: np.array, unc_image_cutout: np.array, psf_filename: Path
+        self,
+        image_cutout: np.array,
+        unc_image_cutout: np.array,
+        psf_filename: str | Path,
     ) -> tuple[float, float, float, float, float]:
+        """
+        Function to perform PSF photometry on a cutout
+        :param image_cutout: cutout of image
+        :param unc_image_cutout: cutout of uncertainty image
+        :param psf_filename: filename of psf file
+        :return: flux, fluxunc, minchi2, xshift, yshift
+        """
+        if not isinstance(psf_filename, Path):
+            psf_filename = Path(psf_filename)
         psfmodels = make_psf_shifted_array(
-            psf_filename=psf_filename,
+            psf_filename=psf_filename.as_posix(),
             cutout_size_psf_phot=int(image_cutout.shape[0] / 2),
         )
 
         flux, fluxunc, minchi2, xshift, yshift = psf_photometry(
-            image_cutout, unc_image_cutout, psfmodels
+            image_cutout,
+            unc_image_cutout,
+            psfmodels,
+            psf_filename=psf_filename.as_posix(),
         )
         return flux, fluxunc, minchi2, xshift, yshift
 
@@ -64,9 +85,14 @@ class PSFPhotometry(BasePhotometryProcessor):
             fluxes, fluxuncs, minchi2s, xshifts, yshifts = [], [], [], [], []
 
             psf_filename = source_table[self.psf_file_key]
+            temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(metadata)
 
-            for _, row in candidate_table.iterrows():
-                image_cutout, unc_image_cutout = self.generate_cutouts(row, metadata)
+            for ind, row in candidate_table.iterrows():
+                image_cutout, unc_image_cutout = self.generate_cutouts(
+                    imagename=temp_imagename,
+                    unc_imagename=temp_unc_imagename,
+                    data_item=row,
+                )
                 (
                     flux,
                     fluxunc,
@@ -76,6 +102,19 @@ class PSFPhotometry(BasePhotometryProcessor):
                 ) = self.perform_photometry(
                     image_cutout, unc_image_cutout, psf_filename=psf_filename
                 )
+
+                if self.save_cutouts:
+                    image_cutout_path = get_output_dir(
+                        self.temp_output_sub_dir, self.night_sub_dir
+                    ).joinpath(f"image_cutout_{ind}.dat")
+                    logger.debug(f"Writing cutout to {image_cutout_path}")
+                    np.savetxt(X=image_cutout, fname=image_cutout_path)
+                    unc_image_cutout_path = get_output_dir(
+                        self.temp_output_sub_dir, self.night_sub_dir
+                    ).joinpath(f"unc_image_cutout_{ind}.dat")
+                    logger.debug(f"Writing cutout to {unc_image_cutout_path}")
+                    np.savetxt(X=unc_image_cutout, fname=unc_image_cutout_path)
+
                 fluxes.append(flux)
                 fluxuncs.append(fluxunc)
                 minchi2s.append(minchi2)
@@ -97,6 +136,9 @@ class PSFPhotometry(BasePhotometryProcessor):
 
             candidate_table[MAG_PSF_KEY] = magnitudes
             candidate_table[MAGERR_PSF_KEY] = magnitudes_unc
+
+            temp_imagename.unlink()
+            temp_unc_imagename.unlink()
 
             source_table.set_data(candidate_table)
 

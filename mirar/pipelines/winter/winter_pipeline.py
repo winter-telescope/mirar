@@ -20,6 +20,7 @@ from mirar.pipelines.winter.blocks import (
     load_stack,
     load_test,
     mask_and_split,
+    mosaic,
     only_ref,
     photcal_stacks,
     process_candidates,
@@ -74,6 +75,7 @@ class WINTERPipeline(Pipeline):
         "full_imsub": load_stack + imsub + detect_candidates + process_candidates,
         "full": reduce + imsub + detect_candidates + process_candidates,
         "focus_cals": focus_cals,
+        "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,
     }
 

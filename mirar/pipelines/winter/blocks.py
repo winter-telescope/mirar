@@ -401,6 +401,7 @@ stack_dithers = [
         header_keys_to_combine=["RAWID"],
     ),
     ImageSaver(output_dir_name="stack"),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
 ]
 
@@ -443,9 +444,6 @@ photcal_and_export = [
 
 load_stack = [
     ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
-    # ImageSelector(
-    #     (BASE_NAME_KEY, "WINTERcamera_20230727-035357-778_mef_4_0_1_stack.fits")
-    # ),
 ]
 
 imsub = [
@@ -481,10 +479,11 @@ detect_candidates = [
         output_sub_dir="subtract",
         **sextractor_candidate_config,
     ),
-    PSFPhotometry(),
+    PSFPhotometry(phot_cutout_half_size=10),
     AperturePhotometry(
+        temp_output_sub_dir="aper_photometry",
         aper_diameters=[16, 70],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
@@ -539,6 +538,24 @@ process_candidates = [
     ),
 ]
 
+# To make a mosaic by stacking all boards
+stack_boards = [
+    ImageBatcher([TARGET_KEY]),
+    Swarp(
+        swarp_config_path=swarp_config_path,
+        calculate_dims_in_swarp=True,
+        include_scamp=False,
+        subtract_bkg=False,
+        cache=False,
+        center_type="ALL",
+        temp_output_sub_dir="mosaic_weights",
+    ),
+    ImageSaver(output_dir_name="mosaic"),
+]
+
+mosaic = load_stack + stack_boards
+
+
 # To make cals for focusing
 focus_subcoord = [
     HeaderAnnotator(input_keys=["BOARD_ID"], output_key="SUBCOORD"),
@@ -562,7 +579,9 @@ full_reduction = (
     + photcal_and_export
 )
 
-photcal_stacks = [ImageLoader(input_sub_dir="stack")] + photcal_and_export
+photcal_stacks = [
+    ImageLoader(input_sub_dir="stack", input_img_dir=base_output_dir)
+] + photcal_and_export
 
 reduce_unpacked = load_unpacked + full_reduction
 

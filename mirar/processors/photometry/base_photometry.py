@@ -34,7 +34,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
 
     def __init__(
         self,
-        phot_cutout_size: int = 20,
+        phot_cutout_half_size: int = 20,
         temp_output_sub_dir: str = "photometry",
         zp_key: str = ZP_KEY,
         zp_std_key: str = ZP_STD_KEY,
@@ -43,9 +43,10 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         psf_file_key: str = NORM_PSFEX_KEY,
         x_colname: str = XPOS_KEY,
         y_colname: str = YPOS_KEY,
+        save_cutouts: bool = False,
     ):
         super().__init__()
-        self.phot_cutout_size = phot_cutout_size
+        self.phot_cutout_half_size = phot_cutout_half_size
         self.temp_output_sub_dir = temp_output_sub_dir
         self.zp_key = zp_key
         self.zp_std_key = zp_std_key
@@ -54,6 +55,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         self.psf_file_key = psf_file_key
         self.xpos_key = x_colname
         self.ypos_key = y_colname
+        self.save_cutouts = save_cutouts
 
     def save_temp_image(self, image) -> Path:
         """
@@ -82,7 +84,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         photometry_out_temp_dir = get_output_dir(
             self.temp_output_sub_dir, self.night_sub_dir
         )
-        unc_filename = Path(image[BASE_NAME_KEY] + ".unc")
+        unc_filename = Path(image[BASE_NAME_KEY].replace(".fits", ".unc.fits"))
         rms_image = get_rms_image(image)
         unc_filename = photometry_out_temp_dir.joinpath(unc_filename)
         unc_filename.parent.mkdir(parents=True, exist_ok=True)
@@ -92,29 +94,26 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         return unc_filename
 
     def generate_cutouts(
-        self, data_item: Image | pd.Series, metadata: dict
+        self, imagename: Path, unc_imagename: Path, data_item: Image | pd.Series
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate image and uncertainty image cutouts. This function first saves the
         image and uncertainty image to temporary files, then generates the cutouts,
         then deletes the temporary files.
-        Args:
-            data_item: pandas DataFrame Series or astropy fits Header
-            metadata: Metadata dictionary
+        :param imagename: Path to the image
+        :param unc_imagename: Path to the uncertainty image
+        :param data_item: pandas DataFrame Series or astropy fits Header
 
-        Returns:
-            tuple: 2D numpy arrays of the image cutout and uncertainty image cutout
+        :returns tuple: 2D numpy arrays of the image cutout and uncertainty image cutout
         """
 
-        temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(metadata)
         x, y = self.get_physical_coordinates(data_item)
         image_cutout, unc_image_cutout = make_cutouts(
-            image_paths=[temp_imagename, temp_unc_imagename],
+            image_paths=[imagename, unc_imagename],
             position=(x, y),
-            half_size=self.phot_cutout_size,
+            half_size=self.phot_cutout_half_size,
         )
-        temp_imagename.unlink()
-        temp_unc_imagename.unlink()
+
         return image_cutout, unc_image_cutout
 
     def save_temp_image_uncimage(self, metadata: dict) -> tuple[Path, Path]:

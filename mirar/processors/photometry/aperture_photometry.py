@@ -9,6 +9,7 @@ from mirar.paths import (
     APFLUXUNC_PREFIX_KEY,
     APMAG_PREFIX_KEY,
     APMAGUNC_PREFIX_KEY,
+    get_output_dir,
 )
 from mirar.processors.photometry.base_photometry import BasePhotometryProcessor
 from mirar.processors.photometry.utils import aper_photometry, get_mags_from_fluxes
@@ -73,17 +74,32 @@ class AperturePhotometry(BasePhotometryProcessor):
             metadata = source_table.get_metadata()
 
             all_fluxes, all_fluxuncs = [], []
+            temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(metadata)
 
             for cand_ind in range(len(candidate_table)):
                 row = candidate_table.iloc[cand_ind]
 
-                image_cutout, unc_image_cutout = self.generate_cutouts(row, metadata)
+                image_cutout, unc_image_cutout = self.generate_cutouts(
+                    imagename=temp_imagename,
+                    unc_imagename=temp_unc_imagename,
+                    data_item=row,
+                )
 
                 fluxes, fluxuncs = self.perform_photometry(
                     image_cutout=image_cutout, unc_image_cutout=unc_image_cutout
                 )
                 all_fluxes.append(fluxes)
                 all_fluxuncs.append(fluxuncs)
+
+                if self.save_cutouts:
+                    image_cutout_path = get_output_dir(
+                        self.temp_output_sub_dir, self.night_sub_dir
+                    ).joinpath(f"image_cutout_{cand_ind}.dat")
+                    np.savetxt(X=image_cutout, fname=image_cutout_path)
+                    unc_image_cutout_path = get_output_dir(
+                        self.temp_output_sub_dir, self.night_sub_dir
+                    ).joinpath(f"unc_image_cutout_{cand_ind}.dat")
+                    np.savetxt(X=unc_image_cutout, fname=unc_image_cutout_path)
 
             all_fluxes = np.array(all_fluxes).T
             all_fluxuncs = np.array(all_fluxuncs).T
@@ -102,6 +118,8 @@ class AperturePhotometry(BasePhotometryProcessor):
                 candidate_table[f"{APMAG_PREFIX_KEY}{suffix}"] = magnitudes
                 candidate_table[f"{APMAGUNC_PREFIX_KEY}{suffix}"] = magnitudes_unc
 
+            temp_imagename.unlink()
+            temp_unc_imagename.unlink()
             source_table.set_data(candidate_table)
 
         return batch

@@ -173,23 +173,6 @@ def clean_header(header: fits.Header) -> fits.Header:
     return header
 
 
-def load_proc_winter_image(path: str | Path) -> tuple[np.array, fits.Header]:
-    """
-    Load proc image
-
-    :param path: Path to image
-    :return data and header
-    """
-    logger.debug(f"Loading {path}")
-    data, header = open_fits(path)
-    if "weight" in path:
-        header[OBSCLASS_KEY] = "weight"
-
-    header["FILTER"] = header["FILTERID"]
-
-    return data, header
-
-
 def load_stacked_winter_image(
     path: str | Path,
 ) -> tuple[np.array, fits.Header]:
@@ -341,7 +324,18 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:20, :] = 1.0
 
     if header["BOARD_ID"] == 1:
-        pass
+        mask[:, 344:347] = 1.0
+        mask[:, 998:1000] = 1.0
+        mask[:, 1006:1008] = 1.0
+        mask[260:262, :] = 1.0
+        # Mask entire striped area to the right of the chip
+        # mask[:, 1655:] = 1.0
+
+        # Mask the low sensitivity regions around edges
+        mask[1070:, :] = 1.0
+        mask[:20, :] = 1.0
+        mask[:, :75] = 1.0
+        mask[:, 1961:] = 1.0
 
     if header["BOARD_ID"] == 2:
         mask[1060:, :] = 1.0
@@ -359,6 +353,10 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:, 1970:] = 1.0
         mask[:55, :] = 1.0
         mask[:, :20] = 1.0
+
+        # Mask outages on top right and bottom right
+        mask[:180, 1725:] = 1.0
+        mask[1030:, 1800:] = 1.0
 
     if header["BOARD_ID"] == 4:
         # # Mask the region to the top left

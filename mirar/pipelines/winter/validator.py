@@ -48,8 +48,8 @@ def masked_images_rejector(batch: ImageBatch) -> ImageBatch:
         8: 0.3,
         9: 0.4,
         10: 0.5,
-        11: 0.4,
-        12: 0.4,
+        11: 0.5,
+        12: 0.5,
     }
 
     for image in batch:

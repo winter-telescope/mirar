@@ -204,7 +204,7 @@ export_candidates_from_header = [
 candidate_photometry = [
     AperturePhotometry(
         aper_diameters=[16, 70],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
@@ -240,7 +240,7 @@ process_candidates = [
     PSFPhotometry(),
     AperturePhotometry(
         aper_diameters=[16, 70],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
