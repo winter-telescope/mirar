@@ -341,7 +341,17 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:20, :] = 1.0
 
     if header["BOARD_ID"] == 1:
-        pass
+        mask[:, 344:347] = 1.0
+        mask[:, 998:1000] = 1.0
+        mask[:, 1006:1008] = 1.0
+        mask[260:262, :] = 1.0
+        mask[:, 1655:] = 1.0
+
+        # Mask the low sensitivity regions around edges
+        mask[1070:, :] = 1.0
+        mask[:20, :] = 1.0
+        mask[:, :75] = 1.0
+        mask[:, 1961:] = 1.0
 
     if header["BOARD_ID"] == 2:
         mask[1060:, :] = 1.0

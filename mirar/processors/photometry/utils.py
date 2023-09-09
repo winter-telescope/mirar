@@ -90,7 +90,10 @@ def make_cutouts(
 
 
 def psf_photometry(
-    image_cutout: np.array, image_unc_cutout: np.array, psfmodels: np.array
+    image_cutout: np.array,
+    image_unc_cutout: np.array,
+    psfmodels: np.array,
+    psf_filename: str,
 ) -> tuple[float, float, float, float, float]:
     """
     Function to perform PSF photometry
@@ -135,18 +138,24 @@ def psf_photometry(
 
     best_fit_psfmodel = psfmodels[:, :, minchi2_ind]
     ys_cen, xs_cen = np.where(best_fit_psfmodel == np.max(best_fit_psfmodel))
-    yshift = ys_cen[0] - 6
-    xshift = xs_cen[0] - 6
+
+    psf = fits.getdata(psf_filename)
+    y_cen, x_cen = np.where(psf == np.max(psf))
+    yshift = ys_cen[0] - y_cen
+    xshift = xs_cen[0] - x_cen
 
     return best_fit_psf_flux, best_fit_psf_fluxunc, minchi2, xshift, yshift
 
 
-def make_psf_shifted_array(psf_filename: str, cutout_size_psf_phot: int = 20):
+def make_psf_shifted_array(
+    psf_filename: str, cutout_size_psf_phot: int = 20, pad_psf_size: int = 60
+):
     """
     Function to make a shifted array from a PSF model
     Args:
         psf_filename:
         cutout_size_psf_phot:
+        pad_psf_size:
 
     Returns:
 
@@ -159,16 +168,20 @@ def make_psf_shifted_array(psf_filename: str, cutout_size_psf_phot: int = 20):
     grid_x = np.ndarray.flatten(grid_x)
     grid_y = np.ndarray.flatten(grid_y)
 
-    padpsfs = np.zeros((60, 60, ngrid))
+    psfmodel_half_size = int(psf.shape[0] / 2)
+    padpsfs = np.zeros((pad_psf_size, pad_psf_size, ngrid))
+    pad_loind = int((pad_psf_size - 2 * psfmodel_half_size) / 2)
+    pad_upind = pad_psf_size - pad_loind + 1
     for i in range(ngrid):
         padpsfs[
-            int(10 + grid_y[i]) : int(51 + grid_y[i]),
-            int(10 + grid_x[i]) : int(51 + grid_x[i]),
+            int(pad_loind + grid_y[i]) : int(pad_upind + grid_y[i]),
+            int(pad_loind + grid_x[i]) : int(pad_upind + grid_x[i]),
             i,
         ] = normpsf
 
+    unshifted_ind = int(ngrid / 2)
     normpsfmax = np.max(normpsf)
-    xcen_1, xcen_2 = np.where(padpsfs[:, :, 12] == normpsfmax)
+    xcen_1, xcen_2 = np.where(padpsfs[:, :, unshifted_ind] == normpsfmax)
     xcen_1 = int(xcen_1)
     xcen_2 = int(xcen_2)
 
