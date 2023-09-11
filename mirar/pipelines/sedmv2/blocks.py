@@ -9,6 +9,7 @@ from mirar.pipelines.sedmv2.config import (  # sextractor_reference_config,
     psfex_config_path,
     sedmv2_mask_path,
     sextractor_astrometry_config,
+    sextractor_candidates_config,
     sextractor_photometry_config,
     swarp_config_path,
 )
@@ -31,7 +32,11 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
-from mirar.processors.sources import ForcedPhotometryDetector, SourceWriter
+from mirar.processors.sources import (
+    ForcedPhotometryDetector,
+    SextractorSourceDetector,
+    SourceWriter,
+)
 from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
@@ -230,6 +235,17 @@ transient_phot = [
     SourceWriter(output_dir_name="sourcetable"),
 ]
 
+all_phot = [
+    ImageSaver(
+        output_dir_name="sources",
+        write_mask=True,
+    ),
+    PSFex(config_path=psfex_config_path, norm_fits=True),
+    SextractorSourceDetector(output_sub_dir="sources", **sextractor_candidates_config),
+    PSFPhotometry(),
+    SourceWriter(output_dir_name="sourcetable"),
+]
+
 upload_fritz = [
     SkyportalSourceUploader(
         origin="SEDMv2TEST",
@@ -240,6 +256,7 @@ upload_fritz = [
 ]
 
 process_transient = reduce + resample_transient + calibrate
+process_all = reduce + resample_transient + calibrate + all_phot
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),

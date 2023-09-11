@@ -13,6 +13,7 @@ from mirar.pipelines.sedmv2.blocks import (
     detrend_only,
     image_photometry,
     load_raw,
+    process_all,
     process_stellar,
     process_transient,
     transient_phot,
@@ -44,6 +45,7 @@ class SEDMv2Pipeline(Pipeline):
         + process_transient
         + transient_phot
         + upload_fritz,
+        "all_phot": load_raw + process_all,
     }
 
     @staticmethod
