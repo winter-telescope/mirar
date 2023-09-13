@@ -290,7 +290,7 @@ package_candidates = [
         instrument_id=5,
         stream_id=1005,
         update_thumbnails=True,
-        skyportal_client=SkyportalClient(base_url="https://preview.fritz.science/api/"),
+        skyportal_client=SkyportalClient(base_url="https://fritz.science/api/"),
     ),
 ]
 
