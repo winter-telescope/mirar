@@ -31,6 +31,7 @@ from mirar.pipelines.winter.blocks import (
     reftest,
     save_raw,
     select_split_subset,
+    send_to_skyportal,
     unpack_all,
     unpack_subset,
 )
@@ -77,6 +78,7 @@ class WINTERPipeline(Pipeline):
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,
+        "send_skyportal": send_to_skyportal,
     }
 
     non_linear_level = 40000.0
