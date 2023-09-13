@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 WIRC_NONLINEAR_LEVEL = 30000
 
 sncosmo_filters = {
-    "j": "2massj",
-    "h": "2massh",
-    "ks": "2massks",
+    "j": "cspjs",
+    "h": "csphs",
+    "ks": "cspk",
 }
 
 

@@ -70,6 +70,7 @@ from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
 from mirar.processors.skyportal import SkyportalCandidateUploader
+from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.sources import (
     CandidateNamer,
     ForcedPhotometryDetector,
@@ -289,6 +290,7 @@ package_candidates = [
         instrument_id=5,
         stream_id=1005,
         update_thumbnails=True,
+        skyportal_client=SkyportalClient(base_url="https://preview.fritz.science/api/"),
     ),
 ]
 
