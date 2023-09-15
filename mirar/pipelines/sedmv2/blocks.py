@@ -9,7 +9,6 @@ from mirar.pipelines.sedmv2.config import (  # sextractor_reference_config,
     psfex_config_path,
     sedmv2_mask_path,
     sextractor_astrometry_config,
-    sextractor_candidates_config,
     sextractor_photometry_config,
     swarp_config_path,
 )
@@ -241,7 +240,7 @@ all_phot = [
         write_mask=True,
     ),
     PSFex(config_path=psfex_config_path, norm_fits=True),
-    SextractorSourceDetector(output_sub_dir="sources", **sextractor_candidates_config),
+    SextractorSourceDetector(output_sub_dir="sources"),
     PSFPhotometry(),
     SourceWriter(output_dir_name="sourcetable"),
 ]
