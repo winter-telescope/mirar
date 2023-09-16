@@ -442,7 +442,7 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
         src_df["d_to_x"] = src_df["NAXIS1"] - src_df["xpos"]
         src_df["d_to_y"] = src_df["NAXIS2"] - src_df["ypos"]
         src_df["mindtoedge"] = src_df[["xpos", "ypos", "d_to_x", "d_to_y"]].min(axis=1)
-        nnegs, nbads, sumrat = [], [], []
+        nnegs, nbads, sumrat, frac_masked = [], [], [], []
         for _, src in src_df.iterrows():
             diff_cutout_data = decode_img(src["cutout_difference"])
             # Get central 5x5 pixels
@@ -453,12 +453,37 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
             nnegs.append(np.sum(diff_stamp < 0))
             nbads.append(np.sum(np.isnan(diff_stamp)))
             sumrat.append(np.sum(diff_stamp) / np.sum(np.abs(diff_stamp)))
+            frac_masked.append(
+                np.sum(np.isnan(diff_cutout_data))
+                / (diff_cutout_data.shape[0] * diff_cutout_data.shape[1])
+            )
 
         src_df["nneg"] = nnegs
         src_df["nbad"] = nbads
         src_df["sumrat"] = sumrat
+        src_df["fracmasked"] = frac_masked
 
         source.set_data(src_df)
+        new_batch.append(source)
+
+    return new_batch
+
+
+def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
+    """
+    Function to perform quality filtering on WINTER candidates
+    """
+    new_batch = SourceBatch([])
+
+    for source in source_table:
+        src_df = source.get_data()
+        mask = (
+            (src_df["fracmasked"] < 0.5)
+            & (src_df["scorr"] > 10)
+            & (src_df["nneg"] < 12)
+        )
+        filtered_df = src_df[mask].reset_index(drop=True)
+        source.set_data(filtered_df)
         new_batch.append(source)
 
     return new_batch

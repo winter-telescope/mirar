@@ -64,8 +64,10 @@ def pyzogy(
     new_nanmask = np.isnan(new_data)
     ref_nanmask = np.isnan(ref_data)
 
-    new_data[new_nanmask] = 0.0
-    ref_data[ref_nanmask] = 0.0
+    new_data[new_nanmask] = np.nanmedian(new_data)
+    ref_data[ref_nanmask] = np.nanmedian(ref_data)
+
+    logger.debug(f"Number of nans is  {np.sum(new_nanmask)}")
 
     # Load the PSFs into memory
     with fits.open(new_psf_path) as img_psf_f:

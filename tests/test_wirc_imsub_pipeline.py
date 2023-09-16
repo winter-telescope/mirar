@@ -54,25 +54,24 @@ def reference_image_test_generator(
 
 
 EXPECTED_HEADER_VALUES = {
-    "SCORMEAN": -0.04392849749015427,
-    "SCORMED": -0.02331383704510348,
-    "SCORSTD": 1.25595271525748,
+    "SCORMEAN": -0.045206374332235115,
+    "SCORMED": -0.024397068964100148,
+    "SCORSTD": 1.2562012521997061,
 }
-
 EXPECTED_DATAFRAME_VALUES = {
     "magpsf": [
-        19.532174878440024,
-        19.37926219106463,
-        19.592829160635986,
-        17.551198868994298,
-        17.197011228688517,
+        19.530512675610588,
+        19.589633462001487,
+        19.377558920088127,
+        17.181427378369182,
+        17.550804696760466,
     ],
     "magap": [
-        20.391746490573613,
-        18.8437585775724,
-        19.25446868459551,
-        17.74467203323279,
-        17.11032933773533,
+        20.389276936964894,
+        19.283149879747363,
+        18.841473495674315,
+        17.110329764104456,
+        17.73993873590829,
     ],
 }
 
@@ -138,6 +137,20 @@ class TestWircImsubPipeline(BaseTestCase):
         self.assertEqual(len(res), 1)
 
         source_table = res[0][0]
+        candidates_table = source_table.get_data()
+
+        print("New Results WIRC-imsub:")
+        new_exp_header = "EXPECTED_HEADER_VALUES = { \n"
+        for key, _ in EXPECTED_HEADER_VALUES.items():
+            new_exp_header += f'"{key}": {source_table[key]},\n'
+        new_exp_header += "}"
+        print(new_exp_header)
+
+        new_exp_df = "EXPECTED_DATAFRAME_VALUES = { \n"
+        for key, _ in EXPECTED_DATAFRAME_VALUES.items():
+            new_exp_df += f'"{key}": {list(candidates_table[key])},\n'
+        new_exp_df += "}"
+        print(new_exp_df)
 
         for key, value in EXPECTED_HEADER_VALUES.items():
             if isinstance(value, float):
@@ -149,8 +162,6 @@ class TestWircImsubPipeline(BaseTestCase):
                     f"Type for value ({type(value)} is neither float not int."
                 )
 
-        candidates_table = source_table.get_data()
-
         self.assertEqual(len(candidates_table), 5)
         for key, value in EXPECTED_DATAFRAME_VALUES.items():
             if isinstance(value, list):
@@ -158,29 +169,3 @@ class TestWircImsubPipeline(BaseTestCase):
                     self.assertAlmostEqual(
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
-
-
-if __name__ == "__main__":
-    print("Calculating latest scorr metrics dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images(
-        dataset=Dataset(ImageBatch()), catch_all_errors=False
-    )
-    new_source_table = new_res[0][0]
-
-    NEW_EXP_HEADER = "expected_header_values = { \n"
-    for header_key in new_source_table.keys():
-        if "SCOR" in header_key:
-            NEW_EXP_HEADER += f'    "{header_key}": {new_source_table[header_key]}, \n'
-    NEW_EXP_HEADER += "}"
-    print(NEW_EXP_HEADER)
-
-    new_candidates_table = new_source_table.get_data()
-
-    NEW_EXP_DATAFRAME = "expected_dataframe_values = { \n"
-    for key in EXPECTED_DATAFRAME_VALUES:
-        NEW_EXP_DATAFRAME += f'    "{key}": {list(new_candidates_table[key])}, \n'
-    NEW_EXP_DATAFRAME += "}"
-    print(NEW_EXP_DATAFRAME)

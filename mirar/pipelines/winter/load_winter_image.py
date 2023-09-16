@@ -39,8 +39,15 @@ from mirar.pipelines.winter.constants import (
     winter_filters_map,
 )
 from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_dict
+from mirar.processors.skyportal import SNCOSMO_KEY
 
 logger = logging.getLogger(__name__)
+
+sncosmo_filters = {
+    "y": "desy",
+    "j": "2massj",
+    "h": "2massh",
+}
 
 
 def clean_header(header: fits.Header) -> fits.Header:
@@ -170,7 +177,33 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["ITID"] = itid_dict[imgtype_dict[header[OBSCLASS_KEY]]]
 
     header["EXPMJD"] = header["MJD-OBS"]
+    if header["FILTER"].lower() in ["y", "j", "h"]:
+        header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
     return header
+
+
+def load_winter_stack(
+    path: str | Path,
+) -> Image:
+    """
+    Load proc image
+
+    :param path: Path to image
+    :return: data and header
+    """
+    logger.debug(f"Loading {path}")
+    data, header = open_fits(path)
+
+    dirname = path.split("/winter/")[0] + "/winter/"
+    wghtpath = header["WGHTPATH"]
+    weight_pathname = wghtpath.split("/winter/")[-1]
+    new_weightpath = Path(dirname) / weight_pathname
+    header["WGHTPATH"] = new_weightpath.as_posix()
+
+    if SNCOSMO_KEY not in header.keys():
+        if header["FILTER"].lower() in ["y", "j", "h"]:
+            header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
+    return Image(data=data, header=header)
 
 
 def load_stacked_winter_image(

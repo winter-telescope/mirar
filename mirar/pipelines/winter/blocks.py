@@ -39,6 +39,7 @@ from mirar.pipelines.winter.generator import (
     winter_astrostat_catalog_purifier,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
+    winter_candidate_quality_filterer,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_photometric_catalog_generator,
@@ -55,6 +56,7 @@ from mirar.pipelines.winter.load_winter_image import (
     load_stacked_winter_image,
     load_test_winter_image,
     load_winter_mef_image,
+    load_winter_stack,
 )
 from mirar.pipelines.winter.models import (
     CANDIDATE_PREFIX,
@@ -103,6 +105,8 @@ from mirar.processors.mask import (  # MaskAboveThreshold,
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
+from mirar.processors.skyportal.client import SkyportalClient
+from mirar.processors.skyportal.skyportal_candidate import SkyportalCandidateUploader
 from mirar.processors.sources import (
     CandidateNamer,
     CustomSourceTableModifier,
@@ -443,7 +447,11 @@ photcal_and_export = [
 # Image subtraction
 
 load_stack = [
-    ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
+    ImageLoader(
+        input_sub_dir="final",
+        input_img_dir=base_output_dir,
+        load_image=load_winter_stack,
+    ),
 ]
 
 imsub = [
@@ -536,8 +544,22 @@ process_candidates = [
         broadcast=False,
         avro_schema_path=winter_avro_schema_path,
     ),
+    CustomSourceTableModifier(modifier_function=winter_candidate_quality_filterer),
+    SourceWriter(output_dir_name="preskyportal"),
 ]
 
+send_to_skyportal = [
+    SourceLoader(input_dir_name="preskyportal"),
+    SkyportalCandidateUploader(
+        origin="WINTERTEST",
+        group_ids=[1076],
+        fritz_filter_id=1016,
+        instrument_id=1066,
+        stream_id=1008,
+        update_thumbnails=True,
+        skyportal_client=SkyportalClient(base_url="https://preview.fritz.science/api/"),
+    ),
+]
 # To make a mosaic by stacking all boards
 stack_boards = [
     ImageBatcher([TARGET_KEY]),

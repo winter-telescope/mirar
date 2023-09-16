@@ -9,10 +9,11 @@ import matplotlib
 import numpy as np
 import pandas as pd
 import requests
+from astropy.time import Time
 
 from mirar.data import SourceBatch
 from mirar.data.utils import decode_img
-from mirar.paths import SOURCE_HISTORY_KEY, SOURCE_NAME_KEY
+from mirar.paths import SOURCE_HISTORY_KEY, SOURCE_NAME_KEY, TIME_KEY
 from mirar.processors.base_processor import BaseSourceProcessor
 from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.skyportal.thumbnail import make_thumbnail
@@ -37,13 +38,14 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         group_ids: list[int],
         instrument_id: int,
         update_thumbnails: bool = False,
+        skyportal_client: Optional[SkyportalClient] = SkyportalClient(),
     ):
         super().__init__()
         self.group_ids = group_ids
         self.instrument_id = instrument_id
         self.origin = origin  # used for sending updates to Fritz
         self.update_thumbnails = update_thumbnails
-        self.skyportal_client = SkyportalClient()
+        self.skyportal_client = skyportal_client
 
     def _apply_to_sources(
         self,
@@ -60,6 +62,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
             metadata = source_table.get_metadata()
 
+            candidate_df["mjd"] = Time(metadata[TIME_KEY]).mjd
             for _, src in candidate_df.iterrows():
                 super_dict = self.generate_super_dict(metadata, src)
                 self.export_to_skyportal(deepcopy(super_dict))
@@ -126,14 +129,14 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
         linear_stretch = alert_packet_type.lower() in ["difference"]
 
-        skyportal_thumbnal = make_thumbnail(
+        skyportal_thumbnail = make_thumbnail(
             image_data=decode_img(cutout_data),
             linear_stretch=linear_stretch,
         )
 
         thumbnail_dict = {
             "obj_id": source[SOURCE_NAME_KEY],
-            "data": skyportal_thumbnal,
+            "data": skyportal_thumbnail,
             "ttype": skyportal_type,
         }
 

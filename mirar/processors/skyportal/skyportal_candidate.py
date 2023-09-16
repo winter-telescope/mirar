@@ -75,6 +75,13 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             "chipsf": alert["chipsf"],
             "fwhm": alert["fwhm"],
             "scorr": alert["scorr"],
+            "nneg": alert["nneg"],
+            "mindtoedge": alert["mindtoedge"],
+            "diffmaglim": alert["diffmaglim"],
+            "distpsnr1": alert["distpsnr1"],
+            "sgmag1": alert["sgmag1"],
+            "srmag1": alert["srmag1"],
+            "simag1": alert["simag1"],
         }
         payload = {"origin": self.origin, "data": data, "group_ids": self.group_ids}
 
