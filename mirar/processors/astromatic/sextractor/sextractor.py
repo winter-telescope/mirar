@@ -19,6 +19,7 @@ from mirar.data.utils.coords import write_regions_file
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
+    PSFEX_CAT_KEY,
     get_output_dir,
     get_temp_path,
 )
@@ -69,8 +70,8 @@ class Sextractor(BaseImageProcessor):
     base_key = "sextractor"
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(
-        self,
+    def __init__(  # pylint: disable=too-many-locals
+        self,  # pylint: disable=too-many-instance-attributes
         output_sub_dir: str,
         config_path: str,
         parameter_path: str,
@@ -84,6 +85,7 @@ class Sextractor(BaseImageProcessor):
         cache: bool = False,
         mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
+        psf_name: Optional[str] = None,
         catalog_purifier: Callable[[Table, Image], Table] = None,
     ):
         """
@@ -121,6 +123,7 @@ class Sextractor(BaseImageProcessor):
         self.cache = cache
         self.mag_zp = mag_zp
         self.write_regions = write_regions_bool
+        self.psf_name = psf_name
         self.catalog_purifier = catalog_purifier
 
         if isinstance(self.checkimage_name, str):
@@ -142,10 +145,12 @@ class Sextractor(BaseImageProcessor):
         """
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
-    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+    def _apply_to_images(  # pylint: disable=too-many-locals
+        self, batch: ImageBatch
+    ) -> ImageBatch:
         sextractor_out_dir = self.get_sextractor_output_dir()
 
-        try:
+        try:  # pylint: disable=too-many-branches
             os.makedirs(sextractor_out_dir)
         except OSError:
             pass
@@ -179,6 +184,9 @@ class Sextractor(BaseImageProcessor):
                 weight_path = self.save_mask_image(image, temp_path)
                 temp_files.append(Path(weight_path))
 
+            if PSFEX_CAT_KEY in image.keys():
+                self.psf_name = Path(image[PSFEX_CAT_KEY])
+
             output_cat = sextractor_out_dir.joinpath(
                 image[BASE_NAME_KEY].replace(".fits", ".cat")
             )
@@ -204,6 +212,7 @@ class Sextractor(BaseImageProcessor):
                 checkimage_name=checkimage_name,
                 checkimage_type=self.checkimage_type,
                 gain=self.gain,
+                psf_name=self.psf_name,
                 catalog_name=output_cat,
             )
 
@@ -229,7 +238,7 @@ class Sextractor(BaseImageProcessor):
 
                 regions_path = output_cat.with_suffix(".reg")
 
-                write_regions_file(
+                write_regions_file(  # pylint: disable=duplicate-code
                     regions_path=regions_path,
                     x_coords=x_coords,
                     y_coords=y_coords,

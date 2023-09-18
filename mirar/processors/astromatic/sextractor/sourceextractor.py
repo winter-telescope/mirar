@@ -129,7 +129,7 @@ def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
         run_sextractor_single(img, output_dir, *args, **kwargs)
 
 
-def run_sextractor_single(
+def run_sextractor_single(  # pylint: disable=too-many-arguments
     img: str | Path,
     output_dir: str | Path,
     catalog_name: Optional[Path] = None,
@@ -145,14 +145,15 @@ def run_sextractor_single(
     gain: Optional[float] = None,
     mag_zp: Optional[float] = None,
     write_regions: bool = False,
-):
+    psf_name: Optional[Path] = None,
+):  # pylint: disable=too-many-locals
     """
     Function to run sextractor in single mode
     Args:
         img: The image to run sextractor on
         output_dir: The directory to output the catalog to
         catalog_name: The name of the catalog to output.
-        config:
+        config:  #TODO: fill these in.
         parameters_name:
         filter_name:
         starnnw_name:
@@ -164,6 +165,7 @@ def run_sextractor_single(
         gain: The gain to use for the catalog
         mag_zp: The magnitude zero point to use for the catalog
         write_regions: Whether to write ds9 regions for the objects in the catalog
+        psf_name: PSFex model path, used to calculate PSF magnitudes
     Returns:
 
     """
@@ -206,6 +208,8 @@ def run_sextractor_single(
     if mag_zp is not None:
         cmd += f" -MAG_ZEROPOINT {mag_zp}"
 
+    if psf_name is not None:
+        cmd += f" -PSF_NAME {psf_name}"
     try:
         execute(cmd, output_dir)
     except ExecutionError as exc:
@@ -229,7 +233,7 @@ def run_sextractor_single(
     return catalog_name, checkimage_name
 
 
-def run_sextractor_dual(
+def run_sextractor_dual(  # pylint: disable=too-many-arguments
     det_image: str,
     measure_image: str,
     output_dir: str | Path,
@@ -245,7 +249,7 @@ def run_sextractor_dual(
     checkimage_type: Optional[str | list] = None,
     gain: Optional[float] = None,
     mag_zp: Optional[float] = None,
-):
+):  # pylint: disable=too-many-locals
     """
     Run sextractor in the dual mode
     Args:
