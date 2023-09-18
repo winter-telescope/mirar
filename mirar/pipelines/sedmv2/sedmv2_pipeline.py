@@ -17,6 +17,7 @@ from mirar.pipelines.sedmv2.blocks import (
     process_stellar,
     process_transient,
     transient_phot,
+    transient_phot_psfexsex,
     upload_fritz,
 )
 from mirar.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
@@ -46,6 +47,7 @@ class SEDMv2Pipeline(Pipeline):
         + transient_phot
         + upload_fritz,
         "all_phot": load_raw + process_all,
+        "transient_PSF": load_raw + process_transient + transient_phot_psfexsex,
     }
 
     @staticmethod

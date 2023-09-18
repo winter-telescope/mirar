@@ -68,7 +68,6 @@ class Sextractor(BaseImageProcessor):
     """
 
     base_key = "sextractor"
-    # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-locals
         self,  # pylint: disable=too-many-instance-attributes
@@ -145,12 +144,44 @@ class Sextractor(BaseImageProcessor):
         """
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
+    def check_psf_prerequisite(self):
+        """
+        Check that the PSF-related parameters are in the given .param file
+        """
+        sextractor_param_path = self.parameters_name
+        required_psf_params = ["MAG_PSF", "MAGERR_PSF"]
+
+        logger.debug(
+            f"Sextractor is using a PSFex model to solve for PSF magnitudes, "
+            f"Checking file {sextractor_param_path} for "
+            f"required params {required_psf_params}"
+        )
+
+        with open(sextractor_param_path, "rb") as param_file:
+            sextractor_params = [
+                x.strip().decode() for x in param_file.readlines() if len(x.strip()) > 0
+            ]
+            sextractor_params = [
+                x.split("(")[0] for x in sextractor_params if x[0] not in ["#"]
+            ]
+
+        for param in required_psf_params:
+            if param not in sextractor_params:
+                msg = (
+                    f"Missing parameter: {self.__module__} requires {param} "
+                    f"to save PSF magnitudes, but this parameter was not found in "
+                    f"sextractor config file '{sextractor_param_path}' . Please add "
+                    f"the parameter to this list, ideally in a new param file as so "
+                    f"not to conflict with earlier Sextractor runs."
+                )
+                logger.warning(msg)
+
     def _apply_to_images(  # pylint: disable=too-many-locals
         self, batch: ImageBatch
     ) -> ImageBatch:
         sextractor_out_dir = self.get_sextractor_output_dir()
 
-        try:  # pylint: disable=too-many-branches
+        try:
             os.makedirs(sextractor_out_dir)
         except OSError:
             pass
@@ -186,6 +217,7 @@ class Sextractor(BaseImageProcessor):
 
             if PSFEX_CAT_KEY in image.keys():
                 self.psf_name = Path(image[PSFEX_CAT_KEY])
+                self.check_psf_prerequisite()
 
             output_cat = sextractor_out_dir.joinpath(
                 image[BASE_NAME_KEY].replace(".fits", ".cat")
