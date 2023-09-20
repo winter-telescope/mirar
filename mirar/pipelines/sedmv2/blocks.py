@@ -216,7 +216,8 @@ transient_phot_psfexsex = [
         checkimage_type="BACKGROUND_RMS",
         **sextractor_PSF_photometry_config
     ),  # Sextractor-based PSF mags, saves to catalog
-    ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
+    SextractorSourceDetector(output_sub_dir="sources", target_only=True),
+    # ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
     # PSFPhotometry(),  # non-sextractor-based PSF mags, saves to sourcetable
     SourceWriter(output_dir_name="sourcetable"),
 ]
