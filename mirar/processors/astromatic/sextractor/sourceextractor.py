@@ -153,15 +153,17 @@ def run_sextractor_single(  # pylint: disable=too-many-arguments
         img: The image to run sextractor on
         output_dir: The directory to output the catalog to
         catalog_name: The name of the catalog to output.
-        config:  #TODO: fill these in.
-        parameters_name:
-        filter_name:
-        starnnw_name:
-        saturation:
-        weight_image:
-        verbose_type:
-        checkimage_name:
-        checkimage_type:
+        config:  path to sextractor config file
+        parameters_name: path to sextractor parameter file
+        filter_name: path to sextractor filter file
+        starnnw_name: path to sextractor starnnw file
+        saturation: saturation level for sextractor. Leave to None if not known,
+        no saturation will be applied
+        weight_image: path to sextractor weight image
+        verbose_type: verbose type for sextractor
+        checkimage_name: name of checkimage to output. Leave to None to use
+        pipeline defaults in sextractor_checkimage_map for output name (recommended).
+        checkimage_type: type of checkimage to output
         gain: The gain to use for the catalog
         mag_zp: The magnitude zero point to use for the catalog
         write_regions: Whether to write ds9 regions for the objects in the catalog

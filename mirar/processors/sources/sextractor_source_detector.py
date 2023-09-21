@@ -30,15 +30,15 @@ logger = logging.getLogger(__name__)
 
 def generate_candidates_table(
     image: Image,
-    sex_catalog_path: str | Path,
+    sextractor_catalog_path: str | Path,
     target_only: bool = True,
 ) -> pd.DataFrame:
     """
     Generate a candidates table from a sextractor catalog
-    :param sex_catalog_path: Path to the sextractor catalog
+    :param sextractor_catalog_path: Path to the sextractor catalog
     :return: Candidates table
     """
-    det_srcs = get_table_from_ldac(sex_catalog_path)
+    det_srcs = get_table_from_ldac(sextractor_catalog_path)
     logger.debug(f"Found {len(det_srcs)} sources in image.")
 
     multi_col_mask = [det_srcs.dtype[i].shape != () for i in range(len(det_srcs.dtype))]
@@ -74,17 +74,17 @@ def generate_candidates_table(
 
 def isolate_target(
     image: Image,
-    sex_catalog: astropy.table.Table,
+    sextractor_catalog: astropy.table.Table,
 ) -> astropy.table.Table:
     """
     Args:
         image: Image object containing the target source coordinates
-        sex_catalog: sextractor catalog as an astropy Table
+        sextractor_catalog: sextractor catalog as an astropy Table
     Returns: Table with len=1, the target source from the sextractor catalog
     """
     cat_coords = SkyCoord(
-        ra=sex_catalog["ALPHAWIN_J2000"],
-        dec=sex_catalog["DELTAWIN_J2000"],
+        ra=sextractor_catalog["ALPHAWIN_J2000"],
+        dec=sextractor_catalog["DELTAWIN_J2000"],
         unit=(u.deg, u.deg),
     )
     targ_coords = SkyCoord(
@@ -92,14 +92,14 @@ def isolate_target(
     )
 
     idx, _, __ = match_coordinates_sky(targ_coords, cat_coords)
-    matched_sex_catalog = sex_catalog[idx]
+    matched_sextractor_catalog = sextractor_catalog[idx]
 
     logger.debug(
         f"Found nearest neighbor source at "
-        f"{matched_sex_catalog['ALPHAWIN_J2000']}, "
-        f"{matched_sex_catalog['DELTAWIN_J2000']}"
+        f"{matched_sextractor_catalog['ALPHAWIN_J2000']}, "
+        f"{matched_sextractor_catalog['DELTAWIN_J2000']}"
     )
-    return astropy.table.Table(matched_sex_catalog)
+    return astropy.table.Table(matched_sextractor_catalog)
 
 
 class SextractorSourceDetector(BaseSourceGenerator):
@@ -114,6 +114,11 @@ class SextractorSourceDetector(BaseSourceGenerator):
         output_sub_dir: str = "sources",
         target_only: bool = True,
     ):
+        """
+        :param output_sub_dir: subdirectory to output files
+        :param target_only: whether the returned sourcetable should contain the
+        target source only (vs. all sources in the image)
+        """
         super().__init__()
         self.output_sub_dir = output_sub_dir
         self.target_only = target_only
@@ -135,7 +140,7 @@ class SextractorSourceDetector(BaseSourceGenerator):
         for image in batch:
             srcs_table = generate_candidates_table(
                 image=image,
-                sex_catalog_path=image[SEXTRACTOR_HEADER_KEY],
+                sextractor_catalog_path=image[SEXTRACTOR_HEADER_KEY],
                 target_only=self.target_only,
             )
 
