@@ -24,6 +24,13 @@ sextractor_photometry_config = {
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 
+sextractor_PSF_photometry_config = {
+    "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
+    "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
+    "parameter_path": os.path.join(astromatic_config_dir, "photomPSF.param"),
+    "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
+}
+
 sextractor_astrometry_config = {
     "config_path": os.path.join(astromatic_config_dir, "astrom.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),

@@ -15,10 +15,10 @@ from astropy.io import fits
 from astropy.table import Table
 
 from mirar.data import Image, ImageBatch
-from mirar.data.utils.coords import write_regions_file
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
+    PSFEX_CAT_KEY,
     get_output_dir,
     get_temp_path,
 )
@@ -67,10 +67,9 @@ class Sextractor(BaseImageProcessor):
     """
 
     base_key = "sextractor"
-    # pylint: disable=too-many-instance-attributes
 
-    def __init__(
-        self,
+    def __init__(  # pylint: disable=too-many-locals
+        self,  # pylint: disable=too-many-instance-attributes
         output_sub_dir: str,
         config_path: str,
         parameter_path: str,
@@ -84,6 +83,7 @@ class Sextractor(BaseImageProcessor):
         cache: bool = False,
         mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
+        psf_name: Optional[str] = None,
         catalog_purifier: Callable[[Table, Image], Table] = None,
     ):
         """
@@ -121,6 +121,7 @@ class Sextractor(BaseImageProcessor):
         self.cache = cache
         self.mag_zp = mag_zp
         self.write_regions = write_regions_bool
+        self.psf_name = psf_name
         self.catalog_purifier = catalog_purifier
 
         if isinstance(self.checkimage_name, str):
@@ -142,7 +143,41 @@ class Sextractor(BaseImageProcessor):
         """
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
-    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+    def check_psf_prerequisite(self):
+        """
+        Check that the PSF-related parameters are in the given .param file
+        """
+        sextractor_param_path = self.parameters_name
+        required_psf_params = ["MAG_PSF", "MAGERR_PSF"]
+
+        logger.debug(
+            f"Sextractor is using a PSFex model to solve for PSF magnitudes, "
+            f"Checking file {sextractor_param_path} for "
+            f"required params {required_psf_params}"
+        )
+
+        with open(sextractor_param_path, "rb") as param_file:
+            sextractor_params = [
+                x.strip().decode() for x in param_file.readlines() if len(x.strip()) > 0
+            ]
+            sextractor_params = [
+                x.split("(")[0] for x in sextractor_params if x[0] not in ["#"]
+            ]
+
+        for param in required_psf_params:
+            if param not in sextractor_params:
+                msg = (
+                    f"Missing parameter: {self.__module__} requires {param} "
+                    f"to save PSF magnitudes, but this parameter was not found in "
+                    f"sextractor config file '{sextractor_param_path}' . Please add "
+                    f"the parameter to this list, ideally in a new param file as so "
+                    f"not to conflict with earlier Sextractor runs."
+                )
+                logger.warning(msg)
+
+    def _apply_to_images(  # pylint: disable=too-many-locals
+        self, batch: ImageBatch
+    ) -> ImageBatch:
         sextractor_out_dir = self.get_sextractor_output_dir()
 
         try:
@@ -179,6 +214,10 @@ class Sextractor(BaseImageProcessor):
                 weight_path = self.save_mask_image(image, temp_path)
                 temp_files.append(Path(weight_path))
 
+            if PSFEX_CAT_KEY in image.keys():
+                self.psf_name = Path(image[PSFEX_CAT_KEY])
+                self.check_psf_prerequisite()
+
             output_cat = sextractor_out_dir.joinpath(
                 image[BASE_NAME_KEY].replace(".fits", ".cat")
             )
@@ -204,6 +243,7 @@ class Sextractor(BaseImageProcessor):
                 checkimage_name=checkimage_name,
                 checkimage_type=self.checkimage_type,
                 gain=self.gain,
+                psf_name=self.psf_name,
                 catalog_name=output_cat,
             )
 
@@ -220,22 +260,6 @@ class Sextractor(BaseImageProcessor):
                 with fits.open(output_cat, memmap=False) as hdul:
                     clean_hdulist = fits.HDUList([hdul[0], hdul[1], clean_hdu[2]])
                     clean_hdulist.writeto(output_cat, overwrite=True)
-
-            if self.write_regions:
-                output_catalog = get_table_from_ldac(output_cat)
-
-                x_coords = output_catalog["X_IMAGE"]
-                y_coords = output_catalog["Y_IMAGE"]
-
-                regions_path = output_cat.with_suffix(".reg")
-
-                write_regions_file(
-                    regions_path=regions_path,
-                    x_coords=x_coords,
-                    y_coords=y_coords,
-                    system="image",
-                    region_radius=5,
-                )
 
             image[SEXTRACTOR_HEADER_KEY] = sextractor_out_dir.joinpath(
                 output_cat
