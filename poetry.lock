@@ -378,12 +378,12 @@ wrapt = [
 
 [[package]]
 name = "astroplan"
-version = "0.9"
+version = "0.9.1"
 description = "Observation planning package for astronomers"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "astroplan-0.9.tar.gz", hash = "sha256:257d3026ac0c66fadf0878d03b0585416b1c0af48bba39761df297a07d124ae8"},
+    {file = "astroplan-0.9.1.tar.gz", hash = "sha256:d98c5ea58f6131de391aa66c78e0b4d77649359b29dbc8fdee9385e0408c2f4b"},
 ]
 
 [package.dependencies]
