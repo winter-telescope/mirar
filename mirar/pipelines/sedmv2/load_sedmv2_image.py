@@ -102,27 +102,38 @@ def clean_science_header(  # pylint: disable=too-many-branches
 
 
 def clean_cal_header(
-    hdr0: fits.Header, hdr1: fits.Header, filepath
+    hdr0: fits.Header,
+    split_headers: list[fits.Header],
+    filepath,
+    is_mode0: bool,
 ) -> tuple[fits.Header, list[fits.Header]]:
     """
-    function to modify the primary header of an SEDMv2 calibration file (flat or bias)
+    function to modify the primary header of an SEDMv2 calibration file
+    (flat or bias or dark)
     :param hdr0: original primary header of calibration file
     :param hdr1: original secondary header of calibration file
     :return: modified headers
     """
 
-    hdr0[OBSCLASS_KEY] = hdr1["IMGTYPE"].lower()
-    hdr0["IMGTYPE"] = hdr1["IMGTYPE"]
+    hdr1 = split_headers[0]
+    if is_mode0:
+        imgtype_hdr = hdr1
+    else:
+        imgtype_hdr = hdr0
+    if imgtype_hdr["IMGTYPE"] == "unknown":  # ask Reed to fix this!!!!!
+        imgtype_hdr["IMGTYPE"] = "dark"
+    hdr0[OBSCLASS_KEY] = imgtype_hdr["IMGTYPE"].lower()
+    hdr0["IMGTYPE"] = imgtype_hdr["IMGTYPE"]
     hdr0[TARGET_KEY] = hdr0[OBSCLASS_KEY]
 
     # flat/bias-specific keys
     if hdr0["IMGTYPE"] == "flat":
         filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
         hdr0["FILTERID"] = filt
-        hdr0["FILTER"] = filt  # f"SDSS {filt}'"  #f"SDSS {filt}' (Chroma)"
-    if hdr0["IMGTYPE"] == "bias":
-        hdr0["FILTER"] = "g"  # arbitrary filter for bias
-        hdr0["FILTERID"] = "g"  # arbitrary filter for bias
+        hdr0["FILTER"] = filt
+    if hdr0["IMGTYPE"] in ["bias", "dark"]:
+        hdr0["FILTER"] = "g"  # arbitrary filter for bias or dark
+        hdr0["FILTERID"] = "g"  # arbitrary filter for bias or dark
 
     hdr0["SOURCE"] = "None"
     hdr0["COADDS"] = 1
@@ -156,12 +167,13 @@ def clean_cal_header(
     ]  # can these be changed? shortened?
 
     if EXPTIME_KEY not in hdr1:
-        hdr1[EXPTIME_KEY] = hdr1["EXPOSURE"]
+        hdr1[EXPTIME_KEY] = imgtype_hdr["EXPOSURE"]
+        hdr0[EXPTIME_KEY] = imgtype_hdr["EXPOSURE"]
 
     for count, key in enumerate(req_headers):
         hdr0[key] = default_vals[count]
 
-    return hdr0, [hdr1]
+    return hdr0, split_headers
 
 
 def load_raw_sedmv2_mef(
@@ -172,7 +184,7 @@ def load_raw_sedmv2_mef(
     """
 
     sedmv2_ignore_files = [
-        "dark",
+        # "dark",
         "sedm2",
         "speccal",
     ]
@@ -197,10 +209,15 @@ def load_raw_sedmv2_mef(
             split_data = split_data[1:]
             split_headers = split_headers[1:]
         header, split_headers = clean_science_header(header, split_headers, is_mode0)
-    elif check_header["IMGTYPE"] in ["flat", "bias"]:
-        header, split_headers = clean_cal_header(header, split_headers[0], path)
+    elif check_header["IMGTYPE"] in [
+        "flat",
+        "bias",
+        "dark",
+        "unknown",
+    ]:  # ask Reed to name these darks
+        header, split_headers = clean_cal_header(header, split_headers, path, is_mode0)
     else:
-        logger.debug("Unexpected IMGTYPE. Is this a dark?")
+        logger.debug("Unexpected IMGTYPE.")
 
     header[BASE_NAME_KEY] = os.path.basename(path)
     header[RAW_IMG_KEY] = path

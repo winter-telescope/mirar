@@ -27,6 +27,7 @@ from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.csvlog import CSVLog
+from mirar.processors.dark import DarkCalibrator
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
@@ -274,13 +275,15 @@ imsub = subtract  # + export_diff_to_db + extract_candidates
 
 
 detrend_only = [
+    # ImageSelector((OBSCLASS_KEY, ["science"])),
     MaskPixelsFromPath(mask_path=sedmv2_mask_path),
-    BiasCalibrator(),
+    DarkCalibrator(),
+    # BiasCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
     ImageBatcher(
         split_key="filterid"
     ),  # maybe change back to filter after revising load func
-    FlatCalibrator(),
+    # FlatCalibrator(),
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector((OBSCLASS_KEY, ["science"])),  # pylint: disable=duplicate-code
     ImageSaver(output_dir_name="detrend", write_mask=True),
