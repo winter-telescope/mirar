@@ -110,7 +110,7 @@ jobs:
           KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
         run: |
-          TESTDATA_CHECK="True" poetry run coverage run -m unittest tests/test_winter_pipeline.py
+          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
 
       - name: Run Coveralls
         if: ${{ success() }}
