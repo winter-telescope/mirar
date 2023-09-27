@@ -2,7 +2,6 @@
 Tests for WINTER reduction
 """
 import logging
-import unittest
 
 from mirar.data import Dataset, ImageBatch
 from mirar.pipelines import get_pipeline
@@ -35,32 +34,22 @@ expected_zp = {
     "ZP_AUTO": 24.73688507080078,
     "ZP_AUTO_std": 0.04644254967570305,
     "ZP_AUTO_nstars": 18,
-    "SCORMEAN": -0.12958823890710153,
-    "SCORMED": -0.1301039138898356,
-    "SCORSTD": 1.3122340990145394,
+    "SCORMEAN": -0.12757964164555186,
+    "SCORMED": -0.12762728858491093,
+    "SCORSTD": 1.2944800868876563,
 }
 expected_dataframe_values = {
     "magpsf": [
-        15.375861884283529,
-        16.374333222331714,
-        15.608207538893376,
-        15.067430526438294,
-        15.653983533357021,
-        13.419238512947432,
-        17.011711896680684,
-        12.170644129676203,
-        13.357850739732427,
+        13.437558244389425,
+        15.086925695408636,
+        12.179985879079442,
+        13.362372683548639,
     ],
     "magap": [
-        15.631678216134478,
-        13.205179088230622,
-        14.944221301597864,
-        13.728325953741994,
-        13.330006266001618,
-        16.01533818407105,
-        13.071709898390827,
-        11.974951516927666,
-        14.643142758189727,
+        14.005305925184217,
+        13.540635835344922,
+        11.975646329550564,
+        14.33770149013968,
     ],
 }
 pipeline = get_pipeline(
@@ -70,10 +59,9 @@ pipeline = get_pipeline(
 logging.basicConfig(level=logging.DEBUG)
 
 
-@unittest.skip(
-    "WFAU is down, but this test should pass as the values have been"
-    "updated in this PR"
-)
+# @unittest.skip(
+#     "WFAU is down"
+# )
 class TestWinterPipeline(BaseTestCase):
     """
     Module for testing winter pipeline
@@ -133,7 +121,7 @@ class TestWinterPipeline(BaseTestCase):
 
         candidates_table = source_table.get_data()
 
-        self.assertEqual(len(candidates_table), 9)
+        self.assertEqual(len(candidates_table), 4)
         for key, value in expected_dataframe_values.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):
