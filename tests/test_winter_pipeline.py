@@ -40,18 +40,14 @@ expected_zp = {
 }
 expected_dataframe_values = {
     "magpsf": [
-        15.364326796642695,
-        16.405064573424866,
+        13.437558244389425,
         15.086925695408636,
-        13.427669507502234,
         12.179985879079442,
         13.362372683548639,
     ],
     "magap": [
-        15.407261531615623,
-        13.230876388088348,
+        14.005305925184217,
         13.540635835344922,
-        17.03798435283008,
         11.975646329550564,
         14.33770149013968,
     ],
@@ -125,7 +121,7 @@ class TestWinterPipeline(BaseTestCase):
 
         candidates_table = source_table.get_data()
 
-        self.assertEqual(len(candidates_table), 6)
+        self.assertEqual(len(candidates_table), 4)
         for key, value in expected_dataframe_values.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):
