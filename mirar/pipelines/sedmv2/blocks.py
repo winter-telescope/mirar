@@ -10,6 +10,7 @@ from mirar.pipelines.sedmv2.config import (  # sextractor_reference_config,
     sedmv2_mask_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
+    sextractor_PSF_photometry_config,
     swarp_config_path,
 )
 from mirar.pipelines.sedmv2.config.constants import SEDMV2_PIXEL_SCALE
@@ -205,32 +206,19 @@ transient_phot = [
     PSFex(config_path=psfex_config_path, norm_fits=True),
     ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
     PSFPhotometry(),
-    # AperturePhotometry(  # arguments from Ben's blocks
-    #        aper_diameters=[
-    #            2 / SEDMV2_PIXEL_SCALE,
-    #            3 / SEDMV2_PIXEL_SCALE,
-    #            4 / SEDMV2_PIXEL_SCALE,
-    #            5 / SEDMV2_PIXEL_SCALE,
-    #            10 / SEDMV2_PIXEL_SCALE,
-    #        ],
-    #        bkg_in_diameters=[
-    #            2.5 / SEDMV2_PIXEL_SCALE,
-    #            3.5 / SEDMV2_PIXEL_SCALE,
-    #            4.5 / SEDMV2_PIXEL_SCALE,
-    #            5.5 / SEDMV2_PIXEL_SCALE,
-    #            10.5 / SEDMV2_PIXEL_SCALE,
-    #        ],
-    #        bkg_out_diameters=[
-    #           5.5 / SEDMV2_PIXEL_SCALE,
-    #           8.6 / SEDMV2_PIXEL_SCALE,
-    #            9.5 / SEDMV2_PIXEL_SCALE,
-    #            10.6 / SEDMV2_PIXEL_SCALE,
-    #            15.6 / SEDMV2_PIXEL_SCALE,
-    #        ],
-    #        col_suffix_list=["2", "3", "4", "5", "10"],
-    #        #phot_cutout_size=100,
-    #        zp_key="ZP_AUTO",
-    #    ),
+    SourceWriter(output_dir_name="sourcetable"),
+]
+
+transient_phot_psfexsex = [
+    PSFex(config_path=psfex_config_path, norm_fits=True),
+    Sextractor(
+        output_sub_dir="photprocess",
+        checkimage_type="BACKGROUND_RMS",
+        **sextractor_PSF_photometry_config
+    ),  # Sextractor-based PSF mags, saves to catalog
+    SextractorSourceDetector(output_sub_dir="sources", target_only=True),
+    # ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
+    # PSFPhotometry(),  # non-sextractor-based PSF mags, saves to sourcetable
     SourceWriter(output_dir_name="sourcetable"),
 ]
 
