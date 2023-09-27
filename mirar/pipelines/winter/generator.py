@@ -478,10 +478,15 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
     for source in source_table:
         src_df = source.get_data()
         mask = (
-            (src_df["fracmasked"] < 0.5)
-            & (src_df["scorr"] > 10)
-            & (src_df["nneg"] < 12)
+            (src_df["nbad"] < 2)
+            & (src_df["chipsf"] < 3.0)
+            & (src_df["sumrat"] > 0.7)
+            & (src_df["fwhm"] < 10.0)
+            & (src_df["magdiff"] < 1.6)
+            & (src_df["magdiff"] > -1.0)
+            & (src_df["mindtoedge"] > 50.0)
         )
+
         filtered_df = src_df[mask].reset_index(drop=True)
         source.set_data(filtered_df)
         new_batch.append(source)
