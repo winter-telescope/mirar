@@ -2,7 +2,6 @@
 Tests for WINTER reduction
 """
 import logging
-import unittest
 
 from mirar.data import Dataset, ImageBatch
 from mirar.pipelines import get_pipeline
@@ -70,10 +69,9 @@ pipeline = get_pipeline(
 logging.basicConfig(level=logging.DEBUG)
 
 
-@unittest.skip(
-    "WFAU is down, but this test should pass as the values have been"
-    "updated in this PR"
-)
+# @unittest.skip(
+#     "WFAU is down"
+# )
 class TestWinterPipeline(BaseTestCase):
     """
     Module for testing winter pipeline
