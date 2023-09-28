@@ -93,7 +93,10 @@ from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
-load_stack = [ImageLoader(input_sub_dir="stack", load_image=load_raw_wirc_image)]
+load_stack = [
+    ImageLoader(input_sub_dir="stack", load_image=load_raw_wirc_image),
+    ImageBatcher("DATE-OBS"),
+]
 # load_raw = [ImageLoader(input_sub_dir="firstpassstack",
 # load_image=load_raw_wirc_image)]
 
