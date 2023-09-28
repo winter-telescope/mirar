@@ -22,6 +22,7 @@ from mirar.pipelines.wirc.generator import (
     wirc_reference_psfex,
     wirc_reference_sextractor,
     wirc_source_table_filter_annotator,
+    wirc_ukirt_reference_generator,
     wirc_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
@@ -92,6 +93,7 @@ from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
+load_stack = [ImageLoader(input_sub_dir="stack", load_image=load_raw_wirc_image)]
 # load_raw = [ImageLoader(input_sub_dir="firstpassstack",
 # load_image=load_raw_wirc_image)]
 
@@ -184,6 +186,15 @@ reduce = log + masking + dark_calibration + reduction
 reference = [
     ProcessReference(
         ref_image_generator=wirc_reference_image_generator,
+        swarp_resampler=wirc_reference_image_resampler,
+        sextractor=wirc_reference_sextractor,
+        ref_psfex=wirc_reference_psfex,
+    )
+]
+
+ukirtreference = [
+    ProcessReference(
+        ref_image_generator=wirc_ukirt_reference_generator,
         swarp_resampler=wirc_reference_image_resampler,
         sextractor=wirc_reference_sextractor,
         ref_psfex=wirc_reference_psfex,
@@ -296,3 +307,4 @@ package_candidates = [
 
 candidates = detect_candidates + process_candidates + package_candidates
 imsub = reference + subtract + candidates
+ukirt_imsub = ukirtreference + subtract
