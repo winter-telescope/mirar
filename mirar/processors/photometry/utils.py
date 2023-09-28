@@ -54,7 +54,7 @@ def make_cutouts(
             cutout = np.pad(cutout, ((0, n_ypix), (0, n_xpix)), "constant")
 
         elif y < half_size:
-            logger.info(
+            logger.debug(
                 f"Cutout parameters are {y + half_size + 1}, {x - half_size},"
                 f" {x + half_size + 1},{y_image_size},"
                 f"{x_image_size}"

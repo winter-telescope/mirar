@@ -38,7 +38,7 @@ class XMatch(BaseSourceProcessor):
             query_names = np.array([f"q{x}" for x in np.arange(len(ras))])
 
             catalog = self.catalog
-            logger.info(f"Querying {catalog.catalog_name} for {len(ras)} sources.")
+            logger.debug(f"Querying {catalog.catalog_name} for {len(ras)} sources.")
             query_coords = {
                 f"{query_names[ind]}": [ras[ind], decs[ind]] for ind in range(len(ras))
             }
