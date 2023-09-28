@@ -18,7 +18,7 @@ imgtype_dict = {
 }
 
 NXSPLIT = 1
-NYSPLIT = 2
+NYSPLIT = 1
 
 WINTER_N_BOARDS = 6
 
