@@ -202,8 +202,8 @@ class WFAUQuery(BaseWFCAMQuery):
         self.query_db_table = query_db_table
         self.use_db_for_component_queries = use_db_for_component_queries
         self.skip_online_query = skip_online_query
-        self.dbexporter = DatabaseImageInserter(db_table=self.query_db_table)
 
+        self.dbexporter = None
         if self.use_db_for_component_queries:
             if self.components_db_table is None:
                 raise ValueError(
@@ -215,6 +215,7 @@ class WFAUQuery(BaseWFCAMQuery):
                     "query_table must be provided if check_local_database is True"
                 )
 
+            self.dbexporter = DatabaseImageInserter(db_table=self.query_db_table)
             required_components_db_keys = [
                 MULTIFRAME_ID_KEY.lower(),
                 EXTENSION_ID_KEY.lower(),
