@@ -405,13 +405,13 @@ stack_dithers = [
         header_keys_to_combine=["RAWID"],
     ),
     ImageSaver(output_dir_name="stack"),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    CustomImageBatchModifier(masked_images_rejector),
 ]
 
 photcal_and_export = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
         **sextractor_photometry_config,
         output_sub_dir="phot",
@@ -446,7 +446,7 @@ photcal_and_export = [
 
 # Image subtraction
 
-load_stack = [
+load_final_stack = [
     ImageLoader(
         input_sub_dir="final",
         input_img_dir=base_output_dir,
@@ -575,7 +575,7 @@ stack_boards = [
     ImageSaver(output_dir_name="mosaic"),
 ]
 
-mosaic = load_stack + stack_boards
+mosaic = load_final_stack + stack_boards
 
 
 # To make cals for focusing
@@ -602,7 +602,11 @@ full_reduction = (
 )
 
 photcal_stacks = [
-    ImageLoader(input_sub_dir="stack", input_img_dir=base_output_dir)
+    ImageLoader(
+        input_sub_dir="stack",
+        input_img_dir=base_output_dir,
+        load_image=load_winter_stack,
+    ),
 ] + photcal_and_export
 
 reduce_unpacked = load_unpacked + full_reduction
