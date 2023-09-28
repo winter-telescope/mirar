@@ -225,13 +225,13 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 2
+BOARD_ID = 4
 select_subset = [
     ImageSelector(
         # ("EXPTIME", "120.0"),
         # ("FIELDID", ["3944", "999999999", "6124"]),
         ("BOARD_ID", str(BOARD_ID)),
-        ("FILTER", ["dark", "J"]),
+        # ("FILTER", ["dark", "J"]),
     ),
 ]
 
@@ -343,8 +343,8 @@ astrometry = [
     # ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
-        scale_bounds=[15, 23],
-        scale_units="amw",
+        scale_bounds=[1.0, 1.3],
+        scale_units="app",
         use_sextractor=True,
         parity="neg",
         search_radius_deg=5.0,
