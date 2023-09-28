@@ -11,15 +11,22 @@ from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
 from mirar.data import Image, SourceBatch
+from mirar.paths import get_output_dir
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     sextractor_reference_config,
+    swarp_sp_path,
     wirc_file_dir,
 )
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
+from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
+from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 from mirar.references.wirc import WIRCRef
 
 logger = logging.getLogger(__name__)
+
+
+swarp_config_path = swarp_sp_path
 
 
 def wirc_source_table_filter_annotator(source_table: SourceBatch) -> SourceBatch:
@@ -128,7 +135,7 @@ def wirc_reference_image_resampler(**kwargs) -> Swarp:
         swarp_config_path=wirc_file_dir.joinpath("config.swarp"),
         cache=True,
         subtract_bkg=True,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -138,7 +145,7 @@ def wirc_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
         **sextractor_reference_config,
         gain=gain,
         output_sub_dir=output_sub_dir,
-        cache=True
+        cache=True,
     )
 
 
@@ -176,3 +183,58 @@ def wirc_zogy_catalogs_purifier(
         & (ref_catalog["SNR_WIN"] < 1000)
     )
     return good_sci_sources, good_ref_sources
+
+
+def wirc_wfau_component_image_stacker(**kwargs) -> Swarp:
+    """
+    Generates a resampler for reference images
+
+    :param kwargs: kwargs
+    :return: Swarp processor
+    """
+    return Swarp(
+        swarp_config_path=swarp_config_path,
+        cache=False,
+        include_scamp=False,
+        combine=True,
+        calculate_dims_in_swarp=True,
+        subtract_bkg=True,
+        center_type="ALL",
+        **kwargs,
+    )
+
+
+def wirc_ukirt_reference_generator(image: Image):
+    """
+    Generates a reference image for the winter data
+    Args:
+        db_table: Database table to search for existing image
+        image: Image
+
+    Returns:
+
+    """
+    components_image_dir = get_output_dir(
+        dir_root="components", sub_dir="wirc/references"
+    )
+    components_image_dir.mkdir(parents=True, exist_ok=True)
+
+    filtername = image["FILTER"]
+
+    ukirt_query = UKIRTOnlineQuery(
+        num_query_points=4,
+        filter_name=filtername,
+        use_db_for_component_queries=False,
+        skip_online_query=False,
+        component_image_subdir="wirc/references/components",
+    )
+    return WFCAMStackedRef(
+        filter_name=filtername,
+        wfcam_query=ukirt_query,
+        image_resampler_generator=wirc_wfau_component_image_stacker,
+        write_stacked_image=True,
+        write_stack_sub_dir="wirc/references/ref_stacks",
+        write_stack_to_db=False,
+        component_image_sub_dir="components",
+        references_base_subdir_name="wirc/references",
+    )
