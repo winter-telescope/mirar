@@ -179,6 +179,8 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["EXPMJD"] = header["MJD-OBS"]
     if header["FILTER"].lower() in ["y", "j", "h"]:
         header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
+
+    header["DITHGRP"] = int(header["DITHNUM"] <= 5)
     return header
 
 
