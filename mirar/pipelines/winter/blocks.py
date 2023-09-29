@@ -355,7 +355,9 @@ astrometry = [
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
-    ImageBatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
+    ImageBatcher(
+        [TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD", "DITHGRP"]
+    ),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -397,7 +399,7 @@ stack_dithers = [
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
-        include_scamp=False,
+        include_scamp=True,
         subtract_bkg=False,
         cache=False,
         center_type="ALL",
