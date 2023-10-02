@@ -3,7 +3,7 @@ Module for DBQueryConstraints to carefully specify postgres query constraints
 """
 import numpy as np
 
-POSTGRES_ACCEPTED_COMPARISONS = ["=", "<", ">", "<=", ">=", "between", "<>", "!="]
+POSTGRES_ACCEPTED_COMPARISONS = ["=", "<", ">", "<=", ">=", "between", "<>", "!=", "in"]
 
 
 class DBQueryConstraints:
@@ -69,6 +69,9 @@ class DBQueryConstraints:
             assert np.logical_and(
                 isinstance(accepted_values, tuple), len(accepted_values) == 2
             )
+
+        if comparison_type == "in":
+            assert isinstance(accepted_values, list)
 
         self.columns.append(column)
         self.accepted_values.append(accepted_values)
