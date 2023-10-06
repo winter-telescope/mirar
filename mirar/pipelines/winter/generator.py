@@ -614,14 +614,17 @@ def winter_fourier_filtered_image_generator(batch: ImageBatch) -> ImageBatch:
 
 def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
     """
-    Selects the flat for the winter data
+    Selects the flat for the winter data, get the top 250 images sorted by median counts
     """
-    flat_images = []
+    flat_images, medcounts = [], []
     for image in images:
         image["MEDCOUNT"] = np.nanmedian(image.get_data())
         if image["MEDCOUNT"] > 3000:
             flat_images.append(image)
+            medcounts.append(image["MEDCOUNT"])
 
+    sort_inds = np.argsort(medcounts)
+    flat_images = [flat_images[i] for i in sort_inds[::-1]][:250]
     flat_images = ImageBatch(flat_images)
 
     if len(flat_images) == 0:
