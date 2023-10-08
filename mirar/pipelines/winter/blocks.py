@@ -457,6 +457,8 @@ load_final_stack = [
 ]
 
 split_stack = [
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
     SwarpImageSplitter(swarp_config_path=swarp_config_path, n_x=2, n_y=1),
     ImageSaver(output_dir_name="split_stacks"),
 ]
