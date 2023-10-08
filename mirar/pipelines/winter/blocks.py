@@ -114,7 +114,7 @@ from mirar.processors.sources import (
     SourceWriter,
     ZOGYSourceDetector,
 )
-from mirar.processors.split import SUB_ID_KEY, SplitImage
+from mirar.processors.split import SUB_ID_KEY, SplitImage, SwarpImageSplitter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
@@ -454,6 +454,11 @@ load_final_stack = [
         input_img_dir=base_output_dir,
         load_image=load_winter_stack,
     ),
+]
+
+split_stack = [
+    SwarpImageSplitter(swarp_config_path=swarp_config_path, n_x=2, n_y=1),
+    ImageSaver(output_dir_name="split_stacks"),
 ]
 
 imsub = [

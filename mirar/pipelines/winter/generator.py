@@ -556,7 +556,7 @@ def winter_reference_generator(image: Image):
                 return RefFromPath(path=savepath, filter_name=filtername)
 
     ukirt_query = UKIRTOnlineQuery(
-        num_query_points=25,
+        num_query_points=16,
         filter_name=filtername,
         use_db_for_component_queries=True,
         components_db_table=RefComponent,
