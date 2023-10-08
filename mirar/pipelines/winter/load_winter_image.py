@@ -410,7 +410,7 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
 
         # Mask the outage to the right
         mask[145:, 1735:] = 1.0
-        mask[data > 40000] = 1.0
+        # mask[data > 40000] = 1.0
 
         # Mask random vertical strip
         mask[:, 1080:1085] = 1.0
