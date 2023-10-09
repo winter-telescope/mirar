@@ -138,7 +138,10 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["FILTER"] = header["FILTERID"]
     if header["FILTER"] == "Hs":
         header["FILTER"] = "H"
-    header["FID"] = int(winter_filters_map[header["FILTERID"]])
+    if header["FILTERID"] in winter_filters_map:
+        header["FID"] = int(winter_filters_map[header["FILTERID"]])
+    else:
+        header["FID"] = -99
 
     # Set default values if field details seem incorrect
     if "FIELDID" not in header.keys():
