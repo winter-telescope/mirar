@@ -294,15 +294,19 @@ def winter_ref_catalog_namer(image: Image, output_dir: Path) -> Path:
     Function to name the reference catalog to use for WINTER astrometry
     """
     output_dir.mkdir(exist_ok=True, parents=True)
+
+    dither_grp = ""
+    if "astrometric" in output_dir.as_posix():
+        dither_grp = image["DITHGRP"]
     if image["FIELDID"] != DEFAULT_FIELD:
         ref_cat_path = (
             output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}"
-            f"_{image['FILTER']}.ldac.cat"
+            f"_{dither_grp}_{image['FILTER']}.ldac.cat"
         )
     else:
         ref_cat_path = (
             output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}_"
-            f"{image['TARGNAME']}_{image[TIME_KEY]}"
+            f"_{dither_grp}_{image['TARGNAME']}_{image[TIME_KEY]}"
             f"_{image['FILTER']}.ldac.cat"
         )
     return ref_cat_path
