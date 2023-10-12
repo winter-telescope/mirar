@@ -248,7 +248,17 @@ def load_test_winter_image(
     :return: Image object
     """
     image = open_raw_image(path)
-    header = clean_header(image.header)
+    try:
+        header = clean_header(image.header)
+    except KeyError:
+        header = image.header
+        header[OBSCLASS_KEY] = "test"
+        header["COADDS"] = 1
+        header["CALSTEPS"] = ""
+        header["PROCFAIL"] = 1
+        header["RAWPATH"] = ""
+        header["BASENAME"] = os.path.basename(path)
+        header[TARGET_KEY] = "test"
     image.set_header(header)
     return image
 
