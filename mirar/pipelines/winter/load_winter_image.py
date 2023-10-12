@@ -275,6 +275,7 @@ def load_raw_winter_mef(
         primary_header["CALSTEPS"] = ""
         primary_header["PROCFAIL"] = 1
         primary_header[TARGET_KEY] = "test"
+        primary_header["UTCTIME"] = "2023-06-14T00:00:00"
         for field in core_fields:
             if field not in primary_header.keys():
                 primary_header[field] = -99
