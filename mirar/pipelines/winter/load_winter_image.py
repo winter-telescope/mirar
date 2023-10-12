@@ -248,17 +248,8 @@ def load_test_winter_image(
     :return: Image object
     """
     image = open_raw_image(path)
-    try:
-        header = clean_header(image.header)
-    except KeyError:
-        header = image.header
-        header[OBSCLASS_KEY] = "test"
-        header["COADDS"] = 1
-        header["CALSTEPS"] = ""
-        header["PROCFAIL"] = 1
-        header["RAWPATH"] = ""
-        header["BASENAME"] = os.path.basename(path)
-        header[TARGET_KEY] = "test"
+    header = clean_header(image.header)
+
     image.set_header(header)
     return image
 
@@ -274,8 +265,17 @@ def load_raw_winter_mef(
     """
     primary_header, split_data, split_headers = open_mef_fits(path)
 
-    primary_header = clean_header(primary_header)
-
+    try:
+        primary_header = clean_header(primary_header)
+    except KeyError:
+        logger.warning(f"Could not clean header for {path}, missing keywords")
+        primary_header[OBSCLASS_KEY] = "test"
+        primary_header["COADDS"] = 1
+        primary_header["CALSTEPS"] = ""
+        primary_header["PROCFAIL"] = 1
+        primary_header["RAWPATH"] = ""
+        primary_header["BASENAME"] = os.path.basename(path)
+        primary_header[TARGET_KEY] = "test"
     primary_header[BASE_NAME_KEY] = os.path.basename(path)
     primary_header[RAW_IMG_KEY] = path
 
