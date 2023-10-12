@@ -31,6 +31,7 @@ from mirar.paths import (
     RAW_IMG_KEY,
     SATURATE_KEY,
     TARGET_KEY,
+    core_fields,
 )
 from mirar.pipelines.winter.constants import (
     imgtype_dict,
@@ -273,9 +274,10 @@ def load_raw_winter_mef(
         primary_header["COADDS"] = 1
         primary_header["CALSTEPS"] = ""
         primary_header["PROCFAIL"] = 1
-        primary_header["RAWPATH"] = ""
-        primary_header["BASENAME"] = os.path.basename(path)
         primary_header[TARGET_KEY] = "test"
+        for field in core_fields:
+            if field not in primary_header.keys():
+                primary_header[field] = -99
     primary_header[BASE_NAME_KEY] = os.path.basename(path)
     primary_header[RAW_IMG_KEY] = path
 
