@@ -150,6 +150,7 @@ build_test = [
             "DECDEG",
             "T_ROIC",
             "FIELDID",
+            "FOCPOS",
         ]
     ),
     ImageSelector(
