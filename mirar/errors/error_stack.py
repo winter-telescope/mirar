@@ -134,3 +134,26 @@ class ErrorStack:
                 err_file.write(summary)
 
         return summary
+
+    def summarise_error_stack_tsv(self, output_path=None) -> str:
+        """
+        Returns a tsv summary of all ErrorReports in format
+        error_name, image_paths
+        :param output_path: Path to write summary in .csv format (optional)
+        :return: str
+        """
+        all_reports = self.get_all_reports()
+        error_names = [err.get_error_name() for err in all_reports]
+        error_paths = [err.contents for err in all_reports]
+        error_paths = [",".join(x) for x in error_paths]
+
+        tsv_summary = "error_name\timage_paths\n"
+        for name, paths in zip(error_names, error_paths):
+            tsv_summary += f"{name}\t{paths}\n"
+
+        if output_path is not None:
+            logger.error(f"Saving tracebacks of caught errors to {output_path}")
+            with open(output_path, "w", encoding="utf-8") as err_file:
+                err_file.write(tsv_summary)
+
+        return tsv_summary

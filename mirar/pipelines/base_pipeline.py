@@ -273,6 +273,9 @@ class Pipeline:
                     break
 
         err_stack.summarise_error_stack(output_path=output_error_path)
+        err_stack.summarise_error_stack_tsv(
+            output_path=output_error_path.with_suffix(".tsv")
+        )
         return dataset, err_stack
 
     def postprocess_configuration(
