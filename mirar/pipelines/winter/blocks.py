@@ -227,12 +227,14 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 0
+BOARD_ID = 4
 select_subset = [
     ImageSelector(
+        (TARGET_KEY, ["timed_requests_11_08_2023_18_1699498547.db_0", "dark"])
         # ("EXPTIME", "120.0"),
         # ("FIELDID", ["3944", "999999999", "6124"]),
-        ("BOARD_ID", str(BOARD_ID)),
+        # timed_requests_11_08_2023_18_1699498547.db_0
+        # ("BOARD_ID", str(BOARD_ID)),
         # ("FILTER", ["dark", "J"]),
     ),
 ]
