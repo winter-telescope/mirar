@@ -21,6 +21,7 @@ from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
+    FILTER_KEY,
     MAGLIM_KEY,
     OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
@@ -642,3 +643,25 @@ def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
             images, key=OBSCLASS_KEY, target_values="science"
         )
     return flat_images
+
+
+def winter_master_flat_path_generator(images: ImageBatch) -> Path:
+    """
+    Generates a master flat path for the winter data
+
+    :param images:
+    :return:
+    """
+    filters_list = [image[FILTER_KEY] for image in images]
+    filter = np.unique(filters_list)
+    assert len(filter) == 1, "More than one filter in batch"
+    filter = filter[0]
+    subdetid_list = [image[SUB_ID_KEY] for image in images]
+    subdetid = np.unique(subdetid_list)
+    assert len(subdetid) == 1, "More than one subdetid in batch"
+    subdetid = subdetid[0]
+
+    master_flat_dir = get_output_dir(dir_root="winter/master_calibrations/masterflats")
+
+    master_flat_path = master_flat_dir / f"master_flat_{filter}_{subdetid}.fits"
+    return master_flat_path

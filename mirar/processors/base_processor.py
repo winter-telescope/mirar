@@ -11,6 +11,7 @@ from abc import ABC
 from pathlib import Path
 from queue import Queue
 from threading import Thread
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -467,9 +468,11 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
     Processor with pre-made master image
     """
 
-    def __init__(self, master_image_path: str | Path, *args, **kwargs):
+    def __init__(
+        self, master_image_path_generator: Callable[[ImageBatch], Path], *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
-        self.master_image_path = Path(master_image_path)
+        self.master_image_path_generator = master_image_path_generator
 
     def get_cache_path(self, images: ImageBatch) -> Path:
         """
@@ -478,7 +481,7 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
         :param images: Images to process
         :return: Path to cached image
         """
-        return self.master_image_path
+        return self.master_image_path_generator(images)
 
 
 class BaseSourceGenerator(CleanupProcessor, ImageHandler, ABC):

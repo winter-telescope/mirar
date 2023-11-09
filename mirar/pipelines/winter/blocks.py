@@ -42,6 +42,7 @@ from mirar.pipelines.winter.generator import (
     winter_candidate_quality_filterer,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
+    winter_master_flat_path_generator,
     winter_photometric_catalog_generator,
     winter_photometric_ref_catalog_namer,
     winter_reference_generator,
@@ -97,7 +98,7 @@ from mirar.processors.database.database_selector import (
     DatabaseHistorySelector,
 )
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
-from mirar.processors.flat import FlatCalibrator
+from mirar.processors.flat import FlatCalibrator, MasterFlatCalibrator
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -320,9 +321,10 @@ flat_calibrate = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", "SUBCOORD"]),
     # SkyFlatCalibrator(cache_sub_dir="skycals"),
-    FlatCalibrator(
-        cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
-    ),
+    # FlatCalibrator(
+    #     cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
+    # ),
+    MasterFlatCalibrator(master_image_path_generator=winter_master_flat_path_generator),
     ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
