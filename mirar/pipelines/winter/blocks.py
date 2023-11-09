@@ -227,14 +227,14 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 4
+BOARD_ID = 2
 select_subset = [
     ImageSelector(
-        (TARGET_KEY, ["timed_requests_11_08_2023_18_1699498547.db_0", "dark"])
+        (TARGET_KEY, ["timed_requests_11_08_2023_18_1699498547.db_0", "dark"]),
+        ("BOARD_ID", str(BOARD_ID)),
         # ("EXPTIME", "120.0"),
         # ("FIELDID", ["3944", "999999999", "6124"]),
         # timed_requests_11_08_2023_18_1699498547.db_0
-        # ("BOARD_ID", str(BOARD_ID)),
         # ("FILTER", ["dark", "J"]),
     ),
 ]
@@ -323,10 +323,10 @@ flat_calibrate = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", "SUBCOORD"]),
     # SkyFlatCalibrator(cache_sub_dir="skycals"),
-    # FlatCalibrator(
-    #     cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
-    # ),
-    MasterFlatCalibrator(master_image_path_generator=winter_master_flat_path_generator),
+    FlatCalibrator(
+        cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
+    ),
+    # MasterFlatCalibrator(master_image_path_generator=winter_master_flat_path_generator),
     ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
