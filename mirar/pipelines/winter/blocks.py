@@ -231,7 +231,7 @@ BOARD_ID = 2
 select_subset = [
     ImageSelector(
         # (TARGET_KEY, ["timed_requests_11_09_2023_18_1699582760.db_0", "dark"]),
-        (TARGET_KEY, [" timed_requests_11_09_2023_19_1699585528.db_0", "dark"]),
+        (TARGET_KEY, ["timed_requests_11_09_2023_19_1699585528.db_0", "dark"]),
         # ("BOARD_ID", str(BOARD_ID)),
         # ("EXPTIME", "120.0"),
         # ("FIELDID", ["3944", "999999999", "6124"]),
@@ -305,7 +305,7 @@ load_unpacked = [
         ]
     ),
     ImageSelector(
-        (TARGET_KEY, [" timed_requests_11_09_2023_19_1699585528.db_0", "dark"]),
+        (TARGET_KEY, ["timed_requests_11_09_2023_19_1699585528.db_0", "dark"]),
     ),
 ]
 
