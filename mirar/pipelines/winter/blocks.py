@@ -230,7 +230,7 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 BOARD_ID = 2
 select_subset = [
     ImageSelector(
-        (TARGET_KEY, ["timed_requests_11_08_2023_18_1699498547.db_0", "dark"]),
+        (TARGET_KEY, ["timed_requests_11_09_2023_18_1699582760.db_0", "dark"]),
         ("BOARD_ID", str(BOARD_ID)),
         # ("EXPTIME", "120.0"),
         # ("FIELDID", ["3944", "999999999", "6124"]),
