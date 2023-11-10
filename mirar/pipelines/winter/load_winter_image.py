@@ -77,12 +77,10 @@ def clean_header(header: fits.Header) -> fits.Header:
         header[OBSCLASS_KEY] = "bias"
 
     if header["FILTERID"] == "dark":
-        if header[OBSCLASS_KEY] not in [
-            "dark",
-            "bias",
-            "test",
-        ]:
+        if header[OBSCLASS_KEY] not in ["dark", "bias", "test", "science"]:
             header[OBSCLASS_KEY] = "test"
+        else:
+            header[OBSCLASS_KEY] = "dark"
 
     # Discard pre-sunset, post-sunset darks
     if header[OBSCLASS_KEY] == "dark":
