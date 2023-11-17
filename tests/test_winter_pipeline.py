@@ -124,7 +124,3 @@ class TestWinterPipeline(BaseTestCase):
                     self.assertAlmostEqual(
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
-
-        # Cleanup - delete ouptut dir
-        output_dir = get_output_dir(dir_root="winter/20230726")
-        output_dir.rmdir()
