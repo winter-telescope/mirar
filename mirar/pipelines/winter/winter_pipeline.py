@@ -8,6 +8,7 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
+    astrometry,
     build_test,
     csvlog,
     detect_candidates,
@@ -51,6 +52,7 @@ class WINTERPipeline(Pipeline):
     default_cal_requirements = winter_cal_requirements
 
     all_pipeline_configurations = {
+        "astrometry": astrometry,
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
         "detrend_unpacked": detrend_unpacked,
