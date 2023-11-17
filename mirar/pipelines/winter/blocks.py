@@ -493,6 +493,9 @@ load_final_stack = [
         input_img_dir=base_output_dir,
         load_image=load_winter_stack,
     ),
+    ImageSelector(
+        (BASE_NAME_KEY, "WINTERcamera_20231102-104633-102_mef_2_0_0_stack.fits")
+    ),
 ]
 
 split_stack = [
