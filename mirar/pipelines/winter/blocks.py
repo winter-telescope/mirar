@@ -690,4 +690,4 @@ focus_cals = (
     + flat_calibrate
 )
 
-astrometry = load_calibrated + astrometry + validate_astrometry
+astrometry = load_calibrated + fourier_filter + astrometry + validate_astrometry
