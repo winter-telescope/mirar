@@ -185,8 +185,10 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["DITHGRP"] = int(header["DITHNUM"] <= 5)
     if "GAINCOLT" not in header.keys():
         header["GAINCOLT"] = "[]"
-    if "GAINROWT" not in header.keys():
-        header["GAINROWT"] = "[]"
+    if "GAINCOLB" not in header.keys():
+        header["GAINCOLB"] = "[]"
+    if "GAINROW" not in header.keys():
+        header["GAINROW"] = "[]"
     return header
 
 
