@@ -115,7 +115,7 @@ def write_regions_file(
         for ind, x in enumerate(x_coords):
             line = f"CIRCLE({x},{y_coords[ind]},{region_radius})"
             if text is not None:
-                line += f" # text={text[ind]}"
+                line += " # text={" + text[ind] + "}"
             regions_f.write(f"{line}\n")
 
 
