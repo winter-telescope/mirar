@@ -54,6 +54,7 @@ from mirar.processors.base_catalog_xmatch_processor import (
 from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
 from mirar.processors.utils.image_selector import select_from_images
+from mirar.references import PS1Ref
 from mirar.references.local import RefFromPath
 from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
@@ -541,46 +542,52 @@ def winter_reference_generator(image: Image):
     logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
 
     cache_ref_stack = False
-    if fieldid != DEFAULT_FIELD:
-        cache_ref_stack = True
-        constraints = DBQueryConstraints(
-            columns=["fieldid", SUB_ID_KEY.lower()],
-            accepted_values=[fieldid, subdetid],
+    if filtername in ["J", "H"]:
+        if fieldid != DEFAULT_FIELD:
+            cache_ref_stack = True
+            constraints = DBQueryConstraints(
+                columns=["fieldid", SUB_ID_KEY.lower()],
+                accepted_values=[fieldid, subdetid],
+            )
+
+            db_results = select_from_table(
+                db_constraints=constraints,
+                sql_table=RefStack.sql_model,
+                output_columns=["savepath"],
+            )
+
+            if len(db_results) > 0:
+                savepath = db_results["savepath"].iloc[0]
+                if os.path.exists(savepath):
+                    logger.debug(f"Found reference image in database: {savepath}")
+                    return RefFromPath(path=savepath, filter_name=filtername)
+
+        skip_online_query = filtername == "H"
+        ukirt_query = UKIRTOnlineQuery(
+            num_query_points=16,
+            filter_name=filtername,
+            use_db_for_component_queries=True,
+            components_db_table=RefComponent,
+            query_db_table=RefQuery,
+            skip_online_query=skip_online_query,
+            component_image_subdir="winter/references/components",
+        )
+        return WFCAMStackedRef(
+            filter_name=filtername,
+            wfcam_query=ukirt_query,
+            image_resampler_generator=winter_wfau_component_image_stacker,
+            write_stacked_image=cache_ref_stack,
+            write_stack_sub_dir="winter/references/ref_stacks",
+            write_stack_to_db=cache_ref_stack,
+            stacks_db_table=RefStack,
+            component_image_sub_dir="components",
+            references_base_subdir_name="winter/references",
+            stack_image_annotator=winter_reference_stack_annotator,
         )
 
-        db_results = select_from_table(
-            db_constraints=constraints,
-            sql_table=RefStack.sql_model,
-            output_columns=["savepath"],
-        )
-
-        if len(db_results) > 0:
-            savepath = db_results["savepath"].iloc[0]
-            if os.path.exists(savepath):
-                logger.debug(f"Found reference image in database: {savepath}")
-                return RefFromPath(path=savepath, filter_name=filtername)
-
-    ukirt_query = UKIRTOnlineQuery(
-        num_query_points=16,
-        filter_name=filtername,
-        use_db_for_component_queries=True,
-        components_db_table=RefComponent,
-        query_db_table=RefQuery,
-        skip_online_query=False,
-        component_image_subdir="winter/references/components",
-    )
-    return WFCAMStackedRef(
-        filter_name=filtername,
-        wfcam_query=ukirt_query,
-        image_resampler_generator=winter_wfau_component_image_stacker,
-        write_stacked_image=cache_ref_stack,
-        write_stack_sub_dir="winter/references/ref_stacks",
-        write_stack_to_db=cache_ref_stack,
-        stacks_db_table=RefStack,
-        component_image_sub_dir="components",
-        references_base_subdir_name="winter/references",
-        stack_image_annotator=winter_reference_stack_annotator,
-    )
+    # Use PS1 references for Y-band
+    logger.debug("Will query reference image from PS1")
+    return PS1Ref(filter_name=filtername)
 
 
 winter_history_deprecated_constraint = DBQueryConstraints(
@@ -653,9 +660,9 @@ def winter_master_flat_path_generator(images: ImageBatch) -> Path:
     :return:
     """
     filters_list = [image[FILTER_KEY] for image in images]
-    filter = np.unique(filters_list)
-    assert len(filter) == 1, "More than one filter in batch"
-    filter = filter[0]
+    image_filter = np.unique(filters_list)
+    assert len(image_filter) == 1, "More than one filter in batch"
+    image_filter = image_filter[0]
     subdetid_list = [image[SUB_ID_KEY] for image in images]
     subdetid = np.unique(subdetid_list)
     assert len(subdetid) == 1, "More than one subdetid in batch"
@@ -663,5 +670,5 @@ def winter_master_flat_path_generator(images: ImageBatch) -> Path:
 
     master_flat_dir = get_output_dir(dir_root="winter/master_calibrations/masterflats")
 
-    master_flat_path = master_flat_dir / f"master_flat_{filter}_{subdetid}.fits"
+    master_flat_path = master_flat_dir / f"master_flat_{image_filter}_{subdetid}.fits"
     return master_flat_path
