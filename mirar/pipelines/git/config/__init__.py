@@ -3,19 +3,16 @@ Module containing SEDMv2-specific paths
 """
 import os
 
-from mirar.pipelines.sedmv2.config.constants import (
+from mirar.pipelines.git.config.constants import (
     DB_NAME,
+    GIT_GAIN,
+    GIT_PIXEL_SCALE,
     PIPELINE_NAME,
-    SEDMV2_GAIN,
-    SEDMV2_PIXEL_SCALE,
 )
-from mirar.processors.utils.cal_hunter import CalRequirement
 
-sedmv2_dir = os.path.dirname(__file__)
+git_dir = os.path.dirname(__file__)
 
-astromatic_config_dir = os.path.join(sedmv2_dir, "files")
-sedmv2_mask_path = os.path.join(sedmv2_dir, "mask.fits")
-sedmv2_weight_path = os.path.join(sedmv2_dir, "weight.fits")
+astromatic_config_dir = os.path.join(git_dir, "files")
 
 sextractor_photometry_config = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
@@ -59,10 +56,4 @@ swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 
 psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
 
-sedmv2_cal_requirements = [
-    CalRequirement(
-        target_name="flat",
-        required_field="FILTERID",
-        required_values=["u", "g", "r", "i"],
-    ),
-]
+psfex_sci_config_path = os.path.join(astromatic_config_dir, "photom_sci.psfex")
