@@ -18,6 +18,7 @@ import numpy as np
 import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
 from astropy.io import fits
+from scipy.ndimage import shift
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,9 @@ def pyzogy(
     ref_data[ref_nanmask] = np.nanmedian(ref_data)
 
     logger.debug(f"Number of nans is  {np.sum(new_nanmask)}")
+
+    logger.debug(f"Shifting ref image by {dx}, {dy} pixels")
+    ref_data = shift(ref_data, (-dx, -dy))
 
     # Load the PSFs into memory
     with fits.open(new_psf_path) as img_psf_f:
