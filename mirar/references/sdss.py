@@ -9,10 +9,12 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astroquery.sdss import SDSS
 
-from mirar.catalog.vizier import NotInSDSSError, in_sdss
+# from mirar.catalog.vizier import NotInSDSSError, in_sdss
 from mirar.data import Image
 from mirar.references.base_reference_generator import BaseReferenceGenerator
 from mirar.references.errors import ReferenceImageError
+
+# import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +33,12 @@ class SDSSRef(BaseReferenceGenerator):
 
         wcs = WCS(header)
 
-        ra_cent, dec_cent = wcs.all_pix2world(nx, ny, 0)
+        ra_cent, dec_cent = wcs.all_pix2world(nx / 2, ny / 2, 0)
 
-        if not in_sdss(ra_deg=ra_cent, dec_deg=dec_cent):
-            err = "Image does not overlap SDSS"
-            logger.error(err)
-            raise NotInSDSSError(err)
+        # if not in_sdss(ra_deg=ra_cent, dec_deg=dec_cent):
+        #     err = "Image does not overlap SDSS"
+        #     logger.error(err)
+        #     raise NotInSDSSError(err)
 
         logger.debug(f"Querying SDSS image around {ra_cent},{dec_cent}")
 
