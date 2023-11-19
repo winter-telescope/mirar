@@ -39,16 +39,16 @@ expected_zp = {
 }
 
 
-def get_cal_path(images: ImageBatch) -> str:
+def get_cal_path(name: str) -> str:
     """
     Function to get cal path
     Args:
-        images:
+        name:
 
     Returns:
 
     """
-    return os.path.join(test_data_dir, "wirc/cals/test_dark.fits")
+    return os.path.join(test_data_dir, f"wirc/cals/test_{name}.fits")
 
 
 test_configuration = (
@@ -61,10 +61,7 @@ test_configuration = (
     ]
     + log
     + masking
-    + [
-        ImageSelector(("exptime", "45.0")),
-        MasterDarkCalibrator(master_image_path_generator=get_cal_path),
-    ]
+    + [ImageSelector(("exptime", "45.0")), MasterDarkCalibrator(get_cal_path("dark"))]
     + reduction
 )
 
