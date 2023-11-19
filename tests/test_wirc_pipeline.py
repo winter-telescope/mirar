@@ -3,9 +3,11 @@ Module to test WIRC pipeline
 """
 import logging
 import os
+import shutil
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.paths import get_output_dir
 from mirar.pipelines.wirc.blocks import log, masking, reduction
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
@@ -37,16 +39,16 @@ expected_zp = {
 }
 
 
-def get_cal_path(name: str) -> str:
+def get_cal_path(images: ImageBatch) -> str:
     """
     Function to get cal path
     Args:
-        name:
+        images:
 
     Returns:
 
     """
-    return os.path.join(test_data_dir, f"wirc/cals/test_{name}.fits")
+    return os.path.join(test_data_dir, "wirc/cals/test_dark.fits")
 
 
 test_configuration = (
@@ -59,7 +61,10 @@ test_configuration = (
     ]
     + log
     + masking
-    + [ImageSelector(("exptime", "45.0")), MasterDarkCalibrator(get_cal_path("dark"))]
+    + [
+        ImageSelector(("exptime", "45.0")),
+        MasterDarkCalibrator(master_image_path_generator=get_cal_path),
+    ]
     + reduction
 )
 
@@ -92,6 +97,10 @@ class TestWircPipeline(BaseTestCase):
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
+
+        # Cleanup
+        output_dir = get_output_dir("wirc/20210330")
+        shutil.rmtree(output_dir)
 
         header = res[0][0].get_header()
 

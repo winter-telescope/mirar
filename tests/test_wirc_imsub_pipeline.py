@@ -3,11 +3,13 @@ Tests for image subtraction with WIRC
 """
 import logging
 import os
+import shutil
 
 from astropy.io import fits
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.paths import get_output_dir
 from mirar.pipelines.wirc.blocks import candidates, subtract
 from mirar.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
@@ -169,3 +171,7 @@ class TestWircImsubPipeline(BaseTestCase):
                     self.assertAlmostEqual(
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
+
+        # Cleanup
+        output_dir = get_output_dir("wirc/20210330")
+        shutil.rmtree(output_dir)

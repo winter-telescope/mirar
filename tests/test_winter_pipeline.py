@@ -2,8 +2,10 @@
 Tests for WINTER reduction
 """
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
+from mirar.paths import get_output_dir
 from mirar.pipelines import get_pipeline
 from mirar.testing import BaseTestCase
 
@@ -85,6 +87,10 @@ class TestWinterPipeline(BaseTestCase):
         self.logger.info("\n\n Testing winter pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
+
+        # Cleanup - delete ouptut dir
+        output_dir = get_output_dir(dir_root="winter/20230726")
+        shutil.rmtree(output_dir)
 
         # Expect one dataset, for one different sub-boards
         self.assertEqual(len(res[0]), 1)

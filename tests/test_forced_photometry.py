@@ -2,10 +2,11 @@
 Tests forced photometry with a WIRC image
 """
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
-from mirar.paths import ZP_KEY, ZP_STD_KEY
+from mirar.paths import ZP_KEY, ZP_STD_KEY, get_output_dir
 from mirar.pipelines.wirc.blocks import (
     candidate_photometry,
     export_candidates_from_header,
@@ -81,6 +82,9 @@ class TestForcedPhot(BaseTestCase):
             dataset=Dataset(ImageBatch()), catch_all_errors=False
         )
         self.assertEqual(len(res), 1)
+        # Cleanup
+        output_dir = get_output_dir(f"wirc/{NIGHT_NAME}")
+        shutil.rmtree(output_dir)
 
         new = res[0][0]
 

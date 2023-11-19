@@ -2,9 +2,11 @@
 Module to test SEDMv2 pipeline with "default_stellar" configuration
 """
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.paths import get_output_dir
 from mirar.pipelines.sedmv2.blocks import image_photometry, process_stellar
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
@@ -138,6 +140,10 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
                     raise TypeError(
                         f"Type for value ({type(value)} is neither float not int."
                     )
+
+        # Cleanup
+        output_dir = get_output_dir("sedmv2/20230328")
+        shutil.rmtree(output_dir)
 
 
 if __name__ == "__main__":

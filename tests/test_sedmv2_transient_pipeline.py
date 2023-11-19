@@ -2,9 +2,11 @@
 Module to test SEDMv2 pipeline with "default_transient" configuration
 """
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.paths import get_output_dir
 from mirar.pipelines.sedmv2.blocks import process_transient
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
@@ -70,6 +72,10 @@ class TestSEDMv2TransientPipeline(BaseTestCase):
         self.logger.info("\n\n Testing SEDMv2 transient pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
+
+        # Cleanup
+        output_dir = get_output_dir("sedmv2/20230526")
+        shutil.rmtree(output_dir)
 
         self.assertEqual(len(res), 1)
 

@@ -2,8 +2,10 @@
 Module to test summer image subtraction pipeline
 """
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
+from mirar.paths import get_output_dir
 from mirar.pipelines.summer.summer_pipeline import SummerPipeline
 from mirar.testing import BaseTestCase
 
@@ -39,6 +41,10 @@ class TestSummerImsubPipeline(BaseTestCase):
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
+
+        # Cleanup
+        output_dir = get_output_dir("summer/20220815")
+        shutil.rmtree(output_dir)
 
         header = res[0][0].get_header()
 
