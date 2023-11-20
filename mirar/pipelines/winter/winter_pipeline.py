@@ -76,11 +76,7 @@ class WINTERPipeline(Pipeline):
         "only_ref": only_ref,
         "realtime": realtime,
         "detect_candidates": load_final_stack + imsub + detect_candidates,
-        "full_imsub": load_final_stack
-        + split_stack
-        + imsub
-        + detect_candidates
-        + process_candidates,
+        "full_imsub": load_final_stack + imsub + detect_candidates + process_candidates,
         "full": reduce + imsub + detect_candidates + process_candidates,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
