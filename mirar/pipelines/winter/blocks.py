@@ -21,7 +21,6 @@ from mirar.pipelines.winter.config import (
     prv_candidate_cols,
     psfex_path,
     scamp_config_path,
-    sextractor_anet_config,
     sextractor_astrometry_config,
     sextractor_astromstats_config,
     sextractor_candidate_config,
@@ -33,6 +32,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     select_winter_flat_images,
+    winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
@@ -42,7 +42,6 @@ from mirar.pipelines.winter.generator import (
     winter_candidate_quality_filterer,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
-    winter_master_flat_path_generator,
     winter_photometric_catalog_generator,
     winter_photometric_ref_catalog_namer,
     winter_reference_generator,
@@ -98,7 +97,7 @@ from mirar.processors.database.database_selector import (
     DatabaseHistorySelector,
 )
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
-from mirar.processors.flat import FlatCalibrator, MasterFlatCalibrator
+from mirar.processors.flat import FlatCalibrator
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -358,7 +357,6 @@ flat_calibrate = [
     FlatCalibrator(
         cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
     ),
-    # MasterFlatCalibrator(master_image_path_generator=winter_master_flat_path_generator),
     ImageSaver(output_dir_name="skyflatcal"),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
@@ -387,7 +385,7 @@ astrometry = [
         use_sextractor=True,
         parity="neg",
         search_radius_deg=5.0,
-        sextractor_config_path=sextractor_anet_config["config_path"],
+        sextractor_config_path=winter_anet_sextractor_config_path_generator,
         use_weight=True,
         timeout=120,
         cache=True,

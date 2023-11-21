@@ -33,6 +33,7 @@ from mirar.paths import (
 )
 from mirar.pipelines.winter.config import (
     psfex_path,
+    sextractor_anet_config,
     sextractor_reference_config,
     swarp_config_path,
 )
@@ -672,3 +673,13 @@ def winter_master_flat_path_generator(images: ImageBatch) -> Path:
 
     master_flat_path = master_flat_dir / f"master_flat_{image_filter}_{subdetid}.fits"
     return master_flat_path
+
+
+def winter_anet_sextractor_config_path_generator(image: Image) -> str:
+    """
+    Generates the sextractor config file path for the winter image
+    """
+    if image[SUB_ID_KEY] in [2, 6]:
+        return sextractor_anet_config["config_path_boardid_1_5"]
+
+    return sextractor_anet_config["config_path_boardid_0_2_3_4"]
