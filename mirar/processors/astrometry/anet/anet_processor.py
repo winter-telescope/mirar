@@ -3,7 +3,7 @@ Module containing a processor to run astrometry.net
 """
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from astropy.io import fits
 from astropy.table import Table
@@ -57,7 +57,7 @@ class AstrometryNet(BaseImageProcessor):
         sextractor_path: str = "sex",
         search_radius_deg: float = 5.0,
         parity: str | None = None,
-        sextractor_config_path: str | Path | None = None,
+        sextractor_config_path: str | Path | Callable[[Image], str] | None = None,
         sextractor_params_path: str | Path | None = None,
         sextractor_conv_path: str | Path | None = default_conv_path,
         sextractor_starnnw_path: str | Path | None = default_starnnw_path,
@@ -81,7 +81,8 @@ class AstrometryNet(BaseImageProcessor):
         :param sextractor_starnnw_path: path to sextractor starnnw file
         :param search_radius_deg: search radius in degrees
         :param parity: parity of the image, if known (e.g. "odd" or "even")
-        :param sextractor_config_path: path to sextractor config file, NOTE that you
+        :param sextractor_config_path: path to sextractor config file, or a function
+        that generates the config file path for a given image. NOTE that you
         cannot specify other config files (param, conv, nnw, etc.)to astrometry-net.
         Make sure to set the config file to use the correct filter, etc.
         :param x_image_key: key for x-image coordinate in sextractor catalog, defaults
@@ -145,10 +146,11 @@ class AstrometryNet(BaseImageProcessor):
         Setup sextractor config file
         """
         sextractor_temp_files = []
-        sextractor_config_path, sextractor_params_path = (
-            self.sextractor_config_path,
-            self.sextractor_params_path,
-        )
+        if isinstance(self.sextractor_config_path, Callable):
+            sextractor_config_path = self.sextractor_config_path(image)
+        else:
+            sextractor_config_path = self.sextractor_config_path
+        sextractor_params_path = self.sextractor_params_path
         anet_out_dir = self.get_anet_output_dir()
         if self.sextractor_config_path is not None:
             if self.sextractor_params_path is None:
@@ -166,9 +168,7 @@ class AstrometryNet(BaseImageProcessor):
                 assert (
                     sextractor_params_path.exists()
                 ), f"sextractor params file {sextractor_params_path} does not exist"
-            sextractor_config_dict = parse_sextractor_config(
-                self.sextractor_config_path
-            )
+            sextractor_config_dict = parse_sextractor_config(sextractor_config_path)
             sextractor_config_dict["PARAMETERS_NAME"] = sextractor_params_path
             sextractor_config_dict["FILTER_NAME"] = self.sextractor_conv_path
             sextractor_config_dict["STARNNW_NAME"] = self.sextractor_starnnw_path
