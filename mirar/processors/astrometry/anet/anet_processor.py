@@ -108,9 +108,8 @@ class AstrometryNet(BaseImageProcessor):
         self.y_image_key = y_image_key
         self.sort_key_name = sort_key_name
         self.use_weight = use_weight
-        self.sextractor_config_path = (
-            Path(sextractor_config_path) if sextractor_config_path is not None else None
-        )
+        if isinstance(sextractor_config_path, str):
+            self.sextractor_config_path = Path(sextractor_config_path)
         self.sextractor_params_path = (
             Path(sextractor_params_path) if sextractor_params_path is not None else None
         )
@@ -147,12 +146,12 @@ class AstrometryNet(BaseImageProcessor):
         """
         sextractor_temp_files = []
         if isinstance(self.sextractor_config_path, Callable):
-            sextractor_config_path = self.sextractor_config_path(image)
+            sextractor_config_path = Path(self.sextractor_config_path(image))
         else:
             sextractor_config_path = self.sextractor_config_path
         sextractor_params_path = self.sextractor_params_path
         anet_out_dir = self.get_anet_output_dir()
-        if self.sextractor_config_path is not None:
+        if sextractor_config_path is not None:
             if self.sextractor_params_path is None:
                 temp_params_path = get_temp_path(
                     anet_out_dir, f"{image[BASE_NAME_KEY]}_sex_anet" f".params"
