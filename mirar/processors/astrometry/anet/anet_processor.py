@@ -110,6 +110,8 @@ class AstrometryNet(BaseImageProcessor):
         self.use_weight = use_weight
         if isinstance(sextractor_config_path, str):
             self.sextractor_config_path = Path(sextractor_config_path)
+        else:
+            self.sextractor_config_path = sextractor_config_path
         self.sextractor_params_path = (
             Path(sextractor_params_path) if sextractor_params_path is not None else None
         )
