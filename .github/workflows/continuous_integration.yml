@@ -116,7 +116,7 @@ jobs:
         if: ${{ success() }}
         shell: bash -el {0}
         run: |
-          poetry run coveralls --service=github
+          poetry --no-ansi run coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

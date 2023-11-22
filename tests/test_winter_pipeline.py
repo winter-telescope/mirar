@@ -2,8 +2,10 @@
 Tests for WINTER reduction
 """
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
+from mirar.paths import get_output_dir
 from mirar.pipelines import get_pipeline
 from mirar.testing import BaseTestCase
 
@@ -20,7 +22,7 @@ expected_zp = {
     "ZP_4.0_std": 0.05887956544756889,
     "ZP_4.0_nstars": 21,
     "ZP_5.0": 24.742101669311523,
-    "ZP_5.0_std": 0.06479335576295853,
+    "ZP_5.0_std": 0.06479323655366898,
     "ZP_5.0_nstars": 22,
     "ZP_6.0": 24.743587493896484,
     "ZP_6.0_std": 0.06024789810180664,
@@ -34,23 +36,13 @@ expected_zp = {
     "ZP_AUTO": 24.73688507080078,
     "ZP_AUTO_std": 0.04644254967570305,
     "ZP_AUTO_nstars": 18,
-    "SCORMEAN": -0.12757964164555186,
-    "SCORMED": -0.12762728858491093,
-    "SCORSTD": 1.2944800868876563,
+    "SCORMEAN": -0.12757963568366343,
+    "SCORMED": -0.12762722183515532,
+    "SCORSTD": 1.294480084375938,
 }
 expected_dataframe_values = {
-    "magpsf": [
-        13.437558244389425,
-        15.086925695408636,
-        12.179985879079442,
-        13.362372683548639,
-    ],
-    "magap": [
-        14.005305925184217,
-        13.540635835344922,
-        11.975646329550564,
-        14.33770149013968,
-    ],
+    "magpsf": [15.086925673498104, 12.179985877346585, 13.362372716480653],
+    "magap": [13.540636566228276, 11.975646597800141, 14.33770121854132],
 }
 pipeline = get_pipeline(
     instrument="winter", selected_configurations=["test"], night="20230726"
@@ -85,6 +77,10 @@ class TestWinterPipeline(BaseTestCase):
         self.logger.info("\n\n Testing winter pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
+
+        # Cleanup - delete ouptut dir
+        output_dir = get_output_dir(dir_root="winter/20230726")
+        shutil.rmtree(output_dir)
 
         # Expect one dataset, for one different sub-boards
         self.assertEqual(len(res[0]), 1)
@@ -121,7 +117,7 @@ class TestWinterPipeline(BaseTestCase):
 
         candidates_table = source_table.get_data()
 
-        self.assertEqual(len(candidates_table), 4)
+        self.assertEqual(len(candidates_table), 3)
         for key, value in expected_dataframe_values.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):

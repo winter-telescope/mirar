@@ -2,8 +2,10 @@
 Tests for getting and making WFAU reference images
 """
 import logging
+import shutil
 import unittest
 
+from mirar.paths import get_output_dir
 from mirar.pipelines import get_pipeline
 from mirar.pipelines.winter.build_references import run_winter_reference_build_pipeline
 from mirar.testing import BaseTestCase
@@ -62,6 +64,10 @@ class TestIRReferencePipeline(BaseTestCase):
         )
 
         self.assertEqual(len(res[0]), 1)
+
+        # Cleanup
+        output_dir = get_output_dir("winter/references")
+        shutil.rmtree(output_dir)
 
         header = res[0][0].get_header()
         for key, value in expected_header.items():
