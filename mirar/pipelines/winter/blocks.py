@@ -370,7 +370,10 @@ flat_calibrate = [
     # ImageSelector(("FIELDID", str(8948))),
 ]
 
-load_calibrated = [ImageLoader(input_sub_dir="skysub", input_img_dir=base_output_dir)]
+load_calibrated = [
+    ImageLoader(input_sub_dir="skysub", input_img_dir=base_output_dir),
+    ImageBatcher(["UTCTIME", "BOARD_ID"]),
+]
 
 fourier_filter = [CustomImageBatchModifier(winter_fourier_filtered_image_generator)]
 
