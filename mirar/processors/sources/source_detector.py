@@ -53,6 +53,22 @@ def generate_candidates_table(
     """
     det_srcs = get_table_from_ldac(scorr_catalog_path)
 
+    # Check if required sextractor specific keys are present in table
+    for key in [
+        "XPEAK_IMAGE",
+        "YPEAK_IMAGE",
+        "FWHM_IMAGE",
+        "XPEAK_IMAGE",
+        "YPEAK_IMAGE",
+        "ALPHAWIN_J2000",
+        "DELTAWIN_J2000",
+        "A_IMAGE",
+        "B_IMAGE",
+        "ELONGATION",
+    ]:
+        if key not in det_srcs.colnames:
+            raise PrerequisiteError(f"Required key {key} not found in scorr catalog.")
+
     diff_path = diff[LATEST_SAVE_KEY]
 
     logger.debug(f"Found {len(det_srcs)} candidates in image.")
