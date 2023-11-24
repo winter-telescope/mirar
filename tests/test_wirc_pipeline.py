@@ -2,8 +2,8 @@
 Module to test WIRC pipeline
 """
 import logging
-import os
 import shutil
+from pathlib import Path
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
@@ -39,7 +39,7 @@ expected_zp = {
 }
 
 
-def get_cal_path(images: ImageBatch) -> str:
+def get_cal_path(images: ImageBatch) -> Path:
     """
     Function to get cal path
     Args:
@@ -48,7 +48,7 @@ def get_cal_path(images: ImageBatch) -> str:
     Returns:
 
     """
-    return os.path.join(test_data_dir, "wirc/cals/test_dark.fits")
+    return Path(test_data_dir).joinpath("wirc/cals/test_dark.fits")
 
 
 test_configuration = (
