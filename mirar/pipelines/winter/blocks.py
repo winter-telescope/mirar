@@ -110,6 +110,7 @@ from mirar.processors.skyportal.skyportal_candidate import SkyportalCandidateUpl
 from mirar.processors.sources import (
     CandidateNamer,
     CustomSourceTableModifier,
+    ForcedPhotometryDetector,
     SourceLoader,
     SourceWriter,
     ZOGYSourceDetector,
@@ -692,5 +693,16 @@ focus_cals = (
     + dark_calibrate
     + flat_calibrate
 )
+
+forced_photometry = [
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
+    AperturePhotometry(
+        aper_diameters=[5, 8, 10, 15],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[20, 20, 20, 20],
+        bkg_out_diameters=[40, 40, 20, 40],
+    ),
+    PSFPhotometry(),
+]
 
 astrometry = load_calibrated + fourier_filter + astrometry  # + validate_astrometry
