@@ -37,20 +37,6 @@ def masked_images_rejector(batch: ImageBatch) -> ImageBatch:
     Rejects images with too many masked pixels
     """
     assert len(batch) == 1
-    # subdet_nan_limits = {
-    #     1: 0.4,
-    #     2: 0.5,
-    #     3: 0.3,
-    #     4: 0.3,
-    #     5: 0.4,
-    #     6: 0.5,
-    #     7: 0.4,
-    #     8: 0.3,
-    #     9: 0.6,
-    #     10: 0.6,
-    #     11: 0.5,
-    #     12: 0.5,
-    # }
 
     subdet_nan_limits = {
         1: 0.6,
