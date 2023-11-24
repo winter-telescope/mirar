@@ -83,7 +83,7 @@ class PSFPhotometry(BasePhotometryProcessor):
 
             fluxes, fluxuncs, minchi2s, xshifts, yshifts = [], [], [], [], []
 
-            if self.psf_file_key not in source_table.columns:
+            if self.psf_file_key not in metadata:
                 raise PrerequisiteError(
                     f"PSF file key {self.psf_file_key} not in source table."
                     f"Have you run the PSFEx processor, or set the correct key? with"
