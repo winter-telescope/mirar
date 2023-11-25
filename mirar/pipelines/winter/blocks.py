@@ -695,6 +695,8 @@ focus_cals = (
 )
 
 forced_photometry = [
+    ImageDebatcher(),
+    ImageBatcher(["UTCTIME"]),
     ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
     AperturePhotometry(
         aper_diameters=[5, 8, 10, 15],

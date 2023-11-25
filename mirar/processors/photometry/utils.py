@@ -12,9 +12,16 @@ from matplotlib.patches import Circle
 from photutils.aperture import CircularAnnulus, CircularAperture, aperture_photometry
 
 from mirar.data import Image
+from mirar.errors import ProcessorError
 from mirar.paths import GAIN_KEY
 
 logger = logging.getLogger(__name__)
+
+
+class CutoutError(ProcessorError):
+    """
+    Error raised when cutout is not valid
+    """
 
 
 def make_cutouts(
@@ -39,6 +46,11 @@ def make_cutouts(
         y_image_size, x_image_size = np.shape(data)
         x, y = position
         logger.debug(f"Cutout parameters {x},{y},{np.shape(data)}")
+
+        if x < 0 or x > x_image_size or y < 0 or y > y_image_size:
+            raise CutoutError(
+                f"Cutout position {x},{y} is outside " f"the image {image_path}"
+            )
 
         if x < half_size:
             xmin, xmax = 0, x + half_size + 1
