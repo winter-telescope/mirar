@@ -694,7 +694,19 @@ focus_cals = (
     + flat_calibrate
 )
 
-forced_photometry = [
+stack_forced_photometry = [
+    ImageDebatcher(),
+    ImageBatcher([BASE_NAME_KEY]),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
+    AperturePhotometry(
+        aper_diameters=[5, 8, 10, 15],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[20, 20, 20, 20],
+        bkg_out_diameters=[40, 40, 40, 40],
+    ),
+]
+
+diff_forced_photometry = [
     ImageDebatcher(),
     ImageBatcher([BASE_NAME_KEY]),
     ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),

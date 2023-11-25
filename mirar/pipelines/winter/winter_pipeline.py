@@ -13,9 +13,9 @@ from mirar.pipelines.winter.blocks import (
     csvlog,
     detect_candidates,
     detrend_unpacked,
+    diff_forced_photometry,
     extract_all,
     focus_cals,
-    forced_photometry,
     full_reduction,
     imsub,
     load_final_stack,
@@ -35,6 +35,7 @@ from mirar.pipelines.winter.blocks import (
     select_split_subset,
     send_to_skyportal,
     split_stack,
+    stack_forced_photometry,
     unpack_all,
     unpack_subset,
 )
@@ -84,7 +85,8 @@ class WINTERPipeline(Pipeline):
         "log": load_raw + extract_all + csvlog,
         "send_skyportal": send_to_skyportal,
         "split_stacks": load_final_stack + split_stack,
-        "forced_phot": forced_photometry,
+        "diff_forced_phot": diff_forced_photometry,
+        "stack_forced_phot": stack_forced_photometry,
     }
 
     non_linear_level = 40000.0
