@@ -700,7 +700,7 @@ forced_photometry = [
         aper_diameters=[5, 8, 10, 15],
         phot_cutout_half_size=50,
         bkg_in_diameters=[20, 20, 20, 20],
-        bkg_out_diameters=[40, 40, 20, 40],
+        bkg_out_diameters=[40, 40, 40, 40],
     ),
     PSFPhotometry(),
 ]
