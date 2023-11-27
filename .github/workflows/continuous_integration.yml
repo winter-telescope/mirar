@@ -39,6 +39,10 @@ jobs:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
 
+      - name: debug
+        continue-on-error: true
+        run: python -c "raise"
+
       - name: Install poetry
         shell: bash -el {0}
         run: conda install poetry
