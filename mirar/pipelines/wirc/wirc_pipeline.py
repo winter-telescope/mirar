@@ -8,7 +8,7 @@ from pathlib import Path
 from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
 from mirar.pipelines.base_pipeline import Pipeline
-from mirar.pipelines.wirc.blocks import imsub, load_raw, reduce, log
+from mirar.pipelines.wirc.blocks import imsub, load_raw, load_stack, log, reduce
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 from mirar.pipelines.wirc.wirc_files.models import set_up_wirc_database
 
@@ -29,7 +29,7 @@ class WircPipeline(Pipeline):
 
     all_pipeline_configurations = {
         "default": load_raw + reduce,
-        "imsub": load_raw + imsub,
+        "imsub": load_stack + imsub,
         "log": load_raw + log,
     }
 

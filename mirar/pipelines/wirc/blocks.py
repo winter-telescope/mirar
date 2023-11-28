@@ -50,6 +50,7 @@ from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.avro import IPACAvroExporter
+from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_inserter import DatabaseSourceInserter
@@ -63,7 +64,6 @@ from mirar.processors.mask import (
     WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
@@ -89,9 +89,8 @@ from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
-load_raw = [
-    ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)
-]
+load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
+load_stack = [ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image)]
 # load_raw = [ImageLoader(input_sub_dir="firstpassstack",
 # load_image=load_raw_wirc_image)]
 
@@ -107,15 +106,12 @@ log = [
             OBSCLASS_KEY,
         ]
     ),
-    ImageDebatcher()
+    ImageDebatcher(),
 ]
 
 masking = [MaskPixelsFromPath(mask_path=wirc_mask_path)]
 
-dark_calibration = [
-    ImageBatcher("EXPTIME"),
-    DarkCalibrator()
-]
+dark_calibration = [ImageBatcher("EXPTIME"), DarkCalibrator()]
 
 
 reduction = [
@@ -176,7 +172,6 @@ reduction = [
     NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
-
     Sextractor(
         **sextractor_photometry_config,
         output_sub_dir="final_sextractor",
