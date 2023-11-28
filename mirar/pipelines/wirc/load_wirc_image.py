@@ -56,7 +56,7 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     if SATURATE_KEY not in header:
         header[SATURATE_KEY] = WIRC_NONLINEAR_LEVEL * header["DETCOADD"]
 
-    if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
+    if header["OBJECT"] in ["acquisition", "pointing", "focus", "none", "dark", "flat"]:
         header[OBSCLASS_KEY] = header["OBJECT"]
     else:
         header[OBSCLASS_KEY] = "science"

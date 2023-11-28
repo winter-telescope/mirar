@@ -62,7 +62,8 @@ from mirar.processors.mask import (
     MaskPixelsFromWCS,
     WriteMaskedCoordsToFile,
 )
-from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
@@ -88,11 +89,14 @@ from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
-load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
+load_raw = [
+    ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)
+]
 # load_raw = [ImageLoader(input_sub_dir="firstpassstack",
 # load_image=load_raw_wirc_image)]
 
 log = [
+    ImageBatcher("UTSHUT"),
     CSVLog(
         export_keys=[
             "OBJECT",
@@ -102,12 +106,17 @@ log = [
             "COADDS",
             OBSCLASS_KEY,
         ]
-    )
+    ),
+    ImageDebatcher()
 ]
 
 masking = [MaskPixelsFromPath(mask_path=wirc_mask_path)]
 
-dark_calibration = [ImageSelector(("exptime", "45.0")), DarkCalibrator()]
+dark_calibration = [
+    ImageBatcher("EXPTIME"),
+    DarkCalibrator()
+]
+
 
 reduction = [
     ImageSaver(output_dir_name="darkcal"),
@@ -167,10 +176,18 @@ reduction = [
     NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
-    Sextractor(output_sub_dir="final_sextractor", **sextractor_photometry_config),
+
+    Sextractor(
+        **sextractor_photometry_config,
+        output_sub_dir="final_sextractor",
+        checkimage_type="BACKGROUND_RMS",
+    ),
     PhotCalibrator(
         ref_catalog_generator=wirc_photometric_catalog_generator,
         write_regions=True,
+    ),
+    CatalogLimitingMagnitudeCalculator(
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
     ImageSaver(output_dir_name="final"),
 ]

@@ -72,6 +72,10 @@ def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     :return: catalogue
     """
     filter_name = image["FILTER"]
+    if filter_name == "ks":
+        return Gaia2Mass(
+            min_mag=10, max_mag=20, search_radius_arcmin=10, filter_name="k"
+        )
     return Gaia2Mass(
         min_mag=10, max_mag=20, search_radius_arcmin=10, filter_name=filter_name
     )
