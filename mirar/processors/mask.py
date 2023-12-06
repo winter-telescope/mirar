@@ -107,8 +107,11 @@ class MaskPixelsFromPath(BaseMask):
         if mask_path is not None and mask_path_key is not None:
             raise ValueError("Must specify either mask_path or mask_path_key, not both")
 
+        self.mask_name = Path(mask_path).name if mask_path is not None \
+            else f"Header key: `{mask_path_key}`"
+
     def __str__(self) -> str:
-        return f"Processor to mask bad pixels using a pre-defined map: {self.mask_path}"
+        return f"Processor to mask bad pixels using a pre-defined map: {self.mask_name}"
 
     def get_mask(self, image) -> np.ndarray:
         """
