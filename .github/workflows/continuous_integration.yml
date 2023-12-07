@@ -113,6 +113,7 @@ jobs:
           TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
 
       - name: Run Coveralls
+        continue-on-error: true
         if: ${{ success() }}
         shell: bash -el {0}
         run: |
