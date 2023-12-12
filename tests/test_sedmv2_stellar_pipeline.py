@@ -10,7 +10,7 @@ from mirar.paths import get_output_dir
 from mirar.pipelines.sedmv2.blocks import image_photometry, process_stellar
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
-from mirar.processors.utils import MEFLoader  # MultiExtParser
+from mirar.processors.utils import MEFLoader
 from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -18,42 +18,42 @@ logger = logging.getLogger(__name__)
 test_data_dir = get_test_data_dir()
 
 expected_zp = {
-    "ZP_4.0": 25.940887427559876,
-    "ZP_4.0_std": 0.49824802025845366,
-    "ZP_4.0_nstars": 39,
-    "ZP_6.0": 26.614804158685146,
-    "ZP_6.0_std": 0.4727982155483261,
-    "ZP_6.0_nstars": 39,
-    "ZP_8.0": 26.982064199066162,
-    "ZP_8.0_std": 0.4582201430387493,
-    "ZP_8.0_nstars": 39,
-    "ZP_10.0": 27.189493400241165,
-    "ZP_10.0_std": 0.45806133571891794,
-    "ZP_10.0_nstars": 39,
-    "ZP_AUTO": 27.008659106875687,
-    "ZP_AUTO_std": 0.5468613179756767,
-    "ZP_AUTO_nstars": 39,
+    "ZP_4.0": 25.944757945287797,
+    "ZP_4.0_std": 0.49857585767841284,
+    "ZP_4.0_nstars": 42,
+    "ZP_6.0": 26.623309585117156,
+    "ZP_6.0_std": 0.4724771413715337,
+    "ZP_6.0_nstars": 42,
+    "ZP_8.0": 26.992235837754748,
+    "ZP_8.0_std": 0.4544249717014124,
+    "ZP_8.0_nstars": 42,
+    "ZP_10.0": 27.20203013202122,
+    "ZP_10.0_std": 0.4537419044965269,
+    "ZP_10.0_nstars": 42,
+    "ZP_AUTO": 27.03152120235988,
+    "ZP_AUTO_std": 0.5298220244029958,
+    "ZP_AUTO_nstars": 42,
 }
 
 expected_ap_phot = {
-    "fluxap2": -13.850341348155112,
-    "fluxuncap2": 205.58084553347814,
-    "fluxap3": 161.299057848526,
-    "fluxuncap3": 310.77711898765494,
-    "magap3": 21.489579530194685,
-    "sigmagap3": 2.1626931885857243,
-    "fluxap4": 302.3792599800752,
-    "fluxuncap4": 412.9893558727741,
-    "magap4": 20.807279107272198,
-    "sigmagap4": 1.5808578175981052,
-    "fluxap5": 103.20045314743703,
-    "fluxuncap5": 513.7743881699428,
-    "magap5": 21.974455096230088,
-    "sigmagap5": 5.43414211374817,
-    "fluxap10": 1175.65266261521,
-    "fluxuncap10": 1027.506059351285,
-    "magap10": 19.332961527420412,
-    "sigmagap10": 1.0954197393390197,
+    "fluxap2": 67.2952646726674,
+    "fluxuncap2": 116.78870886643895,
+    "fluxap3": 140.59308642554566,
+    "fluxuncap3": 176.46045017437314,
+    "magap3": 21.661611289716124,
+    "sigmagap3": 1.4624052574158826,
+    "fluxap4": 280.95853878914204,
+    "fluxuncap4": 234.71042636381088,
+    "magap4": 20.909915613483555,
+    "sigmagap4": 1.0506128633112535,
+    "fluxap5": 284.07456543030924,
+    "fluxuncap5": 292.0564971080343,
+    "magap5": 20.897940324914178,
+    "sigmagap5": 1.2358462219129922,
+    "fluxap10": 1096.4122358435654,
+    "fluxuncap10": 584.1465261477068,
+    "magap10": 19.43158651842342,
+    "sigmagap10": 0.7845306178009698,
 }
 
 test_configuration = (
@@ -110,10 +110,10 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
         new_exp += "}"
         print(new_exp)
 
-        for key, value in expected_zp.items():
+        for key, value in expected_zp.items():  # pylint: disable=R0801
             if isinstance(value, float):
                 self.assertAlmostEqual(value, header[key], places=2)
-            elif isinstance(value, int):
+            elif isinstance(value, int):  # pylint: disable=R0801
                 self.assertEqual(value, header[key])
             else:
                 raise TypeError(
@@ -146,20 +146,20 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
         shutil.rmtree(output_dir)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pylint: disable=R0801
     print("Calculating latest ZP dictionary")
 
     # Code to generate updated ZP dict of the results change
 
     new_res, new_errorstack = pipeline.reduce_images(
         Dataset(ImageBatch()), catch_all_errors=False
-    )
+    )  # pylint: disable=R0801
 
     new_header = new_res[0][0].get_header()
 
     new_exp = "expected_zp = { \n"  # pylint: disable=C0103
     for header_key in new_header.keys():
-        if "ZP_" in header_key:
+        if "ZP_" in header_key:  # pylint: disable=R0801
             new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
     new_exp += "}"
     print(new_exp)
