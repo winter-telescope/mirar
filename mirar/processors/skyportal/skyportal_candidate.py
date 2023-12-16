@@ -71,18 +71,23 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         :param alert: alert data
         :return: None
         """
-        data = {
-            "chipsf": alert["chipsf"],
-            "fwhm": alert["fwhm"],
-            "scorr": alert["scorr"],
-            "nneg": alert["nneg"],
-            "mindtoedge": alert["mindtoedge"],
-            "diffmaglim": alert["diffmaglim"],
-            "distpsnr1": alert["distpsnr1"],
-            "sgmag1": alert["sgmag1"],
-            "srmag1": alert["srmag1"],
-            "simag1": alert["simag1"],
-        }
+        data = {}
+
+        for key in [
+            "chipsf",
+            "fwhm",
+            "scorr",
+            "nneg",
+            "mindtoedge",
+            "diffmaglim",
+            "distpsnr1",
+            "sgmag1",
+            "srmag1",
+            "simag1",
+        ]:
+            if key in alert:
+                data[key] = alert[key]
+
         payload = {"origin": self.origin, "data": data, "group_ids": self.group_ids}
 
         path = f"sources/{str(alert[SOURCE_NAME_KEY])}/annotations"
