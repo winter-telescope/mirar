@@ -214,7 +214,6 @@ def load_raw_sedmv2_mef(
     """
 
     sedmv2_ignore_files = [
-        # "dark",
         "sedm2",
         "speccal",
     ]
@@ -242,7 +241,7 @@ def load_raw_sedmv2_mef(
     elif check_header["IMGTYPE"] in ["flat", "bias", "dark", "unknown", "illum"]:
         header, split_headers = clean_cal_header(header, split_headers, path, is_mode0)
     else:
-        logger.debug("Unexpected IMGTYPE.")
+        logger.debug(f"Unexpected IMGTYPE: {check_header['IMGTYPE']}")
 
     header[BASE_NAME_KEY] = os.path.basename(path)
     header[RAW_IMG_KEY] = path
