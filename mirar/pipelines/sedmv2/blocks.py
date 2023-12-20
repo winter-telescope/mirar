@@ -184,6 +184,7 @@ image_photometry = [  # imported from wirc/blocks.py
         phot_cutout_half_size=100,
         zp_key="ZP_AUTO",
     ),
+    SourceWriter(output_dir_name="sourcetable"),
 ]
 
 candidate_photometry = [  # imported from wirc/blocks.py
