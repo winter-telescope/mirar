@@ -31,10 +31,6 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     candidates = relationship("CandidatesTable", back_populates="stack_id")
     raw = relationship("RawsTable", back_populates="stacks")
     diff = relationship("DiffsTable", back_populates="stack_id")
-    # procid = Column(Double, primary_key=True, autoincrement=False)
-
-    # rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)
-    # raw_ids: Mapped["RawTable"] = relationship(back_populates="proc")
 
     savepath = Column(VARCHAR(255), unique=True)
     wghtpath = Column(VARCHAR(255), unique=True)
@@ -58,6 +54,9 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     detmag95 = Column(REAL)
     astunc = Column(REAL)
     astunc95 = Column(REAL)
+
+    ra_column_name = "crval1"
+    dec_column_name = "crval2"
 
 
 class Stack(BaseDB):
