@@ -114,6 +114,7 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
+        lastname = None
         for source_table in batch:
             sources = source_table.get_data()
 
@@ -122,7 +123,6 @@ class CandidateNamer(BaseDatabaseSourceSelector):
             ), "No candidate cross-match in source table"
 
             names = []
-            lastname = None
 
             detection_time = Time(source_table[TIME_KEY])
             for _, source in sources.iterrows():
