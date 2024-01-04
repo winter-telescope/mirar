@@ -230,15 +230,8 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 BOARD_ID = 1
 select_subset = [
     ImageSelector(
-        # (TARGET_KEY, ["timed_requests_11_09_2023_18_1699582760.db_0", "dark"]),
-        # (TARGET_KEY, ["timed_requests_11_09_2023_19_1699585528.db_0", "dark"]),
         (TARGET_KEY, ["timed_requests_11_09_2023_22_1699596785.db_0", "dark"]),
-        # (TARGET_KEY, ["timed_requests_11_09_2023_19_1699588705.db_0", "dark"]),
         ("BOARD_ID", str(BOARD_ID)),
-        # ("EXPTIME", "120.0"),
-        # ("FIELDID", ["3944", "999999999", "6124"]),
-        # timed_requests_11_08_2023_18_1699498547.db_0
-        # ("FILTER", ["dark", "J"]),
     ),
 ]
 
@@ -306,23 +299,6 @@ load_unpacked = [
             "MEDCOUNT",
         ]
     ),
-    # ImageSelector(
-    #     (
-    #         TARGET_KEY,
-    #         [
-    #             "timed_requests_11_09_2023_18_1699582760.db_0",
-    #             "timed_requests_11_09_2023_19_1699585528.db_0",
-    #             "timed_requests_11_09_2023_19_1699588705.db_0",
-    #             "timed_requests_11_09_2023_19_1699588705.db_0",
-    #             "timed_requests_11_09_2023_22_1699596785.db_0",
-    #             "timed_requests_11_09_2023_21_1699595765.db_0",
-    #             "timed_requests_11_09_2023_23_1699600374.db_0",
-    #             "timed_requests_11_09_2023_23_1699600102.db_0",
-    #             "timed_requests_11_04_2023_18_1699147583.db_16",
-    #             "dark",
-    #         ],
-    #     ),
-    # ),
 ]
 
 # Detrend blocks

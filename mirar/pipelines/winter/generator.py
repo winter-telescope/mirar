@@ -658,7 +658,7 @@ def winter_master_flat_path_generator(images: ImageBatch) -> Path:
     Generates a master flat path for the winter data
 
     :param images:
-    :return:
+    :return: Path to master flat
     """
     filters_list = [image[FILTER_KEY] for image in images]
     image_filter = np.unique(filters_list)

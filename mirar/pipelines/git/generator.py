@@ -1,6 +1,6 @@
 """
 Module containing functions to generate astrometric/photometric calibration catalogs
-for SEDMv2
+for GIT
 """
 import logging
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def git_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     """
-    Get a reference image generator for an sedmv2 image
+    Get a reference image generator for a git image
 
     For u band: SDSS if possible, otherwise fail
     For g/r: use PS1
@@ -31,7 +31,7 @@ def git_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     filter_name = image["FILTER"]
     logger.info(f"Filter is {filter_name}")
 
-    if filter_name in ["u", "U", "r", "R"]:
+    if filter_name in ["u", "U"]:
         # if in_sdss(image["CRVAL1"], image["CRVAL2"]):
         #     logger.debug("Will query reference image from SDSS")
         return SDSSRef(filter_name=filter_name)
@@ -125,7 +125,7 @@ def git_zogy_catalogs_purifier(sci_catalog, ref_catalog):
 
 def lt_photometric_catalog_generator(image: Image) -> BaseCatalog:
     """
-    Generate a photometric calibration catalog for sedmv2 images
+    Generate a photometric calibration catalog for LT images
 
     For u band: SDSS if possible, otherwise Skymapper (otherwise fail)
     For g/r1: use PS1
@@ -134,6 +134,5 @@ def lt_photometric_catalog_generator(image: Image) -> BaseCatalog:
     :return: catalog at image position
     """
     filter_name = image["FILTER"]
-    # dec = image["DEC"]
 
     return PS1(min_mag=10, max_mag=20, search_radius_arcmin=5, filter_name=filter_name)

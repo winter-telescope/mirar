@@ -86,7 +86,7 @@ class PSFPhotometry(BasePhotometryProcessor):
             if self.psf_file_key not in metadata:
                 raise PrerequisiteError(
                     f"PSF file key {self.psf_file_key} not in source table."
-                    f"Have you run the PSFEx processor, or set the correct key? with"
+                    f"Have you run the PSFEx processor, or set the correct key with"
                     f" the psf file name?"
                 )
             psf_filename = source_table[self.psf_file_key]

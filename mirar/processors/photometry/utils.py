@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class CutoutError(ProcessorError):
     """
-    Error raised when cutout is not valid
+    Error raised when cutout generation fails
     """
 
 
@@ -49,7 +49,7 @@ def make_cutouts(
 
         if x < 0 or x > x_image_size or y < 0 or y > y_image_size:
             raise CutoutError(
-                f"Cutout position {x},{y} is outside " f"the image {image_path}"
+                f"Cutout position {x},{y} is outside the image {image_path}"
             )
 
         if x < half_size:

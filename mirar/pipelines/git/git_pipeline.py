@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class GITPipeline(Pipeline):
     """
-    Class to run SEDMv2 data reduction pipeline
+    Class to run GIT/LT data reduction pipeline
     """
 
     name = PIPELINE_NAME

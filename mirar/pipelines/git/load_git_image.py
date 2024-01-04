@@ -1,5 +1,5 @@
 """
-Module for loading raw WIRC images and ensuring they have the correct format
+Module for loading raw GIT/LT images and ensuring they have the correct format
 """
 import logging
 from pathlib import Path
@@ -25,12 +25,12 @@ git_filter_dict = {"g": 1, "r": 2, "i": 3, "z": 4, "y": 5}
 
 logger = logging.getLogger(__name__)
 
-WIRC_NONLINEAR_LEVEL = 30000
+GIT_NONLINEAR_LEVEL = 30000
 
 
 def load_raw_git_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
     """
-    Function to load a raw WIRC image
+    Function to load a raw GIT image
 
     :param path: path of file
     :return: data and header of image
@@ -45,7 +45,7 @@ def load_raw_git_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
     if "COADDS" in header.keys():
         header["DETCOADD"] = header["COADDS"]
     if SATURATE_KEY not in header:
-        header[SATURATE_KEY] = WIRC_NONLINEAR_LEVEL * header["DETCOADD"]
+        header[SATURATE_KEY] = GIT_NONLINEAR_LEVEL * header["DETCOADD"]
 
     if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
         header[OBSCLASS_KEY] = header["OBJECT"]
@@ -89,7 +89,7 @@ def load_raw_git_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
 
 def load_raw_lt_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
     """
-    Function to load a raw WIRC image
+    Function to load a raw LT image
 
     :param path: path of file
     :return: data and header of image
@@ -104,7 +104,7 @@ def load_raw_lt_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header
 
     header["DETCOADD"] = 1
     if SATURATE_KEY not in header:
-        header[SATURATE_KEY] = WIRC_NONLINEAR_LEVEL * header["DETCOADD"]
+        header[SATURATE_KEY] = GIT_NONLINEAR_LEVEL * header["DETCOADD"]
 
     if header["OBJECT"] in ["acquisition", "pointing", "focus", "none"]:
         header[OBSCLASS_KEY] = header["OBJECT"]
@@ -148,7 +148,7 @@ def load_raw_lt_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header
 
 def load_raw_git_image(path: str | Path) -> Image:
     """
-    Function to load a raw WIRC image
+    Function to load a raw GIT image
 
     :param path: Path to the raw image
     :return: Image object
@@ -158,7 +158,7 @@ def load_raw_git_image(path: str | Path) -> Image:
 
 def load_raw_lt_image(path: str | Path) -> Image:
     """
-    Function to load a raw WIRC image
+    Function to load a raw LT image
 
     :param path: Path to the raw image
     :return: Image object

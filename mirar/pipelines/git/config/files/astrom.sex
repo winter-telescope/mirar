@@ -19,7 +19,7 @@ DETECT_THRESH    5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 ANALYSIS_THRESH  5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
  
 FILTER           Y              # apply filter for detection (Y or N)?
-FILTER_NAME      /home/viraj/rts2/python/img_subtraction/default.conv   # name of the file containing the filter
+FILTER_NAME      /              # name of the file containing the filter
  
 DEBLEND_NTHRESH  16             # Number of deblending sub-thresholds
 DEBLEND_MINCONT  1e-4          # Minimum contrast parameter for deblending
@@ -69,7 +69,7 @@ PIXEL_SCALE      0.32           # size of pixel in arcsec (0=use FITS WCS info)
 #------------------------- Star/Galaxy Separation ----------------------------
  
 SEEING_FWHM      2            # stellar FWHM in arcsec
-STARNNW_NAME     /home/viraj/rts2/python/img_subtraction/default.nnw    # Neural-Network_Weight table filename
+STARNNW_NAME     /            # Neural-Network_Weight table filename
  
 #------------------------------ Background -----------------------------------
  
