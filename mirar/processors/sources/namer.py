@@ -125,12 +125,13 @@ class CandidateNamer(BaseDatabaseSourceSelector):
             names = []
 
             detection_time = Time(source_table[TIME_KEY])
-            for _, source in sources.iterrows():
+            for ind, source in sources.iterrows():
                 if len(source[SOURCE_XMATCH_KEY]) > 0:
                     source_name = source[SOURCE_XMATCH_KEY][0][self.db_name_field]
                 else:
                     source_name = self.get_next_name(detection_time, last_name=lastname)
                     lastname = source_name
+                logger.debug(f"Assigning name: {source_name} to source # {ind}.")
                 names.append(source_name)
 
             sources[self.db_name_field] = names
