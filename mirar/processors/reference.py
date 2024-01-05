@@ -29,6 +29,8 @@ class ProcessReference(BaseImageProcessor):
 
     base_key = "REFPREP"
 
+    max_n_cpu = 1
+
     def __init__(
         self,
         ref_image_generator: Callable[..., BaseReferenceGenerator],
