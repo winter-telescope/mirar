@@ -15,6 +15,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 from mirar.data import Image, ImageBatch
+from mirar.data.utils.coords import write_regions_file
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
@@ -260,6 +261,22 @@ class Sextractor(BaseImageProcessor):
                 with fits.open(output_cat, memmap=False) as hdul:
                     clean_hdulist = fits.HDUList([hdul[0], hdul[1], clean_hdu[2]])
                     clean_hdulist.writeto(output_cat, overwrite=True)
+
+            if self.write_regions:
+                output_catalog = get_table_from_ldac(output_cat)
+
+                x_coords = output_catalog["X_IMAGE"]
+                y_coords = output_catalog["Y_IMAGE"]
+
+                regions_path = output_cat.with_suffix(".reg")
+
+                write_regions_file(
+                    regions_path=regions_path,
+                    x_coords=x_coords,
+                    y_coords=y_coords,
+                    system="image",
+                    region_radius=5,
+                )
 
             image[SEXTRACTOR_HEADER_KEY] = sextractor_out_dir.joinpath(
                 output_cat
