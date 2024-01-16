@@ -69,6 +69,7 @@ class Swarp(BaseImageProcessor):
         flux_scaling_factor: float = None,
         calculate_dims_in_swarp: bool = False,
         header_keys_to_combine: Optional[str | list[str]] = None,
+        coordinate_tolerance_deg: float = 10,
     ):
         """
 
@@ -129,6 +130,8 @@ class Swarp(BaseImageProcessor):
                 all of them.
             header_keys_to_combine: list If specified, will combine the values of the
             corresponding header keys to a comma-separated value in the stacked images
+            coordinate_tolerance_deg: float Will raise an error if the input images are
+            not within this tolerance of each other in terms of their coordinates.
         """
         super().__init__()
         self.swarp_config = swarp_config_path
@@ -152,6 +155,7 @@ class Swarp(BaseImageProcessor):
         self.header_keys_to_combine = header_keys_to_combine
         if isinstance(self.header_keys_to_combine, str):
             self.header_keys_to_combine = [self.header_keys_to_combine]
+        self.coordinate_tolerance_deg = coordinate_tolerance_deg
 
     def __str__(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
@@ -338,6 +342,18 @@ class Swarp(BaseImageProcessor):
             center_ra_to_use = None
 
         output_image_weight_path = output_image_path.with_suffix(".weight.fits")
+
+        if (np.ptp(all_ras) > self.coordinate_tolerance_deg) or (
+            np.ptp(all_decs) > self.coordinate_tolerance_deg
+        ):
+            err = (
+                f"Images have a large range of RA/Dec values - RA difference "
+                f"{np.ptp(all_ras)}, Dec difference {np.ptp(all_decs)}. "
+                f"This may cause problems with SWarp. Please check the output image "
+                f"carefully."
+            )
+            logger.error(err)
+            raise SwarpError(err)
 
         run_swarp(
             stack_list_path=swarp_image_list_path,
