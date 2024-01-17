@@ -249,39 +249,23 @@ class Swarp(BaseImageProcessor):
                 center_ra_to_use = self.center_ra
                 center_dec_to_use = self.center_dec
 
-                if (
-                    (self.pixscale is None)
-                    | (self.x_imgpixsize is None)
-                    | (self.y_imgpixsize is None)
-                    | (self.center_ra is None)
-                    | (self.center_dec is None)
-                ):
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", AstropyWarning)
-                        wcs = WCS(image.get_header())
-
-                    cd11 = image["CD1_1"]
-                    cd21 = image["CD2_1"]
-
-                    nxpix = image["NAXIS1"]
-                    nypix = image["NAXIS2"]
-
-                    image_x_cen = nxpix / 2
-                    image_y_cen = nypix / 2
-
-                    [ra, dec] = wcs.all_pix2world(image_x_cen, image_y_cen, 1)
-
-                    xscale = np.sqrt(cd11**2 + cd21**2)
-
-                    pixscale = xscale * 3600
-                    imgpixsize = max(nxpix, nypix)
-
-                    all_pixscales.append(pixscale)
-                    all_imgpixsizes.append(imgpixsize)
-                    all_ras.append(ra)
-                    all_decs.append(dec)
-
-                logger.debug(f"{all_ras}, {all_decs}")
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", AstropyWarning)
+                    wcs = WCS(image.get_header())
+                cd11 = image["CD1_1"]
+                cd21 = image["CD2_1"]
+                nxpix = image["NAXIS1"]
+                nypix = image["NAXIS2"]
+                image_x_cen = nxpix / 2
+                image_y_cen = nypix / 2
+                [ra, dec] = wcs.all_pix2world(image_x_cen, image_y_cen, 1)
+                xscale = np.sqrt(cd11**2 + cd21**2)
+                pixscale = xscale * 3600
+                imgpixsize = max(nxpix, nypix)
+                all_pixscales.append(pixscale)
+                all_imgpixsizes.append(imgpixsize)
+                all_ras.append(ra)
+                all_decs.append(dec)
 
                 if self.include_scamp:
                     temp_head_path = copy_temp_file(
