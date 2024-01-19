@@ -12,12 +12,10 @@ Core ZOGY algorithm implementation in Python.
 """
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
-from astropy.io import fits
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +26,10 @@ pyfftw.interfaces.cache.set_keepalive_time(1.0)
 def pyzogy(
     new_data: np.ndarray,
     ref_data: np.ndarray,
-    new_psf_path: str | Path,
-    ref_psf_path: str | Path,
-    new_sigma_path: str | Path,
-    ref_sigma_path: str | Path,
+    new_psf: np.ndarray,
+    ref_psf: np.ndarray,
+    new_sigma: np.ndarray,
+    ref_sigma: np.ndarray,
     new_avg_unc: float,
     ref_avg_unc: float,
     dx: float = 0.25,
@@ -43,22 +41,29 @@ def pyzogy(
     background subtracted, and gain-matched.
 
     Arguments:
-    new_image_path: New image (filename)
-    ref_image_path: Reference image (filename)
-    new_psf_path: PSF of New image (filename)
-    ref_psf_path: PSF or Reference image (filename)
-    new_sigma_path: 2D Uncertainty (sigma) of New image (filename)
-    ref_sigma_path: 2D Uncertainty (sigma) of Reference image (filename)
-    new_avg_unc: Average uncertainty (sigma) of New image
-    ref_avg_unc: Average uncertainty (sigma) of Reference image
-    dx: Astrometric uncertainty (sigma) in x coordinate
-    dy: Astrometric uncertainty (sigma) in y coordinate
+    :param new_data: New image
+    :param ref_data: Reference image
+    :param new_psf: PSF of New image
+    :param ref_psf: PSF or Reference image
+    :param new_sigma: 2D Uncertainty (sigma) of New image
+    :param ref_sigma: 2D Uncertainty (sigma) of Reference image
+    :param new_avg_unc: Average uncertainty (sigma) of New image
+    :param ref_avg_unc: Average uncertainty (sigma) of Reference image
+    :param dx: Astrometric uncertainty (sigma) in x coordinate
+    :param dy: Astrometric uncertainty (sigma) in y coordinate
 
     Returns:
     diff: Subtracted image
     diff_psf: PSF of subtracted image
     s_corr: Corrected subtracted image
     """
+
+    # Make sure the new and ref images have even dimensions, otherwise a shift is
+    # introduced between the subtraction and scorr images
+    assert new_data.shape[0] % 2 == 0, "New image has odd number of rows"
+    assert new_data.shape[1] % 2 == 0, "New image has odd number of columns"
+    assert ref_data.shape[0] % 2 == 0, "Ref image has odd number of rows"
+    assert ref_data.shape[1] % 2 == 0, "Ref image has odd number of columns"
 
     # Set nans to zero in new and ref images
     new_nanmask = np.isnan(new_data)
@@ -69,17 +74,9 @@ def pyzogy(
 
     logger.debug(f"Number of nans is  {np.sum(new_nanmask)}")
 
-    # Load the PSFs into memory
-    with fits.open(new_psf_path) as img_psf_f:
-        new_psf = img_psf_f[0].data  # pylint: disable=no-member
-
-    with fits.open(ref_psf_path) as ref_psf_f:
-        ref_psf = ref_psf_f[0].data  # pylint: disable=no-member
-
     logger.debug(
         f"Max of small PSF is "
         f"{np.unravel_index(np.argmax(new_psf, axis=None), new_psf.shape)}"
-        f"PSF path is {new_psf_path.as_posix()}"
     )
 
     # Place PSF at center of image with same size as new / reference
@@ -97,7 +94,6 @@ def pyzogy(
     logger.debug(
         f"Max of big PSF is "
         f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
-        f"PSF path is {new_psf_path.as_posix()}"
     )
 
     # Shift the PSF to the origin, so that it will not introduce a shift
@@ -107,8 +103,7 @@ def pyzogy(
     logger.debug(
         f"Max of big PSF shift is "
         f"{np.unravel_index(np.argmax(new_psf_big, axis=None), new_psf_big.shape)}"
-        f"PSF path is {new_psf_path.as_posix()} with data shape {new_data.shape}"
-        f"and ref data shape {ref_data.shape}"
+        f"PSF shape {new_data.shape} and ref data shape {ref_data.shape}"
     )
 
     # Take all the Fourier Transforms
@@ -123,15 +118,11 @@ def pyzogy(
     diff_hat_denominator = np.sqrt(
         new_avg_unc**2 * np.abs(ref_psf_hat**2)
         + ref_avg_unc**2 * np.abs(new_psf_hat**2)
-        + 1e-8
     )
     diff_hat = diff_hat_numerator / diff_hat_denominator
     # Flux-based zero point (Equation 15)
     flux_zero_point = 1.0 / np.sqrt(new_avg_unc**2 + ref_avg_unc**2)
-    logger.debug(
-        f"Calculated flux_zero_point {flux_zero_point} "
-        f"PSF path is {new_psf_path.as_posix()}"
-    )
+    logger.debug(f"Calculated flux_zero_point {flux_zero_point} ")
 
     # Difference Image
     diff = np.real(fft.ifft2(diff_hat)) / flux_zero_point
@@ -145,7 +136,7 @@ def pyzogy(
     logger.debug(
         f"Max of diff PSF is "
         f"{np.unravel_index(np.argmax(diff_psf, axis=None), diff_psf.shape)}"
-        f"PSF path is {new_psf_path.as_posix()} with data shape {new_data.shape}"
+        f"PSF data shape is {new_data.shape}"
         f"and ref data shape {ref_data.shape}"
     )
 
@@ -158,13 +149,6 @@ def pyzogy(
     # Now start calculating Scorr matrix (including all noise terms)
 
     # Start out with source noise
-    # Load the sigma images into memory
-    with fits.open(new_sigma_path) as img_sigma_f:
-        new_sigma = img_sigma_f[0].data  # pylint: disable=no-member
-
-    with fits.open(ref_sigma_path) as ref_sigma_f:
-        ref_sigma = ref_sigma_f[0].data  # pylint: disable=no-member
-
     new_sigma[new_nanmask] = 0.0
     ref_sigma[ref_nanmask] = 0.0
     # Sigma to variance
