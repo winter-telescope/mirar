@@ -157,9 +157,10 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
             unit=(u.deg, u.deg),
         )
 
+        clean_img_cat = self.sextractor_catalog_purifier(img_cat, image)
         clean_img_coords = SkyCoord(
-            ra=img_cat["ALPHAWIN_J2000"],
-            dec=img_cat["DELTAWIN_J2000"],
+            ra=clean_img_cat["ALPHAWIN_J2000"],
+            dec=clean_img_cat["DELTAWIN_J2000"],
             unit=(u.deg, u.deg),
         )
 
