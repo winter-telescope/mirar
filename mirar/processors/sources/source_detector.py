@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from astropy.io import fits
+from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch, SourceBatch, SourceTable
 from mirar.data.utils import encode_img, write_regions_file
@@ -96,6 +97,10 @@ def generate_candidates_table(
 
     det_srcs[CAND_RA_KEY] = det_srcs["ALPHAWIN_J2000"]
     det_srcs[CAND_DEC_KEY] = det_srcs["DELTAWIN_J2000"]
+    wcs = WCS(diff.get_header())
+    img_ra, img_dec = wcs.all_pix2world(det_srcs[XPOS_KEY], det_srcs[YPOS_KEY], 1)
+    det_srcs["IMAGE_RA"] = img_ra
+    det_srcs["IMAGE_DEC"] = img_dec
     det_srcs["fwhm"] = det_srcs["FWHM_IMAGE"]
     det_srcs["aimage"] = det_srcs["A_IMAGE"]
     det_srcs["bimage"] = det_srcs["B_IMAGE"]
@@ -232,11 +237,20 @@ class ZOGYSourceDetector(BaseSourceGenerator):
             else:
                 msg = f"Found {len(srcs_table)} sources in image {image[BASE_NAME_KEY]}"
                 if self.write_regions:
-                    reg_name = diff_image_path.replace(".fits", ".cands.reg")
+                    reg_name = diff_image_path.replace(".fits", ".cands.img.reg")
                     write_regions_file(
                         regions_path=reg_name,
                         x_coords=srcs_table["X_IMAGE"],
                         y_coords=srcs_table["Y_IMAGE"],
+                        text=[str(round(x, 2)) for x in srcs_table["scorr"]],
+                    )
+
+                    write_regions_file(
+                        regions_path=diff_image_path.replace(".fits", ".cands.wcs.reg"),
+                        x_coords=srcs_table[CAND_RA_KEY],
+                        y_coords=srcs_table[CAND_DEC_KEY],
+                        region_radius=5.0 / 3600.0,
+                        system="wcs",
                         text=[str(round(x, 2)) for x in srcs_table["scorr"]],
                     )
 
