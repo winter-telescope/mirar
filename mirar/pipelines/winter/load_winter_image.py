@@ -209,6 +209,7 @@ def load_winter_stack(
     weight_pathname = wghtpath.split("/winter/")[-1]
     new_weightpath = Path(dirname) / weight_pathname
     header["WGHTPATH"] = new_weightpath.as_posix()
+    header["SAVEPATH"] = path
 
     if SNCOSMO_KEY not in header.keys():
         if header["FILTER"].lower() in ["y", "j", "h"]:
