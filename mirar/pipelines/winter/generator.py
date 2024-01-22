@@ -537,6 +537,10 @@ def winter_reference_generator(image: Image):
     components_image_dir.mkdir(parents=True, exist_ok=True)
 
     filtername = image["FILTER"]
+
+    if filtername not in ["Y", "J", "H"]:
+        raise ValueError(f"Filter {filtername} not recognized for WINTER")
+
     # TODO if in_ukirt and in_vista, different processing
     fieldid = int(image["FIELDID"])
     subdetid = int(image[SUB_ID_KEY])
@@ -586,12 +590,10 @@ def winter_reference_generator(image: Image):
             stack_image_annotator=winter_reference_stack_annotator,
         )
 
-    elif filtername == "Y":
+    if filtername == "Y":
         # Use PS1 references for Y-band
         logger.debug("Will query reference image from PS1")
         return PS1Ref(filter_name=filtername)
-    else:
-        AssertionError(f"Filter {filtername} not recognised")
 
 
 winter_history_deprecated_constraint = DBQueryConstraints(
