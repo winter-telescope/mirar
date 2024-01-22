@@ -586,9 +586,12 @@ def winter_reference_generator(image: Image):
             stack_image_annotator=winter_reference_stack_annotator,
         )
 
-    # Use PS1 references for Y-band
-    logger.debug("Will query reference image from PS1")
-    return PS1Ref(filter_name=filtername)
+    elif filtername == "Y":
+        # Use PS1 references for Y-band
+        logger.debug("Will query reference image from PS1")
+        return PS1Ref(filter_name=filtername)
+    else:
+        AssertionError(f"Filter {filtername} not recognised")
 
 
 winter_history_deprecated_constraint = DBQueryConstraints(
