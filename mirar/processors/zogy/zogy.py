@@ -450,10 +450,10 @@ class ZOGY(ZOGYPrepare):
             logger.debug(f"Running zogy on image {image[BASE_NAME_KEY]}")
 
             # Load the PSFs into memory
-            with fits.open(sci_psf_path) as img_psf_f:
+            with fits.open(sci_psf_path, memmap=False) as img_psf_f:
                 new_psf = img_psf_f[0].data  # pylint: disable=no-member
 
-            with fits.open(ref_psf_path) as ref_psf_f:
+            with fits.open(ref_psf_path, memmap=False) as ref_psf_f:
                 ref_psf = ref_psf_f[0].data  # pylint: disable=no-member
 
             # Load the sigma images into memory
