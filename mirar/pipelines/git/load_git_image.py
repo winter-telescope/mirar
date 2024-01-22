@@ -52,7 +52,7 @@ def load_raw_git_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
     else:
         header[OBSCLASS_KEY] = "science"
 
-    # Apparently for WIRC, the images come tagged correctly.
+    # Apparently for GIT, the images come tagged correctly.
     header[TARGET_KEY] = header["OBJECT"].lower()
     # header["DATE-OBS"] = header["UTSHUT"]
     header["MJD-OBS"] = Time(header["DATE-OBS"]).mjd
