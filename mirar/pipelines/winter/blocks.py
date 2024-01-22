@@ -472,9 +472,6 @@ load_final_stack = [
         load_image=load_winter_stack,
     ),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
-    # ImageSelector(
-    #     (BASE_NAME_KEY, "WINTERcamera_20231102-104633-102_mef_2_0_0_stack.fits")
-    # ),
 ]
 
 split_stack = [
