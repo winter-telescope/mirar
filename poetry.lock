@@ -2741,23 +2741,24 @@ files = [
 
 [[package]]
 name = "lacosmic"
-version = "1.0.0"
+version = "1.1.0"
 description = "Laplacian Cosmic Ray Identification"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "lacosmic-1.0.0-py3-none-any.whl", hash = "sha256:9cf955af6638c9b12b646dc41bd6df3a720673831ff04e9ccea0fd1b733bcd4f"},
-    {file = "lacosmic-1.0.0.tar.gz", hash = "sha256:6f75e44c0dd97f0f4eece5a1e111e1a3caf8f35857f39612b978e0e0847e7364"},
+    {file = "lacosmic-1.1.0-py3-none-any.whl", hash = "sha256:7f27b4b34ca9d81540a3bb93b2271b38ca60a18404b7c0bb7c8f0ad325511ee3"},
+    {file = "lacosmic-1.1.0.tar.gz", hash = "sha256:657a23cd5cd79f6638f3b36e3597ce713b760923103d2326a66509964f9c423e"},
 ]
 
 [package.dependencies]
-astropy = ">=4.1"
-numpy = ">=1.18"
-scipy = ">=1.6.0"
+astropy = ">=5.0"
+numpy = ">=1.22"
+scipy = ">=1.7.2"
 
 [package.extras]
-docs = ["matplotlib (>=3.1)", "sphinx", "sphinx-astropy"]
-test = ["pytest-astropy"]
+all = ["matplotlib (>=3.5)"]
+docs = ["lacosmic[all]", "sphinx", "sphinx-astropy (>=1.6)", "tomli"]
+test = ["pytest-astropy (>=0.10)"]
 
 [[package]]
 name = "lazy-object-proxy"
