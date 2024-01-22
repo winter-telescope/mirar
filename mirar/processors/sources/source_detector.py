@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.wcs import WCS
 
@@ -95,12 +96,18 @@ def generate_candidates_table(
     det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"] - 1
     det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"] - 1
 
-    det_srcs[CAND_RA_KEY] = det_srcs["ALPHAWIN_J2000"]
-    det_srcs[CAND_DEC_KEY] = det_srcs["DELTAWIN_J2000"]
+    det_srcs["SEXTR_RA"] = det_srcs["ALPHAWIN_J2000"]
+    det_srcs["SEXTR_DEC"] = det_srcs["DELTAWIN_J2000"]
     wcs = WCS(diff.get_header())
     img_ra, img_dec = wcs.all_pix2world(det_srcs[XPOS_KEY], det_srcs[YPOS_KEY], 1)
-    det_srcs["IMAGE_RA"] = img_ra
-    det_srcs["IMAGE_DEC"] = img_dec
+    det_srcs[CAND_RA_KEY] = img_ra
+    det_srcs[CAND_DEC_KEY] = img_dec
+    det_crds = SkyCoord(ra=img_ra, dec=img_dec, unit="deg")
+    sextractor_crds = SkyCoord(
+        ra=det_srcs["SEXTR_RA"], dec=det_srcs["SEXTR_DEC"], unit="deg"
+    )
+    det_srcs["crd_offset"] = sextractor_crds.separation(det_crds).arcsec
+
     det_srcs["fwhm"] = det_srcs["FWHM_IMAGE"]
     det_srcs["aimage"] = det_srcs["A_IMAGE"]
     det_srcs["bimage"] = det_srcs["B_IMAGE"]
