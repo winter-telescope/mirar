@@ -84,7 +84,7 @@ def set_up_q3c(db_name: str, db_table: BaseTable):
 if DB_USER is not None:
     setup_database(db_base=WinterBase)
 
-    for table in [ExposuresTable, CandidatesTable, RefQueriesTable]:
+    for table in [ExposuresTable, CandidatesTable, RefQueriesTable, StacksTable]:
         set_up_q3c(db_name=WinterBase.db_name, db_table=table)
 
     populate_fields()

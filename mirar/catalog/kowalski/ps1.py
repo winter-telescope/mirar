@@ -23,8 +23,8 @@ class PS1(BaseKowalskiXMatch):
 
     column_names = {
         "_id": "psobjectid",
-        "raMean": "psra",
-        "decMean": "psdec",
+        "raMean": f"{abbreviation}ra",
+        "decMean": f"{abbreviation}dec",
         "gMeanPSFMag": "sgmag",
         "rMeanPSFMag": "srmag",
         "iMeanPSFMag": "simag",
@@ -40,3 +40,6 @@ class PS1(BaseKowalskiXMatch):
         "simag": float,
         "szmag": float,
     }
+
+    ra_column_name = f"{abbreviation}ra"
+    dec_column_name = f"{abbreviation}dec"

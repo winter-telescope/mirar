@@ -8,16 +8,18 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
+    astrometry,
     build_test,
     csvlog,
     detect_candidates,
     detrend_unpacked,
+    diff_forced_photometry,
     extract_all,
     focus_cals,
     full_reduction,
     imsub,
+    load_final_stack,
     load_raw,
-    load_stack,
     load_test,
     mask_and_split,
     mosaic,
@@ -32,6 +34,8 @@ from mirar.pipelines.winter.blocks import (
     save_raw,
     select_split_subset,
     send_to_skyportal,
+    split_stack,
+    stack_forced_photometry,
     unpack_all,
     unpack_subset,
 )
@@ -50,10 +54,11 @@ class WINTERPipeline(Pipeline):
     default_cal_requirements = winter_cal_requirements
 
     all_pipeline_configurations = {
+        "astrometry": astrometry,
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
         "detrend_unpacked": detrend_unpacked,
-        "imsub": load_stack + imsub + detect_candidates,
+        "imsub": load_final_stack + imsub + detect_candidates,
         "reduce": reduce,
         "reduce_unpacked": reduce_unpacked,
         "photcal_stacks": photcal_stacks,
@@ -72,13 +77,16 @@ class WINTERPipeline(Pipeline):
         "reftest": reftest,
         "only_ref": only_ref,
         "realtime": realtime,
-        "detect_candidates": load_stack + imsub + detect_candidates,
-        "full_imsub": load_stack + imsub + detect_candidates + process_candidates,
+        "detect_candidates": load_final_stack + imsub + detect_candidates,
+        "full_imsub": load_final_stack + imsub + detect_candidates + process_candidates,
         "full": reduce + imsub + detect_candidates + process_candidates,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,
         "send_skyportal": send_to_skyportal,
+        "split_stacks": load_final_stack + split_stack,
+        "diff_forced_phot": diff_forced_photometry,
+        "stack_forced_phot": stack_forced_photometry,
     }
 
     non_linear_level = 40000.0

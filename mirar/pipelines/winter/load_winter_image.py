@@ -31,6 +31,7 @@ from mirar.paths import (
     RAW_IMG_KEY,
     SATURATE_KEY,
     TARGET_KEY,
+    core_fields,
 )
 from mirar.pipelines.winter.constants import (
     imgtype_dict,
@@ -76,17 +77,15 @@ def clean_header(header: fits.Header) -> fits.Header:
         header[OBSCLASS_KEY] = "bias"
 
     if header["FILTERID"] == "dark":
-        if header[OBSCLASS_KEY] not in [
-            "dark",
-            "bias",
-            "test",
-        ]:
+        if header[OBSCLASS_KEY] not in ["dark", "bias", "test", "science"]:
             header[OBSCLASS_KEY] = "test"
+        else:
+            header[OBSCLASS_KEY] = "dark"
 
     # Discard pre-sunset, post-sunset darks
     if header[OBSCLASS_KEY] == "dark":
         sun_pos = palomar_observer.sun_altaz(Time(header["UTCTIME"]))
-        if sun_pos.alt.to_value("deg") > -25.0:
+        if sun_pos.alt.to_value("deg") > -20.0:
             header[OBSCLASS_KEY] = "test"
 
     # Sometimes darks come with wrong fieldids
@@ -138,7 +137,10 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["FILTER"] = header["FILTERID"]
     if header["FILTER"] == "Hs":
         header["FILTER"] = "H"
-    header["FID"] = int(winter_filters_map[header["FILTERID"]])
+    if header["FILTERID"] in winter_filters_map:
+        header["FID"] = int(winter_filters_map[header["FILTERID"]])
+    else:
+        header["FID"] = -99
 
     # Set default values if field details seem incorrect
     if "FIELDID" not in header.keys():
@@ -179,6 +181,14 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["EXPMJD"] = header["MJD-OBS"]
     if header["FILTER"].lower() in ["y", "j", "h"]:
         header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
+
+    header["DITHGRP"] = int(header["DITHNUM"] <= 5)
+    if "GAINCOLT" not in header.keys():
+        header["GAINCOLT"] = "[]"
+    if "GAINCOLB" not in header.keys():
+        header["GAINCOLB"] = "[]"
+    if "GAINROW" not in header.keys():
+        header["GAINROW"] = "[]"
     return header
 
 
@@ -199,6 +209,7 @@ def load_winter_stack(
     weight_pathname = wghtpath.split("/winter/")[-1]
     new_weightpath = Path(dirname) / weight_pathname
     header["WGHTPATH"] = new_weightpath.as_posix()
+    header["SAVEPATH"] = path
 
     if SNCOSMO_KEY not in header.keys():
         if header["FILTER"].lower() in ["y", "j", "h"]:
@@ -244,6 +255,7 @@ def load_test_winter_image(
     """
     image = open_raw_image(path)
     header = clean_header(image.header)
+
     image.set_header(header)
     return image
 
@@ -259,8 +271,19 @@ def load_raw_winter_mef(
     """
     primary_header, split_data, split_headers = open_mef_fits(path)
 
-    primary_header = clean_header(primary_header)
-
+    try:
+        primary_header = clean_header(primary_header)
+    except KeyError:
+        logger.warning(f"Could not clean header for {path}, missing keywords")
+        primary_header[OBSCLASS_KEY] = "test"
+        primary_header["COADDS"] = 1
+        primary_header["CALSTEPS"] = ""
+        primary_header["PROCFAIL"] = 1
+        primary_header[TARGET_KEY] = "test"
+        primary_header["UTCTIME"] = "2023-06-14T00:00:00"
+        for field in core_fields:
+            if field not in primary_header.keys():
+                primary_header[field] = -99
     primary_header[BASE_NAME_KEY] = os.path.basename(path)
     primary_header[RAW_IMG_KEY] = path
 
@@ -408,7 +431,7 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
 
         # Mask the outage to the right
         mask[145:, 1735:] = 1.0
-        mask[data > 40000] = 1.0
+        # mask[data > 40000] = 1.0
 
         # Mask random vertical strip
         mask[:, 1080:1085] = 1.0

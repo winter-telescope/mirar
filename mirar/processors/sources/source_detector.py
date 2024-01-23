@@ -8,10 +8,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
+from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch, SourceBatch, SourceTable
-from mirar.data.utils import encode_img
+from mirar.data.utils import encode_img, write_regions_file
 from mirar.paths import (
     BASE_NAME_KEY,
     CAND_DEC_KEY,
@@ -45,39 +47,73 @@ def generate_candidates_table(
     Generate a candidates table from a difference image
     :param diff: Difference image
     :param scorr_catalog_path: Path to the scorr catalog
+    :param scorr_stats_catalog_path: Path to the scorr stats catalog
     :param sci_resamp_image_path: Path to the resampled science image
     :param ref_resamp_image_path: Path to the resampled reference image
     :param diff_scorr_path: Path to the scorr image
     :return: Candidates table
     """
     det_srcs = get_table_from_ldac(scorr_catalog_path)
-    det_srcs = det_srcs.to_pandas()
+
+    # Check if required sextractor specific keys are present in table
+    for key in [
+        "XPEAK_IMAGE",
+        "YPEAK_IMAGE",
+        "FWHM_IMAGE",
+        "XPEAK_IMAGE",
+        "YPEAK_IMAGE",
+        "ALPHAWIN_J2000",
+        "DELTAWIN_J2000",
+        "A_IMAGE",
+        "B_IMAGE",
+        "ELONGATION",
+    ]:
+        if key not in det_srcs.colnames:
+            raise PrerequisiteError(f"Required key {key} not found in scorr catalog.")
 
     diff_path = diff[LATEST_SAVE_KEY]
 
     logger.debug(f"Found {len(det_srcs)} candidates in image.")
 
+    xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"] - 1, det_srcs["YPEAK_IMAGE"] - 1
+    det_srcs["xpeak"] = xpeaks
+    det_srcs["ypeak"] = ypeaks
+    scorr_data = fits.getdata(diff_scorr_path)
+    scorr_peaks = scorr_data[ypeaks, xpeaks]
+    det_srcs["scorr"] = scorr_peaks
+
+    det_srcs = det_srcs[det_srcs["scorr"] > 5]
+
+    det_srcs = det_srcs.to_pandas()
+
+    logger.debug(
+        f"Filtered to {len(det_srcs)} candidates in image with " f"scorr peak > 5."
+    )
     # Rename sextractor keys
     ydims, xdims = diff.get_data().shape
     det_srcs["NAXIS1"] = xdims
     det_srcs["NAXIS2"] = ydims
     det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"] - 1
     det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"] - 1
-    xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"] - 1, det_srcs["YPEAK_IMAGE"] - 1
-    det_srcs["xpeak"] = xpeaks
-    det_srcs["ypeak"] = ypeaks
-    det_srcs[CAND_RA_KEY] = det_srcs["ALPHA_J2000"]
-    det_srcs[CAND_DEC_KEY] = det_srcs["DELTA_J2000"]
+
+    det_srcs["SEXTR_RA"] = det_srcs["ALPHAWIN_J2000"]
+    det_srcs["SEXTR_DEC"] = det_srcs["DELTAWIN_J2000"]
+    wcs = WCS(diff.get_header())
+    img_ra, img_dec = wcs.all_pix2world(det_srcs[XPOS_KEY], det_srcs[YPOS_KEY], 1)
+    det_srcs[CAND_RA_KEY] = img_ra
+    det_srcs[CAND_DEC_KEY] = img_dec
+    det_crds = SkyCoord(ra=img_ra, dec=img_dec, unit="deg")
+    sextractor_crds = SkyCoord(
+        ra=det_srcs["SEXTR_RA"], dec=det_srcs["SEXTR_DEC"], unit="deg"
+    )
+    det_srcs["crd_offset"] = sextractor_crds.separation(det_crds).arcsec
+
     det_srcs["fwhm"] = det_srcs["FWHM_IMAGE"]
     det_srcs["aimage"] = det_srcs["A_IMAGE"]
     det_srcs["bimage"] = det_srcs["B_IMAGE"]
     det_srcs["aimagerat"] = det_srcs["aimage"] / det_srcs["fwhm"]
     det_srcs["bimagerat"] = det_srcs["bimage"] / det_srcs["fwhm"]
     det_srcs["elong"] = det_srcs["ELONGATION"]
-
-    scorr_data = fits.getdata(diff_scorr_path)
-    scorr_peaks = scorr_data[ypeaks, xpeaks]
-    det_srcs["scorr"] = scorr_peaks
 
     cutout_size_display = 40
 
@@ -128,6 +164,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         cand_det_sextractor_nnw: str,
         cand_det_sextractor_params: str,
         output_sub_dir: str = "candidates",
+        write_regions: bool = False,
     ):
         super().__init__()
         self.output_sub_dir = output_sub_dir
@@ -135,6 +172,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         self.cand_det_sextractor_filter = cand_det_sextractor_filter
         self.cand_det_sextractor_nnw = cand_det_sextractor_nnw
         self.cand_det_sextractor_params = cand_det_sextractor_params
+        self.write_regions = write_regions
 
     def __str__(self) -> str:
         return (
@@ -205,6 +243,24 @@ class ZOGYSourceDetector(BaseSourceGenerator):
 
             else:
                 msg = f"Found {len(srcs_table)} sources in image {image[BASE_NAME_KEY]}"
+                if self.write_regions:
+                    reg_name = diff_image_path.replace(".fits", ".cands.img.reg")
+                    write_regions_file(
+                        regions_path=reg_name,
+                        x_coords=srcs_table["X_IMAGE"],
+                        y_coords=srcs_table["Y_IMAGE"],
+                        text=[str(round(x, 2)) for x in srcs_table["scorr"]],
+                    )
+
+                    write_regions_file(
+                        regions_path=diff_image_path.replace(".fits", ".cands.wcs.reg"),
+                        x_coords=srcs_table[CAND_RA_KEY],
+                        y_coords=srcs_table[CAND_DEC_KEY],
+                        region_radius=5.0 / 3600.0,
+                        system="wcs",
+                        text=[str(round(x, 2)) for x in srcs_table["scorr"]],
+                    )
+
                 logger.debug(msg)
                 all_cands.append(SourceTable(srcs_table, metadata=metadata))
 

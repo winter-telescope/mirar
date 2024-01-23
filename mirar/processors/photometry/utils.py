@@ -12,9 +12,16 @@ from matplotlib.patches import Circle
 from photutils.aperture import CircularAnnulus, CircularAperture, aperture_photometry
 
 from mirar.data import Image
+from mirar.errors import ProcessorError
 from mirar.paths import GAIN_KEY
 
 logger = logging.getLogger(__name__)
+
+
+class CutoutError(ProcessorError):
+    """
+    Error raised when cutout generation fails
+    """
 
 
 def make_cutouts(
@@ -38,54 +45,43 @@ def make_cutouts(
         data = fits.getdata(image_path)
         y_image_size, x_image_size = np.shape(data)
         x, y = position
-        # logger.debug(f'{x},{y},{np.shape(data)}')
-        if np.logical_and(x < half_size, y < half_size):
-            cutout = data[0 : y + half_size + 1, 0 : x + half_size + 1]
-            n_xpix = half_size - y
-            n_ypix = half_size - x
-            cutout = np.pad(cutout, ((n_ypix, 0), (n_xpix, 0)), "constant")
+        logger.debug(f"Cutout parameters {x},{y},{np.shape(data)}")
 
-        elif np.logical_and(
-            x + half_size + 1 > x_image_size, y + half_size + 1 > y_image_size
-        ):
-            cutout = data[y - half_size : y_image_size, x - half_size : x_image_size]
-            n_xpix = (half_size + x + 1) - x_image_size
-            n_ypix = (half_size + y + 1) - y_image_size
-            cutout = np.pad(cutout, ((0, n_ypix), (0, n_xpix)), "constant")
-
-        elif y < half_size:
-            logger.info(
-                f"Cutout parameters are {y + half_size + 1}, {x - half_size},"
-                f" {x + half_size + 1},{y_image_size},"
-                f"{x_image_size}"
+        if x < 0 or x > x_image_size or y < 0 or y > y_image_size:
+            raise CutoutError(
+                f"Cutout position {x},{y} is outside the image {image_path}"
             )
-            cutout = data[0 : y + half_size + 1, x - half_size : x + half_size + 1]
-            n_pix = half_size - y
-            cutout = np.pad(cutout, ((n_pix, 0), (0, 0)), "constant")
+
+        if x < half_size:
+            xmin, xmax = 0, x + half_size + 1
+            x_pad_width = (half_size - x, 0)
+
+        elif x + half_size + 1 > x_image_size:
+            xmin, xmax = x - half_size, x_image_size
+            x_pad_width = (0, (half_size + x + 1) - x_image_size)
+        else:
+            xmin, xmax = x - half_size, x + half_size + 1
+            x_pad_width = (0, 0)
+
+        if y < half_size:
+            ymin, ymax = 0, y + half_size + 1
+            y_pad_width = (half_size - y, 0)
 
         elif y + half_size + 1 > y_image_size:
-            cutout = data[
-                y - half_size : y_image_size, x - half_size : x + half_size + 1
-            ]
-            n_pix = (half_size + y + 1) - y_image_size
-            cutout = np.pad(cutout, ((0, n_pix), (0, 0)), "constant")
-
-        elif x < half_size:
-            cutout = data[y - half_size : y + half_size + 1, 0 : x + half_size + 1]
-            n_pix = half_size - x
-            cutout = np.pad(cutout, ((0, 0), (n_pix, 0)), "constant")
-        elif x + half_size > x_image_size:
-            cutout = data[
-                y - half_size : y + half_size + 1, x - half_size : x_image_size
-            ]
-            n_pix = (half_size + x + 1) - x_image_size
-            cutout = np.pad(cutout, ((0, 0), (0, n_pix)), "constant")
+            ymin, ymax = y - half_size, y_image_size
+            y_pad_width = (0, (half_size + y + 1) - y_image_size)
         else:
-            cutout = data[
-                y - half_size : y + half_size + 1, x - half_size : x + half_size + 1
-            ]
+            ymin, ymax = y - half_size, y + half_size + 1
+            y_pad_width = (0, 0)
 
+        cutout = data[ymin:ymax, xmin:xmax]
+        cutout = np.pad(cutout, (y_pad_width, x_pad_width), "constant")
         cutout_list.append(cutout)
+
+        assert cutout.shape == (2 * half_size + 1, 2 * half_size + 1), (
+            f"Cutout shape is not correct for x={x} and y={y} and "
+            f"half_size={half_size}. Shape is {cutout.shape} Data shape is {data.shape}"
+        )
     return cutout_list
 
 

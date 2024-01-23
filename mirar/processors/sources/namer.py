@@ -38,6 +38,7 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         self.db_order_field = db_order_field
         self.base_name = base_name
         self.name_start = name_start
+        self.lastname = None
 
     @staticmethod
     def increment_string(string: str):
@@ -122,15 +123,17 @@ class CandidateNamer(BaseDatabaseSourceSelector):
             ), "No candidate cross-match in source table"
 
             names = []
-            lastname = None
 
             detection_time = Time(source_table[TIME_KEY])
-            for _, source in sources.iterrows():
+            for ind, source in sources.iterrows():
                 if len(source[SOURCE_XMATCH_KEY]) > 0:
                     source_name = source[SOURCE_XMATCH_KEY][0][self.db_name_field]
                 else:
-                    source_name = self.get_next_name(detection_time, last_name=lastname)
-                    lastname = source_name
+                    source_name = self.get_next_name(
+                        detection_time, last_name=self.lastname
+                    )
+                    self.lastname = source_name
+                logger.debug(f"Assigning name: {source_name} to source # {ind}.")
                 names.append(source_name)
 
             sources[self.db_name_field] = names

@@ -171,6 +171,20 @@ class BaseXMatchCatalog(ABCatalog, ABC):
         """
         raise NotImplementedError
 
+    @property
+    def ra_column_name(self):
+        """
+        Name of RA column
+        """
+        raise NotImplementedError
+
+    @property
+    def dec_column_name(self):
+        """
+        Name of Dec column
+        """
+        raise NotImplementedError
+
     def __init__(self, *args, num_sources: int = 1, **kwargs):
         super().__init__(*args, **kwargs)
         self.search_radius_arcsec = self.search_radius_arcmin * 60.0

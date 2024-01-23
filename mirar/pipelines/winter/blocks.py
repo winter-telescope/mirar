@@ -21,7 +21,6 @@ from mirar.pipelines.winter.config import (
     prv_candidate_cols,
     psfex_path,
     scamp_config_path,
-    sextractor_anet_config,
     sextractor_astrometry_config,
     sextractor_astromstats_config,
     sextractor_candidate_config,
@@ -33,6 +32,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     select_winter_flat_images,
+    winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
@@ -110,11 +110,12 @@ from mirar.processors.skyportal.skyportal_candidate import SkyportalCandidateUpl
 from mirar.processors.sources import (
     CandidateNamer,
     CustomSourceTableModifier,
+    ForcedPhotometryDetector,
     SourceLoader,
     SourceWriter,
     ZOGYSourceDetector,
 )
-from mirar.processors.split import SUB_ID_KEY, SplitImage
+from mirar.processors.split import SUB_ID_KEY, SplitImage, SwarpImageSplitter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
@@ -150,6 +151,7 @@ build_test = [
             "DECDEG",
             "T_ROIC",
             "FIELDID",
+            "FOCPOS",
         ]
     ),
     ImageSelector(
@@ -225,13 +227,11 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 2
+BOARD_ID = 1
 select_subset = [
     ImageSelector(
-        # ("EXPTIME", "120.0"),
-        # ("FIELDID", ["3944", "999999999", "6124"]),
+        (TARGET_KEY, ["timed_requests_11_09_2023_22_1699596785.db_0", "dark"]),
         ("BOARD_ID", str(BOARD_ID)),
-        ("FILTER", ["dark", "J"]),
     ),
 ]
 
@@ -305,7 +305,9 @@ load_unpacked = [
 
 dark_calibrate = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", EXPTIME_KEY, "SUBCOORD"]),
+    ImageBatcher(
+        ["BOARD_ID", EXPTIME_KEY, "SUBCOORD", "GAINCOLT", "GAINCOLB", "GAINROW"]
+    ),
     DarkCalibrator(cache_sub_dir="calibration_darks"),
     ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     ImageDebatcher(),
@@ -317,7 +319,17 @@ dark_calibrate = [
 
 flat_calibrate = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "SUBCOORD"]),
+    ImageBatcher(
+        [
+            "BOARD_ID",
+            "FILTER",
+            "SUBCOORD",
+            "GAINCOLT",
+            "GAINCOLB",
+            "GAINROW",
+            TARGET_KEY,
+        ]
+    ),
     # SkyFlatCalibrator(cache_sub_dir="skycals"),
     FlatCalibrator(
         cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
@@ -335,6 +347,11 @@ flat_calibrate = [
     # ImageSelector(("FIELDID", str(8948))),
 ]
 
+load_calibrated = [
+    ImageLoader(input_sub_dir="skysub", input_img_dir=base_output_dir),
+    ImageBatcher(["UTCTIME", "BOARD_ID"]),
+]
+
 fourier_filter = [CustomImageBatchModifier(winter_fourier_filtered_image_generator)]
 
 astrometry = [
@@ -343,19 +360,21 @@ astrometry = [
     # ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
-        scale_bounds=[15, 23],
-        scale_units="amw",
+        scale_bounds=[1.0, 1.3],
+        scale_units="app",
         use_sextractor=True,
         parity="neg",
         search_radius_deg=5.0,
-        sextractor_config_path=sextractor_anet_config["config_path"],
+        sextractor_config_path=winter_anet_sextractor_config_path_generator,
         use_weight=True,
         timeout=120,
         cache=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
     ImageDebatcher(),
-    ImageBatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
+    ImageBatcher(
+        [TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD", "DITHGRP"]
+    ),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -397,7 +416,7 @@ stack_dithers = [
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
-        include_scamp=False,
+        include_scamp=True,
         subtract_bkg=False,
         cache=False,
         center_type="ALL",
@@ -405,13 +424,13 @@ stack_dithers = [
         header_keys_to_combine=["RAWID"],
     ),
     ImageSaver(output_dir_name="stack"),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    CustomImageBatchModifier(masked_images_rejector),
 ]
 
 photcal_and_export = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
         **sextractor_photometry_config,
         output_sub_dir="phot",
@@ -446,12 +465,20 @@ photcal_and_export = [
 
 # Image subtraction
 
-load_stack = [
+load_final_stack = [
     ImageLoader(
         input_sub_dir="final",
         input_img_dir=base_output_dir,
         load_image=load_winter_stack,
     ),
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
+]
+
+split_stack = [
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
+    SwarpImageSplitter(swarp_config_path=swarp_config_path, n_x=2, n_y=1),
+    ImageSaver(output_dir_name="split_stacks"),
 ]
 
 imsub = [
@@ -484,8 +511,7 @@ load_sub = [
 ]
 detect_candidates = [
     ZOGYSourceDetector(
-        output_sub_dir="subtract",
-        **sextractor_candidate_config,
+        output_sub_dir="subtract", **sextractor_candidate_config, write_regions=True
     ),
     PSFPhotometry(phot_cutout_half_size=10),
     AperturePhotometry(
@@ -575,7 +601,7 @@ stack_boards = [
     ImageSaver(output_dir_name="mosaic"),
 ]
 
-mosaic = load_stack + stack_boards
+mosaic = load_final_stack + stack_boards
 
 
 # To make cals for focusing
@@ -602,7 +628,11 @@ full_reduction = (
 )
 
 photcal_stacks = [
-    ImageLoader(input_sub_dir="stack", input_img_dir=base_output_dir)
+    ImageLoader(
+        input_sub_dir="stack",
+        input_img_dir=base_output_dir,
+        load_image=load_winter_stack,
+    ),
 ] + photcal_and_export
 
 reduce_unpacked = load_unpacked + full_reduction
@@ -637,3 +667,30 @@ focus_cals = (
     + dark_calibrate
     + flat_calibrate
 )
+
+stack_forced_photometry = [
+    ImageDebatcher(),
+    ImageBatcher([BASE_NAME_KEY]),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
+    AperturePhotometry(
+        aper_diameters=[5, 8, 10, 15],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[20, 20, 20, 20],
+        bkg_out_diameters=[40, 40, 40, 40],
+    ),
+]
+
+diff_forced_photometry = [
+    ImageDebatcher(),
+    ImageBatcher([BASE_NAME_KEY]),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
+    AperturePhotometry(
+        aper_diameters=[5, 8, 10, 15],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[20, 20, 20, 20],
+        bkg_out_diameters=[40, 40, 40, 40],
+    ),
+    PSFPhotometry(),
+]
+
+astrometry = load_calibrated + fourier_filter + astrometry  # + validate_astrometry

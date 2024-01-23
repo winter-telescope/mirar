@@ -11,7 +11,7 @@ CATALOG_TYPE     FITS_1.0       # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
 #------------------------------- Extraction ----------------------------------
 
 DETECT_TYPE      CCD            # CCD (linear) or PHOTO (with gamma correction)
-DETECT_MINAREA   5              # minimum number of pixels above threshold
+DETECT_MINAREA   10              # minimum number of pixels above threshold
 THRESH_TYPE	 RELATIVE	# threshold type: RELATIVE (in sigmas) or ABSOLUTE (in ADUs)
 
 DETECT_THRESH    1.5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2

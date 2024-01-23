@@ -290,11 +290,16 @@ class WFAUQuery(BaseWFCAMQuery):
             wfau_query_decs,
             wfau_query_exists_locally_list,
         ) = ([], [], [], [])
-
-        # Get different surveys by the telescope
-        query_ra_cent = np.median(query_crds.ra.deg)
-        query_dec_cent = np.median(query_crds.dec.deg)
-        surveys = self.get_surveys(query_ra_cent, query_dec_cent)
+        # Get surveys that are available at the given coordinates
+        surveys, survey_names = [], []
+        for ra, dec in zip(query_ra_list, query_dec_list):
+            crd_surveys = self.get_surveys(ra, dec)
+            for srv in crd_surveys:
+                if srv.survey_name not in survey_names:
+                    surveys.append(srv)
+                    survey_names.append(srv.survey_name)
+        logger.debug(f"Surveys are {[x.survey_name for x in surveys]}")
+        surveys = np.array(surveys)
         if len(surveys) == 0:
             err = "Coordinates not in any survey"
             raise NotinWFCAMError(err)

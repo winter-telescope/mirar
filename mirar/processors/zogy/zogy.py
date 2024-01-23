@@ -250,6 +250,65 @@ class ZOGYPrepare(BaseImageProcessor):
 
             ref_img = self.open_fits(self.get_path(ref_img_path))
 
+            sci_x_imgsize = int(image["NAXIS1"])
+            sci_y_imgsize = int(image["NAXIS2"])
+            ref_x_imgsize = int(ref_img["NAXIS1"])
+            ref_y_imgsize = int(ref_img["NAXIS2"])
+
+            assert sci_x_imgsize == ref_x_imgsize, (
+                "Science and reference images " "have different x dimensions"
+            )
+            assert sci_y_imgsize == ref_y_imgsize, (
+                "Science and reference images " "have different y dimensions"
+            )
+
+            trimming_required = (sci_x_imgsize % 2 == 1) or (sci_y_imgsize % 2 == 1)
+            if sci_x_imgsize % 2 == 1:
+                sci_x_imgsize -= 1
+            if sci_y_imgsize % 2 == 1:
+                sci_y_imgsize -= 1
+
+            if trimming_required:
+                logger.debug(
+                    "Trimming science image, original size was "
+                    f"{ref_x_imgsize} x {ref_y_imgsize}"
+                    f" new size is {sci_x_imgsize} x {sci_y_imgsize}"
+                )
+                image.set_data(image.get_data()[0:sci_y_imgsize, 0:sci_x_imgsize])
+                image["NAXIS1"] = sci_x_imgsize
+                image["NAXIS2"] = sci_y_imgsize
+
+                logger.debug("Trimming reference image")
+                ref_img.set_data(ref_img.get_data()[0:sci_y_imgsize, 0:sci_x_imgsize])
+                ref_img["NAXIS1"] = sci_x_imgsize
+                ref_img["NAXIS2"] = sci_y_imgsize
+                logger.debug(f"Saving trimmed reference image to {ref_img_path}")
+                self.save_fits(ref_img, ref_img_path)
+
+                logger.debug(f"Trimming science weight image")
+                weight_path = image[LATEST_WEIGHT_SAVE_KEY]
+                with fits.open(
+                    self.get_path(weight_path), "update", memmap=False
+                ) as weight_img:
+                    weight_data = weight_img[0].data  # pylint: disable=no-member
+                    weight_img[0].data = weight_data[:sci_y_imgsize, :sci_x_imgsize]
+                    weight_img[0].header[
+                        "NAXIS1"
+                    ] = sci_x_imgsize  # pylint: disable=no-member
+                    weight_img[0].header[
+                        "NAXIS2"
+                    ] = sci_y_imgsize  # pylint: disable=no-member
+
+                logger.debug("Trimming reference weight image")
+                ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
+                with fits.open(
+                    self.get_path(ref_weight_path), "update", memmap=False
+                ) as weight_img:
+                    weight_data = weight_img[0].data  # pylint: disable=no-member
+                    weight_img[0].data = weight_data[:sci_y_imgsize, :sci_x_imgsize]
+                    weight_img[0].header["NAXIS1"] = sci_x_imgsize
+                    weight_img[0].header["NAXIS2"] = sci_y_imgsize
+
             ref_catalog_path = ref_img[SEXTRACTOR_HEADER_KEY]
             ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
 
@@ -389,13 +448,28 @@ class ZOGY(ZOGYPrepare):
 
             logger.debug(f"Ast unc x is {ast_unc_x:.2f} and y is {ast_unc_y:.2f}")
             logger.debug(f"Running zogy on image {image[BASE_NAME_KEY]}")
+
+            # Load the PSFs into memory
+            with fits.open(sci_psf_path, memmap=False) as img_psf_f:
+                new_psf = img_psf_f[0].data  # pylint: disable=no-member
+
+            with fits.open(ref_psf_path, memmap=False) as ref_psf_f:
+                ref_psf = ref_psf_f[0].data  # pylint: disable=no-member
+
+            # Load the sigma images into memory
+            with fits.open(sci_rms_path, memmap=False) as img_sigma_f:
+                new_sigma = img_sigma_f[0].data  # pylint: disable=no-member
+
+            with fits.open(ref_rms_path, memmap=False) as ref_sigma_f:
+                ref_sigma = ref_sigma_f[0].data  # pylint: disable=no-member
+
             diff_data, diff_psf_data, scorr_data = pyzogy(
                 new_data=image.get_data(),
                 ref_data=ref_image.get_data(),
-                new_psf_path=sci_psf_path,
-                ref_psf_path=ref_psf_path,
-                new_sigma_path=sci_rms_path,
-                ref_sigma_path=ref_rms_path,
+                new_psf=new_psf,
+                ref_psf=ref_psf,
+                new_sigma=new_sigma,
+                ref_sigma=ref_sigma,
                 new_avg_unc=sci_rms,
                 ref_avg_unc=ref_rms,
                 dx=ast_unc_x,

@@ -14,7 +14,6 @@ from mirar.paths import (
     PSF_FLUXUNC_KEY,
     get_output_dir,
 )
-from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.base_processor import PrerequisiteError
 from mirar.processors.photometry.base_photometry import BasePhotometryProcessor
 from mirar.processors.photometry.utils import (
@@ -84,6 +83,12 @@ class PSFPhotometry(BasePhotometryProcessor):
 
             fluxes, fluxuncs, minchi2s, xshifts, yshifts = [], [], [], [], []
 
+            if self.psf_file_key not in metadata:
+                raise PrerequisiteError(
+                    f"PSF file key {self.psf_file_key} not in source table."
+                    f"Have you run the PSFEx processor, or set the correct key with"
+                    f" the psf file name?"
+                )
             psf_filename = source_table[self.psf_file_key]
             temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(metadata)
 
@@ -143,15 +148,3 @@ class PSFPhotometry(BasePhotometryProcessor):
             source_table.set_data(candidate_table)
 
         return batch
-
-    def check_prerequisites(
-        self,
-    ):
-        mask = [isinstance(x, PSFex) for x in self.preceding_steps]
-        if np.sum(mask) < 1:
-            err = (
-                f"{self.__module__} requires {PSFex} as a prerequisite. "
-                f"However, the following steps were found: {self.preceding_steps}."
-            )
-            logger.error(err)
-            raise PrerequisiteError(err)

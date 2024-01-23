@@ -29,6 +29,9 @@ class ProcessReference(BaseImageProcessor):
 
     base_key = "REFPREP"
 
+    max_n_cpu = 15  # Because PS1 ref downloads get rate-limited if you use too many
+    # threads
+
     def __init__(
         self,
         ref_image_generator: Callable[..., BaseReferenceGenerator],
