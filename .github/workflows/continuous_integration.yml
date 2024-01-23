@@ -71,12 +71,10 @@ jobs:
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
+          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl wcstools
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
           poetry install
-          sudo apt-get update
-          sudo apt-get install libcairo2-dev libnetpbm10-dev netpbm libpng2-dev libjpeg-dev python-numpy python-pyfits python-dev zlib1g-dev libbz2-dev swig cfitsio-dev
           swarp -v
           scamp -v
           sex -v
@@ -99,6 +97,7 @@ jobs:
       # Set up database
       - name: postgres
         run: |
+          sudo apt-get update
           sudo apt-get install postgresql
           sudo apt-get install postgresql-common
           sudo apt-get install postgresql-server-dev-14
