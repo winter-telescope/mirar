@@ -11,6 +11,7 @@ from astropy.io import fits
 from astropy.io.fits.verify import VerifyWarning
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
+from scipy.optimize import curve_fit
 
 from mirar.catalog.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
@@ -111,7 +112,7 @@ class BaseZeroPointCalculator:
             calculating zero point. The reference catalog is assumed to have the
             "magnitude" column, as it comes from mirar.catalog.base_catalog.BaseCatalog
         Returns:
-            Image object with zero point information added to the header
+            Image object with zero point information added to the header.
         """
         raise NotImplementedError
 
@@ -187,6 +188,58 @@ class OutlierRejectionZPCalculator(BaseZeroPointCalculator):
                 image[f"ZP_{zpvals['diameter']}"] = zpvals["zp_mean"]
                 image[f"ZP_{zpvals['diameter']}_std"] = zpvals["zp_std"]
                 image[f"ZP_{zpvals['diameter']}_nstars"] = zpvals["nstars"]
+
+        return image
+
+
+def line_model(data, slope, intercept):
+    """linear model to hand to scipy curve_fit"""
+    return slope * data + intercept
+
+
+class ZPWithColorTermCalculator(BaseZeroPointCalculator):
+    """
+    Class to calculate zero point by including a color term. This models the data as
+
+    ref_mag - img_mag = ZP + C * (ref_color)
+
+    Attributes:
+        catalog_color_colnames: list of two strings, the column names of the colors in
+        the reference catalog
+    """
+
+    def __init__(self, catalog_color_colnames: list[str, str]):
+        self.catalog_color_colnames = catalog_color_colnames
+
+    def calculate_zeropoint(
+        self,
+        image: Image,
+        matched_ref_cat: Table,
+        matched_img_cat: Table,
+        colnames: list[str],
+    ) -> Image:
+        colors = (
+            matched_ref_cat[self.catalog_color_colnames[0]]
+            - matched_ref_cat[self.catalog_color_colnames[1]]
+        )
+
+        for colname in colnames:
+            y = matched_img_cat[colname] - matched_ref_cat["magnitude"]
+            x = colors
+            y_err = np.sqrt(
+                matched_img_cat[colname.replace("MAG", "MAGERR")] ** 2
+                + matched_ref_cat["magnitude_err"] ** 2
+            )
+            popt, pcov = curve_fit(f=line_model, xdata=x, ydata=y, sigma=y_err)
+            color, zero_point = popt
+            color_err, zp_err = np.sqrt(np.diag(pcov))
+
+            aperture = colname.split("_")[-1]
+            image[f"ZP_{aperture}"] = zero_point
+            image[f"ZP_{aperture}_std"] = zp_err
+            image[f"ZP_{aperture}_nstars"] = len(matched_ref_cat)
+            image[f"C_{aperture}"] = color
+            image[f"C_{aperture}_std"] = color_err
 
         return image
 
