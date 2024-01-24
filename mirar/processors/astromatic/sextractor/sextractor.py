@@ -84,7 +84,8 @@ class Sextractor(BaseImageProcessor):
         cache: bool = False,
         mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
-        psf_name: Optional[str] = None,
+        use_psfex: bool = False,
+        psf_path: Optional[str] = None,
         catalog_purifier: Callable[[Table, Image], Table] = None,
     ):
         """
@@ -103,6 +104,9 @@ class Sextractor(BaseImageProcessor):
         :param cache: whether to cache sextractor output
         :param mag_zp: magnitude zero point for sextractor. Leave to None if not known.
         :param write_regions_bool: whether to write regions file for ds9
+        :param use_psfex: whether to use psfex
+        :param psf_path: name of psf file to use for sextractor. If none, will check
+        for key in header
         :param catalog_purifier: If not None, will apply this function to the
         Sextractor catalog before saving
         """
@@ -122,13 +126,17 @@ class Sextractor(BaseImageProcessor):
         self.cache = cache
         self.mag_zp = mag_zp
         self.write_regions = write_regions_bool
-        self.psf_name = psf_name
+        self.use_psfex = use_psfex
+        self.psf_path = psf_path
         self.catalog_purifier = catalog_purifier
 
         if isinstance(self.checkimage_name, str):
             self.checkimage_name = [self.checkimage_name]
         if isinstance(self.checkimage_type, str):
             self.checkimage_type = [self.checkimage_type]
+
+        if ~self.use_psfex & (self.psf_path is not None):
+            raise ValueError("Cannot specify psf_path without setting use_psfex=True")
 
     def __str__(self) -> str:
         return (
@@ -215,8 +223,17 @@ class Sextractor(BaseImageProcessor):
                 weight_path = self.save_mask_image(image, temp_path)
                 temp_files.append(Path(weight_path))
 
-            if PSFEX_CAT_KEY in image.keys():
-                self.psf_name = Path(image[PSFEX_CAT_KEY])
+            if self.use_psfex:
+                if PSFEX_CAT_KEY in image.keys():
+                    self.psf_path = Path(image[PSFEX_CAT_KEY])
+
+                if self.psf_path is None:
+                    raise ValueError(
+                        f"PSFex catalog not found in image {image[BASE_NAME_KEY]}"
+                        f"Please run PSFex on this image that should add the path to "
+                        f"the header, or specify the path manually using psf_name "
+                        f"argument"
+                    )
                 self.check_psf_prerequisite()
 
             output_cat = sextractor_out_dir.joinpath(
@@ -244,7 +261,7 @@ class Sextractor(BaseImageProcessor):
                 checkimage_name=checkimage_name,
                 checkimage_type=self.checkimage_type,
                 gain=self.gain,
-                psf_name=self.psf_name,
+                psf_name=self.psf_path,
                 catalog_name=output_cat,
             )
 

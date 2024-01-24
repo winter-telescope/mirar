@@ -30,6 +30,13 @@ sextractor_photometry_config = {
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
+sextractor_photometry_psf_config = {
+    "config_path": winter_file_dir.joinpath("photomCat.sex"),
+    "filter_path": winter_file_dir.joinpath("default.conv"),
+    "parameter_path": winter_file_dir.joinpath("photom_psf.param"),
+    "starnnw_path": winter_file_dir.joinpath("default.nnw"),
+}
+
 
 sextractor_anet_config = {
     "config_path_boardid_1_5": winter_file_dir.joinpath("astrom_anet_1_5.sex"),

@@ -88,6 +88,109 @@ def get_maglim(
     return maglim
 
 
+class BaseZeroPointCalculator:
+    """
+    Base class for actually calculating zero point calculators
+    """
+
+    def calculate_zeropoint(
+        self,
+        image: Image,
+        matched_ref_cat: Table,
+        matched_img_cat: Table,
+        colnames: list[str],
+    ) -> Image:
+        """
+        Function to calculate zero point from two catalogs and add the zeropoint
+        information to the image header
+        Args:
+            matched_ref_cat: Reference catalog table
+            matched_img_cat: Catalog of sources
+            image: Image object
+            colnames: List of column names from the image catalog to use for
+            calculating zero point. The reference catalog is assumed to have the
+            "magnitude" column, as it comes from mirar.catalog.base_catalog.BaseCatalog
+        Returns:
+            Image object with zero point information added to the header
+        """
+        raise NotImplementedError
+
+
+class OutlierRejectionZPCalculator(BaseZeroPointCalculator):
+    """
+    Class to calculate zero point using outlier rejection
+    Attributes:
+        num_stars_threshold: int to use as minimum number of stars
+        outlier_rejection_threshold: float or list of floats to use as number of sigmas
+    """
+
+    def __init__(
+        self,
+        num_stars_threshold: int = 5,
+        outlier_rejection_threshold: float | list[float] = 3.0,
+    ):
+        self.num_stars_threshold = num_stars_threshold
+        self.outlier_rejection_threshold = outlier_rejection_threshold
+        if isinstance(outlier_rejection_threshold, float):
+            self.outlier_rejection_threshold = [outlier_rejection_threshold]
+        self.outlier_rejection_threshold = np.sort(self.outlier_rejection_threshold)
+
+    def calculate_zeropoint(
+        self,
+        image: Image,
+        matched_ref_cat: Table,
+        matched_img_cat: Table,
+        colnames: list[str],
+    ) -> Image:
+        zeropoints = []
+
+        for colname in colnames:
+            offsets = np.ma.array(
+                matched_ref_cat["magnitude"] - matched_img_cat[colname]
+            )
+            for outlier_thresh in self.outlier_rejection_threshold:
+                cl_offset = sigma_clip(offsets, sigma=outlier_thresh)
+                num_stars = np.sum(np.invert(cl_offset.mask))
+
+                zp_mean, zp_med, zp_std = sigma_clipped_stats(
+                    offsets, sigma=outlier_thresh
+                )
+
+                if num_stars > self.num_stars_threshold:
+                    break
+
+            check = [np.isnan(x) for x in [zp_mean, zp_med, zp_std]]
+            if np.sum(check) > 0:
+                err = (
+                    f"Error with nan when calculating sigma stats: \n "
+                    f"mean: {zp_mean}, median: {zp_med}, std: {zp_std}"
+                )
+                logger.error(err)
+                raise PhotometryCalculationError(err)
+
+            aperture = colname.split("_")[-1]
+            zero_dict = {
+                "diameter": aperture,
+                "zp_mean": zp_mean,
+                "zp_median": zp_med,
+                "zp_std": zp_std,
+                "nstars": num_stars,
+                "mag_cat": matched_ref_cat["magnitude"][np.invert(cl_offset.mask)],
+                "mag_apers": matched_img_cat[colname][np.invert(cl_offset.mask)],
+            }
+            zeropoints.append(zero_dict)
+
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter("ignore", category=VerifyWarning)
+
+            for zpvals in zeropoints:
+                image[f"ZP_{zpvals['diameter']}"] = zpvals["zp_mean"]
+                image[f"ZP_{zpvals['diameter']}_std"] = zpvals["zp_std"]
+                image[f"ZP_{zpvals['diameter']}_nstars"] = zpvals["nstars"]
+
+        return image
+
+
 class PhotCalibrator(BaseProcessorWithCrossMatch):
     """
     Photometric calibrator processor
@@ -95,7 +198,6 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
     Attributes:
         num_matches_threshold: minimum number of matches required for
         photometric calibration
-        outlier_rejection_threshold: float or list of floats to use as number of sigmas
         for outlier rejection. If a ist is provided, the list is sorted and stepped
         through in order with increasing thresholds until the specified
         number of matches is reached.
@@ -114,7 +216,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         crossmatch_radius_arcsec: float = 1.0,
         write_regions: bool = False,
         cache: bool = False,
-        outlier_rejection_threshold: float | list[float] = 3.0,
+        zp_calculator: BaseZeroPointCalculator = OutlierRejectionZPCalculator(),
     ):
         super().__init__(
             ref_catalog_generator=ref_catalog_generator,
@@ -126,10 +228,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             required_parameters=REQUIRED_PARAMETERS,
         )
         self.num_matches_threshold = num_matches_threshold
-        self.outlier_rejection_threshold = outlier_rejection_threshold
-        if isinstance(outlier_rejection_threshold, float):
-            self.outlier_rejection_threshold = [outlier_rejection_threshold]
-        self.outlier_rejection_threshold = np.sort(self.outlier_rejection_threshold)
+        self.zp_calculator = zp_calculator
 
     def __str__(self) -> str:
         return "Processor to perform photometric calibration."
@@ -141,113 +240,14 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         """
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 
-    def calculate_zeropoint(
-        self,
-        ref_cat: Table,
-        clean_img_cat: Table,
-    ) -> list[dict]:
-        """
-        Function to calculate zero point from two catalogs
-        Args:
-            ref_cat: Reference catalog table
-            clean_img_cat: Catalog of sources from image to xmatch with ref_cat
-        Returns:
-        """
-
-        matched_img_cat, matched_ref_cat, _ = self.xmatch_catalogs(
-            ref_cat=ref_cat,
-            image_cat=clean_img_cat,
-            crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
-        )
-        logger.debug(
-            f"Cross-matched {len(matched_img_cat)} sources from catalog to the image."
-        )
-
-        if len(matched_img_cat) < self.num_matches_threshold:
-            err = (
-                "Not enough cross-matched sources "
-                "found to calculate a reliable zeropoint. "
-                f"Only found {len(matched_img_cat)} crossmatches, "
-                f"while {self.num_matches_threshold} are required. "
-                f"Used {len(ref_cat)} reference sources and "
-                f"{len(clean_img_cat)} image sources."
-            )
-            logger.error(err)
-            raise PhotometryCrossMatchError(err)
-
-        apertures = self.get_sextractor_apertures()  # aperture diameters
-        zeropoints = []
-
-        for i, aperture in enumerate(apertures):
-            offsets = np.ma.array(
-                matched_ref_cat["magnitude"] - matched_img_cat["MAG_APER"][:, i]
-            )
-            for outlier_thresh in self.outlier_rejection_threshold:
-                cl_offset = sigma_clip(offsets, sigma=outlier_thresh)
-                num_stars = np.sum(np.invert(cl_offset.mask))
-
-                zp_mean, zp_med, zp_std = sigma_clipped_stats(
-                    offsets, sigma=outlier_thresh
-                )
-
-                if num_stars > self.num_matches_threshold:
-                    break
-
-            check = [np.isnan(x) for x in [zp_mean, zp_med, zp_std]]
-            if np.sum(check) > 0:
-                err = (
-                    f"Error with nan when calculating sigma stats: \n "
-                    f"mean: {zp_mean}, median: {zp_med}, std: {zp_std}"
-                )
-                logger.error(err)
-                raise PhotometryCalculationError(err)
-
-            zero_dict = {
-                "diameter": aperture,
-                "zp_mean": zp_mean,
-                "zp_median": zp_med,
-                "zp_std": zp_std,
-                "nstars": num_stars,
-                "mag_cat": matched_ref_cat["magnitude"][np.invert(cl_offset.mask)],
-                "mag_apers": matched_img_cat["MAG_APER"][:, i][
-                    np.invert(cl_offset.mask)
-                ],
-            }
-            zeropoints.append(zero_dict)
-
-        for outlier_thresh in self.outlier_rejection_threshold:
-            offsets = np.ma.array(
-                matched_ref_cat["magnitude"] - matched_img_cat["MAG_AUTO"]
-            )
-            cl_offset = sigma_clip(offsets, sigma=outlier_thresh)
-            num_stars = np.sum(np.invert(cl_offset.mask))
-            zp_mean, zp_med, zp_std = sigma_clipped_stats(offsets, sigma=outlier_thresh)
-            zero_auto_mag_cat = matched_ref_cat["magnitude"][np.invert(cl_offset.mask)]
-            zero_auto_mag_img = matched_img_cat["MAG_AUTO"][np.invert(cl_offset.mask)]
-
-            if num_stars > self.num_matches_threshold:
-                break
-
-        zeropoints.append(
-            {
-                "diameter": "AUTO",
-                "zp_mean": zp_mean,
-                "zp_median": zp_med,
-                "zp_std": zp_std,
-                "nstars": num_stars,
-                "mag_cat": zero_auto_mag_cat,
-                "mag_apers": zero_auto_mag_img,
-            }
-        )
-
-        return zeropoints
-
     def _apply_to_images(
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
         phot_output_dir = self.get_phot_output_dir()
         phot_output_dir.mkdir(parents=True, exist_ok=True)
+
+        apertures = self.get_sextractor_apertures()  # aperture diameters
 
         for image in batch:
             ref_cat, _, cleaned_img_cat = self.setup_catalogs(image)
@@ -285,8 +285,51 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                 logger.error(err)
                 raise PhotometrySourceError(err)
 
-            zp_dicts = self.calculate_zeropoint(
-                ref_cat=ref_cat, clean_img_cat=cleaned_img_cat
+            matched_img_cat, matched_ref_cat, _ = self.xmatch_catalogs(
+                ref_cat=ref_cat,
+                image_cat=cleaned_img_cat,
+                crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
+            )
+            logger.debug(
+                f"Cross-matched {len(matched_img_cat)} sources from catalog to "
+                "the image."
+            )
+
+            if len(matched_img_cat) < self.num_matches_threshold:
+                err = (
+                    "Not enough cross-matched sources "
+                    "found to calculate a reliable zeropoint. "
+                    f"Only found {len(matched_img_cat)} crossmatches, "
+                    f"while {self.num_matches_threshold} are required. "
+                    f"Used {len(ref_cat)} reference sources and "
+                    f"{len(cleaned_img_cat)} image sources."
+                )
+                logger.error(err)
+                raise PhotometryCrossMatchError(err)
+
+            # Add columns to image catalog for each aperture
+            colnames = []
+            for ind, aperture in enumerate(apertures):
+                matched_img_cat[f"MAGAPER_{aperture}"] = matched_img_cat["MAG_APER"][
+                    :, ind
+                ]
+                matched_img_cat[f"MAGAPER_{aperture}_ERR"] = matched_img_cat[
+                    "MAGERR_APER"
+                ][:, ind]
+
+                colnames.append(f"MAGAPER_{aperture}")
+
+            if "MAG_AUTO" in matched_img_cat.colnames:
+                colnames.append("MAG_AUTO")
+
+            if "MAG_PSF" in matched_img_cat.colnames:
+                colnames.append("MAG_PSF")
+
+            image = self.zp_calculator.calculate_zeropoint(
+                image=image,
+                matched_ref_cat=matched_ref_cat,
+                matched_img_cat=matched_img_cat,
+                colnames=colnames,
             )
 
             aperture_diameters = []
@@ -295,19 +338,18 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             with warnings.catch_warnings(record=True):
                 warnings.simplefilter("ignore", category=VerifyWarning)
 
-                for zpvals in zp_dicts:
-                    image[f"ZP_{zpvals['diameter']}"] = zpvals["zp_mean"]
-                    image[f"ZP_{zpvals['diameter']}_std"] = zpvals["zp_std"]
-                    image[f"ZP_{zpvals['diameter']}_nstars"] = zpvals["nstars"]
-                    try:
-                        aperture_diameters.append(float(zpvals["diameter"]))
-                        zp_values.append(zpvals["zp_mean"])
-                    except ValueError:
-                        continue
-
-                aperture_diameters.append(med_fwhm_pix * 2)
-                zp_values.append(image["ZP_AUTO"])
-
+                for col in colnames:
+                    aper = col.split("_")[-1]
+                    # Check if the right zeropoint keys are in the image header
+                    for key in [f"ZP_{aper}", f"ZP_{aper}_std", f"ZP_{aper}_nstars"]:
+                        assert (
+                            key in image.header.keys()
+                        ), f"Zeropoint key {key} not found in image header."
+                    zp_values.append(image[f"ZP_{aper}"])
+                    if col in ["MAG_AUTO", "MAG_PSF"]:
+                        aperture_diameters.append(med_fwhm_pix * 2)
+                    else:
+                        aperture_diameters.append(float(aper))
                 if sextractor_checkimg_map["BACKGROUND_RMS"] in image.header.keys():
                     logger.debug(
                         "Calculating limiting magnitudes from background RMS file"
@@ -322,11 +364,15 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
 
                 for ind, diam in enumerate(aperture_diameters[:-1]):
                     image[f"MAGLIM_{np.rint(diam)}"] = limmags[ind]
+
                 image[MAGLIM_KEY] = limmags[-1]
 
-                image[ZP_KEY] = image["ZP_AUTO"]
-                image[ZP_STD_KEY] = image["ZP_AUTO_STD"]
-                image[ZP_NSTARS_KEY] = image["ZP_AUTO_NSTARS"]
+                zp_key = "AUTO"
+                if "MAG_PSF" in colnames:
+                    zp_key = "PSF"
+                image[ZP_KEY] = image[f"ZP_{zp_key}"]
+                image[ZP_STD_KEY] = image[f"ZP_{zp_key}_STD"]
+                image[ZP_NSTARS_KEY] = image[f"ZP_{zp_key}_NSTARS"]
                 image["MAGSYS"] = "AB"
 
         return batch

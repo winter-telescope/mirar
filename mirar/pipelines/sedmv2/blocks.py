@@ -214,6 +214,7 @@ transient_phot_psfexsex = [
     Sextractor(
         output_sub_dir="photprocess",
         checkimage_type="BACKGROUND_RMS",
+        use_psfex=True,
         **sextractor_PSF_photometry_config
     ),  # Sextractor-based PSF mags, saves to catalog
     SextractorSourceDetector(output_sub_dir="sources", target_only=True),
