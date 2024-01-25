@@ -52,7 +52,7 @@ from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
 )
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal.photcal import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
 from mirar.processors.utils.image_selector import select_from_images
 from mirar.references import PS1Ref

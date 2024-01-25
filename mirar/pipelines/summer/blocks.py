@@ -41,7 +41,7 @@ from mirar.processors.csvlog import CSVLog
 from mirar.processors.database.database_inserter import DatabaseImageInserter
 from mirar.processors.database.database_updater import ImageSequenceDatabaseUpdater
 from mirar.processors.mask import MaskPixelsFromPath
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import SourceWriter

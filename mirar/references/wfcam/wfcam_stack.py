@@ -25,7 +25,7 @@ from mirar.paths import BASE_NAME_KEY, ZP_KEY, ZP_STD_KEY
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.base_processor import ImageHandler
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal.photcal import PhotCalibrator
 from mirar.references.base_reference_generator import (
     BaseStackReferenceGenerator,
     ReferenceGenerationError,

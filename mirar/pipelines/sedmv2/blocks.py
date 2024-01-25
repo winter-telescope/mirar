@@ -28,7 +28,7 @@ from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.mask import MaskPixelsFromPath
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
