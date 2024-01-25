@@ -93,36 +93,77 @@ def clean_science_header(  # pylint: disable=too-many-branches
         if isinstance(informative_hdr["QCOMMENT"], str):
             header["OBJECTID"] = informative_hdr["QCOMMENT"].split("_")[0]
 
-    if not EXPTIME_KEY in informative_hdr:
-        header[EXPTIME_KEY] = informative_hdr[
-            "EXPOSURE"
-        ]  # be weary - exposure is not always reliable
+    if not is_mode0:
+        frame_time = 10  # pretty sure this is always true
+        # HUGE CHANGE - MEF is split up, so we need individual exptimes
+        if EXPTIME_KEY not in informative_hdr:
+            # be wary -- keyword "EXPOSURE" is not always reliable
+            informative_hdr["FULL_EXPTIME"], header["FULL_EXPTIME"] = (
+                informative_hdr["EXPOSURE"],
+                informative_hdr["EXPOSURE"],
+            )
+
+        else:
+            informative_hdr["FULL_EXPTIME"], header["FULL_EXPTIME"] = (
+                informative_hdr[EXPTIME_KEY],
+                informative_hdr[EXPTIME_KEY],
+            )
+
+        header[EXPTIME_KEY], informative_hdr[EXPTIME_KEY] = frame_time, frame_time
 
     return header, split_headers
 
 
 def clean_cal_header(
-    hdr0: fits.Header, hdr1: fits.Header, filepath
+    hdr0: fits.Header,
+    split_headers: list[fits.Header],
+    filepath,
+    is_mode0: bool,
 ) -> tuple[fits.Header, list[fits.Header]]:
     """
-    function to modify the primary header of an SEDMv2 calibration file (flat or bias)
+    function to modify the primary header of an SEDMv2 calibration file
+    (flat or bias or dark)
     :param hdr0: original primary header of calibration file
     :param hdr1: original secondary header of calibration file
     :return: modified headers
     """
 
-    hdr0[OBSCLASS_KEY] = hdr1["IMGTYPE"].lower()
-    hdr0["IMGTYPE"] = hdr1["IMGTYPE"]
+    hdr1 = split_headers[0]
+    if is_mode0:
+        imgtype_hdr = hdr1
+    else:
+        imgtype_hdr = hdr0
+    if imgtype_hdr["IMGTYPE"] == "unknown":
+        imgtype_hdr["IMGTYPE"] = "dark"
+    if imgtype_hdr["IMGTYPE"] == "illum":  # sky flats
+        imgtype_hdr["IMGTYPE"] = "flat"
+    hdr0[OBSCLASS_KEY] = imgtype_hdr["IMGTYPE"].lower()
+    hdr0["IMGTYPE"] = imgtype_hdr["IMGTYPE"]
     hdr0[TARGET_KEY] = hdr0[OBSCLASS_KEY]
 
     # flat/bias-specific keys
     if hdr0["IMGTYPE"] == "flat":
+        flat_time_ugriz = [0.5, 0.1, 0.03, 0.01, 0.1]
+        filt_list = np.array(["u", "g", "r", "i", "z"])
+
         filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
         hdr0["FILTERID"] = filt
-        hdr0["FILTER"] = filt  # f"SDSS {filt}'"  #f"SDSS {filt}' (Chroma)"
-    if hdr0["IMGTYPE"] == "bias":
-        hdr0["FILTER"] = "g"  # arbitrary filter for bias
-        hdr0["FILTERID"] = "g"  # arbitrary filter for bias
+        hdr0["FILTER"] = filt
+        hdr0[EXPTIME_KEY] = flat_time_ugriz[np.where(filt_list == filt)[0][0]]
+        hdr0["EXPOSURE"] = hdr0[EXPTIME_KEY]
+        hdr1[EXPTIME_KEY] = hdr0[EXPTIME_KEY]
+        hdr1["EXPOSURE"] = hdr0[EXPTIME_KEY]
+    if hdr0["IMGTYPE"] in ["bias", "dark"]:
+        hdr0["FILTER"] = "g"  # arbitrary filter for bias or dark
+        hdr0["FILTERID"] = "g"  # arbitrary filter for bias or dark
+    if hdr0["IMGTYPE"] == "dark":
+        # darks will be split (they are MEFs) so save frame exptime
+        frame_exptime = 10  # hdr0["EXPOSURE"] / (len(split_headers)+1)
+
+        # when not in mode0, just median combine without dividing by exptime
+        # frame_exptime = 1.0 # need to make compatible with mode0
+        hdr0[EXPTIME_KEY] = frame_exptime
+        hdr1[EXPTIME_KEY] = frame_exptime
 
     hdr0["SOURCE"] = "None"
     hdr0["COADDS"] = 1
@@ -156,12 +197,13 @@ def clean_cal_header(
     ]  # can these be changed? shortened?
 
     if EXPTIME_KEY not in hdr1:
-        hdr1[EXPTIME_KEY] = hdr1["EXPOSURE"]
+        hdr1[EXPTIME_KEY] = imgtype_hdr["EXPOSURE"]
+        hdr0[EXPTIME_KEY] = imgtype_hdr["EXPOSURE"]
 
     for count, key in enumerate(req_headers):
         hdr0[key] = default_vals[count]
 
-    return hdr0, [hdr1]
+    return hdr0, split_headers
 
 
 def load_raw_sedmv2_mef(
@@ -172,7 +214,6 @@ def load_raw_sedmv2_mef(
     """
 
     sedmv2_ignore_files = [
-        "dark",
         "sedm2",
         "speccal",
     ]
@@ -197,10 +238,10 @@ def load_raw_sedmv2_mef(
             split_data = split_data[1:]
             split_headers = split_headers[1:]
         header, split_headers = clean_science_header(header, split_headers, is_mode0)
-    elif check_header["IMGTYPE"] in ["flat", "bias"]:
-        header, split_headers = clean_cal_header(header, split_headers[0], path)
+    elif check_header["IMGTYPE"] in ["flat", "bias", "dark", "unknown", "illum"]:
+        header, split_headers = clean_cal_header(header, split_headers, path, is_mode0)
     else:
-        logger.debug("Unexpected IMGTYPE. Is this a dark?")
+        logger.debug(f"Unexpected IMGTYPE: {check_header['IMGTYPE']}")
 
     header[BASE_NAME_KEY] = os.path.basename(path)
     header[RAW_IMG_KEY] = path
