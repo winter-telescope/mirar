@@ -72,7 +72,6 @@ from mirar.pipelines.winter.models import (
 from mirar.pipelines.winter.validator import (
     masked_images_rejector,
     poor_astrometric_quality_rejector,
-    winter_condensation_rejector,
     winter_dark_oversubtraction_rejector,
 )
 from mirar.processors.astromatic import PSFex, Scamp
@@ -122,6 +121,7 @@ from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
+    ImageRejector,
     ImageSaver,
     ImageSelector,
     MEFLoader,
@@ -299,6 +299,7 @@ load_unpacked = [
             "MEDCOUNT",
         ]
     ),
+    ImageRejector(("BOARD_ID", "0")),
 ]
 
 # Detrend blocks
@@ -314,7 +315,6 @@ dark_calibrate = [
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     ImageSaver(output_dir_name="darkcal"),
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
-    CustomImageBatchModifier(winter_condensation_rejector),
 ]
 
 flat_calibrate = [
