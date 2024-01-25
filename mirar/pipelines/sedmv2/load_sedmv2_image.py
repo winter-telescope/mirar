@@ -97,7 +97,7 @@ def clean_science_header(  # pylint: disable=too-many-branches
         frame_time = 10  # pretty sure this is always true
         # HUGE CHANGE - MEF is split up, so we need individual exptimes
         if EXPTIME_KEY not in informative_hdr:
-            # be weary - keyword "EXPOSURE" is not always reliable
+            # be wary - keyword "EXPOSURE" is not always reliable
             informative_hdr["FULL_EXPTIME"], header["FULL_EXPTIME"] = (
                 informative_hdr["EXPOSURE"],
                 informative_hdr["EXPOSURE"],
