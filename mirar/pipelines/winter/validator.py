@@ -125,7 +125,7 @@ def winter_dark_oversubtraction_rejector(images: ImageBatch) -> ImageBatch:
     Rejects images possibly affected by dark oversubtraction
     """
     assert len(images) == 1
-    median_sky_counts_threshold_per_sec = 1000.0 / 120.0
+    median_sky_counts_threshold_per_sec = 100.0 / 120.0
     for image in images:
         data = image.get_data()
         if np.nanmedian(data) < median_sky_counts_threshold_per_sec * image["EXPTIME"]:
