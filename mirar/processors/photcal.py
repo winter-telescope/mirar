@@ -204,12 +204,17 @@ class ZPWithColorTermCalculator(BaseZeroPointCalculator):
     ref_mag - img_mag = ZP + C * (ref_color)
 
     Attributes:
-        catalog_color_colnames: list of two strings, the column names of the colors in
-        the reference catalog
+        color_colnames_generator: function that takes an image as input and returns
+        a list containing two strings that are the column names of the reference catalog
+        to use for the color term. The first string is the bluer band, the second is the
+         redder band.
     """
 
-    def __init__(self, catalog_color_colnames: list[str, str]):
-        self.catalog_color_colnames = catalog_color_colnames
+    def __init__(
+        self,
+        color_colnames_generator: Callable[Image, [list[str, str]]],
+    ):
+        self.color_colnames_generator = color_colnames_generator
 
     def calculate_zeropoint(
         self,
@@ -218,10 +223,8 @@ class ZPWithColorTermCalculator(BaseZeroPointCalculator):
         matched_img_cat: Table,
         colnames: list[str],
     ) -> Image:
-        colors = (
-            matched_ref_cat[self.catalog_color_colnames[0]]
-            - matched_ref_cat[self.catalog_color_colnames[1]]
-        )
+        color_colnames = self.color_colnames_generator(image)
+        colors = matched_ref_cat[color_colnames[0]] - matched_ref_cat[color_colnames[1]]
 
         for colname in colnames:
             y = matched_img_cat[colname] - matched_ref_cat["magnitude"]
