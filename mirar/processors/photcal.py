@@ -212,7 +212,7 @@ class ZPWithColorTermCalculator(BaseZeroPointCalculator):
 
     def __init__(
         self,
-        color_colnames_generator: Callable[Image, [list[str, str]]],
+        color_colnames_generator: Callable[[Image], [str, str]],
     ):
         self.color_colnames_generator = color_colnames_generator
 
