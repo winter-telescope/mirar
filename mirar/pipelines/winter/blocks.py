@@ -270,6 +270,7 @@ save_raw = [
     CustomImageBatchModifier(winter_stackid_annotator),
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageRejector(("BOARD_ID", "0")),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
