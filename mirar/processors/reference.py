@@ -39,6 +39,7 @@ class ProcessReference(BaseImageProcessor):
         swarp_resampler: Callable[..., Swarp],
         sextractor: Callable[..., Sextractor],
         ref_psfex: Callable[..., PSFex],
+        phot_sextractor: Callable[..., Sextractor] = None,
         temp_output_subtract_dir: str = "subtract",
     ):
         super().__init__()
@@ -46,7 +47,10 @@ class ProcessReference(BaseImageProcessor):
         self.swarp_resampler = swarp_resampler
         self.sextractor = sextractor
         self.psfex = ref_psfex
+        self.phot_sextractor = phot_sextractor
         self.temp_output_subtract_dir = temp_output_subtract_dir
+        if self.phot_sextractor is None:
+            self.phot_sextractor = self.sextractor
 
     def get_sub_output_dir(self) -> Path:
         """
@@ -198,8 +202,23 @@ class ProcessReference(BaseImageProcessor):
                 ImageBatch(resampled_ref_sextractor_img)
             )[0]
 
+            logger.debug(
+                f"Running photometry on "
+                f"{resampled_ref_sextractor_psfex_img.get_name()}"
+            )
+
+            # Run Sextractor again using PSFex model
+            ref_psf_phot_sextractor = self.phot_sextractor(
+                output_sub_dir=self.temp_output_subtract_dir, gain=ref_resamp_gain
+            )
+            ref_psf_phot_sextractor.set_night(night_sub_dir=self.night_sub_dir)
+
+            final_ref_image = ref_psf_phot_sextractor.apply(
+                ImageBatch(resampled_ref_sextractor_psfex_img)
+            )[0]
+
             # Save the final resampled, sextracted and psfexed reference image
-            self.save_fits(resampled_ref_sextractor_psfex_img, resampled_ref_path)
+            self.save_fits(final_ref_image, resampled_ref_path)
 
             # Copy over header keys from ref to sci
             # resampled_sci_image[REF_PSF_KEY] = resampled_ref_sextractor_img[

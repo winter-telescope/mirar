@@ -28,7 +28,7 @@ from mirar.pipelines.winter.config import (
     sextractor_candidate_config,
     sextractor_photometry_config,
     sextractor_photometry_psf_config,
-    sextractor_reference_config,
+    sextractor_reference_psf_phot_config,
     swarp_config_path,
     winter_avro_schema_path,
 )
@@ -50,6 +50,7 @@ from mirar.pipelines.winter.generator import (
     winter_photometric_ref_catalog_namer,
     winter_reference_generator,
     winter_reference_image_resampler_for_zogy,
+    winter_reference_psf_phot_sextractor,
     winter_reference_psfex,
     winter_reference_sextractor,
     winter_source_entry_updater,
@@ -507,9 +508,15 @@ imsub = [
         swarp_resampler=winter_reference_image_resampler_for_zogy,
         sextractor=winter_reference_sextractor,
         ref_psfex=winter_reference_psfex,
+        phot_sextractor=winter_reference_psf_phot_sextractor,
     ),
-    Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
-    PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
+    Sextractor(
+        **sextractor_reference_psf_phot_config,
+        output_sub_dir="subtract",
+        cache=False,
+        use_psfex=True,
+    ),
+    # PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
     # ImageSaver(output_dir_name="presubtract"),
     ZOGYPrepare(
         output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY

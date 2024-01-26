@@ -37,6 +37,7 @@ from mirar.pipelines.winter.config import (
     psfex_path,
     sextractor_anet_config,
     sextractor_reference_config,
+    sextractor_reference_psf_phot_config,
     swarp_config_path,
 )
 from mirar.pipelines.winter.constants import winter_filters_map
@@ -109,6 +110,19 @@ def winter_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
         gain=gain,
         output_sub_dir=output_sub_dir,
         cache=False,
+    )
+
+
+def winter_reference_psf_phot_sextractor(
+    output_sub_dir: str, gain: float
+) -> Sextractor:
+    """Returns a Sextractor processor for WINTER reference images"""
+    return Sextractor(
+        **sextractor_reference_psf_phot_config,
+        gain=gain,
+        output_sub_dir=output_sub_dir,
+        cache=False,
+        use_psfex=True,
     )
 
 

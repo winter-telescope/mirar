@@ -54,6 +54,13 @@ sextractor_reference_config = {
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
+sextractor_reference_psf_phot_config = {
+    "config_path": winter_file_dir.joinpath("reference.sex"),
+    "parameter_path": winter_file_dir.joinpath("photom_psf.param"),
+    "filter_path": winter_file_dir.joinpath("default.conv"),
+    "starnnw_path": winter_file_dir.joinpath("default.nnw"),
+}
+
 sextractor_candidate_config = {
     "cand_det_sextractor_config": winter_file_dir.joinpath("candidate_detection.sex"),
     "cand_det_sextractor_nnw": winter_file_dir.joinpath("default.nnw"),
