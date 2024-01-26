@@ -103,8 +103,8 @@ from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
 )
-from mirar.processors.photcal.photcal import PhotCalibrator
-from mirar.processors.photcal.zp_calculator import OutlierRejectionZPCalculator
+from mirar.processors.photcal import OutlierRejectionZPCalculator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.skyportal.client import SkyportalClient

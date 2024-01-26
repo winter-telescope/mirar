@@ -135,7 +135,7 @@ class Sextractor(BaseImageProcessor):
         if isinstance(self.checkimage_type, str):
             self.checkimage_type = [self.checkimage_type]
 
-        if ~self.use_psfex & (self.psf_path is not None):
+        if (not self.use_psfex) & (self.psf_path is not None):
             raise ValueError("Cannot specify psf_path without setting use_psfex=True")
 
     def __str__(self) -> str:

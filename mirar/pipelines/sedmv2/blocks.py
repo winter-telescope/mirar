@@ -31,7 +31,7 @@ from mirar.processors.astromatic.sextractor.background_subtractor import (
 from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.mask import MaskPixelsFromPath
-from mirar.processors.photcal.photcal import PhotCalibrator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader

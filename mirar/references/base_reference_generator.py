@@ -35,7 +35,7 @@ from mirar.paths import (
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.database.database_inserter import DatabaseImageInserter
-from mirar.processors.photcal.photcal import PhotCalibrator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
 
 logger = logging.getLogger(__name__)
 

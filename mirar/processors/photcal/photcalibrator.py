@@ -20,13 +20,15 @@ from mirar.processors.base_catalog_xmatch_processor import (
     BaseProcessorWithCrossMatch,
     default_image_sextractor_catalog_purifier,
 )
-from mirar.processors.photcal import (
+from mirar.processors.photcal.photcal_errors import (
     PhotometryCrossMatchError,
     PhotometryReferenceError,
     PhotometrySourceError,
 )
-from mirar.processors.photcal.zp_calculator import (
+from mirar.processors.photcal.zp_calculator.base_zp_calculator import (
     BaseZeroPointCalculator,
+)
+from mirar.processors.photcal.zp_calculator.outlier_rejection_zp_calculator import (
     OutlierRejectionZPCalculator,
 )
 
