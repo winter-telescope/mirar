@@ -29,14 +29,16 @@ class ZPWithColorTermCalculator(BaseZeroPointCalculator):
 
     Attributes:
         color_colnames_generator: function that takes an image as input and returns
-        a list containing two strings that are the column names of the reference catalog
-        to use for the color term. The first string is the bluer band, the second is the
-         redder band.
+        two lists containing two strings each that are the column names of the reference
+        catalog magnitudes and magnitude errors to use for the color term. The first
+        string is the bluer band, the second is the redder band.
     """
 
     def __init__(
         self,
-        color_colnames_generator: Callable[[Image], list[str, str]],
+        color_colnames_generator: Callable[
+            [Image], list[list[str, str], list[str, str]]
+        ],
     ):
         self.color_colnames_generator = color_colnames_generator
 
