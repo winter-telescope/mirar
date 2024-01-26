@@ -199,7 +199,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                 matched_img_cat[f"MAGAPER_{aperture}"] = matched_img_cat["MAG_APER"][
                     :, ind
                 ]
-                matched_img_cat[f"MAGAPERERR_{aperture}"] = matched_img_cat[
+                matched_img_cat[f"MAGERRAPER_{aperture}"] = matched_img_cat[
                     "MAGERR_APER"
                 ][:, ind]
 

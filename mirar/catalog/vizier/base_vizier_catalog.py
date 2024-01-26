@@ -115,6 +115,7 @@ class VizierCatalog(BaseCatalog, ABC):
         table["ra"] = table[self.ra_key]
         table["dec"] = table[self.dec_key]
         table["magnitude"] = table[self.get_mag_key()]
+        table["magnitude_err"] = table[self.get_mag_error_key()]
         logger.debug(
             f"{len(table)} matches found in the given radius in {self.abbreviation}"
         )
