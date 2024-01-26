@@ -51,7 +51,7 @@ class ZPWithColorTermCalculator(BaseZeroPointCalculator):
         colors = matched_ref_cat[color_colnames[0]] - matched_ref_cat[color_colnames[1]]
 
         for colname in colnames:
-            y = matched_img_cat[colname] - matched_ref_cat["magnitude"]
+            y = matched_ref_cat["magnitude"] - matched_img_cat[colname]
             x = colors
             y_err = np.sqrt(
                 matched_img_cat[colname.replace("MAG", "MAGERR")] ** 2
