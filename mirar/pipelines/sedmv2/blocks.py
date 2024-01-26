@@ -31,7 +31,7 @@ from mirar.processors.astromatic.sextractor.background_subtractor import (
 from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.mask import MaskPixelsFromPath
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
@@ -230,6 +230,7 @@ transient_phot_psfexsex = [  # run phot on target in image with new PSF method
     Sextractor(
         output_sub_dir="photprocess",
         checkimage_type="BACKGROUND_RMS",
+        use_psfex=True,
         **sextractor_PSF_photometry_config,
     ),  # Sextractor-based PSF mags, saves to catalog
     SextractorSourceDetector(output_sub_dir="sources", target_only=True),

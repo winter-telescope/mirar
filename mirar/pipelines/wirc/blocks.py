@@ -65,7 +65,7 @@ from mirar.processors.mask import (
     MaskPixelsFromWCS,
     WriteMaskedCoordsToFile,
 )
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator

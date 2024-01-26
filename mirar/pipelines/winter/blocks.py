@@ -25,6 +25,7 @@ from mirar.pipelines.winter.config import (
     sextractor_astromstats_config,
     sextractor_candidate_config,
     sextractor_photometry_config,
+    sextractor_photometry_psf_config,
     sextractor_reference_config,
     swarp_config_path,
     winter_avro_schema_path,
@@ -102,7 +103,8 @@ from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
 )
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal import OutlierRejectionZPCalculator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.skyportal.client import SkyportalClient
@@ -227,10 +229,9 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 1
+BOARD_ID = 3
 select_subset = [
     ImageSelector(
-        (TARGET_KEY, ["timed_requests_11_09_2023_22_1699596785.db_0", "dark"]),
         ("BOARD_ID", str(BOARD_ID)),
     ),
 ]
@@ -299,6 +300,7 @@ load_unpacked = [
             "MEDCOUNT",
         ]
     ),
+    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
 # Detrend blocks
@@ -433,8 +435,15 @@ photcal_and_export = [
     CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
         **sextractor_photometry_config,
+        output_sub_dir="stack_psf",
+        checkimage_type="BACKGROUND_RMS",
+    ),
+    PSFex(config_path=psfex_path, output_sub_dir="phot", norm_fits=True),
+    Sextractor(
+        **sextractor_photometry_psf_config,
         output_sub_dir="phot",
         checkimage_type="BACKGROUND_RMS",
+        use_psfex=True,
     ),
     CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
     PhotCalibrator(
@@ -442,7 +451,9 @@ photcal_and_export = [
         temp_output_sub_dir="phot",
         write_regions=True,
         cache=True,
-        outlier_rejection_threshold=[1.5, 2.0, 3.0],
+        zp_calculator=OutlierRejectionZPCalculator(
+            outlier_rejection_threshold=[1.5, 2.0, 3.0]
+        ),
     ),
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
