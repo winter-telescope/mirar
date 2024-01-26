@@ -35,7 +35,8 @@ from mirar.processors.astromatic.sextractor.background_subtractor import (
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal import OutlierRejectionZPCalculator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import ForcedPhotometryDetector
@@ -192,7 +193,9 @@ reduce_raw_lt = [
     ),
     PhotCalibrator(
         ref_catalog_generator=lt_photometric_catalog_generator,
-        outlier_rejection_threshold=[2, 3, 5],
+        zp_calculator=OutlierRejectionZPCalculator(
+            outlier_rejection_threshold=[1.5, 2.0, 3.0]
+        ),
     ),
     ImageSaver(output_dir_name="stack"),
 ]
