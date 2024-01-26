@@ -10,7 +10,7 @@ homepage = "https://github.com/winter-telescope/mirar"
 [tool.poetry.dependencies]
 python = ">=3.10.0,<3.12"
 astroplan = ">=0.8,<0.10"
-astropy = {extras = ["all"], version = "^5.3"}
+astropy = {extras = ["all"], version = "^6.0"}
 astroquery = "^0.4.6"
 avro = "^1.11.3"
 certifi = "^2023.7.22"
@@ -28,7 +28,7 @@ pandas = "^2.0.2"
 penquins = "^2.3.1"
 photutils = "^1.8.0"
 psycopg = {extras = ["binary"], version = "^3.1.9"}
-pydl = {version = "^1.0.0rc1", allow-prereleases = true}
+pydl = "^1.0.0"
 pyFFTW = "^0.13.1"
 setuptools = ">=67.8,<70.0"
 watchdog = "^3.0.0"
