@@ -4428,17 +4428,17 @@ pylint = ">=1.7"
 
 [[package]]
 name = "pylint-pydantic"
-version = "0.2.4"
+version = "0.3.2"
 description = "A Pylint plugin to help Pylint understand the Pydantic"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "pylint_pydantic-0.2.4-py3-none-any.whl", hash = "sha256:452b32992f47e303b432f8940d4077f1d60e8d3325351b8998d846431699111a"},
+    {file = "pylint_pydantic-0.3.2-py3-none-any.whl", hash = "sha256:e5cec02370aa68ac8eff138e5d573b0ac049bab864e9a6c3a9057cf043440aa1"},
 ]
 
 [package.dependencies]
 pydantic = "<3.0"
-pylint = ">2.0,<3.0"
+pylint = ">2.0,<4.0"
 pylint-plugin-utils = "*"
 
 [[package]]
@@ -6128,4 +6128,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.12"
-content-hash = "4ed9a9d89e6e9e296ffd2885fd0cb842d62d9e26072f922d502a60a0f20d8bde"
+content-hash = "b70d063d2a6ae3bec0433abea56c82cda2dd92fe2aae4d5f723fb83814d00bd3"
