@@ -165,3 +165,30 @@ def sedmv2_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     )
 
     return good_sci_sources, good_ref_sources
+
+
+def sedmv2_color_function_ps1(image: Image) -> list[str]:
+    """
+    Args:
+        matched_ps1_cat: PanStarrs1 catalog crossmatched to an image catalog
+    Returns:
+        color_filts: the two PS1 columns that define color term
+        color_errs: the two PS1 columns with associated errors #TODO: update
+    """
+
+    img_filt = image["FILTER"]
+
+    # filters which define the color term. e.g. if img_filt = g, color = g - r
+    if img_filt.lower() in ["g", "r"]:
+        color_filts = ["gmag", "rmag"]
+    elif img_filt.lower() == "i":
+        color_filts = ["rmag", "imag"]
+    elif img_filt.lower() == "z":
+        color_filts = ["imag", "zmag"]
+    else:
+        logger.debug(f"Unexpected image filter: {img_filt}, defaulted to color = g-r")
+        color_filts = ["gmag", "rmag"]
+    # color_errs = ["e_" + color_filts[0], "e_" + color_filts[1]]
+    mag_err = "e_" + img_filt.lower() + "mag"
+
+    return color_filts, mag_err
