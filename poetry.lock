@@ -3699,12 +3699,12 @@ files = [
 
 [[package]]
 name = "penquins"
-version = "2.3.2"
+version = "2.4.0"
 description = "A python client for Kowalski"
 optional = false
 python-versions = "*"
 files = [
-    {file = "penquins-2.3.2.tar.gz", hash = "sha256:eb05e3d5fed68c328d0dbf90eb546e7949d24823159a1ad72e75044ff24bdd36"},
+    {file = "penquins-2.4.0.tar.gz", hash = "sha256:0bdc8ce278cdfa8e1c5a9821b2cecbc55c1479b95601e351c5b156b3a8586297"},
 ]
 
 [package.dependencies]
