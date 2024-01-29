@@ -13,6 +13,7 @@ from mirar.pipelines.sedmv2.blocks import (
     image_photometry,
     load_raw,
     process_all,
+    process_all_psf_then_cal,
     process_stellar,
     process_transient,
     reduce_not0,
@@ -42,6 +43,7 @@ class SEDMv2Pipeline(Pipeline):
         "default_stellar": load_raw + process_stellar + image_photometry,
         "default_transient": load_raw + process_transient + transient_phot,  # +imsub,
         "realtime": load_raw + reduce_not0,  # +much more...
+        "psf_all_then_calibrate": load_raw + process_all_psf_then_cal,
         "transient_upload": load_raw
         + process_transient
         + transient_phot
