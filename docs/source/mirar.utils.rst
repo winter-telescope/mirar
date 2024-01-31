@@ -56,11 +56,3 @@ mirar.utils.send\_email module
    :members:
    :undoc-members:
    :show-inheritance:
-
-mirar.utils.sql module
-----------------------
-
-.. automodule:: mirar.utils.sql
-   :members:
-   :undoc-members:
-   :show-inheritance:

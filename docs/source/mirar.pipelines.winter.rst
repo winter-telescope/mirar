@@ -50,10 +50,26 @@ mirar.pipelines.winter.fix\_headers module
    :undoc-members:
    :show-inheritance:
 
+mirar.pipelines.winter.fourier\_bkg\_model module
+-------------------------------------------------
+
+.. automodule:: mirar.pipelines.winter.fourier_bkg_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mirar.pipelines.winter.generator module
 ---------------------------------------
 
 .. automodule:: mirar.pipelines.winter.generator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mirar.pipelines.winter.ingest\_references module
+------------------------------------------------
+
+.. automodule:: mirar.pipelines.winter.ingest_references
    :members:
    :undoc-members:
    :show-inheritance:
@@ -66,10 +82,26 @@ mirar.pipelines.winter.load\_winter\_image module
    :undoc-members:
    :show-inheritance:
 
+mirar.pipelines.winter.validator module
+---------------------------------------
+
+.. automodule:: mirar.pipelines.winter.validator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mirar.pipelines.winter.winter\_pipeline module
 ----------------------------------------------
 
 .. automodule:: mirar.pipelines.winter.winter_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mirar.pipelines.winter.write\_obslog module
+-------------------------------------------
+
+.. automodule:: mirar.pipelines.winter.write_obslog
    :members:
    :undoc-members:
    :show-inheritance:
