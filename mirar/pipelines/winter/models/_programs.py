@@ -68,7 +68,7 @@ class Program(BaseDB, ProgramCredentials):
     startdate: date = date_field
     enddate: date = date_field
     hours_allocated: float = Field(ge=0.0)
-    hours_remaining: float = Field(ge=0.0)
+    hours_used: float = Field(ge=0.0)
     maxpriority: float = Field(
         ge=DEFAULT_MAX_PRIORITY,
         default=DEFAULT_MAX_PRIORITY,
@@ -120,7 +120,7 @@ default_program = Program(
     startdate=date(2001, 1, 1),
     enddate=date(3001, 1, 1),
     hours_allocated=0,
-    hours_remaining=0,
+    hours_used=0,
     maxpriority=DEFAULT_MAX_PRIORITY,
 )
 
