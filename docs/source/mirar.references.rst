@@ -6,6 +6,14 @@ mirar.references package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   mirar.references.wfcam
+
 Submodules
 ----------
 
@@ -45,14 +53,6 @@ mirar.references.sdss module
 ----------------------------
 
 .. automodule:: mirar.references.sdss
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mirar.references.ukirt module
------------------------------
-
-.. automodule:: mirar.references.ukirt
    :members:
    :undoc-members:
    :show-inheritance:

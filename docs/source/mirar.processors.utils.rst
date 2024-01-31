@@ -49,6 +49,14 @@ mirar.processors.utils.image\_loader module
    :undoc-members:
    :show-inheritance:
 
+mirar.processors.utils.image\_modifier module
+---------------------------------------------
+
+.. automodule:: mirar.processors.utils.image_modifier
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mirar.processors.utils.image\_rejector module
 ---------------------------------------------
 

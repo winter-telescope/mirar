@@ -12,12 +12,14 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   mirar.processors.alerts
    mirar.processors.astromatic
    mirar.processors.astrometry
-   mirar.processors.candidates
+   mirar.processors.avro
    mirar.processors.database
-   mirar.processors.sqldatabase
+   mirar.processors.photcal
+   mirar.processors.photometry
+   mirar.processors.skyportal
+   mirar.processors.sources
    mirar.processors.utils
 
 Submodules
@@ -43,6 +45,14 @@ mirar.processors.bias module
 ----------------------------
 
 .. automodule:: mirar.processors.bias
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mirar.processors.catalog\_limiting\_mag module
+----------------------------------------------
+
+.. automodule:: mirar.processors.catalog_limiting_mag
    :members:
    :undoc-members:
    :show-inheritance:
@@ -83,14 +93,6 @@ mirar.processors.mask module
 ----------------------------
 
 .. automodule:: mirar.processors.mask
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mirar.processors.photcal module
--------------------------------
-
-.. automodule:: mirar.processors.photcal
    :members:
    :undoc-members:
    :show-inheritance:
