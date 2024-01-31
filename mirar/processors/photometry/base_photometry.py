@@ -1,6 +1,7 @@
 """
 Module with classes to perform photometry on sources
 """
+
 import logging
 from abc import ABC
 from pathlib import Path

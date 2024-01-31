@@ -1,6 +1,7 @@
 """
 Tests forced photometry with a WIRC image
 """
+
 import logging
 import shutil
 

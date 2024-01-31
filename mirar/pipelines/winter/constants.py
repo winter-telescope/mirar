@@ -1,6 +1,7 @@
 """
 Constants for the winter pipeline.
 """
+
 import astroplan
 import astropy.coordinates as coords
 import pandas as pd

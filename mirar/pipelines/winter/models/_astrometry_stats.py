@@ -1,6 +1,7 @@
 """
 Models for the 'exposures' table
 """
+
 import logging
 from typing import ClassVar
 

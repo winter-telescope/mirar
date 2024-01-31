@@ -4,6 +4,7 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~mirar.pipelines.summer.summer_pipeline.SummerPipeline`.
 """
+
 # pylint: disable=duplicate-code
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import BASE_NAME_KEY, GAIN_KEY, OBSCLASS_KEY, core_fields
@@ -161,7 +162,7 @@ process_raw = [
     ),
     Swarp(
         swarp_config_path=swarp_config_path,
-        cache=True
+        cache=True,
         # TODO: work out why this was ever here...
         # imgpixsize=2400
     ),

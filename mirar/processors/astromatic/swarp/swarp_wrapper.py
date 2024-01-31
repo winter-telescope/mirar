@@ -1,6 +1,7 @@
 """
 Wrapper function to interface with Swarp
 """
+
 import os
 from pathlib import Path
 from typing import Optional

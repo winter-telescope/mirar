@@ -1,6 +1,7 @@
 """
 Module containing processors that mask cosmic rays
 """
+
 import logging
 
 import lacosmic

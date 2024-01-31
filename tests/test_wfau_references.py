@@ -1,6 +1,7 @@
 """
 Tests for getting and making WFAU reference images
 """
+
 import logging
 import shutil
 import unittest

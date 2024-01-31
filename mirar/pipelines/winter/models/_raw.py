@@ -1,6 +1,7 @@
 """
 Models for the 'raw' table
 """
+
 import os
 from typing import ClassVar
 

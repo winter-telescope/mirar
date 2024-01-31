@@ -1,6 +1,7 @@
 """
 Photometric calibration processor
 """
+
 from mirar.processors.photcal.photcal_errors import (
     PhotometryCalculationError,
     PhotometryCrossMatchError,

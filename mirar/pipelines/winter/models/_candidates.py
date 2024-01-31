@@ -1,6 +1,7 @@
 """
 Models for the 'candidates' table
 """
+
 import logging
 from typing import ClassVar
 

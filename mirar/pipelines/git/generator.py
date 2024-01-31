@@ -2,6 +2,7 @@
 Module containing functions to generate astrometric/photometric calibration catalogs
 for GIT
 """
+
 import logging
 
 from mirar.catalog import BaseCatalog

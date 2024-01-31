@@ -1,6 +1,7 @@
 """
 Module for DBQueryConstraints to carefully specify postgres query constraints
 """
+
 import numpy as np
 
 POSTGRES_ACCEPTED_COMPARISONS = ["=", "<", ">", "<=", ">=", "between", "<>", "!="]
@@ -14,11 +15,9 @@ class DBQueryConstraints:
     def __init__(
         self,
         columns: str | list[str] | None = None,
-        accepted_values: str
-        | int
-        | float
-        | list[str | float | int | list]
-        | None = None,
+        accepted_values: (
+            str | int | float | list[str | float | int | list] | None
+        ) = None,
         comparison_types: str | list[str] | None = None,
     ):
         self.columns = []

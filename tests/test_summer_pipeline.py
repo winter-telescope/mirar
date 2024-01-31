@@ -1,6 +1,7 @@
 """
 Tests for summer reduction
 """
+
 import logging
 import shutil
 

@@ -1,6 +1,7 @@
 """
 Util functions for database interactions
 """
+
 from sqlalchemy import Engine, NullPool, create_engine
 
 from mirar.database.credentials import DB_PASSWORD, DB_USER

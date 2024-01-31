@@ -1,6 +1,7 @@
 """
 Module containing Skymapper Vizier catalog
 """
+
 import logging
 
 from mirar.catalog.vizier.base_vizier_catalog import VizierCatalog

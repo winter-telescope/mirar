@@ -1,6 +1,7 @@
 """
 Module to select database entries
 """
+
 import pandas as pd
 from sqlalchemy import Select, text
 

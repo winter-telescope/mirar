@@ -13,6 +13,7 @@ zeropoint is assigned to the stacked image.
 3. The stacked image is optionally saved to the user-specified path and inserted into
 a user-specified stack-table in the database by the parent class.
 """
+
 import logging
 from collections.abc import Callable
 from typing import Type

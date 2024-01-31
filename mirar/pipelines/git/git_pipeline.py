@@ -1,6 +1,7 @@
 """
 Module to run the SEDMv2 data reduction pipeline
 """
+
 import logging
 
 from mirar.pipelines.base_pipeline import Pipeline

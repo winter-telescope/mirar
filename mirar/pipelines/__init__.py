@@ -1,6 +1,7 @@
 """
 Central location for all pipelines. This is where you should add new pipelines.
 """
+
 import logging
 
 from mirar.errors import ProcessorError

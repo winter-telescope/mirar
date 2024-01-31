@@ -1,6 +1,7 @@
 """
 Module for adding metadata to Image headers
 """
+
 import logging
 
 from mirar.data import ImageBatch

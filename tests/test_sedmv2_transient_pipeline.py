@@ -1,6 +1,7 @@
 """
 Module to test SEDMv2 pipeline with "default_transient" configuration
 """
+
 import logging
 import shutil
 

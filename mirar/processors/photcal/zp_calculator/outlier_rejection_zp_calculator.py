@@ -1,6 +1,7 @@
 """
 Module to calculate zero point using outlier rejection
 """
+
 import logging
 import warnings
 

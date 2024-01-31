@@ -1,6 +1,7 @@
 """
 Module handling the downloading of test data
 """
+
 import logging
 import os
 from pathlib import Path

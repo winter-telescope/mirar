@@ -1,6 +1,7 @@
 """
 Central module hosting all shared paths/directory conventions/keys/variables
 """
+
 import logging
 import os
 import shutil

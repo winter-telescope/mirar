@@ -1,6 +1,7 @@
 """
 Base class for source filters
 """
+
 import logging
 
 from mirar.data import SourceBatch

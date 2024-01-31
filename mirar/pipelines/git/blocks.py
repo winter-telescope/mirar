@@ -4,6 +4,7 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~mirar.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
+
 from mirar.paths import (
     BASE_NAME_KEY,
     GAIN_KEY,

@@ -1,6 +1,7 @@
 """
 Models for database and pydantic dataclass models
 """
+
 import logging
 
 from mirar.database.base_table import BaseTable

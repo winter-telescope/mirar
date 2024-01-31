@@ -1,6 +1,7 @@
 """
 Module for loading raw GIT/LT images and ensuring they have the correct format
 """
+
 import logging
 from pathlib import Path
 

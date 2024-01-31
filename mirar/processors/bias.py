@@ -1,6 +1,7 @@
 """
 Module containing processors for bias correction
 """
+
 import logging
 from collections.abc import Callable
 

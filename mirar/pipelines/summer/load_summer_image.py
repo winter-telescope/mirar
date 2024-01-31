@@ -1,6 +1,7 @@
 """
 Module with functions to load raw and processed summer images
 """
+
 import logging
 import warnings
 from pathlib import Path

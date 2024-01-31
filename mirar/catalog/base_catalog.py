@@ -1,6 +1,7 @@
 """
 Module for Catalog base class
 """
+
 import logging
 from abc import ABC
 from pathlib import Path

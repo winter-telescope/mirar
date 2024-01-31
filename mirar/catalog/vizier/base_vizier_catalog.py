@@ -1,6 +1,7 @@
 """
 Module containing base class for a Vizier catalog
 """
+
 import logging
 from abc import ABC
 

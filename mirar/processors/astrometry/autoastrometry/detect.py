@@ -1,6 +1,7 @@
 """
 Component of autoastrometry which detects sources in the science image
 """
+
 import logging
 import os
 from pathlib import Path

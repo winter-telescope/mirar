@@ -2,6 +2,7 @@
 Base processor for any functionality requiring cross-matching a
 reference catalog to a Sextractor catalog
 """
+
 from pathlib import Path
 from typing import Callable
 

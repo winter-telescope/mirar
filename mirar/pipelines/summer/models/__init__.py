@@ -1,6 +1,7 @@
 """
 Models for database and pydantic dataclass models
 """
+
 # pylint: disable=duplicate-code
 from mirar.database.credentials import DB_USER
 from mirar.database.setup import setup_database

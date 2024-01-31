@@ -1,6 +1,7 @@
 """
 Module to make reference stacks table
 """
+
 from typing import ClassVar
 
 from pydantic import Field

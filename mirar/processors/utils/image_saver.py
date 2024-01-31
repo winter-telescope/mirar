@@ -1,6 +1,7 @@
 """
 Module for saving images
 """
+
 import logging
 from pathlib import Path
 

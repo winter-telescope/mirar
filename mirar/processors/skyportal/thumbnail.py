@@ -1,6 +1,7 @@
 """
 Function for converting a FITS image to a skyportal "thumbnail".
 """
+
 import base64
 import io
 

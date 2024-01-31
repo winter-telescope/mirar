@@ -1,6 +1,7 @@
 """
 Edge mask processor
 """
+
 import logging
 
 import numpy as np

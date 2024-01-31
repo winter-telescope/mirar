@@ -14,6 +14,7 @@ A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
 :class:`~mirar.data.base_data.DataBatch` in a
 :class:`~mirar.data.base_data.Dataset`.
 """
+
 import logging
 from pathlib import Path
 from typing import Optional, Type

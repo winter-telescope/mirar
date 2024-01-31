@@ -2,6 +2,7 @@
 Module for generating visualisations of
 :class:`~mirar.pipeline.base_pipeline.Pipeline` objects.
 """
+
 import logging
 from datetime import datetime
 from pathlib import Path

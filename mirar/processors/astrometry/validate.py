@@ -1,6 +1,7 @@
 """
 Module for validating astrometric solutions
 """
+
 import logging
 from collections.abc import Callable
 from pathlib import Path

@@ -1,6 +1,7 @@
 """
 Module for finding archival calibration images if these are missing
 """
+
 import copy
 import logging
 import os

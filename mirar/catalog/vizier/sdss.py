@@ -1,6 +1,7 @@
 """
 Module containing SDSS Vizier catalog
 """
+
 import logging
 from pathlib import Path
 

@@ -1,6 +1,7 @@
 """
 Module containing standard processing blocks for WIRC
 """
+
 # pylint: disable=duplicate-code
 from mirar.catalog.kowalski import PS1, TMASS
 from mirar.paths import (

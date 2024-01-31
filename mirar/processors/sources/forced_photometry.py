@@ -1,6 +1,7 @@
 """
 Module to extract a candidates table from an image header
 """
+
 import pandas as pd
 
 from mirar.data import ImageBatch, SourceBatch, SourceTable

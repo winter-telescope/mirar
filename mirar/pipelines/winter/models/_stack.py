@@ -1,6 +1,7 @@
 """
 Models for the 'proc' table
 """
+
 import os
 from typing import ClassVar
 

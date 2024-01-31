@@ -1,6 +1,7 @@
 """
 Module containing helper functions for autoastrometry
 """
+
 import logging
 
 import numpy as np

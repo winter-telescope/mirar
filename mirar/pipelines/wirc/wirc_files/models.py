@@ -1,6 +1,7 @@
 """
 Models for the 'candidates' table
 """
+
 #  pylint: disable=duplicate-code
 import logging
 from typing import ClassVar

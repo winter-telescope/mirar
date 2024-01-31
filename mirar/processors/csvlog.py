@@ -1,6 +1,7 @@
 """
 Module to generate a CSV log of observations
 """
+
 import logging
 import os
 from pathlib import Path

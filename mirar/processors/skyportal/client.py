@@ -1,6 +1,7 @@
 """
 Client for interacting with Skyportal API
 """
+
 import logging
 import os
 from typing import Mapping, Optional
