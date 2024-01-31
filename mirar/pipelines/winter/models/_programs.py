@@ -32,7 +32,7 @@ class ProgramsTable(WinterBase):  # pylint: disable=too-few-public-methods
     startdate = Column(DATE)  # Start time of program
     enddate = Column(DATE)  # End time of program
     hours_allocated = Column(REAL)  # Total hours allocated
-    hours_remaining = Column(REAL)  # Total hours remaining
+    hours_remaining = Column(REAL)  # Total hours used
     maxpriority = Column(REAL, default=DEFAULT_MAX_PRIORITY)  # Base priority
 
     progtitle = Column(VARCHAR(20), nullable=True)  # Optional 20 char descr. of title
