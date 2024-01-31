@@ -5875,13 +5875,13 @@ files = [
 
 [[package]]
 name = "wintertoo"
-version = "0.4.2"
+version = "1.1.0"
 description = ""
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "wintertoo-0.4.2-py3-none-any.whl", hash = "sha256:8de951284cdc2848fa369523d6125daa958c593df6ee7858d308136718ec284e"},
-    {file = "wintertoo-0.4.2.tar.gz", hash = "sha256:6a700393509230e93ba06972d1711dafa803e35d5d1fc71d2419c495766b4e97"},
+    {file = "wintertoo-1.1.0-py3-none-any.whl", hash = "sha256:ff6bb630b07b873df7d437f9b68ff7fadc0fdf1ce456cb84c7340b96da7c742a"},
+    {file = "wintertoo-1.1.0.tar.gz", hash = "sha256:06688b2bd08d1db6a28a944dd23e24018054bbf73e69797ac6f47e487e9b5a0b"},
 ]
 
 [package.dependencies]
@@ -5900,7 +5900,7 @@ pytz = "*"
 sqlalchemy = "*"
 
 [package.extras]
-dev = ["black (==23.7.0)", "coveralls", "isort (==5.12.0)", "pylint (==2.17.5)"]
+dev = ["black (>=24.1.0)", "coveralls", "isort (>=5.13.0)", "pylint (>=3.0.0)"]
 
 [[package]]
 name = "wrapt"
@@ -6102,4 +6102,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.12"
-content-hash = "183f07f0f60d9db04d7c4f21585e328d1e9c52b6d90544432bc7f373bb123a02"
+content-hash = "232c3db22da022339f9fb00d22996ba4fadd57b22f45d1c366ccfa223c9a3f6b"
