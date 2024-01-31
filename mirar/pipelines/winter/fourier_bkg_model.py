@@ -1,6 +1,7 @@
 """
 Module to subtract a Fourier background model from a raw image.
 """
+
 import numpy as np
 from numpy import fft
 

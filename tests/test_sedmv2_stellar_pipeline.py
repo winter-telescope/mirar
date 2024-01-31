@@ -1,6 +1,7 @@
 """
 Module to test SEDMv2 pipeline with "default_stellar" configuration
 """
+
 import logging
 import shutil
 

@@ -1,6 +1,7 @@
 """
 Module to create q3c extension and index on table
 """
+
 import logging
 
 from sqlalchemy import DDL

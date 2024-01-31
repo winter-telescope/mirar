@@ -1,6 +1,7 @@
 """
 Module for loading raw SEDMv2 images and ensuring they have the correct format
 """
+
 import logging
 import os
 from pathlib import Path

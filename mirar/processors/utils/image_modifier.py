@@ -1,6 +1,7 @@
 """
 Module to modify an image using a custom user-defined function
 """
+
 from typing import Callable
 
 from mirar.data import ImageBatch

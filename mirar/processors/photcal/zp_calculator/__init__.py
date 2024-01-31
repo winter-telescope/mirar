@@ -1,6 +1,7 @@
 """
 Module to calculate zero point using outlier rejection
 """
+
 from mirar.processors.photcal.zp_calculator.base_zp_calculator import (
     BaseZeroPointCalculator,
 )

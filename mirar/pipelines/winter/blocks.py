@@ -1,6 +1,7 @@
 """
 Module for WINTER data reduction
 """
+
 # pylint: disable=duplicate-code
 from mirar.catalog.kowalski import PS1, TMASS
 from mirar.downloader.get_test_data import get_test_data_dir

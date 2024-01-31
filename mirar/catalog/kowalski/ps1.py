@@ -1,6 +1,7 @@
 """
 Module for querying PS1 using Kowalski
 """
+
 from mirar.catalog.kowalski.base_kowalski_catalog import BaseKowalskiXMatch
 
 

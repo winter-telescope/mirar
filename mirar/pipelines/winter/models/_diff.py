@@ -1,6 +1,7 @@
 """
 Models for the 'diff' table
 """
+
 import os
 from typing import ClassVar
 

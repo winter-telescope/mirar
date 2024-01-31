@@ -1,6 +1,7 @@
 """
 Base class for models
 """
+
 import os
 
 from sqlalchemy.orm import DeclarativeBase

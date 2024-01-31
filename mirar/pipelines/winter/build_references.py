@@ -1,6 +1,7 @@
 """
 Module to run the IR reference building pipeline on WINTER images
 """
+
 import argparse
 import logging
 import sys

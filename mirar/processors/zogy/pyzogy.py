@@ -160,15 +160,11 @@ def pyzogy(
     ref_variance_hat = fft.fft2(ref_variance)
 
     # Equation 28
-    k_r_hat = (
-        np.conj(ref_psf_hat) * np.abs(new_psf_hat**2) / (diff_hat_denominator**2)
-    )
+    k_r_hat = np.conj(ref_psf_hat) * np.abs(new_psf_hat**2) / (diff_hat_denominator**2)
     k_r = np.real(fft.ifft2(k_r_hat))
 
     # Equation 29
-    k_n_hat = (
-        np.conj(new_psf_hat) * np.abs(ref_psf_hat**2) / (diff_hat_denominator**2)
-    )
+    k_n_hat = np.conj(new_psf_hat) * np.abs(ref_psf_hat**2) / (diff_hat_denominator**2)
     k_n = np.real(fft.ifft2(k_n_hat))
 
     # Noise in New Image: Equation 26

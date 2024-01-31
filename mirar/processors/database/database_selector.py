@@ -1,6 +1,7 @@
 """
 Module containing processors which import values from a database
 """
+
 import logging
 from abc import ABC
 from collections.abc import Callable

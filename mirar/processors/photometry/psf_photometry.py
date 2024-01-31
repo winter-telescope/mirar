@@ -1,6 +1,7 @@
 """
 Module with processors to perform point-spread-function photometry
 """
+
 import logging
 from pathlib import Path
 

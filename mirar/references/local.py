@@ -1,6 +1,7 @@
 """
 Module for getting reference images stored locally
 """
+
 import logging
 from pathlib import Path
 from typing import Type

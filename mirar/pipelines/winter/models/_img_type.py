@@ -1,6 +1,7 @@
 """
 Models for the 'imgTypes' table
 """
+
 from typing import ClassVar
 
 from pydantic import Field

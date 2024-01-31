@@ -1,6 +1,7 @@
 """
 Module to test WIRC pipeline
 """
+
 import logging
 import shutil
 from pathlib import Path

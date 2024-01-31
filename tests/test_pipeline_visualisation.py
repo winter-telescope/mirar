@@ -1,6 +1,7 @@
 """
 Test pipeline visualisation
 """
+
 import logging
 
 from mirar.testing import BaseTestCase

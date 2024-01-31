@@ -1,6 +1,7 @@
 """
 Util functions for password generation
 """
+
 import secrets
 import string
 

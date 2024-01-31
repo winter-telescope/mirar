@@ -1,6 +1,7 @@
 """
 Module for querying PS1 catalog
 """
+
 import logging
 
 import numpy as np

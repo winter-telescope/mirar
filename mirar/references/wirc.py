@@ -1,6 +1,7 @@
 """
 Module for generating reference images with WIRC data
 """
+
 import logging
 from glob import glob
 

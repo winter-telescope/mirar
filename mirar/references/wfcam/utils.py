@@ -1,6 +1,7 @@
 """
 Utility functions for WFCAM
 """
+
 from pathlib import Path
 
 import numpy as np

@@ -1,6 +1,7 @@
 """
 Module containing processors to add astrometry headers to images
 """
+
 import logging
 import os
 

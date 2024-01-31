@@ -1,6 +1,7 @@
 """
 Module with processors to perform aperture photometry
 """
+
 import numpy as np
 
 from mirar.data import SourceBatch

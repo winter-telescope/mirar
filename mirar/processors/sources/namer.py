@@ -1,6 +1,7 @@
 """
 Module containing a processor for assigning names to sources
 """
+
 import logging
 
 import numpy as np

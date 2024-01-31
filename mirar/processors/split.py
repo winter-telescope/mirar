@@ -1,6 +1,7 @@
 """
 Module for splitting images into sub-images
 """
+
 import copy
 import logging
 

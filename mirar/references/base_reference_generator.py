@@ -1,6 +1,7 @@
 """
 Module with base class for reference image generation
 """
+
 import logging
 import os
 from pathlib import Path

@@ -1,6 +1,7 @@
 """
 Module for applying dark corrections
 """
+
 import logging
 from collections.abc import Callable
 from copy import copy

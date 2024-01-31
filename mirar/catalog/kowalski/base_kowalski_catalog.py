@@ -1,6 +1,7 @@
 """
 Module containing the base Kowalski catalog object
 """
+
 import logging
 import os
 from abc import ABC

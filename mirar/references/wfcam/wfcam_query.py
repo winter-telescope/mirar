@@ -3,6 +3,7 @@ Module to query for WFCAM images.
 You can either query the online WFAU archive, or query a local database to get
 component images.
 """
+
 import logging
 import warnings
 from pathlib import Path

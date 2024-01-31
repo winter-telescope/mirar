@@ -1,4 +1,5 @@
 """Test suite for ..module::mirar.monitor module"""
+
 import logging
 import os
 

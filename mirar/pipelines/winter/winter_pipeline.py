@@ -1,6 +1,7 @@
 """
 Module with pipeline for building reference images in the IR from WFAU
 """
+
 import logging
 
 from mirar.data import Image

@@ -1,6 +1,7 @@
 """
 Module for encoding/decoding numpy 2D images to gziped fits files
 """
+
 import gzip
 import io
 

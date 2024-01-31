@@ -1,6 +1,7 @@
 """
 Module containing a processor to run astrometry.net
 """
+
 import logging
 from pathlib import Path
 from typing import Callable, Optional

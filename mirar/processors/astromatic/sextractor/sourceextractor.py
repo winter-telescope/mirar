@@ -1,6 +1,7 @@
 """
 Module to run source extractor
 """
+
 import logging
 import os
 from pathlib import Path

@@ -8,6 +8,7 @@ In most cases, a processor chain will first require
 :class:`mirar.processors.zogy.zogy.ZOGYPrepare`
 in order to set these relevant header paths.
 """
+
 import logging
 from collections.abc import Callable
 from copy import copy

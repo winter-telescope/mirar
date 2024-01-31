@@ -1,6 +1,7 @@
 """
 Module to write an observation log for a directory of images
 """
+
 import argparse
 from glob import glob
 

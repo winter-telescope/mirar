@@ -1,6 +1,7 @@
 """
 Module for sending candidates to Fritz.
 """
+
 import logging
 from datetime import datetime
 

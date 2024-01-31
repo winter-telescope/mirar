@@ -1,6 +1,7 @@
 """
 Module to reject images based on quality criteria
 """
+
 import logging
 
 import numpy as np

@@ -1,6 +1,7 @@
 """
 Module for loading and creating multi-extension FITS (MEF) images
 """
+
 import logging
 import os
 from collections.abc import Callable

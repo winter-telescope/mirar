@@ -1,6 +1,7 @@
 """
 Module for calculating zero points
 """
+
 import logging
 
 from astropy.table import Table

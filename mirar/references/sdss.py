@@ -1,6 +1,7 @@
 """
 Module for generating reference images from SDSS
 """
+
 import logging
 
 import astropy.units as u

@@ -1,6 +1,7 @@
 """
 Module for loading raw WINTER images and ensuring they have the correct format
 """
+
 import logging
 import os
 import warnings

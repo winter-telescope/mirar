@@ -1,6 +1,7 @@
 """
 Module with generators for WINTER pipeline
 """
+
 import logging
 import os
 from pathlib import Path

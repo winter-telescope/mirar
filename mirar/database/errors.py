@@ -1,6 +1,7 @@
 """
 Database errors
 """
+
 from mirar.errors.exceptions import ProcessorError
 
 
