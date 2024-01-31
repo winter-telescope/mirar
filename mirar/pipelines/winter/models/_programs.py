@@ -97,9 +97,9 @@ class Program(BaseDB, ProgramCredentials):
         :return: self
         """
         total_time = self.hours_allocated
-        hours_remaining = self.hours_remaining
-        assert not hours_remaining > total_time
-        assert not hours_remaining < 0.0
+        hours_used = self.hours_used
+        assert not hours_used > total_time
+        assert not hours_used < 0
         return self
 
     def exists(self) -> bool:
