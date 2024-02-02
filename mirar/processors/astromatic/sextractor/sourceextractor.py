@@ -176,6 +176,9 @@ def run_sextractor_single(  # pylint: disable=too-many-arguments
         image_name = Path(img).stem
         catalog_name = f"{image_name}.cat"
 
+    if isinstance(catalog_name, str):
+        catalog_name = Path(catalog_name)
+
     cmd = (
         f"sex {img} "
         f"-c {config} "
