@@ -13,7 +13,7 @@ import numpy as np
 from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch
-from mirar.paths import BASE_NAME_KEY, REF_IMG_KEY, get_output_dir
+from mirar.paths import LATEST_SAVE_KEY, REF_IMG_KEY, get_output_dir
 from mirar.processors.astromatic.psfex.psfex import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp, SwarpWarning
@@ -31,6 +31,7 @@ class ProcessReference(BaseImageProcessor):
     base_key = "REFPREP"
 
     max_n_cpu = 15  # Because PS1 ref downloads get rate-limited if you use too many
+
     # threads
 
     def __init__(
@@ -149,7 +150,7 @@ class ProcessReference(BaseImageProcessor):
                 ref_resamp_pixscale,
                 ref_resamp_x_imgsize,
                 ref_resamp_y_imgsize,
-                ref_resamp_gain,
+                _,
             ) = self.get_image_header_params(resampled_ref_img)
 
             # This is a fall back if the ref image resampling by Swarp fails
@@ -179,7 +180,7 @@ class ProcessReference(BaseImageProcessor):
             # Detect source in reference image, and save as catalog
 
             ref_sextractor = self.sextractor(
-                output_sub_dir=self.temp_output_subtract_dir, gain=ref_resamp_gain
+                output_sub_dir=self.temp_output_subtract_dir
             )
             ref_sextractor.set_night(night_sub_dir=self.night_sub_dir)
 
@@ -209,7 +210,7 @@ class ProcessReference(BaseImageProcessor):
 
             # Run Sextractor again using PSFex model
             ref_psf_phot_sextractor = self.phot_sextractor(
-                output_sub_dir=self.temp_output_subtract_dir, gain=ref_resamp_gain
+                output_sub_dir=self.temp_output_subtract_dir,
             )
             ref_psf_phot_sextractor.set_night(night_sub_dir=self.night_sub_dir)
 
@@ -225,7 +226,7 @@ class ProcessReference(BaseImageProcessor):
             #     NORM_PSFEX_KEY
             # ]
             resampled_sci_image[REF_IMG_KEY] = resampled_ref_sextractor_psfex_img[
-                BASE_NAME_KEY
+                LATEST_SAVE_KEY
             ]
 
             new_batch.append(resampled_sci_image)
