@@ -42,6 +42,7 @@ def generate_candidates_table(
     sci_resamp_image_path: str | Path,
     ref_resamp_image_path: str | Path,
     diff_scorr_path: str | Path,
+    isdiffpos: bool = True,
 ) -> pd.DataFrame:
     """
     Generate a candidates table from a difference image
@@ -51,6 +52,7 @@ def generate_candidates_table(
     :param sci_resamp_image_path: Path to the resampled science image
     :param ref_resamp_image_path: Path to the resampled reference image
     :param diff_scorr_path: Path to the scorr image
+    :param isdiffpos: Is the difference image positive?
     :return: Candidates table
     """
     det_srcs = get_table_from_ldac(scorr_catalog_path)
@@ -143,8 +145,7 @@ def generate_candidates_table(
     det_srcs["cutout_template"] = display_ref_ims
     det_srcs["cutout_difference"] = display_diff_ims
 
-    # TODO - make isdiffpos a parameter
-    det_srcs["isdiffpos"] = True
+    det_srcs["isdiffpos"] = isdiffpos
 
     return det_srcs
 
@@ -165,6 +166,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         cand_det_sextractor_params: str,
         output_sub_dir: str = "candidates",
         write_regions: bool = False,
+        detect_in_negative: bool = False,
     ):
         super().__init__()
         self.output_sub_dir = output_sub_dir
@@ -173,6 +175,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         self.cand_det_sextractor_nnw = cand_det_sextractor_nnw
         self.cand_det_sextractor_params = cand_det_sextractor_params
         self.write_regions = write_regions
+        self.detect_in_negative = detect_in_negative
 
     def __str__(self) -> str:
         return (
@@ -205,6 +208,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
             scorr_mask_path = os.path.join(
                 self.get_sub_output_dir(), scorr_image[LATEST_WEIGHT_SAVE_KEY]
             )
+
             cands_catalog_name = diff_image_path.replace(".fits", ".dets")
             cands_catalog_name, _ = run_sextractor_dual(
                 det_image=scorr_image_path,
@@ -230,6 +234,55 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                 diff_scorr_path=scorr_image_path,
             )
 
+            logger.debug(f"Found {len(srcs_table)} candidates in positive image")
+            if self.detect_in_negative:
+                negative_img_paths = []
+                for img_path in [scorr_image_path, diff_image_path]:
+                    negative_img_path = img_path.replace(".fits", ".neg.fits")
+                    img = self.open_fits(img_path)
+                    img.set_data(img.get_data() * -1)
+                    self.save_fits(img, negative_img_path)
+                    negative_img_paths.append(negative_img_path)
+
+                negative_scorr_path, negative_diff_path = negative_img_paths
+                cands_catalog_name = diff_image_path.replace(".fits", ".neg.dets")
+                negative_image = Image(
+                    header=image.get_header(), data=-1.0 * image.get_data()
+                )
+                cands_catalog_name, _ = run_sextractor_dual(
+                    det_image=negative_scorr_path,
+                    measure_image=negative_diff_path,
+                    output_dir=self.get_sub_output_dir(),
+                    catalog_name=cands_catalog_name,
+                    config=self.cand_det_sextractor_config,
+                    parameters_name=self.cand_det_sextractor_params,
+                    filter_name=self.cand_det_sextractor_filter,
+                    starnnw_name=self.cand_det_sextractor_nnw,
+                    weight_image=scorr_mask_path,
+                    gain=1.0,
+                )
+                negative_srcs_table = generate_candidates_table(
+                    diff=negative_image,
+                    scorr_catalog_path=cands_catalog_name,
+                    sci_resamp_image_path=sci_image_path,
+                    ref_resamp_image_path=ref_image_path,
+                    diff_scorr_path=negative_scorr_path,
+                    isdiffpos=False,
+                )
+                srcs_table = pd.concat(
+                    [srcs_table, negative_srcs_table],
+                    axis=0,
+                    ignore_index=True,
+                    sort=False,
+                )
+
+                logger.debug(
+                    f"Found {len(negative_srcs_table)} sources in "
+                    f"negative image {image[BASE_NAME_KEY]}"
+                )
+
+            logger.debug(srcs_table)
+            logger.debug(f"Found {len(srcs_table)} total sources.")
             if len(srcs_table) > 0:
                 x_shape, y_shape = image.get_data().shape
                 srcs_table["X_SHAPE"] = x_shape
