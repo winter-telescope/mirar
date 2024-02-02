@@ -97,7 +97,7 @@ class PSFex(BaseImageProcessor):
             sextractor_cat_path = Path(image[SEXTRACTOR_HEADER_KEY])
 
             psf_path = sextractor_cat_path.with_suffix(".psf")
-            norm_psf_path = sextractor_cat_path.with_suffix(".psfmodel")
+            norm_psf_path = sextractor_cat_path.with_suffix(".psfmodel.fits")
             run_psfex(
                 sextractor_cat_path=sextractor_cat_path,
                 config_path=self.config_path,
