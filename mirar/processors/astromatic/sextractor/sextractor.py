@@ -160,7 +160,7 @@ class Sextractor(BaseImageProcessor):
         required_psf_params = ["MAG_PSF", "MAGERR_PSF"]
 
         logger.debug(
-            f"Sextractor is using a PSFex model to solve for PSF magnitudes, "
+            f"Checking SExtractor PSF prerequisites, "
             f"Checking file {sextractor_param_path} for "
             f"required params {required_psf_params}"
         )
@@ -174,15 +174,26 @@ class Sextractor(BaseImageProcessor):
             ]
 
         for param in required_psf_params:
-            if param not in sextractor_params:
-                msg = (
-                    f"Missing parameter: {self.__module__} requires {param} "
-                    f"to save PSF magnitudes, but this parameter was not found in "
-                    f"sextractor config file '{sextractor_param_path}' . Please add "
-                    f"the parameter to this list, ideally in a new param file as so "
-                    f"not to conflict with earlier Sextractor runs."
-                )
-                logger.warning(msg)
+            param_found = param in sextractor_params
+            if self.use_psfex:
+                if not param_found:
+                    msg = (
+                        f"Missing parameter: {self.__module__} requires {param} "
+                        f"to save PSF magnitudes, but this parameter was not found in "
+                        f"sextractor config file '{sextractor_param_path}' . Please add "
+                        f"the parameter to this list, ideally in a new param file as so "
+                        f"not to conflict with earlier Sextractor runs."
+                    )
+                    logger.warning(msg)
+            else:
+                # Raise error if not using PSFex but PSF-related params are in param
+                # file (this crashes sextractor with a cryptic error message)
+                if param_found:
+                    err = (
+                        f"Parameter {param} found in sextractor config file "
+                        f"'{sextractor_param_path}' but use_psfex is set to False."
+                    )
+                    raise PrerequisiteError(err)
 
     def _apply_to_images(  # pylint: disable=too-many-locals
         self, batch: ImageBatch
@@ -234,7 +245,7 @@ class Sextractor(BaseImageProcessor):
                         f"the header, or specify the path manually using psf_name "
                         f"argument"
                     )
-                self.check_psf_prerequisite()
+            self.check_psf_prerequisite()
 
             output_cat = sextractor_out_dir.joinpath(
                 image[BASE_NAME_KEY].replace(".fits", ".cat")
