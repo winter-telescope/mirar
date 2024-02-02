@@ -31,8 +31,8 @@ def default_lim_mag_sextractor_catalog_purifier(
     """
     Default function to purify the photometric image catalog
     """
-    clean_catalog = default_image_sextractor_catalog_purifier(
-        catalog, image, fwhm_threshold_arcsec=20
+    clean_catalog, _ = default_image_sextractor_catalog_purifier(
+        sci_catalog=catalog, ref_catalog=None, image=image, fwhm_threshold_arcsec=20
     )
     for key in ["MAG_AUTO", "SNR_WIN", "FLAGS"]:
         assert key in clean_catalog.keys(), (
