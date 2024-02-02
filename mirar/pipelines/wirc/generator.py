@@ -55,32 +55,6 @@ def wirc_source_table_filter_annotator(source_table: SourceBatch) -> SourceBatch
     return new_batch
 
 
-def wirc_photometric_img_catalog_purifier(catalog, image):
-    """
-    Function to purify the photometric catalog
-
-    :return: purified catalog
-    """
-    edge_width_pixels = 100
-    fwhm_threshold_arcsec = 4.0
-
-    x_lower_limit = edge_width_pixels
-    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
-    y_lower_limit = edge_width_pixels
-    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
-
-    clean_mask = (
-        (catalog["FLAGS"] == 0)
-        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
-        & (catalog["X_IMAGE"] > x_lower_limit)
-        & (catalog["X_IMAGE"] < x_upper_limit)
-        & (catalog["Y_IMAGE"] > y_lower_limit)
-        & (catalog["Y_IMAGE"] < y_upper_limit)
-    )
-
-    return catalog[clean_mask]
-
-
 def wirc_astrometric_catalog_generator(_) -> Gaia2Mass:
     """
     Function to crossmatch WIRC to GAIA/2mass for astrometry
