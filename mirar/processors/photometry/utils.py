@@ -46,7 +46,6 @@ def make_cutouts(
         data = fits.getdata(image_path)
         y_image_size, x_image_size = np.shape(data)
         x, y = position
-        logger.debug(f"Cutout parameters {x},{y},{np.shape(data)}")
 
         if x < 0 or x > x_image_size or y < 0 or y > y_image_size:
             raise CutoutError(
