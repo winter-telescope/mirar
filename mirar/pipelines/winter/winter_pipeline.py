@@ -60,7 +60,7 @@ class WINTERPipeline(Pipeline):
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
         "detrend_unpacked": detrend_unpacked,
-        "imsub": load_final_stack + imsub + detect_candidates,
+        "imsub": load_final_stack + imsub,
         "reduce": reduce,
         "reduce_unpacked": reduce_unpacked,
         "photcal_stacks": photcal_stacks,
