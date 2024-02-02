@@ -34,6 +34,7 @@ from mirar.pipelines.winter.config import (
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
+    mask_stamps_around_bright_stars,
     select_winter_flat_images,
     winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
@@ -45,8 +46,11 @@ from mirar.pipelines.winter.generator import (
     winter_candidate_quality_filterer,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
+    winter_imsub_catalog_purifier,
     winter_new_source_updater,
+    winter_photcal_color_columns_generator,
     winter_photometric_catalog_generator,
+    winter_photometric_catalogs_purifier,
     winter_photometric_ref_catalog_namer,
     winter_reference_generator,
     winter_reference_image_resampler_for_zogy,
@@ -108,7 +112,7 @@ from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
 )
-from mirar.processors.photcal import OutlierRejectionZPCalculator
+from mirar.processors.photcal import ZPWithColorTermCalculator
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
@@ -135,6 +139,7 @@ from mirar.processors.utils import (
     MEFLoader,
 )
 from mirar.processors.xmatch import XMatch
+from mirar.processors.zogy.reference_aligner import AlignReference
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 build_test = [
@@ -455,15 +460,18 @@ photcal_and_export = [
     CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
     PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
+        catalogs_purifier=winter_photometric_catalogs_purifier,
         temp_output_sub_dir="phot",
         write_regions=True,
         cache=True,
-        zp_calculator=OutlierRejectionZPCalculator(
-            outlier_rejection_threshold=[1.5, 2.0, 3.0]
+        zp_calculator=ZPWithColorTermCalculator(
+            color_colnames_generator=winter_photcal_color_columns_generator,
+            reject_outliers=True,
         ),
+        zp_column_name="MAG_POINTSOURCE",
     ),
     CatalogLimitingMagnitudeCalculator(
-        sextractor_mag_key_name="MAG_AUTO", write_regions=True
+        sextractor_mag_key_name="MAG_PSF", write_regions=True
     ),
     AstrometryStatsWriter(
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
@@ -516,10 +524,24 @@ imsub = [
         cache=False,
         use_psfex=True,
     ),
-    # PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
-    # ImageSaver(output_dir_name="presubtract"),
+    PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
+    AlignReference(
+        order=1,
+        sextractor=winter_reference_sextractor,
+        psfex=winter_reference_psfex,
+        phot_sextractor=winter_reference_psf_phot_sextractor,
+        catalog_purifier=winter_imsub_catalog_purifier,
+    ),
+    MaskPixelsFromFunction(mask_function=mask_stamps_around_bright_stars),
+    ImageSaver(output_dir_name="presubtract"),
     ZOGYPrepare(
-        output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
+        output_sub_dir="subtract",
+        sci_zp_header_key="ZP_AUTO",
+        ref_zp_header_key=ZP_KEY,
+        catalog_purifier=winter_imsub_catalog_purifier,
+        x_key="XMODEL_IMAGE",
+        y_key="YMODEL_IMAGE",
+        flux_key="FLUX_POINTSOURCE",
     ),
     # ImageSaver(output_dir_name="prezogy"),
     ZOGY(
@@ -535,7 +557,10 @@ load_sub = [
 ]
 detect_candidates = [
     ZOGYSourceDetector(
-        output_sub_dir="subtract", **sextractor_candidate_config, write_regions=True
+        output_sub_dir="subtract",
+        **sextractor_candidate_config,
+        write_regions=True,
+        detect_in_negative=True,
     ),
     PSFPhotometry(phot_cutout_half_size=10),
     AperturePhotometry(
