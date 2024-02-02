@@ -73,6 +73,7 @@ scamp_config_path = winter_file_dir.joinpath("astrom.scamp")
 winter_mask_path = winter_file_dir.joinpath("winter_mask.fits")
 
 psfex_path = winter_file_dir.joinpath("photom.psfex")
+ref_psfex_path = winter_file_dir.joinpath("reference.psfex")
 
 winter_cal_requirements = [
     CalRequirement(
