@@ -6,7 +6,7 @@ import logging
 from typing import ClassVar
 
 from pydantic import Field
-from sqlalchemy import Column, Float, ForeignKey
+from sqlalchemy import VARCHAR, Column, Float, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
@@ -26,6 +26,7 @@ class AstrometryStatsTable(WinterBase):  # pylint: disable=too-few-public-method
 
     rawid = mapped_column(ForeignKey("raws.rawid"), primary_key=True, unique=True)
     astrom_raw_ids: Mapped["RawsTable"] = relationship(back_populates="astrometry")
+    savepath = Column(VARCHAR(255), unique=True)
     crval1 = Column(Float)
     crval2 = Column(Float)
     crpix1 = Column(Float)
@@ -60,6 +61,7 @@ class AstrometryStat(BaseDB):
     sql_model: ClassVar = AstrometryStatsTable
 
     rawid: int = Field(ge=0)
+    savepath: str = Column(VARCHAR(255), unique=True)
     crval1: float = ra_field
     crval2: float = dec_field
     crpix1: float = default_unknown_field
