@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mirar"
-version = "0.11.1"
+version = "0.12.0"
 description = "Modular Image Reduction and Analysis Resource (MIRAR)"
 authors = ["Robert Stein <rdstein@caltech.edu>", "Viraj Karambelkar <viraj@astro.caltech.edu>"]
 license = "MIT"
@@ -48,9 +48,9 @@ sqlalchemy = "^2.0.15"
 pydantic = "^2.1.1"
 pylint-pydantic = ">=0.1.6,<0.4.0"
 astrosurveyutils = "^0.0.1"
-wintertoo = ">=1.1.0"
 urllib3 = "^1.26.16"
 sqlalchemy-utils = "^0.41.1"
+wintertoo = "^1.2.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.0.1"

@@ -9,6 +9,7 @@ from typing import ClassVar
 import pandas as pd
 from pydantic import Field
 from sqlalchemy import (  # event,
+    VARCHAR,
     BigInteger,
     Column,
     DateTime,
@@ -18,6 +19,7 @@ from sqlalchemy import (  # event,
     Sequence,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from wintertoo.data import MAX_TARGNAME_LEN
 
 from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
 from mirar.database.constraints import DBQueryConstraints
@@ -65,6 +67,9 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
     program_name: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
 
+    targname = Column(VARCHAR(MAX_TARGNAME_LEN), nullable=True)
+    rawpath = Column(VARCHAR(255), unique=True)
+
     utctime = Column(DateTime(timezone=True))
 
     exptime = Column(Float, nullable=False)
@@ -107,6 +112,10 @@ class Exposure(BaseDB):
     fieldid: int = fieldid_field
     itid: int = Field(ge=0)
     progname: str = Field(min_length=1)
+    targname: str | None = Field(
+        min_length=0, max_length=MAX_TARGNAME_LEN, default=None
+    )
+    rawpath: str = Field(min_length=1)
 
     utctime: datetime = Field()
     exptime: float = Field(ge=0)
