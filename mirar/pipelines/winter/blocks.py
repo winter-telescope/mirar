@@ -322,7 +322,7 @@ load_unpacked = [
 
 dark_calibrate = [
     ImageDebatcher(),
-    ImageSelector(("FILTER", ["Y", "H", "dark"])),
+    # ImageSelector(("FILTER", ["Y", "H", "dark"])),
     ImageBatcher(
         ["BOARD_ID", EXPTIME_KEY, "SUBCOORD", "GAINCOLT", "GAINCOLB", "GAINROW"]
     ),
