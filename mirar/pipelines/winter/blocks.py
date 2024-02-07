@@ -242,9 +242,10 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 # Optional subset selection
 BOARD_ID = 4
 select_subset = [
-    ImageSelector(
-        ("BOARD_ID", str(BOARD_ID)),
-    ),
+    # ImageSelector(
+    #     ("BOARD_ID", str(BOARD_ID)),
+    # ),
+    ImageSelector(("FILTER", ["Y", "dark"]))
 ]
 
 select_ref = [
@@ -292,63 +293,6 @@ save_raw = [
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
-    ImageSelector(
-        (
-            "TARGNAME",
-            [
-                "dark",
-                "nightly_20230906.db_35",
-                "nightly_20230907.db_35",
-                "nightly_20230912.db_33",
-                "nightly_20230913.db_33",
-                "nightly_20230915.db_33",
-                "nightly_20230916.db_33",
-                "nightly_20230918.db_31",
-                "nightly_20230919.db_31",
-                "nightly_20230921.db_31",
-                "nightly_20230924.db_29",
-                "nightly_20230925.db_29",
-                "nightly_20230926.db_29",
-                "nightly_20231003.db_27",
-                "nightly_20231005.db_27",
-                "nightly_20231006.db_27",
-                "nightly_20231009.db_32",
-                "nightly_20231010.db_32",
-                "nightly_20231012.db_33",
-                "nightly_20231013.db_34",
-                "nightly_20231016.db_30",
-                "timed_requests_10_29_2023_18_1698630508.db_0",
-                "timed_requests_10_29_2023_18_1698630508.db_1",
-                "timed_requests_10_29_2023_18_1698630508.db_2",
-                "timed_requests_10_29_2023_18_1698630508.db_3",
-                "timed_requests_10_29_2023_18_1698630508.db_4",
-                "timed_requests_10_29_2023_18_1698630508.db_5",
-                "timed_requests_10_29_2023_18_1698630508.db_6",
-                "timed_requests_10_29_2023_18_1698630508.db_7",
-                "timed_requests_10_29_2023_18_1698630508.db_14",
-                "timed_requests_10_29_2023_18_1698630508.db_15",
-                "timed_requests_10_29_2023_18_1698630508.db_16",
-                "timed_requests_10_29_2023_18_1698630508.db_17",
-                "timed_requests_10_29_2023_18_1698630508.db_24",
-                "timed_requests_10_29_2023_18_1698630508.db_25",
-                "timed_requests_10_29_2023_18_1698630508.db_26",
-                "timed_requests_11_08_2023_18_1699498547.db_0",
-                "timed_requests_11_09_2023_18_1699582760.db_0",
-                "timed_requests_11_09_2023_19_1699585528.db_0",
-                "timed_requests_11_09_2023_19_1699588705.db_0",
-                "timed_requests_11_09_2023_21_1699593499.db_0",
-                "timed_requests_11_09_2023_21_1699595765.db_0",
-                "timed_requests_11_09_2023_23_1699600374.db_0",
-                "timed_requests_11_09_2023_12_1699561175.db_6",
-                "timed_requests_11_09_2023_12_1699561175.db_7",
-                "timed_requests_11_09_2023_12_1699561175.db_11",
-                "nightly_20231112.db_11",
-                "timed_requests_12_02_2023_18_1701570098.db_1",
-                "timed_requests_12_02_2023_18_1701570098.db_2",
-                "timed_requests_01_11_2024_17_1705024078.db_13",
-            ],
-        )
-    ),
     ImageDebatcher(),
     ImageBatcher("UTCTIME"),
     CSVLog(
@@ -378,6 +322,7 @@ load_unpacked = [
 
 dark_calibrate = [
     ImageDebatcher(),
+    ImageSelector(("FILTER", ["Y", "H", "dark"])),
     ImageBatcher(
         ["BOARD_ID", EXPTIME_KEY, "SUBCOORD", "GAINCOLT", "GAINCOLB", "GAINROW"]
     ),
