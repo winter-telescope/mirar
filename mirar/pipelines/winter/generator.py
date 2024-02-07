@@ -246,7 +246,7 @@ def winter_photometric_catalogs_purifier(
         ref_catalog=ref_catalog,
         image=image,
         edge_width_pixels=100,
-        fwhm_threshold_arcsec=4.0,
+        fwhm_threshold_arcsec=5.0,
     )
 
     sci_catalog = sci_catalog[
@@ -267,10 +267,12 @@ def winter_photcal_color_columns_generator(image):
     :return: color columns
     """
     filter_name = image[FILTER_KEY]
-    if filter_name in ["J", "H"]:
+    if filter_name == "J":
         return ["j_m", "h_m"], ["j_msigcom", "h_msigcom"]
+    if filter_name == "H":
+        return ["h_m", "ks_m"], ["h_msigcom", "ks_msigcom"]
     if filter_name in ["Y"]:
-        return ["magnitude", "magnitude"], ["magnitude_err", "magnitude_err"]
+        return ["ymag", "zmag"], ["e_ymag", "e_zmag"]
     err = f"Filter {filter_name} not recognised"
     logger.error(err)
     raise ValueError(err)
