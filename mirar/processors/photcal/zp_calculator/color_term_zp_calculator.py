@@ -6,7 +6,7 @@ from typing import Callable
 
 import numpy as np
 from astropy.table import Table
-from scipy.optimize import curve_fit
+from scipy.odr import ODR, Model, RealData
 
 from mirar.data import Image
 from mirar.processors.photcal.zp_calculator.base_zp_calculator import (
@@ -16,12 +16,15 @@ from mirar.processors.photcal.zp_calculator.base_zp_calculator import (
 logger = logging.getLogger(__name__)
 
 
-def line_model(data, slope, intercept):
-    """linear model to hand to scipy curve_fit"""
-    return slope * data + intercept
+def line_func(theta, x):
+    """linear model to hand to scipy.odr"""
+    slope, intercept = theta
+    return (slope * x) + intercept
 
 
-class ZPWithColorTermCalculator(BaseZeroPointCalculator):
+class ZPWithColorTermCalculator(
+    BaseZeroPointCalculator
+):  # pylint: disable=too-few-public-methods
     """
     Class to calculate zero point by including a color term. This models the data as
 
@@ -42,14 +45,18 @@ class ZPWithColorTermCalculator(BaseZeroPointCalculator):
     ):
         self.color_colnames_generator = color_colnames_generator
 
-    def calculate_zeropoint(
+    def calculate_zeropoint(  # pylint: disable=too-many-locals
         self,
         image: Image,
         matched_ref_cat: Table,
         matched_img_cat: Table,
         colnames: list[str],
     ) -> Image:
-        color_colnames = self.color_colnames_generator(image)
+        (
+            color_colnames,
+            color_err_colnames,
+            firstguess_color_zp,
+        ) = self.color_colnames_generator(image)
         colors = matched_ref_cat[color_colnames[0]] - matched_ref_cat[color_colnames[1]]
 
         for colname in colnames:
@@ -59,9 +66,35 @@ class ZPWithColorTermCalculator(BaseZeroPointCalculator):
                 matched_img_cat[colname.replace("MAG", "MAGERR")] ** 2
                 + matched_ref_cat["magnitude_err"] ** 2
             )
-            popt, pcov = curve_fit(f=line_model, xdata=x, ydata=y, sigma=y_err)
-            color, zero_point = popt
-            color_err, zp_err = np.sqrt(np.diag(pcov))
+            x_err = np.sqrt(
+                matched_ref_cat[color_err_colnames[0]] ** 2
+                + matched_ref_cat[color_err_colnames[1]] ** 2
+            )
+
+            # use scipy.odr to fit a line to data with x and y uncertainties
+            ## setup: remove sources with 0 uncertainty (or else scipy.odr won't work)
+            where_zero_y = np.where(np.array(y_err) == 0)[0]
+            if len(where_zero_y) > 0:
+                y = np.delete(y, where_zero_y)
+                x = np.delete(x, where_zero_y)
+                y_err = np.delete(y_err, where_zero_y)
+                x_err = np.delete(x_err, where_zero_y)
+
+            where_zero_x = np.where(np.array(x_err) == 0)[0]
+            if len(where_zero_x) > 0:
+                y = np.delete(y, where_zero_x)
+                x = np.delete(x, where_zero_x)
+                y_err = np.delete(y_err, where_zero_x)
+                x_err = np.delete(x_err, where_zero_x)
+
+            ## set up odr
+            line_model = Model(line_func)
+            data = RealData(x, y, sx=x_err, sy=y_err)
+            odr = ODR(data, line_model, beta0=firstguess_color_zp)
+            ## run the regression
+            out = odr.run()
+            color, zero_point = out.beta
+            color_err, zp_err = np.sqrt(np.diag(out.cov_beta))
 
             aperture = colname.split("_")[-1]
             image[f"ZP_{aperture}"] = zero_point
