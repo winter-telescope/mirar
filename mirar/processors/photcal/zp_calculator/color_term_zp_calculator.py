@@ -37,19 +37,26 @@ class ZPWithColorTermCalculator(
     """
     Class to calculate zero point by including a color term. This models the data as
 
-    ref_mag - img_mag = ZP + C * (ref_color)
+    ref_mag - img_mag = ZP + C * (ref_color).
+
+    Note: this processor relies on scipy.odr,
+    which requires all data points to have nonzero (x and y) error. This function
+    removes those points, but it is up to the user to also consider removing these
+    points from their reference catalogs to begin with (0 error in magnitude indicates
+    unreliable photometry in PanStarrs, for example).
 
     Attributes:
         color_colnames_generator: function that takes an image as input and returns
-        two lists containing two strings each that are the column names of the reference
-        catalog magnitudes and magnitude errors to use for the color term. The first
-        string is the bluer band, the second is the redder band.
+        three tuples. The first two tuples contain two strings each that are the column
+        names of the reference catalog magnitudes and magnitude errors to use for
+        the color term. The first string is the bluer band, the second is the redder
+        band. The third tuple returns a first guess at the color and zero-point values.
     """
 
     def __init__(
         self,
         color_colnames_generator: Callable[
-            [Image], list[list[str, str], list[str, str]]
+            [Image], tuple[tuple[str, str], tuple[str, str], tuple[float, float]]
         ],
     ):
         self.color_colnames_generator = color_colnames_generator
