@@ -252,8 +252,6 @@ all_phot_psfexsex_calibrate = [  # run phot on all sources in image
         use_psfex=True,
         **sextractor_PSF_photometry_config,
     ),  # Sextractor-based PSF mags, saves to catalog
-    # SextractorSourceDetector(output_sub_dir="sources"),
-    # SourceWriter(output_dir_name="sourcetable"),
     PhotCalibrator(
         ref_catalog_generator=sedmv2_photometric_catalog_generator,
         zp_calculator=ZPWithColorTermCalculator(

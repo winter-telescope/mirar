@@ -18,7 +18,15 @@ logger = logging.getLogger(__name__)
 
 
 def line_func(theta, x):
-    """linear model to hand to scipy.odr"""
+    """
+    linear model to hand to scipy.odr
+    Args:
+        theta: slope and intercept of line to fit to data
+        x: x data (color in our context)
+
+    Returns:
+
+    """
     slope, intercept = theta
     return (slope * x) + intercept
 

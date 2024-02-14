@@ -168,7 +168,9 @@ def sedmv2_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     return good_sci_sources, good_ref_sources
 
 
-def sedmv2_color_function_ps1(image: Image) -> list[str]:
+def sedmv2_color_function_ps1(
+    image: Image,
+) -> tuple[tuple[str, str], tuple[str, str], tuple[float, float]]:
     """
     Args:
         image: Image object undergoing photometric calibrations
