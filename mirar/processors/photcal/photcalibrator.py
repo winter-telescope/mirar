@@ -1,6 +1,7 @@
 """
 Module for running photometric calibration
 """
+
 import logging
 import warnings
 from collections.abc import Callable

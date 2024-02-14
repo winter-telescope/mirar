@@ -1,6 +1,7 @@
 """
 Module containing the :class:`~wintedrp.processors.BaseProcessor`
 """
+
 import datetime
 import getpass
 import hashlib

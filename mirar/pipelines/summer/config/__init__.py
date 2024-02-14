@@ -1,6 +1,7 @@
 """
 Module for summer-specific files
 """
+
 import os
 
 from mirar.pipelines.summer.config.constants import (

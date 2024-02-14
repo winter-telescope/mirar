@@ -1,6 +1,7 @@
 """
 Module to run Scamp
 """
+
 import logging
 import os
 import shutil

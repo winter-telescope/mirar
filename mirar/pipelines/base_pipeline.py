@@ -9,6 +9,7 @@ Each :class:`~mirar.pipelines.base_pipeline.Pipeline` will have several
 The pipeline will process data using a chosen list of these individual
 :class:`~mirar.processors.BaseProcessor` objects.
 """
+
 import copy
 import logging
 import os

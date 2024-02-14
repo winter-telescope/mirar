@@ -1,6 +1,7 @@
 """
 Module to calculate the brightest and faintest stars detected in the image
 """
+
 import logging
 from pathlib import Path
 from typing import Callable

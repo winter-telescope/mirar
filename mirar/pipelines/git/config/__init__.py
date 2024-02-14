@@ -1,6 +1,7 @@
 """
 Module containing SEDMv2-specific paths
 """
+
 import os
 
 from mirar.pipelines.git.config.constants import (

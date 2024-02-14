@@ -2,6 +2,7 @@
 Module containing functions to generate astrometric/photometric calibration catalogs
 for SEDMv2
 """
+
 import logging
 
 from mirar.catalog import BaseCatalog, Gaia2Mass

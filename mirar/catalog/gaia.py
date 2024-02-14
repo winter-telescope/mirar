@@ -1,6 +1,7 @@
 """
 Module for obtaining a Gaia/2Mass catalog
 """
+
 import logging
 from typing import Optional
 

@@ -22,6 +22,7 @@ the code distinguishes between **internal errors** which were deliberately raise
     :end-line: 14
 
 """
+
 from mirar.errors.error_report import ErrorReport
 from mirar.errors.error_stack import ErrorStack
 from mirar.errors.exceptions import (

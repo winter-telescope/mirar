@@ -4,6 +4,7 @@ Module for ErrorReport objects.
 An :class:`~mirar.errors.error_report.ErrorReport` object summarises a single error
 raised by the code.
 """
+
 import logging
 import traceback
 from datetime import datetime

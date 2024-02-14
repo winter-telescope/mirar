@@ -1,6 +1,7 @@
 """
 Module for the WIRC (https://doi.org/10.1117/12.460336) pipeline
 """
+
 import logging
 from pathlib import Path
 

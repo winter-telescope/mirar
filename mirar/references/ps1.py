@@ -1,6 +1,7 @@
 """
 Module for PS1 reference image generator
 """
+
 import logging
 
 import numpy as np

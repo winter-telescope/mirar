@@ -1,6 +1,7 @@
 """
 Module to calculate zero point by including a color term.
 """
+
 import logging
 from typing import Callable
 

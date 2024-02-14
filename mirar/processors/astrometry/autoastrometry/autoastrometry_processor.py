@@ -1,6 +1,7 @@
 """
 Module containing a processor to run automastrometry
 """
+
 import logging
 from typing import Optional
 

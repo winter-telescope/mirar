@@ -1,6 +1,7 @@
 """
 Tests for image subtraction with WIRC
 """
+
 import logging
 import os
 import shutil

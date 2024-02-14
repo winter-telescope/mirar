@@ -1,6 +1,7 @@
 """
 Module to update database entries
 """
+
 from sqlalchemy import text, update
 
 from mirar.database.base_table import BaseTable

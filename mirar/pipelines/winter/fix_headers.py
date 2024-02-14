@@ -1,6 +1,7 @@
 """
 Script to fix headers of images based on a log file
 """
+
 import argparse
 
 import numpy as np

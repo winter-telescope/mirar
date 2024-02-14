@@ -1,6 +1,7 @@
 """
 Module with classes to make avro alert packets
 """
+
 import io
 import logging
 from pathlib import Path

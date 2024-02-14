@@ -1,6 +1,7 @@
 """
 Tests for WINTER reduction
 """
+
 import logging
 import shutil
 

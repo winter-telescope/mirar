@@ -1,6 +1,7 @@
 """
 Central module for candidate detection and extraction.
 """
+
 from mirar.processors.sources.edge_mask import EdgeSourcesMask
 from mirar.processors.sources.forced_photometry import ForcedPhotometryDetector
 from mirar.processors.sources.namer import CandidateNamer

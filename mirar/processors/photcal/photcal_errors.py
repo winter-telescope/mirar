@@ -1,6 +1,7 @@
 """
 Photometric calibration errors
 """
+
 from mirar.errors import ProcessorError
 
 

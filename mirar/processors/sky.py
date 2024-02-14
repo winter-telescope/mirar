@@ -1,6 +1,7 @@
 """
 Module for sky subtraction
 """
+
 import logging
 
 import numpy as np

@@ -1,6 +1,7 @@
 """
 Central module hosting all shared paths/directory conventions/keys/variables
 """
+
 import logging
 import os
 import shutil
@@ -305,7 +306,7 @@ EXPTIME_KEY = "EXPTIME"
 TIME_KEY = "DATE-OBS"
 JD_KEY = "JD"
 OBSCLASS_KEY = "OBSCLASS"
-TARGET_KEY = "TARGNAME"
+TARGET_KEY = "TARGET"
 DITHER_N_KEY = "DITHNUM"
 MAX_DITHER_KEY = "NUMDITHS"
 FILTER_KEY = "FILTER"

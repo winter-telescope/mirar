@@ -1,6 +1,7 @@
 """
 Module containing gmail integration functions
 """
+
 import getpass
 import gzip
 import logging

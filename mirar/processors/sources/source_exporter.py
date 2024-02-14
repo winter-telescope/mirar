@@ -1,6 +1,7 @@
 """
 Module with classes to write a source table
 """
+
 import logging
 import pickle
 from pathlib import Path

@@ -1,6 +1,7 @@
 """
 Module containing base database processor class
 """
+
 import logging
 from abc import ABC
 from typing import Type

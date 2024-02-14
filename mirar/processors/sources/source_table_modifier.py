@@ -1,6 +1,7 @@
 """
 Module for modifying a source table.
 """
+
 import logging
 from typing import Callable
 

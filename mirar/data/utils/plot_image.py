@@ -1,6 +1,7 @@
 """
 Utilities for working with data
 """
+
 import logging
 from pathlib import Path
 from typing import List, Tuple

@@ -2,6 +2,7 @@
 Component module for autoastrometry, dealing with crossmatching image sources with
 reference sources
 """
+
 import logging
 import os
 from typing import Optional

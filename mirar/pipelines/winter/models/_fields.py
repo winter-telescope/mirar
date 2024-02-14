@@ -1,6 +1,7 @@
 """
 Models for the 'fields' table
 """
+
 import time
 from typing import ClassVar
 

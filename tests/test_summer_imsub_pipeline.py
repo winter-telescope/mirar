@@ -1,6 +1,7 @@
 """
 Module to test summer image subtraction pipeline
 """
+
 import logging
 import shutil
 

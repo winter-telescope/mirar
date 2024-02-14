@@ -1,6 +1,7 @@
 """
 Script containing functions to run astrometry.net locally
 """
+
 import logging
 import os
 from pathlib import Path

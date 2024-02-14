@@ -1,6 +1,7 @@
 """
 Models for the 'itid' table
 """
+
 # pylint: disable=duplicate-code
 from typing import ClassVar
 

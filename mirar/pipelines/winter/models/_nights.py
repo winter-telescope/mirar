@@ -1,6 +1,7 @@
 """
 Models for the 'nights' table
 """
+
 from datetime import date
 from typing import ClassVar
 

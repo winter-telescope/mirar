@@ -1,6 +1,7 @@
 """
 This module contains the processors that are used to process the raw data
 """
+
 # import logging
 from mirar.processors.base_processor import BaseImageProcessor
 from mirar.processors.bias import BiasCalibrator

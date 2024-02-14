@@ -2,6 +2,7 @@
 Module containing functions to generate astrometric/photometric calibration catalogs
 for SUMMER
 """
+
 import logging
 
 from astropy.table import Table

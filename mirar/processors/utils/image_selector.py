@@ -1,6 +1,7 @@
 """
 Module containing processors and functions to select a subset of images from a batch
 """
+
 import logging
 
 from mirar.data import Dataset, ImageBatch

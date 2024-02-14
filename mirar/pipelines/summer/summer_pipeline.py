@@ -1,6 +1,7 @@
 """
 Module to run the summer data reduction pipeline
 """
+
 import logging
 import os
 from pathlib import Path

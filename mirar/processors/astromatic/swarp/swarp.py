@@ -1,6 +1,7 @@
 """
 Module relating to `swarp <https://www.astromatic.net/software/swarp`_
 """
+
 import logging
 import shutil
 import warnings

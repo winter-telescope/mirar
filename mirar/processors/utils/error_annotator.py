@@ -1,6 +1,7 @@
 """
 Module for adding saved errors into image header metadata
 """
+
 import logging
 
 from mirar.data import ImageBatch

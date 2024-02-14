@@ -2,6 +2,7 @@
 Script containing the :class:`~mirar.monitor.base_monitor.Monitor` class,
 used for processing data in real time.
 """
+
 import copy
 import logging
 import os

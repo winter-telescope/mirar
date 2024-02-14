@@ -1,6 +1,7 @@
 """
 Module containing processors for flat calibration
 """
+
 import logging
 import os.path
 import sys

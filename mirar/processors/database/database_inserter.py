@@ -1,6 +1,7 @@
 """
 Module containing processors for exporting to databases
 """
+
 import logging
 from abc import ABC
 

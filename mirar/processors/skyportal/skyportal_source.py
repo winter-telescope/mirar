@@ -1,6 +1,7 @@
 """
 Module for sending sources to Fritz.
 """
+
 import logging
 from copy import deepcopy
 from typing import Mapping, Optional

@@ -1,6 +1,7 @@
 """
 Base class for unit testing, with common cleanup method
 """
+
 import tempfile
 import unittest
 

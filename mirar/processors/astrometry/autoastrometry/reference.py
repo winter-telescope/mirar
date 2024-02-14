@@ -2,6 +2,7 @@
 Module for downloading a reference image to perform calibration,
 and extracting sources from that reference image
 """
+
 import logging
 import urllib.error
 import urllib.request

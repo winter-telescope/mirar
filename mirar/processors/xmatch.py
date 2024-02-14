@@ -1,6 +1,7 @@
 """
 Module to cross-match a candidate_table with different catalogs
 """
+
 import logging
 
 import astropy.units as u

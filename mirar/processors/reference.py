@@ -2,6 +2,7 @@
 This module contains the ProcessReference class, which is used to generate
 reference images.
 """
+
 import logging
 import os.path
 import warnings

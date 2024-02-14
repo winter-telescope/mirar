@@ -1,6 +1,7 @@
 """
 Module with classes to read a source table from a json file
 """
+
 import logging
 import pickle
 from pathlib import Path

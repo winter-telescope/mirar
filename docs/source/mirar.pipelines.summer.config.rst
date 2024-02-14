@@ -6,14 +6,6 @@ mirar.pipelines.summer.config package
    :undoc-members:
    :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   mirar.pipelines.summer.config.schema
-
 Submodules
 ----------
 

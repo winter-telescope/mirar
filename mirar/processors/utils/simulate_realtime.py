@@ -2,6 +2,7 @@
 Module to 'simulate' real-time data, by copying images into a directory.
 Used to test performance of the :module:`wintedrp.processors`
 """
+
 import logging
 from pathlib import Path
 from shutil import copy

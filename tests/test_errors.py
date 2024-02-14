@@ -1,6 +1,7 @@
 """
 Script for testing the error handling in ..module::mirar.errors
 """
+
 import logging
 
 from mirar.data import Dataset, ImageBatch
@@ -23,7 +24,6 @@ expected_error = {
 
 
 class TestErrors(BaseTestCase):
-
     """Class for testing errors in ..module::mirar.errors"""
 
     def setUp(self):
