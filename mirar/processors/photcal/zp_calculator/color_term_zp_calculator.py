@@ -89,19 +89,14 @@ class ZPWithColorTermCalculator(
 
             # use scipy.odr to fit a line to data with x and y uncertainties
             ## setup: remove sources with 0 uncertainty (or else scipy.odr won't work)
-            where_zero_y = np.where(np.array(y_err) == 0)[0]
-            if len(where_zero_y) > 0:
-                y = np.delete(y, where_zero_y)
-                x = np.delete(x, where_zero_y)
-                y_err = np.delete(y_err, where_zero_y)
-                x_err = np.delete(x_err, where_zero_y)
-
-            where_zero_x = np.where(np.array(x_err) == 0)[0]
-            if len(where_zero_x) > 0:
-                y = np.delete(y, where_zero_x)
-                x = np.delete(x, where_zero_x)
-                y_err = np.delete(y_err, where_zero_x)
-                x_err = np.delete(x_err, where_zero_x)
+            zero_mask = (np.array(y_err) == 0) | (np.array(x_err) == 0)
+            if np.sum(zero_mask) != 0:
+                logger.debug(
+                    f"Found {np.sum(zero_mask)} source(s) with zero reported "
+                    f"uncertainty, removing them from calibrations."
+                )
+                x, y = x[~zero_mask], y[~zero_mask]
+                x_err, y_err = x_err[~zero_mask], y_err[~zero_mask]
 
             ## set up odr
             line_model = Model(line_func)
