@@ -7,7 +7,7 @@ from typing import Callable
 
 import numpy as np
 from astropy.table import Table
-from scipy.optimize import curve_fit
+from scipy.odr import ODR, Model, RealData
 
 from mirar.data import Image
 from mirar.processors.photcal.zp_calculator.base_zp_calculator import (
@@ -17,40 +17,62 @@ from mirar.processors.photcal.zp_calculator.base_zp_calculator import (
 logger = logging.getLogger(__name__)
 
 
-def line_model(data, slope, intercept):
-    """linear model to hand to scipy curve_fit"""
-    return slope * data + intercept
+def line_func(theta, x):
+    """
+    linear model to hand to scipy.odr
+    Args:
+        theta: slope and intercept of line to fit to data
+        x: x data (color in our context)
+
+    Returns:
+
+    """
+    slope, intercept = theta
+    return (slope * x) + intercept
 
 
-class ZPWithColorTermCalculator(BaseZeroPointCalculator):
+class ZPWithColorTermCalculator(
+    BaseZeroPointCalculator
+):  # pylint: disable=too-few-public-methods
     """
     Class to calculate zero point by including a color term. This models the data as
 
-    ref_mag - img_mag = ZP + C * (ref_color)
+    ref_mag - img_mag = ZP + C * (ref_color).
+
+    Note: this processor relies on scipy.odr,
+    which requires all data points to have nonzero (x and y) error. This function
+    removes those points, but it is up to the user to also consider removing these
+    points from their reference catalogs to begin with (0 error in magnitude indicates
+    unreliable photometry in PanStarrs, for example).
 
     Attributes:
         color_colnames_generator: function that takes an image as input and returns
-        two lists containing two strings each that are the column names of the reference
-        catalog magnitudes and magnitude errors to use for the color term. The first
-        string is the bluer band, the second is the redder band.
+        three tuples. The first two tuples contain two strings each that are the column
+        names of the reference catalog magnitudes and magnitude errors to use for
+        the color term. The first string is the bluer band, the second is the redder
+        band. The third tuple returns a first guess at the color and zero-point values.
     """
 
     def __init__(
         self,
         color_colnames_generator: Callable[
-            [Image], list[list[str, str], list[str, str]]
+            [Image], tuple[tuple[str, str], tuple[str, str], tuple[float, float]]
         ],
     ):
         self.color_colnames_generator = color_colnames_generator
 
-    def calculate_zeropoint(
+    def calculate_zeropoint(  # pylint: disable=too-many-locals
         self,
         image: Image,
         matched_ref_cat: Table,
         matched_img_cat: Table,
         colnames: list[str],
     ) -> Image:
-        color_colnames = self.color_colnames_generator(image)
+        (
+            color_colnames,
+            color_err_colnames,
+            firstguess_color_zp,
+        ) = self.color_colnames_generator(image)
         colors = matched_ref_cat[color_colnames[0]] - matched_ref_cat[color_colnames[1]]
 
         for colname in colnames:
@@ -60,9 +82,30 @@ class ZPWithColorTermCalculator(BaseZeroPointCalculator):
                 matched_img_cat[colname.replace("MAG", "MAGERR")] ** 2
                 + matched_ref_cat["magnitude_err"] ** 2
             )
-            popt, pcov = curve_fit(f=line_model, xdata=x, ydata=y, sigma=y_err)
-            color, zero_point = popt
-            color_err, zp_err = np.sqrt(np.diag(pcov))
+            x_err = np.sqrt(
+                matched_ref_cat[color_err_colnames[0]] ** 2
+                + matched_ref_cat[color_err_colnames[1]] ** 2
+            )
+
+            # use scipy.odr to fit a line to data with x and y uncertainties
+            ## setup: remove sources with 0 uncertainty (or else scipy.odr won't work)
+            zero_mask = (np.array(y_err) == 0) | (np.array(x_err) == 0)
+            if np.sum(zero_mask) != 0:
+                logger.debug(
+                    f"Found {np.sum(zero_mask)} source(s) with zero reported "
+                    f"uncertainty, removing them from calibrations."
+                )
+                x, y = x[~zero_mask], y[~zero_mask]
+                x_err, y_err = x_err[~zero_mask], y_err[~zero_mask]
+
+            ## set up odr
+            line_model = Model(line_func)
+            data = RealData(x, y, sx=x_err, sy=y_err)
+            odr = ODR(data, line_model, beta0=firstguess_color_zp)
+            ## run the regression
+            out = odr.run()
+            color, zero_point = out.beta
+            color_err, zp_err = np.sqrt(np.diag(out.cov_beta))
 
             aperture = colname.split("_")[-1]
             image[f"ZP_{aperture}"] = zero_point

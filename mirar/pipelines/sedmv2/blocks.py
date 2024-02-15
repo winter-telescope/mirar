@@ -16,6 +16,7 @@ from mirar.pipelines.sedmv2.config import (
 )
 from mirar.pipelines.sedmv2.config.constants import SEDMV2_PIXEL_SCALE
 from mirar.pipelines.sedmv2.generator import (
+    sedmv2_color_function_ps1,
     sedmv2_photometric_catalog_generator,
     sedmv2_reference_image_generator,
     sedmv2_reference_image_resampler,
@@ -33,6 +34,7 @@ from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.processors.photcal.zp_calculator import ZPWithColorTermCalculator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
@@ -108,7 +110,6 @@ astrometry = [
         timeout=60,
         use_sextractor=True,
     ),
-    ImageSaver(output_dir_name="a-net-solved", write_mask=True),
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
@@ -238,6 +239,31 @@ transient_phot_psfexsex = [  # run phot on target in image with new PSF method
     SourceWriter(output_dir_name="sourcetable"),
 ]
 
+all_phot_psfexsex_calibrate = [  # run phot on all sources in image
+    Sextractor(
+        output_sub_dir="sextractor_before_psfex",
+        checkimage_type="BACKGROUND_RMS",
+        **sextractor_photometry_config,
+    ),  # pylint: disable=duplicate-code
+    PSFex(config_path=psfex_config_path, norm_fits=True),
+    Sextractor(
+        output_sub_dir="sextractor_after_psfex",
+        checkimage_type="BACKGROUND_RMS",
+        use_psfex=True,
+        **sextractor_PSF_photometry_config,
+    ),  # Sextractor-based PSF mags, saves to catalog
+    PhotCalibrator(
+        ref_catalog_generator=sedmv2_photometric_catalog_generator,
+        zp_calculator=ZPWithColorTermCalculator(
+            color_colnames_generator=sedmv2_color_function_ps1,
+        ),
+    ),
+    ImageSaver(
+        output_dir_name="processed_after_psf",
+        write_mask=True,
+    ),
+]
+
 all_phot = [  # run phot on all sources in image
     ImageSaver(
         output_dir_name="sources",
@@ -258,6 +284,9 @@ upload_fritz = [
     )
 ]
 
+process_all_psf_then_cal = (
+    reduce_not0 + astrometry + resample_transient + all_phot_psfexsex_calibrate
+)
 process_transient = reduce_not0 + astrometry + resample_transient + calibrate
 process_all = reduce_not0 + astrometry + resample_transient + calibrate + all_phot
 

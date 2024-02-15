@@ -166,3 +166,34 @@ def sedmv2_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     )
 
     return good_sci_sources, good_ref_sources
+
+
+def sedmv2_color_function_ps1(
+    image: Image,
+) -> tuple[tuple[str, str], tuple[str, str], tuple[float, float]]:
+    """
+    Args:
+        image: Image object undergoing photometric calibrations
+    Returns:
+        color_filts: the two PS1 columns that define color term
+        color_errs: the two PS1 columns with associated errors
+        firstguess_color_zp: first guess at color and zeropoint (constant for sedmv2)
+    """
+
+    img_filt = image["FILTER"]
+
+    # filters which define the color term. e.g. if img_filt = g, color = g - r
+    if img_filt.lower() in ["g", "r"]:
+        color_filts = ["gmag", "rmag"]
+    elif img_filt.lower() == "i":
+        color_filts = ["rmag", "imag"]
+    elif img_filt.lower() == "z":
+        color_filts = ["imag", "zmag"]
+    else:
+        logger.debug(f"Unexpected image filter: {img_filt}, defaulted to color = g-r")
+        color_filts = ["gmag", "rmag"]
+    color_errs = ["e_" + color_filts[0], "e_" + color_filts[1]]
+
+    firstguess_color_zp = [-0.4, 27]
+
+    return color_filts, color_errs, firstguess_color_zp
