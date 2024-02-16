@@ -94,7 +94,7 @@ def winter_wfau_component_image_stacker(**kwargs) -> Swarp:
     """
     return Swarp(
         swarp_config_path=swarp_config_path,
-        cache=True,
+        cache=False,
         include_scamp=False,
         combine=True,
         calculate_dims_in_swarp=True,
