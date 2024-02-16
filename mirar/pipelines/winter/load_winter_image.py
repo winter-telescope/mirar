@@ -209,13 +209,22 @@ def load_winter_stack(
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
 
-    dirname = path.split("/winter/stacks_weight")[0] + "/winter/stacks_weight/"
+    dirname = path.split("/winter/")[0] + "/winter/"
+    logger.debug(dirname)
     wghtpath = header["WGHTPATH"]
-    weight_pathname = wghtpath.split("/winter/stacks_weight")[-1]
+    weight_pathname = wghtpath.split("/winter/")[-1]
     new_weightpath = Path(dirname) / weight_pathname
     header["WGHTPATH"] = new_weightpath.as_posix()
-    header["SAVEPATH"] = path
 
+    new_psfpath = Path(dirname) / header["PSFCAT"].split("/winter/")[-1]
+    header["PSFCAT"] = new_psfpath.as_posix()
+    header["SAVEPATH"] = path
+    new_catpath = Path(dirname) / header["RFCTPATH"].split("/winter/")[-1]
+    header["RFCTPATH"] = new_catpath.as_posix()
+
+    if TARGET_KEY not in header.keys():
+        if "TARGNAME" in header.keys():
+            header[TARGET_KEY] = header["TARGNAME"]
     if SNCOSMO_KEY not in header.keys():
         if header["FILTER"].lower() in ["y", "j", "h"]:
             header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
@@ -245,7 +254,8 @@ def load_stacked_winter_image(
         header[TARGET_KEY] = "weight"
     if "UTCTIME" not in header.keys():
         header["UTCTIME"] = "2023-06-14T00:00:00"
-
+    if TARGET_KEY not in header.keys():
+        header[TARGET_KEY] = header["TARGNAME"]
     return data, header
 
 
