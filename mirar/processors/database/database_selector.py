@@ -292,9 +292,7 @@ class BaseSpatialCrossmatchSource(BaseDatabaseSourceSelector, ABC):
         self.order_ascending = order_ascending
         self.query_dist = query_dist
 
-    def get_source_crossmatch_constraints(
-        self, data: dict
-    ) -> DBQueryConstraints:
+    def get_source_crossmatch_constraints(self, data: dict) -> DBQueryConstraints:
         """
         Apply constraints to a single source, using q3c
 

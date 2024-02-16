@@ -33,7 +33,7 @@ class SourcesTable(WinterBase):  # pylint: disable=too-few-public-methods
     # Core fields
     sourceid = Column(
         BigInteger,
-        Sequence(name="sources_candid_seq", start=0, increment=1),
+        Sequence(name="sources_candid_seq", start=1, increment=1),
         unique=True,
         autoincrement=True,
         primary_key=True,
