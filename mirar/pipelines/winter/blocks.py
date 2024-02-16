@@ -465,7 +465,7 @@ photcal_and_export = [
         write_regions=True,
         cache=True,
         zp_calculator=ZPWithColorTermCalculator(
-            color_colnames_generator=winter_photcal_color_columns_generator,
+            color_colnames_guess_generator=winter_photcal_color_columns_generator,
             reject_outliers=True,
         ),
         zp_column_name="MAG_POINTSOURCE",

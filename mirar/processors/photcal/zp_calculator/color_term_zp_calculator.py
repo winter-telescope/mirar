@@ -46,22 +46,22 @@ class ZPWithColorTermCalculator(
     unreliable photometry in PanStarrs, for example).
 
     Attributes:
-        color_colnames_generator: function that takes an image as input and returns
-        three tuples. The first two tuples contain two strings each that are the column
-        names of the reference catalog magnitudes and magnitude errors to use for
+        color_colnames_guess_generator: function that takes an image as input and
+        returns three tuples. The first two tuples contain two strings each that are the
+        column names of the reference catalog magnitudes and magnitude errors to use for
         the color term. The first string is the bluer band, the second is the redder
         band. The third tuple returns a first guess at the color and zero-point values.
     """
 
     def __init__(
         self,
-        color_colnames_generator: Callable[
+        color_colnames_guess_generator: Callable[
             [Image], tuple[tuple[str, str], tuple[str, str], tuple[float, float]]
         ],
         reject_outliers: bool = True,
         num_stars_threshold: int = 5,
     ):
-        self.color_colnames_generator = color_colnames_generator
+        self.color_colnames_guess_generator = color_colnames_guess_generator
         self.reject_outliers = reject_outliers
         self.num_stars_threshold = num_stars_threshold
 
@@ -76,7 +76,7 @@ class ZPWithColorTermCalculator(
             color_colnames,
             color_err_colnames,
             firstguess_color_zp,
-        ) = self.color_colnames_generator(image)
+        ) = self.color_colnames_guess_generator(image)
         colors = matched_ref_cat[color_colnames[0]] - matched_ref_cat[color_colnames[1]]
 
         for colname in colnames:
@@ -108,8 +108,12 @@ class ZPWithColorTermCalculator(
             if self.reject_outliers:
                 y_lo, y_up = np.percentile(y, [1, 99])
                 outlier_mask = (y > y_lo) & (y < y_up)
-                y, y_err, x, x_err = y[outlier_mask], y_err[outlier_mask], \
-                                     x[outlier_mask], x_err[outlier_mask]
+                y, y_err, x, x_err = (
+                    y[outlier_mask],
+                    y_err[outlier_mask],
+                    x[outlier_mask],
+                    x_err[outlier_mask],
+                )
                 data = RealData(x, y, sx=x_err, sy=y_err)
                 odr = ODR(data, line_model, beta0=firstguess_color_zp)
                 out = odr.run()
@@ -122,8 +126,10 @@ class ZPWithColorTermCalculator(
                 residual_outlier_mask = np.abs(y_residual) <= 4 * residual_rms
 
                 if np.sum(residual_outlier_mask) < self.num_stars_threshold:
-                    logger.warning(f"Too few stars ({np.sum(residual_outlier_mask)}) "
-                                   f"to calculate zeropoint for {colname}. Res")
+                    logger.warning(
+                        f"Too few stars ({np.sum(residual_outlier_mask)}) "
+                        f"to calculate zeropoint for {colname}. Res"
+                    )
                 y, y_err, x, x_err = (
                     y[residual_outlier_mask],
                     y_err[residual_outlier_mask],
