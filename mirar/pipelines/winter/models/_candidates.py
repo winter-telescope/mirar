@@ -59,10 +59,13 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     # Image properties
 
-    diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))  # FIXME
+    sourceid: Mapped[int] = mapped_column(ForeignKey("sources.sourceid"))
+    source: Mapped["SourcesTable"] = relationship(back_populates="candidates")
+
+    diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))
     diff_id: Mapped["DiffsTable"] = relationship(back_populates="candidates")
 
-    stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))  # FIXME
+    stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))
     stack_id: Mapped["StacksTable"] = relationship(back_populates="candidates")
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
@@ -211,6 +214,8 @@ class Candidate(BaseDB):
 
     objectid: str = Field(min_length=MIN_NAME_LENGTH)
     deprecated: bool = Field(default=False)
+
+    sourceid: int = Field(ge=0)
 
     jd: float = Field(ge=0)
 

@@ -8,7 +8,9 @@ from mirar.processors.database.database_inserter import (
 )
 from mirar.processors.database.database_selector import (
     BaseDatabaseSourceSelector,
-    CrossmatchSourceWithDatabase,
     DatabaseHistorySelector,
+    SelectSourcesWithMetadata,
+    SingleSpatialCrossmatchSource,
+    SpatialCrossmatchSourceWithDatabase,
 )
 from mirar.processors.database.database_updater import ImageDatabaseUpdater

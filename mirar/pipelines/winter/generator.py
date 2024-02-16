@@ -27,6 +27,7 @@ from mirar.paths import (
     OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
     SATURATE_KEY,
+    SOURCE_HISTORY_KEY,
     TIME_KEY,
     ZP_KEY,
     ZP_STD_KEY,
@@ -419,6 +420,62 @@ def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatc
     return new_batch
 
 
+def winter_new_source_updater(source_table: SourceBatch) -> SourceBatch:
+    """
+    Function to add relevant fields for new sources
+
+    :param source_table: Original source table
+    :return: Updated source table
+    """
+    for source in source_table:
+        src_df = source.get_data()
+
+        src_df["ndet"] = 1
+        src_df["average_ra"] = src_df["ra"]
+        src_df["average_dec"] = src_df["dec"]
+
+        source.set_data(src_df)
+
+    return source_table
+
+
+def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
+    """
+    Function to update the source table with new source averages
+
+    :param source_table: Original source table
+    :return: Updated source table
+    """
+    for source in source_table:
+        src_df = source.get_data()
+
+        hist_dfs = [
+            pd.DataFrame(src_df[SOURCE_HISTORY_KEY].loc[x]) for x in range(len(src_df))
+        ]
+
+        src_df["ndet"] = [len(x) + 1 for x in hist_dfs]
+
+        average_ras, average_decs = [], []
+
+        for i, hist_df in enumerate(hist_dfs):
+            if len(hist_df) == 0:
+                average_ras.append(src_df["ra"].iloc[i])
+                average_decs.append(src_df["dec"].iloc[i])
+            else:
+                average_ras.append(
+                    np.mean(hist_df["ra"].tolist() + [src_df["ra"].iloc[i]])
+                )
+                average_decs.append(
+                    np.mean(hist_df["dec"].tolist() + [src_df["dec"].iloc[i]])
+                )
+
+        src_df["average_ra"] = average_ras
+        src_df["average_dec"] = average_decs
+        source.set_data(src_df)
+
+    return source_table
+
+
 def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> SourceBatch:
     """
     Function to calculate the AVRO fields for WINTER
@@ -433,7 +490,7 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
         src_df["magfromlim"] = source["diffmaglim"] - src_df["magpsf"]
 
         hist_dfs = [
-            pd.DataFrame(src_df["prv_candidates"].loc[x]) for x in range(len(src_df))
+            pd.DataFrame(src_df[SOURCE_HISTORY_KEY].loc[x]) for x in range(len(src_df))
         ]
 
         jdstarthists, jdendhists = [], []
@@ -591,10 +648,11 @@ def winter_reference_generator(image: Image):
             stack_image_annotator=winter_reference_stack_annotator,
         )
 
-    if filtername == "Y":
-        # Use PS1 references for Y-band
-        logger.debug("Will query reference image from PS1")
-        return PS1Ref(filter_name=filtername)
+    assert filtername == "Y", f"Filter {filtername} not recognized for WINTER"
+
+    # Use PS1 references for Y-band
+    logger.debug("Will query reference image from PS1")
+    return PS1Ref(filter_name=filtername)
 
 
 winter_history_deprecated_constraint = DBQueryConstraints(

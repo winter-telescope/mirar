@@ -34,4 +34,6 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         self.pg_user = pg_user
         self._pg_admin = pg_admin
 
-        assert self.duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
+        assert (
+            self.duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
+        ), f"Invalid duplicate protocol, must be one of {POSTGRES_DUPLICATE_PROTOCOLS}"

@@ -555,4 +555,5 @@ class BaseSourceProcessor(BaseProcessor, ABC):
         super_dict.update(
             {key.lower(): val for key, val in source_row.to_dict().items()}
         )
+        super_dict.update({key.upper(): val for key, val in super_dict.items()})
         return super_dict
