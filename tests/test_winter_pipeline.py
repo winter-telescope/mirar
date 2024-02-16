@@ -271,7 +271,7 @@ class TestWinterPipeline(BaseTestCase):
 
         # Cleanup - delete ouptut dir
         output_dir = get_output_dir(dir_root="winter/20230726")
-        shutil.rmtree(output_dir)
+        shutil.rmtree(output_dir, ignore_errors=True)
 
         # Expect one dataset, for one different sub-boards
         self.assertEqual(len(res[0]), 1)
