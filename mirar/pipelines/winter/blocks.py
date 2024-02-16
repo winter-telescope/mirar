@@ -240,12 +240,12 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
+
 BOARD_ID = 4
 select_subset = [
-    # ImageSelector(
-    #     ("BOARD_ID", str(BOARD_ID)),
-    # ),
-    ImageSelector(("FILTER", ["Y", "dark"]))
+    ImageSelector(
+        ("BOARD_ID", str(BOARD_ID)),
+    ),
 ]
 
 select_ref = [
@@ -322,7 +322,6 @@ load_unpacked = [
 
 dark_calibrate = [
     ImageDebatcher(),
-    # ImageSelector(("FILTER", ["Y", "H", "dark"])),
     ImageBatcher(
         ["BOARD_ID", EXPTIME_KEY, "SUBCOORD", "GAINCOLT", "GAINCOLB", "GAINROW"]
     ),
@@ -346,7 +345,6 @@ flat_calibrate = [
             "GAINROW",
         ]
     ),
-    # SkyFlatCalibrator(cache_sub_dir="skycals"),
     FlatCalibrator(
         cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
     ),
