@@ -268,11 +268,11 @@ def winter_photcal_color_columns_generator(image):
     """
     filter_name = image[FILTER_KEY]
     if filter_name == "J":
-        return ["j_m", "h_m"], ["j_msigcom", "h_msigcom"]
+        return ["j_m", "h_m"], ["j_msigcom", "h_msigcom"], (0, 25)
     if filter_name == "H":
-        return ["h_m", "ks_m"], ["h_msigcom", "ks_msigcom"]
+        return ["h_m", "ks_m"], ["h_msigcom", "ks_msigcom"], (0, 25)
     if filter_name in ["Y"]:
-        return ["ymag", "zmag"], ["e_ymag", "e_zmag"]
+        return ["ymag", "zmag"], ["e_ymag", "e_zmag"], (0, 25)
     err = f"Filter {filter_name} not recognised"
     logger.error(err)
     raise ValueError(err)
