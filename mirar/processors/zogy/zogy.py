@@ -308,10 +308,10 @@ class ZOGYPrepare(BaseImageProcessor):
                 ) as weight_img:
                     weight_data = weight_img[0].data  # pylint: disable=no-member
                     weight_img[0].data = weight_data[:sci_y_imgsize, :sci_x_imgsize]
-                    weight_img[0].header[
+                    weight_img[0].header[  # pylint: disable=no-member
                         "NAXIS1"
                     ] = sci_x_imgsize  # pylint: disable=no-member
-                    weight_img[0].header[
+                    weight_img[0].header[  # pylint: disable=no-member
                         "NAXIS2"
                     ] = sci_y_imgsize  # pylint: disable=no-member
 
@@ -322,8 +322,12 @@ class ZOGYPrepare(BaseImageProcessor):
                 ) as weight_img:
                     weight_data = weight_img[0].data  # pylint: disable=no-member
                     weight_img[0].data = weight_data[:sci_y_imgsize, :sci_x_imgsize]
-                    weight_img[0].header["NAXIS1"] = sci_x_imgsize
-                    weight_img[0].header["NAXIS2"] = sci_y_imgsize
+                    weight_img[0].header[  # pylint: disable=no-member
+                        "NAXIS1"
+                    ] = sci_x_imgsize
+                    weight_img[0].header[  # pylint: disable=no-member
+                        "NAXIS2"
+                    ] = sci_y_imgsize
 
             ref_catalog_path = ref_img[SEXTRACTOR_HEADER_KEY]
             ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
@@ -383,12 +387,12 @@ class ZOGYPrepare(BaseImageProcessor):
             )
 
             sci_rms = 0.5 * (
-                np.percentile(image_data[~image_mask], 84.13)
-                - np.percentile(image_data[~image_mask], 15.86)
+                np.nanpercentile(image_data[~image_mask], 84.13)
+                - np.nanpercentile(image_data[~image_mask], 15.86)
             )
             ref_rms = 0.5 * (
-                np.percentile(ref_data[~image_mask], 84.13)
-                - np.percentile(ref_data[~image_mask], 15.86)
+                np.nanpercentile(ref_data[~image_mask], 84.13)
+                - np.nanpercentile(ref_data[~image_mask], 15.86)
             )
             logger.debug(
                 f"Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}"
