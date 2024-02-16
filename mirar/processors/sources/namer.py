@@ -117,14 +117,15 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         for source_table in batch:
             sources = source_table.get_data()
 
-            assert SOURCE_NAME_KEY in sources.columns, "No cross-match in source table"
-
             names = []
 
             detection_time = Time(source_table[TIME_KEY])
             for ind, source in sources.iterrows():
 
-                source_name = source[SOURCE_NAME_KEY]
+                source_name = None
+
+                if SOURCE_NAME_KEY in source:
+                    source_name = source[SOURCE_NAME_KEY]
 
                 if pd.isnull(source_name):
                     source_name = self.get_next_name(
