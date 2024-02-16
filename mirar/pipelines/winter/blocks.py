@@ -344,7 +344,6 @@ flat_calibrate = [
             "GAINCOLT",
             "GAINCOLB",
             "GAINROW",
-            TARGET_KEY,
         ]
     ),
     # SkyFlatCalibrator(cache_sub_dir="skycals"),
