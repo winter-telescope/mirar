@@ -60,4 +60,4 @@ def populate_subdets():
                 ny=row["ny"],
                 nytot=row["nytot"],
             )
-            new.insert_entry()
+            new.insert_entry(duplicate_protocol="ignore")

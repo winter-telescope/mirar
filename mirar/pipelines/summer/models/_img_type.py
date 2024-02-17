@@ -57,4 +57,4 @@ def populate_itid():
     for i, img_type in enumerate(ALL_ITID):
         itid = ImgType(itid=i + 1, imgtype=img_type)
         if not itid.exists():
-            itid.insert_entry()
+            itid.insert_entry(duplicate_protocol="ignore")

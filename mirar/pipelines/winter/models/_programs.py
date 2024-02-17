@@ -134,4 +134,4 @@ def populate_programs():
     """
 
     if not default_program.exists():
-        default_program.insert_entry()
+        default_program.insert_entry(duplicate_protocol="ignore")
