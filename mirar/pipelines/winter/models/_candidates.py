@@ -332,10 +332,14 @@ class Candidate(BaseDB):
     maggaia: float | None = Field(default=None)
     maggaiabright: float | None = Field(default=None)
 
-    def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
+    def insert_entry(
+        self, duplicate_protocol, returning_key_names=None
+    ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
 
+        :param duplicate_protocol: protocol to follow if duplicate entry is found
+        :param returning_key_names: names of the keys to return
         :return: None
         """
 
@@ -350,4 +354,7 @@ class Candidate(BaseDB):
             )
             self.progname = default_program.progname
 
-        return self._insert_entry(returning_key_names=returning_key_names)
+        return self._insert_entry(
+            duplicate_protocol=duplicate_protocol,
+            returning_key_names=returning_key_names,
+        )

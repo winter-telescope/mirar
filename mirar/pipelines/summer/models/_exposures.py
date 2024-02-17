@@ -163,21 +163,28 @@ class Exposure(BaseDB):
         """
         return datetime.strptime(nightdate, SUMMER_NIGHT_FORMAT)
 
-    def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
+    def insert_entry(
+        self, duplicate_protocol: str, returning_key_names=None
+    ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
 
-        :return: None
+        :param duplicate_protocol: protocol to follow if duplicate entry is found
+        :param returning_key_names: names of keys to return
+        :return: DataFrame of returning keys
         """
         night = Night(nightdate=self.nightdate)
         if not night.exists():
-            night.insert_entry()
+            night.insert_entry(duplicate_protocol="ignore")
 
         logger.debug(f"puid: {self.puid}")
         if not Program._exists(values=self.puid, keys="puid"):
             self.puid = 1
 
-        return self._insert_entry()
+        return self._insert_entry(
+            duplicate_protocol=duplicate_protocol,
+            returning_key_names=returning_key_names,
+        )
 
     def exists(self) -> bool:
         """

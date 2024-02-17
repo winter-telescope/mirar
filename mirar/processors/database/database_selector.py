@@ -200,6 +200,7 @@ class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC)
                 )
 
                 results.append(res)
+
             new_table = self.update_dataframe(candidate_table, results)
             source_table.set_data(new_table)
         return batch
