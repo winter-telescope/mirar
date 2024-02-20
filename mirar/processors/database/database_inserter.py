@@ -133,7 +133,7 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
                 logger.error(err)
                 raise ImageBatchDatabaseExporterError(err) from exc
 
-            if len(np.unique(values)) > 1:
+            if len(pd.unique(values)) > 1:
                 err = (
                     f"Key {column} differs across images in the batch, cannot export"
                     f"it to database."
