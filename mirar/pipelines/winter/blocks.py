@@ -349,6 +349,18 @@ flat_calibrate = [
         cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
     ),
     ImageSaver(output_dir_name="skyflatcal"),
+    ImageDebatcher(),
+    ImageSelector(
+        (
+            TARGET_KEY,
+            [
+                "timed_requests_10_29_2023_18_1698630508.db_1",
+                "timed_requests_10_29_2023_18_1698630508.db_2",
+                "timed_requests_10_29_2023_18_1698630508.db_0",
+            ],
+        )
+    ),
+    ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
@@ -677,7 +689,6 @@ stack_boards = [
 ]
 
 mosaic = load_final_stack + stack_boards
-
 
 # To make cals for focusing
 focus_subcoord = [
