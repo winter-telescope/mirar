@@ -4,15 +4,13 @@ Module containing a processor for assigning names to sources
 
 import logging
 
-import numpy as np
+import pandas as pd
 from astropy.time import Time
 from sqlalchemy import select, text
 
 from mirar.data import SourceBatch
 from mirar.database.transactions.select import run_select
-from mirar.paths import SOURCE_NAME_KEY, SOURCE_XMATCH_KEY, TIME_KEY
-from mirar.processors.base_processor import PrerequisiteError
-from mirar.processors.database import CrossmatchSourceWithDatabase
+from mirar.paths import SOURCE_NAME_KEY, TIME_KEY
 from mirar.processors.database.database_selector import BaseDatabaseSourceSelector
 
 logger = logging.getLogger(__name__)
@@ -119,40 +117,27 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         for source_table in batch:
             sources = source_table.get_data()
 
-            assert (
-                SOURCE_XMATCH_KEY in sources.columns
-            ), "No candidate cross-match in source table"
-
             names = []
 
             detection_time = Time(source_table[TIME_KEY])
             for ind, source in sources.iterrows():
-                if len(source[SOURCE_XMATCH_KEY]) > 0:
-                    source_name = source[SOURCE_XMATCH_KEY][0][self.db_name_field]
-                else:
+
+                source_name = None
+
+                if SOURCE_NAME_KEY in source:
+                    source_name = source[SOURCE_NAME_KEY]
+
+                if pd.isnull(source_name):
                     source_name = self.get_next_name(
                         detection_time, last_name=self.lastname
                     )
                     self.lastname = source_name
-                logger.debug(f"Assigning name: {source_name} to source # {ind}.")
+                    logger.debug(f"Assigning name: {source_name} to source # {ind}.")
+                else:
+                    logger.debug(f"Source # {ind} already has a name: {source_name}.")
                 names.append(source_name)
 
             sources[self.db_name_field] = names
             source_table.set_data(sources)
 
         return batch
-
-    def check_prerequisites(
-        self,
-    ):
-        check = np.sum(
-            [isinstance(x, CrossmatchSourceWithDatabase) for x in self.preceding_steps]
-        )
-        if check < 1:
-            err = (
-                f"{self.__module__} requires {CrossmatchSourceWithDatabase} "
-                f"as a prerequisite. "
-                f"However, the following steps were found: {self.preceding_steps}."
-            )
-            logger.error(err)
-            raise PrerequisiteError(err)

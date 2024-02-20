@@ -74,8 +74,8 @@ class BaseDB(PydanticBase):
 
     def _insert_entry(
         self,
+        duplicate_protocol: str,
         returning_key_names: str | list[str] = None,
-        duplicate_protocol: str = "ignore",
     ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
@@ -186,15 +186,21 @@ class BaseDB(PydanticBase):
         return [x for x in self.get_unique_keys() if x.name in self.model_fields]
 
     def insert_entry(
-        self, returning_key_names: str | list[str] | None = None
+        self,
+        duplicate_protocol: str,
+        returning_key_names: str | list[str] | None = None,
     ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
 
+        :param duplicate_protocol: protocol to follow if duplicate entry is found
         :param returning_key_names: names of the keys to return
         :return: dataframe of the sequence keys
         """
-        result = self._insert_entry(returning_key_names=returning_key_names)
+        result = self._insert_entry(
+            duplicate_protocol=duplicate_protocol,
+            returning_key_names=returning_key_names,
+        )
         logger.debug(f"Return result {result}")
         return result
 
@@ -217,6 +223,9 @@ class BaseDB(PydanticBase):
         )
 
         full_dict = self.model_dump()
+
+        if update_key_names is None:
+            update_key_names = full_dict.keys()
 
         update_dict = {key: full_dict[key] for key in update_key_names}
 

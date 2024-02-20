@@ -71,4 +71,4 @@ def populate_filters(filter_map: dict = None):
     for filter_name, fid in filter_map.items():
         summer_filter = Filter(fid=fid, filtername=filter_name)
         if not summer_filter.exists():
-            summer_filter.insert_entry()
+            summer_filter.insert_entry(duplicate_protocol="ignore")

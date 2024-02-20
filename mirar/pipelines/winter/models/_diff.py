@@ -74,11 +74,15 @@ class Diff(BaseDB):
         return savepath
 
     def insert_entry(
-        self, returning_key_names: str | list[str] | None = None
+        self,
+        duplicate_protocol: str,
+        returning_key_names: str | list[str] | None = None,
     ) -> pd.DataFrame:
         """
         Insert entry into database
+
         :param returning_key_names: names of keys to return
+        :param duplicate_protocol: protocol to follow if duplicate entry is found
         :return: dataframe of inserted entries
         """
         dbconstraints = DBQueryConstraints()
@@ -92,4 +96,7 @@ class Diff(BaseDB):
             db_constraints=dbconstraints,
         )
 
-        return self._insert_entry(returning_key_names=returning_key_names)
+        return self._insert_entry(
+            duplicate_protocol=duplicate_protocol,
+            returning_key_names=returning_key_names,
+        )

@@ -13,6 +13,7 @@ from mirar.paths import (
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
     RAW_IMG_KEY,
+    SOURCE_HISTORY_KEY,
     SOURCE_NAME_KEY,
     TARGET_KEY,
     ZP_KEY,
@@ -44,12 +45,14 @@ from mirar.pipelines.winter.generator import (
     winter_candidate_quality_filterer,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
+    winter_new_source_updater,
     winter_photometric_catalog_generator,
     winter_photometric_ref_catalog_namer,
     winter_reference_generator,
     winter_reference_image_resampler_for_zogy,
     winter_reference_psfex,
     winter_reference_sextractor,
+    winter_source_entry_updater,
     winter_stackid_annotator,
 )
 from mirar.pipelines.winter.load_winter_image import (
@@ -61,14 +64,15 @@ from mirar.pipelines.winter.load_winter_image import (
     load_winter_stack,
 )
 from mirar.pipelines.winter.models import (
-    CANDIDATE_PREFIX,
     DEFAULT_FIELD,
     NAME_START,
+    SOURCE_PREFIX,
     AstrometryStat,
     Candidate,
     Diff,
     Exposure,
     Raw,
+    Source,
     Stack,
 )
 from mirar.pipelines.winter.validator import (
@@ -94,8 +98,8 @@ from mirar.processors.database.database_inserter import (
     DatabaseSourceInserter,
 )
 from mirar.processors.database.database_selector import (
-    CrossmatchSourceWithDatabase,
-    DatabaseHistorySelector,
+    SelectSourcesWithMetadata,
+    SingleSpatialCrossmatchSource,
 )
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.flat import FlatCalibrator
@@ -550,28 +554,47 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
-    CrossmatchSourceWithDatabase(
-        db_table=Candidate,
-        db_output_columns=[SOURCE_NAME_KEY],
+    # Check if the source is already in the source table
+    SingleSpatialCrossmatchSource(
+        db_table=Source,
+        db_output_columns=["sourceid", SOURCE_NAME_KEY],
         crossmatch_radius_arcsec=2.0,
-        max_num_results=1,
+        ra_field_name="average_ra",
+        dec_field_name="average_dec",
     ),
+    # Assign names to the new sources
     CandidateNamer(
-        db_table=Candidate,
-        base_name=CANDIDATE_PREFIX,
+        db_table=Source,
+        base_name=SOURCE_PREFIX,
         name_start=NAME_START,
+        db_name_field=SOURCE_NAME_KEY,
+        db_order_field="sourceid",
     ),
-    DatabaseHistorySelector(
-        crossmatch_radius_arcsec=2.0,
-        time_field_name="jd",
-        history_duration_days=500.0,
+    # Add the new sources to the source table
+    CustomSourceTableModifier(modifier_function=winter_new_source_updater),
+    DatabaseSourceInserter(
+        db_table=Source,
+        duplicate_protocol="ignore",
+    ),
+    # Get all candidates associated with source
+    SelectSourcesWithMetadata(
+        db_query_columns=["sourceid"],
         db_table=Candidate,
         db_output_columns=prv_candidate_cols + [SOURCE_NAME_KEY],
+        base_output_column=SOURCE_HISTORY_KEY,
         additional_query_constraints=winter_history_deprecated_constraint,
     ),
     CustomSourceTableModifier(
         modifier_function=winter_candidate_avro_fields_calculator
     ),
+    # Update average ra and dec for source
+    CustomSourceTableModifier(modifier_function=winter_source_entry_updater),
+    # Update sources in the source table
+    DatabaseSourceInserter(
+        db_table=Source,
+        duplicate_protocol="replace",
+    ),
+    # Add candidates in the candidate table
     DatabaseSourceInserter(
         db_table=Candidate,
         duplicate_protocol="fail",

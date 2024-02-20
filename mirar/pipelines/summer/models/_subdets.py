@@ -68,4 +68,4 @@ def populate_subdets(ndetectors: int = 1, nxtot: int = 1, nytot: int = 1):
                         nxtot=nxtot,
                         nytot=nytot,
                     )
-                    new.insert_entry()
+                    new.insert_entry(duplicate_protocol="fail")

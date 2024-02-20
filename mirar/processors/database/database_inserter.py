@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from mirar.data import Image, ImageBatch, SourceBatch
+from mirar.database.constants import POSTGRES_DUPLICATE_PROTOCOLS
 from mirar.errors.exceptions import BaseProcessorError
 from mirar.processors.base_processor import (
     BaseImageProcessor,
@@ -35,6 +36,14 @@ class BaseDatabaseInserter(BaseDatabaseProcessor, ABC):
     base_key = "dbinserter"
     max_n_cpu = 1
 
+    def __init__(self, *args, duplicate_protocol: str = "fail", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.duplicate_protocol = duplicate_protocol
+
+        assert (
+            self.duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
+        ), f"Invalid duplicate protocol, must be one of {POSTGRES_DUPLICATE_PROTOCOLS}"
+
     def __str__(self):
         return (
             f"Processor to save "
@@ -54,7 +63,7 @@ class DatabaseImageInserter(BaseDatabaseInserter, BaseImageProcessor):
             val_dict = self.generate_value_dict(image)
 
             new = self.db_table(**val_dict)
-            res = new.insert_entry()
+            res = new.insert_entry(duplicate_protocol=self.duplicate_protocol)
 
             assert len(res) == 1
 
@@ -88,7 +97,7 @@ class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
                 super_dict = self.generate_super_dict(metadata, source_row)
 
                 new = self.db_table(**super_dict)
-                res = new.insert_entry()
+                res = new.insert_entry(duplicate_protocol=self.duplicate_protocol)
 
                 assert len(res) == 1
 
@@ -138,7 +147,7 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
         val_dict = {key.lower(): image[key] for key in image.keys()}
 
         new = self.db_table(**val_dict)
-        res = new.insert_entry()
+        res = new.insert_entry(duplicate_protocol=self.duplicate_protocol)
 
         assert len(res) == 1
 
