@@ -240,7 +240,6 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-
 BOARD_ID = 4
 select_subset = [
     ImageSelector(
@@ -479,11 +478,12 @@ photcal_and_export = [
         zp_calculator=ZPWithColorTermCalculator(
             color_colnames_guess_generator=winter_photcal_color_columns_generator,
             reject_outliers=True,
+            solver="curve_fit",
         ),
         zp_column_name="MAG_POINTSOURCE",
     ),
     CatalogLimitingMagnitudeCalculator(
-        sextractor_mag_key_name="MAG_PSF", write_regions=True
+        sextractor_mag_key_name="MAG_POINTSOURCE", write_regions=True
     ),
     AstrometryStatsWriter(
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
