@@ -427,6 +427,7 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         :param images: images to process
         :return: unique hashed name
         """
+        logger.debug(f"Images are {images}")
         cache_images = self.select_cache_images(images)
         return f"{self.base_key}_{self.get_hash(cache_images)}.fits"
 
