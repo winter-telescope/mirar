@@ -386,12 +386,14 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         write_to_cache: bool = True,
         overwrite: bool = True,
         cache_sub_dir: str = CAL_OUTPUT_SUB_DIR,
+        cache_image_name_header_keys: str | list[str] = None,
     ):
         super().__init__()
         self.try_load_cache = try_load_cache
         self.write_to_cache = write_to_cache
         self.overwrite = overwrite
         self.cache_sub_dir = cache_sub_dir
+        self.cache_image_name_header_keys = cache_image_name_header_keys
 
     def select_cache_images(self, images: ImageBatch) -> ImageBatch:
         """
@@ -429,7 +431,18 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         """
         logger.debug(f"Images are {images}")
         cache_images = self.select_cache_images(images)
-        return f"{self.base_key}_{self.get_hash(cache_images)}.fits"
+        cache_image_str = ""
+        if self.cache_image_name_header_keys is not None:
+            if isinstance(self.cache_image_name_header_keys, str):
+                self.cache_image_name_header_keys = [self.cache_image_name_header_keys]
+
+            cache_image_str = "_".join(
+                [
+                    str(cache_images[0].header[x])
+                    for x in self.cache_image_name_header_keys
+                ]
+            )
+        return f"{self.base_key}_{cache_image_str}_{self.get_hash(cache_images)}.fits"
 
     def get_cache_file(self, images: ImageBatch) -> Image:
         """

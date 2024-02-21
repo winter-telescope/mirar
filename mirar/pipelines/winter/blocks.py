@@ -330,7 +330,10 @@ dark_calibrate = [
     ImageBatcher(
         ["BOARD_ID", EXPTIME_KEY, "SUBCOORD", "GAINCOLT", "GAINCOLB", "GAINROW"]
     ),
-    DarkCalibrator(cache_sub_dir="calibration_darks"),
+    DarkCalibrator(
+        cache_sub_dir="calibration_darks",
+        cache_name_image_header_keys=[EXPTIME_KEY, "BOARD_ID"],
+    ),
     ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
@@ -351,7 +354,9 @@ flat_calibrate = [
         ]
     ),
     FlatCalibrator(
-        cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
+        cache_sub_dir="calibration_flats",
+        select_flat_images=select_winter_flat_images,
+        cache_name_image_header_keys=["FILTER", "BOARD_ID"],
     ),
     ImageSaver(output_dir_name="skyflatcal"),
     ImageDebatcher(),
