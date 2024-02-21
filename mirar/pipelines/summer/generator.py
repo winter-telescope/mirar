@@ -121,7 +121,7 @@ def summer_reference_image_resampler(**kwargs) -> Swarp:
     )
 
 
-def summer_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
+def summer_reference_sextractor(output_sub_dir: str) -> Sextractor:
     """
     Generates a sextractor processor for reference images
 
@@ -130,7 +130,6 @@ def summer_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
     :return: Sextractor processor
     """
     return Sextractor(
-        gain=gain,
         output_sub_dir=output_sub_dir,
         cache=True,
         **sextractor_photometry_config,
