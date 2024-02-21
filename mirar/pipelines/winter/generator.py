@@ -462,12 +462,26 @@ def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
                 average_ras.append(src_df["ra"].iloc[i])
                 average_decs.append(src_df["dec"].iloc[i])
             else:
-                average_ras.append(
-                    np.mean(hist_df["ra"].tolist() + [src_df["ra"].iloc[i]])
+
+                ras = np.array(hist_df["ra"].tolist() + [src_df["ra"].iloc[i]])
+                decs = np.array(hist_df["dec"].tolist() + [src_df["dec"].iloc[i]])
+                weights = 1.0 / np.array(
+                    hist_df["sigmapsf"].tolist() + [src_df["sigmapsf"].iloc[i]]
                 )
-                average_decs.append(
-                    np.mean(hist_df["dec"].tolist() + [src_df["dec"].iloc[i]])
-                )
+
+                # Wrap around the RA if split at 0
+                if np.max(ras) > 350.0:
+                    ras[ras < 180.0] += 360.0
+
+                av_ra = np.average(ras, weights=weights)
+                av_dec = np.average(decs, weights=weights)
+
+                # Unwrap the RA
+                if av_ra > 360.0:
+                    av_ra -= 360.0
+
+                average_ras.append(av_ra)
+                average_decs.append(av_dec)
 
         src_df["average_ra"] = average_ras
         src_df["average_dec"] = average_decs
