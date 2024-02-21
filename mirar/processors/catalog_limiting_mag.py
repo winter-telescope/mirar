@@ -77,6 +77,9 @@ class CatalogLimitingMagnitudeCalculator(BaseImageProcessor):
             cleaned_image_cat = self.image_photometric_catalog_purifier(
                 image_cat, image
             )
+            cleaned_image_cat = cleaned_image_cat[
+                cleaned_image_cat[self.sextractor_mag_key_name] < 99
+            ]
             zero_point = image[ZP_KEY]
             detected_mags = cleaned_image_cat[self.sextractor_mag_key_name] + zero_point
             detected_mags_05, detected_mags_50, detected_mags_95 = np.percentile(
