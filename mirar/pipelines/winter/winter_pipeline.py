@@ -81,6 +81,7 @@ class WINTERPipeline(Pipeline):
         "detect_candidates": load_final_stack + imsub + detect_candidates,
         "full_imsub": load_final_stack + imsub + detect_candidates + process_candidates,
         "full": reduce + imsub + detect_candidates + process_candidates,
+        "full_subset": reduce_unpacked + imsub + detect_candidates + process_candidates,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,
