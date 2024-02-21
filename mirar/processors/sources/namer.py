@@ -39,6 +39,12 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         self.name_start = name_start
         self.lastname = None
 
+    def __str__(self) -> str:
+        return (
+            f"Sequentially assign names to new sources, e.g "
+            f"{self.base_name}24{self.name_start}"
+        )
+
     @staticmethod
     def increment_string(string: str):
         """
