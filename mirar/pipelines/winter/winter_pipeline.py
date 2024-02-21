@@ -97,6 +97,7 @@ class WINTERPipeline(Pipeline):
         "name_candidates": name_candidates,
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
+        "detrend": unpack_all + detrend_unpacked,
     }
 
     non_linear_level = 40000.0

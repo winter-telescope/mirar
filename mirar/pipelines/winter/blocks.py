@@ -372,7 +372,9 @@ load_calibrated = [
     ImageBatcher(["UTCTIME", "BOARD_ID"]),
 ]
 
-fourier_filter = [CustomImageBatchModifier(winter_fourier_filtered_image_generator)]
+fourier_filter = [
+    CustomImageBatchModifier(winter_fourier_filtered_image_generator),
+]
 
 astrometry = [
     ImageDebatcher(),
