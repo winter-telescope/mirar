@@ -161,7 +161,6 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
         )
 
         clean_img_cat, ref_cat = self.catalogs_purifier(img_cat, ref_cat, image)
-        logger.debug(clean_img_cat)
         clean_img_coords = SkyCoord(
             ra=clean_img_cat["ALPHAWIN_J2000"],
             dec=clean_img_cat["DELTAWIN_J2000"],

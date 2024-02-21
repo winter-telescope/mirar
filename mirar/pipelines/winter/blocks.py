@@ -355,7 +355,6 @@ flat_calibrate = [
     ),
     ImageSaver(output_dir_name="skyflatcal"),
     ImageDebatcher(),
-    ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
@@ -568,7 +567,7 @@ detect_candidates = [
         output_sub_dir="subtract",
         **sextractor_candidate_config,
         write_regions=True,
-        detect_in_negative=True,
+        detect_negative_sources=True,
     ),
     PSFPhotometry(phot_cutout_half_size=10),
     AperturePhotometry(

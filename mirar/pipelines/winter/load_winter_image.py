@@ -210,7 +210,6 @@ def load_winter_stack(
     data, header = open_fits(path)
 
     dirname = path.split("/winter/")[0] + "/winter/"
-    logger.debug(dirname)
     wghtpath = header["WGHTPATH"]
     weight_pathname = wghtpath.split("/winter/")[-1]
     new_weightpath = Path(dirname) / weight_pathname
