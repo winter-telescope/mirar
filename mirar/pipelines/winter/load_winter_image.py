@@ -215,12 +215,15 @@ def load_winter_stack(
     weight_pathname = wghtpath.split("/winter/")[-1]
     new_weightpath = Path(dirname) / weight_pathname
     header["WGHTPATH"] = new_weightpath.as_posix()
-
-    new_psfpath = Path(dirname) / header["PSFCAT"].split("/winter/")[-1]
-    header["PSFCAT"] = new_psfpath.as_posix()
     header["SAVEPATH"] = path
-    new_catpath = Path(dirname) / header["RFCTPATH"].split("/winter/")[-1]
-    header["RFCTPATH"] = new_catpath.as_posix()
+
+    if "PSFCAT" in header.keys():
+        new_psfpath = Path(dirname) / header["PSFCAT"].split("/winter/")[-1]
+        header["PSFCAT"] = new_psfpath.as_posix()
+
+    if "RFCTPATH" in header.keys():
+        new_catpath = Path(dirname) / header["RFCTPATH"].split("/winter/")[-1]
+        header["RFCTPATH"] = new_catpath.as_posix()
 
     if TARGET_KEY not in header.keys():
         if "TARGNAME" in header.keys():
