@@ -696,10 +696,20 @@ focus_subcoord = [
 process_and_stack = astrometry + validate_astrometry + stack_dithers
 
 unpack_subset = (
-    load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
+    load_raw
+    + cal_hunter
+    + extract_all
+    + csvlog
+    + select_subset
+    + mask_and_split
+    + save_raw
 )
 
-unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
+unpack_all = load_raw + cal_hunter + extract_all + csvlog + mask_and_split + save_raw
+
+unpack_subset_no_calhunter = (
+    load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
+)
 
 unpack_all_no_calhunter = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
@@ -722,6 +732,8 @@ photcal_stacks = [
 reduce_unpacked = load_unpacked + full_reduction
 
 reduce = unpack_all + full_reduction
+
+reduce_no_calhunter = unpack_all_no_calhunter + full_reduction
 
 reftest = (
     unpack_subset
