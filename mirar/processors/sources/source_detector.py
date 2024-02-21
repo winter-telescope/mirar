@@ -166,8 +166,20 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         cand_det_sextractor_params: str,
         output_sub_dir: str = "candidates",
         write_regions: bool = False,
-        detect_in_negative: bool = False,
+        detect_negative_sources: bool = False,
     ):
+        """
+        Parameters
+        :param cand_det_sextractor_config: SExtractor configuration file
+        :param cand_det_sextractor_filter: SExtractor filter file
+        :param cand_det_sextractor_nnw: SExtractor neural network file
+        :param cand_det_sextractor_params: SExtractor parameter file
+        :param output_sub_dir: Directory to save output
+        :param write_regions: Write regions file with detected sources
+        :param detect_negative_sources: Detect negative sources in addition to
+        positive sources? If true, sources are also detected in the negative scorr
+        image, and are marked with isdiffpos=False
+        """
         super().__init__()
         self.output_sub_dir = output_sub_dir
         self.cand_det_sextractor_config = cand_det_sextractor_config
@@ -175,7 +187,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         self.cand_det_sextractor_nnw = cand_det_sextractor_nnw
         self.cand_det_sextractor_params = cand_det_sextractor_params
         self.write_regions = write_regions
-        self.detect_in_negative = detect_in_negative
+        self.detect_negative_sources = detect_negative_sources
 
     def __str__(self) -> str:
         return (
@@ -235,7 +247,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
             )
 
             logger.debug(f"Found {len(srcs_table)} candidates in positive image")
-            if self.detect_in_negative:
+            if self.detect_negative_sources:
                 negative_img_paths = []
                 for img_path in [scorr_image_path, diff_image_path]:
                     negative_img_path = img_path.replace(".fits", ".neg.fits")

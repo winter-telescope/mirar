@@ -46,12 +46,12 @@ def solve_odr(
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Solve for the zero point and color term using scipy.odr.
-    :param x:
-    :param y:
-    :param x_err:
-    :param y_err:
-    :param firstguess_color_zp:
-    :return:
+    :param x: color
+    :param y: ref_mag - img_mag
+    :param x_err: uncertainty in color
+    :param y_err: uncertainty in ref_mag - img_mag
+    :param firstguess_color_zp: first guess at the color and zero-point values
+    :return: best fit color and zero-point values, and their uncertainties
     """
     # setup: remove sources with 0 uncertainty (or else scipy.odr won't work)
     zero_mask = (y_err == 0) | (x_err == 0)
@@ -75,12 +75,11 @@ def solve_curve_fit(
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Solve for the zero point and color term using scipy.curve_fit.
-    :param x:
-    :param y:
-    :param x_err:
-    :param y_err:
-    :param firstguess_color_zp:
-    :return:
+    :param x: color
+    :param y: ref_mag - img_mag
+    :param y_err: uncertainty in ref_mag - img_mag
+    :param firstguess_color_zp: first guess at the color and zero-point values
+    :return: best-fit color and zero-point values, and their uncertainties
     """
     popt, pcov = curve_fit(
         f=line_func_curve_fit, xdata=x, ydata=y, sigma=y_err, p0=firstguess_color_zp
@@ -183,7 +182,7 @@ class ZPWithColorTermCalculator(
                     x_err[outlier_mask],
                 )
 
-                (color, zero_point), (_, _) = self.solver_func(
+                (color, zero_point), _ = self.solver_func(
                     x, y, x_err, y_err, firstguess_color_zp
                 )
                 y_pred = line_func_odr((color, zero_point), x)
