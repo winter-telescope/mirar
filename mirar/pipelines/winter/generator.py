@@ -433,6 +433,8 @@ def winter_new_source_updater(source_table: SourceBatch) -> SourceBatch:
         src_df["ndet"] = 1
         src_df["average_ra"] = src_df["ra"]
         src_df["average_dec"] = src_df["dec"]
+        src_df["first_det_utc"] = source[TIME_KEY]
+        src_df["latest_det_utc"] = source[TIME_KEY]
 
         source.set_data(src_df)
 
@@ -455,22 +457,62 @@ def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
 
         src_df["ndet"] = [len(x) + 1 for x in hist_dfs]
 
-        average_ras, average_decs = [], []
+        new_fields = []
 
         for i, hist_df in enumerate(hist_dfs):
             if len(hist_df) == 0:
-                average_ras.append(src_df["ra"].iloc[i])
-                average_decs.append(src_df["dec"].iloc[i])
-            else:
-                average_ras.append(
-                    np.mean(hist_df["ra"].tolist() + [src_df["ra"].iloc[i]])
-                )
-                average_decs.append(
-                    np.mean(hist_df["dec"].tolist() + [src_df["dec"].iloc[i]])
+
+                new_fields.append(
+                    {
+                        "average_ra": src_df["ra"].iloc[i],
+                        "average_dec": src_df["dec"].iloc[i],
+                        "first_det_utc": source[TIME_KEY],
+                        "latest_det_utc": source[TIME_KEY],
+                        "jdstarthist": source["jd"],
+                        "jdendhist": source["jd"],
+                        "ndethist": 0,
+                    }
                 )
 
-        src_df["average_ra"] = average_ras
-        src_df["average_dec"] = average_decs
+            else:
+
+                ras = np.array(hist_df["ra"].tolist() + [src_df["ra"].iloc[i]])
+                decs = np.array(hist_df["dec"].tolist() + [src_df["dec"].iloc[i]])
+                weights = 1.0 / np.array(
+                    hist_df["sigmapsf"].tolist() + [src_df["sigmapsf"].iloc[i]]
+                )
+
+                # Wrap around the RA if split at 0
+                if np.max(ras) > 350.0:
+                    ras[ras < 180.0] += 360.0
+
+                av_ra = np.average(ras, weights=weights)
+                av_dec = np.average(decs, weights=weights)
+
+                # Unwrap the RA
+                if av_ra > 360.0:
+                    av_ra -= 360.0
+
+                min_jd = min(hist_df["jd"].tolist() + [source["jd"]])
+                max_jd = max(hist_df["jd"].tolist() + [source["jd"]])
+
+                new_fields.append(
+                    {
+                        "average_ra": av_ra,
+                        "average_dec": av_dec,
+                        "first_det_utc": Time(min_jd, format="jd").isot,
+                        "latest_det_utc": Time(max_jd, format="jd").isot,
+                        "jdstarthist": min_jd,
+                        "jdendhist": max_jd,
+                        "ndethist": len(hist_df),
+                    }
+                )
+
+        new = pd.DataFrame(new_fields)
+
+        for column in new.columns:
+            src_df[column] = new[column]
+
         source.set_data(src_df)
 
     return source_table
@@ -489,21 +531,8 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
         src_df["magdiff"] = src_df["magpsf"] - src_df["magap"]
         src_df["magfromlim"] = source["diffmaglim"] - src_df["magpsf"]
 
-        hist_dfs = [
-            pd.DataFrame(src_df[SOURCE_HISTORY_KEY].loc[x]) for x in range(len(src_df))
-        ]
+        src_df["utctime"] = source[TIME_KEY]
 
-        jdstarthists, jdendhists = [], []
-        for _, hist_df in enumerate(hist_dfs):
-            if len(hist_df) == 0:
-                jdstarthists.append(source["jd"])
-                jdendhists.append(source["jd"])
-            else:
-                jdstarthists.append(hist_df["jd"].min())
-                jdendhists.append(hist_df["jd"].max())
-        src_df["jdstarthist"] = min(jdstarthists)
-        src_df["jdendhist"] = max(jdendhists)
-        src_df["ndethist"] = [len(x) for x in hist_dfs]
         src_df["d_to_x"] = src_df["NAXIS1"] - src_df["xpos"]
         src_df["d_to_y"] = src_df["NAXIS2"] - src_df["ypos"]
         src_df["mindtoedge"] = src_df[["xpos", "ypos", "d_to_x", "d_to_y"]].min(axis=1)

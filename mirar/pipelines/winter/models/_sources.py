@@ -3,10 +3,20 @@ Models for the 'sources' table
 """
 
 import logging
+from datetime import datetime
 from typing import ClassVar, List
 
 from pydantic import Field
-from sqlalchemy import VARCHAR, BigInteger, Boolean, Column, Float, Integer, Sequence
+from sqlalchemy import (
+    VARCHAR,
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    Sequence,
+)
 from sqlalchemy.orm import Mapped, relationship
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
@@ -49,6 +59,8 @@ class SourcesTable(WinterBase):  # pylint: disable=too-few-public-methods
     dec_column_name = "average_dec"
 
     ndet = Column(Integer, nullable=False, default=1)
+    first_det_utc = Column(DateTime(timezone=True))
+    latest_det_utc = Column(DateTime(timezone=True))
 
     candidates: Mapped[List["CandidatesTable"]] = relationship(back_populates="source")
 
@@ -65,5 +77,8 @@ class Source(BaseDB):
 
     average_ra: float = ra_field
     average_dec: float = dec_field
+
+    first_det_utc: datetime = Field(description="UTC of first detection")
+    latest_det_utc: datetime = Field(description="UTC of latest detection")
 
     ndet: int = Field(ge=1, description="Number of detections", default=1)

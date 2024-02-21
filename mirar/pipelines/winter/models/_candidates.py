@@ -3,6 +3,7 @@ Models for the 'candidates' table
 """
 
 import logging
+from datetime import datetime
 from typing import ClassVar
 
 import pandas as pd
@@ -12,6 +13,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     Column,
+    DateTime,
     Float,
     ForeignKey,
     Integer,
@@ -56,6 +58,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     objectid = Column(VARCHAR(40), nullable=False, unique=False)
     deprecated = Column(Boolean, nullable=False, default=False)
     jd = Column(Float, nullable=False)
+    utctime = Column(DateTime(timezone=True))
 
     # Image properties
 
@@ -218,6 +221,7 @@ class Candidate(BaseDB):
     sourceid: int = Field(ge=0)
 
     jd: float = Field(ge=0)
+    utctime: datetime = Field()
 
     diffid: int | None = Field(ge=0, default=None)
     stackid: int = Field(ge=0)

@@ -234,7 +234,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 3
+BOARD_ID = 4
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -549,11 +549,16 @@ load_sources = [
     SourceLoader(input_dir_name="candidates"),
 ]
 
-process_candidates = [
-    # SourceWriter(output_dir_name="candidates"),
+crossmatch_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
+    CustomSourceTableModifier(
+        modifier_function=winter_candidate_avro_fields_calculator
+    ),
+]
+
+name_candidates = [
     # Check if the source is already in the source table
     SingleSpatialCrossmatchSource(
         db_table=Source,
@@ -584,9 +589,6 @@ process_candidates = [
         base_output_column=SOURCE_HISTORY_KEY,
         additional_query_constraints=winter_history_deprecated_constraint,
     ),
-    CustomSourceTableModifier(
-        modifier_function=winter_candidate_avro_fields_calculator
-    ),
     # Update average ra and dec for source
     CustomSourceTableModifier(modifier_function=winter_source_entry_updater),
     # Update sources in the source table
@@ -600,6 +602,9 @@ process_candidates = [
         duplicate_protocol="fail",
     ),
     SourceWriter(output_dir_name="preavro"),
+]
+
+avro_export = [
     IPACAvroExporter(
         topic_prefix="winter",
         base_name="WNTR",
@@ -609,6 +614,8 @@ process_candidates = [
     CustomSourceTableModifier(modifier_function=winter_candidate_quality_filterer),
     SourceWriter(output_dir_name="preskyportal"),
 ]
+
+process_candidates = crossmatch_candidates + name_candidates + avro_export
 
 send_to_skyportal = [
     SourceLoader(input_dir_name="preskyportal"),
