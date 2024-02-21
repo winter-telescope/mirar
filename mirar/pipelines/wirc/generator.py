@@ -110,9 +110,7 @@ def wirc_reference_image_resampler(**kwargs) -> Swarp:
 def wirc_reference_sextractor(output_sub_dir: str) -> Sextractor:
     """Returns a Sextractor processor for WIRC reference images"""
     return Sextractor(
-        **sextractor_reference_config,
-        output_sub_dir=output_sub_dir,
-        cache=True
+        **sextractor_reference_config, output_sub_dir=output_sub_dir, cache=True
     )
 
 
