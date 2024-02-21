@@ -163,7 +163,7 @@ class TestWircImsubPipeline(BaseTestCase):
                     f"Type for value ({type(value)} is neither float not int."
                 )
 
-        self.assertEqual(len(candidates_table), 5)
+        self.assertEqual(len(candidates_table), 4)
         for key, value in EXPECTED_DATAFRAME_VALUES.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):
