@@ -433,8 +433,8 @@ def winter_new_source_updater(source_table: SourceBatch) -> SourceBatch:
         src_df["ndet"] = 1
         src_df["average_ra"] = src_df["ra"]
         src_df["average_dec"] = src_df["dec"]
-        src_df["first_det_utc"] = src_df[TIME_KEY]
-        src_df["latest_det_utc"] = src_df[TIME_KEY]
+        src_df["first_det_utc"] = source[TIME_KEY]
+        src_df["latest_det_utc"] = source[TIME_KEY]
 
         source.set_data(src_df)
 
@@ -465,8 +465,8 @@ def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
             if len(hist_df) == 0:
                 average_ras.append(src_df["ra"].iloc[i])
                 average_decs.append(src_df["dec"].iloc[i])
-                first_utcs.append(src_df[TIME_KEY].iloc[i])
-                last_utcs.append(src_df[TIME_KEY].iloc[i])
+                first_utcs.append(source[TIME_KEY])
+                last_utcs.append(source[TIME_KEY])
             else:
 
                 ras = np.array(hist_df["ra"].tolist() + [src_df["ra"].iloc[i]])
@@ -490,10 +490,10 @@ def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
                 average_decs.append(av_dec)
 
                 first_utcs.append(
-                    min(hist_df[TIME_KEY].tolist() + [src_df[TIME_KEY].iloc[i]])
+                    min(hist_df[TIME_KEY].tolist() + [source[TIME_KEY]])
                 )
                 last_utcs.append(
-                    max(hist_df[TIME_KEY].tolist() + [src_df[TIME_KEY].iloc[i]])
+                    max(hist_df[TIME_KEY].tolist() + [source[TIME_KEY]])
                 )
 
         src_df["average_ra"] = average_ras
