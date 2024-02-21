@@ -234,7 +234,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 5
+BOARD_ID = 4
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -550,7 +550,6 @@ load_sources = [
 ]
 
 crossmatch_candidates = [
-    # SourceWriter(output_dir_name="candidates"),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
@@ -597,7 +596,7 @@ name_candidates = [
         db_table=Source,
         duplicate_protocol="replace",
     ),
-    # # Add candidates in the candidate table
+    # Add candidates in the candidate table
     DatabaseSourceInserter(
         db_table=Candidate,
         duplicate_protocol="fail",
