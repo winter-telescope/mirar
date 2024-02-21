@@ -41,6 +41,7 @@ from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
+    winter_cal_requirements,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
     winter_candidate_quality_filterer,
@@ -138,6 +139,7 @@ from mirar.processors.utils import (
     ImageSelector,
     MEFLoader,
 )
+from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.reference_aligner import AlignReference
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
@@ -317,6 +319,10 @@ load_unpacked = [
     ImageRejector(("BOARD_ID", "0")),
 ]
 
+#
+cal_hunter = [
+    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements)
+]
 # Detrend blocks
 
 dark_calibrate = [
@@ -349,16 +355,6 @@ flat_calibrate = [
     ),
     ImageSaver(output_dir_name="skyflatcal"),
     ImageDebatcher(),
-    ImageSelector(
-        (
-            TARGET_KEY,
-            [
-                "timed_requests_10_29_2023_18_1698630508.db_1",
-                "timed_requests_10_29_2023_18_1698630508.db_2",
-                "timed_requests_10_29_2023_18_1698630508.db_0",
-            ],
-        )
-    ),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
@@ -704,6 +700,8 @@ unpack_subset = (
 )
 
 unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
+
+unpack_all_no_calhunter = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
 full_reduction = (
     dark_calibrate

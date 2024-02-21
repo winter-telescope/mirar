@@ -58,6 +58,7 @@ from mirar.processors.base_catalog_xmatch_processor import (
 )
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
+from mirar.processors.utils.cal_hunter import CalRequirement
 from mirar.processors.utils.image_selector import select_from_images
 from mirar.references import PS1Ref
 from mirar.references.local import RefFromPath
@@ -66,6 +67,15 @@ from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
+
+
+winter_cal_requirements = [
+    CalRequirement(
+        target_name="dark",
+        required_field="EXPTIME",
+        required_values=["60.0", "120.0"],
+    ),
+]
 
 
 class ReductionQualityError(ProcessorError):
