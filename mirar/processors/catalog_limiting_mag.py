@@ -31,8 +31,8 @@ def default_lim_mag_sextractor_catalog_purifier(
     """
     Default function to purify the photometric image catalog
     """
-    clean_catalog = default_image_sextractor_catalog_purifier(
-        catalog, image, fwhm_threshold_arcsec=20
+    clean_catalog, _ = default_image_sextractor_catalog_purifier(
+        sci_catalog=catalog, ref_catalog=None, image=image, fwhm_threshold_arcsec=20
     )
     for key in ["MAG_AUTO", "SNR_WIN", "FLAGS"]:
         assert key in clean_catalog.keys(), (
@@ -77,6 +77,9 @@ class CatalogLimitingMagnitudeCalculator(BaseImageProcessor):
             cleaned_image_cat = self.image_photometric_catalog_purifier(
                 image_cat, image
             )
+            cleaned_image_cat = cleaned_image_cat[
+                cleaned_image_cat[self.sextractor_mag_key_name] < 99
+            ]
             zero_point = image[ZP_KEY]
             detected_mags = cleaned_image_cat[self.sextractor_mag_key_name] + zero_point
             detected_mags_05, detected_mags_50, detected_mags_95 = np.percentile(

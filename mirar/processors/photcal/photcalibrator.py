@@ -20,8 +20,10 @@ from mirar.processors.astrometry.validate import get_fwhm
 from mirar.processors.base_catalog_xmatch_processor import (
     BaseProcessorWithCrossMatch,
     default_image_sextractor_catalog_purifier,
+    xmatch_catalogs,
 )
 from mirar.processors.photcal.photcal_errors import (
+    PhotometryCalculationError,
     PhotometryCrossMatchError,
     PhotometryReferenceError,
     PhotometrySourceError,
@@ -88,6 +90,10 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         for outlier rejection. If a ist is provided, the list is sorted and stepped
         through in order with increasing thresholds until the specified
         number of matches is reached.
+        zp_calculator: Zero point calculator object
+        zp_column_name: Name of the column in the photometric catalog that will be used
+        to assign the value of "ZP_KEY" in the header of the output image. Default is
+        "MAG_AUTO"
     """
 
     base_key = "photcalibrator"
@@ -96,26 +102,28 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         self,
         ref_catalog_generator: Callable[[Image], BaseCatalog],
         temp_output_sub_dir: str = "phot",
-        image_photometric_catalog_purifier: Callable[
-            [Table, Image], Table
+        catalogs_purifier: Callable[
+            [Table, Table, Image], [Table, Table]
         ] = default_image_sextractor_catalog_purifier,
         num_matches_threshold: int = 5,
         crossmatch_radius_arcsec: float = 1.0,
         write_regions: bool = False,
         cache: bool = False,
         zp_calculator: BaseZeroPointCalculator = OutlierRejectionZPCalculator(),
+        zp_column_name: str = "MAG_AUTO",
     ):
         super().__init__(
             ref_catalog_generator=ref_catalog_generator,
             temp_output_sub_dir=temp_output_sub_dir,
             crossmatch_radius_arcsec=crossmatch_radius_arcsec,
-            sextractor_catalog_purifier=image_photometric_catalog_purifier,
+            catalogs_purifier=catalogs_purifier,
             write_regions=write_regions,
             cache=cache,
             required_parameters=REQUIRED_PARAMETERS,
         )
         self.num_matches_threshold = num_matches_threshold
         self.zp_calculator = zp_calculator
+        self.zp_column_name = zp_column_name
 
     def __str__(self) -> str:
         return "Processor to perform photometric calibration."
@@ -172,7 +180,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                 logger.error(err)
                 raise PhotometrySourceError(err)
 
-            matched_img_cat, matched_ref_cat, _ = self.xmatch_catalogs(
+            matched_img_cat, matched_ref_cat, _ = xmatch_catalogs(
                 ref_cat=ref_cat,
                 image_cat=cleaned_img_cat,
                 crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
@@ -212,6 +220,9 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
             if "MAG_PSF" in matched_img_cat.colnames:
                 colnames.append("MAG_PSF")
 
+            if "MAG_POINTSOURCE" in matched_img_cat.colnames:
+                colnames.append("MAG_POINTSOURCE")
+
             image = self.zp_calculator.calculate_zeropoint(
                 image=image,
                 matched_ref_cat=matched_ref_cat,
@@ -233,7 +244,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                             key in image.header.keys()
                         ), f"Zeropoint key {key} not found in image header."
                     zp_values.append(image[f"ZP_{aper}"])
-                    if col in ["MAG_AUTO", "MAG_PSF"]:
+                    if col in ["MAG_AUTO", "MAG_PSF", "MAG_POINTSOURCE"]:
                         aperture_diameters.append(med_fwhm_pix * 2)
                     else:
                         aperture_diameters.append(float(aper))
@@ -254,9 +265,18 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
 
                 image[MAGLIM_KEY] = limmags[-1]
 
-                zp_key = "AUTO"
-                if "MAG_PSF" in colnames:
-                    zp_key = "PSF"
+                assert self.zp_column_name in colnames, (
+                    f"You requested {ZP_KEY} be calculated using column "
+                    f"{self.zp_column_name}, which was not found in the image "
+                    "catalog."
+                )
+
+                zp_key = self.zp_column_name.split("_")[-1].upper()
+
+                if image[f"ZP_{zp_key}"] == -99.0:
+                    err = f"Zeropoint calculation failed using {zp_key} column. "
+                    raise PhotometryCalculationError(err)
+
                 image[ZP_KEY] = image[f"ZP_{zp_key}"]
                 image[ZP_STD_KEY] = image[f"ZP_{zp_key}_STD"]
                 image[ZP_NSTARS_KEY] = image[f"ZP_{zp_key}_NSTARS"]

@@ -16,6 +16,7 @@ import logging
 import numpy as np
 import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
+from astropy.stats import sigma_clipped_stats
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,12 @@ def pyzogy(
         f"Max of small PSF is "
         f"{np.unravel_index(np.argmax(new_psf, axis=None), new_psf.shape)}"
     )
+
+    # Match the backgrounds of the new and reference images
+    _, sci_median, _ = sigma_clipped_stats(new_data, sigma=3.0, maxiters=5)
+    _, ref_median, _ = sigma_clipped_stats(ref_data, sigma=3.0, maxiters=5)
+
+    new_data = new_data - sci_median + ref_median
 
     # Place PSF at center of image with same size as new / reference
     new_psf_big = np.zeros(new_data.shape)

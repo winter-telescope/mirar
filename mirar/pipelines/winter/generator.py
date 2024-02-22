@@ -8,9 +8,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from astropy.time import Time
-from astropy.wcs import NoConvergence
+from astropy.wcs import WCS, NoConvergence
 
 from mirar.catalog import Gaia2Mass
 from mirar.catalog.base_catalog import CatalogFromFile
@@ -34,9 +35,10 @@ from mirar.paths import (
     get_output_dir,
 )
 from mirar.pipelines.winter.config import (
-    psfex_path,
+    ref_psfex_path,
     sextractor_anet_config,
     sextractor_reference_config,
+    sextractor_reference_psf_phot_config,
     swarp_config_path,
 )
 from mirar.pipelines.winter.constants import winter_filters_map
@@ -56,6 +58,7 @@ from mirar.processors.base_catalog_xmatch_processor import (
 )
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.split import SUB_ID_KEY
+from mirar.processors.utils.cal_hunter import CalRequirement
 from mirar.processors.utils.image_selector import select_from_images
 from mirar.references import PS1Ref
 from mirar.references.local import RefFromPath
@@ -64,6 +67,15 @@ from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
+
+
+winter_cal_requirements = [
+    CalRequirement(
+        target_name="dark",
+        required_field="EXPTIME",
+        required_values=["60.0", "120.0"],
+    ),
+]
 
 
 class ReductionQualityError(ProcessorError):
@@ -79,7 +91,7 @@ def winter_reference_image_resampler_for_zogy(**kwargs) -> Swarp:
     :return: Swarp processor
     """
     return Swarp(
-        swarp_config_path=swarp_config_path, cache=False, subtract_bkg=False, **kwargs
+        swarp_config_path=swarp_config_path, cache=True, subtract_bkg=False, **kwargs
     )
 
 
@@ -102,32 +114,49 @@ def winter_wfau_component_image_stacker(**kwargs) -> Swarp:
     )
 
 
-def winter_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
+def winter_reference_sextractor(
+    output_sub_dir: str,
+) -> Sextractor:
     """Returns a Sextractor processor for WINTER reference images"""
     return Sextractor(
         **sextractor_reference_config,
-        gain=gain,
+        output_sub_dir=output_sub_dir,
+        cache=True,
+    )
+
+
+def winter_reference_psf_phot_sextractor(output_sub_dir: str) -> Sextractor:
+    """Returns a Sextractor processor for WINTER reference images"""
+    return Sextractor(
+        **sextractor_reference_psf_phot_config,
         output_sub_dir=output_sub_dir,
         cache=False,
+        use_psfex=True,
     )
 
 
 def winter_reference_psfex(output_sub_dir: str, norm_fits: bool) -> PSFex:
     """Returns a PSFEx processor for WINTER"""
     return PSFex(
-        config_path=psfex_path,
+        config_path=ref_psfex_path,
         output_sub_dir=output_sub_dir,
         norm_fits=norm_fits,
     )
 
 
-def winter_astrostat_catalog_purifier(catalog: Table, image: Image) -> Table:
+def winter_astrostat_catalog_purifier(
+    sci_catalog: Table, ref_catalog: Table, image: Image
+) -> (Table, Table):
     """
     Default function to purify the photometric image catalog
     """
 
     return default_image_sextractor_catalog_purifier(
-        catalog, image, edge_width_pixels=0, fwhm_threshold_arcsec=20.0
+        sci_catalog=sci_catalog,
+        ref_catalog=ref_catalog,
+        image=image,
+        edge_width_pixels=0,
+        fwhm_threshold_arcsec=20.0,
     )
 
 
@@ -193,7 +222,7 @@ def winter_photometric_catalog_generator(
 
     if filter_name in ["J", "H"]:
         return Gaia2Mass(
-            min_mag=10,
+            min_mag=0,
             max_mag=20,
             search_radius_arcmin=search_radius_arcmin,
             filter_name=filter_name,
@@ -203,7 +232,7 @@ def winter_photometric_catalog_generator(
 
     if filter_name in ["Y"]:
         return PS1(
-            min_mag=10,
+            min_mag=0,
             max_mag=20,
             search_radius_arcmin=search_radius_arcmin,
             filter_name=filter_name.lower(),
@@ -215,13 +244,63 @@ def winter_photometric_catalog_generator(
     raise ValueError(err)
 
 
-def winter_ref_photometric_img_catalog_purifier(catalog: Table, image: Image) -> Table:
+def winter_photometric_catalogs_purifier(
+    sci_catalog: Table, ref_catalog: Table, image: Image
+) -> (Table, Table):
+    """
+    Default function to purify the photometric image catalog
+    """
+
+    sci_catalog, ref_catalog = default_image_sextractor_catalog_purifier(
+        sci_catalog=sci_catalog,
+        ref_catalog=ref_catalog,
+        image=image,
+        edge_width_pixels=100,
+        fwhm_threshold_arcsec=5.0,
+    )
+
+    sci_catalog = sci_catalog[
+        (sci_catalog["FLAGS_MODEL"] == 0)
+        & (sci_catalog["FLUX_MAX"] < 30000)
+        & (sci_catalog["FLUX_MAX"] > 0)
+    ]
+
+    ref_catalog = ref_catalog[ref_catalog["magnitude"] > 10]
+    return sci_catalog, ref_catalog
+
+
+def winter_photcal_color_columns_generator(image):
+    """
+    Returns the color columns for WINTER photometric calibration
+
+    :param image: Image
+    :return: color columns
+    """
+    filter_name = image[FILTER_KEY]
+    if filter_name == "J":
+        return ["j_m", "h_m"], ["j_msigcom", "h_msigcom"], (0, 25)
+    if filter_name == "H":
+        return ["h_m", "ks_m"], ["h_msigcom", "ks_msigcom"], (0, 25)
+    if filter_name in ["Y"]:
+        return ["ymag", "zmag"], ["e_ymag", "e_zmag"], (0, 25)
+    err = f"Filter {filter_name} not recognised"
+    logger.error(err)
+    raise ValueError(err)
+
+
+def winter_ref_photometric_catalogs_purifier(
+    sci_catalog: Table, ref_catalog: Table, image: Image
+) -> (Table, Table):
     """
     Default function to purify the photometric image catalog
     """
 
     return default_image_sextractor_catalog_purifier(
-        catalog, image, edge_width_pixels=100, fwhm_threshold_arcsec=4.0
+        sci_catalog=sci_catalog,
+        ref_catalog=ref_catalog,
+        image=image,
+        edge_width_pixels=100,
+        fwhm_threshold_arcsec=4.0,
     )
 
 
@@ -237,7 +316,7 @@ def winter_reference_phot_calibrator(_: Image, **kwargs) -> PhotCalibrator:
     return PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
         write_regions=True,
-        image_photometric_catalog_purifier=winter_ref_photometric_img_catalog_purifier,
+        catalogs_purifier=winter_ref_photometric_catalogs_purifier,
         **kwargs,
     )
 
@@ -776,3 +855,64 @@ def winter_anet_sextractor_config_path_generator(image: Image) -> str:
         return sextractor_anet_config["config_path_boardid_1_5"]
 
     return sextractor_anet_config["config_path_boardid_0_2_3_4"]
+
+
+def winter_imsub_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
+    """
+
+    :param sci_catalog:
+    :param ref_catalog:
+    :return:
+    """
+    good_sci_sources = (
+        (sci_catalog["FLAGS"] == 0)
+        & (sci_catalog["FLAGS_MODEL"] == 0)
+        & (sci_catalog["SNR_WIN"] > 10)
+        & (sci_catalog["FWHM_WORLD"] < 4.0 / 3600)
+        & (sci_catalog["FWHM_WORLD"] > 0.5 / 3600)
+        & (sci_catalog["SNR_WIN"] < 200)
+        & (sci_catalog["FLUX_MAX"] < 30000)
+    )
+
+    good_ref_sources = (
+        (ref_catalog["FLAGS"] == 0)
+        & (ref_catalog["FLAGS_MODEL"] == 0)
+        & (ref_catalog["SNR_WIN"] > 10)
+        & (ref_catalog["FWHM_WORLD"] < 5.0 / 3600)
+        & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
+        & (ref_catalog["SNR_WIN"] < 1000)
+        & (ref_catalog["FLUX_MAX"] < 30000)
+    )
+
+    return good_sci_sources, good_ref_sources
+
+
+def mask_stamps_around_bright_stars(image: Image):
+    """
+    Masks the stamps around bright stars in the image
+    :param image:
+    :return: masked image
+    """
+
+    catalog_path = image[REF_CAT_PATH_KEY]
+    catalog = get_table_from_ldac(catalog_path)
+    bright_stars = catalog[(catalog["magnitude"] < 11)]
+    logger.debug(f"Found {len(bright_stars)} bright stars in the image")
+    stamp_half_size = 20
+    bright_star_crds = SkyCoord(
+        ra=bright_stars["ra"], dec=bright_stars["dec"], unit="deg"
+    )
+    wcs = WCS(image.get_header())
+    bright_star_pix_x, bright_star_pix_y = wcs.all_world2pix(
+        bright_star_crds.ra, bright_star_crds.dec, 1
+    )
+    logger.debug(f"Masking stamps around {len(bright_star_pix_x)} bright stars")
+    mask = np.zeros_like(image.get_data(), dtype=bool)
+
+    for x, y in zip(bright_star_pix_x, bright_star_pix_y):
+        mask[
+            int(y) - stamp_half_size : int(y) + stamp_half_size,
+            int(x) - stamp_half_size : int(x) + stamp_half_size,
+        ] = True
+
+    return mask

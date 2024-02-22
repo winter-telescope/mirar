@@ -35,8 +35,8 @@ class PSFPhotometry(BasePhotometryProcessor):
 
     def perform_photometry(
         self,
-        image_cutout: np.array,
-        unc_image_cutout: np.array,
+        image_cutout: np.ndarray,
+        unc_image_cutout: np.ndarray,
         psf_filename: str | Path,
     ) -> tuple[float, float, float, float, float]:
         """
@@ -53,11 +53,10 @@ class PSFPhotometry(BasePhotometryProcessor):
             cutout_size_psf_phot=int(image_cutout.shape[0] / 2),
         )
 
-        flux, fluxunc, minchi2, xshift, yshift = psf_photometry(
-            image_cutout,
-            unc_image_cutout,
-            psfmodels,
-            psf_filename=psf_filename.as_posix(),
+        flux, fluxunc, minchi2, xshift, yshift, _ = psf_photometry(
+            image_cutout=image_cutout,
+            image_unc_cutout=unc_image_cutout,
+            psfmodels=psfmodels,
         )
         return flux, fluxunc, minchi2, xshift, yshift
 

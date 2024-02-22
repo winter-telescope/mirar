@@ -46,7 +46,6 @@ def make_cutouts(
         data = fits.getdata(image_path)
         y_image_size, x_image_size = np.shape(data)
         x, y = position
-        logger.debug(f"Cutout parameters {x},{y},{np.shape(data)}")
 
         if x < 0 or x > x_image_size or y < 0 or y > y_image_size:
             raise CutoutError(
@@ -87,11 +86,10 @@ def make_cutouts(
 
 
 def psf_photometry(
-    image_cutout: np.array,
-    image_unc_cutout: np.array,
-    psfmodels: np.array,
-    psf_filename: str,
-) -> tuple[float, float, float, float, float]:
+    image_cutout: np.ndarray,
+    image_unc_cutout: np.ndarray,
+    psfmodels: np.ndarray,
+) -> tuple[float, float, float, float, float, np.ndarray]:
     """
     Function to perform PSF photometry
     Args:
@@ -136,12 +134,20 @@ def psf_photometry(
     best_fit_psfmodel = psfmodels[:, :, minchi2_ind]
     ys_cen, xs_cen = np.where(best_fit_psfmodel == np.max(best_fit_psfmodel))
 
-    psf = fits.getdata(psf_filename)
-    y_cen, x_cen = np.where(psf == np.max(psf))
+    unshifted_psf = psfmodels[:, :, numpsfmodels // 2 + 1]
+
+    y_cen, x_cen = np.where(unshifted_psf == np.max(unshifted_psf))
     yshift = ys_cen[0] - y_cen
     xshift = xs_cen[0] - x_cen
 
-    return best_fit_psf_flux, best_fit_psf_fluxunc, minchi2, xshift, yshift
+    return (
+        best_fit_psf_flux,
+        best_fit_psf_fluxunc,
+        minchi2,
+        xshift,
+        yshift,
+        best_fit_psfmodel,
+    )
 
 
 def make_psf_shifted_array(
@@ -176,7 +182,7 @@ def make_psf_shifted_array(
             i,
         ] = normpsf
 
-    unshifted_ind = int(ngrid / 2)
+    unshifted_ind = int(ngrid / 2) + 1
     normpsfmax = np.max(normpsf)
     xcen_1, xcen_2 = np.where(padpsfs[:, :, unshifted_ind] == normpsfmax)
     xcen_1 = int(xcen_1)
@@ -246,7 +252,7 @@ def aper_photometry(
         plt.savefig(plotfilename)
         plt.close(fig)
 
-    aperture = CircularAperture((x_crd, y_crd), r=aper_diameter)
+    aperture = CircularAperture((x_crd, y_crd), r=aper_diameter / 2)
     annulus_aperture = CircularAnnulus(
         (x_crd, y_crd), r_in=bkg_in_diameter / 2, r_out=bkg_out_diameter / 2
     )
@@ -257,14 +263,10 @@ def aper_photometry(
     annulus_data_1d = annulus_data[mask > 0]
     _, bkg_median, _ = sigma_clipped_stats(annulus_data_1d, sigma=2, mask_value=np.nan)
     bkg = np.zeros(image_cutout.shape) + bkg_median
-    # bkg_error = np.zeros(image_cutout.shape) + bkg_std
 
     aperture_mask = aperture.to_mask(method="center")
     aperture_unc_data = aperture_mask.multiply(image_unc_cutout)
-    # effective_gain = header['GAIN']
-    # error = calc_total_error(data, bkg_error, effective_gain)
-    # phot_table = aperture_photometry(diff_cutout - bkg, aperture, error=error)
-    # counts_err = phot_table['aperture_sum_err'][0]
+
     error = np.sqrt(np.nansum(aperture_unc_data**2))
     phot_table = aperture_photometry(
         data=image_cutout - bkg, apertures=aperture, mask=image_cutout_mask

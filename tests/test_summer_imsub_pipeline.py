@@ -13,9 +13,9 @@ from mirar.testing import BaseTestCase
 logger = logging.getLogger(__name__)
 
 expected_values = {
-    "SCORMEAN": -0.003193140695408728,
-    "SCORMED": 0.0005658697583316706,
-    "SCORSTD": 1.0565139735005666,
+    "SCORMEAN": -0.06131731786337506,
+    "SCORMED": -0.05791231584806071,
+    "SCORSTD": 1.0663084337455144,
 }
 
 

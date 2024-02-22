@@ -24,11 +24,12 @@ from mirar.utils.ldac_tools import get_table_from_ldac
 
 
 def default_image_sextractor_catalog_purifier(
-    catalog: Table,
+    sci_catalog: Table,
+    ref_catalog: Table | None,
     image: Image,
     edge_width_pixels: float = 100.0,
     fwhm_threshold_arcsec: float = 4.0,
-) -> Table:
+) -> (Table, Table):
     """
     Default function to purify the photometric image catalog
     """
@@ -38,15 +39,45 @@ def default_image_sextractor_catalog_purifier(
     y_upper_limit = image.get_data().shape[0] - edge_width_pixels
 
     clean_mask = (
-        (catalog["FLAGS"] == 0)
-        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
-        & (catalog["X_IMAGE"] > x_lower_limit)
-        & (catalog["X_IMAGE"] < x_upper_limit)
-        & (catalog["Y_IMAGE"] > y_lower_limit)
-        & (catalog["Y_IMAGE"] < y_upper_limit)
+        (sci_catalog["FLAGS"] == 0)
+        & (sci_catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
+        & (sci_catalog["X_IMAGE"] > x_lower_limit)
+        & (sci_catalog["X_IMAGE"] < x_upper_limit)
+        & (sci_catalog["Y_IMAGE"] > y_lower_limit)
+        & (sci_catalog["Y_IMAGE"] < y_upper_limit)
     )
 
-    return catalog[clean_mask]
+    return sci_catalog[clean_mask], ref_catalog
+
+
+def xmatch_catalogs(
+    ref_cat: Table, image_cat: Table, crossmatch_radius_arcsec: float
+) -> (Table, Table, Angle):
+    """
+    Cross-match the reference catalog to the image catalog
+    """
+    ref_coords = SkyCoord(ra=ref_cat["ra"], dec=ref_cat["dec"], unit=(u.deg, u.deg))
+
+    img_coords = SkyCoord(
+        ra=image_cat["ALPHAWIN_J2000"],
+        dec=image_cat["DELTAWIN_J2000"],
+        unit=(u.deg, u.deg),
+    )
+
+    logger.debug(
+        f"Cross-matching {len(ref_cat)} sources in catalog to {len(img_coords)} "
+        f"image with radius {crossmatch_radius_arcsec} arcsec."
+    )
+
+    idx, d2d, _ = ref_coords.match_to_catalog_sky(img_coords)
+    match_mask = d2d < crossmatch_radius_arcsec * u.arcsec
+    matched_ref_cat = ref_cat[match_mask]
+    matched_img_cat = image_cat[idx[match_mask]]
+    logger.debug(
+        f"Cross-matched {len(matched_img_cat)} sources from catalog to the image."
+    )
+
+    return matched_img_cat, matched_ref_cat, d2d[match_mask]
 
 
 class BaseProcessorWithCrossMatch(BaseImageProcessor):
@@ -55,7 +86,7 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
     Attributes:
         ref_catalog_generator: function to generate reference catalog
         temp_output_sub_dir: subdirectory to store temporary files
-        sextractor_catalog_purifier: function to purify photometric catalog
+        catalogs_purifier: function to purify photometric catalog and reference catalog
         crossmatch_radius_arcsec: crossmatch radius in arcsec
         write_regions: whether to write regions file
         cache: whether to cache the temporary files made by this processor
@@ -68,7 +99,7 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
         ref_catalog_generator: Callable[[Image], BaseCatalog],
         crossmatch_radius_arcsec: float,
         required_parameters: list[str],
-        sextractor_catalog_purifier: Callable[[Table, Image], Table],
+        catalogs_purifier: Callable[[Table, Table, Image], list[Table, Table]],
         write_regions: bool = False,
         cache: bool = False,
         temp_output_sub_dir: str = "astrom_stats",
@@ -77,7 +108,7 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
         self.ref_catalog_generator = ref_catalog_generator
         self.crossmatch_radius_arcsec = crossmatch_radius_arcsec
         self.temp_output_sub_dir = temp_output_sub_dir
-        self.sextractor_catalog_purifier = sextractor_catalog_purifier
+        self.catalogs_purifier = catalogs_purifier
         self.cache = cache
         self.required_parameters = required_parameters
 
@@ -109,42 +140,13 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
         if self.write_regions:
             self.write_regions_files(image=image, ref_cat=ref_cat, img_cat=img_cat)
 
-        cleaned_img_cat = self.sextractor_catalog_purifier(img_cat, image)
+        cleaned_img_cat, ref_cat = self.catalogs_purifier(img_cat, ref_cat, image)
 
         if not self.cache:
             temp_cat_path.unlink()
             logger.debug(f"Deleted temporary file {temp_cat_path}")
 
         return ref_cat, img_cat, cleaned_img_cat
-
-    def xmatch_catalogs(
-        self, ref_cat: Table, image_cat: Table, crossmatch_radius_arcsec: float
-    ) -> (Table, Table, Angle):
-        """
-        Cross-match the reference catalog to the image catalog
-        """
-        ref_coords = SkyCoord(ra=ref_cat["ra"], dec=ref_cat["dec"], unit=(u.deg, u.deg))
-
-        img_coords = SkyCoord(
-            ra=image_cat["ALPHAWIN_J2000"],
-            dec=image_cat["DELTAWIN_J2000"],
-            unit=(u.deg, u.deg),
-        )
-
-        logger.debug(
-            f"Cross-matching {len(ref_cat)} sources in catalog to {len(img_coords)} "
-            f"image with radius {crossmatch_radius_arcsec} arcsec."
-        )
-
-        idx, d2d, _ = ref_coords.match_to_catalog_sky(img_coords)
-        match_mask = d2d < crossmatch_radius_arcsec * u.arcsec
-        matched_ref_cat = ref_cat[match_mask]
-        matched_img_cat = image_cat[idx[match_mask]]
-        logger.debug(
-            f"Cross-matched {len(matched_img_cat)} sources from catalog to the image."
-        )
-
-        return matched_img_cat, matched_ref_cat, d2d[match_mask]
 
     def write_regions_files(self, image: Image, ref_cat: Table, img_cat: Table):
         """
@@ -158,7 +160,7 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
             unit=(u.deg, u.deg),
         )
 
-        clean_img_cat = self.sextractor_catalog_purifier(img_cat, image)
+        clean_img_cat, ref_cat = self.catalogs_purifier(img_cat, ref_cat, image)
         clean_img_coords = SkyCoord(
             ra=clean_img_cat["ALPHAWIN_J2000"],
             dec=clean_img_cat["DELTAWIN_J2000"],

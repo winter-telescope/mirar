@@ -57,7 +57,6 @@ class ZOGYError(ProcessorError):
 
 def default_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
     """
-    TODO: This should be in wirc?
 
     :param sci_catalog:
     :param ref_catalog:
@@ -105,6 +104,9 @@ class ZOGYPrepare(BaseImageProcessor):
         ] = default_catalog_purifier,
         write_region_bool: bool = True,
         crossmatch_radius_arcsec: float = 1.0,
+        x_key: str = "X_IMAGE",
+        y_key: str = "Y_IMAGE",
+        flux_key: str = "FLUX_AUTO",
     ):
         super().__init__()
         self.output_sub_dir = output_sub_dir
@@ -115,6 +117,9 @@ class ZOGYPrepare(BaseImageProcessor):
         self.catalog_purifier = catalog_purifier
         self.write_region_bool = write_region_bool
         self.crossmatch_radius_arcsec = crossmatch_radius_arcsec
+        self.x_key = x_key
+        self.y_key = y_key
+        self.flux_key = flux_key
 
     def get_sub_output_dir(self) -> Path:
         """
@@ -135,7 +140,7 @@ class ZOGYPrepare(BaseImageProcessor):
 
     def get_ast_fluxscale(
         self, ref_catalog_name: str | Path, sci_catalog_name: str | Path
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[float, float, float, float, float]:
         """
         Cross match science and reference data catalogs to get flux scaling factor and
         astometric uncertainties
@@ -170,14 +175,14 @@ class ZOGYPrepare(BaseImageProcessor):
 
             write_regions_file(
                 regions_path=ref_reg_name,
-                x_coords=ref_catalog["X_IMAGE"],
-                y_coords=ref_catalog["Y_IMAGE"],
+                x_coords=ref_catalog[self.x_key],
+                y_coords=ref_catalog[self.y_key],
             )
 
             write_regions_file(
                 regions_path=sci_reg_name,
-                x_coords=sci_catalog["X_IMAGE"],
-                y_coords=sci_catalog["Y_IMAGE"],
+                x_coords=sci_catalog[self.x_key],
+                y_coords=sci_catalog[self.y_key],
             )
 
         sci_coords = SkyCoord(
@@ -204,17 +209,21 @@ class ZOGYPrepare(BaseImageProcessor):
             logger.error(err)
             raise ZOGYError(err)
 
-        xpos_sci = sci_catalog["XWIN_IMAGE"]
-        ypos_sci = sci_catalog["YWIN_IMAGE"]
-        xpos_ref = ref_catalog["XWIN_IMAGE"]
-        ypos_ref = ref_catalog["YWIN_IMAGE"]
-        sci_flux_auto = sci_catalog["FLUX_AUTO"]
-        ref_flux_auto = ref_catalog["FLUX_AUTO"]
+        xpos_sci = sci_catalog[self.x_key]
+        ypos_sci = sci_catalog[self.y_key]
+        xpos_ref = ref_catalog[self.x_key]
+        ypos_ref = ref_catalog[self.y_key]
+        sci_flux_auto = sci_catalog[self.flux_key]
+        ref_flux_auto = ref_catalog[self.flux_key]
 
         logger.debug(f"Number of cross-matched sources is {len(d2d)}")
 
-        ast_unc_x = np.std(xpos_sci[idx_sci] - xpos_ref[idx_ref])
-        ast_unc_y = np.std(ypos_sci[idx_sci] - ypos_ref[idx_ref])
+        _, ast_offset_median_x, ast_unc_x = sigma_clipped_stats(
+            xpos_sci[idx_sci] - xpos_ref[idx_ref]
+        )
+        _, ast_offset_median_y, ast_unc_y = sigma_clipped_stats(
+            ypos_sci[idx_sci] - ypos_ref[idx_ref]
+        )
 
         logger.debug(f"Astrometric uncertainties are X: {ast_unc_x} Y: {ast_unc_y}")
 
@@ -225,7 +234,13 @@ class ZOGYPrepare(BaseImageProcessor):
         logger.debug(
             f"Flux scaling for reference is {flux_scale:.5f} +/- {flux_scale_std:.5f}"
         )
-        return ast_unc_x, ast_unc_y, flux_scale
+        return (
+            ast_unc_x,
+            ast_unc_y,
+            ast_offset_median_x,
+            ast_offset_median_y,
+            flux_scale,
+        )
 
     @staticmethod
     def get_rms_image(image: Image, rms: float) -> Image:
@@ -249,7 +264,7 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_img_path = image[REF_IMG_KEY]
             sci_img_path = image[BASE_NAME_KEY]
 
-            ref_img = self.open_fits(self.get_path(ref_img_path))
+            ref_img = self.open_fits(ref_img_path)
 
             sci_x_imgsize = int(image["NAXIS1"])
             sci_y_imgsize = int(image["NAXIS2"])
@@ -286,17 +301,17 @@ class ZOGYPrepare(BaseImageProcessor):
                 logger.debug(f"Saving trimmed reference image to {ref_img_path}")
                 self.save_fits(ref_img, ref_img_path)
 
-                logger.debug(f"Trimming science weight image")
+                logger.debug("Trimming science weight image")
                 weight_path = image[LATEST_WEIGHT_SAVE_KEY]
                 with fits.open(
                     self.get_path(weight_path), "update", memmap=False
                 ) as weight_img:
                     weight_data = weight_img[0].data  # pylint: disable=no-member
                     weight_img[0].data = weight_data[:sci_y_imgsize, :sci_x_imgsize]
-                    weight_img[0].header[
+                    weight_img[0].header[  # pylint: disable=no-member
                         "NAXIS1"
                     ] = sci_x_imgsize  # pylint: disable=no-member
-                    weight_img[0].header[
+                    weight_img[0].header[  # pylint: disable=no-member
                         "NAXIS2"
                     ] = sci_y_imgsize  # pylint: disable=no-member
 
@@ -307,8 +322,12 @@ class ZOGYPrepare(BaseImageProcessor):
                 ) as weight_img:
                     weight_data = weight_img[0].data  # pylint: disable=no-member
                     weight_img[0].data = weight_data[:sci_y_imgsize, :sci_x_imgsize]
-                    weight_img[0].header["NAXIS1"] = sci_x_imgsize
-                    weight_img[0].header["NAXIS2"] = sci_y_imgsize
+                    weight_img[0].header[  # pylint: disable=no-member
+                        "NAXIS1"
+                    ] = sci_x_imgsize
+                    weight_img[0].header[  # pylint: disable=no-member
+                        "NAXIS2"
+                    ] = sci_y_imgsize
 
             ref_catalog_path = ref_img[SEXTRACTOR_HEADER_KEY]
             ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
@@ -330,6 +349,8 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_data[image_mask] = np.nan
             ref_img.set_data(ref_data)
 
+            image_mask = np.isnan(image.get_data())
+
             # Create S correlation ('scorr') weight image
             scorr_weight_data = sci_weight_data.get_data() * ref_weight_data.get_data()
             scorr_header = sci_weight_data.get_header()
@@ -346,7 +367,7 @@ class ZOGYPrepare(BaseImageProcessor):
                 path=self.get_path(scorr_weight_path),
             )
 
-            ast_unc_x, ast_unc_y, flux_scale = self.get_ast_fluxscale(
+            ast_unc_x, ast_unc_y, _, _, flux_scale = self.get_ast_fluxscale(
                 ref_catalog_path, sci_catalog_path
             )
 
@@ -366,12 +387,12 @@ class ZOGYPrepare(BaseImageProcessor):
             )
 
             sci_rms = 0.5 * (
-                np.percentile(image_data[~image_mask], 84.13)
-                - np.percentile(image_data[~image_mask], 15.86)
+                np.nanpercentile(image_data[~image_mask], 84.13)
+                - np.nanpercentile(image_data[~image_mask], 15.86)
             )
             ref_rms = 0.5 * (
-                np.percentile(ref_data[~image_mask], 84.13)
-                - np.percentile(ref_data[~image_mask], 15.86)
+                np.nanpercentile(ref_data[~image_mask], 84.13)
+                - np.nanpercentile(ref_data[~image_mask], 15.86)
             )
             logger.debug(
                 f"Science RMS is {sci_rms:.2f}. Reference RMS is {ref_rms:.2f}"
@@ -433,7 +454,7 @@ class ZOGY(ZOGYPrepare):
     ) -> ImageBatch:
         diff_batch = ImageBatch()
         for image in batch:
-            ref_image_path = self.get_path(image[REF_IMG_KEY])
+            ref_image_path = image[REF_IMG_KEY]
             ref_image = self.open_fits(ref_image_path)
 
             sci_rms = image[RMS_COUNTS_KEY]
@@ -453,9 +474,11 @@ class ZOGY(ZOGYPrepare):
             # Load the PSFs into memory
             with fits.open(sci_psf_path, memmap=False) as img_psf_f:
                 new_psf = img_psf_f[0].data  # pylint: disable=no-member
+                new_psf[new_psf < 0] = 0
 
             with fits.open(ref_psf_path, memmap=False) as ref_psf_f:
                 ref_psf = ref_psf_f[0].data  # pylint: disable=no-member
+                ref_psf[ref_psf < 0] = 0
 
             # Load the sigma images into memory
             with fits.open(sci_rms_path, memmap=False) as img_sigma_f:
@@ -560,5 +583,5 @@ class ZOGY(ZOGYPrepare):
         self,
     ):
         check = np.sum([isinstance(x, ZOGYPrepare) for x in self.preceding_steps])
-        if check != 1:
+        if check < 1:
             raise PrerequisiteError("ZOGYPrepare must be run before ZOGY")

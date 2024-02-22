@@ -13,7 +13,7 @@ import numpy as np
 from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch
-from mirar.paths import BASE_NAME_KEY, REF_IMG_KEY, get_output_dir
+from mirar.paths import LATEST_SAVE_KEY, REF_IMG_KEY, get_output_dir
 from mirar.processors.astromatic.psfex.psfex import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp, SwarpWarning
@@ -31,6 +31,7 @@ class ProcessReference(BaseImageProcessor):
     base_key = "REFPREP"
 
     max_n_cpu = 15  # Because PS1 ref downloads get rate-limited if you use too many
+
     # threads
 
     def __init__(
@@ -39,6 +40,7 @@ class ProcessReference(BaseImageProcessor):
         swarp_resampler: Callable[..., Swarp],
         sextractor: Callable[..., Sextractor],
         ref_psfex: Callable[..., PSFex],
+        phot_sextractor: Callable[..., Sextractor] = None,
         temp_output_subtract_dir: str = "subtract",
     ):
         super().__init__()
@@ -46,7 +48,10 @@ class ProcessReference(BaseImageProcessor):
         self.swarp_resampler = swarp_resampler
         self.sextractor = sextractor
         self.psfex = ref_psfex
+        self.phot_sextractor = phot_sextractor
         self.temp_output_subtract_dir = temp_output_subtract_dir
+        if self.phot_sextractor is None:
+            self.phot_sextractor = self.sextractor
 
     def get_sub_output_dir(self) -> Path:
         """
@@ -145,7 +150,7 @@ class ProcessReference(BaseImageProcessor):
                 ref_resamp_pixscale,
                 ref_resamp_x_imgsize,
                 ref_resamp_y_imgsize,
-                ref_resamp_gain,
+                _,
             ) = self.get_image_header_params(resampled_ref_img)
 
             # This is a fall back if the ref image resampling by Swarp fails
@@ -175,7 +180,7 @@ class ProcessReference(BaseImageProcessor):
             # Detect source in reference image, and save as catalog
 
             ref_sextractor = self.sextractor(
-                output_sub_dir=self.temp_output_subtract_dir, gain=ref_resamp_gain
+                output_sub_dir=self.temp_output_subtract_dir
             )
             ref_sextractor.set_night(night_sub_dir=self.night_sub_dir)
 
@@ -198,15 +203,30 @@ class ProcessReference(BaseImageProcessor):
                 ImageBatch(resampled_ref_sextractor_img)
             )[0]
 
+            logger.debug(
+                f"Running photometry on "
+                f"{resampled_ref_sextractor_psfex_img.get_name()}"
+            )
+
+            # Run Sextractor again using PSFex model
+            ref_psf_phot_sextractor = self.phot_sextractor(
+                output_sub_dir=self.temp_output_subtract_dir,
+            )
+            ref_psf_phot_sextractor.set_night(night_sub_dir=self.night_sub_dir)
+
+            final_ref_image = ref_psf_phot_sextractor.apply(
+                ImageBatch(resampled_ref_sextractor_psfex_img)
+            )[0]
+
             # Save the final resampled, sextracted and psfexed reference image
-            self.save_fits(resampled_ref_sextractor_psfex_img, resampled_ref_path)
+            self.save_fits(final_ref_image, resampled_ref_path)
 
             # Copy over header keys from ref to sci
             # resampled_sci_image[REF_PSF_KEY] = resampled_ref_sextractor_img[
             #     NORM_PSFEX_KEY
             # ]
             resampled_sci_image[REF_IMG_KEY] = resampled_ref_sextractor_psfex_img[
-                BASE_NAME_KEY
+                LATEST_SAVE_KEY
             ]
 
             new_batch.append(resampled_sci_image)

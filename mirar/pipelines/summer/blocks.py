@@ -22,7 +22,6 @@ from mirar.pipelines.summer.config import (
 from mirar.pipelines.summer.generator import (
     summer_astrometric_catalog_generator,
     summer_photometric_catalog_generator,
-    summer_photometric_img_catalog_purifier,
     summer_reference_image_generator,
     summer_reference_image_resampler,
     summer_reference_psfex,
@@ -174,7 +173,6 @@ process_raw = [
     ),
     PhotCalibrator(
         ref_catalog_generator=summer_photometric_catalog_generator,
-        image_photometric_catalog_purifier=summer_photometric_img_catalog_purifier,
     ),
     ImageSaver(
         output_dir_name="processed",

@@ -17,7 +17,6 @@ from mirar.paths import (
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
-    wirc_photometric_img_catalog_purifier,
     wirc_reference_image_generator,
     wirc_reference_image_resampler,
     wirc_reference_psfex,
@@ -174,7 +173,6 @@ reduction = [
     Sextractor(output_sub_dir="final_sextractor", **sextractor_photometry_config),
     PhotCalibrator(
         ref_catalog_generator=wirc_photometric_catalog_generator,
-        image_photometric_catalog_purifier=wirc_photometric_img_catalog_purifier,
         write_regions=True,
     ),
     ImageSaver(output_dir_name="final"),
