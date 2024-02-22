@@ -86,7 +86,7 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
     Attributes:
         ref_catalog_generator: function to generate reference catalog
         temp_output_sub_dir: subdirectory to store temporary files
-        catalogs_purifier: function to purify photometric catalog
+        catalogs_purifier: function to purify photometric catalog and reference catalog
         crossmatch_radius_arcsec: crossmatch radius in arcsec
         write_regions: whether to write regions file
         cache: whether to cache the temporary files made by this processor
