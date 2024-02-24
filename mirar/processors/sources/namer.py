@@ -114,10 +114,7 @@ class CandidateNamer(BaseDatabaseSourceSelector):
                 select(col).where(col.contains(cand_year)).order_by(col.desc()).limit(1)
             )
 
-            res = run_select(
-                query=sel,
-                sql_table=self.db_table.sql_model,
-            )
+            res = run_select(query=sel, sql_table=self.db_table.sql_model)
 
             # If no names of the same year, start from the beginning
             if len(res) == 0:
