@@ -369,7 +369,6 @@ flat_calibrate = [
     ),
     SextractorBkgSubtractor(),
     ImageSaver(output_dir_name="skysub"),
-    # ImageSelector(("FIELDID", str(8948))),
 ]
 
 load_calibrated = [
@@ -384,7 +383,6 @@ fourier_filter = [
 astrometry = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
-    # ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[1.0, 1.3],
@@ -415,8 +413,6 @@ astrometry = [
         copy_scamp_header_to_image=True,
         cache=True,
     ),
-    # TODO Do you want this here, or later down so that the saved img has astrometry
-    #  stats in the header?
     ImageSaver(output_dir_name="post_scamp"),
 ]
 
