@@ -203,7 +203,9 @@ class WFAUQuery(BaseWFCAMQuery):
         self.query_db_table = query_db_table
         self.use_db_for_component_queries = use_db_for_component_queries
         self.skip_online_query = skip_online_query
-        self.dbexporter = DatabaseImageInserter(db_table=self.query_db_table)
+        self.dbexporter = DatabaseImageInserter(
+            db_table=self.query_db_table, duplicate_protocol="ignore"
+        )
 
         if self.use_db_for_component_queries:
             if self.components_db_table is None:
