@@ -408,6 +408,7 @@ astrometry = [
         copy_scamp_header_to_image=True,
         cache=True,
     ),
+    ImageSaver(output_dir_name="post_scamp"),
 ]
 
 validate_astrometry = [
@@ -425,7 +426,6 @@ validate_astrometry = [
         cache=False,
         crossmatch_radius_arcsec=5.0,
     ),
-    ImageSaver(output_dir_name="post_scamp"),
     DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="ignore"),
     CustomImageBatchModifier(poor_astrometric_quality_rejector),
 ]
@@ -788,4 +788,6 @@ diff_forced_photometry = [
     PSFPhotometry(),
 ]
 
-astrometry = load_calibrated + fourier_filter + astrometry  # + validate_astrometry
+perform_astrometry = (
+    load_calibrated + fourier_filter + astrometry
+)  # + validate_astrometry
