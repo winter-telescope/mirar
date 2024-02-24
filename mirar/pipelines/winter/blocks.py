@@ -612,7 +612,6 @@ name_candidates = [
         base_name=SOURCE_PREFIX,
         name_start=NAME_START,
         db_name_field=SOURCE_NAME_KEY,
-        db_order_field="sourceid",
     ),
     # Add the new sources to the source table
     CustomSourceTableModifier(modifier_function=winter_new_source_updater),

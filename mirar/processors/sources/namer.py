@@ -6,7 +6,7 @@ import logging
 
 import pandas as pd
 from astropy.time import Time
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from mirar.data import SourceBatch
 from mirar.database.transactions.select import run_select
@@ -29,12 +29,10 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         base_name: str,
         name_start: str = "aaaaa",
         db_name_field: str = SOURCE_NAME_KEY,
-        db_order_field: str = "candid",
         **kwargs,
     ):
         super().__init__(db_output_columns=[db_name_field], **kwargs)
         self.db_name_field = db_name_field
-        self.db_order_field = db_order_field
         self.base_name = base_name
         self.name_start = name_start
         self.lastname = None
@@ -82,6 +80,16 @@ class CandidateNamer(BaseDatabaseSourceSelector):
 
         return new_string
 
+    def extract_last_year(self, last_name: str) -> int:
+        """
+        Extract the year from the last name
+
+        :param last_name: last name
+        :return: year
+        """
+        last_year = int(last_name[len(self.base_name) : len(self.base_name) + 2])
+        return last_year
+
     def get_next_name(self, detection_time: Time, last_name: str = None) -> str:
         """
         Function to get a new candidate name
@@ -91,28 +99,43 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         :return: new name
         """
         cand_year = detection_time.datetime.year % 1000
+
+        if last_name is not None:
+            last_year = self.extract_last_year(last_name)
+            if last_year != cand_year:
+                last_name = None
+
         if last_name is None:
+
+            col = self.db_table.sql_model.__table__.c[self.db_name_field]
+
+            # Select most recent name of same year
+            sel = (
+                select(col).where(col.contains(cand_year)).order_by(col.desc()).limit(1)
+            )
+
             res = run_select(
-                query=select(getattr(self.db_table.sql_model, self.db_name_field))
-                .order_by(text(f"{self.db_order_field} desc"))
-                .limit(1),
+                query=sel,
                 sql_table=self.db_table.sql_model,
             )
 
+            # If no names of the same year, start from the beginning
             if len(res) == 0:
                 name = self.base_name + str(cand_year) + self.name_start
                 return name
 
-            last_name = res[SOURCE_NAME_KEY].iloc[0]
+            last_name = res[self.db_name_field].iloc[0]
             logger.debug(res)
 
-        last_year = int(last_name[len(self.base_name) : len(self.base_name) + 2])
-        if cand_year != last_year:
-            name = self.base_name + str(cand_year) + self.name_start
-        else:
-            last_name_letters = last_name[len(self.base_name) + 2 :]
-            new_name_letters = self.increment_string(last_name_letters)
-            name = self.base_name + str(cand_year) + new_name_letters
+        last_year = self.extract_last_year(last_name)
+
+        assert (
+            last_year == cand_year
+        ), f"Last year {last_year} does not match candidate year {cand_year}"
+
+        last_name_letters = last_name[len(self.base_name) + 2 :]
+        new_name_letters = self.increment_string(last_name_letters)
+        name = self.base_name + str(cand_year) + new_name_letters
         logger.debug(f"Assigning name: {name}")
         return name
 
