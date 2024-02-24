@@ -804,7 +804,7 @@ def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
     flat_images, medcounts = [], []
     for image in images:
         image["MEDCOUNT"] = np.nanmedian(image.get_data())
-        if image["MEDCOUNT"] > 3000:
+        if image["MEDCOUNT"] > 2000:
             flat_images.append(image)
             medcounts.append(image["MEDCOUNT"])
 
