@@ -108,7 +108,7 @@ class BaseDB(PydanticBase):
             if duplicate_protocol == "fail":
                 err = (
                     f"Duplicate error, entry with {self.model_dump()} "
-                    f"already exists in {self.sql_model.name}."
+                    f"already exists in {self.sql_model.__tablename__}."
                 )
                 logger.error(err)
                 raise errors.UniqueViolation from exc
