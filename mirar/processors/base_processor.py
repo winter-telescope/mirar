@@ -386,7 +386,7 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         write_to_cache: bool = True,
         overwrite: bool = True,
         cache_sub_dir: str = CAL_OUTPUT_SUB_DIR,
-        cache_image_name_header_keys: str | list[str] = None,
+        cache_image_name_header_keys: str | list[str] | None = None,
     ):
         super().__init__()
         self.try_load_cache = try_load_cache
