@@ -9,6 +9,7 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
+    astrometry,
     build_test,
     csvlog,
     detect_candidates,
@@ -18,6 +19,7 @@ from mirar.pipelines.winter.blocks import (
     focus_cals,
     full_reduction,
     imsub,
+    load_calibrated,
     load_final_stack,
     load_raw,
     load_test,
@@ -57,6 +59,7 @@ class WINTERPipeline(Pipeline):
     default_cal_requirements = winter_cal_requirements
 
     all_pipeline_configurations = {
+        "astrometry": load_calibrated + astrometry,
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
         "unpack_subset_no_calhunter": unpack_subset_no_calhunter,
@@ -97,6 +100,7 @@ class WINTERPipeline(Pipeline):
         "name_candidates": name_candidates,
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
+        "detrend": unpack_all + detrend_unpacked,
     }
 
     non_linear_level = 40000.0

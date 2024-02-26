@@ -330,7 +330,10 @@ dark_calibrate = [
     ImageBatcher(
         ["BOARD_ID", EXPTIME_KEY, "SUBCOORD", "GAINCOLT", "GAINCOLB", "GAINROW"]
     ),
-    DarkCalibrator(cache_sub_dir="calibration_darks"),
+    DarkCalibrator(
+        cache_sub_dir="calibration_darks",
+        cache_image_name_header_keys=[EXPTIME_KEY, "BOARD_ID"],
+    ),
     ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
@@ -351,7 +354,9 @@ flat_calibrate = [
         ]
     ),
     FlatCalibrator(
-        cache_sub_dir="calibration_flats", select_flat_images=select_winter_flat_images
+        cache_sub_dir="calibration_flats",
+        select_flat_images=select_winter_flat_images,
+        cache_image_name_header_keys=["FILTER", "BOARD_ID"],
     ),
     ImageSaver(output_dir_name="skyflatcal"),
     ImageDebatcher(),
@@ -364,7 +369,6 @@ flat_calibrate = [
     ),
     SextractorBkgSubtractor(),
     ImageSaver(output_dir_name="skysub"),
-    # ImageSelector(("FIELDID", str(8948))),
 ]
 
 load_calibrated = [
@@ -372,12 +376,13 @@ load_calibrated = [
     ImageBatcher(["UTCTIME", "BOARD_ID"]),
 ]
 
-fourier_filter = [CustomImageBatchModifier(winter_fourier_filtered_image_generator)]
+fourier_filter = [
+    CustomImageBatchModifier(winter_fourier_filtered_image_generator),
+]
 
 astrometry = [
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
-    # ImageSaver(output_dir_name="pre_anet"),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[1.0, 1.3],
@@ -408,6 +413,7 @@ astrometry = [
         copy_scamp_header_to_image=True,
         cache=True,
     ),
+    ImageSaver(output_dir_name="post_scamp"),
 ]
 
 validate_astrometry = [
@@ -425,7 +431,6 @@ validate_astrometry = [
         cache=False,
         crossmatch_radius_arcsec=5.0,
     ),
-    ImageSaver(output_dir_name="post_scamp"),
     DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="ignore"),
     CustomImageBatchModifier(poor_astrometric_quality_rejector),
 ]
@@ -787,4 +792,5 @@ diff_forced_photometry = [
     PSFPhotometry(),
 ]
 
-astrometry = load_calibrated + fourier_filter + astrometry  # + validate_astrometry
+perform_astrometry = load_calibrated + fourier_filter + astrometry
+# + validate_astrometry
