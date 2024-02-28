@@ -21,19 +21,22 @@ logger = logging.getLogger(__name__)
 def plot_fits_image(
     image: Image,
     savedir: str | Path,
-    regions_wcs_coords: List[Tuple[float, float]] = None,
+    regions_wcs_coords: List[Tuple[float, float]] | None = None,
+    plot_format: str = "png",
+    title_fields: List[str] | None = None,
 ):
     """
-    Plot the fits image with the regions
+    Plot the fits image with the specified regions
     Args:
-        image: Image to plot
-        savedir: Directory to save to
-        regions_wcs_coords:If you want to mark specific coordinates on the image,
-        provide a list of tuples of RA, Dec
-
-    Returns:
-
+        :param image: Image to plot
+        :param savedir: Directory to save to
+        :param regions_wcs_coords:If you want to mark specific coordinates on the image,
+        :param provide a list of tuples of RA, Dec
+        :param plot_format: pdf or png
     """
+    assert plot_format in ["pdf", "png"], (
+        f"Only pdf and png formats are supported, " f"got {plot_format}."
+    )
     if not isinstance(savedir, Path):
         savedir = Path(savedir)
 
@@ -49,9 +52,30 @@ def plot_fits_image(
         for _, (ra, dec) in enumerate(regions_image_coords):
             ax.scatter(ra, dec, marker="x", color="red", s=100)
 
+    if title_fields is not None:
+        assert all(
+            [field in image.header for field in title_fields]
+        ), f"Title fields {title_fields} not present in header {image.header}"
+        # Make a string for title in the format key:value
+        hdr = image.get_header()
+        title_str = ""
+        for field in title_fields:
+            title_str += field + ": "
+            val = hdr[field]
+            if isinstance(val, float):
+                val = f"{val:.2f}"
+            title_str += str(val) + ",   "
+
+        # Wrap title if it's too long
+        title = "\n".join([title_str[i : i + 80] for i in range(0, len(title_str), 80)])
+        # Set title that has latex
+        ax.set_title(rf"{title}", fontsize=10)
+
     ax.set_xlabel("RA")
     ax.set_ylabel("Dec")
-    plot_savepath = savedir / image.header[BASE_NAME_KEY].replace(".fits", ".png")
+    plot_savepath = savedir / image.header[BASE_NAME_KEY].replace(
+        ".fits", f".{plot_format}"
+    )
     logger.info(f"Saving plot to {plot_savepath}")
     plt.savefig(plot_savepath, bbox_inches="tight")
     plt.close()
