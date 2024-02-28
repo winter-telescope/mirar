@@ -1,5 +1,5 @@
 """
-Module to plot images
+Module to plot 2D image-data as a pdf or png file.
 """
 
 import logging
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImagePlotter(BaseImageProcessor):
-    """Processor to load raw images.
+    """Processor to plot images.
     Attributes
     :param plot_format: pdf or png?
     """
@@ -38,7 +38,8 @@ class ImagePlotter(BaseImageProcessor):
 
     def __str__(self):
         return (
-            f"Processor to plot images and save them in the '{self.output_sub_dir}' "
+            f"Processor to plot images as {self.plot_format} and save them "
+            f"in the '{self.output_sub_dir}' "
             f"sub-directory"
         )
 

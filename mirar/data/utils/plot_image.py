@@ -31,8 +31,9 @@ def plot_fits_image(
         :param image: Image to plot
         :param savedir: Directory to save to
         :param regions_wcs_coords:If you want to mark specific coordinates on the image,
-        :param provide a list of tuples of RA, Dec
+        provide a list of tuples of RA, Dec
         :param plot_format: pdf or png
+        :param title_fields: Image header fields to annotate the plot with
     """
     assert plot_format in ["pdf", "png"], (
         f"Only pdf and png formats are supported, " f"got {plot_format}."
@@ -76,6 +77,6 @@ def plot_fits_image(
     plot_savepath = savedir / image.header[BASE_NAME_KEY].replace(
         ".fits", f".{plot_format}"
     )
-    logger.info(f"Saving plot to {plot_savepath}")
+    logger.debug(f"Saving plot to {plot_savepath}")
     plt.savefig(plot_savepath, bbox_inches="tight")
     plt.close()

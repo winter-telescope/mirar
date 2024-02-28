@@ -481,10 +481,10 @@ photcal_and_export = [
             reject_outliers=True,
             solver="curve_fit",
         ),
-        zp_column_name="MAG_POINTSOURCE",
+        zp_column_name="MAG_AUTO",
     ),
     CatalogLimitingMagnitudeCalculator(
-        sextractor_mag_key_name="MAG_POINTSOURCE", write_regions=True
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
     AstrometryStatsWriter(
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
