@@ -134,6 +134,7 @@ from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
+    ImagePlotter,
     ImageRejector,
     ImageSaver,
     ImageSelector,
@@ -480,10 +481,10 @@ photcal_and_export = [
             reject_outliers=True,
             solver="curve_fit",
         ),
-        zp_column_name="MAG_POINTSOURCE",
+        zp_column_name="MAG_AUTO",
     ),
     CatalogLimitingMagnitudeCalculator(
-        sextractor_mag_key_name="MAG_POINTSOURCE", write_regions=True
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
     AstrometryStatsWriter(
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
@@ -498,6 +499,19 @@ photcal_and_export = [
         sequence_key="rawid",
         db_table=Raw,
         db_alter_columns="ustackid",
+    ),
+    ImagePlotter(
+        output_sub_dir="final_stacks_plots",
+        annotate_fields=[
+            BASE_NAME_KEY,
+            "COADDS",
+            TARGET_KEY,
+            "CRVAL1",
+            "CRVAL2",
+            "FILTER",
+            "ZP",
+            "ZPSTD",
+        ],
     ),
 ]
 
