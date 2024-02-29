@@ -39,8 +39,7 @@ class ImagePlotter(BaseImageProcessor):
     def __str__(self):
         return (
             f"Processor to plot images as {self.plot_format} and save them "
-            f"in the '{self.output_sub_dir}' "
-            f"sub-directory"
+            f"in the '{self.output_sub_dir}' sub-directory"
         )
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
