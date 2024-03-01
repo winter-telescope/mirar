@@ -52,6 +52,7 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     )
     expid = Column(BigInteger, primary_key=False, unique=True, autoincrement=False)
     pipeversion = Column(VARCHAR(10), nullable=True, default=None)
+    lastmodified = Column(DateTime(timezone=True))
     # Deterministic ID of exposure
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
@@ -147,6 +148,16 @@ class Exposure(BaseDB):
         :return: version of the pipeline
         """
         return __version__
+
+    @computed_field
+    @property
+    def lastmodified(self) -> datetime:
+        """
+        Returns the current date and time
+
+        :return: current date and time
+        """
+        return datetime.now()
 
     def insert_entry(
         self, duplicate_protocol: str, returning_key_names=None
