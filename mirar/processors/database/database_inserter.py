@@ -119,7 +119,10 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         column_names = [
-            x for x in self.db_table.__dict__["__annotations__"] if x != "sql_model"
+            x
+            for x in self.db_table.__dict__["__annotations__"]
+            if (x != "sql_model")
+            & (x not in self.db_table.model_computed_fields.keys())
         ]
 
         for column in column_names:
@@ -147,6 +150,7 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
         val_dict = {key.lower(): image[key] for key in image.keys()}
 
         new = self.db_table(**val_dict)
+
         res = new.insert_entry(duplicate_protocol=self.duplicate_protocol)
 
         assert len(res) == 1
