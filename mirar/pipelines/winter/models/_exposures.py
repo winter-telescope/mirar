@@ -7,7 +7,7 @@ from datetime import date, datetime
 from typing import ClassVar
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, computed_field
 from sqlalchemy import (  # event,
     VARCHAR,
     BigInteger,
@@ -24,6 +24,7 @@ from wintertoo.data import MAX_TARGNAME_LEN
 from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
+from mirar.paths import __version__
 from mirar.pipelines.winter.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.winter.models._filters import FiltersTable, fid_field
 from mirar.pipelines.winter.models._img_type import ImgTypesTable
@@ -50,6 +51,7 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
         primary_key=True,
     )
     expid = Column(BigInteger, primary_key=False, unique=True, autoincrement=False)
+    pipeversion = Column(VARCHAR(10), nullable=True, default=None)
     # Deterministic ID of exposure
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
@@ -135,6 +137,16 @@ class Exposure(BaseDB):
     dec: float = dec_field
     altitude: float = alt_field
     azimuth: float = az_field
+
+    @computed_field
+    @property
+    def pipeversion(self) -> str:
+        """
+        Returns the version of the pipeline used to process the exposure
+
+        :return: version of the pipeline
+        """
+        return __version__
 
     def insert_entry(
         self, duplicate_protocol: str, returning_key_names=None
