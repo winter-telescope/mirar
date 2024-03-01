@@ -249,8 +249,6 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
                     logger.error(
                         f"Failed to get source groups info on {alert[SOURCE_NAME_KEY]}"
                     )
-            else:  # exists in SkyPortal but NOT saved as a source
-                self.skyportal_post_source(alert)
 
             # post alert photometry in single call to /api/photometry
             logger.debug(f"Using stream_id={self.stream_id}")

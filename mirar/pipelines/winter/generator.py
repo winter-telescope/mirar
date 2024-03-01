@@ -647,15 +647,18 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
     return new_batch
 
 
-def winter_skyportal_annotator(source_table: SourceBatch) -> SourceBatch:
+def winter_skyportal_annotator(source_batch: SourceBatch) -> SourceBatch:
     """
     Function to update the candidate table with the skyportal fields
 
-    :param source_table: Original source table
+    :param source_batch: Original source table
     :return: Updated source table
     """
-    for source in source_table:
-        src_df = source.get_data()
+
+    new_batch = SourceBatch([])
+
+    for source_table in source_batch:
+        src_df = source_table.get_data()
 
         if SNCOSMO_KEY not in src_df.columns:
             sncosmo_fs = [
@@ -673,9 +676,18 @@ def winter_skyportal_annotator(source_table: SourceBatch) -> SourceBatch:
             ]
             hist_df[SNCOSMO_KEY] = sncosmo_fs
 
-        source.set_data(src_df)
+        src_df["ndethist"] = [len(x) for x in src_df[SOURCE_HISTORY_KEY]]
 
-    return source_table
+        mask = src_df["ndethist"] > 0
+
+        src_df = src_df[mask].reset_index(drop=True)
+
+        # Only keep sources with at least 2 detections
+        if len(src_df) > 0:
+            source_table.set_data(src_df)
+            new_batch.append(source_table)
+
+    return new_batch
 
 
 def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
