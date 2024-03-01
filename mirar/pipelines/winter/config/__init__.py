@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastavro.schema import load_schema
 
+from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
 
 PIPELINE_NAME = "winter"
@@ -85,3 +86,25 @@ winter_avro_schema_path = winter_file_dir.joinpath("avro_schema/winter.alert.avs
 winter_avro_schema = load_schema(winter_avro_schema_path)
 winter_prv_schema = winter_avro_schema["__named_schemas"]["winter.alert.prv_candidate"]
 prv_candidate_cols = [x["name"] for x in winter_prv_schema["fields"]]
+
+# To send to preview.fritz.science
+winter_preview_config = {
+    "origin": "mirar",
+    "group_ids": [1092],
+    "fritz_filter_id": 1018,
+    "instrument_id": 1066,
+    "stream_id": 1008,
+    "update_thumbnails": True,
+    "skyportal_client": SkyportalClient(base_url="https://preview.fritz.science/api/"),
+}
+
+# To send to fritz.science
+winter_fritz_config = {
+    "origin": "mirar",
+    "group_ids": [1092],
+    "fritz_filter_id": 1018,
+    "instrument_id": 1066,
+    "stream_id": 1008,
+    "update_thumbnails": True,
+    "skyportal_client": SkyportalClient(base_url="https://fritz.science/api/"),
+}

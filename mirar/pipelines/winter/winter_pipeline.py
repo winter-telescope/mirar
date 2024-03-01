@@ -21,6 +21,7 @@ from mirar.pipelines.winter.blocks import (
     imsub,
     load_calibrated,
     load_final_stack,
+    load_history,
     load_raw,
     load_test,
     mask_and_split,
@@ -101,6 +102,7 @@ class WINTERPipeline(Pipeline):
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
         "detrend": unpack_all + detrend_unpacked,
+        "send_with_history": load_history + send_to_skyportal,
     }
 
     non_linear_level = 40000.0

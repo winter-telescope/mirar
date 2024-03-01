@@ -37,6 +37,7 @@ from mirar.paths import (
 from mirar.pipelines.winter.constants import (
     imgtype_dict,
     palomar_observer,
+    sncosmo_filters,
     subdets,
     winter_filters_map,
 )
@@ -44,12 +45,6 @@ from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_d
 from mirar.processors.skyportal import SNCOSMO_KEY
 
 logger = logging.getLogger(__name__)
-
-sncosmo_filters = {
-    "y": "desy",
-    "j": "2massj",
-    "h": "2massh",
-}
 
 
 def clean_header(header: fits.Header) -> fits.Header:

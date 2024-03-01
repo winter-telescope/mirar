@@ -264,9 +264,7 @@ class DatabaseMultimatchSelector(BaseDatabaseSourceSelector, ABC):
         :return: updated pandas dataframe
         """
         assert len(results) == len(candidate_table)
-        candidate_table[self.base_output_column] = [
-            x.to_dict(orient="records") for x in results
-        ]
+        candidate_table[self.base_output_column] = results
         return candidate_table
 
 
