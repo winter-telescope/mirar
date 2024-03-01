@@ -41,7 +41,11 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
 )
-from mirar.pipelines.winter.constants import winter_filters_map
+from mirar.pipelines.winter.constants import (
+    sncosmo_filters,
+    winter_filters_map,
+    winter_inv_filters_map,
+)
 from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
 from mirar.pipelines.winter.models import (
     DEFAULT_FIELD,
@@ -57,6 +61,7 @@ from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
 )
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.processors.skyportal.skyportal_source import SNCOSMO_KEY
 from mirar.processors.split import SUB_ID_KEY
 from mirar.processors.utils.cal_hunter import CalRequirement
 from mirar.processors.utils.image_selector import select_from_images
@@ -638,6 +643,52 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
 
         source.set_data(src_df)
         new_batch.append(source)
+
+    return new_batch
+
+
+def winter_skyportal_annotator(source_batch: SourceBatch) -> SourceBatch:
+    """
+    Function to update the candidate table with the skyportal fields
+
+    :param source_batch: Original source table
+    :return: Updated source table
+    """
+
+    new_batch = SourceBatch([])
+
+    for source_table in source_batch:
+        src_df = source_table.get_data()
+
+        if "fid" not in src_df.columns:
+            src_df["fid"] = source_table["FID"]
+
+        if SNCOSMO_KEY not in src_df.columns:
+            sncosmo_fs = [
+                sncosmo_filters[winter_inv_filters_map[x].lower()]
+                for x in src_df["fid"]
+            ]
+            src_df[SNCOSMO_KEY] = sncosmo_fs
+
+        for hist_df in src_df[SOURCE_HISTORY_KEY]:
+            mjds = [Time(x, format="jd").mjd for x in hist_df["jd"]]
+            hist_df["mjd"] = mjds
+            sncosmo_fs = [
+                sncosmo_filters[winter_inv_filters_map[x].lower()]
+                for x in hist_df["fid"]
+            ]
+            hist_df[SNCOSMO_KEY] = sncosmo_fs
+
+        src_df["ndethist"] = [len(x) for x in src_df[SOURCE_HISTORY_KEY]]
+
+        mask = src_df["ndethist"] > 0
+
+        src_df = src_df[mask].reset_index(drop=True)
+
+        # Only keep sources with at least 2 detections
+        if len(src_df) > 0:
+            source_table.set_data(src_df)
+            new_batch.append(source_table)
 
     return new_batch
 

@@ -65,7 +65,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
             candidate_df["mjd"] = Time(metadata[TIME_KEY]).mjd
             for _, src in candidate_df.iterrows():
-                super_dict = self.generate_super_dict(metadata, src)
+                super_dict = self.generate_super_dict(metadata, src.fillna(""))
                 self.export_to_skyportal(deepcopy(super_dict))
 
         return batch
@@ -157,7 +157,13 @@ class SkyportalSourceUploader(BaseSourceProcessor):
             logger.debug(
                 f"Making {instrument_type} thumbnail for {alert[SOURCE_NAME_KEY]} "
             )
-            thumb = self.make_thumbnail(alert, ttype, instrument_type)
+            try:
+                thumb = self.make_thumbnail(alert, ttype, instrument_type)
+            except KeyError:
+                logger.error(
+                    f"Missing {instrument_type} cutout for {alert[SOURCE_NAME_KEY]}"
+                )
+                continue
 
             logger.debug(
                 f"Posting {instrument_type} thumbnail for {alert[SOURCE_NAME_KEY]} "
@@ -201,22 +207,16 @@ class SkyportalSourceUploader(BaseSourceProcessor):
                 prv_detections = pd.DataFrame.from_records(source[SOURCE_HISTORY_KEY])
 
                 for _, row in prv_detections.iterrows():
-                    try:
-                        photometry_table.append(
-                            {
-                                "mjd": row["mjd"],
-                                "mag": row["magpsf"],
-                                "magerr": row["sigmapsf"],
-                                "filter": row[SNCOSMO_KEY],
-                                "ra": row["ra"],
-                                "dec": row["dec"],
-                            }
-                        )
-                    except KeyError:
-                        logger.warning(
-                            f"Missing photometry information for previous "
-                            f"detection of {source[SOURCE_NAME_KEY]}"
-                        )
+                    photometry_table.append(
+                        {
+                            "mjd": row["mjd"],
+                            "mag": row["magpsf"],
+                            "magerr": row["sigmapsf"],
+                            "filter": row[SNCOSMO_KEY],
+                            "ra": row["ra"],
+                            "dec": row["dec"],
+                        }
+                    )
 
         df_photometry = pd.DataFrame(photometry_table)
 

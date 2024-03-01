@@ -31,6 +31,7 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
     winter_avro_schema_path,
+    winter_fritz_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
@@ -58,6 +59,7 @@ from mirar.pipelines.winter.generator import (
     winter_reference_psf_phot_sextractor,
     winter_reference_psfex,
     winter_reference_sextractor,
+    winter_skyportal_annotator,
     winter_source_entry_updater,
     winter_stackid_annotator,
 )
@@ -117,7 +119,6 @@ from mirar.processors.photcal import ZPWithColorTermCalculator
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
-from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.skyportal.skyportal_candidate import SkyportalCandidateUploader
 from mirar.processors.sources import (
     CandidateNamer,
@@ -616,29 +617,7 @@ crossmatch_candidates = [
     ),
 ]
 
-name_candidates = [
-    # Check if the source is already in the source table
-    SingleSpatialCrossmatchSource(
-        db_table=Source,
-        db_output_columns=["sourceid", SOURCE_NAME_KEY],
-        crossmatch_radius_arcsec=2.0,
-        ra_field_name="average_ra",
-        dec_field_name="average_dec",
-    ),
-    # Assign names to the new sources
-    CandidateNamer(
-        db_table=Source,
-        base_name=SOURCE_PREFIX,
-        name_start=NAME_START,
-        db_name_field=SOURCE_NAME_KEY,
-    ),
-    # Add the new sources to the source table
-    CustomSourceTableModifier(modifier_function=winter_new_source_updater),
-    DatabaseSourceInserter(
-        db_table=Source,
-        duplicate_protocol="ignore",
-    ),
-    # Get all candidates associated with source
+select_history = [
     SelectSourcesWithMetadata(
         db_query_columns=["sourceid"],
         db_table=Candidate,
@@ -646,20 +625,50 @@ name_candidates = [
         base_output_column=SOURCE_HISTORY_KEY,
         additional_query_constraints=winter_history_deprecated_constraint,
     ),
-    # Update average ra and dec for source
-    CustomSourceTableModifier(modifier_function=winter_source_entry_updater),
-    # Update sources in the source table
-    DatabaseSourceInserter(
-        db_table=Source,
-        duplicate_protocol="replace",
-    ),
-    # Add candidates in the candidate table
-    DatabaseSourceInserter(
-        db_table=Candidate,
-        duplicate_protocol="fail",
-    ),
-    SourceWriter(output_dir_name="preavro"),
 ]
+
+name_candidates = (
+    [
+        # Check if the source is already in the source table
+        SingleSpatialCrossmatchSource(
+            db_table=Source,
+            db_output_columns=["sourceid", SOURCE_NAME_KEY],
+            crossmatch_radius_arcsec=2.0,
+            ra_field_name="average_ra",
+            dec_field_name="average_dec",
+        ),
+        # Assign names to the new sources
+        CandidateNamer(
+            db_table=Source,
+            base_name=SOURCE_PREFIX,
+            name_start=NAME_START,
+            db_name_field=SOURCE_NAME_KEY,
+        ),
+        # Add the new sources to the source table
+        CustomSourceTableModifier(modifier_function=winter_new_source_updater),
+        DatabaseSourceInserter(
+            db_table=Source,
+            duplicate_protocol="ignore",
+        ),
+        # Get all candidates associated with source
+    ]
+    + select_history
+    + [
+        # Update average ra and dec for source
+        CustomSourceTableModifier(modifier_function=winter_source_entry_updater),
+        # Update sources in the source table
+        DatabaseSourceInserter(
+            db_table=Source,
+            duplicate_protocol="replace",
+        ),
+        # Add candidates in the candidate table
+        DatabaseSourceInserter(
+            db_table=Candidate,
+            duplicate_protocol="fail",
+        ),
+        SourceWriter(output_dir_name="preavro"),
+    ]
+)
 
 avro_export = [
     IPACAvroExporter(
@@ -674,18 +683,13 @@ avro_export = [
 
 process_candidates = crossmatch_candidates + name_candidates + avro_export
 
+load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
+
 send_to_skyportal = [
-    SourceLoader(input_dir_name="preskyportal"),
-    SkyportalCandidateUploader(
-        origin="WINTERTEST",
-        group_ids=[1076],
-        fritz_filter_id=1016,
-        instrument_id=1066,
-        stream_id=1008,
-        update_thumbnails=True,
-        skyportal_client=SkyportalClient(base_url="https://preview.fritz.science/api/"),
-    ),
+    CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
+    SkyportalCandidateUploader(**winter_fritz_config),
 ]
+
 # To make a mosaic by stacking all boards
 stack_boards = [
     ImageBatcher([TARGET_KEY]),
