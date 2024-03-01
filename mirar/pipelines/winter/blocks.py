@@ -31,7 +31,7 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
     winter_avro_schema_path,
-    winter_preview_config,
+    winter_fritz_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
@@ -617,7 +617,7 @@ crossmatch_candidates = [
     ),
 ]
 
-load_history = [
+select_history = [
     SelectSourcesWithMetadata(
         db_query_columns=["sourceid"],
         db_table=Candidate,
@@ -652,7 +652,7 @@ name_candidates = (
         ),
         # Get all candidates associated with source
     ]
-    + load_history
+    + select_history
     + [
         # Update average ra and dec for source
         CustomSourceTableModifier(modifier_function=winter_source_entry_updater),
@@ -683,10 +683,11 @@ avro_export = [
 
 process_candidates = crossmatch_candidates + name_candidates + avro_export
 
+load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
+
 send_to_skyportal = [
-    # SourceLoader(input_dir_name="preskyportal"),
     CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
-    SkyportalCandidateUploader(**winter_preview_config),
+    SkyportalCandidateUploader(**winter_fritz_config),
 ]
 
 # To make a mosaic by stacking all boards

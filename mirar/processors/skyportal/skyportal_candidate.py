@@ -7,7 +7,7 @@ from datetime import datetime
 
 from astropy.time import Time
 
-from mirar.paths import PACKAGE_NAME, SOURCE_NAME_KEY, __version__
+from mirar.paths import SOURCE_NAME_KEY
 from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             "filter_ids": [self.fritz_filter_id],
             "passing_alert_id": self.fritz_filter_id,
             "passed_at": Time(datetime.utcnow()).isot,
-            "origin": f"{PACKAGE_NAME}:{__version__}",
+            "origin": self.origin,
         }
 
         logger.debug(

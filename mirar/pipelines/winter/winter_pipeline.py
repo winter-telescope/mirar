@@ -21,8 +21,8 @@ from mirar.pipelines.winter.blocks import (
     imsub,
     load_calibrated,
     load_final_stack,
-    load_history,
     load_raw,
+    load_skyportal,
     load_test,
     mask_and_split,
     mosaic,
@@ -37,6 +37,7 @@ from mirar.pipelines.winter.blocks import (
     refbuild,
     reftest,
     save_raw,
+    select_history,
     select_split_subset,
     send_to_skyportal,
     stack_forced_photometry,
@@ -88,7 +89,11 @@ class WINTERPipeline(Pipeline):
         "realtime": realtime,
         "detect_candidates": load_final_stack + imsub + detect_candidates,
         "full_imsub": load_final_stack + imsub + detect_candidates + process_candidates,
-        "full": reduce + imsub + detect_candidates + process_candidates,
+        "full": reduce
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + send_to_skyportal,
         "full_subset": reduce_unpacked + imsub + detect_candidates + process_candidates,
         "full_no_calhunter": reduce_no_calhunter
         + imsub
@@ -97,12 +102,12 @@ class WINTERPipeline(Pipeline):
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,
-        "send_skyportal": send_to_skyportal,
+        "skyportal": load_skyportal + send_to_skyportal,
         "name_candidates": name_candidates,
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
         "detrend": unpack_all + detrend_unpacked,
-        "send_with_history": load_history + send_to_skyportal,
+        "send_with_history": select_history + send_to_skyportal,
     }
 
     non_linear_level = 40000.0

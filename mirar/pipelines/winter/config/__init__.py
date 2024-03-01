@@ -101,10 +101,10 @@ winter_preview_config = {
 # To send to fritz.science
 winter_fritz_config = {
     "origin": "mirar",
-    "group_ids": [1092],
-    "fritz_filter_id": 1018,
-    "instrument_id": 1066,
-    "stream_id": 1008,
+    "group_ids": [1657],
+    "fritz_filter_id": 1185,
+    "instrument_id": 1087,
+    "stream_id": 1005,
     "update_thumbnails": True,
     "skyportal_client": SkyportalClient(base_url="https://fritz.science/api/"),
 }

@@ -46,9 +46,6 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         self.instrument_id = instrument_id
         self.origin = origin  # used for sending updates to Fritz
         self.update_thumbnails = update_thumbnails
-
-        print("update_thumbnails: ", update_thumbnails)
-
         self.skyportal_client = skyportal_client
 
     def _apply_to_sources(
