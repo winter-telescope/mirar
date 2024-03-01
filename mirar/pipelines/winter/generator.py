@@ -661,7 +661,7 @@ def winter_skyportal_annotator(source_batch: SourceBatch) -> SourceBatch:
         src_df = source_table.get_data()
 
         if "fid" not in src_df.columns:
-            src_df["fid"] = source_table["fid"]
+            src_df["fid"] = source_table["FID"]
 
         if SNCOSMO_KEY not in src_df.columns:
             sncosmo_fs = [
