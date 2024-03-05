@@ -4,10 +4,15 @@ Module to plot 2D image-data as a pdf or png file.
 
 import logging
 
+import matplotlib
+import matplotlib.pyplot as plt
+
 from mirar.data import ImageBatch
 from mirar.data.utils.plot_image import plot_fits_image
 from mirar.paths import get_output_dir
 from mirar.processors.base_processor import BaseImageProcessor
+
+matplotlib.use("Agg")
 
 logger = logging.getLogger(__name__)
 
@@ -48,10 +53,15 @@ class ImagePlotter(BaseImageProcessor):
         )
         output_dir.mkdir(parents=True, exist_ok=True)
         for image in batch:
+            # We use multithreading to plot the images, so we need to make sure
+            # the axes are not shared between threads
+            fig = plt.figure()
             plot_fits_image(
                 image=image,
                 savedir=output_dir,
                 title_fields=self.annotate_fields,
+                plot_format=self.plot_format,
+                fig=fig,
             )
 
         return batch

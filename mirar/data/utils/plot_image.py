@@ -24,16 +24,18 @@ def plot_fits_image(
     regions_wcs_coords: List[Tuple[float, float]] | None = None,
     plot_format: str = "png",
     title_fields: List[str] | None = None,
+    fig: plt.Figure | None = None,
 ):
     """
     Plot the fits image with the specified regions
     Args:
         :param image: Image to plot
-        :param savedir: Directory to save to
+        :param savedir: Directory to save to.
         :param regions_wcs_coords:If you want to mark specific coordinates on the image,
         provide a list of tuples of RA, Dec
         :param plot_format: pdf or png
         :param title_fields: Image header fields to annotate the plot with
+        :param fig: If you want to plot on an existing figure, provide it here
     """
     assert plot_format in ["pdf", "png"], (
         f"Only pdf and png formats are supported, " f"got {plot_format}."
@@ -41,7 +43,8 @@ def plot_fits_image(
     if not isinstance(savedir, Path):
         savedir = Path(savedir)
 
-    fig = plt.figure(figsize=(10, 10))
+    if fig is None:
+        fig = plt.figure()
     ax = fig.add_subplot(111)
     data = image.get_data()
     _, median, std = sigma_clipped_stats(data)
@@ -74,9 +77,10 @@ def plot_fits_image(
 
     ax.set_xlabel("RA")
     ax.set_ylabel("Dec")
+
     plot_savepath = savedir / image.header[BASE_NAME_KEY].replace(
         ".fits", f".{plot_format}"
     )
     logger.debug(f"Saving plot to {plot_savepath}")
-    plt.savefig(plot_savepath, bbox_inches="tight")
-    plt.close()
+    fig.savefig(plot_savepath, bbox_inches="tight")
+    plt.close(fig)

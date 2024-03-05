@@ -527,6 +527,24 @@ load_final_stack = [
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
 ]
 
+plot_stack = [
+    ImageDebatcher(),
+    ImageBatcher([TARGET_KEY, "BOARD_ID"]),
+    ImagePlotter(
+        output_sub_dir="final_stacks_plots",
+        annotate_fields=[
+            BASE_NAME_KEY,
+            "COADDS",
+            TARGET_KEY,
+            "CRVAL1",
+            "CRVAL2",
+            "FILTER",
+            "ZP",
+            "ZPSTD",
+        ],
+    ),
+]
+
 split_stack = [
     ImageDebatcher(),
     ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
