@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def plot_fits_image(
     image: Image,
-    savedir: str | Path | None = None,
+    savedir: str | Path,
     regions_wcs_coords: List[Tuple[float, float]] | None = None,
     plot_format: str = "png",
     title_fields: List[str] | None = None,
@@ -30,7 +30,7 @@ def plot_fits_image(
     Plot the fits image with the specified regions
     Args:
         :param image: Image to plot
-        :param savedir: Directory to save to. If None, no saving is done.
+        :param savedir: Directory to save to.
         :param regions_wcs_coords:If you want to mark specific coordinates on the image,
         provide a list of tuples of RA, Dec
         :param plot_format: pdf or png
