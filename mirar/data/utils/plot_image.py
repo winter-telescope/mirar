@@ -24,6 +24,7 @@ def plot_fits_image(
     regions_wcs_coords: List[Tuple[float, float]] | None = None,
     plot_format: str = "png",
     title_fields: List[str] | None = None,
+    ax: plt.Axes | None = None,
 ):
     """
     Plot the fits image with the specified regions
@@ -34,6 +35,7 @@ def plot_fits_image(
         provide a list of tuples of RA, Dec
         :param plot_format: pdf or png
         :param title_fields: Image header fields to annotate the plot with
+        :param ax: Axes to plot on
     """
     assert plot_format in ["pdf", "png"], (
         f"Only pdf and png formats are supported, " f"got {plot_format}."
@@ -41,8 +43,9 @@ def plot_fits_image(
     if not isinstance(savedir, Path):
         savedir = Path(savedir)
 
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111)
+    if ax is None:
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111)
     data = image.get_data()
     _, median, std = sigma_clipped_stats(data)
     ax.imshow(
@@ -78,5 +81,5 @@ def plot_fits_image(
         ".fits", f".{plot_format}"
     )
     logger.debug(f"Saving plot to {plot_savepath}")
-    plt.savefig(plot_savepath, bbox_inches="tight")
-    plt.close()
+    ax.savefig(plot_savepath, bbox_inches="tight")
+    plt.close(ax.figure)
