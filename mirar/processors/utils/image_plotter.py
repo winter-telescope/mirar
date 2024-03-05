@@ -55,13 +55,13 @@ class ImagePlotter(BaseImageProcessor):
         for image in batch:
             # We use multithreading to plot the images, so we need to make sure
             # the axes are not shared between threads
-            ax = plt.figure().add_subplot(111)
+            fig = plt.figure()
             plot_fits_image(
                 image=image,
                 savedir=output_dir,
                 title_fields=self.annotate_fields,
                 plot_format=self.plot_format,
-                ax=ax,
+                fig=fig,
             )
 
         return batch
