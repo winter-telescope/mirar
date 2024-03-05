@@ -29,6 +29,7 @@ from mirar.pipelines.winter.blocks import (
     name_candidates,
     only_ref,
     photcal_stacks,
+    plot_stack,
     process_candidates,
     realtime,
     reduce,
@@ -72,6 +73,7 @@ class WINTERPipeline(Pipeline):
         "reduce_no_calhunter": reduce_no_calhunter,
         "reduce_unpacked": reduce_unpacked,
         "photcal_stacks": photcal_stacks,
+        "plot_stacks": load_final_stack + plot_stack,
         "buildtest": build_test,
         "test": load_test
         + csvlog
