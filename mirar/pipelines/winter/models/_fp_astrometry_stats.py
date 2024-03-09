@@ -1,5 +1,5 @@
 """
-Models for the 'exposures' table
+Models for the 'fp_astrometry_stats' table
 """
 
 import logging
@@ -20,7 +20,7 @@ class FirstPassAstrometryStatsTable(
     WinterBase
 ):  # pylint: disable=too-few-public-methods
     """
-    Astrometry stats table in database
+    Astrometry stats after first pass processing table in database
     """
 
     __tablename__ = "fp_astrometry_stats"
@@ -59,7 +59,7 @@ default_unknown_field = Field(default=-999)
 
 class FirstPassAstrometryStat(BaseDB):
     """
-    A pydantic model for an astrometry stats database entry
+    A pydantic model for a first-pass astrometry stats database entry
     """
 
     sql_model: ClassVar = FirstPassAstrometryStatsTable
