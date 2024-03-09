@@ -256,6 +256,8 @@ all_phot_psfexsex_calibrate = [  # run phot on all sources in image
         ref_catalog_generator=sedmv2_photometric_catalog_generator,
         zp_calculator=ZPWithColorTermCalculator(
             color_colnames_guess_generator=sedmv2_color_function_ps1,
+            reject_outliers=True,
+            solver="odr",
         ),
     ),
     ImageSaver(
