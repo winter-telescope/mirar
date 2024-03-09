@@ -7,10 +7,9 @@ from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
-from astropy.io.fits import Header
 
-from mirar.data import ImageBatch
-from mirar.io import open_fits
+from mirar.data import Image, ImageBatch
+from mirar.io import open_raw_image
 from mirar.paths import STACKED_COMPONENT_IMAGES_KEY
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.base_processor import BaseImageProcessor, PrerequisiteError
@@ -28,7 +27,7 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
 
     def __init__(
         self,
-        load_image: Callable[[str], [np.ndarray, Header]] = open_fits,
+        load_image: Callable[[str], [Image]] = open_raw_image,
         header_key=STACKED_COMPONENT_IMAGES_KEY,
         copy_header_keys: str | list[str] = None,
     ):
