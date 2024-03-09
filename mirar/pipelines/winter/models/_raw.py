@@ -46,6 +46,10 @@ class RawsTable(WinterBase):  # pylint: disable=too-few-public-methods
         back_populates="astrom_raw_ids"
     )
 
+    fp_astrometry: Mapped["FirstPassAstrometryStatsTable"] = relationship(
+        back_populates="fp_astrom_raw_ids"
+    )
+
 
 class Raw(BaseDB):
     """

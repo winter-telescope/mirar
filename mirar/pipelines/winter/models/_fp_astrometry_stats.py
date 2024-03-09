@@ -23,11 +23,13 @@ class FirstPassAstrometryStatsTable(
     Astrometry stats table in database
     """
 
-    __tablename__ = "astrometry_stats"
+    __tablename__ = "fp_astrometry_stats"
     __table_args__ = {"extend_existing": True}
 
     rawid = mapped_column(ForeignKey("raws.rawid"), primary_key=True, unique=True)
-    astrom_raw_ids: Mapped["RawsTable"] = relationship(back_populates="astrometry")
+    fp_astrom_raw_ids: Mapped["RawsTable"] = relationship(
+        back_populates="fp_astrometry"
+    )
     savepath = Column(VARCHAR(255), unique=True)
     crval1 = Column(Float)
     crval2 = Column(Float)
