@@ -18,6 +18,7 @@ from mirar.pipelines.winter.blocks import (
     detrend_unpacked,
     diff_forced_photometry,
     extract_all,
+    first_pass_processing,
     focus_cals,
     full_reduction,
     imsub,
@@ -41,6 +42,9 @@ from mirar.pipelines.winter.blocks import (
     refbuild,
     reftest,
     save_raw,
+    second_pass_astrometry,
+    second_pass_processing,
+    select_history,
     select_split_subset,
     send_to_skyportal,
     stack_forced_photometry,
@@ -64,7 +68,7 @@ class WINTERPipeline(Pipeline):
     default_cal_requirements = winter_cal_requirements
 
     all_pipeline_configurations = {
-        "astrometry": load_calibrated + astrometry,
+        "astrometry": load_calibrated + second_pass_astrometry,
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
         "detrend_unpacked": detrend_unpacked,
@@ -116,6 +120,10 @@ class WINTERPipeline(Pipeline):
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
         "rebroadcast_avro": load_avro + avro_export,
+        "firstpass": first_pass_processing,
+        "secpass": second_pass_processing,
+        "detrend": unpack_all + detrend_unpacked,
+        "send_with_history": select_history + send_to_skyportal,
     }
 
     non_linear_level = 40000.0
