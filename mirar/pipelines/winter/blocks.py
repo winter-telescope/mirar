@@ -13,6 +13,7 @@ from mirar.paths import (
     BASE_NAME_KEY,
     DITHER_N_KEY,
     EXPTIME_KEY,
+    FITS_MASK_KEY,
     LATEST_SAVE_KEY,
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
@@ -88,6 +89,7 @@ from mirar.pipelines.winter.models import (
     Candidate,
     Diff,
     Exposure,
+    FirstPassAstrometryStat,
     Raw,
     Source,
     Stack,
@@ -98,12 +100,18 @@ from mirar.pipelines.winter.validator import (
     winter_dark_oversubtraction_rejector,
 )
 from mirar.processors.astromatic import PSFex, Scamp
+from mirar.processors.astromatic.scamp.scamp import SCAMP_HEADER_KEY
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
 )
-from mirar.processors.astromatic.sextractor.sextractor import Sextractor
+from mirar.processors.astromatic.sextractor.sextractor import (
+    Sextractor,
+    sextractor_checkimg_map,
+)
+from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
+from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
 from mirar.processors.avro import IPACAvroExporter
 from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
@@ -116,10 +124,13 @@ from mirar.processors.database.database_inserter import (
 )
 from mirar.processors.database.database_selector import SelectSourcesWithMetadata
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
-from mirar.processors.flat import FlatCalibrator
+from mirar.processors.flat import FlatCalibrator, SkyFlatCalibrator
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
+    MaskPixelsFromPathInverted,
+    MaskPixelsFromWCS,
+    WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import ZPWithColorTermCalculator
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
@@ -152,6 +163,7 @@ from mirar.processors.utils import (
     MEFLoader,
 )
 from mirar.processors.utils.cal_hunter import CalHunter
+from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.reference_aligner import AlignReference
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
@@ -321,6 +333,7 @@ save_raw = [
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
     ImageRebatcher("EXPID"),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -365,6 +378,7 @@ dark_calibrate = [
 
 flat_calibrate = [
     ImageSelector((OBSCLASS_KEY, ["science"])),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageRebatcher(
         [
             "BOARD_ID",
@@ -379,6 +393,7 @@ flat_calibrate = [
     FlatCalibrator(
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
+        cache_image_name_header_keys=["FILTER", "BOARD_ID", TARGET_KEY],
     ),
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="skyflatcal"),
@@ -392,6 +407,38 @@ flat_calibrate = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
+
+first_pass_flat_calibrate = [
+    ImageSelector((OBSCLASS_KEY, ["science"])),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageRebatcher([
+            "BOARD_ID",
+            "FILTER",
+            "SUBCOORD",
+            "GAINCOLT",
+            "GAINCOLB",
+            "GAINROW",
+            TARGET_KEY,
+        ]
+    ),
+    FlatCalibrator(
+        cache_sub_dir="fp_flats",
+        select_flat_images=select_winter_sky_flat_images,
+        cache_image_name_header_keys=["FILTER", "BOARD_ID", TARGET_KEY],
+    ),
+    ImageSaver(output_dir_name="fp_skyflatcal"),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="fp_skysub",
+        checkimage_type=["-BACKGROUND"],
+    ),
+    SextractorBkgSubtractor(),
+    ImageSaver(output_dir_name="fp_skysub"),
+]
+
 load_calibrated = [
     ImageLoader(input_sub_dir="skysub", input_img_dir=base_output_dir),
     ImageBatcher(["UTCTIME", "BOARD_ID"]),
@@ -401,7 +448,8 @@ fourier_filter = [
     CustomImageBatchModifier(winter_fourier_filtered_image_generator),
 ]
 
-astrometry = [
+astrometry_net = [
+    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[1.0, 1.3],
@@ -415,8 +463,10 @@ astrometry = [
         cache=False,
         no_tweak=True,
     ),
-    ImageSaver(output_dir_name="post_anet"),
-    Sextractor(
+# ImageSaver(output_dir_name="post_anet"),
+    ]
+
+astrometry_scamp = [Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
         output_sub_dir="scamp",
@@ -451,8 +501,9 @@ astrometry = [
         make_checkplots=True,
     ),
     ImageRebatcher(BASE_NAME_KEY),
-    ImageSaver(output_dir_name="post_scamp"),
+    # ImageSaver(output_dir_name="post_scamp"),
 ]
+
 
 validate_astrometry = [
     Sextractor(
@@ -467,7 +518,20 @@ validate_astrometry = [
         cache=False,
         crossmatch_radius_arcsec=5.0,
     ),
-    DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="ignore"),
+]
+
+astrometry = (astrometry_net + [ImageSaver('post_anet')] + astrometry_scamp
+              + [ImageSaver('post_scamp')])
+
+first_pass_validate_astrometry_export_and_filter = validate_astrometry + [
+    DatabaseImageInserter(
+        db_table=FirstPassAstrometryStat, duplicate_protocol="replace"
+    ),
+    CustomImageBatchModifier(poor_astrometric_quality_rejector),
+]
+
+second_pass_validate_astrometry_export_and_filter = validate_astrometry + [
+    DatabaseImageInserter(db_table=AstrometryStat, duplicate_protocol="replace"),
     CustomImageBatchModifier(poor_astrometric_quality_rejector),
 ]
 
@@ -488,6 +552,91 @@ stack_dithers = [
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="stack"),
 ]
+
+first_pass_stacking = (
+    astrometry_net
+    + astrometry_scamp
+    + first_pass_validate_astrometry_export_and_filter
+    + [
+        ImageSaver(output_dir_name="fp_post_astrometry"),
+    ]
+    + stack_dithers
+    + [
+        ImageSaver(output_dir_name="fp_stack"),
+    ]
+)
+
+load_astrometried = [
+    ImageLoader(
+        input_sub_dir="fp_post_astrometry",
+        input_img_dir=base_output_dir,
+    )
+]
+
+second_pass_calibration = [
+    ImageLoader(
+        input_sub_dir="fp_stack",
+        input_img_dir=base_output_dir,
+        load_image=load_winter_stack,
+    ),
+    Sextractor(
+        output_sub_dir="sp_stack_source_mask",
+        **sextractor_astrometry_config,
+        checkimage_type="SEGMENTATION",
+        cache=True,
+    ),
+    MaskPixelsFromPathInverted(
+        mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
+        write_masked_pixels_to_file=True,
+        output_dir="sp_stack_source_mask",
+    ),
+    WriteMaskedCoordsToFile(output_dir="sp_stack_mask"),
+    ReloadSwarpComponentImages(
+        copy_header_keys=FITS_MASK_KEY,
+    ),
+    LoadImageFromHeader(
+        header_key=RAW_IMG_KEY,
+        copy_header_keys=[SCAMP_HEADER_KEY, FITS_MASK_KEY],
+    ),
+    AstrometryFromFile(astrometry_file_key=SCAMP_HEADER_KEY),
+    ImageSaver(output_dir_name="sp_astrometry", write_mask=True),
+    MaskPixelsFromWCS(
+        write_masked_pixels_to_file=True,
+        output_dir="sp_source_mask",
+        only_write_mask=True,
+    ),
+    ImageSaver(output_dir_name="sp_masked", write_mask=True),
+    SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY),
+    ImageSaver(output_dir_name="sp_calibration_flat"),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="skysub",
+        checkimage_type=["-BACKGROUND"],
+    ),
+    SextractorBkgSubtractor(),
+    ImageSaver(output_dir_name="skysub"),
+]
+
+second_pass_astrometry = (
+    astrometry_net
+    + [
+        ImageSaver(output_dir_name="post_anet"),
+    ]
+    + astrometry_scamp
+    + [
+        ImageSaver(output_dir_name="post_scamp"),
+    ]
+)
+
+second_pass_stack = (
+    second_pass_astrometry
+    + second_pass_validate_astrometry_export_and_filter
+    + stack_dithers
+    + [
+        ImageSaver(output_dir_name="stack"),
+    ]
+)
 
 photcal_and_export = [
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
@@ -888,7 +1037,14 @@ focus_subcoord = [
 ]
 
 # Combinations of different blocks, to be used in configurations
-process_and_stack = astrometry + validate_astrometry + stack_dithers
+process_and_stack = (
+    second_pass_astrometry
+    + second_pass_validate_astrometry_export_and_filter
+    + stack_dithers
+    + [
+        ImageSaver(output_dir_name="stack"),
+    ]
+)
 
 unpack_subset = (
     load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
@@ -896,11 +1052,26 @@ unpack_subset = (
 
 unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
+second_pass_processing = (
+    load_astrometried + stack_dithers + second_pass_calibration + second_pass_stack
+)
+
+first_pass_processing = (
+    load_unpacked
+    + dark_calibrate
+    + first_pass_flat_calibrate
+    + fourier_filter
+    + first_pass_stacking
+)
+
 full_reduction = (
     dark_calibrate
-    + flat_calibrate
+    + first_pass_flat_calibrate
     + fourier_filter
-    + process_and_stack
+    + first_pass_stacking
+    + second_pass_calibration
+    + fourier_filter
+    + second_pass_stack
     + photcal_and_export
 )
 
@@ -923,13 +1094,16 @@ reduce = unpack_all + full_reduction
 reftest = (
     unpack_subset
     + dark_calibrate
-    + flat_calibrate
+    + first_pass_flat_calibrate
     + process_and_stack
     + select_ref
     + refbuild
 )
 
 detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
+
+detrend_unpacked_firstpass = load_unpacked + dark_calibrate + first_pass_flat_calibrate
+
 
 only_ref = load_ref + select_ref + refbuild
 
@@ -973,5 +1147,4 @@ diff_forced_photometry = [
     PSFPhotometry(),
 ]
 
-perform_astrometry = load_calibrated + fourier_filter + astrometry
-# + validate_astrometry
+perform_astrometry = load_calibrated + fourier_filter + second_pass_astrometry
