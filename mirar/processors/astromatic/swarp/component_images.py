@@ -13,7 +13,6 @@ from mirar.io import open_raw_image
 from mirar.paths import STACKED_COMPONENT_IMAGES_KEY
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.base_processor import BaseImageProcessor, PrerequisiteError
-from mirar.processors.utils.image_saver import ImageSaver
 
 logger = logging.getLogger(__name__)
 
@@ -79,19 +78,6 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
         if np.sum(mask) == 0:
             err = (
                 f"{self.__module__} requires {Swarp} as a prerequisite. "
-                f"However, the following steps were found: {self.preceding_steps}."
-            )
-            logger.error(err)
-            raise PrerequisiteError(err)
-
-        index = np.argmax(mask)
-
-        preceding_step = self.preceding_steps[index - 1]
-
-        if not isinstance(preceding_step, ImageSaver):
-            err = (
-                f"{self.__module__} requires an {ImageSaver} to be used to save the "
-                f"component images immediately before {Swarp} is run. "
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
