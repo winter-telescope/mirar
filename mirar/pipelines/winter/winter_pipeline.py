@@ -31,6 +31,7 @@ from mirar.pipelines.winter.blocks import (
     load_test,
     mask_and_split,
     mosaic,
+    name_candidates,
     only_ref,
     photcal_stacks,
     plot_stack,
@@ -90,7 +91,6 @@ class WINTERPipeline(Pipeline):
         + process_candidates,
         "refbuild": refbuild,
         "reftest": reftest,
-        "only_ref": only_ref,
         "realtime": realtime,
         "detect_candidates": load_final_stack
         + imsub

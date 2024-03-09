@@ -213,22 +213,12 @@ load_test = [
     ImageBatcher("UTCTIME"),
 ]
 
-load_ref = [
-    ImageLoader(
-        input_sub_dir="stack",
-        load_image=load_stacked_winter_image,
-        input_img_dir=base_output_dir,
-    )
-]
-
 refbuild = [
     GetReferenceImage(ref_image_generator=winter_reference_generator),
     ImageSaver(output_dir_name="stacked_ref"),
 ]
 
 # Start for new WINTER blocks:
-
-# Loading
 
 load_raw = [
     MEFLoader(
@@ -356,12 +346,12 @@ load_unpacked = [
     ImageRebatcher(BASE_NAME_KEY),
 ]
 
-export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
-load_and_export_unpacked = load_unpacked + export_unpacked
-
+# Calibration hunter
+cal_hunter = [
+    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements)
+]
 
 # Detrend blocks
-
 dark_calibrate = [
     ImageRebatcher(
         ["BOARD_ID", EXPTIME_KEY, "SUBCOORD", "GAINCOLT", "GAINCOLB", "GAINROW"]
@@ -378,7 +368,6 @@ dark_calibrate = [
 
 flat_calibrate = [
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageRebatcher(
         [
             "BOARD_ID",
@@ -393,7 +382,6 @@ flat_calibrate = [
     FlatCalibrator(
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
-        cache_image_name_header_keys=["FILTER", "BOARD_ID", TARGET_KEY],
     ),
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="skyflatcal"),
@@ -411,7 +399,8 @@ flat_calibrate = [
 first_pass_flat_calibrate = [
     ImageSelector((OBSCLASS_KEY, ["science"])),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    ImageRebatcher([
+    ImageRebatcher(
+        [
             "BOARD_ID",
             "FILTER",
             "SUBCOORD",
@@ -439,15 +428,12 @@ first_pass_flat_calibrate = [
     ImageSaver(output_dir_name="fp_skysub"),
 ]
 
-load_calibrated = [
-    ImageLoader(input_sub_dir="skysub", input_img_dir=base_output_dir),
-    ImageBatcher(["UTCTIME", "BOARD_ID"]),
-]
-
+# Fourier filtering
 fourier_filter = [
     CustomImageBatchModifier(winter_fourier_filtered_image_generator),
 ]
 
+# Various astrometry-related blocks
 astrometry_net = [
     ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     AstrometryNet(
@@ -463,10 +449,11 @@ astrometry_net = [
         cache=False,
         no_tweak=True,
     ),
-# ImageSaver(output_dir_name="post_anet"),
-    ]
+    # ImageSaver(output_dir_name="post_anet"),
+]
 
-astrometry_scamp = [Sextractor(
+astrometry_scamp = [
+    Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
         output_sub_dir="scamp",
@@ -520,8 +507,12 @@ validate_astrometry = [
     ),
 ]
 
-astrometry = (astrometry_net + [ImageSaver('post_anet')] + astrometry_scamp
-              + [ImageSaver('post_scamp')])
+astrometry = (
+    astrometry_net
+    + [ImageSaver("post_anet")]
+    + astrometry_scamp
+    + [ImageSaver("post_scamp")]
+)
 
 first_pass_validate_astrometry_export_and_filter = validate_astrometry + [
     DatabaseImageInserter(
@@ -535,6 +526,12 @@ second_pass_validate_astrometry_export_and_filter = validate_astrometry + [
     CustomImageBatchModifier(poor_astrometric_quality_rejector),
 ]
 
+load_calibrated = [
+    ImageLoader(input_sub_dir="skysub", input_img_dir=base_output_dir),
+    ImageBatcher(["UTCTIME", "BOARD_ID"]),
+]
+
+# Stacking
 stack_dithers = [
     CustomImageBatchModifier(winter_boardid_6_demasker),
     ImageRebatcher("STACKID"),
@@ -573,6 +570,7 @@ load_astrometried = [
     )
 ]
 
+# Second pass calibration
 second_pass_calibration = [
     ImageLoader(
         input_sub_dir="fp_stack",
@@ -618,6 +616,7 @@ second_pass_calibration = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
+# Second pass astrometry
 second_pass_astrometry = (
     astrometry_net
     + [
@@ -629,6 +628,7 @@ second_pass_astrometry = (
     ]
 )
 
+# Second pass stacking
 second_pass_stack = (
     second_pass_astrometry
     + second_pass_validate_astrometry_export_and_filter
@@ -638,6 +638,7 @@ second_pass_stack = (
     ]
 )
 
+# Photometric calibration
 photcal_and_export = [
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
@@ -698,6 +699,7 @@ photcal_and_export = [
         ],
     ),
 ]
+# End of image-reduction blocks
 
 # Stack stacks together
 
@@ -870,8 +872,6 @@ detect_candidates = [
     CustomSourceTableModifier(winter_candidate_annotator_filterer),
     SourceWriter(output_dir_name="candidates"),
 ]
-#
-# candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
 load_sources = [
     SourceLoader(input_dir_name="candidates"),
@@ -1083,6 +1083,19 @@ photcal_stacks = [
     ),
 ] + photcal_and_export
 
+load_ref = [
+    ImageLoader(
+        input_sub_dir="stack",
+        load_image=load_stacked_winter_image,
+        input_img_dir=base_output_dir,
+    )
+]
+
+only_ref = load_ref + select_ref + refbuild
+
+export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
+load_and_export_unpacked = load_unpacked + export_unpacked
+
 reduce_unpacked = load_and_export_unpacked + full_reduction
 
 reduce_unpacked_subset = (
@@ -1104,8 +1117,6 @@ detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
 
 detrend_unpacked_firstpass = load_unpacked + dark_calibrate + first_pass_flat_calibrate
 
-
-only_ref = load_ref + select_ref + refbuild
 
 realtime = extract_all + mask_and_split + save_raw + full_reduction
 
