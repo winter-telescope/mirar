@@ -6,6 +6,7 @@ for SEDMv2
 import logging
 
 import numpy as np
+from astropy.table import Table
 
 from mirar.catalog import BaseCatalog, Gaia2Mass
 from mirar.catalog.vizier import PS1, SkyMapper
@@ -152,7 +153,9 @@ def sedmv2_reference_psfex(output_sub_dir: str, norm_fits: bool) -> PSFex:
 
 
 # purifiers -
-def sedmv2_zogy_catalogs_purifier(sci_catalog, ref_catalog):
+def sedmv2_zogy_catalogs_purifier(
+    sci_catalog: Table, ref_catalog: Table
+) -> tuple[np.ndarray, np.ndarray]:
     """
     To hand to ZOGY catalogs_purifier
 
@@ -177,7 +180,9 @@ def sedmv2_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     return good_sci_sources, good_ref_sources
 
 
-def sedmv2_photcal_catalog_purifier(sci_catalog, ref_catalog, image):
+def sedmv2_photcal_catalog_purifier(
+    sci_catalog: Table, ref_catalog: Table, image: Image
+) -> tuple[Table, Table]:
     """
     To hand to PhotCalibrator catalogs_purifier;
         purifies science catalog by removing:
