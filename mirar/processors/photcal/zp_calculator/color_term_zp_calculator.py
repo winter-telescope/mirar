@@ -209,7 +209,7 @@ class ZPWithColorTermCalculator(
                 if np.sum(residual_outlier_mask) < self.num_stars_threshold:
                     logger.warning(
                         f"Too few stars ({np.sum(residual_outlier_mask)}) "
-                        f"to calculate zeropoint for {colname}. Res"
+                        f"to calculate zeropoint for {colname}."
                     )
                 y, y_err, x, x_err = (
                     y[residual_outlier_mask],
