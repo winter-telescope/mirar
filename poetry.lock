@@ -5904,13 +5904,13 @@ files = [
 
 [[package]]
 name = "wintertoo"
-version = "1.4.0"
+version = "1.5.0"
 description = ""
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "wintertoo-1.4.0-py3-none-any.whl", hash = "sha256:d0cba81d39244d73cbbcc48b708c18537e4951c2a0da5c9c275b67b175cc7a03"},
-    {file = "wintertoo-1.4.0.tar.gz", hash = "sha256:1ec38fed45acee2e3b1b1182fbf3fbe7da0054c8a72308039cfaddbc81e31e0b"},
+    {file = "wintertoo-1.5.0-py3-none-any.whl", hash = "sha256:bee5a0f0a77754b02203e33737a5aa1874783b9b448e6f4864c06cddc14adad3"},
+    {file = "wintertoo-1.5.0.tar.gz", hash = "sha256:a11c9b74f7990ed96825e883e6217b8c3abc741362337c92d74fbebe99be3d96"},
 ]
 
 [package.dependencies]
