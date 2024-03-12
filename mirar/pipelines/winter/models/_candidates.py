@@ -206,6 +206,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     neargaiabright = Column(Float, nullable=True)
     maggaia = Column(Float, nullable=True)
     maggaiabright = Column(Float, nullable=True)
+    plxgaia = Column(Float, nullable=True)
 
 
 class Candidate(BaseDB):
@@ -335,6 +336,7 @@ class Candidate(BaseDB):
     neargaiabright: float | None = Field(ge=0, default=None)
     maggaia: float | None = Field(default=None)
     maggaiabright: float | None = Field(default=None)
+    plxgaia: float | None = Field(default=None)
 
     def insert_entry(
         self, duplicate_protocol, returning_key_names=None
