@@ -404,6 +404,8 @@ second_pass_calibration = [
         output_dir="sp_stack_source_mask",
     ),
     WriteMaskedCoordsToFile(output_dir="sp_stack_mask"),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
     ReloadSwarpComponentImages(
         copy_header_keys=FITS_MASK_KEY,
     ),
