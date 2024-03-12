@@ -249,12 +249,13 @@ first_pass_flat_calibrate = [
             "GAINCOLT",
             "GAINCOLB",
             "GAINROW",
+            TARGET_KEY,
         ]
     ),
     FlatCalibrator(
         cache_sub_dir="fp_flats",
         select_flat_images=select_winter_flat_images,
-        cache_image_name_header_keys=["FILTER", "BOARD_ID"],
+        cache_image_name_header_keys=["FILTER", "BOARD_ID", TARGET_KEY],
     ),
     ImageSaver(output_dir_name="skyflatcal"),
     ImageDebatcher(),
@@ -389,6 +390,8 @@ second_pass_calibration = [
         input_img_dir=base_output_dir,
         load_image=load_winter_stack,
     ),
+    ImageDebatcher(),
+    ImageBatcher([TARGET_KEY, "BOARD_ID"]),
     Sextractor(
         output_sub_dir="sp_stack_source_mask",
         **sextractor_astrometry_config,
