@@ -5,6 +5,9 @@ for SEDMv2
 
 import logging
 
+import numpy as np
+from astropy.table import Table
+
 from mirar.catalog import BaseCatalog, Gaia2Mass
 from mirar.catalog.vizier import PS1, SkyMapper
 from mirar.catalog.vizier.sdss import SDSS, NotInSDSSError, in_sdss
@@ -21,6 +24,7 @@ from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
 logger = logging.getLogger(__name__)
 
 
+# generators -
 def sedmv2_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
     """
     Returns an astrometric catalog for sedmv2,
@@ -104,6 +108,7 @@ def sedmv2_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     return PS1Ref(filter_name=filter_name)
 
 
+# astromatic-related -
 def sedmv2_reference_image_resampler(**kwargs) -> Swarp:
     """
     Generates a resampler for reference images
@@ -147,9 +152,16 @@ def sedmv2_reference_psfex(output_sub_dir: str, norm_fits: bool) -> PSFex:
     )
 
 
-def sedmv2_zogy_catalogs_purifier(sci_catalog, ref_catalog):
+# purifiers -
+def sedmv2_zogy_catalogs_purifier(
+    sci_catalog: Table, ref_catalog: Table
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    TODO: This should be in sedmv2?
+    To hand to ZOGY catalogs_purifier
+
+    :param sci_catalog: SEDMv2 Sextractor catalog
+    :param ref_catalog: reference catalog
+    :return: good source indices for sci_ and ref_ catalogs
     """
     good_sci_sources = (
         (sci_catalog["FLAGS"] == 0)
@@ -168,6 +180,78 @@ def sedmv2_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     return good_sci_sources, good_ref_sources
 
 
+def sedmv2_photcal_catalog_purifier(
+    sci_catalog: Table, ref_catalog: Table, image: Image
+) -> tuple[Table, Table]:
+    """
+    To hand to PhotCalibrator catalogs_purifier;
+        purifies science catalog by removing:
+            sources with nonzero Sextractor FLAGS
+            sources with PSF mag = -99
+            sources near edge of image
+            sources with large SPREAD_MODEL, (likely galaxies)
+            [pending] sources near shadow edge
+        purifies reference catalog by removing:
+            sources with 0 reported error
+
+    :param sci_catalog: SEDMv2 Sextractor catalog
+    :param ref_catalog: reference catalog
+    :param image: SEDMv2 Image object
+
+    :return: purified sci_ and ref_ catalogs
+    """
+
+    ## science catalog cuts
+    # remove sources close to edge
+    edge_width_pixels = 100
+    x_lower_limit = edge_width_pixels
+    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
+    y_lower_limit = edge_width_pixels
+    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
+
+    # remove sources with spread_model > sm_cutoff (they are likely galaxies)
+    sm_cutoff = 0.0015
+    # raise warning if most sources don't pass this cut
+    ind_bad = np.where(sci_catalog["SPREAD_MODEL"] > sm_cutoff)[0]
+    if (len(sci_catalog[ind_bad]) / len(sci_catalog)) > 0.4:
+        logger.warning(
+            f"Many sources with large SPREAD_MODEL value: "
+            f"{len(sci_catalog[ind_bad])} out of {len(sci_catalog)} "
+            f"sources. Likely caused by bad observing conditions."
+        )
+
+    good_sci_sources = (
+        (sci_catalog["FLAGS"] == 0)
+        & (sci_catalog["MAG_PSF"] != 99)
+        & (sci_catalog["X_IMAGE"] > x_lower_limit)
+        & (sci_catalog["X_IMAGE"] < x_upper_limit)
+        & (sci_catalog["Y_IMAGE"] > y_lower_limit)
+        & (sci_catalog["Y_IMAGE"] < y_upper_limit)
+        & (sci_catalog["SPREAD_MODEL"] < sm_cutoff)
+    )
+
+    logger.debug(
+        f"Original science catalog length = "
+        f"{len(sci_catalog)}, \npure length = {len(sci_catalog[good_sci_sources])}"
+    )
+
+    ## reference catalog cuts
+    # remove sources where PS1 reports 0 error
+    error_cols = [col for col in ref_catalog.colnames if col.startswith("e_")]
+    # diagnostic: the last error column is likely a magnitude error (not astrometry).
+    good_ref_sources = (
+        ref_catalog[error_cols[-1]].mask  # pylint: disable=singleton-comparison
+        == False  # pylint: disable=singleton-comparison
+    )
+    logger.debug(
+        f"Original reference catalog length = "
+        f"{len(ref_catalog)}, \npure length = {len(ref_catalog[good_ref_sources])}"
+    )
+
+    return sci_catalog[good_sci_sources], ref_catalog[good_ref_sources]
+
+
+# color corrections -
 def sedmv2_color_function_ps1(
     image: Image,
 ) -> tuple[tuple[str, str], tuple[str, str], tuple[float, float]]:
