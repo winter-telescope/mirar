@@ -35,11 +35,11 @@ def get_engine(
 
     url_object = URL.create(
         "postgresql+psycopg",
-        username=f"{db_user}",
-        password=f"{db_password}",
-        host=f"{db_hostname}",
-        port=f"{db_port}",
-        database=f"{db_name}",
+        username=db_user,
+        password=db_password,
+        host=db_hostname,
+        port=db_port,
+        database=db_name,
     )
 
     return create_engine(
