@@ -81,7 +81,7 @@ def solve_curve_fit(
     :param firstguess_color_zp: first guess at the color and zero-point values
     :return: best-fit color and zero-point values, and their uncertainties
     """
-    popt, pcov = curve_fit(
+    popt, pcov = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
         f=line_func_curve_fit, xdata=x, ydata=y, sigma=y_err, p0=firstguess_color_zp
     )
     return popt, np.sqrt(np.diag(pcov))
@@ -149,6 +149,12 @@ class ZPWithColorTermCalculator(
             color_err_colnames,
             firstguess_color_zp,
         ) = self.color_colnames_guess_generator(image)
+
+        logger.debug(
+            f"Start of calibrations: {len(matched_ref_cat)} cross-matched source(s). "
+            f"Now for quality cuts..."
+        )
+
         # If any of the columns in the reference catalog is a MaskedColumn, remove the
         # masked values
         for colname in color_colnames + color_err_colnames:
@@ -156,6 +162,10 @@ class ZPWithColorTermCalculator(
                 mask = matched_ref_cat[colname].mask
                 matched_ref_cat = matched_ref_cat[~mask]
                 matched_img_cat = matched_img_cat[~mask]
+                logger.debug(
+                    f"Found {np.sum(mask)} source(s) with masked values in reference "
+                    f"{colname} column, removing them from calibrations."
+                )
 
         colors = matched_ref_cat[color_colnames[0]] - matched_ref_cat[color_colnames[1]]
 
@@ -175,6 +185,10 @@ class ZPWithColorTermCalculator(
             if self.reject_outliers:
                 y_lo, y_up = np.percentile(y, [1, 99])
                 outlier_mask = (y > y_lo) & (y < y_up)
+                logger.debug(
+                    f"Found {len(y) - np.sum(outlier_mask)} outlier source(s), "
+                    f"removing them from calibrations."
+                )
                 y, y_err, x, x_err = (
                     y[outlier_mask],
                     y_err[outlier_mask],
@@ -195,7 +209,7 @@ class ZPWithColorTermCalculator(
                 if np.sum(residual_outlier_mask) < self.num_stars_threshold:
                     logger.warning(
                         f"Too few stars ({np.sum(residual_outlier_mask)}) "
-                        f"to calculate zeropoint for {colname}. Res"
+                        f"to calculate zeropoint for {colname}."
                     )
                 y, y_err, x, x_err = (
                     y[residual_outlier_mask],
@@ -213,6 +227,9 @@ class ZPWithColorTermCalculator(
                 color = -99.0
                 color_err = -99.0
             else:
+                logger.debug(
+                    f"End of calibrations: {len(y)} sources pass quality cuts."
+                )
                 (color, zero_point), (color_err, zp_err) = self.solver_func(
                     x, y, x_err, y_err, firstguess_color_zp
                 )
