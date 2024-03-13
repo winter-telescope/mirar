@@ -66,9 +66,6 @@ class PostgresUser:
             logger.error(err)
             raise DataBaseError(err)
 
-        err = f"'db_password' is '{self.db_password}'."
-        logger.error(err)
-
         engine = get_engine(
             db_name=self.db_name,
             db_user=self.db_user,
