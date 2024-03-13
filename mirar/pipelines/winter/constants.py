@@ -1,11 +1,20 @@
 """
 Constants for the winter pipeline.
 """
+
 import astroplan
 import astropy.coordinates as coords
 import pandas as pd
 
 winter_filters_map = {"Y": 1, "J": 2, "Hs": 3, "dark": 4}
+
+winter_inv_filters_map = {v: k for k, v in winter_filters_map.items()}
+
+sncosmo_filters = {
+    "y": "desy",
+    "j": "2massj",
+    "h": "2massh",
+}
 
 imgtype_dict = {
     "science": "SCIENCE",
@@ -18,7 +27,7 @@ imgtype_dict = {
 }
 
 NXSPLIT = 1
-NYSPLIT = 2
+NYSPLIT = 1
 
 WINTER_N_BOARDS = 6
 

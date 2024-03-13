@@ -1,6 +1,7 @@
 """
 Module containing processors for exporting to databases
 """
+
 import logging
 from abc import ABC
 
@@ -8,8 +9,13 @@ import numpy as np
 import pandas as pd
 
 from mirar.data import Image, ImageBatch, SourceBatch
+from mirar.database.constants import POSTGRES_DUPLICATE_PROTOCOLS
 from mirar.errors.exceptions import BaseProcessorError
-from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
+from mirar.processors.base_processor import (
+    BaseImageProcessor,
+    BaseSourceProcessor,
+    PrerequisiteError,
+)
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 from mirar.processors.utils.image_selector import ImageBatcher
 
@@ -30,6 +36,14 @@ class BaseDatabaseInserter(BaseDatabaseProcessor, ABC):
     base_key = "dbinserter"
     max_n_cpu = 1
 
+    def __init__(self, *args, duplicate_protocol: str = "fail", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.duplicate_protocol = duplicate_protocol
+
+        assert (
+            self.duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
+        ), f"Invalid duplicate protocol, must be one of {POSTGRES_DUPLICATE_PROTOCOLS}"
+
     def __str__(self):
         return (
             f"Processor to save "
@@ -49,7 +63,7 @@ class DatabaseImageInserter(BaseDatabaseInserter, BaseImageProcessor):
             val_dict = self.generate_value_dict(image)
 
             new = self.db_table(**val_dict)
-            res = new.insert_entry()
+            res = new.insert_entry(duplicate_protocol=self.duplicate_protocol)
 
             assert len(res) == 1
 
@@ -83,7 +97,7 @@ class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
                 super_dict = self.generate_super_dict(metadata, source_row)
 
                 new = self.db_table(**super_dict)
-                res = new.insert_entry()
+                res = new.insert_entry(duplicate_protocol=self.duplicate_protocol)
 
                 assert len(res) == 1
 
@@ -97,21 +111,6 @@ class DatabaseSourceInserter(BaseDatabaseInserter, BaseSourceProcessor):
 
         return batch
 
-    @staticmethod
-    def generate_super_dict(metadata: dict, source_row: pd.Series) -> dict:
-        """
-        Generate a dictionary of metadata and candidate row, with lower case keys
-
-        :param metadata: Metadata for the source table
-        :param source_row: Individual row of the source table
-        :return: Combined dictionary
-        """
-        super_dict = {key.lower(): val for key, val in metadata.items()}
-        super_dict.update(
-            {key.lower(): val for key, val in source_row.to_dict().items()}
-        )
-        return super_dict
-
 
 class DatabaseImageBatchInserter(DatabaseImageInserter):
     """
@@ -120,7 +119,10 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         column_names = [
-            x for x in self.db_table.__dict__["__annotations__"] if x != "sql_model"
+            x
+            for x in self.db_table.__dict__["__annotations__"]
+            if (x != "sql_model")
+            & (x not in self.db_table.model_computed_fields.keys())
         ]
 
         for column in column_names:
@@ -134,7 +136,7 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
                 logger.error(err)
                 raise ImageBatchDatabaseExporterError(err) from exc
 
-            if len(np.unique(values)) > 1:
+            if len(pd.unique(pd.Series(values))) > 1:
                 err = (
                     f"Key {column} differs across images in the batch, cannot export"
                     f"it to database."
@@ -148,7 +150,8 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
         val_dict = {key.lower(): image[key] for key in image.keys()}
 
         new = self.db_table(**val_dict)
-        res = new.insert_entry()
+
+        res = new.insert_entry(duplicate_protocol=self.duplicate_protocol)
 
         assert len(res) == 1
 
@@ -170,4 +173,4 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError
+            raise PrerequisiteError(err)

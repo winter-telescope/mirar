@@ -17,50 +17,26 @@ mirar.processors.database.base\_database\_processor module
    :undoc-members:
    :show-inheritance:
 
-mirar.processors.database.constraints module
---------------------------------------------
-
-.. automodule:: mirar.processors.database.constraints
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mirar.processors.database.database\_exporter module
+mirar.processors.database.database\_inserter module
 ---------------------------------------------------
 
-.. automodule:: mirar.processors.database.database_exporter
+.. automodule:: mirar.processors.database.database_inserter
    :members:
    :undoc-members:
    :show-inheritance:
 
-mirar.processors.database.database\_importer module
+mirar.processors.database.database\_selector module
 ---------------------------------------------------
 
-.. automodule:: mirar.processors.database.database_importer
+.. automodule:: mirar.processors.database.database_selector
    :members:
    :undoc-members:
    :show-inheritance:
 
-mirar.processors.database.database\_modifier module
----------------------------------------------------
+mirar.processors.database.database\_updater module
+--------------------------------------------------
 
-.. automodule:: mirar.processors.database.database_modifier
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mirar.processors.database.postgres module
------------------------------------------
-
-.. automodule:: mirar.processors.database.postgres
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mirar.processors.database.utils module
---------------------------------------
-
-.. automodule:: mirar.processors.database.utils
+.. automodule:: mirar.processors.database.database_updater
    :members:
    :undoc-members:
    :show-inheritance:

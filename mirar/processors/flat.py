@@ -1,10 +1,12 @@
 """
 Module containing processors for flat calibration
 """
+
 import logging
 import os.path
 import sys
 from collections.abc import Callable
+from copy import copy
 
 import numpy as np
 
@@ -13,6 +15,7 @@ from mirar.errors import ImageNotFoundError
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
+    EXPTIME_KEY,
     FLAT_FRAME_KEY,
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
@@ -21,6 +24,12 @@ from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWith
 from mirar.processors.utils.image_selector import select_from_images
 
 logger = logging.getLogger(__name__)
+
+
+class MissingFlatError(ImageNotFoundError):
+    """
+    Error for when a dark image is missing
+    """
 
 
 def default_select_flat(
@@ -98,7 +107,7 @@ class FlatCalibrator(ProcessorWithCache):
         if n_frames == 0:
             err = f"Found {n_frames} suitable flats in batch"
             logger.error(err)
-            raise ImageNotFoundError(err)
+            raise MissingFlatError(err)
 
         nx, ny = images[0].get_data().shape
 
@@ -131,7 +140,8 @@ class FlatCalibrator(ProcessorWithCache):
                     f"Masking {np.sum(mask)} pixels in flat {img[BASE_NAME_KEY]}"
                 )
                 data[mask] = np.nan
-                flat_exptimes.append(img["EXPTIME"])
+
+            flat_exptimes.append(img[EXPTIME_KEY])
 
             median = np.nanmedian(
                 data[self.x_min : self.x_max, self.y_min : self.y_max]
@@ -142,8 +152,9 @@ class FlatCalibrator(ProcessorWithCache):
 
         master_flat = np.nanmedian(flats, axis=2)
 
-        master_flat_image = Image(master_flat, header=images[0].get_header())
+        master_flat_image = Image(master_flat, header=copy(images[0].get_header()))
         master_flat_image[COADD_KEY] = n_frames
+
         master_flat_image["INDIVEXP"] = ",".join(
             [str(x) for x in np.unique(flat_exptimes)]
         )

@@ -1,6 +1,7 @@
 """
 Module containing processors which import values from a database
 """
+
 import logging
 from abc import ABC
 from collections.abc import Callable
@@ -11,7 +12,7 @@ import pandas as pd
 from mirar.data import DataBlock, Image, ImageBatch, SourceBatch
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
-from mirar.paths import SOURCE_HISTORY_KEY, SOURCE_XMATCH_KEY
+from mirar.paths import SOURCE_HISTORY_KEY
 from mirar.processors.base_processor import BaseImageProcessor, BaseSourceProcessor
 from mirar.processors.database.base_database_processor import BaseDatabaseProcessor
 
@@ -32,7 +33,7 @@ class BaseDatabaseSelector(BaseDatabaseProcessor, ABC):
         super().__init__(*args, **kwargs)
         self.boolean_match_key = boolean_match_key
 
-    def get_constraints(self, data: DataBlock) -> None | DBQueryConstraints:
+    def get_constraints(self, data: dict) -> None | DBQueryConstraints:
         """
         Get db query constraints for a given datablock object
 
@@ -100,14 +101,14 @@ class BaseImageDatabaseSelector(BaseDatabaseSelector, BaseImageProcessor, ABC):
         return batch
 
 
-class CrossmatchDatabaseWithHeader(BaseImageDatabaseSelector):
+class BaseValuesCrossmatch(BaseDatabaseSelector, ABC):
     """Processor to crossmatch to a database"""
 
     def __init__(self, db_query_columns: str | list[str], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.db_query_columns = db_query_columns
 
-    def get_accepted_values(self, data: DataBlock) -> list[str | float | int]:
+    def get_accepted_values(self, data: dict) -> list[str | float | int]:
         """
         Get list of accepted values for crossmatch query
 
@@ -117,7 +118,7 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseSelector):
         accepted_values = [data[x.upper()] for x in self.db_query_columns]
         return accepted_values
 
-    def get_constraints(self, data: DataBlock) -> DBQueryConstraints:
+    def get_constraints(self, data: dict) -> DBQueryConstraints:
         """
         Get db query constraints for a datablock
 
@@ -133,6 +134,12 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseSelector):
             comparison_types=comparison_types,
         )
         return query_constraints
+
+
+class CrossmatchDatabaseWithHeader(BaseImageDatabaseSelector, BaseValuesCrossmatch):
+    """
+    Processor to crossmatch to a database using keys
+    """
 
 
 class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC):
@@ -169,10 +176,12 @@ class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC)
         batch: SourceBatch,
     ) -> SourceBatch:
         for source_table in batch:
+            metadata = source_table.get_metadata()
             candidate_table = source_table.get_data()
             results = []
-            for _, cand in candidate_table.iterrows():
-                query_constraints = self.get_constraints(cand)
+            for _, source in candidate_table.iterrows():
+                super_dict = self.generate_super_dict(metadata, source)
+                query_constraints = self.get_constraints(super_dict)
                 logger.debug(
                     f"Query constraints: " f"{query_constraints.parse_constraints()}"
                 )
@@ -191,14 +200,77 @@ class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC)
                 )
 
                 results.append(res)
+
             new_table = self.update_dataframe(candidate_table, results)
             source_table.set_data(new_table)
         return batch
 
 
-class CrossmatchSourceWithDatabase(BaseDatabaseSourceSelector, BaseSourceProcessor):
+class DatabaseSingleMatchSelector(BaseDatabaseSourceSelector, ABC):
     """
-    Processor to crossmatch to sources in a database
+    Processor to import a single match from a database
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, max_num_results=1, **kwargs)
+
+    def update_dataframe(
+        self, candidate_table: pd.DataFrame, results: list[pd.DataFrame]
+    ) -> pd.DataFrame:
+        """
+        Update a dataframe with db results
+
+        :param candidate_table: pandas table
+        :param results: results from db query
+        :return: updated dataframe
+        """
+        assert len(results) == len(candidate_table)
+
+        new_cols = []
+        for res in results:
+            if len(res) > 0:
+                assert len(res) == 1
+                new_row = {x: res.iloc[0][x] for x in self.db_output_columns}
+
+            else:
+                new_row = {x: None for x in self.db_output_columns}
+
+            new_cols.append(new_row)
+
+        candidate_table = candidate_table.join(pd.DataFrame(new_cols))
+
+        return candidate_table
+
+
+class DatabaseMultimatchSelector(BaseDatabaseSourceSelector, ABC):
+    """
+    Processor to import multiple matches from a database
+    """
+
+    def __init__(self, *args, base_output_column: str = SOURCE_HISTORY_KEY, **kwargs):
+        self.base_output_column = base_output_column
+        super().__init__(*args, **kwargs)
+
+    def update_dataframe(
+        self,
+        candidate_table: pd.DataFrame,
+        results: list[pd.DataFrame],
+    ) -> pd.DataFrame:
+        """
+        Update a pandas dataframe with the number of matches
+
+        :param candidate_table: Pandas dataframe
+        :param results: db query results
+        :return: updated pandas dataframe
+        """
+        assert len(results) == len(candidate_table)
+        candidate_table[self.base_output_column] = results
+        return candidate_table
+
+
+class BaseSpatialCrossmatchSource(BaseDatabaseSourceSelector, ABC):
+    """
+    Processor to crossmatch to sources in a database using spatial search
     """
 
     def __init__(
@@ -209,7 +281,6 @@ class CrossmatchSourceWithDatabase(BaseDatabaseSourceSelector, BaseSourceProcess
         order_field_name: Optional[str] = None,
         order_ascending: bool = False,
         query_dist: bool = False,
-        output_df_colname: str = SOURCE_XMATCH_KEY,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -219,40 +290,18 @@ class CrossmatchSourceWithDatabase(BaseDatabaseSourceSelector, BaseSourceProcess
         self.order_field_name = order_field_name
         self.order_ascending = order_ascending
         self.query_dist = query_dist
-        self.output_df_colname = output_df_colname
 
-    def update_dataframe(
-        self,
-        candidate_table: pd.DataFrame,
-        results: list[pd.DataFrame],
-    ) -> pd.DataFrame:
-        """
-        Update a pandas dataframe with the number of previous detections
-
-        :param candidate_table: Pandas dataframe
-        :param results: db query results
-        :return: updated pandas dataframe
-        """
-        assert len(results) == len(candidate_table)
-        candidate_table[self.output_df_colname] = [
-            x.to_dict(orient="records") for x in results
-        ]
-
-        return candidate_table
-
-    def get_source_crossmatch_constraints(
-        self, source: pd.Series
-    ) -> DBQueryConstraints:
+    def get_source_crossmatch_constraints(self, data: dict) -> DBQueryConstraints:
         """
         Apply constraints to a single source, using q3c
 
-        :param source: Source
+        :param data: Dictionary containing source data
         :return: DBQueryConstraints
         """
         query_constraints = DBQueryConstraints()
         query_constraints.add_q3c_constraint(
-            ra=source["ra"],
-            dec=source["dec"],
+            ra=data["ra"],
+            dec=data["dec"],
             ra_field_name=self.ra_field_name,
             dec_field_name=self.dec_field_name,
             crossmatch_radius_arcsec=self.xmatch_radius_arcsec,
@@ -260,11 +309,33 @@ class CrossmatchSourceWithDatabase(BaseDatabaseSourceSelector, BaseSourceProcess
 
         return query_constraints
 
-    def get_constraints(self, source: pd.Series) -> DBQueryConstraints:
-        return self.get_source_crossmatch_constraints(source)
+    def get_constraints(self, data: dict) -> DBQueryConstraints:
+        return self.get_source_crossmatch_constraints(data)
 
 
-class DatabaseHistorySelector(CrossmatchSourceWithDatabase):
+class SingleSpatialCrossmatchSource(
+    BaseSpatialCrossmatchSource, DatabaseSingleMatchSelector
+):
+    """
+    Processor to import a single source from a database using spatial crossmatch
+    """
+
+
+class SpatialCrossmatchSourceWithDatabase(
+    BaseSpatialCrossmatchSource, DatabaseMultimatchSelector
+):
+    """
+    Processor to import multiple sources from a database using spatial crossmatch
+    """
+
+
+class SelectSourcesWithMetadata(DatabaseMultimatchSelector, BaseValuesCrossmatch):
+    """
+    Processor to import sources from a database using metadata values
+    """
+
+
+class DatabaseHistorySelector(SpatialCrossmatchSourceWithDatabase):
     """
     Processor to import previous detections of a source from a database
     """
@@ -281,16 +352,16 @@ class DatabaseHistorySelector(CrossmatchSourceWithDatabase):
         self.output_df_colname = SOURCE_HISTORY_KEY
         logger.info(f"Update db is {self.update_dataframe}")
 
-    def get_constraints(self, source: pd.Series) -> DBQueryConstraints:
-        query_constraints = self.get_source_crossmatch_constraints(source)
+    def get_constraints(self, data: dict) -> DBQueryConstraints:
+        query_constraints = self.get_source_crossmatch_constraints(data)
         query_constraints.add_constraint(
             column=self.time_field_name,
             comparison_type="<",
-            accepted_values=source[self.time_field_name],
+            accepted_values=data[self.time_field_name],
         )
         query_constraints.add_constraint(
             column=self.time_field_name,
             comparison_type=">=",
-            accepted_values=source[self.time_field_name] - self.history_duration_days,
+            accepted_values=data[self.time_field_name] - self.history_duration_days,
         )
         return query_constraints

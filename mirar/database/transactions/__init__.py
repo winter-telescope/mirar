@@ -1,6 +1,7 @@
 """
 Central module for all DB transaction types.
 """
+
 from mirar.database.transactions.insert import _insert_in_table
 from mirar.database.transactions.select import (
     check_table_exists,

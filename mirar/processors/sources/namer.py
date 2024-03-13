@@ -1,16 +1,16 @@
 """
 Module containing a processor for assigning names to sources
 """
+
 import logging
 
-import numpy as np
+import pandas as pd
 from astropy.time import Time
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from mirar.data import SourceBatch
 from mirar.database.transactions.select import run_select
-from mirar.paths import CAND_NAME_KEY, SOURCE_XMATCH_KEY
-from mirar.processors.database import CrossmatchSourceWithDatabase
+from mirar.paths import SOURCE_NAME_KEY, TIME_KEY
 from mirar.processors.database.database_selector import BaseDatabaseSourceSelector
 
 logger = logging.getLogger(__name__)
@@ -28,17 +28,20 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         self,
         base_name: str,
         name_start: str = "aaaaa",
-        db_name_field: str = CAND_NAME_KEY,
-        db_order_field: str = "candid",
-        date_field: str = "jd",
+        db_name_field: str = SOURCE_NAME_KEY,
         **kwargs,
     ):
         super().__init__(db_output_columns=[db_name_field], **kwargs)
         self.db_name_field = db_name_field
-        self.db_order_field = db_order_field
         self.base_name = base_name
         self.name_start = name_start
-        self.date_field = date_field
+        self.lastname = None
+
+    def __str__(self) -> str:
+        return (
+            f"Sequentially assign names to new sources, e.g "
+            f"{self.base_name}24{self.name_start}"
+        )
 
     @staticmethod
     def increment_string(string: str):
@@ -77,37 +80,59 @@ class CandidateNamer(BaseDatabaseSourceSelector):
 
         return new_string
 
-    def get_next_name(self, cand_jd: float, last_name: str = None) -> str:
+    def extract_last_year(self, last_name: str) -> int:
+        """
+        Extract the year from the last name
+
+        :param last_name: last name
+        :return: year
+        """
+        last_year = int(last_name[len(self.base_name) : len(self.base_name) + 2])
+        return last_year
+
+    def get_next_name(self, detection_time: Time, last_name: str = None) -> str:
         """
         Function to get a new candidate name
 
-        :param cand_jd: jd of detection
+        :param detection_time: detection time (Astropy Time object)
         :param last_name: last name
         :return: new name
         """
-        cand_year = Time(cand_jd, format="jd").datetime.year % 1000
+        cand_year = detection_time.datetime.year % 1000
+
+        if last_name is not None:
+            last_year = self.extract_last_year(last_name)
+            if last_year != cand_year:
+                last_name = None
+
         if last_name is None:
-            res = run_select(
-                query=select(getattr(self.db_table.sql_model, self.db_name_field))
-                .order_by(text(f"{self.db_order_field} desc"))
-                .limit(1),
-                sql_table=self.db_table.sql_model,
+
+            col = self.db_table.sql_model.__table__.c[self.db_name_field]
+
+            # Select most recent name of same year
+            sel = (
+                select(col).where(col.contains(cand_year)).order_by(col.desc()).limit(1)
             )
 
+            res = run_select(query=sel, sql_table=self.db_table.sql_model)
+
+            # If no names of the same year, start from the beginning
             if len(res) == 0:
                 name = self.base_name + str(cand_year) + self.name_start
                 return name
 
-            last_name = res[CAND_NAME_KEY].iloc[0]
+            last_name = res[self.db_name_field].iloc[0]
             logger.debug(res)
 
-        last_year = int(last_name[len(self.base_name) : len(self.base_name) + 2])
-        if cand_year != last_year:
-            name = self.base_name + str(cand_year) + self.name_start
-        else:
-            last_name_letters = last_name[len(self.base_name) + 2 :]
-            new_name_letters = self.increment_string(last_name_letters)
-            name = self.base_name + str(cand_year) + new_name_letters
+        last_year = self.extract_last_year(last_name)
+
+        assert (
+            last_year == cand_year
+        ), f"Last year {last_year} does not match candidate year {cand_year}"
+
+        last_name_letters = last_name[len(self.base_name) + 2 :]
+        new_name_letters = self.increment_string(last_name_letters)
+        name = self.base_name + str(cand_year) + new_name_letters
         logger.debug(f"Assigning name: {name}")
         return name
 
@@ -118,39 +143,27 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         for source_table in batch:
             sources = source_table.get_data()
 
-            assert (
-                SOURCE_XMATCH_KEY in sources.columns
-            ), "No candidate cross-match in source table"
-
             names = []
-            lastname = None
-            for _, source in sources.iterrows():
-                if len(source[SOURCE_XMATCH_KEY]) > 0:
-                    source_name = source[SOURCE_XMATCH_KEY][0][self.db_name_field]
 
-                else:
+            detection_time = Time(source_table[TIME_KEY])
+            for ind, source in sources.iterrows():
+
+                source_name = None
+
+                if SOURCE_NAME_KEY in source:
+                    source_name = source[SOURCE_NAME_KEY]
+
+                if pd.isnull(source_name):
                     source_name = self.get_next_name(
-                        source[self.date_field], last_name=lastname
+                        detection_time, last_name=self.lastname
                     )
-                    lastname = source_name
+                    self.lastname = source_name
+                    logger.debug(f"Assigning name: {source_name} to source # {ind}.")
+                else:
+                    logger.debug(f"Source # {ind} already has a name: {source_name}.")
                 names.append(source_name)
 
             sources[self.db_name_field] = names
             source_table.set_data(sources)
 
         return batch
-
-    def check_prerequisites(
-        self,
-    ):
-        check = np.sum(
-            [isinstance(x, CrossmatchSourceWithDatabase) for x in self.preceding_steps]
-        )
-        if check < 1:
-            err = (
-                f"{self.__module__} requires {CrossmatchSourceWithDatabase} "
-                f"as a prerequisite. "
-                f"However, the following steps were found: {self.preceding_steps}."
-            )
-            logger.error(err)
-            raise ValueError(err)

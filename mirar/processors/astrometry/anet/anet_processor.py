@@ -1,16 +1,17 @@
 """
 Module containing a processor to run astrometry.net
 """
+
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from astropy.io import fits
 from astropy.table import Table
 
 from mirar.data import Image, ImageBatch
 from mirar.data.utils import write_regions_file
-from mirar.errors import ProcessorError
+from mirar.errors.exceptions import ProcessorError
 from mirar.io import open_fits
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -27,12 +28,17 @@ from mirar.processors.astromatic.sextractor.settings import (
 )
 from mirar.processors.astrometry.anet.anet import (
     ASTROMETRY_TIMEOUT,
-    AstrometryNetError,
     run_astrometry_net_single,
 )
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
+
+
+class AstrometryNetNoSolvedError(ProcessorError):
+    """
+    Class for errors in astrometry.net
+    """
 
 
 class AstrometryNet(BaseImageProcessor):
@@ -52,7 +58,7 @@ class AstrometryNet(BaseImageProcessor):
         sextractor_path: str = "sex",
         search_radius_deg: float = 5.0,
         parity: str | None = None,
-        sextractor_config_path: str | Path | None = None,
+        sextractor_config_path: str | Path | Callable[[Image], str] | None = None,
         sextractor_params_path: str | Path | None = None,
         sextractor_conv_path: str | Path | None = default_conv_path,
         sextractor_starnnw_path: str | Path | None = default_starnnw_path,
@@ -61,6 +67,7 @@ class AstrometryNet(BaseImageProcessor):
         sort_key_name: str = "MAG_AUTO",
         use_weight: bool = True,
         write_regions: bool = True,
+        cache: bool = False,
     ):
         """
         :param output_sub_dir: subdirectory to output astrometry.net results
@@ -75,7 +82,8 @@ class AstrometryNet(BaseImageProcessor):
         :param sextractor_starnnw_path: path to sextractor starnnw file
         :param search_radius_deg: search radius in degrees
         :param parity: parity of the image, if known (e.g. "odd" or "even")
-        :param sextractor_config_path: path to sextractor config file, NOTE that you
+        :param sextractor_config_path: path to sextractor config file, or a function
+        that generates the config file path for a given image. NOTE that you
         cannot specify other config files (param, conv, nnw, etc.)to astrometry-net.
         Make sure to set the config file to use the correct filter, etc.
         :param x_image_key: key for x-image coordinate in sextractor catalog, defaults
@@ -101,9 +109,10 @@ class AstrometryNet(BaseImageProcessor):
         self.y_image_key = y_image_key
         self.sort_key_name = sort_key_name
         self.use_weight = use_weight
-        self.sextractor_config_path = (
-            Path(sextractor_config_path) if sextractor_config_path is not None else None
-        )
+        if isinstance(sextractor_config_path, str):
+            self.sextractor_config_path = Path(sextractor_config_path)
+        else:
+            self.sextractor_config_path = sextractor_config_path
         self.sextractor_params_path = (
             Path(sextractor_params_path) if sextractor_params_path is not None else None
         )
@@ -117,6 +126,8 @@ class AstrometryNet(BaseImageProcessor):
         )
 
         self.write_regions = write_regions
+
+        self.cache = cache
 
     def __str__(self) -> str:
         return (
@@ -137,12 +148,13 @@ class AstrometryNet(BaseImageProcessor):
         Setup sextractor config file
         """
         sextractor_temp_files = []
-        sextractor_config_path, sextractor_params_path = (
-            self.sextractor_config_path,
-            self.sextractor_params_path,
-        )
+        if isinstance(self.sextractor_config_path, Callable):
+            sextractor_config_path = Path(self.sextractor_config_path(image))
+        else:
+            sextractor_config_path = self.sextractor_config_path
+        sextractor_params_path = self.sextractor_params_path
         anet_out_dir = self.get_anet_output_dir()
-        if self.sextractor_config_path is not None:
+        if sextractor_config_path is not None:
             if self.sextractor_params_path is None:
                 temp_params_path = get_temp_path(
                     anet_out_dir, f"{image[BASE_NAME_KEY]}_sex_anet" f".params"
@@ -158,9 +170,7 @@ class AstrometryNet(BaseImageProcessor):
                 assert (
                     sextractor_params_path.exists()
                 ), f"sextractor params file {sextractor_params_path} does not exist"
-            sextractor_config_dict = parse_sextractor_config(
-                self.sextractor_config_path
-            )
+            sextractor_config_dict = parse_sextractor_config(sextractor_config_path)
             sextractor_config_dict["PARAMETERS_NAME"] = sextractor_params_path
             sextractor_config_dict["FILTER_NAME"] = self.sextractor_conv_path
             sextractor_config_dict["STARNNW_NAME"] = self.sextractor_starnnw_path
@@ -227,6 +237,21 @@ class AstrometryNet(BaseImageProcessor):
                 sort_key_name=self.sort_key_name,
             )
 
+            anet_output_filees_basepath = new_img_path.as_posix().replace(".fits", "")
+            for suffix in [
+                ".axy",
+                "-objs.png",
+                "-ngc.png",
+                "-indx.png",
+                "-indx.xyls",
+                ".corr",
+                ".rdls",
+                ".match",
+                ".solved",
+                ".wcs",
+            ]:
+                temp_files.append(Path(f"{anet_output_filees_basepath}{suffix}"))
+
             if self.write_regions:
                 coords_file = anet_out_dir.joinpath(
                     image[BASE_NAME_KEY].replace(".fits", ".axy")
@@ -248,7 +273,7 @@ class AstrometryNet(BaseImageProcessor):
             solved_path = new_img_path.with_suffix(".solved")
 
             if not solved_path.exists():
-                raise AstrometryNetError(
+                raise AstrometryNetNoSolvedError(
                     f"AstrometryNet did not run successfully - no output "
                     f"file {solved_path} found."
                 )
@@ -260,12 +285,14 @@ class AstrometryNet(BaseImageProcessor):
 
             batch[i] = Image(data=data, header=hdr)
 
-            for temp_file in temp_files:
+            if not self.cache:
+                for temp_file in temp_files:
+                    temp_file.unlink(missing_ok=True)
+                    logger.debug(f"Deleted temporary file {temp_file}")
+
+        if not self.cache:
+            for temp_file in sextractor_temp_files:
                 temp_file.unlink(missing_ok=True)
                 logger.debug(f"Deleted temporary file {temp_file}")
-
-        for temp_file in sextractor_temp_files:
-            temp_file.unlink(missing_ok=True)
-            logger.debug(f"Deleted temporary file {temp_file}")
 
         return batch

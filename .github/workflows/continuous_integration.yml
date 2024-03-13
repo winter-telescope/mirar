@@ -69,6 +69,12 @@ jobs:
           curl -o /usr/share/miniconda/envs/test/data/index-5201-04.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5201-04.fits
           curl -o /usr/share/miniconda/envs/test/data/index-5204-13.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5204-13.fits
           curl -o /usr/share/miniconda/envs/test/data/index-5205-13.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5205-13.fits
+          # WINTER
+          curl -o /usr/share/miniconda/envs/test/data/index-5205-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5205-11.fits
+          curl -o /usr/share/miniconda/envs/test/data/index-5203-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5203-11.fits
+          curl -o /usr/share/miniconda/envs/test/data/index-5206-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5206-11.fits
+          curl -o /usr/share/miniconda/envs/test/data/index-5204-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5204-11.fits
+
 
       # Set up database
       - name: postgres
@@ -109,13 +115,14 @@ jobs:
           KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
         run: |
-          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests
+          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
 
       - name: Run Coveralls
+        continue-on-error: true
         if: ${{ success() }}
         shell: bash -el {0}
         run: |
-          poetry run coveralls --service=github
+          poetry --no-ansi run coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

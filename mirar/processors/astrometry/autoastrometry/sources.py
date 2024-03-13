@@ -1,6 +1,7 @@
 """
 Module containing base Source classes used by autoastrometry
 """
+
 import logging
 
 import numpy as np

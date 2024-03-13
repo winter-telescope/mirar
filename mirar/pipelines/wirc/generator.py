@@ -2,6 +2,7 @@
 Module containing WIRC-specific generator functions to
 yield e.g catalog for astrometric calibrations
 """
+
 import logging
 import os
 
@@ -10,9 +11,7 @@ import pandas as pd
 from astropy.table import Table
 
 from mirar.catalog import Gaia2Mass
-from mirar.data import Image
-from mirar.paths import DIFF_IMG_KEY, FILTER_KEY, MAGLIM_KEY, REF_IMG_KEY, SCI_IMG_KEY
-from mirar.pipelines.wirc.load_wirc_image import wirc_filter_dict
+from mirar.data import Image, SourceBatch
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     sextractor_reference_config,
@@ -24,60 +23,36 @@ from mirar.references.wirc import WIRCRef
 logger = logging.getLogger(__name__)
 
 
-def wirc_source_table_filter_annotator(src_df: pd.DataFrame) -> pd.DataFrame:
+def wirc_source_table_filter_annotator(source_table: SourceBatch) -> SourceBatch:
     """
     Function to remove bad candidates with None in sigmapsf, magpsf, magap, sigmagap,
     and update the source table with the keys required for the WIRC database
-    :param src_df: Source dataframe
-    :return: annotated dataframe
+    :param source_table: source table
+    :return: updated source table
     """
-    none_mask = (
-        src_df.loc[:, "sigmapsf"].isnull()
-        | src_df.loc[:, "magpsf"].isnull()
-        | src_df.loc[:, "magap"].isnull()
-        | src_df.loc[:, "sigmagap"].isnull()
-    )
 
-    mask = none_mask.values
+    new_batch = SourceBatch([])
 
-    # Needing to do this because the dataframe is big-endian
-    mask_inds = np.where(~mask)[0]
-    src_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(drop=True)
+    for source in source_table:
+        src_df = source.get_data()
 
-    src_df.loc[:, "sciimgname"] = src_df.loc[:, SCI_IMG_KEY]
-    src_df.loc[:, "refimgname"] = src_df.loc[:, REF_IMG_KEY]
-    src_df.loc[:, "diffimgname"] = src_df.loc[:, DIFF_IMG_KEY]
-    src_df.loc[:, "fid"] = [wirc_filter_dict[x] for x in src_df.loc[:, FILTER_KEY]]
-    src_df.loc[:, "programid"] = src_df.loc[:, "progid"]
-    src_df.loc[:, "programpi"] = src_df.loc[:, "progpi"]
-    src_df.loc[:, "diffmaglim"] = src_df.loc[:, MAGLIM_KEY]
-    return src_df
+        none_mask = (
+            src_df.loc[:, "sigmapsf"].isnull()
+            | src_df.loc[:, "magpsf"].isnull()
+            | src_df.loc[:, "magap"].isnull()
+            | src_df.loc[:, "sigmagap"].isnull()
+        )
 
+        mask = none_mask.values
 
-def wirc_photometric_img_catalog_purifier(catalog, image):
-    """
-    Function to purify the photometric catalog
+        # Needing to do this because the dataframe is big-endian
+        mask_inds = np.where(~mask)[0]
+        src_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(drop=True)
 
-    :return: purified catalog
-    """
-    edge_width_pixels = 100
-    fwhm_threshold_arcsec = 4.0
+        source.set_data(src_df)
+        new_batch.append(source)
 
-    x_lower_limit = edge_width_pixels
-    x_upper_limit = image.get_data().shape[1] - edge_width_pixels
-    y_lower_limit = edge_width_pixels
-    y_upper_limit = image.get_data().shape[0] - edge_width_pixels
-
-    clean_mask = (
-        (catalog["FLAGS"] == 0)
-        & (catalog["FWHM_WORLD"] < fwhm_threshold_arcsec / 3600.0)
-        & (catalog["X_IMAGE"] > x_lower_limit)
-        & (catalog["X_IMAGE"] < x_upper_limit)
-        & (catalog["Y_IMAGE"] > y_lower_limit)
-        & (catalog["Y_IMAGE"] < y_upper_limit)
-    )
-
-    return catalog[clean_mask]
+    return new_batch
 
 
 def wirc_astrometric_catalog_generator(_) -> Gaia2Mass:
@@ -132,13 +107,10 @@ def wirc_reference_image_resampler(**kwargs) -> Swarp:
     )
 
 
-def wirc_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
+def wirc_reference_sextractor(output_sub_dir: str) -> Sextractor:
     """Returns a Sextractor processor for WIRC reference images"""
     return Sextractor(
-        **sextractor_reference_config,
-        gain=gain,
-        output_sub_dir=output_sub_dir,
-        cache=True
+        **sextractor_reference_config, output_sub_dir=output_sub_dir, cache=True
     )
 
 

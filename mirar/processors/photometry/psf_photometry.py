@@ -1,56 +1,64 @@
 """
 Module with processors to perform point-spread-function photometry
 """
+
 import logging
+from pathlib import Path
 
 import numpy as np
 
-from mirar.data import Image, ImageBatch, SourceBatch
+from mirar.data import SourceBatch
 from mirar.paths import (
     MAG_PSF_KEY,
     MAGERR_PSF_KEY,
-    NORM_PSFEX_KEY,
     PSF_FLUX_KEY,
     PSF_FLUXUNC_KEY,
+    get_output_dir,
 )
-from mirar.processors.astromatic.psfex import PSFex
 from mirar.processors.base_processor import PrerequisiteError
-from mirar.processors.photometry.base_photometry import (
-    BaseImagePhotometry,
-    BaseSourcePhotometry,
-    PSFPhotometry,
+from mirar.processors.photometry.base_photometry import BasePhotometryProcessor
+from mirar.processors.photometry.utils import (
+    get_mags_from_fluxes,
+    make_psf_shifted_array,
+    psf_photometry,
 )
-from mirar.processors.photometry.utils import get_mags_from_fluxes
 
 logger = logging.getLogger(__name__)
 
 
-def check_psf_phot_prerequisites(processor):
+class PSFPhotometry(BasePhotometryProcessor):
     """
-    Function to check prerequisites for running PSF photometry
-    Args:
-        processor: PSF photometry processor
+    Processor to run PSF photometry on a source table
+    """
 
-    """
-    mask = [isinstance(x, PSFex) for x in processor.preceding_steps]
-    if np.sum(mask) < 1:
-        err = (
-            f"{processor.__module__} requires {PSFex} as a prerequisite. "
-            f"However, the following steps were found: {processor.preceding_steps}."
+    base_key = "PSFPHOT"
+
+    def perform_photometry(
+        self,
+        image_cutout: np.ndarray,
+        unc_image_cutout: np.ndarray,
+        psf_filename: str | Path,
+    ) -> tuple[float, float, float, float, float]:
+        """
+        Function to perform PSF photometry on a cutout
+        :param image_cutout: cutout of image
+        :param unc_image_cutout: cutout of uncertainty image
+        :param psf_filename: filename of psf file
+        :return: flux, fluxunc, minchi2, xshift, yshift
+        """
+        if not isinstance(psf_filename, Path):
+            psf_filename = Path(psf_filename)
+        psfmodels = make_psf_shifted_array(
+            psf_filename=psf_filename.as_posix(),
+            cutout_size_psf_phot=int(image_cutout.shape[0] / 2),
         )
-        logger.error(err)
-        raise PrerequisiteError(err)
 
-
-class SourcePSFPhotometry(BaseSourcePhotometry):
-    """
-    Processor to run PSF photometry on all candidates in candidate table
-    """
-
-    base_key = "PSFPHOTDF"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        flux, fluxunc, minchi2, xshift, yshift, _ = psf_photometry(
+            image_cutout=image_cutout,
+            image_unc_cutout=unc_image_cutout,
+            psfmodels=psfmodels,
+        )
+        return flux, fluxunc, minchi2, xshift, yshift
 
     def get_psf_filename(self, row):
         """
@@ -71,21 +79,47 @@ class SourcePSFPhotometry(BaseSourcePhotometry):
         for source_table in batch:
             candidate_table = source_table.get_data()
 
+            metadata = source_table.get_metadata()
+
             fluxes, fluxuncs, minchi2s, xshifts, yshifts = [], [], [], [], []
 
-            for ind in range(len(candidate_table)):
-                row = candidate_table.iloc[ind]
+            if self.psf_file_key not in metadata:
+                raise PrerequisiteError(
+                    f"PSF file key {self.psf_file_key} not in source table."
+                    f"Have you run the PSFEx processor, or set the correct key with"
+                    f" the psf file name?"
+                )
+            psf_filename = source_table[self.psf_file_key]
+            temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(metadata)
 
-                image_cutout, unc_image_cutout = self.generate_cutouts(row)
-                psf_filename = self.get_psf_filename(row)
-                psf_photometer = PSFPhotometry(psf_filename=psf_filename)
+            for ind, row in candidate_table.iterrows():
+                image_cutout, unc_image_cutout = self.generate_cutouts(
+                    imagename=temp_imagename,
+                    unc_imagename=temp_unc_imagename,
+                    data_item=row,
+                )
                 (
                     flux,
                     fluxunc,
                     minchi2,
                     xshift,
                     yshift,
-                ) = psf_photometer.perform_photometry(image_cutout, unc_image_cutout)
+                ) = self.perform_photometry(
+                    image_cutout, unc_image_cutout, psf_filename=psf_filename
+                )
+
+                if self.save_cutouts:
+                    image_cutout_path = get_output_dir(
+                        self.temp_output_sub_dir, self.night_sub_dir
+                    ).joinpath(f"image_cutout_{ind}.dat")
+                    logger.debug(f"Writing cutout to {image_cutout_path}")
+                    np.savetxt(X=image_cutout, fname=image_cutout_path)
+                    unc_image_cutout_path = get_output_dir(
+                        self.temp_output_sub_dir, self.night_sub_dir
+                    ).joinpath(f"unc_image_cutout_{ind}.dat")
+                    logger.debug(f"Writing cutout to {unc_image_cutout_path}")
+                    np.savetxt(X=unc_image_cutout, fname=unc_image_cutout_path)
+
                 fluxes.append(flux)
                 fluxuncs.append(fluxunc)
                 minchi2s.append(minchi2)
@@ -99,81 +133,18 @@ class SourcePSFPhotometry(BaseSourcePhotometry):
             candidate_table["yshift"] = yshifts
 
             magnitudes, magnitudes_unc = get_mags_from_fluxes(
-                flux_list=fluxes,
-                fluxunc_list=fluxuncs,
-                zeropoint_list=np.array(candidate_table[self.zp_key], dtype=float),
-                zeropoint_unc_list=np.array(
-                    candidate_table[self.zp_std_key], dtype=float
-                ),
+                flux_list=np.array(fluxes, dtype=float),
+                fluxunc_list=np.array(fluxuncs, dtype=float),
+                zeropoint=float(source_table[self.zp_key]),
+                zeropoint_unc=float(source_table[self.zp_std_key]),
             )
 
             candidate_table[MAG_PSF_KEY] = magnitudes
             candidate_table[MAGERR_PSF_KEY] = magnitudes_unc
 
+            temp_imagename.unlink()
+            temp_unc_imagename.unlink()
+
             source_table.set_data(candidate_table)
 
         return batch
-
-    def check_prerequisites(
-        self,
-    ):
-        check_psf_phot_prerequisites(self)
-
-
-class ImagePSFPhotometry(BaseImagePhotometry):
-    """
-    Processor to run PSF photometry at the RA/Dec specified in the header
-    """
-
-    base_key = "PSFPHOTIM"
-
-    def __init__(
-        self,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-
-    def get_psf_filename(self, image: Image):
-        """
-        Function to get PSF file name of an image
-        Args:
-            image: Image
-
-        Returns:
-
-        """
-        psf_filename = image[NORM_PSFEX_KEY]
-        return psf_filename
-
-    def _apply_to_images(
-        self,
-        batch: ImageBatch,
-    ) -> ImageBatch:
-        for image in batch:
-            image_cutout, unc_image_cutout = self.generate_cutouts(image)
-            psf_filename = self.get_psf_filename(image)
-
-            psf_photometer = PSFPhotometry(psf_filename=psf_filename)
-
-            flux, fluxunc, _, _, _ = psf_photometer.perform_photometry(
-                image_cutout, unc_image_cutout
-            )
-
-            magnitudes, magnitudes_unc = get_mags_from_fluxes(
-                flux_list=[flux],
-                fluxunc_list=[fluxunc],
-                zeropoint_list=[float(image[self.zp_key])],
-                zeropoint_unc_list=[float(image[self.zp_std_key])],
-            )
-            image[PSF_FLUX_KEY] = flux
-            image[PSF_FLUXUNC_KEY] = fluxunc
-            image[MAG_PSF_KEY] = magnitudes[0]
-            image[MAGERR_PSF_KEY] = magnitudes_unc[0]
-
-        return batch
-
-    def check_prerequisites(
-        self,
-    ):
-        check_psf_phot_prerequisites(self)

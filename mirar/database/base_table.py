@@ -1,6 +1,7 @@
 """
 Module to define PSQL database tables using sqlalchemy
 """
+
 import logging
 
 from sqlalchemy import inspect

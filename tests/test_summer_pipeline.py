@@ -1,9 +1,12 @@
 """
 Tests for summer reduction
 """
+
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
+from mirar.paths import get_output_dir
 from mirar.pipelines import get_pipeline
 from mirar.testing import BaseTestCase
 
@@ -64,6 +67,10 @@ class TestSummerPipeline(BaseTestCase):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
+
+        # Cleanup - delete non-empty ouptut dir
+        output_dir = get_output_dir(dir_root="summer/20220402")
+        shutil.rmtree(output_dir)
 
         self.assertEqual(len(res[0]), 1)
 

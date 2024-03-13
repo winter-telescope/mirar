@@ -1,6 +1,7 @@
 """
 Module for SourceTable objects, and their corresponding SourceBatches
 """
+
 from typing import Optional
 
 import pandas as pd

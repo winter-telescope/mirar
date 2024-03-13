@@ -1,6 +1,7 @@
 """
 Module for interfacing with the SWarp software.
 """
+
 from mirar.processors.astromatic.swarp.component_images import (
     ReloadSwarpComponentImages,
 )

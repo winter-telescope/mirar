@@ -1,6 +1,7 @@
 """
 Module with sextractor utilities
 """
+
 import os
 from pathlib import Path
 

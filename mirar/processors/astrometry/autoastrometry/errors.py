@@ -1,6 +1,7 @@
 """
 Module containing custom errors for autoastrometry
 """
+
 from mirar.errors import ProcessorError
 
 

@@ -1,6 +1,7 @@
 """
 Postgres Admin class
 """
+
 from sqlalchemy.sql.ddl import DDL
 
 from mirar.database.credentials import (

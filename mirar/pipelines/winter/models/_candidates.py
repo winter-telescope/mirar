@@ -1,7 +1,9 @@
 """
 Models for the 'candidates' table
 """
+
 import logging
+from datetime import datetime
 from typing import ClassVar
 
 import pandas as pd
@@ -11,6 +13,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     Column,
+    DateTime,
     Float,
     ForeignKey,
     Integer,
@@ -55,13 +58,17 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     objectid = Column(VARCHAR(40), nullable=False, unique=False)
     deprecated = Column(Boolean, nullable=False, default=False)
     jd = Column(Float, nullable=False)
+    utctime = Column(DateTime(timezone=True))
 
     # Image properties
 
-    diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))  # FIXME
+    sourceid: Mapped[int] = mapped_column(ForeignKey("sources.sourceid"))
+    source: Mapped["SourcesTable"] = relationship(back_populates="candidates")
+
+    diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))
     diff_id: Mapped["DiffsTable"] = relationship(back_populates="candidates")
 
-    stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))  # FIXME
+    stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))
     stack_id: Mapped["StacksTable"] = relationship(back_populates="candidates")
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
@@ -211,7 +218,10 @@ class Candidate(BaseDB):
     objectid: str = Field(min_length=MIN_NAME_LENGTH)
     deprecated: bool = Field(default=False)
 
+    sourceid: int = Field(ge=0)
+
     jd: float = Field(ge=0)
+    utctime: datetime = Field()
 
     diffid: int | None = Field(ge=0, default=None)
     stackid: int = Field(ge=0)
@@ -326,10 +336,14 @@ class Candidate(BaseDB):
     maggaia: float | None = Field(default=None)
     maggaiabright: float | None = Field(default=None)
 
-    def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
+    def insert_entry(
+        self, duplicate_protocol, returning_key_names=None
+    ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
 
+        :param duplicate_protocol: protocol to follow if duplicate entry is found
+        :param returning_key_names: names of the keys to return
         :return: None
         """
 
@@ -344,4 +358,7 @@ class Candidate(BaseDB):
             )
             self.progname = default_program.progname
 
-        return self._insert_entry(returning_key_names=returning_key_names)
+        return self._insert_entry(
+            duplicate_protocol=duplicate_protocol,
+            returning_key_names=returning_key_names,
+        )

@@ -1,6 +1,7 @@
 """
 Models for the 'imgTypes' table
 """
+
 from typing import ClassVar
 
 from pydantic import Field
@@ -58,4 +59,4 @@ def populate_itid():
     for ind, imgtype in enumerate(ALL_ITID):
         itid = ImgType(itid=ind + 1, imgtype=imgtype)
         if not itid.exists():
-            itid.insert_entry()
+            itid.insert_entry(duplicate_protocol="ignore")

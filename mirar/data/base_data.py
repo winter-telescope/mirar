@@ -14,6 +14,7 @@ A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
 :class:`~mirar.data.base_data.DataBatch` in a
 :class:`~mirar.data.base_data.Dataset`.
 """
+
 import logging
 from pathlib import Path
 from typing import Optional, Type
@@ -51,7 +52,7 @@ class DataBlock:
 
         :return: List of path strings
         """
-        return self.raw_img_list
+        return [Path(x) for x in self[RAW_IMG_KEY].split(",")]  # self.raw_img_list
 
 
 class PseudoList:

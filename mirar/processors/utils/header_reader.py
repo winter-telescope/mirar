@@ -1,6 +1,7 @@
 """
 Module for reading/logging values from image headers
 """
+
 import logging
 
 from mirar.data import ImageBatch

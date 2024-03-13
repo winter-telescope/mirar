@@ -1,6 +1,7 @@
 """
 Module handling the downloading of test data
 """
+
 import logging
 import os
 from pathlib import Path
@@ -16,8 +17,7 @@ test_data_dir = base_code_dir.parent.joinpath(
     os.path.basename(TEST_DATA_URL.replace(".git", ""))
 )
 
-
-TEST_DATA_TAG = "v0.1.14b"
+TEST_DATA_TAG = "v0.1.17"
 
 COMPLETED_CHECK_BOOL = f"{PACKAGE_NAME}_testdata_check"
 NEED_TEST_DATA = "TESTDATA_CHECK"

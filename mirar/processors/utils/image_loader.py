@@ -1,6 +1,7 @@
 """
 Module for loading images
 """
+
 import logging
 import os
 from collections.abc import Callable

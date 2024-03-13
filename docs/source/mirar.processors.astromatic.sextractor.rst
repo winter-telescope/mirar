@@ -9,6 +9,14 @@ mirar.processors.astromatic.sextractor package
 Submodules
 ----------
 
+mirar.processors.astromatic.sextractor.background\_subtractor module
+--------------------------------------------------------------------
+
+.. automodule:: mirar.processors.astromatic.sextractor.background_subtractor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mirar.processors.astromatic.sextractor.settings module
 ------------------------------------------------------
 

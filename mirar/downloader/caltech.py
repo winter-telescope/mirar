@@ -1,6 +1,7 @@
 """
 Module for downloading data from caltech machines
 """
+
 import logging
 import os
 from pathlib import Path

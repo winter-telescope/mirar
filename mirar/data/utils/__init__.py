@@ -1,6 +1,7 @@
 """
 Utils for data
 """
+
 from mirar.data.utils.compress import decode_img, encode_img
 from mirar.data.utils.coords import (
     check_coords_within_image,

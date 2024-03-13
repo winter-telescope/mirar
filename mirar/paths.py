@@ -1,6 +1,7 @@
 """
 Central module hosting all shared paths/directory conventions/keys/variables
 """
+
 import logging
 import os
 import shutil
@@ -279,7 +280,7 @@ SCOR_MEDIAN_KEY = "SCORMED"
 SCOR_STD_KEY = "SCORSTD"
 
 # Source-related keys
-CAND_NAME_KEY = "objectid"
+SOURCE_NAME_KEY = "objectid"
 CAND_RA_KEY = "ra"
 CAND_DEC_KEY = "dec"
 SOURCE_HISTORY_KEY = "prv_candidates"
@@ -291,7 +292,7 @@ MAGERR_PSF_KEY = "sigmapsf"
 XPOS_KEY = "xpos"
 YPOS_KEY = "ypos"
 APFLUX_PREFIX_KEY = "fluxap"
-APFLUXUNC_PREFIX_KEY = "fluxucap"
+APFLUXUNC_PREFIX_KEY = "fluxuncap"
 APMAG_PREFIX_KEY = "magap"
 APMAGUNC_PREFIX_KEY = "sigmagap"
 
@@ -333,6 +334,7 @@ core_fields = [
     PROC_FAIL_KEY,
     RAW_IMG_KEY,
     BASE_NAME_KEY,
+    EXPTIME_KEY,
 ]
 
 MONITOR_EMAIL_KEY = "WATCHDOG_EMAIL"

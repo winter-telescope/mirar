@@ -1,6 +1,7 @@
 """
 Module containing postgres util functions
 """
+
 import logging
 
 from sqlalchemy import text

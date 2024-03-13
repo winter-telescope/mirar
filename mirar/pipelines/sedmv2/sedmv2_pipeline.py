@@ -1,6 +1,7 @@
 """
 Module to run the SEDMv2 data reduction pipeline
 """
+
 import logging
 import os
 from pathlib import Path
@@ -10,11 +11,16 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.sedmv2.blocks import (
-    detrend_only,
     image_photometry,
     load_raw,
+    process_all,
+    process_all_psf_then_cal,
     process_stellar,
     process_transient,
+    reduce_not0,
+    transient_phot,
+    transient_phot_psfexsex,
+    upload_fritz,
 )
 from mirar.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_mef
@@ -36,8 +42,15 @@ class SEDMv2Pipeline(Pipeline):
     all_pipeline_configurations = {
         "default": load_raw + process_stellar,
         "default_stellar": load_raw + process_stellar + image_photometry,
-        "default_transient": load_raw + process_transient,  # +imsub,
-        "realtime": load_raw + detrend_only,  # +much more...
+        "default_transient": load_raw + process_transient + transient_phot,  # +imsub,
+        "realtime": load_raw + reduce_not0,  # +much more...
+        "psf_all_then_calibrate": load_raw + process_all_psf_then_cal,
+        "transient_upload": load_raw
+        + process_transient
+        + transient_phot
+        + upload_fritz,
+        "all_phot": load_raw + process_all,
+        "transient_PSF": load_raw + process_transient + transient_phot_psfexsex,
     }
 
     @staticmethod

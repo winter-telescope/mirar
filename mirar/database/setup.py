@@ -1,6 +1,7 @@
 """
 Central function to setup database
 """
+
 import logging
 from typing import Union
 

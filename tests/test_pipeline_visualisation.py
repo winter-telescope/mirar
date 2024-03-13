@@ -1,5 +1,8 @@
+"""
+Test pipeline visualisation
+"""
+
 import logging
-import unittest
 
 from mirar.testing import BaseTestCase
 from mirar.utils.pipeline_visualisation import iterate_flowify
@@ -7,7 +10,7 @@ from mirar.utils.pipeline_visualisation import iterate_flowify
 logger = logging.getLogger(__name__)
 
 
-class TestErrors(BaseTestCase):
+class TestPipelineVisualisation(BaseTestCase):
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)

@@ -1,6 +1,7 @@
 """
 Models for the 'filters' table
 """
+
 from typing import ClassVar
 
 from pydantic import Field, field_validator
@@ -69,4 +70,4 @@ def populate_filters(filter_map: dict = None):
     for filter_name, fid in filter_map.items():
         winter_filter = Filter(fid=fid, filtername=filter_name)
         if not winter_filter.exists():
-            winter_filter.insert_entry()
+            winter_filter.insert_entry(duplicate_protocol="ignore")

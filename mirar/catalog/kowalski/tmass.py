@@ -1,6 +1,7 @@
 """
 Module for querying 2MASS using Kowalski
 """
+
 from mirar.catalog.gaia import offsets_2mass
 from mirar.catalog.kowalski.base_kowalski_catalog import BaseKowalskiXMatch
 
@@ -27,8 +28,8 @@ class TMASS(BaseKowalskiXMatch):
     }
 
     column_names = {
-        "ra": "tmra",
-        "decl": "tmdec",
+        "ra": f"{abbreviation}ra",
+        "decl": f"{abbreviation}dec",
         "j_m": "tmjmag",
         "h_m": "tmhmag",
         "k_m": "tmkmag",
@@ -51,6 +52,9 @@ class TMASS(BaseKowalskiXMatch):
         "tmobjectid": str,
         "tmph_qual": str,
     }
+
+    ra_column_name = f"{abbreviation}ra"
+    dec_column_name = f"{abbreviation}dec"
 
     @staticmethod
     def update_data(data: dict) -> dict:

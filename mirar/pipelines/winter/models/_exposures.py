@@ -1,13 +1,15 @@
 """
 Models for the 'exposures' table
 """
+
 import logging
 from datetime import date, datetime
 from typing import ClassVar
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, computed_field
 from sqlalchemy import (  # event,
+    VARCHAR,
     BigInteger,
     Column,
     DateTime,
@@ -17,10 +19,12 @@ from sqlalchemy import (  # event,
     Sequence,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from wintertoo.data import MAX_TARGNAME_LEN
 
 from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
+from mirar.paths import __version__
 from mirar.pipelines.winter.models._fields import FieldsTable, fieldid_field
 from mirar.pipelines.winter.models._filters import FiltersTable, fid_field
 from mirar.pipelines.winter.models._img_type import ImgTypesTable
@@ -47,6 +51,8 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
         primary_key=True,
     )
     expid = Column(BigInteger, primary_key=False, unique=True, autoincrement=False)
+    pipeversion = Column(VARCHAR(10), nullable=True, default=None)
+    lastmodified = Column(DateTime(timezone=True))
     # Deterministic ID of exposure
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
@@ -63,6 +69,9 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
     program_name: Mapped["ProgramsTable"] = relationship(back_populates="exposures")
+
+    targname = Column(VARCHAR(MAX_TARGNAME_LEN), nullable=True)
+    rawpath = Column(VARCHAR(255), unique=True)
 
     utctime = Column(DateTime(timezone=True))
 
@@ -106,6 +115,10 @@ class Exposure(BaseDB):
     fieldid: int = fieldid_field
     itid: int = Field(ge=0)
     progname: str = Field(min_length=1)
+    targname: str | None = Field(
+        min_length=0, max_length=MAX_TARGNAME_LEN, default=None
+    )
+    rawpath: str = Field(min_length=1)
 
     utctime: datetime = Field()
     exptime: float = Field(ge=0)
@@ -126,16 +139,40 @@ class Exposure(BaseDB):
     altitude: float = alt_field
     azimuth: float = az_field
 
-    def insert_entry(self, returning_key_names=None) -> pd.DataFrame:
+    @computed_field
+    @property
+    def pipeversion(self) -> str:
+        """
+        Returns the version of the pipeline used to process the exposure
+
+        :return: version of the pipeline
+        """
+        return __version__
+
+    @computed_field
+    @property
+    def lastmodified(self) -> datetime:
+        """
+        Returns the current date and time
+
+        :return: current date and time
+        """
+        return datetime.now()
+
+    def insert_entry(
+        self, duplicate_protocol: str, returning_key_names=None
+    ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
 
+        :param duplicate_protocol: protocol to follow if duplicate entry is found
+        :param returning_key_names: names of the keys to return
         :return: None
         """
         night = Night(nightdate=self.nightdate)
         logger.debug(f"Searched for night {self.nightdate}")
         if not night.exists():
-            night.insert_entry()
+            night.insert_entry(duplicate_protocol="ignore")
 
         prog_match = select_from_table(
             DBQueryConstraints(columns="progname", accepted_values=self.progname),
@@ -148,7 +185,10 @@ class Exposure(BaseDB):
             )
             self.progname = default_program.progname
 
-        return self._insert_entry(returning_key_names=returning_key_names)
+        return self._insert_entry(
+            duplicate_protocol=duplicate_protocol,
+            returning_key_names=returning_key_names,
+        )
 
     def exists(self) -> bool:
         """

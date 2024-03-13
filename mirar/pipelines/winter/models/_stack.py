@@ -1,6 +1,7 @@
 """
 Models for the 'proc' table
 """
+
 import os
 from typing import ClassVar
 
@@ -31,10 +32,6 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     candidates = relationship("CandidatesTable", back_populates="stack_id")
     raw = relationship("RawsTable", back_populates="stacks")
     diff = relationship("DiffsTable", back_populates="stack_id")
-    # procid = Column(Double, primary_key=True, autoincrement=False)
-
-    # rawid: Mapped[int] = Column(Integer, ForeignKey("raw.rawid"), primary_key=True)
-    # raw_ids: Mapped["RawTable"] = relationship(back_populates="proc")
 
     savepath = Column(VARCHAR(255), unique=True)
     wghtpath = Column(VARCHAR(255), unique=True)
@@ -53,6 +50,14 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     zp_auto_nstars = Column(Integer)
     zp_auto_std = Column(REAL)
     maglim = Column(REAL)
+    coadds = Column(Integer)
+    detmag50 = Column(REAL)
+    detmag95 = Column(REAL)
+    astunc = Column(REAL)
+    astunc95 = Column(REAL)
+
+    ra_column_name = "crval1"
+    dec_column_name = "crval2"
 
 
 class Stack(BaseDB):
@@ -81,6 +86,11 @@ class Stack(BaseDB):
     zp_auto_nstars: int = Field(ge=0)
     zp_auto_std: float = Field(ge=0)
     maglim: float = Field()
+    coadds: int = Field(ge=1)
+    detmag50: float = Field()
+    detmag95: float = Field()
+    astunc: float = Field(ge=0)
+    astunc95: float = Field(ge=0)
 
     @field_validator("savepath")
     @classmethod

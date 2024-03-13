@@ -1,6 +1,7 @@
 """
 Module to run source extractor
 """
+
 import logging
 import os
 from pathlib import Path
@@ -129,7 +130,7 @@ def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
         run_sextractor_single(img, output_dir, *args, **kwargs)
 
 
-def run_sextractor_single(
+def run_sextractor_single(  # pylint: disable=too-many-arguments
     img: str | Path,
     output_dir: str | Path,
     catalog_name: Optional[Path] = None,
@@ -145,31 +146,38 @@ def run_sextractor_single(
     gain: Optional[float] = None,
     mag_zp: Optional[float] = None,
     write_regions: bool = False,
-):
+    psf_name: Optional[Path] = None,
+):  # pylint: disable=too-many-locals
     """
     Function to run sextractor in single mode
     Args:
         img: The image to run sextractor on
         output_dir: The directory to output the catalog to
         catalog_name: The name of the catalog to output.
-        config:
-        parameters_name:
-        filter_name:
-        starnnw_name:
-        saturation:
-        weight_image:
-        verbose_type:
-        checkimage_name:
-        checkimage_type:
+        config:  path to sextractor config file
+        parameters_name: path to sextractor parameter file
+        filter_name: path to sextractor filter file
+        starnnw_name: path to sextractor starnnw file
+        saturation: saturation level for sextractor. Leave to None if not known,
+        no saturation will be applied
+        weight_image: path to sextractor weight image
+        verbose_type: verbose type for sextractor
+        checkimage_name: name of checkimage to output. Leave to None to use
+        pipeline defaults in sextractor_checkimage_map for output name (recommended).
+        checkimage_type: type of checkimage to output
         gain: The gain to use for the catalog
         mag_zp: The magnitude zero point to use for the catalog
         write_regions: Whether to write ds9 regions for the objects in the catalog
+        psf_name: PSFex model path, used to calculate PSF magnitudes
     Returns:
 
     """
     if catalog_name is None:
         image_name = Path(img).stem
         catalog_name = f"{image_name}.cat"
+
+    if isinstance(catalog_name, str):
+        catalog_name = Path(catalog_name)
 
     cmd = (
         f"sex {img} "
@@ -206,6 +214,8 @@ def run_sextractor_single(
     if mag_zp is not None:
         cmd += f" -MAG_ZEROPOINT {mag_zp}"
 
+    if psf_name is not None:
+        cmd += f" -PSF_NAME {psf_name}"
     try:
         execute(cmd, output_dir)
     except ExecutionError as exc:
@@ -229,7 +239,7 @@ def run_sextractor_single(
     return catalog_name, checkimage_name
 
 
-def run_sextractor_dual(
+def run_sextractor_dual(  # pylint: disable=too-many-arguments
     det_image: str,
     measure_image: str,
     output_dir: str | Path,
@@ -245,7 +255,7 @@ def run_sextractor_dual(
     checkimage_type: Optional[str | list] = None,
     gain: Optional[float] = None,
     mag_zp: Optional[float] = None,
-):
+):  # pylint: disable=too-many-locals
     """
     Run sextractor in the dual mode
     Args:

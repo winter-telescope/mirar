@@ -4,6 +4,7 @@ Main executable for mirar. You can execute the code from the terminal like:
 .. codeblock:: bash
     python -m mirar -args...
 """
+
 import argparse
 import logging
 import sys
@@ -108,9 +109,11 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             pipeline=args.pipeline,
             night=night,
             realtime_configurations=CONFIG,
-            postprocess_configurations=args.postprocessconfig.split(",")
-            if args.postprocessconfig is not None
-            else None,
+            postprocess_configurations=(
+                args.postprocessconfig.split(",")
+                if args.postprocessconfig is not None
+                else None
+            ),
             log_level=args.level,
             final_postprocess_hours=args.finalpostprocesshours,
             midway_postprocess_hours=args.midwaypostprocesshours,

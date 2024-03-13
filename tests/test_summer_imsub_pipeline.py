@@ -1,18 +1,21 @@
 """
 Module to test summer image subtraction pipeline
 """
+
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
+from mirar.paths import get_output_dir
 from mirar.pipelines.summer.summer_pipeline import SummerPipeline
 from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
 expected_values = {
-    "SCORMEAN": -0.003193140695408728,
-    "SCORMED": 0.0005658697583316706,
-    "SCORSTD": 1.0565139735005666,
+    "SCORMEAN": -0.06131731786337506,
+    "SCORMED": -0.05791231584806071,
+    "SCORSTD": 1.0663084337455144,
 }
 
 
@@ -39,6 +42,10 @@ class TestSummerImsubPipeline(BaseTestCase):
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
+
+        # Cleanup
+        output_dir = get_output_dir("summer/20220815")
+        shutil.rmtree(output_dir)
 
         header = res[0][0].get_header()
 

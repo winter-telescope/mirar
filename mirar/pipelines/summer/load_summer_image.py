@@ -1,6 +1,7 @@
 """
 Module with functions to load raw and processed summer images
 """
+
 import logging
 import warnings
 from pathlib import Path
@@ -253,6 +254,9 @@ def load_proc_summer_image(path: str) -> Image:
 
     header["CENTRA"] = header["CRVAL1"]
     header["CENTDEC"] = header["CRVAL2"]
+
+    if "TARGET" in header.keys():
+        header[TARGET_KEY] = header["TARGET"]
 
     pipeline_version = __version__
     pipeline_version_padded_str = "".join(

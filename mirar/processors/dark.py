@@ -1,8 +1,10 @@
 """
 Module for applying dark corrections
 """
+
 import logging
 from collections.abc import Callable
+from copy import copy
 
 import numpy as np
 
@@ -11,7 +13,9 @@ from mirar.errors import ImageNotFoundError
 from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
+    DARK_FRAME_KEY,
     EXPTIME_KEY,
+    LATEST_SAVE_KEY,
     OBSCLASS_KEY,
     SATURATE_KEY,
     STACKED_COMPONENT_IMAGES_KEY,
@@ -78,6 +82,7 @@ class DarkCalibrator(ProcessorWithCache):
                 image[SATURATE_KEY] -= (
                     np.nanmedian(master_dark.get_data()) * image[EXPTIME_KEY]
                 )
+            image[DARK_FRAME_KEY] = master_dark[LATEST_SAVE_KEY]
         return batch
 
     def make_image(
@@ -108,7 +113,7 @@ class DarkCalibrator(ProcessorWithCache):
             imagenames_key.append(img[BASE_NAME_KEY])
 
         logger.debug(f"Median combining {n_frames} darks")
-        master_dark_header = dark_images[0].get_header()
+        master_dark_header = copy(dark_images[0].get_header())
         master_dark_header[EXPTIME_KEY] = 1.0
         master_dark_header[COADD_KEY] = n_frames
         master_dark_header["INDIVEXP"] = ",".join(individual_dark_exptimes)

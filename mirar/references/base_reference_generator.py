@@ -1,6 +1,7 @@
 """
 Module with base class for reference image generation
 """
+
 import logging
 import os
 from pathlib import Path
@@ -35,7 +36,7 @@ from mirar.paths import (
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.database.database_inserter import DatabaseImageInserter
-from mirar.processors.photcal import PhotCalibrator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
 
 logger = logging.getLogger(__name__)
 
@@ -279,6 +280,11 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
         :return: ref image HDU, ref weight HDU
         """
         component_image_batch = self.get_component_images(image)
+
+        if not len(component_image_batch) > 0:
+            raise ReferenceGenerationError(
+                "No component images found for reference image"
+            )
         resampler = self.image_resampler_generator()
 
         resampler.set_night(night_sub_dir=self.references_base_subdir_name)

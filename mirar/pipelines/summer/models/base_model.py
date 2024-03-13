@@ -1,6 +1,7 @@
 """
 Base class for models
 """
+
 from sqlalchemy.orm import DeclarativeBase
 
 from mirar.database.base_table import BaseTable

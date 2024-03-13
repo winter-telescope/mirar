@@ -1,6 +1,7 @@
 """
 Module for validating astrometric solutions
 """
+
 import logging
 from collections.abc import Callable
 from pathlib import Path
@@ -16,6 +17,7 @@ from mirar.paths import get_output_dir
 from mirar.processors.base_catalog_xmatch_processor import (
     BaseProcessorWithCrossMatch,
     default_image_sextractor_catalog_purifier,
+    xmatch_catalogs,
 )
 
 
@@ -77,7 +79,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
         ref_catalog_generator: Callable[[Image], BaseCatalog],
         temp_output_sub_dir: str = "astrstat",
         image_catalog_purifier: Callable[
-            [Table, Image], Table
+            [Table, Table, Image], [Table, Table]
         ] = default_image_sextractor_catalog_purifier,
         crossmatch_radius_arcsec: float = 3.0,
         write_regions: bool = False,
@@ -87,7 +89,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
             ref_catalog_generator=ref_catalog_generator,
             temp_output_sub_dir=temp_output_sub_dir,
             crossmatch_radius_arcsec=crossmatch_radius_arcsec,
-            sextractor_catalog_purifier=image_catalog_purifier,
+            catalogs_purifier=image_catalog_purifier,
             write_regions=write_regions,
             cache=cache,
             required_parameters=REQUIRED_PARAMETERS,
@@ -137,8 +139,9 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
 
             image.header["ASTUNC"] = -999.0
             image.header["ASTFIELD"] = -999.0
+            image.header["ASTUNC95"] = -999.0
 
-            _, _, d2d = self.xmatch_catalogs(
+            _, _, d2d = xmatch_catalogs(
                 ref_cat=ref_cat,
                 image_cat=cleaned_img_cat,
                 crossmatch_radius_arcsec=self.crossmatch_radius_arcsec,
@@ -146,6 +149,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
 
             if len(d2d) > 0:
                 image.header["ASTUNC"] = np.nanmedian(d2d.value)
+                image.header["ASTUNC95"] = np.percentile(d2d.value, 95)
                 image.header["ASTFIELD"] = np.arctan(
                     image.header["CD1_2"] / image.header["CD1_1"]
                 ) * (180 / np.pi)

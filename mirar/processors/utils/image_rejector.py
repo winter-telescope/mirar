@@ -1,6 +1,7 @@
 """
 Module containing functions and processors to filter images
 """
+
 import logging
 
 from mirar.data import ImageBatch

@@ -1,6 +1,7 @@
 """
 Module for processors to modify database entries
 """
+
 import logging
 from abc import ABC
 from typing import Optional

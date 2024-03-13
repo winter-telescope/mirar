@@ -1,6 +1,7 @@
 """
 Module for Catalog base class
 """
+
 import logging
 from abc import ABC
 from pathlib import Path
@@ -168,6 +169,20 @@ class BaseXMatchCatalog(ABCatalog, ABC):
     def column_dtypes(self):
         """
         dtype of columns
+        """
+        raise NotImplementedError
+
+    @property
+    def ra_column_name(self):
+        """
+        Name of RA column
+        """
+        raise NotImplementedError
+
+    @property
+    def dec_column_name(self):
+        """
+        Name of Dec column
         """
         raise NotImplementedError
 

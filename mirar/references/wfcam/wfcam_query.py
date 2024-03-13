@@ -3,6 +3,7 @@ Module to query for WFCAM images.
 You can either query the online WFAU archive, or query a local database to get
 component images.
 """
+
 import logging
 import warnings
 from pathlib import Path
@@ -202,7 +203,9 @@ class WFAUQuery(BaseWFCAMQuery):
         self.query_db_table = query_db_table
         self.use_db_for_component_queries = use_db_for_component_queries
         self.skip_online_query = skip_online_query
-        self.dbexporter = DatabaseImageInserter(db_table=self.query_db_table)
+        self.dbexporter = DatabaseImageInserter(
+            db_table=self.query_db_table, duplicate_protocol="ignore"
+        )
 
         if self.use_db_for_component_queries:
             if self.components_db_table is None:
@@ -290,11 +293,16 @@ class WFAUQuery(BaseWFCAMQuery):
             wfau_query_decs,
             wfau_query_exists_locally_list,
         ) = ([], [], [], [])
-
-        # Get different surveys by the telescope
-        query_ra_cent = np.median(query_crds.ra.deg)
-        query_dec_cent = np.median(query_crds.dec.deg)
-        surveys = self.get_surveys(query_ra_cent, query_dec_cent)
+        # Get surveys that are available at the given coordinates
+        surveys, survey_names = [], []
+        for ra, dec in zip(query_ra_list, query_dec_list):
+            crd_surveys = self.get_surveys(ra, dec)
+            for srv in crd_surveys:
+                if srv.survey_name not in survey_names:
+                    surveys.append(srv)
+                    survey_names.append(srv.survey_name)
+        logger.debug(f"Surveys are {[x.survey_name for x in surveys]}")
+        surveys = np.array(surveys)
         if len(surveys) == 0:
             err = "Coordinates not in any survey"
             raise NotinWFCAMError(err)
@@ -658,7 +666,7 @@ def get_locally_existing_overlap_images(
                 for x in savepaths
                 if check_coords_within_image(
                     header=fits.getheader(x, 1), ra=query_ra, dec=query_dec
-                )
+                )[0]
             ]
         logger.debug(f"{len(savepaths)} images confirmed to overlap")
     return savepaths

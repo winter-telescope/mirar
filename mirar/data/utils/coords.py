@@ -1,7 +1,9 @@
 """
 Functions to get image coordinates from WCS
 """
+
 import logging
+from pathlib import Path
 
 import numpy as np
 from astropy import units as u
@@ -81,7 +83,12 @@ def get_xy_from_wcs(
 
 
 def write_regions_file(
-    regions_path, x_coords, y_coords, system="image", region_radius=5
+    regions_path: str | Path,
+    x_coords: list[float],
+    y_coords: list[float],
+    system: str = "image",
+    region_radius: float = 5,
+    text: list | None = None,
 ):
     """
     Function to write a regions file
@@ -91,15 +98,26 @@ def write_regions_file(
         y_coords: list, y-coordinates or Dec
         system: str, image or wcs
         region_radius: float, radius of circle
+        text: list, text to accompany the regions file
 
     Returns:
 
     """
     logger.debug(f"Writing regions path to {regions_path}")
+    if text is not None:
+        assert len(text) == len(x_coords) == len(y_coords), (
+            "Text must be same size as coordinates, found len(text) = "
+            f"{len(text)}, len(x_coords) = {len(x_coords)}, len(y_coords) = "
+            f"{len(y_coords)}"
+        )
+
     with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
         regions_f.write(f"{system}\n")
         for ind, x in enumerate(x_coords):
-            regions_f.write(f"CIRCLE({x},{y_coords[ind]},{region_radius})\n")
+            line = f"CIRCLE({x},{y_coords[ind]},{region_radius})"
+            if text is not None:
+                line += " # text={" + text[ind] + "}"
+            regions_f.write(f"{line}\n")
 
 
 def get_image_dims_from_header(header: fits.Header) -> (Quantity, Quantity):
@@ -117,7 +135,9 @@ def get_image_dims_from_header(header: fits.Header) -> (Quantity, Quantity):
     return img_dims
 
 
-def check_coords_within_image(ra: float, dec: float, header: fits.Header) -> bool:
+def check_coords_within_image(
+    ra: float | list[float], dec: float | list[float], header: fits.Header
+) -> list[bool]:
     """
     Check that the coordinates are within the image
     Args:
@@ -127,6 +147,10 @@ def check_coords_within_image(ra: float, dec: float, header: fits.Header) -> boo
     Returns:
         :return: True if within image, False if not
     """
+    if isinstance(ra, float):
+        ra = [ra]
+    if isinstance(dec, float):
+        dec = [dec]
     wcs = WCS(header)
     nx, ny = header["NAXIS1"], header["NAXIS2"]
     x, y = wcs.all_world2pix(ra, dec, 0)

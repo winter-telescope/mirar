@@ -1,6 +1,7 @@
 """
 Module for loading raw WIRC images and ensuring they have the correct format
 """
+
 import logging
 from pathlib import Path
 
@@ -21,12 +22,19 @@ from mirar.paths import (
     ZP_KEY,
     ZP_STD_KEY,
 )
+from mirar.processors.skyportal import SNCOSMO_KEY
 
 wirc_filter_dict = {"J": 1, "H": 2, "Ks": 3}
 
 logger = logging.getLogger(__name__)
 
 WIRC_NONLINEAR_LEVEL = 30000
+
+sncosmo_filters = {
+    "j": "cspjs",
+    "h": "csphs",
+    "ks": "cspk",
+}
 
 
 def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
@@ -40,6 +48,9 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     if GAIN_KEY not in header.keys():
         header[GAIN_KEY] = 1.2
     header["FILTER"] = header["AFT"].split("__")[0]
+
+    header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
+
     if "COADDS" in header.keys():
         header["DETCOADD"] = header["COADDS"]
     if SATURATE_KEY not in header:
@@ -57,6 +68,9 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     else:
         header["DATE-OBS"] = header["UTSHUT"]
         header["MJD-OBS"] = Time(header["UTSHUT"]).mjd
+
+    header["JD"] = Time(header["DATE-OBS"]).jd
+
     if COADD_KEY not in header.keys():
         logger.debug(f"No {COADD_KEY} entry. Setting coadds to 1.")
         header[COADD_KEY] = 1

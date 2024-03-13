@@ -1,6 +1,7 @@
 """
 Module with classes to make avro alert packets
 """
+
 import io
 import logging
 from pathlib import Path
@@ -11,7 +12,7 @@ import pandas as pd
 from fastavro.types import Schema
 
 from mirar.data import SourceTable
-from mirar.paths import BASE_NAME_KEY
+from mirar.paths import BASE_NAME_KEY, SOURCE_HISTORY_KEY
 from mirar.processors.avro.base_avro_exporter import BaseAvroExporter
 
 logger = logging.getLogger(__name__)
@@ -68,8 +69,12 @@ class IPACAvroExporter(BaseAvroExporter):
             key = field["name"]
             if key in row.keys():
                 new[key] = row[key]
+            elif key.upper() in row.keys():
+                new[key] = row[key.upper()]
             elif key in metadata.keys():
                 new[key] = metadata[key]
+            elif key.upper() in metadata.keys():
+                new[key] = metadata[key.upper()]
 
         return new
 
@@ -82,26 +87,30 @@ class IPACAvroExporter(BaseAvroExporter):
         :param source_table: input source table
         :return: list of avro alerts
         """
+
         new_alerts = []
 
         metadata = source_table.get_metadata()
 
         for _, row in source_table.get_data().iterrows():
+
             alert = self.fill_schema(self.alert_schema, row, metadata)
             candidate = self.fill_schema(self.candidate_schema, row, metadata)
             alert["candidate"] = candidate
 
             prv_candidates = []
-            if "prv_candidates" in row.keys():
-                prv_cands = pd.DataFrame(row["prv_candidates"])
-                if len(prv_candidates) > 0:
-                    for _, prv_row in prv_cands.iterrows():
-                        prv_dict = {}
-                        for key in self.prv_schema["fields"]:
-                            if key in prv_row.keys():
-                                prv_dict[key] = prv_row[key]
-                        prv_candidates.append(prv_dict)
-            alert["prv_candidate"] = prv_candidates
+
+            if SOURCE_HISTORY_KEY in row.keys():
+                prv_cands = row[SOURCE_HISTORY_KEY]
+                if len(prv_cands) > 0:
+
+                    keys = list(str(x["name"]) for x in self.prv_schema["fields"])
+
+                    prv_cands = prv_cands.loc[:, keys]
+
+                    prv_candidates = prv_cands.to_dict(orient="records")
+
+            alert["prv_candidates"] = prv_candidates
 
             new_alerts.append(alert)
 

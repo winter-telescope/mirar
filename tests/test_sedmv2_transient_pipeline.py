@@ -1,10 +1,13 @@
 """
 Module to test SEDMv2 pipeline with "default_transient" configuration
 """
+
 import logging
+import shutil
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
+from mirar.paths import get_output_dir
 from mirar.pipelines.sedmv2.blocks import process_transient
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
@@ -16,21 +19,21 @@ logger = logging.getLogger(__name__)
 test_data_dir = get_test_data_dir()
 
 expected_zp = {
-    "ZP_4.0": 25.36942881745319,
-    "ZP_4.0_std": 0.14864595223970622,
-    "ZP_4.0_nstars": 49,
-    "ZP_6.0": 26.162161270312875,
-    "ZP_6.0_std": 0.13163613207360314,
-    "ZP_6.0_nstars": 49,
-    "ZP_8.0": 26.670253060648395,
-    "ZP_8.0_std": 0.10943878945493246,
-    "ZP_8.0_nstars": 49,
-    "ZP_10.0": 27.00897391752905,
-    "ZP_10.0_std": 0.08841983371476303,
-    "ZP_10.0_nstars": 49,
-    "ZP_AUTO": 27.475927448018393,
-    "ZP_AUTO_std": 0.1390826192603922,
-    "ZP_AUTO_nstars": 42,
+    "ZP_4.0": 25.36360745590808,
+    "ZP_4.0_std": 0.14724311210534166,
+    "ZP_4.0_nstars": 51,
+    "ZP_6.0": 26.15392027903538,
+    "ZP_6.0_std": 0.13070718773424334,
+    "ZP_6.0_nstars": 51,
+    "ZP_8.0": 26.66336689997654,
+    "ZP_8.0_std": 0.1086079039958986,
+    "ZP_8.0_nstars": 51,
+    "ZP_10.0": 27.003677127613738,
+    "ZP_10.0_std": 0.08699360514282195,
+    "ZP_10.0_nstars": 51,
+    "ZP_AUTO": 27.450250866071915,
+    "ZP_AUTO_std": 0.1669529245679239,
+    "ZP_AUTO_nstars": 45,
 }
 
 test_configuration = [
@@ -70,6 +73,10 @@ class TestSEDMv2TransientPipeline(BaseTestCase):
         self.logger.info("\n\n Testing SEDMv2 transient pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
+
+        # Cleanup
+        output_dir = get_output_dir("sedmv2/20230526")
+        shutil.rmtree(output_dir)
 
         self.assertEqual(len(res), 1)
 

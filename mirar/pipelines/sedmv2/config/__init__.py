@@ -1,6 +1,7 @@
 """
 Module containing SEDMv2-specific paths
 """
+
 import os
 
 from mirar.pipelines.sedmv2.config.constants import (
@@ -21,6 +22,13 @@ sextractor_photometry_config = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
+    "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
+}
+
+sextractor_PSF_photometry_config = {
+    "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
+    "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
+    "parameter_path": os.path.join(astromatic_config_dir, "photomPSF.param"),
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 

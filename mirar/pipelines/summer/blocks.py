@@ -4,6 +4,7 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~mirar.pipelines.summer.summer_pipeline.SummerPipeline`.
 """
+
 # pylint: disable=duplicate-code
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import BASE_NAME_KEY, GAIN_KEY, OBSCLASS_KEY, core_fields
@@ -21,7 +22,6 @@ from mirar.pipelines.summer.config import (
 from mirar.pipelines.summer.generator import (
     summer_astrometric_catalog_generator,
     summer_photometric_catalog_generator,
-    summer_photometric_img_catalog_purifier,
     summer_reference_image_generator,
     summer_reference_image_resampler,
     summer_reference_psfex,
@@ -41,9 +41,8 @@ from mirar.processors.csvlog import CSVLog
 from mirar.processors.database.database_inserter import DatabaseImageInserter
 from mirar.processors.database.database_updater import ImageSequenceDatabaseUpdater
 from mirar.processors.mask import MaskPixelsFromPath
-from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import SourceAperturePhotometry
-from mirar.processors.photometry.psf_photometry import SourcePSFPhotometry
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import SourceWriter
 from mirar.processors.sources.source_detector import ZOGYSourceDetector
@@ -162,7 +161,7 @@ process_raw = [
     ),
     Swarp(
         swarp_config_path=swarp_config_path,
-        cache=True
+        cache=True,
         # TODO: work out why this was ever here...
         # imgpixsize=2400
     ),
@@ -174,7 +173,6 @@ process_raw = [
     ),
     PhotCalibrator(
         ref_catalog_generator=summer_photometric_catalog_generator,
-        image_photometric_catalog_purifier=summer_photometric_img_catalog_purifier,
     ),
     ImageSaver(
         output_dir_name="processed",
@@ -229,10 +227,10 @@ export_diff_to_db = [
 extract_candidates = [
     ZOGYSourceDetector(output_sub_dir="subtract", **sextractor_candidates_config),
     RegionsWriter(output_dir_name="candidates"),
-    SourcePSFPhotometry(),
-    SourceAperturePhotometry(
+    PSFPhotometry(),
+    AperturePhotometry(
         aper_diameters=[8, 40],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],

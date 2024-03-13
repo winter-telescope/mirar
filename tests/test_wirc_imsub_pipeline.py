@@ -1,15 +1,16 @@
 """
 Tests for image subtraction with WIRC
 """
+
 import logging
 import os
+import shutil
 
 from astropy.io import fits
 
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
-from mirar.io import open_fits
-from mirar.paths import get_output_path
+from mirar.paths import get_output_dir
 from mirar.pipelines.wirc.blocks import candidates, subtract
 from mirar.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
@@ -56,25 +57,22 @@ def reference_image_test_generator(
 
 
 EXPECTED_HEADER_VALUES = {
-    "SCORMEAN": -0.04392849749015427,
-    "SCORMED": -0.02331383704510348,
-    "SCORSTD": 1.25595271525748,
+    "SCORMEAN": 0.049450589357321745,
+    "SCORMED": 0.06992433914552572,
+    "SCORSTD": 1.2498783381487255,
 }
-
 EXPECTED_DATAFRAME_VALUES = {
     "magpsf": [
-        19.532174878440024,
-        19.37926219106463,
-        19.592829160635986,
-        17.551198868994298,
-        17.197011228688517,
+        19.37980722187377,
+        19.173776427588024,
+        17.16839618364596,
+        17.593767904409027,
     ],
     "magap": [
-        20.391746490573613,
-        18.8437585775724,
-        19.25446868459551,
-        17.74467203323279,
-        17.11032933773533,
+        19.68843701280298,
+        19.417567597329914,
+        17.312072330263064,
+        17.902854210820834,
     ],
 }
 
@@ -139,25 +137,33 @@ class TestWircImsubPipeline(BaseTestCase):
 
         self.assertEqual(len(res), 1)
 
-        candidates_table = res[0][0].get_data()
-        diff_imgpath = get_output_path(
-            base_name=candidates_table.iloc[0]["diffimgname"],
-            dir_root="subtract",
-            sub_dir=NIGHT_NAME,
-        )
+        source_table = res[0][0]
+        candidates_table = source_table.get_data()
 
-        _, header = open_fits(diff_imgpath)
+        print("New Results WIRC-imsub:")
+        new_exp_header = "EXPECTED_HEADER_VALUES = { \n"
+        for key, _ in EXPECTED_HEADER_VALUES.items():
+            new_exp_header += f'"{key}": {source_table[key]},\n'
+        new_exp_header += "}"
+        print(new_exp_header)
+
+        new_exp_df = "EXPECTED_DATAFRAME_VALUES = { \n"
+        for key, _ in EXPECTED_DATAFRAME_VALUES.items():
+            new_exp_df += f'"{key}": {list(candidates_table[key])},\n'
+        new_exp_df += "}"
+        print(new_exp_df)
+
         for key, value in EXPECTED_HEADER_VALUES.items():
             if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=2)
+                self.assertAlmostEqual(value, source_table[key], places=2)
             elif isinstance(value, int):
-                self.assertEqual(value, header[key])
+                self.assertEqual(value, source_table[key])
             else:
                 raise TypeError(
                     f"Type for value ({type(value)} is neither float not int."
                 )
 
-        self.assertEqual(len(candidates_table), 5)
+        self.assertEqual(len(candidates_table), 4)
         for key, value in EXPECTED_DATAFRAME_VALUES.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):
@@ -165,32 +171,6 @@ class TestWircImsubPipeline(BaseTestCase):
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
 
-
-if __name__ == "__main__":
-    print("Calculating latest scorr metrics dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images(
-        dataset=Dataset(ImageBatch()), catch_all_errors=False
-    )
-    new_candidates_table = new_res[0][0].get_data()
-    new_diff_imgpath = get_output_path(
-        base_name=new_candidates_table.iloc[0]["diffimname"],
-        dir_root="subtract",
-        sub_dir="20210330",
-    )
-    _, new_header = open_fits(new_diff_imgpath)
-
-    NEW_EXP_HEADER = "expected_header_values = { \n"
-    for header_key in new_header.keys():
-        if "SCOR" in header_key:
-            NEW_EXP_HEADER += f'    "{header_key}": {new_header[header_key]}, \n'
-    NEW_EXP_HEADER += "}"
-    print(NEW_EXP_HEADER)
-
-    NEW_EXP_DATAFRAME = "expected_dataframe_values = { \n"
-    for key in EXPECTED_DATAFRAME_VALUES:
-        NEW_EXP_DATAFRAME += f'    "{key}": {list(new_candidates_table[key])}, \n'
-    NEW_EXP_DATAFRAME += "}"
-    print(NEW_EXP_DATAFRAME)
+        # Cleanup
+        output_dir = get_output_dir("wirc/20210330")
+        shutil.rmtree(output_dir)

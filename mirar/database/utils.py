@@ -1,6 +1,7 @@
 """
 Module for postgres utilities
 """
+
 import logging
 
 import numpy as np

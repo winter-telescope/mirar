@@ -4,16 +4,19 @@ Script containing the various
 lists which are used to build configurations for the
 :class:`~mirar.pipelines.sedmv2.sedmv2_pipeline.SEDMv2Pipeline`.
 """
-from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, core_fields
-from mirar.pipelines.sedmv2.config import (  # sextractor_reference_config,
+
+from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY
+from mirar.pipelines.sedmv2.config import (
     psfex_config_path,
     sedmv2_mask_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
+    sextractor_PSF_photometry_config,
     swarp_config_path,
 )
 from mirar.pipelines.sedmv2.config.constants import SEDMV2_PIXEL_SCALE
 from mirar.pipelines.sedmv2.generator import (
+    sedmv2_color_function_ps1,
     sedmv2_photometric_catalog_generator,
     sedmv2_reference_image_generator,
     sedmv2_reference_image_resampler,
@@ -24,18 +27,22 @@ from mirar.pipelines.sedmv2.generator import (
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.processors import BiasCalibrator, FlatCalibrator
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
+from mirar.processors.astromatic.sextractor.background_subtractor import (
+    SextractorBkgSubtractor,
+)
 from mirar.processors.astrometry.anet import AstrometryNet
-from mirar.processors.csvlog import CSVLog
+from mirar.processors.dark import DarkCalibrator
 from mirar.processors.mask import MaskPixelsFromPath
-from mirar.processors.photcal import PhotCalibrator
-from mirar.processors.photometry.aperture_photometry import (
-    ImageAperturePhotometry,
-    SourceAperturePhotometry,
-)
-from mirar.processors.photometry.psf_photometry import (  # ImagePSFPhotometry,
-    SourcePSFPhotometry,
-)
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.processors.photcal.zp_calculator import ZPWithColorTermCalculator
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
+from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
+from mirar.processors.sources import (
+    ForcedPhotometryDetector,
+    SextractorSourceDetector,
+    SourceWriter,
+)
 from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
@@ -43,8 +50,6 @@ from mirar.processors.utils import (
     ImageSelector,
     MEFLoader,
 )
-
-# from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.header_annotate import HeaderEditor
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
@@ -56,52 +61,79 @@ load_raw = [
     ImageSaver(output_dir_name="loaded"),
 ]
 
-# cal_hunter = [
-# CalHunter(load_image=load_raw_sedmv2_image, requirements=sedmv2_cal_requirements),
-# ]
+mask_all = [  # masks cals and science, assuming run just after load_raw
+    MaskPixelsFromPath(mask_path=sedmv2_mask_path)
+]
 
-build_log = [  # pylint: disable=duplicate-code
-    CSVLog(
-        export_keys=[
-            "UTC",
-            "FIELDID",
-            "FILTERID",
-            OBSCLASS_KEY,
-            "RA",
-            "DEC",
-            "PROGID",
-            BASE_NAME_KEY,
-        ]
-        + core_fields
-    ),
-]  # pylint: disable=duplicate-code
-
-reduce = [
-    MaskPixelsFromPath(mask_path=sedmv2_mask_path),
+bias_all = [  # applies bias subtraction to darks, flats, and science
+    ImageDebatcher(),
     BiasCalibrator(),
+]
+
+dark_all = [  # applies dark subtraction to flats and science
+    ImageDebatcher(),
+    ImageSelector((OBSCLASS_KEY, ["dark", "flat", "science"])),
+    DarkCalibrator(cache_sub_dir="calibration_darks"),
+]
+
+flat_all = [
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
-    ImageBatcher(
-        split_key="filterid"
-    ),  # maybe change back to filter after revising load func
+    ImageBatcher(split_key="filterid"),
     FlatCalibrator(),
+    ImageSaver(output_dir_name="detrend", write_mask=True),
+]
+
+skysub = [
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector((OBSCLASS_KEY, ["science"])),  # pylint: disable=duplicate-code
-    ImageSaver(output_dir_name="detrend", write_mask=True),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        cache=True,
+        output_sub_dir="skysub",
+        checkimage_type=["-BACKGROUND"],
+    ),
+    SextractorBkgSubtractor(),
+    ImageSaver(output_dir_name="skysub", write_mask=True),
+]
+
+reduce_not0 = mask_all + bias_all + dark_all + flat_all + skysub
+reduce_0 = mask_all + dark_all + flat_all + skysub
+reduce_no_dark = mask_all + bias_all + flat_all + skysub
+
+astrometry = [
     AstrometryNet(
         output_sub_dir="a-net",
         scale_bounds=(0.08333333, 0.11666667),
         scale_units="degw",
         downsample=2,
         timeout=60,
+        use_sextractor=True,
     ),
-    ImageSaver(output_dir_name="a-net-solved", write_mask=True),
     Sextractor(
         output_sub_dir="sextractor",
         checkimage_name=None,
         checkimage_type=None,
-        **sextractor_astrometry_config
+        **sextractor_astrometry_config,
     ),
 ]
+
+calibrate = [
+    Sextractor(
+        output_sub_dir="photprocess",
+        checkimage_type="BACKGROUND_RMS",
+        **sextractor_photometry_config,
+    ),  # pylint: disable=duplicate-code
+    PhotCalibrator(ref_catalog_generator=sedmv2_photometric_catalog_generator),
+    ImageSaver(
+        output_dir_name="processed",
+        write_mask=True,
+    ),
+    HeaderEditor(edit_keys="procflag", values=1),
+]
+
+
+# stellar --
 
 resample_stellar = [
     # ImageDebatcher(),
@@ -119,30 +151,16 @@ resample_stellar = [
     ),  # pylint: disable=duplicate-code
 ]
 
-calibrate = [
-    Sextractor(
-        output_sub_dir="photprocess",
-        checkimage_type="BACKGROUND_RMS",
-        **sextractor_photometry_config
-    ),  # pylint: disable=duplicate-code
-    PhotCalibrator(ref_catalog_generator=sedmv2_photometric_catalog_generator),
-    ImageSaver(
-        output_dir_name="processed",
-        write_mask=True,
-    ),
-    HeaderEditor(edit_keys="procflag", values=1),
-]
-
-# stellar --
 
 parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 
 # process_stellar = parse_stellar + process
-process_stellar = reduce + resample_stellar + calibrate
+process_stellar = reduce_not0 + astrometry + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
-    # ImageSelector(("OBSTYPE", "SCIENCE")),
-    ImageAperturePhotometry(
+    ImageSaver(output_dir_name="photometry"),
+    ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
+    AperturePhotometry(
         aper_diameters=[
             2 / SEDMV2_PIXEL_SCALE,
             3 / SEDMV2_PIXEL_SCALE,
@@ -165,30 +183,21 @@ image_photometry = [  # imported from wirc/blocks.py
             15.6 / SEDMV2_PIXEL_SCALE,
         ],
         col_suffix_list=["2", "3", "4", "5", "10"],
-        phot_cutout_size=100,
-        target_ra_key="OBJRAD",
-        target_dec_key="OBJDECD",
+        phot_cutout_half_size=100,
         zp_key="ZP_AUTO",
     ),
-    # Sextractor(**sextractor_reference_config, output_sub_dir="psf", cache=False),
-    # PSFex(config_path=psfex_config_path, output_sub_dir="psf", norm_fits=True),
-    # ImagePSFPhotometry(
-    #     target_ra_key="OBJRAD",
-    #     target_dec_key="OBJDECD",
-    #     zp_colname="ZP_AUTO",
-    # ),
-    ImageSaver(output_dir_name="photometry"),
+    SourceWriter(output_dir_name="sourcetable"),
 ]
 
 candidate_photometry = [  # imported from wirc/blocks.py
-    SourceAperturePhotometry(
+    AperturePhotometry(
         aper_diameters=[16, 70],
-        phot_cutout_size=100,
+        phot_cutout_half_size=100,
         bkg_in_diameters=[25, 90],
         bkg_out_diameters=[40, 100],
         col_suffix_list=["", "big"],
     ),
-    SourcePSFPhotometry(),
+    PSFPhotometry(),
 ]
 
 
@@ -211,8 +220,75 @@ resample_transient = [
     ),  # pylint: disable=duplicate-code
 ]
 
-# process_transient = parse_transient + reduce + resample_transient + calibrate
-process_transient = reduce + resample_transient + calibrate
+transient_phot = [  # run phot on target in image
+    PSFex(config_path=psfex_config_path, norm_fits=True),
+    ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
+    PSFPhotometry(),
+    SourceWriter(output_dir_name="sourcetable"),
+]
+
+transient_phot_psfexsex = [  # run phot on target in image with new PSF method
+    PSFex(config_path=psfex_config_path, norm_fits=True),
+    Sextractor(
+        output_sub_dir="photprocess",
+        checkimage_type="BACKGROUND_RMS",
+        use_psfex=True,
+        **sextractor_PSF_photometry_config,
+    ),  # Sextractor-based PSF mags, saves to catalog
+    SextractorSourceDetector(output_sub_dir="sources", target_only=True),
+    SourceWriter(output_dir_name="sourcetable"),
+]
+
+all_phot_psfexsex_calibrate = [  # run phot on all sources in image
+    Sextractor(
+        output_sub_dir="sextractor_before_psfex",
+        checkimage_type="BACKGROUND_RMS",
+        **sextractor_photometry_config,
+    ),  # pylint: disable=duplicate-code
+    PSFex(config_path=psfex_config_path, norm_fits=True),
+    Sextractor(
+        output_sub_dir="sextractor_after_psfex",
+        checkimage_type="BACKGROUND_RMS",
+        use_psfex=True,
+        **sextractor_PSF_photometry_config,
+    ),  # Sextractor-based PSF mags, saves to catalog
+    PhotCalibrator(
+        ref_catalog_generator=sedmv2_photometric_catalog_generator,
+        zp_calculator=ZPWithColorTermCalculator(
+            color_colnames_guess_generator=sedmv2_color_function_ps1,
+        ),
+    ),
+    ImageSaver(
+        output_dir_name="processed_after_psf",
+        write_mask=True,
+    ),
+]
+
+all_phot = [  # run phot on all sources in image
+    ImageSaver(
+        output_dir_name="sources",
+        write_mask=True,
+    ),
+    PSFex(config_path=psfex_config_path, norm_fits=True),
+    SextractorSourceDetector(output_sub_dir="sources"),
+    PSFPhotometry(),
+    SourceWriter(output_dir_name="sourcetable"),
+]
+
+upload_fritz = [
+    SkyportalSourceUploader(
+        origin="SEDMv2TEST",
+        group_ids=[1423],
+        instrument_id=1078,
+        update_thumbnails=False,
+    )
+]
+
+process_all_psf_then_cal = (
+    reduce_not0 + astrometry + resample_transient + all_phot_psfexsex_calibrate
+)
+process_transient = reduce_not0 + astrometry + resample_transient + calibrate
+process_all = reduce_not0 + astrometry + resample_transient + calibrate + all_phot
 
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
@@ -227,7 +303,7 @@ subtract = [
         output_sub_dir="subtract",
         cache=False,
         write_regions_bool=True,
-        **sextractor_photometry_config
+        **sextractor_photometry_config,
     ),
     PSFex(config_path=psfex_config_path, output_sub_dir="subtract", norm_fits=True),
     ImageSaver(output_dir_name="ref"),
@@ -240,17 +316,3 @@ subtract = [
 ]
 
 imsub = subtract  # + export_diff_to_db + extract_candidates
-
-
-detrend_only = [
-    MaskPixelsFromPath(mask_path=sedmv2_mask_path),
-    BiasCalibrator(),
-    ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
-    ImageBatcher(
-        split_key="filterid"
-    ),  # maybe change back to filter after revising load func
-    FlatCalibrator(),
-    ImageBatcher(split_key=BASE_NAME_KEY),
-    ImageSelector((OBSCLASS_KEY, ["science"])),  # pylint: disable=duplicate-code
-    ImageSaver(output_dir_name="detrend", write_mask=True),
-]

@@ -1,6 +1,7 @@
 """
 This file contains the credential keys for the database.
 """
+
 import os
 
 DB_USER_KEY = "DB_USER"

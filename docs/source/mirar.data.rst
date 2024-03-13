@@ -6,6 +6,14 @@ mirar.data package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   mirar.data.utils
+
 Submodules
 ----------
 
@@ -37,14 +45,6 @@ mirar.data.source\_data module
 ------------------------------
 
 .. automodule:: mirar.data.source_data
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mirar.data.utils module
------------------------
-
-.. automodule:: mirar.data.utils
    :members:
    :undoc-members:
    :show-inheritance:

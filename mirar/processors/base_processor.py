@@ -1,6 +1,7 @@
 """
 Module containing the :class:`~wintedrp.processors.BaseProcessor`
 """
+
 import datetime
 import getpass
 import hashlib
@@ -11,8 +12,10 @@ from abc import ABC
 from pathlib import Path
 from queue import Queue
 from threading import Thread
+from typing import Callable
 
 import numpy as np
+import pandas as pd
 from tqdm.auto import tqdm
 
 from mirar.data import DataBatch, Dataset, Image, ImageBatch, SourceBatch
@@ -383,12 +386,14 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         write_to_cache: bool = True,
         overwrite: bool = True,
         cache_sub_dir: str = CAL_OUTPUT_SUB_DIR,
+        cache_image_name_header_keys: str | list[str] | None = None,
     ):
         super().__init__()
         self.try_load_cache = try_load_cache
         self.write_to_cache = write_to_cache
         self.overwrite = overwrite
         self.cache_sub_dir = cache_sub_dir
+        self.cache_image_name_header_keys = cache_image_name_header_keys
 
     def select_cache_images(self, images: ImageBatch) -> ImageBatch:
         """
@@ -424,8 +429,20 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         :param images: images to process
         :return: unique hashed name
         """
+        logger.debug(f"Images are {images}")
         cache_images = self.select_cache_images(images)
-        return f"{self.base_key}_{self.get_hash(cache_images)}.fits"
+        cache_image_str = ""
+        if self.cache_image_name_header_keys is not None:
+            if isinstance(self.cache_image_name_header_keys, str):
+                self.cache_image_name_header_keys = [self.cache_image_name_header_keys]
+
+            cache_image_str = "_".join(
+                [
+                    str(cache_images[0].header[x])
+                    for x in self.cache_image_name_header_keys
+                ]
+            )
+        return f"{self.base_key}_{cache_image_str}_{self.get_hash(cache_images)}.fits"
 
     def get_cache_file(self, images: ImageBatch) -> Image:
         """
@@ -466,12 +483,20 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
     Processor with pre-made master image
     """
 
-    def __init__(self, master_image_path: str | Path, *args, **kwargs):
+    def __init__(
+        self, master_image_path_generator: Callable[[ImageBatch], Path], *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
-        self.master_image_path = Path(master_image_path)
+        self.master_image_path_generator = master_image_path_generator
 
     def get_cache_path(self, images: ImageBatch) -> Path:
-        return self.master_image_path
+        """
+        Gets path for saving/loading cached image
+
+        :param images: Images to process
+        :return: Path to cached image
+        """
+        return self.master_image_path_generator(images)
 
 
 class BaseSourceGenerator(CleanupProcessor, ImageHandler, ABC):
@@ -496,6 +521,21 @@ class BaseSourceGenerator(CleanupProcessor, ImageHandler, ABC):
     def _apply_to_images(self, batch: ImageBatch) -> SourceBatch:
         raise NotImplementedError
 
+    def get_metadata(self, image: Image) -> dict:
+        """
+        Get metadata from image
+
+        :param image: Image to get metadata from
+        :return: Metadata dictionary
+        """
+        metadata = {}
+
+        for key in image.keys():
+            if key != "COMMENT":
+                metadata[key] = image[key]
+
+        return metadata
+
 
 class BaseSourceProcessor(BaseProcessor, ABC):
     """
@@ -515,3 +555,19 @@ class BaseSourceProcessor(BaseProcessor, ABC):
         batch: SourceBatch,
     ) -> SourceBatch:
         raise NotImplementedError
+
+    @staticmethod
+    def generate_super_dict(metadata: dict, source_row: pd.Series) -> dict:
+        """
+        Generate a dictionary of metadata and candidate row, with lower case keys
+
+        :param metadata: Metadata for the source table
+        :param source_row: Individual row of the source table
+        :return: Combined dictionary
+        """
+        super_dict = {key.lower(): val for key, val in metadata.items()}
+        super_dict.update(
+            {key.lower(): val for key, val in source_row.to_dict().items()}
+        )
+        super_dict.update({key.upper(): val for key, val in super_dict.items()})
+        return super_dict

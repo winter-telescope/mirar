@@ -13,6 +13,7 @@ zeropoint is assigned to the stacked image.
 3. The stacked image is optionally saved to the user-specified path and inserted into
 a user-specified stack-table in the database by the parent class.
 """
+
 import logging
 from collections.abc import Callable
 from typing import Type
@@ -25,8 +26,11 @@ from mirar.paths import BASE_NAME_KEY, ZP_KEY, ZP_STD_KEY
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.base_processor import ImageHandler
-from mirar.processors.photcal import PhotCalibrator
-from mirar.references.base_reference_generator import BaseStackReferenceGenerator
+from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.references.base_reference_generator import (
+    BaseStackReferenceGenerator,
+    ReferenceGenerationError,
+)
 from mirar.references.wfcam.wfcam_query import BaseWFCAMQuery
 
 logger = logging.getLogger(__name__)
@@ -123,7 +127,13 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
         """
         wfau_images = self.wfcam_query.run_query(image)
 
-        wfau_images = self.filter_images(wfau_images)
+        if len(wfau_images) > 0:
+            wfau_images = self.filter_images(wfau_images)
+
+        if len(wfau_images) == 0:
+            raise ReferenceGenerationError(
+                f"No good WFAU images found for {image[BASE_NAME_KEY]}"
+            )
 
         # change BASENAME to gel well with parallel processing
         for ind, ref_img in enumerate(wfau_images):

@@ -1,6 +1,7 @@
 """
 Models for the 'program' table
 """
+
 from datetime import date
 from typing import ClassVar
 
@@ -32,7 +33,7 @@ class ProgramsTable(WinterBase):  # pylint: disable=too-few-public-methods
     startdate = Column(DATE)  # Start time of program
     enddate = Column(DATE)  # End time of program
     hours_allocated = Column(REAL)  # Total hours allocated
-    hours_remaining = Column(REAL)  # Total hours remaining
+    hours_used = Column(REAL)  # Total hours used
     maxpriority = Column(REAL, default=DEFAULT_MAX_PRIORITY)  # Base priority
 
     progtitle = Column(VARCHAR(20), nullable=True)  # Optional 20 char descr. of title
@@ -68,7 +69,7 @@ class Program(BaseDB, ProgramCredentials):
     startdate: date = date_field
     enddate: date = date_field
     hours_allocated: float = Field(ge=0.0)
-    hours_remaining: float = Field(ge=0.0)
+    hours_used: float = Field(ge=0.0)
     maxpriority: float = Field(
         ge=DEFAULT_MAX_PRIORITY,
         default=DEFAULT_MAX_PRIORITY,
@@ -96,9 +97,9 @@ class Program(BaseDB, ProgramCredentials):
         :return: self
         """
         total_time = self.hours_allocated
-        hours_remaining = self.hours_remaining
-        assert not hours_remaining > total_time
-        assert not hours_remaining < 0.0
+        hours_used = self.hours_used
+        assert not hours_used > total_time
+        assert not hours_used < 0
         return self
 
     def exists(self) -> bool:
@@ -120,7 +121,7 @@ default_program = Program(
     startdate=date(2001, 1, 1),
     enddate=date(3001, 1, 1),
     hours_allocated=0,
-    hours_remaining=0,
+    hours_used=0,
     maxpriority=DEFAULT_MAX_PRIORITY,
 )
 
@@ -133,4 +134,4 @@ def populate_programs():
     """
 
     if not default_program.exists():
-        default_program.insert_entry()
+        default_program.insert_entry(duplicate_protocol="ignore")

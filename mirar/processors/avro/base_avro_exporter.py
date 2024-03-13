@@ -1,6 +1,7 @@
 """
 Module with classes to make avro alert packets
 """
+
 import logging
 import time
 from pathlib import Path
@@ -97,6 +98,7 @@ class BaseAvroExporter(BaseSourceProcessor):
         :param schema: Schema of the records
         :return: None
         """
+        raise NotImplementedError
 
     def broadcast_single_alert_packet(self, packet, schema, topic_name):
         """

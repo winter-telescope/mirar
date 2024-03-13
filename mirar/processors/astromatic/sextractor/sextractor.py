@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Callable, Optional
 
+import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 
@@ -18,6 +19,7 @@ from mirar.data.utils.coords import write_regions_file
 from mirar.paths import (
     BASE_NAME_KEY,
     LATEST_WEIGHT_SAVE_KEY,
+    PSFEX_CAT_KEY,
     get_output_dir,
     get_temp_path,
 )
@@ -25,7 +27,11 @@ from mirar.processors.astromatic.sextractor.sourceextractor import (
     parse_checkimage,
     run_sextractor_single,
 )
-from mirar.processors.base_processor import BaseImageProcessor
+from mirar.processors.base_processor import (
+    BaseImageProcessor,
+    BaseProcessor,
+    PrerequisiteError,
+)
 from mirar.utils.ldac_tools import convert_table_to_ldac, get_table_from_ldac
 
 logger = logging.getLogger(__name__)
@@ -42,16 +48,29 @@ sextractor_checkimg_map = {
 }
 
 
+def check_sextractor_prerequisite(processor: BaseProcessor):
+    """
+    Check that the preceding steps of a given processor contain Sextractor
+    """
+    check = np.sum([isinstance(x, Sextractor) for x in processor.preceding_steps])
+    if check < 1:
+        err = (
+            f"{processor.__module__} requires {Sextractor} as a prerequisite. "
+            f"However, the following steps were found: {processor.preceding_steps}."
+        )
+        logger.error(err)
+        raise PrerequisiteError(err)
+
+
 class Sextractor(BaseImageProcessor):
     """
     Processor to run sextractor on images
     """
 
     base_key = "sextractor"
-    # pylint: disable=too-many-instance-attributes
 
-    def __init__(
-        self,
+    def __init__(  # pylint: disable=too-many-locals
+        self,  # pylint: disable=too-many-instance-attributes
         output_sub_dir: str,
         config_path: str,
         parameter_path: str,
@@ -65,6 +84,8 @@ class Sextractor(BaseImageProcessor):
         cache: bool = False,
         mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
+        use_psfex: bool = False,
+        psf_path: Optional[str] = None,
         catalog_purifier: Callable[[Table, Image], Table] = None,
     ):
         """
@@ -83,6 +104,9 @@ class Sextractor(BaseImageProcessor):
         :param cache: whether to cache sextractor output
         :param mag_zp: magnitude zero point for sextractor. Leave to None if not known.
         :param write_regions_bool: whether to write regions file for ds9
+        :param use_psfex: whether to use psfex
+        :param psf_path: name of psf file to use for sextractor. If none, will check
+        for key in header
         :param catalog_purifier: If not None, will apply this function to the
         Sextractor catalog before saving
         """
@@ -102,12 +126,17 @@ class Sextractor(BaseImageProcessor):
         self.cache = cache
         self.mag_zp = mag_zp
         self.write_regions = write_regions_bool
+        self.use_psfex = use_psfex
+        self.psf_path = psf_path
         self.catalog_purifier = catalog_purifier
 
         if isinstance(self.checkimage_name, str):
             self.checkimage_name = [self.checkimage_name]
         if isinstance(self.checkimage_type, str):
             self.checkimage_type = [self.checkimage_type]
+
+        if (not self.use_psfex) & (self.psf_path is not None):
+            raise ValueError("Cannot specify psf_path without setting use_psfex=True")
 
     def __str__(self) -> str:
         return (
@@ -123,7 +152,52 @@ class Sextractor(BaseImageProcessor):
         """
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
-    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+    def check_psf_prerequisite(self):
+        """
+        Check that the PSF-related parameters are in the given .param file
+        """
+        sextractor_param_path = self.parameters_name
+        required_psf_params = ["MAG_PSF", "MAGERR_PSF"]
+
+        logger.debug(
+            f"Checking SExtractor PSF prerequisites, "
+            f"Checking file {sextractor_param_path} for "
+            f"required params {required_psf_params}"
+        )
+
+        with open(sextractor_param_path, "rb") as param_file:
+            sextractor_params = [
+                x.strip().decode() for x in param_file.readlines() if len(x.strip()) > 0
+            ]
+            sextractor_params = [
+                x.split("(")[0] for x in sextractor_params if x[0] not in ["#"]
+            ]
+
+        for param in required_psf_params:
+            param_found = param in sextractor_params
+            if self.use_psfex:
+                if not param_found:
+                    msg = (
+                        f"Missing parameter: {self.__module__} requires {param} "
+                        f"to save PSF magnitudes, but this parameter was not found in "
+                        f"sextractor config file '{sextractor_param_path}' . Please add "
+                        f"the parameter to this list, ideally in a new param file as so "
+                        f"not to conflict with earlier Sextractor runs."
+                    )
+                    logger.warning(msg)
+            else:
+                # Raise error if not using PSFex but PSF-related params are in param
+                # file (this crashes sextractor with a cryptic error message)
+                if param_found:
+                    err = (
+                        f"Parameter {param} found in sextractor config file "
+                        f"'{sextractor_param_path}' but use_psfex is set to False."
+                    )
+                    raise PrerequisiteError(err)
+
+    def _apply_to_images(  # pylint: disable=too-many-locals
+        self, batch: ImageBatch
+    ) -> ImageBatch:
         sextractor_out_dir = self.get_sextractor_output_dir()
 
         try:
@@ -160,6 +234,19 @@ class Sextractor(BaseImageProcessor):
                 weight_path = self.save_mask_image(image, temp_path)
                 temp_files.append(Path(weight_path))
 
+            if self.use_psfex:
+                if PSFEX_CAT_KEY in image.keys():
+                    self.psf_path = Path(image[PSFEX_CAT_KEY])
+
+                if self.psf_path is None:
+                    raise ValueError(
+                        f"PSFex catalog not found in image {image[BASE_NAME_KEY]}"
+                        f"Please run PSFex on this image that should add the path to "
+                        f"the header, or specify the path manually using psf_name "
+                        f"argument"
+                    )
+            self.check_psf_prerequisite()
+
             output_cat = sextractor_out_dir.joinpath(
                 image[BASE_NAME_KEY].replace(".fits", ".cat")
             )
@@ -185,6 +272,7 @@ class Sextractor(BaseImageProcessor):
                 checkimage_name=checkimage_name,
                 checkimage_type=self.checkimage_type,
                 gain=self.gain,
+                psf_name=self.psf_path,
                 catalog_name=output_cat,
             )
 

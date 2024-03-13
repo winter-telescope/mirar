@@ -1,6 +1,7 @@
 """
 Module component of autoastrometry, handling I/O
 """
+
 import logging
 import os
 from pathlib import Path

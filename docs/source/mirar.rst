@@ -14,6 +14,7 @@ Subpackages
 
    mirar.catalog
    mirar.data
+   mirar.database
    mirar.downloader
    mirar.errors
    mirar.monitor

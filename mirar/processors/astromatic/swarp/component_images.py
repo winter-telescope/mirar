@@ -1,6 +1,7 @@
 """
 Module for getting the component images used to make a swarp stack
 """
+
 import logging
 from collections.abc import Callable
 from pathlib import Path
@@ -12,7 +13,7 @@ from mirar.data import ImageBatch
 from mirar.io import open_fits
 from mirar.paths import STACKED_COMPONENT_IMAGES_KEY
 from mirar.processors.astromatic.swarp.swarp import Swarp
-from mirar.processors.base_processor import BaseImageProcessor
+from mirar.processors.base_processor import BaseImageProcessor, PrerequisiteError
 from mirar.processors.utils.image_saver import ImageSaver
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError(err)
+            raise PrerequisiteError(err)
 
         index = np.argmax(mask)
 
@@ -92,4 +93,4 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
                 f"However, the following steps were found: {self.preceding_steps}."
             )
             logger.error(err)
-            raise ValueError(err)
+            raise PrerequisiteError(err)

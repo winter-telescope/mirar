@@ -1,6 +1,7 @@
 """
 Module to make reference components table
 """
+
 from typing import ClassVar
 
 from pydantic import Field
@@ -18,7 +19,7 @@ class RefQueriesTable(WinterBase):
 
     __tablename__ = "refqueries"
 
-    queryid = Column(Integer, primary_key=True)
+    queryid = Column(Integer, primary_key=True, autoincrement=True, unique=True)
     qry_ra = Column(Float)
     qry_dec = Column(Float)
     qry_filt = Column(VARCHAR(10))

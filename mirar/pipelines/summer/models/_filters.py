@@ -1,6 +1,7 @@
 """
 Models for the 'filters' table
 """
+
 # pylint: disable=duplicate-code
 from typing import ClassVar
 
@@ -70,4 +71,4 @@ def populate_filters(filter_map: dict = None):
     for filter_name, fid in filter_map.items():
         summer_filter = Filter(fid=fid, filtername=filter_name)
         if not summer_filter.exists():
-            summer_filter.insert_entry()
+            summer_filter.insert_entry(duplicate_protocol="ignore")

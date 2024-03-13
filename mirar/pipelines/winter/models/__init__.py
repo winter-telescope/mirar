@@ -1,6 +1,7 @@
 """
 Models for database and pydantic dataclass models
 """
+
 import logging
 
 from mirar.database.base_table import BaseTable
@@ -11,12 +12,7 @@ from mirar.pipelines.winter.models._astrometry_stats import (
     AstrometryStat,
     AstrometryStatsTable,
 )
-from mirar.pipelines.winter.models._candidates import (
-    CANDIDATE_PREFIX,
-    NAME_START,
-    Candidate,
-    CandidatesTable,
-)
+from mirar.pipelines.winter.models._candidates import Candidate, CandidatesTable
 from mirar.pipelines.winter.models._diff import Diff, DiffsTable
 from mirar.pipelines.winter.models._exposures import Exposure, ExposuresTable
 from mirar.pipelines.winter.models._fields import (
@@ -54,6 +50,13 @@ from mirar.pipelines.winter.models._ref_components import (
 )
 from mirar.pipelines.winter.models._ref_queries import RefQueriesTable, RefQuery
 from mirar.pipelines.winter.models._ref_stacks import RefStack, RefStacksTable
+from mirar.pipelines.winter.models._sources import (
+    MIN_NAME_LENGTH,
+    NAME_START,
+    SOURCE_PREFIX,
+    Source,
+    SourcesTable,
+)
 from mirar.pipelines.winter.models._stack import Stack, StacksTable
 from mirar.pipelines.winter.models._subdets import (
     Subdet,
@@ -84,7 +87,14 @@ def set_up_q3c(db_name: str, db_table: BaseTable):
 if DB_USER is not None:
     setup_database(db_base=WinterBase)
 
-    for table in [ExposuresTable, CandidatesTable, RefQueriesTable]:
+    for table in [
+        ExposuresTable,
+        AstrometryStatsTable,
+        CandidatesTable,
+        RefQueriesTable,
+        StacksTable,
+        SourcesTable,
+    ]:
         set_up_q3c(db_name=WinterBase.db_name, db_table=table)
 
     populate_fields()

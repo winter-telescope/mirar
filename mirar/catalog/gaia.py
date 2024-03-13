@@ -1,6 +1,7 @@
 """
 Module for obtaining a Gaia/2Mass catalog
 """
+
 import logging
 from typing import Optional
 
@@ -75,8 +76,6 @@ class Gaia2Mass(BaseCatalog):
         for filt, val in self.acceptable_ph_quals.items():
             if val is None:
                 self.acceptable_ph_quals[filt] = ["A", "B", "C"]
-
-        logger.debug(f"Sextractor catalog path is {self.image_catalog_path}")
 
     def get_catalog(
         self,
