@@ -3,7 +3,9 @@ Module for WINTER data reduction
 """
 
 # pylint: disable=duplicate-code
-from mirar.catalog.kowalski import PS1, TMASS
+import os
+
+from mirar.catalog.kowalski import PS1, TMASS, Gaia, GaiaBright
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -629,6 +631,8 @@ load_sources = [
 crossmatch_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
+    XMatch(catalog=Gaia(num_sources=1, search_radius_arcmin=1.5)),
+    XMatch(catalog=GaiaBright(num_sources=1, search_radius_arcmin=1.5)),
     SourceWriter(output_dir_name="kowalski"),
     CustomSourceTableModifier(
         modifier_function=winter_candidate_avro_fields_calculator
@@ -689,22 +693,36 @@ name_candidates = (
 )
 
 avro_export = [
+    # Add in the skyportal fields and all save locally
+    CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
     IPACAvroExporter(
         topic_prefix="winter",
         base_name="WNTR",
         broadcast=False,
+        save_local=True,
         avro_schema_path=winter_avro_schema_path,
     ),
+    # Filter out low quality candidates
     CustomSourceTableModifier(modifier_function=winter_candidate_quality_filterer),
+    # Only send a subset of the candidates to IPAC
+    IPACAvroExporter(
+        output_sub_dir="avro_ipac",
+        topic_prefix="winter",
+        base_name="WNTR",
+        broadcast=os.getenv("BROADCAST_AVRO", None) is True,
+        save_local=True,
+        avro_schema_path=winter_avro_schema_path,
+    ),
     SourceWriter(output_dir_name="preskyportal"),
 ]
 
 process_candidates = crossmatch_candidates + name_candidates + avro_export
 
+load_avro = [SourceLoader(input_dir_name="preavro")]
+
 load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
 
 send_to_skyportal = [
-    CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
     SkyportalCandidateUploader(**winter_fritz_config),
 ]
 

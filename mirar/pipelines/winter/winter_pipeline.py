@@ -10,6 +10,7 @@ from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
     astrometry,
+    avro_export,
     build_test,
     csvlog,
     detect_candidates,
@@ -19,6 +20,7 @@ from mirar.pipelines.winter.blocks import (
     focus_cals,
     full_reduction,
     imsub,
+    load_avro,
     load_calibrated,
     load_final_stack,
     load_raw,
@@ -38,7 +40,6 @@ from mirar.pipelines.winter.blocks import (
     refbuild,
     reftest,
     save_raw,
-    select_history,
     select_split_subset,
     send_to_skyportal,
     stack_forced_photometry,
@@ -91,11 +92,7 @@ class WINTERPipeline(Pipeline):
         "realtime": realtime,
         "detect_candidates": load_final_stack + imsub + detect_candidates,
         "full_imsub": load_final_stack + imsub + detect_candidates + process_candidates,
-        "full": reduce
-        + imsub
-        + detect_candidates
-        + process_candidates
-        + send_to_skyportal,
+        "full": reduce + imsub + detect_candidates + process_candidates,
         "full_subset": reduce_unpacked + imsub + detect_candidates + process_candidates,
         "full_no_calhunter": reduce_no_calhunter
         + imsub
@@ -109,7 +106,7 @@ class WINTERPipeline(Pipeline):
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
         "detrend": unpack_all + detrend_unpacked,
-        "send_with_history": select_history + send_to_skyportal,
+        "rebroadcast_avro": load_avro + avro_export,
     }
 
     non_linear_level = 40000.0

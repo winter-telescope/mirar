@@ -641,6 +641,18 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
         src_df["sumrat"] = sumrat
         src_df["fracmasked"] = frac_masked
 
+        for column in ["gaia_parallax_over_error1", "gaiabright_parallax_over_error1"]:
+            mask = ~pd.isnull(src_df[column])
+            src_df.loc[mask, [column]] = abs(src_df.loc[mask, [column]])
+
+        src_df["distgaia"] = src_df["distgaianr1"]
+        src_df["plxgaia"] = src_df["gaia_parallax_over_error1"]
+        src_df["ruwegaia"] = src_df["gaia_ruwe1"]
+
+        src_df["distgaiabright"] = src_df["distgaiabrightnr1"]
+        src_df["plxgaiabright"] = src_df["gaiabright_parallax_over_error1"]
+        src_df["ruwegaiabright"] = src_df["gaiabright_ruwe1"]
+
         source.set_data(src_df)
         new_batch.append(source)
 
@@ -655,10 +667,10 @@ def winter_skyportal_annotator(source_batch: SourceBatch) -> SourceBatch:
     :return: Updated source table
     """
 
-    new_batch = SourceBatch([])
-
     for source_table in source_batch:
         src_df = source_table.get_data()
+
+        src_df["ndethist"] = [len(x) for x in src_df[SOURCE_HISTORY_KEY]]
 
         if "fid" not in src_df.columns:
             src_df["fid"] = source_table["FID"]
@@ -679,18 +691,9 @@ def winter_skyportal_annotator(source_batch: SourceBatch) -> SourceBatch:
             ]
             hist_df[SNCOSMO_KEY] = sncosmo_fs
 
-        src_df["ndethist"] = [len(x) for x in src_df[SOURCE_HISTORY_KEY]]
+        source_table.set_data(src_df)
 
-        mask = src_df["ndethist"] > 0
-
-        src_df = src_df[mask].reset_index(drop=True)
-
-        # Only keep sources with at least 2 detections
-        if len(src_df) > 0:
-            source_table.set_data(src_df)
-            new_batch.append(source_table)
-
-    return new_batch
+    return source_batch
 
 
 def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
@@ -709,6 +712,7 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
 
         mask = (
             (src_df["nbad"] < 2)
+            & (src_df["ndethist"] > 0)
             # & (src_df["chipsf"] < 3.0)
             & (src_df["sumrat"] > 0.7)
             & (src_df["fwhm"] < 10.0)
@@ -717,8 +721,10 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
             & (src_df["mindtoedge"] > 50.0)
         )
         filtered_df = src_df[mask].reset_index(drop=True)
-        source.set_data(filtered_df)
-        new_batch.append(source)
+
+        if len(src_df) > 0:
+            source.set_data(filtered_df)
+            new_batch.append(source)
 
     return new_batch
 

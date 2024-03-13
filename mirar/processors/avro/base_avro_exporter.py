@@ -44,6 +44,10 @@ class BaseAvroExporter(BaseSourceProcessor):
         self.save_local = save_local
         self.broadcast = broadcast
 
+        assert (
+            self.avro_schema_path.exists()
+        ), f"Schema file {self.avro_schema_path} does not exist"
+
         self.schema = load_schema(self.avro_schema_path)
 
     def __str__(self) -> str:
@@ -132,10 +136,11 @@ class BaseAvroExporter(BaseSourceProcessor):
 
         :return: None
         """
-        # Save avro packets to local directory
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-        logger.debug(f"Saving {len(alerts)} alerts to {save_path}")
-        self.save_alert_packets(alerts, self.schema, save_path)
+        if self.save_local:
+            # Save avro packets to local directory
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            logger.debug(f"Saving {len(alerts)} alerts to {save_path}")
+            self.save_alert_packets(alerts, self.schema, save_path)
 
         if self.broadcast:
             t_start = time.time()
