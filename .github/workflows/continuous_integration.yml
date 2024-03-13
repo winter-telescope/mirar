@@ -101,9 +101,7 @@ jobs:
         env:
           OUTPUT_DATA_DIR : /home/runner/
           PG_ADMIN_USER: runner
-          PG_ADMIN_PWD: ""
           DB_USER: runner
-          DB_PWD: ""
           WATCHDOG_EMAIL: ${{ secrets.WATCHDOG_EMAIL }}
           WATCHDOG_EMAIL_PASSWORD: ${{ secrets.WATCHDOG_EMAIL_PASSWORD }}
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}
