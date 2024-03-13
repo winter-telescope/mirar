@@ -709,7 +709,8 @@ avro_export = [
         output_sub_dir="avro_ipac",
         topic_prefix="winter",
         base_name="WNTR",
-        broadcast=os.getenv("BROADCAST_AVRO", None) is True,
+        # configure to broadcast to IPAC
+        broadcast=str(os.getenv("BROADCAST_AVRO", None)) in ["True", "t", "1", "true"],
         save_local=True,
         avro_schema_path=winter_avro_schema_path,
     ),
