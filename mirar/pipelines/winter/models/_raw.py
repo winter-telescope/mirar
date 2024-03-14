@@ -10,7 +10,7 @@ from sqlalchemy import VARCHAR, BigInteger, Column, Float, ForeignKey, Integer, 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.database.base_model import BaseDB
-from mirar.pipelines.winter.models._exposures import Exposure
+from mirar.pipelines.winter.models._exposures import Exposure, default_unknown_field
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 
@@ -58,7 +58,7 @@ class Raw(BaseDB):
     uexpid: int = Field(ge=0)
     subdetid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
-    t_roic: float = Field()
+    t_roic: float = default_unknown_field
     ustackid: int | None = Field(ge=0, default=None)
 
     @field_validator("savepath")
