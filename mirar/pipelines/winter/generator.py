@@ -87,6 +87,10 @@ class ReductionQualityError(ProcessorError):
     """Error raised when the quality of the reduction is too poor"""
 
 
+class NoGoodCandidatesError(ProcessorError):
+    """Error raised when no candidates pass quality cuts"""
+
+
 # Swarp generators
 def winter_reference_image_resampler_for_zogy(**kwargs) -> Swarp:
     """
@@ -700,15 +704,10 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
     """
     Function to perform quality filtering on WINTER candidates
     """
-    new_batch = SourceBatch([])
+    new_batch = []
 
     for source in source_table:
         src_df = source.get_data()
-        # mask = (
-        #     (src_df["fracmasked"] < 0.5)
-        #     & (src_df["scorr"] > 10)
-        #     & (src_df["nneg"] < 12)
-        # )
 
         mask = (
             (src_df["nbad"] < 2)
@@ -726,7 +725,10 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
             source.set_data(filtered_df)
             new_batch.append(source)
 
-    return new_batch
+    if len(new_batch) == 0:
+        raise NoGoodCandidatesError("No candidates passed quality filter")
+
+    return SourceBatch(new_batch)
 
 
 def winter_reference_stack_annotator(stacked_image: Image, image: Image) -> Image:

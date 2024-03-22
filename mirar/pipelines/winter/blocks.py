@@ -692,7 +692,7 @@ name_candidates = (
     ]
 )
 
-avro_export = [
+avro_write = [
     # Add in the skyportal fields and all save locally
     CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
     IPACAvroExporter(
@@ -702,6 +702,9 @@ avro_export = [
         save_local=True,
         avro_schema_path=winter_avro_schema_path,
     ),
+]
+
+avro_broadcast = [
     # Filter out low quality candidates
     CustomSourceTableModifier(modifier_function=winter_candidate_quality_filterer),
     # Only send a subset of the candidates to IPAC
@@ -717,7 +720,9 @@ avro_export = [
     SourceWriter(output_dir_name="preskyportal"),
 ]
 
-process_candidates = crossmatch_candidates + name_candidates + avro_export
+avro_export = avro_write + avro_broadcast
+
+process_candidates = crossmatch_candidates + name_candidates + avro_write
 
 load_avro = [SourceLoader(input_dir_name="preavro")]
 

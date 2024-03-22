@@ -10,6 +10,7 @@ from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
     astrometry,
+    avro_broadcast,
     avro_export,
     build_test,
     csvlog,
@@ -91,13 +92,26 @@ class WINTERPipeline(Pipeline):
         "only_ref": only_ref,
         "realtime": realtime,
         "detect_candidates": load_final_stack + imsub + detect_candidates,
-        "full_imsub": load_final_stack + imsub + detect_candidates + process_candidates,
-        "full": reduce + imsub + detect_candidates + process_candidates,
-        "full_subset": reduce_unpacked + imsub + detect_candidates + process_candidates,
+        "full_imsub": load_final_stack
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
+        "full": reduce
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
+        "full_subset": reduce_unpacked
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
         "full_no_calhunter": reduce_no_calhunter
         + imsub
         + detect_candidates
-        + process_candidates,
+        + process_candidates
+        + avro_broadcast,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,
