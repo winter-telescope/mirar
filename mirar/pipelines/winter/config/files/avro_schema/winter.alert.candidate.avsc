@@ -7,7 +7,7 @@
 		{"name": "candid", "type": "long", "doc": "Candidate ID from candidates DB"},
 		{"name": "deprecated", "type": "boolean", "default": false, "doc": "Whether this candidate is superceded by a reprocessing"},
 		{"name": "jd", "type": "double", "doc": "Observation Julian date at start of exposure [days]"},
-		{"name": "fid", "type": "int", "doc": "Filter ID (0=Y; 1=J; 2=H; 3=K)"},
+		{"name": "fid", "type": "int", "doc": "Filter ID (1=Y; 2=J; 3=Hs; 4=Dark)"},
 		{"name": "exptime", "type": "float", "doc": "Integration time of camera exposure [sec]"},
 		{"name": "ndethist", "type": "int", "default": 1, "doc": "Number of detections"},
 		{"name": "jdstarthist", "type": "double", "doc": "Earliest Julian date of epoch corresponding to ndethist [days]"},
