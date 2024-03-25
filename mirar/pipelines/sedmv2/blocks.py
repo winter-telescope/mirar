@@ -10,6 +10,7 @@ from mirar.pipelines.sedmv2.config import (
     psfex_config_path,
     sedmv2_mask_path,
     sextractor_astrometry_config,
+    sextractor_candidate_config,
     sextractor_photometry_config,
     sextractor_PSF_photometry_config,
     swarp_config_path,
@@ -43,6 +44,7 @@ from mirar.processors.sources import (
     ForcedPhotometryDetector,
     SextractorSourceDetector,
     SourceWriter,
+    ZOGYSourceDetector,
 )
 from mirar.processors.utils import (
     ImageBatcher,
@@ -314,9 +316,30 @@ subtract = [
     ZOGYPrepare(
         output_sub_dir="subtract",
         sci_zp_header_key="ZP_AUTO",
+        ref_zp_header_key="ZPT_0000",
         catalog_purifier=sedmv2_zogy_catalogs_purifier,
     ),
     ZOGY(output_sub_dir="subtract"),
 ]
 
 imsub = subtract  # + export_diff_to_db + extract_candidates
+
+detect_candidates = [
+    ZOGYSourceDetector(
+        output_sub_dir="subtract",
+        **sextractor_candidate_config,
+        write_regions=True,
+        detect_negative_sources=True,
+    ),
+    PSFPhotometry(phot_cutout_half_size=10),
+    # AperturePhotometry(
+    #    temp_output_sub_dir="aper_photometry",
+    #    aper_diameters=[8, 16],
+    #    phot_cutout_half_size=50,
+    #    bkg_in_diameters=[25, 25],
+    #    bkg_out_diameters=[40, 40],
+    #    col_suffix_list=["", "big"],
+    # ),
+    # CustomSourceTableModifier(winter_candidate_annotator_filterer),
+    SourceWriter(output_dir_name="candidates"),
+]

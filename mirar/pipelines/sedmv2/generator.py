@@ -121,14 +121,17 @@ def sedmv2_reference_image_resampler(**kwargs) -> Swarp:
     )
 
 
-def sedmv2_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
+def sedmv2_reference_sextractor(
+    output_sub_dir: str,
+) -> Sextractor:  # , gain: float) -> Sextractor:
     """
     Generates a sextractor processor for reference images
 
-    :param output_sub_dir: output sui directory
+    :param output_sub_dir: output sub directory
     :param gain: gain of image
     :return: Sextractor processor
     """
+    gain = 0.322
     return Sextractor(
         gain=gain,
         output_sub_dir=output_sub_dir,

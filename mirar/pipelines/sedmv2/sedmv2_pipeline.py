@@ -10,8 +10,10 @@ from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
-from mirar.pipelines.sedmv2.blocks import (
+from mirar.pipelines.sedmv2.blocks import (  # transient_phot_psfexsex,
+    detect_candidates,
     image_photometry,
+    imsub,
     load_raw,
     process_all,
     process_all_psf_then_cal,
@@ -19,7 +21,6 @@ from mirar.pipelines.sedmv2.blocks import (
     process_transient,
     reduce_not0,
     transient_phot,
-    transient_phot_psfexsex,
     upload_fritz,
 )
 from mirar.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
@@ -50,7 +51,10 @@ class SEDMv2Pipeline(Pipeline):
         + transient_phot
         + upload_fritz,
         "all_phot": load_raw + process_all,
-        "transient_PSF": load_raw + process_transient + transient_phot_psfexsex,
+        "transient_PSF": load_raw
+        + process_all_psf_then_cal
+        + imsub
+        + detect_candidates,  # process_transient + transient_phot_psfexsex,
     }
 
     @staticmethod
