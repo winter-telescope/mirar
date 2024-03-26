@@ -50,7 +50,7 @@ class PostgresAdmin(PostgresUser):
         :return: None
         """
         engine = get_engine(
-            db_name=self.db_name,
+            db_name="postgres",
             db_user=self.db_user,
             db_password=self.db_password,
             db_hostname=self.db_hostname,
