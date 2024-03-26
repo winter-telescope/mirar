@@ -303,7 +303,7 @@ def load_raw_winter_mef(
         primary_header = clean_header(primary_header)
     except KeyError as exc:
         logger.error(
-            f"Could not clean header for {path}, missing keyword '{exc.args[0]}'. "
+            f"Could not clean header for {path}: '{exc.args[0]}'. "
             f"Marking as corrupted."
         )
         try:
@@ -347,6 +347,9 @@ def load_raw_winter_mef(
     for board_header in split_headers:
         if "EXPTIME" in board_header.keys():
             del board_header["EXPTIME"]
+        # This is especially annoying
+        if "BOARD_ID" in board_header.keys():
+            board_header["BOARD_ID"] = int(board_header["BOARD_ID"])
 
     return primary_header, split_data, split_headers
 

@@ -52,8 +52,8 @@ class BaseAvroExporter(BaseSourceProcessor):
 
     def __str__(self) -> str:
         return (
-            f"Creates avro packets with '{self.avro_schema_path.name}' schema, "
-            f"and save them to '{self.output_sub_dir}' directory."
+            f"Creates avros with '{self.avro_schema_path.name}' schema, "
+            f" saves to '{self.output_sub_dir}' directory. Broadcast: {self.broadcast}"
         )
 
     def _apply_to_sources(
