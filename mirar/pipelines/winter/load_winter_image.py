@@ -43,6 +43,7 @@ from mirar.pipelines.winter.constants import (
 )
 from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_dict
 from mirar.processors.skyportal import SNCOSMO_KEY
+from mirar.processors.utils.image_loader import BadImageError
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +196,11 @@ def clean_header(header: fits.Header) -> fits.Header:
     if "GAINROW" not in header.keys():
         header["GAINROW"] = "[]"
 
-    header["BOARD_ID"] = int(header["BOARD_ID"])
+    try:
+        header["BOARD_ID"] = int(header["BOARD_ID"])
+    except KeyError:
+        pass
+
     return header
 
 
@@ -296,36 +301,41 @@ def load_raw_winter_mef(
 
     try:
         primary_header = clean_header(primary_header)
-    except KeyError:
+    except KeyError as exc:
         logger.error(
-            f"Could not clean header for {path}, missing keywords. "
+            f"Could not clean header for {path}, missing keyword '{exc.args[0]}'. "
             f"Marking as corrupted."
         )
-        primary_header["OBSTYPE"] = "CORRUPTED"
-        primary_header["FILTERID"] = "dark"
-        primary_header["FIELDID"] = DEFAULT_FIELD
-        primary_header["RADEG"] = 180.0
-        primary_header["DECDEG"] = 0.0
-        primary_header["AZIMUTH"] = 180.0
-        primary_header["ALTITUDE"] = 0.0
-        primary_header["DITHNUM"] = 0
-        primary_header["EXPTIME"] = 0.0
+        try:
+            primary_header["OBSTYPE"] = "CORRUPTED"
+            primary_header["FILTERID"] = "dark"
+            primary_header["FIELDID"] = DEFAULT_FIELD
+            primary_header["RADEG"] = 180.0
+            primary_header["DECDEG"] = 0.0
+            primary_header["AZIMUTH"] = 180.0
+            primary_header["ALTITUDE"] = 0.0
+            primary_header["DITHNUM"] = 0
+            primary_header["EXPTIME"] = 0.0
 
-        [date, time, milliseconds] = img_name.split("_")[1].split("-")
-        dateiso = (
-            f"{date[:4]}-{date[4:6]}-{date[6:]} "
-            f"{time[:2]}:{time[2:4]}:{time[4:6]}.{milliseconds}"
-        )
+            [date, time, milliseconds] = img_name.split("_")[1].split("-")
+            dateiso = (
+                f"{date[:4]}-{date[4:6]}-{date[6:]} "
+                f"{time[:2]}:{time[2:4]}:{time[4:6]}.{milliseconds}"
+            )
 
-        primary_header["UTCISO"] = dateiso
-        primary_header["TARGNAME"] = "CORRUPTED"
+            primary_header["UTCISO"] = dateiso
+            primary_header["TARGNAME"] = "CORRUPTED"
 
-        for field in core_fields:
-            if field not in primary_header.keys():
-                primary_header[field] = -99
+            for field in core_fields:
+                if field not in primary_header.keys():
+                    primary_header[field] = -99
 
-        primary_header = clean_header(primary_header)
-        primary_header["PROCFAIL"] = True
+            primary_header = clean_header(primary_header)
+            primary_header["PROCFAIL"] = True
+        except KeyError as exc2:
+            err = f"Could not mark {path} as corrupted. Failing entirely: {exc2}"
+            logger.error(err)
+            raise BadImageError(err) from exc2
 
     split_headers = tag_mef_extension_file_headers(
         primary_header=primary_header,

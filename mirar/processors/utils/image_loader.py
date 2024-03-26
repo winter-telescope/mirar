@@ -89,7 +89,9 @@ def load_from_dir(
                         raise BadImageError(err) from err
                     images.append(image)
             except InvalidImage:
-                logger.debug(f"Image {path} is invalid. Skipping!")
+                logger.warning(f"Image {path} is invalid. Skipping!")
+            except BadImageError:
+                logger.error(f"Image {path} cannot be parsed. Skipping!")
         else:
             logger.warning(f"File {path} is not complete. Skipping!")
 
