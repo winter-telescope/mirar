@@ -189,6 +189,8 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["GAINCOLB"] = "[]"
     if "GAINROW" not in header.keys():
         header["GAINROW"] = "[]"
+
+    header["BOARD_ID"] = int(header["BOARD_ID"])
     return header
 
 

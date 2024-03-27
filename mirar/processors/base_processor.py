@@ -432,7 +432,7 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         logger.debug(f"Images are {images}")
         cache_images = self.select_cache_images(images)
         cache_image_str = ""
-        if self.cache_image_name_header_keys is not None:
+        if (self.cache_image_name_header_keys is not None) and (len(cache_images) > 0):
             if isinstance(self.cache_image_name_header_keys, str):
                 self.cache_image_name_header_keys = [self.cache_image_name_header_keys]
 
