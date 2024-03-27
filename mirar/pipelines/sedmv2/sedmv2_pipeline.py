@@ -18,6 +18,7 @@ from mirar.pipelines.sedmv2.blocks import (  # transient_phot_psfexsex,
     process_all_psf_then_cal,
     process_stellar,
     process_transient,
+    psf_phot_after_imsub,
     reduce_not0,
     transient_phot,
     upload_fritz,
@@ -50,7 +51,10 @@ class SEDMv2Pipeline(Pipeline):
         + transient_phot
         + upload_fritz,
         "all_phot": load_raw + process_all,
-        "transient_PSF": load_raw + process_all_psf_then_cal + imsub,
+        "transient_PSF": load_raw
+        + process_all_psf_then_cal
+        + imsub
+        + psf_phot_after_imsub,  # + upload_fritz
         # + detect_candidates,  # process_transient + transient_phot_psfexsex,
     }
 
