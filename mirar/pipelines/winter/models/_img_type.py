@@ -11,13 +11,13 @@ from sqlalchemy.orm import Mapped, relationship
 from mirar.database.base_model import BaseDB
 from mirar.pipelines.winter.models.base_model import WinterBase
 
-ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "NULL"]
+ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "NULL", "CORRUPTED"]
 itid_dict = {}
 for i, img_type in enumerate(ALL_ITID):
     itid_dict[img_type] = i + 1
 DEFAULT_ITID = 5
 
-itid_field = Field(ge=0, le=5, default=5)
+itid_field = Field(ge=0, le=6, default=5)
 
 
 class ImgTypesTable(WinterBase):  # pylint: disable=too-few-public-methods

@@ -43,6 +43,7 @@ from mirar.pipelines.winter.constants import (
 )
 from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_dict
 from mirar.processors.skyportal import SNCOSMO_KEY
+from mirar.processors.utils.image_loader import BadImageError
 
 logger = logging.getLogger(__name__)
 
@@ -70,12 +71,13 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     # Check to ensure that biases and darks are tagged appropriately
     if header["EXPTIME"] == 0.0:
-        header[OBSCLASS_KEY] = "bias"
+        if header[OBSCLASS_KEY] not in ["corrupted", "bias"]:
+            header[OBSCLASS_KEY] = "bias"
 
     if header["FILTERID"] == "dark":
-        if header[OBSCLASS_KEY] not in ["dark", "bias", "test", "science"]:
+        if header[OBSCLASS_KEY] not in ["dark", "bias", "test", "science", "corrupted"]:
             header[OBSCLASS_KEY] = "test"
-        else:
+        elif header[OBSCLASS_KEY] not in ["corrupted"]:
             header[OBSCLASS_KEY] = "dark"
 
     # Discard pre-sunset, post-sunset darks
@@ -99,8 +101,9 @@ def clean_header(header: fits.Header) -> fits.Header:
     elif TARGET_KEY in header.keys():
         if header[TARGET_KEY] != "":
             target = header[TARGET_KEY]
-    # If the observation is dark/bias/focus/pointing/flat, enforce TARGET_KEY is also
-    # dark/bias as the TARGET_KEY is used for CalHunter. Currently they may not come
+    # If the observation is dark/bias/focus/pointing/flat/corrupted,
+    # enforce TARGET_KEY is also dark/bias as the TARGET_KEY is used for CalHunter.
+    # Currently they may not come
     # with the correct TARGET_KEY.
     if header[OBSCLASS_KEY].lower() in [
         "dark",
@@ -109,6 +112,7 @@ def clean_header(header: fits.Header) -> fits.Header:
         "pointing",
         "flat",
         "test",
+        "corrupted",
     ]:
         target = header[OBSCLASS_KEY].lower()
 
@@ -117,6 +121,8 @@ def clean_header(header: fits.Header) -> fits.Header:
     if "TARGNAME" in header.keys():
         if header["TARGNAME"] == "":
             header["TARGNAME"] = None
+    else:
+        header["TARGNAME"] = None
 
     header["RA"] = header["RADEG"]
     header["DEC"] = header["DECDEG"]
@@ -190,7 +196,11 @@ def clean_header(header: fits.Header) -> fits.Header:
     if "GAINROW" not in header.keys():
         header["GAINROW"] = "[]"
 
-    header["BOARD_ID"] = int(header["BOARD_ID"])
+    try:
+        header["BOARD_ID"] = int(header["BOARD_ID"])
+    except KeyError:
+        pass
+
     return header
 
 
@@ -275,7 +285,7 @@ def load_test_winter_image(
 
 
 def load_raw_winter_mef(
-    path: str | Path,
+    path: str,
 ) -> tuple[astropy.io.fits.Header, list[np.array], list[astropy.io.fits.Header]]:
     """
     Load mef image.
@@ -285,21 +295,47 @@ def load_raw_winter_mef(
     """
     primary_header, split_data, split_headers = open_mef_fits(path)
 
+    img_name = Path(path).name
+    primary_header[BASE_NAME_KEY] = img_name
+    primary_header[RAW_IMG_KEY] = path
+
     try:
         primary_header = clean_header(primary_header)
-    except KeyError:
-        logger.warning(f"Could not clean header for {path}, missing keywords")
-        primary_header[OBSCLASS_KEY] = "test"
-        primary_header["COADDS"] = 1
-        primary_header["CALSTEPS"] = ""
-        primary_header["PROCFAIL"] = 1
-        primary_header[TARGET_KEY] = "test"
-        primary_header["UTCTIME"] = "2023-06-14T00:00:00"
-        for field in core_fields:
-            if field not in primary_header.keys():
-                primary_header[field] = -99
-    primary_header[BASE_NAME_KEY] = os.path.basename(path)
-    primary_header[RAW_IMG_KEY] = path
+    except KeyError as exc:
+        logger.error(
+            f"Could not clean header for {path}: '{exc.args[0]}'. "
+            f"Marking as corrupted."
+        )
+        try:
+            primary_header["OBSTYPE"] = "CORRUPTED"
+            primary_header["FILTERID"] = "dark"
+            primary_header["FIELDID"] = DEFAULT_FIELD
+            primary_header["RADEG"] = 180.0
+            primary_header["DECDEG"] = 0.0
+            primary_header["AZIMUTH"] = 180.0
+            primary_header["ALTITUDE"] = 0.0
+            primary_header["DITHNUM"] = 0
+            primary_header["EXPTIME"] = 0.0
+
+            [date, time, milliseconds] = img_name.split("_")[1].split("-")
+            dateiso = (
+                f"{date[:4]}-{date[4:6]}-{date[6:]} "
+                f"{time[:2]}:{time[2:4]}:{time[4:6]}.{milliseconds}"
+            )
+
+            primary_header["UTCISO"] = dateiso
+            primary_header["TARGNAME"] = "CORRUPTED"
+
+            for field in core_fields:
+                if field not in primary_header.keys():
+                    primary_header[field] = -99
+
+            primary_header = clean_header(primary_header)
+            primary_header["PROCFAIL"] = True
+        except KeyError as exc2:
+            err = f"Could not mark {path} as corrupted. Failing entirely: {exc2}"
+            logger.error(err)
+            raise BadImageError(err) from exc2
 
     split_headers = tag_mef_extension_file_headers(
         primary_header=primary_header,
@@ -311,6 +347,9 @@ def load_raw_winter_mef(
     for board_header in split_headers:
         if "EXPTIME" in board_header.keys():
             del board_header["EXPTIME"]
+        # This is especially annoying
+        if "BOARD_ID" in board_header.keys():
+            board_header["BOARD_ID"] = int(board_header["BOARD_ID"])
 
     return primary_header, split_data, split_headers
 

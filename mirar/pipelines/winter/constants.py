@@ -24,6 +24,7 @@ imgtype_dict = {
     "focus": "FOCUS",
     "pointing": "POINTING",
     "other": "NULL",
+    "corrupted": "CORRUPTED",
 }
 
 NXSPLIT = 1

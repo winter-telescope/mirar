@@ -125,15 +125,17 @@ def winter_dark_oversubtraction_rejector(images: ImageBatch) -> ImageBatch:
     """
     Rejects images possibly affected by dark oversubtraction
     """
-    assert len(images) == 1
+    assert len(images) == 1, "Only one image should be passed to this function."
     median_sky_counts_threshold_per_sec = 100.0 / 120.0
     for image in images:
         data = image.get_data()
         if np.nanmedian(data) < median_sky_counts_threshold_per_sec * image["EXPTIME"]:
-            raise DarkOverSubtractionError(
-                f"Dark-subtracted image has lower than expected median"
-                f"counts for exposure time {image[EXPTIME_KEY]}."
-                f"Threshold : {median_sky_counts_threshold_per_sec * image['EXPTIME']},"
-                f" got: {np.nanmedian(data)}"
+            err = (
+                f"Dark-subtracted image has lower than expected median "
+                f"counts for exposure time {image[EXPTIME_KEY]}. "
+                f"Threshold: {median_sky_counts_threshold_per_sec * image['EXPTIME']}, "
+                f"got: {np.nanmedian(data)}"
             )
+            logger.error(err)
+            raise DarkOverSubtractionError(err)
     return images

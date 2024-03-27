@@ -123,19 +123,11 @@ class DatabaseImageBatchInserter(DatabaseImageInserter):
             for x in self.db_table.__dict__["__annotations__"]
             if (x != "sql_model")
             & (x not in self.db_table.model_computed_fields.keys())
+            & (x in batch[0].keys())
         ]
 
         for column in column_names:
-            try:
-                values = [x[column] for x in batch]
-            except KeyError as exc:
-                err = (
-                    f"Key {column} not found in the batch, cannot export it "
-                    f"to database. Available keys are {list(batch[0].keys())}"
-                )
-                logger.error(err)
-                raise ImageBatchDatabaseExporterError(err) from exc
-
+            values = [x[column] for x in batch]
             if len(pd.unique(pd.Series(values))) > 1:
                 err = (
                     f"Key {column} differs across images in the batch, cannot export"

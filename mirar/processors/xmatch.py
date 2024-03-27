@@ -87,7 +87,7 @@ class XMatch(BaseSourceProcessor):
                     dec=candidate_table[result_dec_colname][crd_nanmask],
                     unit=u.deg,
                 )
-                candidate_table[dist_colname][crd_nanmask] = (
+                candidate_table.loc[crd_nanmask, [dist_colname]] = (
                     crds[crd_nanmask].separation(result_crds).arcsec
                 )
 

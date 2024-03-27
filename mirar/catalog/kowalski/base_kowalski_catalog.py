@@ -79,6 +79,15 @@ class BaseKowalskiXMatch(BaseXMatchCatalog, ABC):
     Base class for a catalog using Kowalski
     """
 
+    @property
+    def kowalski_filter(self) -> dict:
+        """
+        Filter for Kowalski query
+
+        :return: filter
+        """
+        return {}
+
     def __init__(
         self,
         *args,
@@ -105,7 +114,7 @@ class BaseKowalskiXMatch(BaseXMatchCatalog, ABC):
                 "radec": coords,
                 "catalogs": {
                     f"{self.catalog_name}": {
-                        "filter": {},
+                        "filter": self.kowalski_filter,
                         "projection": self.projection,
                     }
                 },

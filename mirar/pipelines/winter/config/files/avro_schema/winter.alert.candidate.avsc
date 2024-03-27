@@ -7,7 +7,7 @@
 		{"name": "candid", "type": "long", "doc": "Candidate ID from candidates DB"},
 		{"name": "deprecated", "type": "boolean", "default": false, "doc": "Whether this candidate is superceded by a reprocessing"},
 		{"name": "jd", "type": "double", "doc": "Observation Julian date at start of exposure [days]"},
-		{"name": "fid", "type": "int", "doc": "Filter ID (0=Y; 1=J; 2=H; 3=K)"},
+		{"name": "fid", "type": "int", "doc": "Filter ID (1=Y; 2=J; 3=Hs; 4=Dark)"},
 		{"name": "exptime", "type": "float", "doc": "Integration time of camera exposure [sec]"},
 		{"name": "ndethist", "type": "int", "default": 1, "doc": "Number of detections"},
 		{"name": "jdstarthist", "type": "double", "doc": "Earliest Julian date of epoch corresponding to ndethist [days]"},
@@ -15,7 +15,7 @@
 		{"name": "progname", "type": "string", "doc": "Name of program e.g 2023A000"},
 		{"name": "programid", "type": "int", "doc": "Program ID: encodes either public, collab, MIT or caltech mode"},
 		{"name": "isdiffpos", "type": "boolean", "doc": "boolean true => candidate is from positive (sci minus ref) subtraction; false => candidate is from negative (ref minus sci) subtraction"},
-		{"name": "field", "type": "int", "doc": "WINTER field ID"},
+		{"name": "fieldid", "type": "int", "doc": "WINTER field ID"},
 		{"name": "ra", "type": "double", "doc": "Right Ascension of candidate; J2000 [deg]"},
 		{"name": "dec", "type": "double",  "doc": "Declination of candidate; J2000 [deg]"},
 		{"name": "magzpsci", "type": ["float", "null"], "doc": "Magnitude zero point for photometry estimates [mag]"},
@@ -102,9 +102,11 @@
         {"name": "tmhmag3", "type": ["float", "null"], "doc": "H-band PSF magnitude of third source from 2MASS catalog; if exists within 30 arcsec [mag]"},
         {"name": "tmkmag3", "type": ["float", "null"], "doc": "K-band PSF magnitude of third source from 2MASS catalog; if exists within 30 arcsec [mag]"},
         {"name": "tmobjectid3", "type": ["string", "null"], "doc": "Object ID of third source from 2MASS catalog; if exists within 30 arcsec"},
-		{"name": "neargaia", "type": ["float", "null"], "doc": "Distance to closest source from Gaia DR1 catalog irrespective of magnitude; if exists within 90 arcsec [arcsec]"},
-		{"name": "neargaiabright", "type": ["float", "null"], "doc": "Distance to closest source from Gaia DR1 catalog brighter than magnitude 14; if exists within 90 arcsec [arcsec]"},
-		{"name": "maggaia", "type": ["float", "null"], "doc": "Gaia (G-band) magnitude of closest source from Gaia DR1 catalog irrespective of magnitude; if exists within 90 arcsec [mag]"},
-		{"name": "maggaiabright", "type": ["float", "null"], "doc": "Gaia (G-band) magnitude of closest source from Gaia DR1 catalog brighter than magnitude 14; if exists within 90 arcsec [mag]"}
-			]
+		{"name": "distgaia", "type": ["float", "null"], "doc": "Distance to closest source from Gaia EDR3 catalog irrespective of magnitude; if exists within 90 arcsec [arcsec]"},
+		{"name": "plxgaia", "type": ["float", "null"], "doc": "Absolute (parallax/sigma) of closest source from Gaia EDR3 catalog; if exists within 90 arcsec [mas]"},
+		{"name": "ruwegaia", "type": ["float", "null"], "doc": "Random Unit Weighted Error of closest source from Gaia EDR3 catalog; if exists within 90 arcsec [mas]"},
+		{"name": "distgaiabright", "type": ["float", "null"], "doc": "Distance to closest source from Gaia DR3 catalog brighter than magnitude 14; if exists within 90 arcsec [arcsec]"},
+		{"name": "plxgaiabright", "type": ["float", "null"], "doc": "Absolute (parallax/sigma) of closest source from Gaia EDR3 catalog brighter than magnitude 14; if exists within 90 arcsec [mag]"},
+		{"name": "ruwegaiabright", "type": ["float", "null"], "doc": "Random Unit Weighted Error of closest source from Gaia EDR3 catalog brighter than magnitude 14; if exists within 90 arcsec [mas]"}
+	]
 }
