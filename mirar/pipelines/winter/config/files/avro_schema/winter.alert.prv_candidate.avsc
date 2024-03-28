@@ -7,8 +7,9 @@
 		{"name": "candid", "type": ["long", "null"], "doc": "Candidate ID from operations DB"},
 		{"name": "progname", "type": "string", "doc": "Name of program e.g 2023A000"},
 		{"name": "jd", "type": "double", "doc": "Observation Julian date at start of exposure [days]"},
-		{"name": "fid", "type": "int", "doc": "Filter ID (0=Y; 1=J; 2=H; 3=K)"},
+		{"name": "fid", "type": "int", "doc": "Filter ID (1=Y; 2=J; 3=Hs; 4=Dark)"},
 		{"name": "isdiffpos", "type": "boolean", "doc": "true => candidate is from positive (sci minus ref) subtraction; f or 0 => candidate is from negative (ref minus sci) subtraction"},
+		{"name": "diffmaglim", "type": ["float", "null"], "doc": "Expected 5-sigma mag limit in difference image based on global noise estimate [mag]"},
 		{"name": "fieldid", "type": "int", "doc": "field ID"},
 		{"name": "ra", "type": "double", "doc": "Right Ascension of candidate; J2000 [deg]"},
 		{"name": "dec", "type": "double", "doc": "Declination of candidate; J2000 [deg]"},
@@ -16,5 +17,5 @@
 		{"name": "sigmapsf", "type": "float", "doc": "1-sigma uncertainty in magpsf [mag]"},
 		{"name": "fwhm", "type": ["float", "null"], "doc": "Full Width Half Max assuming a Gaussian core, from SExtractor [pixels]"},
 		{"name": "scorr", "type": ["double", "null"], "doc": "Peak-pixel signal-to-noise ratio in point source matched-filtered detection image"}
-		        ]
+	]
 }
