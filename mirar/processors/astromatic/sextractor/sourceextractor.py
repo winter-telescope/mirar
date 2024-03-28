@@ -14,7 +14,7 @@ from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
-# sextractor_cmd = os.environ.get("SEXTRACTOR_CMD")
+# sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
 DEFAULT_SATURATION = 10000000000.0
 default_config_path = os.path.join(astromatic_config_dir, "astrom.sex")

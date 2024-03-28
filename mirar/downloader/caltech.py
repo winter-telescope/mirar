@@ -19,7 +19,7 @@ def download_via_ssh(
     pipeline: str,
     prefix: str = "",
     server_sub_dir: Optional[str] = None,
-    username: str = os.environ.get("SSH_USER"),
+    username: str = os.getenv("SSH_USER"),
 ):
     """
     Function to download data via rsync+ssh from a caltech machine

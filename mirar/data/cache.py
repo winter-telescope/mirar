@@ -10,7 +10,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-USE_CACHE: bool = os.environ.get("USE_WINTER_CACHE", "true") in ["true", "True", True]
+USE_CACHE: bool = os.getenv("USE_WINTER_CACHE", "true") in ["true", "True", True]
 
 
 class CacheError(Exception):

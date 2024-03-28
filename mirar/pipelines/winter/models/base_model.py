@@ -8,7 +8,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 from mirar.database.base_table import BaseTable
 
-DB_NAME = os.environ.get("DB_NAME", "winter")
+DB_NAME = os.getenv("DB_NAME", "winter")
 
 
 class WinterBase(DeclarativeBase, BaseTable):
