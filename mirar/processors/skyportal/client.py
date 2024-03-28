@@ -101,7 +101,7 @@ class SkyportalClient:
 
         :return: Fritz token
         """
-        token_fritz = os.environ.get("FRITZ_TOKEN")
+        token_fritz = os.getenv("FRITZ_TOKEN")
 
         if token_fritz is None:
             err = (
