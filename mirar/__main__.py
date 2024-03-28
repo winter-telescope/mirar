@@ -10,7 +10,6 @@ import logging
 import sys
 import tempfile
 
-import dotenv
 from astropy import units as u
 from astropy.time import Time
 
@@ -24,10 +23,6 @@ logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(
     description=f"{PACKAGE_NAME}: Modular Image Reduction and Analysis Resource"
-)
-
-parser.add_argument(
-    "-env", "--env_file", default=None, help=".env file to load environment variables"
 )
 
 parser.add_argument(
