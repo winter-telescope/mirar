@@ -86,9 +86,6 @@ if args.download:
 
 night = args.night
 
-if args.env_file is not None:
-    dotenv.load_dotenv(args.env_file)
-
 with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
     print(f"Using cache {temp_dir_path}")
 
