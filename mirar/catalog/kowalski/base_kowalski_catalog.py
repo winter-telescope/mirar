@@ -29,7 +29,7 @@ def get_kowalski() -> Kowalski:
     :return: Kowalski object
     """
 
-    token_kowalski = os.environ.get("KOWALSKI_TOKEN")
+    token_kowalski = os.getenv("KOWALSKI_TOKEN")
 
     if token_kowalski is not None:
         logger.debug("Using kowalski token")
@@ -39,8 +39,8 @@ def get_kowalski() -> Kowalski:
         )
 
     else:
-        username_kowalski = os.environ.get("KOWALSKI_USER")
-        password_kowalski = os.environ.get("KOWALSKI_PWD")
+        username_kowalski = os.getenv("KOWALSKI_USER")
+        password_kowalski = os.getenv("KOWALSKI_PWD")
 
         if username_kowalski is None:
             err = (

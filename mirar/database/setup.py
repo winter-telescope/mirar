@@ -32,7 +32,7 @@ def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
         pg_user.validate_credentials()
     except OperationalError:
         logger.warning(
-            f"Failed to credentials for user {DB_USER}. "
+            f"Failed to validate credentials for user {DB_USER}. "
             f"Will try creating new user with this name using admin credentials."
         )
         pg_admin = PostgresAdmin()
