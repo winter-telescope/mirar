@@ -102,7 +102,7 @@ class PS1Ref(BaseReferenceGenerator):
         )
         logger.debug(fitsurl)
 
-        with fits.open(fitsurl[0], timeout=300) as hdul:
+        with fits.open(fitsurl[0], timeout=600) as hdul:
             ref_hdu = hdul[0].copy()
 
         ref_hdu.header.rename_keyword("PC001001", "PC1_1")  # pylint: disable=no-member

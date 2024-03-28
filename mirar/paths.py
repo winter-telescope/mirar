@@ -22,13 +22,13 @@ if _n_cpu is None:
     default_n_cpu: int = 1
 else:
     default_n_cpu = max(int(_n_cpu / 2), 1)
-max_n_cpu: int = int(os.getenv("MAX_N_CPU", default_n_cpu))
+max_n_cpu: int = int(os.environ.get("MAX_N_CPU", default_n_cpu))
 
 # Set up default directories
 
 default_dir = Path.home()
 
-_base_raw_dir: str | None = os.getenv("RAW_DATA_DIR")
+_base_raw_dir: str | None = os.environ.get("RAW_DATA_DIR")
 
 if _base_raw_dir is None:
     warning = (
@@ -42,7 +42,7 @@ if _base_raw_dir is None:
 else:
     base_raw_dir = Path(_base_raw_dir)
 
-_base_output_dir = os.getenv("OUTPUT_DATA_DIR")
+_base_output_dir = os.environ.get("OUTPUT_DATA_DIR")
 
 if _base_output_dir is None:
     warning = (
