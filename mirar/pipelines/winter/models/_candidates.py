@@ -201,11 +201,12 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     tmobjectid3 = Column(VARCHAR(40), nullable=True)
 
     # Gaia properties
-
-    neargaia = Column(Float, nullable=True)
-    neargaiabright = Column(Float, nullable=True)
-    maggaia = Column(Float, nullable=True)
-    maggaiabright = Column(Float, nullable=True)
+    distgaia = Column(Float, nullable=True)
+    plxgaia = Column(Float, nullable=True)
+    ruwegaia = Column(Float, nullable=True)
+    distgaiabright = Column(Float, nullable=True)
+    plxgaiabright = Column(Float, nullable=True)
+    ruwegaiabright = Column(Float, nullable=True)
 
 
 class Candidate(BaseDB):
@@ -331,10 +332,13 @@ class Candidate(BaseDB):
     tmkmag3: float | None = Field(default=None)
     tmobjectid3: str | None = Field(default=None)
 
-    neargaia: float | None = Field(ge=0, default=None)
-    neargaiabright: float | None = Field(ge=0, default=None)
-    maggaia: float | None = Field(default=None)
-    maggaiabright: float | None = Field(default=None)
+    distgaia: float | None = Field(ge=0, default=None)
+    plxgaia: float | None = Field(default=None)
+    ruwegaia: float | None = Field(ge=0, default=None)
+
+    distgaiabright: float | None = Field(ge=0, default=None)
+    plxgaiabright: float | None = Field(default=None)
+    ruwegaiabright: float | None = Field(ge=0, default=None)
 
     def insert_entry(
         self, duplicate_protocol, returning_key_names=None

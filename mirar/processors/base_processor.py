@@ -55,6 +55,12 @@ class NoCandidatesError(ProcessorError):
     """
 
 
+class DuplicationError(ProcessorError):
+    """
+    An error raised if a processor returns multiple images with the same name
+    """
+
+
 class BaseProcessor:
     """
     Base processor class, to be inherited from for all processors
@@ -245,6 +251,7 @@ class BaseProcessor:
         """
         batch = self._apply(batch)
         batch = self._update_processing_history(batch)
+        self.check_duplicates(batch)
         return batch
 
     def _apply(self, batch: DataBatch) -> DataBatch:
@@ -276,6 +283,19 @@ class BaseProcessor:
             data_block["REDSOFT"] = PACKAGE_NAME
             batch[i] = data_block
         return batch
+
+    def check_duplicates(self, batch: DataBatch):
+        """
+        Function to check for duplicate names in a batch
+
+        :param batch: Input data batch
+        :return: None
+        """
+        names = [x.get_name() for x in batch]
+        if len(names) != len(set(names)):
+            err = f"Duplicate names in {self.__class__.__name__}"
+            logger.error(err)
+            raise DuplicationError(err)
 
 
 class CleanupProcessor(BaseProcessor, ABC):

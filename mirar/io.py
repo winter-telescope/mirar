@@ -15,13 +15,18 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning, AstropyWarning
 
 from mirar.data import Image
+from mirar.errors.exceptions import ProcessorError
 from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, RAW_IMG_KEY, core_fields
 
 logger = logging.getLogger(__name__)
 
 
-class MissingCoreFieldError(KeyError):
+class MissingCoreFieldError(KeyError, ProcessorError):
     """Base class for missing core field errors"""
+
+
+class ExtensionParsingError(ProcessorError):
+    """Base class for mislabelled extension errors"""
 
 
 def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU:
@@ -220,12 +225,14 @@ def tag_mef_extension_file_headers(
     """
 
     new_extension_headers = []
+    ext_keys = []
 
     for ext_num, ext_header in enumerate(extension_headers):
         if extension_key is not None:
             extension_num_str = str(ext_header[extension_key])
         else:
             extension_num_str = str(ext_num)
+        ext_keys.append(extension_num_str)
 
         # append primary_header to hdrext
         new_single_header = combine_mef_extension_file_headers(
@@ -237,6 +244,14 @@ def tag_mef_extension_file_headers(
             f"{extension_num_str}.fits"
         )
         new_extension_headers.append(new_single_header)
+
+    if len(set(ext_keys)) != len(ext_keys):
+        err = (
+            f"Found duplicate extension keys in {ext_keys}. "
+            "Please ensure that the extension key is unique."
+        )
+        logger.error(err)
+        raise ExtensionParsingError(err)
 
     return new_extension_headers
 
@@ -274,6 +289,10 @@ def open_mef_image(
         check_image_has_core_fields(image)
 
         split_images_list.append(image)
+
+    names = [x.get_name() for x in split_images_list]
+    if len(names) != len(set(names)):
+        raise ExtensionParsingError(f"Found duplicate image names in {names}")
 
     return split_images_list
 
