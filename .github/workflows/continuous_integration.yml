@@ -84,7 +84,7 @@ jobs:
           sudo apt-get install postgresql-common
           sudo apt-get install postgresql-server-dev-14
           sudo service postgresql restart
-          sudo -u postgres psql -c "create user runner; grant all privileges on database postgres to runner; ALTER USER runner WITH SUPERUSER;"
+          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runner_password'; GRANT ALL PRIVILEGES ON DATABASE postgres TO runner; ALTER USER runner WITH SUPERUSER;"
           git clone https://github.com/segasai/q3c.git
           make -C q3c
           sudo make -C q3c install
@@ -101,9 +101,9 @@ jobs:
         env:
           OUTPUT_DATA_DIR : /home/runner/
           PG_ADMIN_USER: runner
-          PG_ADMIN_PWD: ""
+          PG_ADMIN_PWD: runner_password
           DB_USER: runner
-          DB_PWD: ""
+          DB_PWD: runner_password
           WATCHDOG_EMAIL: ${{ secrets.WATCHDOG_EMAIL }}
           WATCHDOG_EMAIL_PASSWORD: ${{ secrets.WATCHDOG_EMAIL_PASSWORD }}
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}

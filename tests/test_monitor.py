@@ -32,15 +32,15 @@ class TestMonitor(BaseTestCase):
         """If required tokens do not exist raise an error.
         :raises RuntimeError: If missing token.
         """
-        if os.environ.get("WATCHDOG_EMAIL", default="") == "":
+        if os.getenv("WATCHDOG_EMAIL", default="") == "":
             raise RuntimeError(
                 "No email sender. Set environment variable WATCHDOG_EMAIL to test."
             )
-        if os.environ.get("WATCHDOG_EMAIL_PASSWORD", default="") == "":
+        if os.getenv("WATCHDOG_EMAIL_PASSWORD", default="") == "":
             raise RuntimeError(
                 "No email password. Set environment variable WATCHDOG_EMAIL_PASSWORD to test."
             )
-        if os.environ.get("WATCHDOG_EMAIL_RECIPIENTS", default="") == "":
+        if os.getenv("WATCHDOG_EMAIL_RECIPIENTS", default="") == "":
             raise RuntimeError(
                 "No email recipients. Set environment variable WATCHDOG_EMAIL_RECIPIENTS to test."
             )

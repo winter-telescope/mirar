@@ -116,11 +116,11 @@ class TestWircImsubPipeline(BaseTestCase):
         """If required tokens do not exist raise an error.
         :raises RuntimeError: If missing token.
         """
-        if os.environ.get("FRITZ_TOKEN", default="") == "":
+        if os.getenv("FRITZ_TOKEN", default="") == "":
             raise RuntimeError(
                 "No Fritz token. Set environment variable FRITZ_TOKEN to test."
             )
-        if os.environ.get("KOWALSKI_TOKEN", default="") == "":
+        if os.getenv("KOWALSKI_TOKEN", default="") == "":
             raise RuntimeError(
                 "No Kowalski token. Set environment variable KOWALSKI_TOKEN to test."
             )

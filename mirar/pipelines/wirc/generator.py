@@ -79,7 +79,7 @@ def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
 
 def wirc_reference_image_generator(
     image: Image,
-    images_directory: str = os.environ.get("REF_IMG_DIR"),
+    images_directory: str = os.getenv("REF_IMG_DIR"),
 ) -> WIRCRef:
     """
     Function to match a new wirc image to a reference image directory

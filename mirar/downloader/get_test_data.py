@@ -29,7 +29,7 @@ def do_testdata_check() -> bool:
 
     :return: Bool
     """
-    return bool(os.environ.get(NEED_TEST_DATA, default=False))
+    return bool(os.getenv(NEED_TEST_DATA, default=False))
 
 
 def completed_testdata_check() -> bool:
@@ -38,7 +38,7 @@ def completed_testdata_check() -> bool:
 
     :return: Bool
     """
-    return bool(os.environ.get(COMPLETED_CHECK_BOOL, default=False))
+    return bool(os.getenv(COMPLETED_CHECK_BOOL, default=False))
 
 
 def require_test_data():
