@@ -11,6 +11,13 @@ It was created by `Robert Stein <https://robertdstein.github.io/>`_ and
 * Want to use mirar for your own telescope? Great! Have a look at our :doc:`contributing-guide`. This also describes what to do if you find a bug or want to request a new feature.
 * What does x piece of mirar do? See the full documentation at :doc:`modules`.
 
+If you make use of mirar in your research, please cite the version using
+the DOI provided by Zenodo:
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.10888437.svg
+  :target: https://doi.org/10.5281/zenodo.10888437
+
+
 Contents
 --------
 
