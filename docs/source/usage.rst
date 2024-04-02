@@ -19,7 +19,7 @@ You can also set individual variables in the command line:
 
     export RAW_DATA_DIR=/home/astronomer/rawdata
 
-Or load all of these variables at once using the command line:
+If you have installed mirar via pip, or your .env file is located elsewhere, you can load all of these variables at once using the command line:
 
 .. code-block:: bash
 

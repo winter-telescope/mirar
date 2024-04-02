@@ -1,7 +1,7 @@
 Welcome to the mirar documentation!
 =======================================
 
-mirar is a modular, flexible, open-source code to reduce analyse and astronomy images, built using python 3.10.
+`mirar <https://github.com/winter-telescope/mirar>`_ is a modular, flexible, open-source code to reduce analyse and astronomy images, built using python 3.10.
 It was created by `Robert Stein <https://robertdstein.github.io/>`_ and
 `Viraj Karambelkar <https://github.com/virajkaram>`_ (see everyone who contributed at :doc:`contributors`).
 
