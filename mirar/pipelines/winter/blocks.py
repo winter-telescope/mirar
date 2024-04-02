@@ -44,6 +44,7 @@ from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
+    winter_boardid_6_demasker,
     winter_cal_requirements,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
@@ -246,7 +247,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 4
+BOARD_ID = 6
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -441,6 +442,7 @@ validate_astrometry = [
 
 stack_dithers = [
     ImageDebatcher(),
+    CustomImageBatchModifier(winter_boardid_6_demasker),
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     Swarp(
         swarp_config_path=swarp_config_path,
