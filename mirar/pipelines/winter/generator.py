@@ -910,10 +910,10 @@ def winter_anet_sextractor_config_path_generator(image: Image) -> str:
     """
     Generates the sextractor config file path for the winter image
     """
-    if image[SUB_ID_KEY] in [2, 6]:
-        return sextractor_anet_config["config_path_boardid_1_5"]
+    if image["BOARD_ID"] in [1, 5, 6]:
+        return sextractor_anet_config["config_path_boardid_1_5_6"]
 
-    return sextractor_anet_config["config_path_boardid_0_2_3_4"]
+    return sextractor_anet_config["config_path_boardid_2_3_4"]
 
 
 def winter_imsub_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
