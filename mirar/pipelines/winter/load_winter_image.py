@@ -39,6 +39,7 @@ from mirar.pipelines.winter.constants import (
     palomar_observer,
     sncosmo_filters,
     subdets,
+    winter_board_ids,
     winter_filters_map,
 )
 from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_dict
@@ -198,6 +199,9 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     try:
         header["BOARD_ID"] = int(header["BOARD_ID"])
+        assert (
+            header["BOARD_ID"] in winter_board_ids
+        ), f"Board ID {header['BOARD_ID']} not in {winter_board_ids}"
     except KeyError:
         pass
 
@@ -425,12 +429,6 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
     header = image.header
 
     mask = np.zeros(data.shape)
-    if header["BOARD_ID"] == 0:
-        # Mask the outage in the bottom center
-        mask[:500, 700:1600] = 1.0
-        mask[1075:, :] = 1.0
-        mask[:, 1950:] = 1.0
-        mask[:20, :] = 1.0
 
     if header["BOARD_ID"] == 1:
         mask[:, 344:347] = 1.0
@@ -495,5 +493,9 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[1072:, :] = 1.0
         mask[:, 1940:] = 1.0
         mask[:15, :] = 1.0
+
+    if header["BOARD_ID"] == 6:
+        # Mask channel 0
+        mask[0::2, 0::4] = 1.0
 
     return mask.astype(bool)
