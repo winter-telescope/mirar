@@ -975,3 +975,20 @@ def mask_stamps_around_bright_stars(image: Image):
         ] = True
 
     return mask
+
+
+def winter_boardid_6_demasker(images: ImageBatch) -> ImageBatch:
+    """
+    Demasks images from board 6 by replacing the bad channel pixels with the median of
+    the unmasked pixels
+    :param images: ImageBatch
+    :return: ImageBatch
+    """
+    for image in images:
+        boardid = image.header["BOARD_ID"]
+        if boardid == 6:
+            img_data = image.get_data()
+            img_data[0::2, 0::4] = np.nanmedian(img_data)
+            image.set_data(img_data)
+
+    return images
