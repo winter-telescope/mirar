@@ -321,7 +321,6 @@ load_unpacked = [
         ]
     ),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
-    ImageRejector(("BOARD_ID", "0")),
 ]
 
 #
@@ -795,6 +794,8 @@ photcal_stacks = [
 ] + photcal_and_export
 
 reduce_unpacked = load_unpacked + full_reduction
+
+reduce_unpacked_subset = load_unpacked + select_subset + full_reduction
 
 reduce = unpack_all + full_reduction
 
