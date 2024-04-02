@@ -20,7 +20,11 @@ __version__ = metadata.version(__package__)
 doc_dir = base_code_dir.joinpath("docs/")
 
 # Load environment variables for .env file
-dotenv.load_dotenv()
+variables_loaded = dotenv.load_dotenv()
+
+if variables_loaded:
+    info = "Environment variables were automatically loaded from .env file."
+    logger.info(info)
 
 _n_cpu = os.cpu_count()
 if _n_cpu is None:
