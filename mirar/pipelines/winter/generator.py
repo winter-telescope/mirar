@@ -980,7 +980,8 @@ def mask_stamps_around_bright_stars(image: Image):
 def winter_boardid_6_demasker(images: ImageBatch) -> ImageBatch:
     """
     Demasks images from board 6 by replacing the bad channel pixels with the median of
-    the unmasked pixels
+    the unmasked pixels. This is required because swarp does not handle masked pixels
+    distributed across the image well, producing a fully masked image.
     :param images: ImageBatch
     :return: ImageBatch
     """
