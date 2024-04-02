@@ -320,8 +320,10 @@ load_unpacked = [
             "MEDCOUNT",
         ]
     ),
-    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
+
+export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
+load_and_export_unpacked = load_unpacked + export_unpacked
 
 #
 cal_hunter = [
@@ -793,9 +795,11 @@ photcal_stacks = [
     ),
 ] + photcal_and_export
 
-reduce_unpacked = load_unpacked + full_reduction
+reduce_unpacked = load_and_export_unpacked + full_reduction
 
-reduce_unpacked_subset = load_unpacked + select_subset + full_reduction
+reduce_unpacked_subset = (
+    load_unpacked + select_subset + export_unpacked + full_reduction
+)
 
 reduce = unpack_all + full_reduction
 
@@ -810,7 +814,7 @@ reftest = (
     + refbuild
 )
 
-detrend_unpacked = load_unpacked + dark_calibrate + flat_calibrate
+detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
 
 only_ref = load_ref + select_ref + refbuild
 
