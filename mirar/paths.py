@@ -8,6 +8,8 @@ import shutil
 from importlib import metadata
 from pathlib import Path
 
+import dotenv
+
 logger = logging.getLogger(__name__)
 
 base_code_dir = Path(__file__).parent.parent.resolve()
@@ -16,6 +18,13 @@ PACKAGE_NAME = "mirar"
 __version__ = metadata.version(__package__)
 
 doc_dir = base_code_dir.joinpath("docs/")
+
+# Load environment variables for .env file
+variables_loaded = dotenv.load_dotenv()
+
+if variables_loaded:
+    info = "Environment variables were automatically loaded from .env file."
+    logger.info(info)
 
 _n_cpu = os.cpu_count()
 if _n_cpu is None:

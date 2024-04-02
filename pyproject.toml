@@ -52,6 +52,7 @@ urllib3 = "^1.26.16"
 sqlalchemy-utils = "^0.41.1"
 wintertoo = "^1.2.0"
 scipy = "^1.12.0"
+python-dotenv = "^1.0.1"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.0.1"
