@@ -34,15 +34,15 @@ WINTER_N_BOARDS = 6
 
 _subdets = []
 
-winter_board_ids = [1, 2, 3, 4, 5, 6]
+all_winter_board_ids = [0, 1, 2, 3, 4, 5, 6]
+active_winter_board_ids = [1, 2, 3, 4, 5, 6]
 
-for ndetector in winter_board_ids:
+for ndetector in all_winter_board_ids:
     for nx in range(NXSPLIT):
         for ny in range(NYSPLIT):
             _subdets.append(
                 {
                     "boardid": ndetector,
-                    "n_board_max": WINTER_N_BOARDS,
                     "nx": nx + 1,
                     "nxtot": NXSPLIT,
                     "ny": ny + 1,
@@ -51,7 +51,7 @@ for ndetector in winter_board_ids:
             )
 
 subdets = pd.DataFrame(_subdets)
-subdets["subdetid"] = winter_board_ids
+subdets["subdetid"] = range(1, len(subdets) + 1)
 
 PALOMAR_LOC = coords.EarthLocation(
     lat=coords.Latitude("33d21m25.5s"),

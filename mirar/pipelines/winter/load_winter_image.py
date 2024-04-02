@@ -35,11 +35,11 @@ from mirar.paths import (
     core_fields,
 )
 from mirar.pipelines.winter.constants import (
+    active_winter_board_ids,
     imgtype_dict,
     palomar_observer,
     sncosmo_filters,
     subdets,
-    winter_board_ids,
     winter_filters_map,
 )
 from mirar.pipelines.winter.models import DEFAULT_FIELD, default_program, itid_dict
@@ -200,8 +200,8 @@ def clean_header(header: fits.Header) -> fits.Header:
     try:
         header["BOARD_ID"] = int(header["BOARD_ID"])
         assert (
-            header["BOARD_ID"] in winter_board_ids
-        ), f"Board ID {header['BOARD_ID']} not in {winter_board_ids}"
+            header["BOARD_ID"] in active_winter_board_ids
+        ), f"Board ID {header['BOARD_ID']} not in {active_winter_board_ids}"
     except KeyError:
         pass
 
