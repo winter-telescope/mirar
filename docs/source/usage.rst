@@ -11,11 +11,22 @@ You can find a full list of variables in `env.example`:
 
 .. literalinclude:: ../../env.example
 
-You can set these variables in the command line:
+If you have created your own .env file, mirar will try to automatically load the .env file.
+
+You can also set individual variables in the command line:
 
 .. code-block:: bash
 
     export RAW_DATA_DIR=/home/astronomer/rawdata
+
+If you have installed mirar via pip, or your .env file is located elsewhere, you can load all of these variables at once using the command line:
+
+.. code-block:: bash
+
+    set -o allexport
+    source .env
+    set +o allexport
+
 
 Running the code
 ----------------
