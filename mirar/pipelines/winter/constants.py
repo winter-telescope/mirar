@@ -35,7 +35,6 @@ WINTER_N_BOARDS = 6
 _subdets = []
 
 all_winter_board_ids = [0, 1, 2, 3, 4, 5, 6]
-active_winter_board_ids = [1, 2, 3, 4, 5, 6]
 
 for ndetector in all_winter_board_ids:
     for nx in range(NXSPLIT):

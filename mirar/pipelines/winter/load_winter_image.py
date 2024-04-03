@@ -35,7 +35,7 @@ from mirar.paths import (
     core_fields,
 )
 from mirar.pipelines.winter.constants import (
-    active_winter_board_ids,
+    all_winter_board_ids,
     imgtype_dict,
     palomar_observer,
     sncosmo_filters,
@@ -200,8 +200,8 @@ def clean_header(header: fits.Header) -> fits.Header:
     try:
         header["BOARD_ID"] = int(header["BOARD_ID"])
         assert (
-            header["BOARD_ID"] in active_winter_board_ids
-        ), f"Board ID {header['BOARD_ID']} not in {active_winter_board_ids}"
+            header["BOARD_ID"] in all_winter_board_ids
+        ), f"Board ID {header['BOARD_ID']} not in {all_winter_board_ids}"
     except KeyError:
         pass
 
@@ -429,6 +429,12 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
     header = image.header
 
     mask = np.zeros(data.shape)
+    if header["BOARD_ID"] == 0:
+        # Mask the outage in the bottom center
+        mask[:500, 700:1600] = 1.0
+        mask[1075:, :] = 1.0
+        mask[:, 1950:] = 1.0
+        mask[:20, :] = 1.0
 
     if header["BOARD_ID"] == 1:
         mask[:, 344:347] = 1.0
