@@ -34,13 +34,14 @@ WINTER_N_BOARDS = 6
 
 _subdets = []
 
-for ndetector in range(WINTER_N_BOARDS):
+all_winter_board_ids = [0, 1, 2, 3, 4, 5, 6]
+
+for ndetector in all_winter_board_ids:
     for nx in range(NXSPLIT):
         for ny in range(NYSPLIT):
             _subdets.append(
                 {
                     "boardid": ndetector,
-                    "n_board_max": WINTER_N_BOARDS,
                     "nx": nx + 1,
                     "nxtot": NXSPLIT,
                     "ny": ny + 1,

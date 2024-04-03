@@ -38,6 +38,7 @@ from mirar.pipelines.winter.blocks import (
     reduce,
     reduce_no_calhunter,
     reduce_unpacked,
+    reduce_unpacked_subset,
     refbuild,
     reftest,
     save_raw,
@@ -102,7 +103,7 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
-        "full_subset": reduce_unpacked
+        "full_subset": reduce_unpacked_subset
         + imsub
         + detect_candidates
         + process_candidates

@@ -41,8 +41,8 @@ sextractor_photometry_psf_config = {
 
 
 sextractor_anet_config = {
-    "config_path_boardid_1_5": winter_file_dir.joinpath("astrom_anet_1_5.sex"),
-    "config_path_boardid_0_2_3_4": winter_file_dir.joinpath("astrom_anet_0_2_3_4.sex"),
+    "config_path_boardid_1_5_6": winter_file_dir.joinpath("astrom_anet_1_5_6.sex"),
+    "config_path_boardid_2_3_4": winter_file_dir.joinpath("astrom_anet_2_3_4.sex"),
     "filter_path": winter_file_dir.joinpath("default.conv"),
     "parameter_path": winter_file_dir.joinpath("astrom.param"),
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),

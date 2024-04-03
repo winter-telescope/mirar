@@ -44,6 +44,7 @@ from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
+    winter_boardid_6_demasker,
     winter_cal_requirements,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
@@ -246,7 +247,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 4
+BOARD_ID = 6
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -319,9 +320,10 @@ load_unpacked = [
             "MEDCOUNT",
         ]
     ),
-    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
-    ImageRejector(("BOARD_ID", "0")),
 ]
+
+export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
+load_and_export_unpacked = load_unpacked + export_unpacked
 
 #
 cal_hunter = [
@@ -441,6 +443,7 @@ validate_astrometry = [
 
 stack_dithers = [
     ImageDebatcher(),
+    CustomImageBatchModifier(winter_boardid_6_demasker),
     ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     Swarp(
         swarp_config_path=swarp_config_path,
@@ -792,7 +795,11 @@ photcal_stacks = [
     ),
 ] + photcal_and_export
 
-reduce_unpacked = load_unpacked + full_reduction
+reduce_unpacked = load_and_export_unpacked + full_reduction
+
+reduce_unpacked_subset = (
+    load_unpacked + select_subset + export_unpacked + full_reduction
+)
 
 reduce = unpack_all + full_reduction
 
@@ -807,7 +814,7 @@ reftest = (
     + refbuild
 )
 
-detrend_unpacked = load_unpacked + dark_calibrate + flat_calibrate
+detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
 
 only_ref = load_ref + select_ref + refbuild
 
