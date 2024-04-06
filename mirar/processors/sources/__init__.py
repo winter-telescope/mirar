@@ -9,7 +9,7 @@ from mirar.processors.sources.sextractor_source_detector import SextractorSource
 from mirar.processors.sources.source_detector import ZOGYSourceDetector
 from mirar.processors.sources.source_exporter import SourceWriter
 from mirar.processors.sources.source_filter import BaseSourceFilter
-from mirar.processors.sources.source_loader import SourceLoader
+from mirar.processors.sources.source_loader import SourceLoader, load_source_table
 from mirar.processors.sources.source_selector import (
     SourceBatcher,
     SourceDebatcher,
