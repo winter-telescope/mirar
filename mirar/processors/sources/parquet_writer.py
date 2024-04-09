@@ -56,7 +56,7 @@ def export_parquet(source_table: pd.DataFrame, metadata: dict, parquet_path: Pat
     )
     existing_metadata = table.schema.metadata
     merged_metadata = {
-        **{"Record Metadata": custom_metadata_bytes},
+        **{PARQUET_METADATA_KEY: custom_metadata_bytes},
         **existing_metadata,
     }
     table = table.replace_schema_metadata(merged_metadata)
