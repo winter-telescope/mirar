@@ -30,7 +30,7 @@ def save_source_table(source_table: SourceTable, out_path: Path):
 
 class SourceWriter(BaseSourceProcessor):
     """
-    Class to write a source table to a pair of json files
+    Class to write a source table
     """
 
     base_key = "SRCWRITE"
