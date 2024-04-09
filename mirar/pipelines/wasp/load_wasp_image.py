@@ -2,6 +2,8 @@
 Module for loading raw WASP images and ensuring they have the correct format
 """
 
+# pylint: disable=duplicate-code
+
 import logging
 from pathlib import Path
 

@@ -2,6 +2,8 @@
 Module containing WASP-specific paths
 """
 
+# pylint: disable=duplicate-code
+
 import os
 
 from mirar.pipelines.wasp.config.constants import PIPELINE_NAME

@@ -3,6 +3,8 @@ Module containing functions to generate astrometric/photometric calibration cata
 for WASP images
 """
 
+# pylint: disable=duplicate-code
+
 import logging
 
 from mirar.catalog import BaseCatalog, Gaia2Mass

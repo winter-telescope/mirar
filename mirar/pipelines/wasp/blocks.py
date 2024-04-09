@@ -5,6 +5,8 @@ lists which are used to build configurations for the
 :class:`~mirar.pipelines.wasp.wasp_pipeline.WASPPipeline`.
 """
 
+# pylint: disable=duplicate-code
+
 from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, core_fields
 from mirar.pipelines.wasp.config import (
     psfex_sci_config_path,
