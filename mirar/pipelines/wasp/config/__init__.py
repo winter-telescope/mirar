@@ -1,5 +1,5 @@
 """
-Module containing SEDMv2-specific paths
+Module containing WASP-specific paths
 """
 
 import os

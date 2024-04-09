@@ -34,7 +34,11 @@ from mirar.processors.flat import FlatCalibrator
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
-from mirar.processors.sources import ForcedPhotometryDetector, SourceWriter
+from mirar.processors.sources import (
+    CSVExporter,
+    ForcedPhotometryDetector,
+    ParquetWriter,
+)
 from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
@@ -68,7 +72,6 @@ calibrate = [
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
-    ImageSelector(("filter", "g'"), ("target", "ztf23abidzvf")),  # FIXME
     ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageBatcher(split_key=BASE_NAME_KEY),
     AutoAstrometry(),
@@ -131,10 +134,10 @@ subtract = [
         # norm_fits=True,
     ),
     ZOGYPrepare(
-        output_sub_dir="subtract",
+        output_sub_dir="zogy",
         catalog_purifier=wasp_zogy_catalogs_purifier,
     ),
-    ZOGY(output_sub_dir="subtract"),
+    ZOGY(output_sub_dir="zogy"),
     ImageSaver(output_dir_name="diff"),
     ForcedPhotometryDetector(ra_header_key="OBJRA", dec_header_key="OBJDEC"),
     AperturePhotometry(
@@ -164,5 +167,6 @@ subtract = [
         zp_key="ZP_AUTO",
     ),
     PSFPhotometry(),
-    SourceWriter(output_dir_name="sources"),
+    ParquetWriter(output_dir_name="sources"),
+    CSVExporter(output_dir_name="sources"),
 ]

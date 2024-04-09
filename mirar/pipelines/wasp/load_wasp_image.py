@@ -1,5 +1,5 @@
 """
-Module for loading raw GIT/LT images and ensuring they have the correct format
+Module for loading raw WASP images and ensuring they have the correct format
 """
 
 import logging
