@@ -24,7 +24,11 @@ from mirar.paths import (
     TARGET_KEY,
     TIME_KEY,
 )
-from mirar.pipelines.wasp.config.constants import WASP_FILTERS, WASP_NONLINEAR_LEVEL
+from mirar.pipelines.wasp.config.constants import (
+    WASP_FILTERS,
+    WASP_GAIN,
+    WASP_NONLINEAR_LEVEL,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +42,7 @@ def load_raw_wasp_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     """
     data, header = open_fits(path)
     if GAIN_KEY not in header.keys():
-        header[GAIN_KEY] = 1.0
+        header[GAIN_KEY] = WASP_GAIN
 
     header["FILTER"] = header["FILTER"].lower().replace(" ", "")
 
@@ -57,10 +61,12 @@ def load_raw_wasp_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
 
     if header["OBJECT"] in ["pointing", "focus", "dark", "bias", "flat"]:
         header[OBSCLASS_KEY] = header["OBJECT"]
-    elif "focus" in Path(path).name.lower():
-        header[OBSCLASS_KEY] = "focus"
     else:
         header[OBSCLASS_KEY] = "science"
+
+    for key in ["focus", "flat", "bias"]:
+        if key in Path(path).name.lower():
+            header[OBSCLASS_KEY] = key
 
     header[TARGET_KEY] = header["OBJECT"].lower()
 

@@ -10,8 +10,10 @@ from mirar.data import Image, ImageBatch
 from mirar.io import open_fits
 from mirar.paths import BASE_NAME_KEY
 from mirar.processors import BaseImageProcessor
-from mirar.processors.astromatic import Sextractor
-from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkimg_map
+from mirar.processors.astromatic.sextractor.sextractor import (
+    Sextractor,
+    sextractor_checkimg_map,
+)
 from mirar.processors.base_processor import PrerequisiteError, logger
 
 

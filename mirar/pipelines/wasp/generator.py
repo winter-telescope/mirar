@@ -36,7 +36,7 @@ def wasp_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
     """
     temp_cat_path = image[SEXTRACTOR_HEADER_KEY]
     cat = Gaia2Mass(
-        min_mag=10,
+        min_mag=12,
         max_mag=20,
         search_radius_arcmin=WASP_SEARCH_RADIUS_ARCMIN,
         trim=True,
@@ -58,10 +58,10 @@ def wasp_photometric_catalog_generator(image: Image) -> BaseCatalog:
     :return: catalog at image position
     """
     filter_name = image["FILTER"].replace("'", "")
-    dec = image["DEC"]
+    dec = image["OBJDEC"]
 
     if filter_name in ["u", "U"]:
-        if in_sdss(image["RA"], image["DEC"]):
+        if in_sdss(image["OBJRA"], image["OBJDEC"]):
             return SDSS(
                 min_mag=10,
                 max_mag=WASP_PHOTOMETRIC_MAX_MAG,

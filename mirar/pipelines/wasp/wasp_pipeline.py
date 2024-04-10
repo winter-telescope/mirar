@@ -7,7 +7,7 @@ from pathlib import Path
 
 from mirar.data import Image
 from mirar.pipelines.base_pipeline import Pipeline
-from mirar.pipelines.wasp.blocks import load_raw, reduce, subtract
+from mirar.pipelines.wasp.blocks import build_log, load_raw, reduce, subtract
 from mirar.pipelines.wasp.config import PIPELINE_NAME
 from mirar.pipelines.wasp.load_wasp_image import load_raw_wasp_image
 
@@ -24,6 +24,7 @@ class WASPPipeline(Pipeline):
     non_linear_level = 30000  # no idea, for pylint
     all_pipeline_configurations = {
         "default": load_raw + reduce + subtract,
+        "log": load_raw + build_log,
         "reduce": load_raw + reduce,
     }
 
