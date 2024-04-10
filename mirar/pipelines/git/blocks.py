@@ -64,9 +64,6 @@ load_raw = [
     ImageDebatcher(),
     ImageBatcher(BASE_NAME_KEY),
     Swarp(
-        center_ra=148.9996947,
-        center_dec=69.6747746,
-        center_type="MANUAL",
         x_imgpixsize=1500,
         y_imgpixsize=1500,
         swarp_config_path=swarp_config_path,
