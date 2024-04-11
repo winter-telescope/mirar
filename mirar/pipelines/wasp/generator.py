@@ -22,7 +22,7 @@ from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
 
 logger = logging.getLogger(__name__)
 
-WASP_SEARCH_RADIUS_ARCMIN = 9.0
+WASP_SEARCH_RADIUS_ARCMIN = 30.0
 WASP_PHOTOMETRIC_MAX_MAG = 22
 
 
@@ -36,8 +36,8 @@ def wasp_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
     """
     temp_cat_path = image[SEXTRACTOR_HEADER_KEY]
     cat = Gaia2Mass(
-        min_mag=12,
-        max_mag=20,
+        min_mag=10,
+        max_mag=24,
         search_radius_arcmin=WASP_SEARCH_RADIUS_ARCMIN,
         trim=True,
         image_catalog_path=temp_cat_path,

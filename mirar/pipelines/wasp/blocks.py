@@ -10,12 +10,14 @@ lists which are used to build configurations for the
 from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
 from mirar.pipelines.wasp.config import (
     psfex_sci_config_path,
+    scamp_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
     swarp_config_path,
 )
 from mirar.pipelines.wasp.config.constants import WASP_PIXEL_SCALE
 from mirar.pipelines.wasp.generator import (
+    wasp_astrometric_catalog_generator,
     wasp_photometric_catalog_generator,
     wasp_reference_image_generator,
     wasp_reference_image_resampler,
@@ -24,9 +26,10 @@ from mirar.pipelines.wasp.generator import (
     wasp_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wasp.load_wasp_image import load_raw_wasp_image
-from mirar.processors.astromatic import PSFex, Sextractor, SextractorBkgSubtractor
+from mirar.processors.astromatic import PSFex, Scamp, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
+from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.bias import BiasCalibrator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.flat import FlatCalibrator
@@ -56,8 +59,6 @@ build_log = [  # pylint: disable=duplicate-code
     CSVLog(
         export_keys=[
             TARGET_KEY,
-            "RA",
-            "DEC",
             "OBJRA",
             "OBJDEC",
             "DATE-OBS",
@@ -78,38 +79,26 @@ calibrate = [
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageBatcher(split_key=BASE_NAME_KEY),
-    # AutoAstrometry(),
-    # Sextractor(
-    #     output_sub_dir="sextractor",
-    #     checkimage_name=None,
-    #     checkimage_type=None,
-    #     **sextractor_astrometry_config,
-    # ),
-    AstrometryNet(
-        output_sub_dir="anet",
-        scale_units="degw",
-        downsample=2,
-        timeout=120,
-        use_sextractor=True,
-    ),
+    AutoAstrometry(),
     Sextractor(
+        output_sub_dir="sextractor",
         **sextractor_astrometry_config,
-        write_regions_bool=False,
-        output_sub_dir="skysub",
-        checkimage_type=["-BACKGROUND"],
     ),
-    SextractorBkgSubtractor(),
-    # LACosmicCleaner(effective_gain_key=GAIN_KEY, readnoise=5),
-    # Scamp(
-    #     ref_catalog_generator=wasp_astrometric_catalog_generator,
-    #     scamp_config_path=scamp_path,
-    #     cache=False,
-    # ),
+    Scamp(
+        ref_catalog_generator=wasp_astrometric_catalog_generator,
+        scamp_config_path=scamp_path,
+        cache=False,
+    ),
     ImageDebatcher(),
     ImageBatcher(split_key=["target", "filter", "objra", "objdec"]),
     Swarp(
         swarp_config_path=swarp_config_path,
-        include_scamp=False,
+        include_scamp=True,
+    ),
+    AstrometryNet(
+        output_sub_dir="anet",
+        timeout=120,
+        use_sextractor=True,
     ),
     Sextractor(
         output_sub_dir="photprocess",

@@ -51,8 +51,12 @@ def load_raw_wasp_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     # Set up for forced photometry
     ra = Angle(f"{header['RA']} hours").degree
     header["OBJRA"] = ra
+
     dec = Angle(f"{header['DEC']} degrees").degree
     header["OBJDEC"] = dec
+
+    del header["RA"]
+    del header["DEC"]
 
     header["DETCOADD"] = 1
 
