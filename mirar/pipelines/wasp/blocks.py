@@ -90,7 +90,7 @@ calibrate = [
         cache=False,
     ),
     ImageDebatcher(),
-    ImageBatcher(split_key=["target", "filter", "objra", "objdec"]),
+    ImageBatcher(split_key=["target", "filter"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         include_scamp=True,
