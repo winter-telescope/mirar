@@ -5,7 +5,7 @@ Module for WINTER data reduction
 # pylint: disable=duplicate-code
 import os
 
-from mirar.catalog.kowalski import PS1, TMASS, Gaia, GaiaBright
+from mirar.catalog.kowalski import PS1, TMASS, Gaia, GaiaBright, PS1SGSc
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -247,7 +247,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 6
+BOARD_ID = 4
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -634,6 +634,7 @@ load_sources = [
 crossmatch_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
+    XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=Gaia(num_sources=1, search_radius_arcmin=1.5)),
     XMatch(catalog=GaiaBright(num_sources=1, search_radius_arcmin=1.5)),
     SourceWriter(output_dir_name="kowalski"),
