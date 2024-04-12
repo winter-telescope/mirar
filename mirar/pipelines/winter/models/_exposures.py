@@ -122,8 +122,8 @@ class Exposure(BaseDB):
         min_length=0, max_length=MAX_TARGNAME_LEN, default=None
     )
     rawpath: str = Field(min_length=1)
-    readoutm: str | None = Field()
-    readoutv: str | None = Field()
+    readoutm: str | None = Field(default=None)
+    readoutv: str | None = Field(default=None)
 
     utctime: datetime = Field()
     exptime: float = Field(ge=0)
