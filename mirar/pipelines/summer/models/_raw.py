@@ -27,9 +27,9 @@ class RawTable(SummerBase):  # pylint: disable=too-few-public-methods
         Integer,
         Sequence(start=1, name="raw_urawid_seq"),
         autoincrement=True,
-        unique=True,
+        primary_key=True,
     )
-    rawid = Column(Double, primary_key=True, autoincrement=False)
+    rawid = Column(Double, primary_key=False, unique=True, autoincrement=False)
     proc: Mapped["ProcTable"] = relationship(back_populates="raw_ids")
 
     uexpid: Mapped[int] = mapped_column(ForeignKey("exposures.uexpid"))
