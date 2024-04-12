@@ -29,6 +29,12 @@ class XMatch(BaseSourceProcessor):
         self.catalog = catalog
         super().__init__()
 
+    def __str__(self):
+        return (
+            f"Processor to cross-match sources with "
+            f"'{self.catalog.catalog_name}' catalog."
+        )
+
     def _apply_to_sources(
         self,
         batch: SourceBatch,

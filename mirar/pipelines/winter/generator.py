@@ -718,6 +718,7 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
             & (src_df["magdiff"] < 1.6)
             & (src_df["magdiff"] > -1.0)
             & (src_df["mindtoedge"] > 50.0)
+            & (src_df["isdiffpos"])
         )
         filtered_df = src_df[mask].reset_index(drop=True)
 

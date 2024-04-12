@@ -44,3 +44,35 @@ class PS1(BaseKowalskiXMatch):
 
     ra_column_name = f"{abbreviation}ra"
     dec_column_name = f"{abbreviation}dec"
+
+
+class PS1SGSc(BaseKowalskiXMatch):
+    """
+    PS1 Star/Galaxy Score Kowalski catalog
+    """
+
+    catalog_name = "PS1_PSC"
+    abbreviation = "sgscore"
+    projection = {
+        "_id": 1,
+        "ra": 1,
+        "dec": 1,
+        "ps_score": 1,
+    }
+
+    column_names = {
+        "_id": f"{abbreviation}objid",
+        "ra": f"{abbreviation}ra",
+        "dec": f"{abbreviation}dec",
+        "ps_score": "sgscore",
+    }
+
+    column_dtypes = {
+        "sgscoreobjid": float,
+        "sgscorera": float,
+        "sgscoredec": float,
+        "sgscore": float,
+    }
+
+    ra_column_name = f"{abbreviation}ra"
+    dec_column_name = f"{abbreviation}dec"
