@@ -240,6 +240,8 @@ csvlog = [
             "DECDEG",
             "T_ROIC",
             "FIELDID",
+            "READOUTM",
+            "READOUTV",
         ]
     ),
 ]

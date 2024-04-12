@@ -16,12 +16,12 @@ from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image, ImageBatch
 from mirar.io import (
+    ExtensionParsingError,
     open_fits,
     open_mef_fits,
     open_mef_image,
     open_raw_image,
     tag_mef_extension_file_headers,
-    ExtensionParsingError
 )
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -60,6 +60,14 @@ def clean_header(header: fits.Header) -> fits.Header:
     """
     header[GAIN_KEY] = 1.0
     header[SATURATE_KEY] = 40000.0
+
+    if "READOUTM" not in header.keys():
+        header["READOUTM"] = None
+
+    if "READOUTV" not in header.keys():
+        header["READOUTV"] = None
+    elif header["READOUTV"] is not None:
+        header["READOUTV"] = str(header["READOUTV"])
 
     header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
 
@@ -340,7 +348,7 @@ def load_raw_winter_mef(
 
             for field in core_fields:
                 if field not in primary_header.keys():
-                    primary_header[field] = -99.
+                    primary_header[field] = -99.0
 
             primary_header = clean_header(primary_header)
         except KeyError as exc2:
@@ -363,17 +371,17 @@ def load_raw_winter_mef(
             primary_header=primary_header,
             extension_headers=split_headers,
         )
-        for i in range(len(split_headers)):
-            split_headers[i]["BOARD_ID"] = i
-            split_headers[i]["T_ROIC"] = -99.
+        for i, split_header in enumerate(split_headers):
+            split_header["BOARD_ID"] = i
+            split_header["T_ROIC"] = -99.0
 
     # Mark final headers as corrupted regardless
     # of which bit of the header was corrupted
-    for i in range(len(split_headers)):
+    for split_header in split_headers:
         if corrupted:
-            split_headers[i]["OBSTYPE"] = "CORRUPTED"
-            split_headers[i]["TARGNAME"] = "CORRUPTED"
-        split_headers[i] = clean_header(split_headers[i])
+            split_header["OBSTYPE"] = "CORRUPTED"
+            split_header["TARGNAME"] = "CORRUPTED"
+        clean_header(split_header)
 
     # Sometimes there are exptime keys
     for board_header in split_headers:

@@ -24,8 +24,15 @@ from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.database.transactions.insert import _insert_in_table
 from mirar.database.transactions.update import _update_database_entry
+from mirar.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
+
+
+class DatabaseUpdateError(ProcessorError):
+    """
+    Exception for database update errors
+    """
 
 
 class PydanticBase(BaseModel):
@@ -221,6 +228,16 @@ class BaseDB(PydanticBase):
             columns=[x.name for x in available_unique_keys],
             accepted_values=[self.model_dump()[x.name] for x in available_unique_keys],
         )
+
+        matches = select_from_table(
+            db_constraints=constraints,
+            sql_table=self.sql_model,
+        )
+
+        if len(matches) == 0:
+            err = f"No matches found for {self.model_dump()} in {self.sql_model}."
+            logger.error(err)
+            raise DatabaseUpdateError(err)
 
         full_dict = self.model_dump()
 
