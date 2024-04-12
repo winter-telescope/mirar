@@ -21,6 +21,7 @@ from mirar.io import (
     open_mef_image,
     open_raw_image,
     tag_mef_extension_file_headers,
+    ExtensionParsingError
 )
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -179,11 +180,14 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
 
     header["IMGTYPE"] = header[OBSCLASS_KEY]
+    if header["IMGTYPE"] == "test":
+        header["IMGTYPE"] = "other"
 
     if not header["IMGTYPE"] in imgtype_dict:
-        header["ITID"] = itid_dict[imgtype_dict["other"]]
+        logger.error(f"Unknown image type: {header['IMGTYPE']}")
+        header["ITID"] = itid_dict[imgtype_dict["corrupted"]]
     else:
-        header["ITID"] = itid_dict[imgtype_dict[header[OBSCLASS_KEY]]]
+        header["ITID"] = itid_dict[imgtype_dict[header["IMGTYPE"]]]
 
     header["EXPMJD"] = header["MJD-OBS"]
     if header["FILTER"].lower() in ["y", "j", "h"]:
@@ -303,6 +307,8 @@ def load_raw_winter_mef(
     primary_header[BASE_NAME_KEY] = img_name
     primary_header[RAW_IMG_KEY] = path
 
+    corrupted = False
+
     try:
         primary_header = clean_header(primary_header)
     except KeyError as exc:
@@ -310,6 +316,7 @@ def load_raw_winter_mef(
             f"Could not clean header for {path}: '{exc.args[0]}'. "
             f"Marking as corrupted."
         )
+        corrupted = True
         try:
             primary_header["OBSTYPE"] = "CORRUPTED"
             primary_header["FILTERID"] = "dark"
@@ -319,6 +326,7 @@ def load_raw_winter_mef(
             primary_header["AZIMUTH"] = 180.0
             primary_header["ALTITUDE"] = 0.0
             primary_header["DITHNUM"] = 0
+            primary_header["NUMDITHS"] = 1
             primary_header["EXPTIME"] = 0.0
 
             [date, time, milliseconds] = img_name.split("_")[1].split("-")
@@ -332,20 +340,40 @@ def load_raw_winter_mef(
 
             for field in core_fields:
                 if field not in primary_header.keys():
-                    primary_header[field] = -99
+                    primary_header[field] = -99.
 
             primary_header = clean_header(primary_header)
-            primary_header["PROCFAIL"] = True
         except KeyError as exc2:
             err = f"Could not mark {path} as corrupted. Failing entirely: {exc2}"
             logger.error(err)
             raise BadImageError(err) from exc2
 
-    split_headers = tag_mef_extension_file_headers(
-        primary_header=primary_header,
-        extension_headers=split_headers,
-        extension_key="BOARD_ID",
-    )
+    try:
+        split_headers = tag_mef_extension_file_headers(
+            primary_header=primary_header,
+            extension_headers=split_headers,
+            extension_key="BOARD_ID",
+        )
+
+    except ExtensionParsingError:
+        logger.error(f"Could not parse extensions for {path}. Marking as corrupted.")
+        corrupted = True
+
+        split_headers = tag_mef_extension_file_headers(
+            primary_header=primary_header,
+            extension_headers=split_headers,
+        )
+        for i in range(len(split_headers)):
+            split_headers[i]["BOARD_ID"] = i
+            split_headers[i]["T_ROIC"] = -99.
+
+    # Mark final headers as corrupted regardless
+    # of which bit of the header was corrupted
+    for i in range(len(split_headers)):
+        if corrupted:
+            split_headers[i]["OBSTYPE"] = "CORRUPTED"
+            split_headers[i]["TARGNAME"] = "CORRUPTED"
+        split_headers[i] = clean_header(split_headers[i])
 
     # Sometimes there are exptime keys
     for board_header in split_headers:
