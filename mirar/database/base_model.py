@@ -224,18 +224,26 @@ class BaseDB(PydanticBase):
 
         assert len(available_unique_keys) > 0
 
-        constraints = DBQueryConstraints(
-            columns=[x.name for x in available_unique_keys],
-            accepted_values=[self.model_dump()[x.name] for x in available_unique_keys],
-        )
+        valid_constraint = None
 
-        matches = select_from_table(
-            db_constraints=constraints,
-            sql_table=self.sql_model,
-        )
+        for key in available_unique_keys:
+            constraints = DBQueryConstraints(
+                columns=[key.name],
+                accepted_values=[self.model_dump()[key.name]],
+            )
+            matches = select_from_table(
+                db_constraints=constraints,
+                sql_table=self.sql_model,
+            )
+            if len(matches) == 1:
+                valid_constraint = constraints
+                break
 
-        if len(matches) == 0:
-            err = f"No matches found for {self.model_dump()} in {self.sql_model}."
+        if valid_constraint is None:
+            err = (
+                f"No matches found for {self.model_dump()} in {self.sql_model}. "
+                f"Tried {available_unique_keys}"
+            )
             logger.error(err)
             raise DatabaseUpdateError(err)
 
@@ -249,7 +257,7 @@ class BaseDB(PydanticBase):
         _update_database_entry(
             update_dict=update_dict,
             sql_table=self.sql_model,
-            db_constraints=constraints,
+            db_constraints=valid_constraint,
         )
 
     def update_entry(self, update_keys=None):
