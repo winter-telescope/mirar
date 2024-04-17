@@ -606,7 +606,9 @@ imsub = [
 
 load_sub = [
     ImageLoader(input_sub_dir="subtract"),
+    DatabaseImageInserter(db_table=Diff, duplicate_protocol="ignore"),
 ]
+
 detect_candidates = [
     ZOGYSourceDetector(
         output_sub_dir="subtract",
@@ -639,10 +641,10 @@ crossmatch_candidates = [
     XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=Gaia(num_sources=1, search_radius_arcmin=1.5)),
     XMatch(catalog=GaiaBright(num_sources=1, search_radius_arcmin=1.5)),
-    SourceWriter(output_dir_name="kowalski"),
     CustomSourceTableModifier(
         modifier_function=winter_candidate_avro_fields_calculator
     ),
+    SourceWriter(output_dir_name="kowalski"),
 ]
 
 select_history = [

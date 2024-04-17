@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import ClassVar
 
 import pandas as pd
+from psycopg.errors import ForeignKeyViolation
 from pydantic import Field
 from sqlalchemy import (
     VARCHAR,
@@ -152,7 +153,6 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     ssnamenr = Column(VARCHAR(40), nullable=True)
 
     # ToO
-
     tooflag = Column(Boolean, nullable=False)
 
     # Cross-match properties
@@ -362,7 +362,20 @@ class Candidate(BaseDB):
             )
             self.progname = default_program.progname
 
-        return self._insert_entry(
-            duplicate_protocol=duplicate_protocol,
-            returning_key_names=returning_key_names,
-        )
+        try:
+            self._insert_entry(
+                duplicate_protocol=duplicate_protocol,
+                returning_key_names=returning_key_names,
+            )
+        except ForeignKeyViolation:
+            self.diffid = None
+            self.deprecated = True
+            err = (
+                "Diff not found in database. "
+                "Setting diffid to None and deprecating entry"
+            )
+            logger.error(err)
+            self._insert_entry(
+                duplicate_protocol=duplicate_protocol,
+                returning_key_names=returning_key_names,
+            )
