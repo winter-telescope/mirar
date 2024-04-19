@@ -415,12 +415,12 @@ astrometry = [
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
     ),
     CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
-    Scamp(
-        scamp_config_path=scamp_config_path,
-        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
-        copy_scamp_header_to_image=True,
-        cache=True,
-    ),
+    # Scamp(
+    #     scamp_config_path=scamp_config_path,
+    #     ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+    #     copy_scamp_header_to_image=True,
+    #     cache=True,
+    # ),
     ImageSaver(output_dir_name="post_scamp"),
 ]
 
@@ -762,7 +762,8 @@ focus_subcoord = [
 ]
 
 # Combinations of different blocks, to be used in configurations
-process_and_stack = astrometry + validate_astrometry + stack_dithers
+# process_and_stack = astrometry + validate_astrometry + stack_dithers
+process_and_stack = astrometry + stack_dithers
 
 unpack_subset = (
     load_raw
