@@ -50,17 +50,30 @@ def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
     """
     image_array = np.array([x for x in image_batch])
 
-    mag_zps = np.array(
-        [
-            x["MAGZPT"]
-            + 2.5 * np.log10(x["EXPTIME"])
-            - x["EXTINCT"] * ((x["AMSTART"] + x["AMEND"]) / 2)
-            for x in image_batch
-        ]
-    )
+    logger.debug(image_array[0].header)
+    try:
+        mag_zps = np.array(
+            [
+                x["MAGZPT"]
+                + 2.5 * np.log10(x["EXPTIME"])
+                - x["EXTINCT"] * ((x["AMSTART"] + x["AMEND"]) / 2)
+                for x in image_batch
+            ]
+        )
+    except KeyError: # TODO: fix
+        mag_zps = np.array(
+            [
+                x["MAGZPT"]
+                + 2.5 * np.log10(x["EXPTIME"])
+                for x in image_batch
+            ]
+        )
     # magerr_zps = np.array([x["MAGZRR"] for x in ukirt_images])
     median_mag_zp = np.median(mag_zps)
-    seeings = np.array([x["SEEING"] for x in image_batch])
+    try:
+        seeings = np.array([x["SEEING"] for x in image_batch])
+    except KeyError:#TODO: fix
+        seeings = np.array([1 for x in image_batch])
     zpmask = np.abs(mag_zps - median_mag_zp) < 0.4
     seeingmask = (seeings < 3.5 / 0.4) & (seeings > 0)
 
@@ -143,15 +156,23 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
             ref_img[BASE_NAME_KEY] = new_basename
 
         # Get the scaling factors
-        mag_zps = np.array(
-            [
-                x["MAGZPT"]
-                + 2.5 * np.log10(x["EXPTIME"])
-                - x["EXTINCT"] * ((x["AMSTART"] + x["AMEND"]) / 2)
-                for x in wfau_images
-            ]
-        )
-
+        try:
+            mag_zps = np.array(
+                [
+                    x["MAGZPT"]
+                    + 2.5 * np.log10(x["EXPTIME"])
+                    - x["EXTINCT"] * ((x["AMSTART"] + x["AMEND"]) / 2)
+                    for x in wfau_images
+                ]
+            )
+        except KeyError: #TODO: fix
+            mag_zps = np.array(
+                [
+                    x["MAGZPT"]
+                    + 2.5 * np.log10(x["EXPTIME"])
+                    for x in wfau_images
+                ]
+            )
         median_mag_zp = np.median(mag_zps)
         scaling_factors = 10 ** (0.4 * (median_mag_zp - mag_zps))
 

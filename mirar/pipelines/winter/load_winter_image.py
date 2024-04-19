@@ -128,7 +128,10 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     header[TARGET_KEY] = target
 
+    logger.debug(header['TARGNAME'])
     if "TARGNAME" in header.keys():
+        if header["TARGNAME"] is not None:
+            header["TARGNAME"] = header["TARGNAME"].replace(" ", "")
         if header["TARGNAME"] == "":
             header["TARGNAME"] = None
     else:

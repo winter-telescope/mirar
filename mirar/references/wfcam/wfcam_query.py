@@ -17,6 +17,7 @@ from astropy.io import fits
 from astropy.units import Quantity
 from astropy.wcs import FITSFixedWarning
 from astroquery.ukidss import UkidssClass
+from astroquery.vsa import VsaClass
 from astroquery.utils.commons import FileContainer
 from astroquery.wfau import BaseWFAUClass
 from astrosurveyutils.surveys import MOCSurvey
@@ -38,7 +39,7 @@ from mirar.references.wfcam.utils import (
     QUERY_DEC_KEY,
     QUERY_FILT_KEY,
     QUERY_RA_KEY,
-    find_ukirt_surveys,
+    find_wfcam_surveys,
     get_query_coordinates_from_header,
     get_wfcam_file_identifiers_from_url,
     make_wfcam_image_from_hdulist,
@@ -358,6 +359,9 @@ class WFAUQuery(BaseWFCAMQuery):
                 # This runs only is skip_online_query is False, again, as a safeguard
                 # against cases where the server is out for long times.
                 if (len(imagepaths) == 0) and (not self.skip_online_query):
+                    undeprecated_compids_file = wfcam_undeprecated_compid_file
+                    if isinstance(wfau_query, VsaClass):
+                        undeprecated_compids_file = None
                     imagepaths = download_wfcam_archive_images(
                         crd,
                         wfau_query=wfau_query,
@@ -367,6 +371,7 @@ class WFAUQuery(BaseWFCAMQuery):
                         use_local_database=self.use_db_for_component_queries,
                         components_table=self.components_db_table,
                         duplicate_protocol="ignore",
+                        undeprecated_compids_file=undeprecated_compids_file
                     )
 
                 # Make an entry in the queries table
@@ -722,7 +727,8 @@ class UKIRTOnlineQuery(WFAUQuery):
         Returns:
             :return: list of surveys
         """
-        return find_ukirt_surveys(ra=ra, dec=dec, band=self.filter_name)
+        return find_wfcam_surveys(ra=ra, dec=dec, band=self.filter_name,
+                                  telescope="ukirt")
 
     def get_query_class(self) -> BaseWFAUClass:
         """
@@ -731,3 +737,30 @@ class UKIRTOnlineQuery(WFAUQuery):
             :return: query class
         """
         return UkidssClass()
+
+
+class VISTAOnlineQuery(WFAUQuery):
+    """
+    Class to query the UKIRT online database at the WFAU.
+    This is a subclass of the WFAUQuery.
+    """
+
+    def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
+        """
+        Function to get the surveys that overlap with the given coordinates
+        Args:
+            :param ra: ra that was queried
+            :param dec: dec that was queried
+        Returns:
+            :return: list of surveys
+        """
+        return find_wfcam_surveys(ra=ra, dec=dec, band=self.filter_name,
+                                  telescope="vista")
+
+    def get_query_class(self) -> BaseWFAUClass:
+        """
+        Function to get the query class
+        Returns:
+            :return: query class
+        """
+        return VsaClass()
