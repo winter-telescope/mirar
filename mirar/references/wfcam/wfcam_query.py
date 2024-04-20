@@ -82,20 +82,6 @@ class BaseWFCAMQuery:
     Base class for querying WFCAM images
     """
 
-    @property
-    def airmass_start_key(self) -> str:
-        """
-        Key for the airmass start
-        """
-        raise NotImplementedError
-
-    @property
-    def airmass_end_key(self) -> str:
-        """
-        Key for the airmass end
-        """
-        raise NotImplementedError
-
     def __init__(
         self,
         filter_name: str,
@@ -261,14 +247,29 @@ class WFAUQuery(BaseWFCAMQuery):
         """
         raise NotImplementedError
 
-    def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
+    def get_surveys_query_class(
+        self, ra: float, dec: float
+    ) -> (list[MOCSurvey], BaseWFAUClass):
         """
         Get the surveys that are available at the given coordinates
         :param ra: RA of the coordinates
         :param dec: Dec of the coordinates
         :return: List of surveys that are available at the given coordinates
         """
-        raise NotImplementedError
+        ukirt_surveys = find_wfcam_surveys(
+            ra=ra, dec=dec, band=self.filter_name, telescope="ukirt"
+        )
+        vista_surveys = find_wfcam_surveys(
+            ra=ra, dec=dec, band=self.filter_name, telescope="vista"
+        )
+        logger.debug(
+            f"{ra}, {dec}, {self.filter_name}, {ukirt_surveys}, {vista_surveys}"
+        )
+        if len(ukirt_surveys) > 0:
+            # Prioritize UKIRT images as they are smaller and usually better
+            return ukirt_surveys, UkidssClass()
+
+        return vista_surveys, VsaClass()
 
     def get_query_crds(
         self, header: fits.Header, num_query_points: int
@@ -311,7 +312,7 @@ class WFAUQuery(BaseWFCAMQuery):
         # Get surveys that are available at the given coordinates
         surveys, survey_names = [], []
         for ra, dec in zip(query_ra_list, query_dec_list):
-            crd_surveys = self.get_surveys(ra, dec)
+            crd_surveys, wfau_query = self.get_surveys_query_class(ra, dec)
             for srv in crd_surveys:
                 if srv.survey_name not in survey_names:
                     surveys.append(srv)
@@ -326,8 +327,6 @@ class WFAUQuery(BaseWFCAMQuery):
         surveys = surveys[np.argsort(lim_mags)[::-1]]
         logger.debug(f"Surveys are {[x.survey_name for x in surveys]}")
         wfau_survey_names = [x.wfau_dbname for x in surveys]
-        # Get the query class
-        wfau_query = self.get_query_class()
 
         for survey in wfau_survey_names:
             wfau_query.database = survey
@@ -724,65 +723,3 @@ def check_multiframe_exists_locally(
     else:
         savepaths = [Path(x) for x in results["savepath"].tolist()]
     return savepaths
-
-
-class UKIRTOnlineQuery(WFAUQuery):
-    """
-    Class to query the UKIRT online database at the WFAU.
-    This is a subclass of the WFAUQuery.
-    """
-
-    airmass_start_key = "AMSTART"
-    airmass_end_key = "AMEND"
-
-    def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
-        """
-        Function to get the surveys that overlap with the given coordinates
-        Args:
-            :param ra: ra that was queried
-            :param dec: dec that was queried
-        Returns:
-            :return: list of surveys
-        """
-        return find_wfcam_surveys(
-            ra=ra, dec=dec, band=self.filter_name, telescope="ukirt"
-        )
-
-    def get_query_class(self) -> BaseWFAUClass:
-        """
-        Function to get the query class
-        Returns:
-            :return: query class
-        """
-        return UkidssClass()
-
-
-class VISTAOnlineQuery(WFAUQuery):
-    """
-    Class to query the UKIRT online database at the WFAU.
-    This is a subclass of the WFAUQuery.
-    """
-
-    airmass_start_key = "ESO TEL AIRM START"
-    airmass_end_key = "ESO TEL AIRM END"
-
-    def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
-        """
-        Function to get the surveys that overlap with the given coordinates
-        Args:
-            :param ra: ra that was queried
-            :param dec: dec that was queried
-        Returns:
-            :return: list of surveys
-        """
-        return find_wfcam_surveys(
-            ra=ra, dec=dec, band=self.filter_name, telescope="vista"
-        )
-
-    def get_query_class(self) -> BaseWFAUClass:
-        """
-        Function to get the query class
-        Returns:
-            :return: query class
-        """
-        return VsaClass()
