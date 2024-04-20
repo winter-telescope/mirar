@@ -78,14 +78,53 @@ def load_raw_nires_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Hea
     if "PROGID" not in header.keys():
         header["PROGID"] = 0
 
-    if "v240225_0012.fits" in path.as_posix():
-        header[TARGET_KEY] = "EPGRB2"
-    if "v240225_0013.fits" in path.as_posix():
-        header[TARGET_KEY] = "EPGRB2"
-    if "v240225_0023.fits" in path.as_posix():
-        header[TARGET_KEY] = "EPGRB3"
-    if "v240225_0024.fits" in path.as_posix():
-        header[TARGET_KEY] = "EPGRB3"
+    # if "v240419_0034.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240408a"
+    # if "v240419_0035.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240408a"
+    # if "v240419_0036.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240408a"
+    # if "v240419_0037.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240408a"
+    # if "v240419_0046.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0047.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0048.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0049.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0053.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0054.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0055.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0056.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0057.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240414a"
+    # if "v240419_0064.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240413a"
+    # if "v240419_0065.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240413a"
+    # if "v240419_0066.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240413a"
+    # if "v240419_0067.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240413a"
+    # if "v240419_0068.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "EP240413a"
+    # if "v240419_0082.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "GRB240418A"
+    # if "v240419_0083.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "GRB240418A"
+    # if "v240419_0084.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "GRB240418A"
+    # if "v240419_0085.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "GRB240418A"
+    # if "v240419_0086.fits" in path.as_posix():
+    #     header[TARGET_KEY] = "GRB240418A"
+
     data = data.astype(float)
 
     data[980:, :] = np.nan

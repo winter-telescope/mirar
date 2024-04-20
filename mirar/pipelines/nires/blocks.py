@@ -45,7 +45,7 @@ build_log = [  # pylint: disable=duplicate-code
 ]  # pylint: disable=duplicate-code
 
 flat_calibrate = [
-    ImageSelector(("EXPTIME", "30.0")),
+    # ImageSelector(("TARGET", ["GRB240418A"])),
     ImageDebatcher(),
     ImageBatcher(
         [
