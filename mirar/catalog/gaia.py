@@ -124,7 +124,7 @@ class Gaia2Mass(BaseCatalog):
                 f"gaiadr2.tmass_best_neighbour AS tbest, "
                 f"extcat.twomass AS tmass "
                 f"WHERE g.source_id = tbest.source_id "
-                f"AND tbest.tmass_oid = tmass.pts_key "
+                f"AND tbest.original_ext_source_id = tmass.mainid "
                 f"AND CONTAINS(POINT('ICRS', g.ra, g.dec), "
                 f"CIRCLE('ICRS', {ra_deg:.4f}, {dec_deg:.4f}, "
                 f"{self.search_radius_arcmin / 60:.4f}))=1 "
