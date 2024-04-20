@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from astroquery.vizier import Vizier
 
-from mirar.catalog.base.base_catalog import BaseCatalog
+from mirar.catalog.base.base_catalog import DEFAULT_SNR_THRESHOLD, BaseCatalog
 from mirar.errors import ProcessorError
 
 
@@ -47,7 +47,7 @@ class VizierCatalog(BaseCatalog, ABC):
     def __init__(
         self,
         *args,
-        snr_threshold: float = 3.0,
+        snr_threshold: float = DEFAULT_SNR_THRESHOLD,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)

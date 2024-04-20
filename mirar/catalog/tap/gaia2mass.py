@@ -7,6 +7,7 @@ import logging
 import astropy.table
 from astroquery.gaia import Gaia
 
+from mirar.catalog.base.base_catalog import DEFAULT_SNR_THRESHOLD
 from mirar.catalog.base.base_gaia import BaseGaia2Mass
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,10 @@ class Gaia2MassTAP(BaseGaia2Mass):
     Crossmatched Gaia/2Mass catalog
     """
 
+    def __init__(self, *args, snr_threshold: DEFAULT_SNR_THRESHOLD, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.snr_threshold = snr_threshold
+
     def get_source_table(
         self,
         ra_deg: float,
@@ -32,15 +37,14 @@ class Gaia2MassTAP(BaseGaia2Mass):
 
         cmd = (
             f"SELECT * FROM gaiadr2.gaia_source AS g, "
-            f"gaiadr2.tmass_best_neighbour AS tbest, "
-            f"gaiadr1.tmass_original_valid AS tmass "
+            f"gaiadr3.tmass_best_neighbour AS tbest, "
             f"WHERE g.source_id = tbest.source_id "
-            f"AND tbest.tmass_oid = tmass.tmass_oid "
             f"AND CONTAINS(POINT('ICRS', g.ra, g.dec), "
             f"CIRCLE('ICRS', {ra_deg:.4f}, {dec_deg:.4f}, "
             f"{self.search_radius_arcmin / 60:.4f}))=1 "
             f"AND tmass.{self.filter_name}_m > {self.min_mag:.2f} "
             f"AND tmass.{self.filter_name}_m < {self.max_mag:.2f} "
+            f"AND tmass.{self.filter_name}_msigcom < {1.086 / self.snr_threshold: .3f}"
             f"AND tbest.number_of_mates=0 "
             f"AND tbest.number_of_neighbours=1;"
         )
