@@ -255,6 +255,7 @@ class WFAUQuery(BaseWFCAMQuery):
         :param ra: RA of the coordinates
         :param dec: Dec of the coordinates
         :return: List of surveys that are available at the given coordinates
+        :return: Class that will be used to query the WFAU database
         """
         ukirt_surveys = find_wfcam_surveys(
             ra=ra, dec=dec, band=self.filter_name, telescope="ukirt"
