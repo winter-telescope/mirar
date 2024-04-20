@@ -47,6 +47,9 @@ class Gaia2MassTAP(BaseGaia2Mass):
 
         job = Gaia.launch_job_async(cmd, dump_to_file=False)
         src_list = job.get_results()
+
+        src_list = self.convert_to_ab_mag(src_list)
+
         src_list["ph_qual"] = src_list["ph_qual"].astype(str)
         src_list["ra_errdeg"] = src_list["ra_error"] / 3.6e6
         src_list["dec_errdeg"] = src_list["dec_error"] / 3.6e6
@@ -54,6 +57,4 @@ class Gaia2MassTAP(BaseGaia2Mass):
         src_list["magnitude"] = src_list[f"{self.filter_name.lower()}_m"]
         src_list["magnitude_err"] = src_list[f"{self.filter_name.lower()}_msigcom"]
         logger.debug(f"Found {len(src_list)} sources in Gaia")
-
-        src_list = self.convert_to_ab_mag(src_list)
         return src_list

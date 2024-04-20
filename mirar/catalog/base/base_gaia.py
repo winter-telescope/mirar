@@ -81,11 +81,10 @@ class BaseGaia2Mass(BaseCatalog, ABC):
         :return: Source list with AB magnitudes
         """
         # Convert to AB magnitudes
-        offset = offsets_2mass[self.filter_name.lower()]
-
-        logger.debug(f"Adding {offset:.2f} to convert from 2MASS to AB magnitudes")
-
-        src_list["magnitude"] += offset
+        for key in ["j", "h", "k"]:
+            offset = offsets_2mass[self.filter_name.lower()]
+            src_list[f"{key}_m"] += offset
+            logger.debug(f"Adding {offset:.2f} to convert from 2MASS to AB magnitudes")
         return src_list
 
     def get_catalog(

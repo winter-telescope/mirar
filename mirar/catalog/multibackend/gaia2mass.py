@@ -5,14 +5,14 @@ Composite catalog for Gaia 2Mass
 import logging
 from typing import Type
 
-from mirar.catalog.base.base_catalog import BaseCatalog, BaseCompositeCatalog
+from mirar.catalog.base.base_catalog import BaseCatalog, BaseMultiBackendCatalog
 from mirar.catalog.tap.gaia2mass import Gaia, Gaia2MassTAP
 from mirar.catalog.vizier.gaia2mass import Gaia2MassVizier
 
 logger = logging.getLogger(__name__)
 
 
-class Gaia2Mass(BaseCompositeCatalog):
+class Gaia2Mass(BaseMultiBackendCatalog):
     """
     Composite catalog for Gaia 2Mass
     """

@@ -128,7 +128,7 @@ class BaseCatalog(ABCatalog, ABC):
         return output_dir.joinpath(cat_base_name)
 
 
-class BaseCompositeCatalog(ABC):
+class BaseMultiBackendCatalog(ABC):
     """
     Base class for composite catalogs that are made up of multiple catalog backends
     """

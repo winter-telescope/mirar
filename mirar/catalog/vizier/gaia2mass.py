@@ -51,6 +51,15 @@ class Gaia2MassVizier(BaseGaia2Mass, VizierCatalog):
         :return: Table of sources
         """
         tmass_cat = VizierCatalog.get_catalog(self, ra_deg, dec_deg)
+
+        tmass_cat.rename_column("Jmag", "j_m")
+        tmass_cat.rename_column("Hmag", "h_m")
+        tmass_cat.rename_column("Kmag", "k_m")
+        self.convert_to_ab_mag(tmass_cat)
+
+        # Previously, the magnitude was set in vegamag, but now it is in AB mag`
+        tmass_cat["magnitude"] = tmass_cat[f"{self.filter_name.lower()}_m"]
+
         tmass_cat.rename_column("Qflg", "ph_qual")
 
         tmass_cat["ra_errdeg"] = tmass_cat["e_RA_ICRS"] / 3.6e6
@@ -58,9 +67,6 @@ class Gaia2MassVizier(BaseGaia2Mass, VizierCatalog):
 
         tmass_cat.rename_column("RPmag", "phot_rp_mean_mag")
         tmass_cat.rename_column("BPmag", "phot_bp_mean_mag")
-        tmass_cat.rename_column("Jmag", "j_m")
-        tmass_cat.rename_column("Hmag", "h_m")
-        tmass_cat.rename_column("Kmag", "k_m")
         tmass_cat.rename_column("e_Jmag", "j_msigcom")
         tmass_cat.rename_column("e_Hmag", "h_msigcom")
         tmass_cat.rename_column("e_Kmag", "k_msigcom")
