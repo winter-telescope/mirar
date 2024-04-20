@@ -58,7 +58,7 @@ def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
             for x in image_batch
         ]
     )
-    mag_zps = np.array(mag_zps)
+
     median_mag_zp = np.median(mag_zps)
 
     seeings = np.array([x["SEEING"] for x in image_batch])
