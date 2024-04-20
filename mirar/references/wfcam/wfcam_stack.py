@@ -50,30 +50,28 @@ def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
     """
     image_array = np.array([x for x in image_batch])
 
-    logger.debug(image_array[0].header)
-    try:
-        mag_zps = np.array(
-            [
-                x["MAGZPT"]
-                + 2.5 * np.log10(x["EXPTIME"])
-                - x["EXTINCT"] * ((x["AMSTART"] + x["AMEND"]) / 2)
-                for x in image_batch
-            ]
+    mag_zps = []
+    for x in image_batch:
+        if "AMSTART" in x.get_header():
+            airmass = (x["AMSTART"] + x["AMEND"]) / 2
+        elif "ESO TEL AIRM START" in x.get_header():
+            airmass = (x["ESO TEL AIRM START"] + x["ESO TEL AIRM END"]) / 2
+        else:
+            raise AssertionError(
+                (
+                    "No standard airmass key was found, are you sure"
+                    "you are using VISTA or UKIRT images? If so, please"
+                    "consider using a custom `filter_images` function."
+                )
+            )
+        mag_zps.append(
+            x["MAGZPT"] + 2.5 * np.log10(x["EXPTIME"]) - x["EXTINCT"] * airmass
         )
-    except KeyError: # TODO: fix
-        mag_zps = np.array(
-            [
-                x["MAGZPT"]
-                + 2.5 * np.log10(x["EXPTIME"])
-                for x in image_batch
-            ]
-        )
-    # magerr_zps = np.array([x["MAGZRR"] for x in ukirt_images])
+    mag_zps = np.array(mag_zps)
     median_mag_zp = np.median(mag_zps)
-    try:
-        seeings = np.array([x["SEEING"] for x in image_batch])
-    except KeyError:#TODO: fix
-        seeings = np.array([1 for x in image_batch])
+
+    seeings = np.array([x["SEEING"] for x in image_batch])
+
     zpmask = np.abs(mag_zps - median_mag_zp) < 0.4
     seeingmask = (seeings < 3.5 / 0.4) & (seeings > 0)
 
@@ -155,24 +153,18 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
             )
             ref_img[BASE_NAME_KEY] = new_basename
 
+        am_start_key = self.wfcam_query.airmass_start_key
+        am_end_key = self.wfcam_query.airmass_end_key
         # Get the scaling factors
-        try:
-            mag_zps = np.array(
-                [
-                    x["MAGZPT"]
-                    + 2.5 * np.log10(x["EXPTIME"])
-                    - x["EXTINCT"] * ((x["AMSTART"] + x["AMEND"]) / 2)
-                    for x in wfau_images
-                ]
-            )
-        except KeyError: #TODO: fix
-            mag_zps = np.array(
-                [
-                    x["MAGZPT"]
-                    + 2.5 * np.log10(x["EXPTIME"])
-                    for x in wfau_images
-                ]
-            )
+        mag_zps = np.array(
+            [
+                x["MAGZPT"]
+                + 2.5 * np.log10(x["EXPTIME"])
+                - x["EXTINCT"] * ((x[am_start_key] + x[am_end_key]) / 2)
+                for x in wfau_images
+            ]
+        )
+
         median_mag_zp = np.median(mag_zps)
         scaling_factors = 10 ** (0.4 * (median_mag_zp - mag_zps))
 
