@@ -153,14 +153,12 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
             )
             ref_img[BASE_NAME_KEY] = new_basename
 
-        am_start_key = self.wfcam_query.airmass_start_key
-        am_end_key = self.wfcam_query.airmass_end_key
         # Get the scaling factors
         mag_zps = np.array(
             [
                 x["MAGZPT"]
                 + 2.5 * np.log10(x["EXPTIME"])
-                - x["EXTINCT"] * ((x[am_start_key] + x[am_end_key]) / 2)
+                - x["EXTINCT"] * ((x["AMSTART"] + x["AMEND"]) / 2)
                 for x in wfau_images
             ]
         )
