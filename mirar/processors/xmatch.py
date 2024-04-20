@@ -8,7 +8,7 @@ import astropy.units as u
 import numpy as np
 from astropy.coordinates import SkyCoord
 
-from mirar.catalog.base_catalog import BaseXMatchCatalog
+from mirar.catalog.base.base_xmatch_catalog import BaseXMatchCatalog
 from mirar.data import SourceBatch
 from mirar.processors.base_processor import BaseSourceProcessor
 

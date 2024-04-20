@@ -10,7 +10,7 @@ import numpy as np
 from astropy.stats import sigma_clipped_stats
 from astropy.table import Table
 
-from mirar.catalog.base_catalog import BaseCatalog
+from mirar.catalog.base.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
 from mirar.errors import ProcessorError
 from mirar.paths import get_output_dir

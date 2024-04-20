@@ -5,28 +5,17 @@ Module for Catalog base class
 import logging
 from abc import ABC
 from pathlib import Path
+from typing import Type
 
 import astropy.table
 
+from mirar.catalog.base.errors import CatalogCacheError
 from mirar.data import Image
 from mirar.data.utils import get_image_center_wcs_coords
-from mirar.errors import ProcessorError
 from mirar.paths import BASE_NAME_KEY, REF_CAT_PATH_KEY
-from mirar.utils.ldac_tools import get_table_from_ldac, save_table_as_ldac
+from mirar.utils.ldac_tools import save_table_as_ldac
 
 logger = logging.getLogger(__name__)
-
-
-class CatalogError(ProcessorError):
-    """
-    Class for errors in Catalog
-    """
-
-
-class CatalogCacheError(CatalogError):
-    """
-    Class for errors in CatalogCache
-    """
 
 
 class ABCatalog:
@@ -139,88 +128,20 @@ class BaseCatalog(ABCatalog, ABC):
         return output_dir.joinpath(cat_base_name)
 
 
-class BaseXMatchCatalog(ABCatalog, ABC):
+class BaseMultiBackendCatalog(ABC):
     """
-    Base Catalog for crossmatching
-    """
-
-    @property
-    def catalog_name(self):
-        """
-        Name of catalog
-        """
-        raise NotImplementedError
-
-    @property
-    def projection(self):
-        """
-        projection for kowalski xmatch
-        """
-        raise NotImplementedError
-
-    @property
-    def column_names(self):
-        """
-        Name of columns
-        """
-        raise NotImplementedError
-
-    @property
-    def column_dtypes(self):
-        """
-        dtype of columns
-        """
-        raise NotImplementedError
-
-    @property
-    def ra_column_name(self):
-        """
-        Name of RA column
-        """
-        raise NotImplementedError
-
-    @property
-    def dec_column_name(self):
-        """
-        Name of Dec column
-        """
-        raise NotImplementedError
-
-    def __init__(self, *args, num_sources: int = 1, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.search_radius_arcsec = self.search_radius_arcmin * 60.0
-        self.num_sources = num_sources
-
-    def query(self, coords: dict) -> dict:
-        """
-        Query coords for result
-
-        :param coords: ra/dec
-        :return: crossmatch
-        """
-        raise NotImplementedError
-
-
-class CatalogFromFile(BaseCatalog):
-    """
-    Local catalog from file
+    Base class for composite catalogs that are made up of multiple catalog backends
     """
 
-    abbreviation = "local"
+    def __new__(cls, *args, backend: str | None = None, **kwargs):
+        backend_class = cls.set_backend(backend)
+        return backend_class(*args, **kwargs)
 
-    def __init__(self, catalog_path: str | Path, *args, **kwargs):
-        super().__init__(
-            min_mag=0,
-            max_mag=99,
-            filter_name="None",
-            search_radius_arcmin=0,
-            *args,
-            **kwargs,
-        )
-        self.catalog_path = catalog_path
-        if isinstance(self.catalog_path, str):
-            self.catalog_path = Path(self.catalog_path)
+    @staticmethod
+    def set_backend(backend: str | None) -> Type[BaseCatalog]:
+        """
+        Set backend for composite catalog
 
-    def get_catalog(self, ra_deg: float, dec_deg: float) -> astropy.table.Table:
-        catalog = get_table_from_ldac(self.catalog_path)
-        return catalog
+        :param backend: Backend name
+        """
+        raise NotImplementedError()
