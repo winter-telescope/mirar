@@ -9,7 +9,7 @@ from typing import Optional
 
 from penquins import Kowalski
 
-from mirar.catalog.base_catalog import BaseXMatchCatalog
+from mirar.catalog.base.base_xmatch_catalog import BaseXMatchCatalog
 from mirar.errors import ProcessorError
 
 logger = logging.getLogger(__name__)

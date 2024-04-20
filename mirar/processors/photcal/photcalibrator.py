@@ -12,7 +12,7 @@ from astropy.io import fits
 from astropy.io.fits.verify import VerifyWarning
 from astropy.table import Table
 
-from mirar.catalog.base_catalog import BaseCatalog
+from mirar.catalog.base.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
 from mirar.paths import MAGLIM_KEY, ZP_KEY, ZP_NSTARS_KEY, ZP_STD_KEY, get_output_dir
 from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkimg_map
