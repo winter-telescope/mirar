@@ -348,7 +348,7 @@ def ref_sextractor(image: Image):
     )
 
 
-def winter_astrometric_ref_catalog_generator(image) -> Gaia2Mass | CatalogFromFile | PS1:
+def winter_astrometric_ref_catalog_generator(image) -> Gaia2Mass | CatalogFromFile:
     """
     Function to generate a reference catalog for WINTER astrometry
 
@@ -374,15 +374,13 @@ def winter_astrometric_ref_catalog_generator(image) -> Gaia2Mass | CatalogFromFi
         * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
         * 60
     ) / 2.0
-    # return Gaia2Mass(
-    #     min_mag=7,
-    #     max_mag=20,
-    #     search_radius_arcmin=search_radius_arcmin,
-    #     cache_catalog_locally=True,
-    # )
-    return PS1(
-        snr_threshold=10.0
+    return Gaia2Mass(
+        min_mag=7,
+        max_mag=20,
+        search_radius_arcmin=search_radius_arcmin,
+        cache_catalog_locally=True,
     )
+
 
 def winter_ref_catalog_namer(image: Image, output_dir: Path) -> Path:
     """
@@ -796,7 +794,7 @@ def winter_reference_generator(image: Image):
                     return RefFromPath(path=savepath, filter_name=filtername)
 
         skip_online_query = filtername == "H"
-        if image['CRVAL2'] >= 0: # TODO: fix with actual logic of Vista vs UKIRT
+        if image["CRVAL2"] >= 0:  # TODO: fix with actual logic of Vista vs UKIRT
             wfcam_query = UKIRTOnlineQuery(
                 num_query_points=16,
                 filter_name=filtername,

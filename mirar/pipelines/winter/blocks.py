@@ -322,7 +322,6 @@ load_unpacked = [
             "MEDCOUNT",
         ]
     ),
-    HeaderAnnotator(input_keys="TARGNAME", output_key=TARGET_KEY),
 ]
 
 export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
@@ -390,7 +389,6 @@ fourier_filter = [
 ]
 
 astrometry = [
-    # ImageSelector(("TARGNAME", ["GRB240414A"])),
     ImageDebatcher(),
     ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     AstrometryNet(
@@ -417,12 +415,12 @@ astrometry = [
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
     ),
     CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
-    # Scamp(
-    #     scamp_config_path=scamp_config_path,
-    #     ref_catalog_generator=winter_astrometric_ref_catalog_generator,
-    #     copy_scamp_header_to_image=True,
-    #     cache=True,
-    # ),
+    Scamp(
+        scamp_config_path=scamp_config_path,
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+        copy_scamp_header_to_image=True,
+        cache=True,
+    ),
     ImageSaver(output_dir_name="post_scamp"),
 ]
 
@@ -452,9 +450,9 @@ stack_dithers = [
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
-        include_scamp=False,
+        include_scamp=True,
         subtract_bkg=False,
-        cache=True,
+        cache=False,
         center_type="ALL",
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
@@ -764,8 +762,7 @@ focus_subcoord = [
 ]
 
 # Combinations of different blocks, to be used in configurations
-# process_and_stack = astrometry + validate_astrometry + stack_dithers
-process_and_stack = astrometry + stack_dithers
+process_and_stack = astrometry + validate_astrometry + stack_dithers
 
 unpack_subset = (
     load_raw
