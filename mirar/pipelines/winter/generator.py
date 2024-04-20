@@ -67,12 +67,11 @@ from mirar.processors.utils.cal_hunter import CalRequirement
 from mirar.processors.utils.image_selector import select_from_images
 from mirar.references import PS1Ref
 from mirar.references.local import RefFromPath
-from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery, VISTAOnlineQuery
+from mirar.references.wfcam.wfcam_query import WFAUQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
-
 
 winter_cal_requirements = [
     CalRequirement(
@@ -794,26 +793,17 @@ def winter_reference_generator(image: Image):
                     return RefFromPath(path=savepath, filter_name=filtername)
 
         skip_online_query = filtername == "H"
-        if image["CRVAL2"] >= 0:  # TODO: fix with actual logic of Vista vs UKIRT
-            wfcam_query = UKIRTOnlineQuery(
-                num_query_points=16,
-                filter_name=filtername,
-                use_db_for_component_queries=True,
-                components_db_table=RefComponent,
-                query_db_table=RefQuery,
-                skip_online_query=skip_online_query,
-                component_image_subdir="winter/references/components",
-            )
-        else:
-            wfcam_query = VISTAOnlineQuery(
-                num_query_points=16,
-                filter_name=filtername,
-                use_db_for_component_queries=True,
-                components_db_table=RefComponent,
-                query_db_table=RefQuery,
-                skip_online_query=skip_online_query,
-                component_image_subdir="winter/references/components",
-            )
+
+        wfcam_query = WFAUQuery(
+            num_query_points=16,
+            filter_name=filtername,
+            use_db_for_component_queries=True,
+            components_db_table=RefComponent,
+            query_db_table=RefQuery,
+            skip_online_query=skip_online_query,
+            component_image_subdir="winter/references/components",
+        )
+
         return WFCAMStackedRef(
             filter_name=filtername,
             wfcam_query=wfcam_query,
