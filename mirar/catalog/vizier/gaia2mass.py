@@ -18,7 +18,7 @@ logging.getLogger("astroquery").setLevel(logging.WARNING)
 
 class Gaia2MassVizier(BaseGaia2Mass, VizierCatalog):
     """
-    Gaia 1 catalog
+    Gaia DR3 catalog
     """
 
     catalog_vizier_code = ["I/355/gaiadr3", "II/246/out"]
@@ -33,6 +33,14 @@ class Gaia2MassVizier(BaseGaia2Mass, VizierCatalog):
         :return: Mag key
         """
         return f"{self.filter_name.upper()}mag"
+
+    def get_column_filters(self) -> dict:
+        """
+        Get the column filters for the catalog
+
+        :return: Column filters
+        """
+        return {"n2MASS": "= 1", "m2MASS": "= 0"}
 
     def get_source_table(self, ra_deg: float, dec_deg: float) -> astropy.table.Table:
         """
@@ -53,6 +61,9 @@ class Gaia2MassVizier(BaseGaia2Mass, VizierCatalog):
         tmass_cat.rename_column("Jmag", "j_m")
         tmass_cat.rename_column("Hmag", "h_m")
         tmass_cat.rename_column("Kmag", "k_m")
+        tmass_cat.rename_column("e_Jmag", "j_msigcom")
+        tmass_cat.rename_column("e_Hmag", "h_msigcom")
+        tmass_cat.rename_column("e_Kmag", "k_msigcom")
         return tmass_cat
 
     def join_query(self, query: dict) -> astropy.table.Table:

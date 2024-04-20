@@ -75,6 +75,12 @@ class VizierCatalog(BaseCatalog, ABC):
         """
         return table
 
+    def get_column_filters(self) -> dict:
+        """
+        Returns the column filters to be applied to the query
+        """
+        return {}
+
     def get_catalog(self, ra_deg: float, dec_deg: float) -> astropy.table.Table:
         logger.debug(
             f"Querying {self.abbreviation} catalog around RA {ra_deg:.4f}, "
@@ -86,6 +92,7 @@ class VizierCatalog(BaseCatalog, ABC):
             column_filters={
                 f"{self.get_mag_key()}": f"< {self.max_mag}",
                 f"{self.get_mag_error_key()}": f"<{1.086 / self.snr_threshold:.3f}",
+                **self.get_column_filters(),
             },
             row_limit=-1,
         )
