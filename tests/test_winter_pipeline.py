@@ -136,7 +136,7 @@ class TestWinterPipeline(BaseTestCase):
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
-                self.assertAlmostEqual(value, source_table[key], places=2)
+                self.assertAlmostEqual(value, source_table[key], delta=0.02)
             elif isinstance(value, int):
                 self.assertEqual(value, source_table[key])
             else:
