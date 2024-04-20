@@ -53,15 +53,6 @@ class VizierCatalog(BaseCatalog, ABC):
         super().__init__(*args, **kwargs)
         self.snr_threshold = snr_threshold
 
-    @staticmethod
-    def get_columns() -> list[str]:
-        """
-        Return the columns to be queried from the catalog
-
-        :return: Columns
-        """
-        return ["*"]
-
     def get_mag_key(self) -> str:
         """
         Returns the key for mag in table
@@ -91,15 +82,13 @@ class VizierCatalog(BaseCatalog, ABC):
         )
 
         viz_cat = Vizier(
-            columns=self.get_columns(),
+            columns=["*"],
             column_filters={
                 f"{self.get_mag_key()}": f"< {self.max_mag}",
                 f"{self.get_mag_error_key()}": f"<{1.086 / self.snr_threshold:.3f}",
             },
             row_limit=-1,
         )
-
-        print(f"Catalog Vizier Code: {self.catalog_vizier_code}")
 
         # pylint: disable=no-member
         query = viz_cat.query_region(
@@ -154,4 +143,3 @@ class VizierCatalog(BaseCatalog, ABC):
         :param dec_deg: Dec
         :return: None
         """
-        pass
