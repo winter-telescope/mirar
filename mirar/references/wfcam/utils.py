@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
-from astrosurveyutils import get_known_ukirt_surveys
+from astrosurveyutils import get_known_ukirt_surveys, get_known_vista_surveys
 from astrosurveyutils.surveys import MOCSurvey
 
 from mirar.data import Image
@@ -17,6 +17,7 @@ from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
     EXPTIME_KEY,
+    FILTER_KEY,
     GAIN_KEY,
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
@@ -87,11 +88,11 @@ def find_wfcam_surveys(
     Returns:
         :return: list of surveys
     """
-    assert telescope.lower() in ["UKIRT", "VISTA"], "Telescope must be UKIRT or VISTA"
-    if telescope.lower() == "UKIRT":
+    assert telescope.lower() in ["ukirt", "vista"], "Telescope must be UKIRT or VISTA"
+    if telescope.lower() == "ukirt":
         surveys = get_known_ukirt_surveys()
     else:
-        surveys = get_known_ukirt_surveys()
+        surveys = get_known_vista_surveys()
     band_surveys = np.array([x for x in surveys if x.filter_name == band])
     in_survey_footprint = [x.contains(ra, dec)[0] for x in band_surveys]
     return band_surveys[in_survey_footprint]
@@ -148,9 +149,19 @@ def make_wfcam_image_from_hdulist(
         header_to_append=ukirt_hdulist[0].header,
     )
 
-    combined_header[EXPTIME_KEY] = combined_header["EXP_TIME"]
+    if "EXP_TIME" in combined_header:
+        combined_header[EXPTIME_KEY] = combined_header["EXP_TIME"]
     combined_header[BASE_NAME_KEY] = basename
-    combined_header[GAIN_KEY] = combined_header["GAIN"]
+    if "GAIN" in combined_header:
+        combined_header[GAIN_KEY] = combined_header["GAIN"]
+    if "GAINCOR" in combined_header:
+        combined_header[GAIN_KEY] = combined_header["GAINCOR"]
+    if "ESO INS FILT1 NAME" in combined_header:
+        combined_header[FILTER_KEY] = combined_header["ESO INS FILT1 NAME"]
+    if "ESO TEL AIRM START" in combined_header:
+        combined_header["AMSTART"] = combined_header["ESO TEL AIRM START"]
+    if "ESO TEL AIRM END" in combined_header:
+        combined_header["AMEND"] = combined_header["ESO TEL AIRM END"]
     combined_header[TIME_KEY] = combined_header["DATE-OBS"]
     combined_header[OBSCLASS_KEY] = "ref"
     combined_header[COADD_KEY] = 1
