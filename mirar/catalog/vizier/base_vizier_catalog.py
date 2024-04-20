@@ -90,7 +90,7 @@ class VizierCatalog(BaseCatalog, ABC):
         viz_cat = Vizier(
             columns=["*"],
             column_filters={
-                f"{self.get_mag_key()}": f"< {self.max_mag}",
+                f"{self.get_mag_key()}": f"{self.min_mag} .. {self.max_mag}",
                 f"{self.get_mag_error_key()}": f"<{1.086 / self.snr_threshold:.3f}",
                 **self.get_column_filters(),
             },

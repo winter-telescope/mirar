@@ -86,7 +86,7 @@ class TestSummerPipeline(BaseTestCase):
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], delta=0.02)
+                self.assertAlmostEqual(value, header[key], places=2)
             elif isinstance(value, int):
                 self.assertEqual(value, header[key])
             else:

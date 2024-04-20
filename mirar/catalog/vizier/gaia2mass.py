@@ -23,8 +23,8 @@ class Gaia2MassVizier(BaseGaia2Mass, VizierCatalog):
 
     catalog_vizier_code = ["I/355/gaiadr3", "II/246/out"]
 
-    ra_key = "RAJ2000_1"
-    dec_key = "DEJ2000_1"
+    ra_key = "RA_ICRS"
+    dec_key = "DE_ICRS"
 
     def get_mag_key(self) -> str:
         """
