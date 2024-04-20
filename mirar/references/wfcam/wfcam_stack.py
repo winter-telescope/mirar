@@ -50,23 +50,14 @@ def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
     """
     image_array = np.array([x for x in image_batch])
 
-    mag_zps = []
-    for x in image_batch:
-        if "AMSTART" in x.get_header():
-            airmass = (x["AMSTART"] + x["AMEND"]) / 2
-        elif "ESO TEL AIRM START" in x.get_header():
-            airmass = (x["ESO TEL AIRM START"] + x["ESO TEL AIRM END"]) / 2
-        else:
-            raise AssertionError(
-                (
-                    "No standard airmass key was found, are you sure"
-                    "you are using VISTA or UKIRT images? If so, please"
-                    "consider using a custom `filter_images` function."
-                )
-            )
-        mag_zps.append(
-            x["MAGZPT"] + 2.5 * np.log10(x["EXPTIME"]) - x["EXTINCT"] * airmass
-        )
+    mag_zps = np.array(
+        [
+            x["MAGZPT"]
+            + 2.5 * np.log10(x["EXPTIME"])
+            - x["EXTINCT"] * ((x["AMSTART"] + x["AMEND"]) / 2)
+            for x in image_batch
+        ]
+    )
     mag_zps = np.array(mag_zps)
     median_mag_zp = np.median(mag_zps)
 
