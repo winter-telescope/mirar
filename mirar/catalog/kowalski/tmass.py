@@ -2,7 +2,7 @@
 Module for querying 2MASS using Kowalski
 """
 
-from mirar.catalog.gaia import offsets_2mass
+from mirar.catalog.base.base_gaia import offsets_2mass
 from mirar.catalog.kowalski.base_kowalski_catalog import BaseKowalskiXMatch
 
 

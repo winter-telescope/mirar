@@ -14,7 +14,7 @@ from astropy.time import Time
 from astropy.wcs import WCS, NoConvergence
 
 from mirar.catalog import Gaia2Mass
-from mirar.catalog.base_catalog import CatalogFromFile
+from mirar.catalog.base.catalog_from_file import CatalogFromFile
 from mirar.catalog.vizier import PS1
 from mirar.data import Image, ImageBatch, SourceBatch
 from mirar.data.utils.compress import decode_img

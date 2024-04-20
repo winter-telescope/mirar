@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 from astropy.io import fits
 
-from mirar.catalog.base_catalog import BaseCatalog
+from mirar.catalog.base.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
 from mirar.paths import (
     BASE_NAME_KEY,

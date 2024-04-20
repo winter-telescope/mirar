@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from astroquery.vizier import Vizier
 
-from mirar.catalog.base_catalog import BaseCatalog
+from mirar.catalog.base.base_catalog import BaseCatalog
 from mirar.errors import ProcessorError
 
 
@@ -30,7 +30,7 @@ class VizierCatalog(BaseCatalog, ABC):
     """
 
     @property
-    def catalog_vizier_code(self):
+    def catalog_vizier_code(self) -> str | list[str]:
         """Code of catalog in Vizier"""
         raise NotImplementedError()
 
@@ -52,6 +52,15 @@ class VizierCatalog(BaseCatalog, ABC):
     ):
         super().__init__(*args, **kwargs)
         self.snr_threshold = snr_threshold
+
+    @staticmethod
+    def get_columns() -> list[str]:
+        """
+        Return the columns to be queried from the catalog
+
+        :return: Columns
+        """
+        return ["*"]
 
     def get_mag_key(self) -> str:
         """
@@ -82,13 +91,15 @@ class VizierCatalog(BaseCatalog, ABC):
         )
 
         viz_cat = Vizier(
-            columns=["*"],
+            columns=self.get_columns(),
             column_filters={
                 f"{self.get_mag_key()}": f"< {self.max_mag}",
                 f"{self.get_mag_error_key()}": f"<{1.086 / self.snr_threshold:.3f}",
             },
             row_limit=-1,
         )
+
+        print(f"Catalog Vizier Code: {self.catalog_vizier_code}")
 
         # pylint: disable=no-member
         query = viz_cat.query_region(
@@ -104,7 +115,8 @@ class VizierCatalog(BaseCatalog, ABC):
             self.check_coverage(ra_deg, dec_deg)
             return Table()
 
-        table = query[0]
+        table = self.join_query(query)
+
         logger.debug(f"Table columns are: {table.colnames}")
         if self.get_mag_key() not in table.colnames:
             err = (
@@ -124,6 +136,15 @@ class VizierCatalog(BaseCatalog, ABC):
         table = self.filter_catalog(table)
         return table
 
+    def join_query(self, query: dict) -> astropy.table.Table:
+        """
+        Join the query results into a single table
+
+        :param query: Query results
+        :return: Table
+        """
+        return query[0]
+
     @staticmethod
     def check_coverage(ra_deg: float, dec_deg: float):
         """
@@ -133,3 +154,4 @@ class VizierCatalog(BaseCatalog, ABC):
         :param dec_deg: Dec
         :return: None
         """
+        pass
