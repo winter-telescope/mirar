@@ -73,18 +73,25 @@ def get_query_coordinates_from_header(
     return ra_list, dec_list
 
 
-def find_ukirt_surveys(ra: float, dec: float, band: str) -> list[MOCSurvey]:
+def find_wfcam_surveys(
+    ra: float, dec: float, band: str, telescope: str
+) -> list[MOCSurvey]:
     """
     Find which UKIRT survey does the given RA/Dec belong to
     Args:
         :param ra: RA in degrees
         :param dec: Dec in degrees
         :param band: band name
+        :param telescope: telescope name UKIRT or VISTA
 
     Returns:
         :return: list of surveys
     """
-    surveys = get_known_ukirt_surveys()
+    assert telescope.lower() in ["UKIRT", "VISTA"], "Telescope must be UKIRT or VISTA"
+    if telescope.lower() == "UKIRT":
+        surveys = get_known_ukirt_surveys()
+    else:
+        surveys = get_known_ukirt_surveys()
     band_surveys = np.array([x for x in surveys if x.filter_name == band])
     in_survey_footprint = [x.contains(ra, dec)[0] for x in band_surveys]
     return band_surveys[in_survey_footprint]

@@ -17,8 +17,8 @@ from astropy.io import fits
 from astropy.units import Quantity
 from astropy.wcs import FITSFixedWarning
 from astroquery.ukidss import UkidssClass
-from astroquery.vsa import VsaClass
 from astroquery.utils.commons import FileContainer
+from astroquery.vsa import VsaClass
 from astroquery.wfau import BaseWFAUClass
 from astrosurveyutils.surveys import MOCSurvey
 
@@ -81,6 +81,20 @@ class BaseWFCAMQuery:
     """
     Base class for querying WFCAM images
     """
+
+    @property
+    def airmass_start_key(self) -> str:
+        """
+        Key for the airmass start
+        """
+        raise NotImplementedError
+
+    @property
+    def airmass_end_key(self) -> str:
+        """
+        Key for the airmass end
+        """
+        raise NotImplementedError
 
     def __init__(
         self,
@@ -371,7 +385,7 @@ class WFAUQuery(BaseWFCAMQuery):
                         use_local_database=self.use_db_for_component_queries,
                         components_table=self.components_db_table,
                         duplicate_protocol="ignore",
-                        undeprecated_compids_file=undeprecated_compids_file
+                        undeprecated_compids_file=undeprecated_compids_file,
                     )
 
                 # Make an entry in the queries table
@@ -718,6 +732,9 @@ class UKIRTOnlineQuery(WFAUQuery):
     This is a subclass of the WFAUQuery.
     """
 
+    airmass_start_key = "AMSTART"
+    airmass_end_key = "AMEND"
+
     def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
         """
         Function to get the surveys that overlap with the given coordinates
@@ -727,8 +744,9 @@ class UKIRTOnlineQuery(WFAUQuery):
         Returns:
             :return: list of surveys
         """
-        return find_wfcam_surveys(ra=ra, dec=dec, band=self.filter_name,
-                                  telescope="ukirt")
+        return find_wfcam_surveys(
+            ra=ra, dec=dec, band=self.filter_name, telescope="ukirt"
+        )
 
     def get_query_class(self) -> BaseWFAUClass:
         """
@@ -745,6 +763,9 @@ class VISTAOnlineQuery(WFAUQuery):
     This is a subclass of the WFAUQuery.
     """
 
+    airmass_start_key = "ESO TEL AIRM START"
+    airmass_end_key = "ESO TEL AIRM END"
+
     def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
         """
         Function to get the surveys that overlap with the given coordinates
@@ -754,8 +775,9 @@ class VISTAOnlineQuery(WFAUQuery):
         Returns:
             :return: list of surveys
         """
-        return find_wfcam_surveys(ra=ra, dec=dec, band=self.filter_name,
-                                  telescope="vista")
+        return find_wfcam_surveys(
+            ra=ra, dec=dec, band=self.filter_name, telescope="vista"
+        )
 
     def get_query_class(self) -> BaseWFAUClass:
         """
