@@ -177,6 +177,10 @@ def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool
     # local reference catalog
     local_ref_cat = get_table_from_ldac(ref_cat_path)
 
+    if len(local_ref_cat) == 0:
+        logger.debug(f"Reference catalog {ref_cat_path} is empty.")
+        return False
+
     try:
         srcs_in_image = check_coords_within_image(
             ra=local_ref_cat["ra"], dec=local_ref_cat["dec"], header=image.get_header()
@@ -289,7 +293,7 @@ def winter_photcal_color_columns_generator(image):
     if filter_name == "J":
         return ["j_m", "h_m"], ["j_msigcom", "h_msigcom"], (0, 25)
     if filter_name == "H":
-        return ["h_m", "ks_m"], ["h_msigcom", "ks_msigcom"], (0, 25)
+        return ["h_m", "k_m"], ["h_msigcom", "k_msigcom"], (0, 25)
     if filter_name in ["Y"]:
         return ["ymag", "zmag"], ["e_ymag", "e_zmag"], (0, 25)
     err = f"Filter {filter_name} not recognised"
@@ -462,13 +466,13 @@ def winter_stackid_annotator(batch: ImageBatch) -> ImageBatch:
 
 def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatch:
     """
-    Function to perform basic filtering to weed out bad WIRC candidates with None
+    Function to perform basic filtering to weed out bad candidates with None
     magnitudes, to be added.
     :param source_batch: Source batch
     :return: updated batch
     """
 
-    new_batch = SourceBatch([])
+    new_batch = []
 
     for source in source_batch:
         src_df = source.get_data()
@@ -503,9 +507,13 @@ def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatc
         source["jd"] = Time(source[TIME_KEY]).jd
 
         source.set_data(filtered_df)
-        new_batch.append(source)
+        if len(filtered_df) > 0:
+            new_batch.append(source)
 
-    return new_batch
+    if len(new_batch) == 0:
+        raise NoGoodCandidatesError("No candidates passed quality filter")
+
+    return SourceBatch(new_batch)
 
 
 def winter_new_source_updater(source_table: SourceBatch) -> SourceBatch:
@@ -681,7 +689,7 @@ def winter_skyportal_annotator(source_batch: SourceBatch) -> SourceBatch:
 
         if SNCOSMO_KEY not in src_df.columns:
             sncosmo_fs = [
-                sncosmo_filters[winter_inv_filters_map[x].lower()]
+                sncosmo_filters[winter_inv_filters_map[x].lower()[0]]
                 for x in src_df["fid"]
             ]
             src_df[SNCOSMO_KEY] = sncosmo_fs
@@ -722,7 +730,7 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
         )
         filtered_df = src_df[mask].reset_index(drop=True)
 
-        if len(src_df) > 0:
+        if len(filtered_df) > 0:
             source.set_data(filtered_df)
             new_batch.append(source)
 
