@@ -350,7 +350,7 @@ class DatabaseHistorySelector(SpatialCrossmatchSourceWithDatabase):
         self.history_duration_days = history_duration_days
         self.time_field_name = time_field_name
         self.output_df_colname = SOURCE_HISTORY_KEY
-        logger.info(f"Update db is {self.update_dataframe}")
+        logger.debug(f"Update db is {self.update_dataframe}")
 
     def get_constraints(self, data: dict) -> DBQueryConstraints:
         query_constraints = self.get_source_crossmatch_constraints(data)

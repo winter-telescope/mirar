@@ -159,6 +159,7 @@ build_test = [
         export_keys=[
             "UTCTIME",
             "PROGNAME",
+            "TARGNAME",
             DITHER_N_KEY,
             MAX_DITHER_KEY,
             "FILTER",
@@ -426,7 +427,7 @@ astrometry = [
 
 validate_astrometry = [
     ImageDebatcher(),
-    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
+    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "DITHGRP"]),
     Sextractor(
         **sextractor_astromstats_config,
         write_regions_bool=True,
@@ -446,7 +447,7 @@ validate_astrometry = [
 stack_dithers = [
     ImageDebatcher(),
     CustomImageBatchModifier(winter_boardid_6_demasker),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD", "DITHGRP"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -462,7 +463,7 @@ stack_dithers = [
 
 photcal_and_export = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD"]),
+    ImageBatcher([BASE_NAME_KEY]),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
@@ -561,7 +562,7 @@ split_stack = [
 
 imsub = [
     ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
+    ImageBatcher([BASE_NAME_KEY]),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -639,10 +640,10 @@ crossmatch_candidates = [
     XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=Gaia(num_sources=1, search_radius_arcmin=1.5)),
     XMatch(catalog=GaiaBright(num_sources=1, search_radius_arcmin=1.5)),
-    SourceWriter(output_dir_name="kowalski"),
     CustomSourceTableModifier(
         modifier_function=winter_candidate_avro_fields_calculator
     ),
+    SourceWriter(output_dir_name="kowalski"),
 ]
 
 select_history = [

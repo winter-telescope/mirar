@@ -8,8 +8,23 @@ import numpy as np
 from astropy.table import Table
 
 from mirar.catalog.vizier.base_vizier_catalog import VizierCatalog
+from mirar.errors import ProcessorError
 
 logger = logging.getLogger(__name__)
+
+
+class NotInPS1Error(ProcessorError):
+    """Error for source not in PS1 field"""
+
+
+def in_ps1(dec_deg: float) -> bool:
+    """
+    Is a given position in PS1?
+
+    :param dec_deg: Declination
+    :return: Boolean
+    """
+    return dec_deg > -30.0
 
 
 class PS1(VizierCatalog):
@@ -34,3 +49,13 @@ class PS1(VizierCatalog):
         clean_cat = table[np.where(check == 0)[0]]
         logger.debug(f"found {len(clean_cat)} columns without this flag")
         return clean_cat
+
+    @staticmethod
+    def check_coverage(ra_deg: float, dec_deg: float):
+        if not in_ps1(dec_deg):
+            err = (
+                f"Querying for PS1 sources, but the field "
+                f"({ra_deg}, {dec_deg}) was not observed in PS1."
+            )
+            logger.error(err)
+            raise NotInPS1Error(err)
