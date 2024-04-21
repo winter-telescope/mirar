@@ -58,9 +58,11 @@ def default_filter_wfau_images(image_batch: ImageBatch) -> ImageBatch:
             for x in image_batch
         ]
     )
-    # magerr_zps = np.array([x["MAGZRR"] for x in ukirt_images])
+
     median_mag_zp = np.median(mag_zps)
+
     seeings = np.array([x["SEEING"] for x in image_batch])
+
     zpmask = np.abs(mag_zps - median_mag_zp) < 0.4
     seeingmask = (seeings < 3.5 / 0.4) & (seeings > 0)
 

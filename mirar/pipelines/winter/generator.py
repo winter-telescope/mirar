@@ -67,12 +67,11 @@ from mirar.processors.utils.cal_hunter import CalRequirement
 from mirar.processors.utils.image_selector import select_from_images
 from mirar.references import PS1Ref
 from mirar.references.local import RefFromPath
-from mirar.references.wfcam.wfcam_query import UKIRTOnlineQuery
+from mirar.references.wfcam.wfcam_query import WFAUQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
-
 
 winter_cal_requirements = [
     CalRequirement(
@@ -802,7 +801,8 @@ def winter_reference_generator(image: Image):
                     return RefFromPath(path=savepath, filter_name=filtername)
 
         skip_online_query = filtername == "H"
-        ukirt_query = UKIRTOnlineQuery(
+
+        wfcam_query = WFAUQuery(
             num_query_points=16,
             filter_name=filtername,
             use_db_for_component_queries=True,
@@ -811,9 +811,10 @@ def winter_reference_generator(image: Image):
             skip_online_query=skip_online_query,
             component_image_subdir="winter/references/components",
         )
+
         return WFCAMStackedRef(
             filter_name=filtername,
-            wfcam_query=ukirt_query,
+            wfcam_query=wfcam_query,
             image_resampler_generator=winter_wfau_component_image_stacker,
             write_stacked_image=cache_ref_stack,
             write_stack_sub_dir="winter/references/ref_stacks",

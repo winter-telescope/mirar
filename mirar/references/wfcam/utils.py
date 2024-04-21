@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
-from astrosurveyutils import get_known_ukirt_surveys
+from astrosurveyutils import get_known_ukirt_surveys, get_known_vista_surveys
 from astrosurveyutils.surveys import MOCSurvey
 
 from mirar.data import Image
@@ -17,6 +17,7 @@ from mirar.paths import (
     BASE_NAME_KEY,
     COADD_KEY,
     EXPTIME_KEY,
+    FILTER_KEY,
     GAIN_KEY,
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
@@ -73,18 +74,26 @@ def get_query_coordinates_from_header(
     return ra_list, dec_list
 
 
-def find_ukirt_surveys(ra: float, dec: float, band: str) -> list[MOCSurvey]:
+def find_wfcam_surveys(
+    ra: float, dec: float, band: str, telescope: str
+) -> list[MOCSurvey]:
     """
     Find which UKIRT survey does the given RA/Dec belong to
     Args:
         :param ra: RA in degrees
         :param dec: Dec in degrees
         :param band: band name
+        :param telescope: telescope name UKIRT or VISTA
 
     Returns:
         :return: list of surveys
     """
-    surveys = get_known_ukirt_surveys()
+    if telescope.lower() not in ["ukirt", "vista"]:
+        raise KeyError(f"Telescope must be UKIRT or VISTA, got {telescope}.")
+    if telescope.lower() == "ukirt":
+        surveys = get_known_ukirt_surveys()
+    else:
+        surveys = get_known_vista_surveys()
     band_surveys = np.array([x for x in surveys if x.filter_name == band])
     in_survey_footprint = [x.contains(ra, dec)[0] for x in band_surveys]
     return band_surveys[in_survey_footprint]
@@ -141,9 +150,19 @@ def make_wfcam_image_from_hdulist(
         header_to_append=ukirt_hdulist[0].header,
     )
 
-    combined_header[EXPTIME_KEY] = combined_header["EXP_TIME"]
+    if "EXP_TIME" in combined_header:
+        combined_header[EXPTIME_KEY] = combined_header["EXP_TIME"]
     combined_header[BASE_NAME_KEY] = basename
-    combined_header[GAIN_KEY] = combined_header["GAIN"]
+    if "GAIN" in combined_header:
+        combined_header[GAIN_KEY] = combined_header["GAIN"]
+    if "GAINCOR" in combined_header:
+        combined_header[GAIN_KEY] = combined_header["GAINCOR"]
+    if "ESO INS FILT1 NAME" in combined_header:
+        combined_header[FILTER_KEY] = combined_header["ESO INS FILT1 NAME"]
+    if "ESO TEL AIRM START" in combined_header:
+        combined_header["AMSTART"] = combined_header["ESO TEL AIRM START"]
+    if "ESO TEL AIRM END" in combined_header:
+        combined_header["AMEND"] = combined_header["ESO TEL AIRM END"]
     combined_header[TIME_KEY] = combined_header["DATE-OBS"]
     combined_header[OBSCLASS_KEY] = "ref"
     combined_header[COADD_KEY] = 1

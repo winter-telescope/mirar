@@ -69,6 +69,7 @@ from mirar.pipelines.winter.generator import (
 from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
     get_raw_winter_mask,
+    load_astrometried_winter_image,
     load_stacked_winter_image,
     load_test_winter_image,
     load_winter_mef_image,
@@ -216,6 +217,10 @@ load_raw = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
+]
+
+load_astrometry = [
+    ImageLoader(input_sub_dir="post_scamp", load_image=load_astrometried_winter_image)
 ]
 
 extract_all = [

@@ -18,6 +18,7 @@ from astropy.units import Quantity
 from astropy.wcs import FITSFixedWarning
 from astroquery.ukidss import UkidssClass
 from astroquery.utils.commons import FileContainer
+from astroquery.vsa import VsaClass
 from astroquery.wfau import BaseWFAUClass
 from astrosurveyutils.surveys import MOCSurvey
 
@@ -38,7 +39,7 @@ from mirar.references.wfcam.utils import (
     QUERY_DEC_KEY,
     QUERY_FILT_KEY,
     QUERY_RA_KEY,
-    find_ukirt_surveys,
+    find_wfcam_surveys,
     get_query_coordinates_from_header,
     get_wfcam_file_identifiers_from_url,
     make_wfcam_image_from_hdulist,
@@ -246,14 +247,30 @@ class WFAUQuery(BaseWFCAMQuery):
         """
         raise NotImplementedError
 
-    def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
+    def get_surveys_query_class(
+        self, ra: float, dec: float
+    ) -> (list[MOCSurvey], BaseWFAUClass):
         """
         Get the surveys that are available at the given coordinates
         :param ra: RA of the coordinates
         :param dec: Dec of the coordinates
         :return: List of surveys that are available at the given coordinates
+        :return: Class that will be used to query the WFAU database
         """
-        raise NotImplementedError
+        ukirt_surveys = find_wfcam_surveys(
+            ra=ra, dec=dec, band=self.filter_name, telescope="ukirt"
+        )
+        vista_surveys = find_wfcam_surveys(
+            ra=ra, dec=dec, band=self.filter_name, telescope="vista"
+        )
+        logger.debug(
+            f"{ra}, {dec}, {self.filter_name}, {ukirt_surveys}, {vista_surveys}"
+        )
+        if len(ukirt_surveys) > 0:
+            # Prioritize UKIRT images as they are smaller and usually better
+            return ukirt_surveys, UkidssClass()
+
+        return vista_surveys, VsaClass()
 
     def get_query_crds(
         self, header: fits.Header, num_query_points: int
@@ -296,7 +313,7 @@ class WFAUQuery(BaseWFCAMQuery):
         # Get surveys that are available at the given coordinates
         surveys, survey_names = [], []
         for ra, dec in zip(query_ra_list, query_dec_list):
-            crd_surveys = self.get_surveys(ra, dec)
+            crd_surveys, wfau_query = self.get_surveys_query_class(ra, dec)
             for srv in crd_surveys:
                 if srv.survey_name not in survey_names:
                     surveys.append(srv)
@@ -311,8 +328,6 @@ class WFAUQuery(BaseWFCAMQuery):
         surveys = surveys[np.argsort(lim_mags)[::-1]]
         logger.debug(f"Surveys are {[x.survey_name for x in surveys]}")
         wfau_survey_names = [x.wfau_dbname for x in surveys]
-        # Get the query class
-        wfau_query = self.get_query_class()
 
         for survey in wfau_survey_names:
             wfau_query.database = survey
@@ -358,6 +373,9 @@ class WFAUQuery(BaseWFCAMQuery):
                 # This runs only is skip_online_query is False, again, as a safeguard
                 # against cases where the server is out for long times.
                 if (len(imagepaths) == 0) and (not self.skip_online_query):
+                    undeprecated_compids_file = wfcam_undeprecated_compid_file
+                    if isinstance(wfau_query, VsaClass):
+                        undeprecated_compids_file = None
                     imagepaths = download_wfcam_archive_images(
                         crd,
                         wfau_query=wfau_query,
@@ -367,6 +385,7 @@ class WFAUQuery(BaseWFCAMQuery):
                         use_local_database=self.use_db_for_component_queries,
                         components_table=self.components_db_table,
                         duplicate_protocol="ignore",
+                        undeprecated_compids_file=undeprecated_compids_file,
                     )
 
                 # Make an entry in the queries table
@@ -705,29 +724,3 @@ def check_multiframe_exists_locally(
     else:
         savepaths = [Path(x) for x in results["savepath"].tolist()]
     return savepaths
-
-
-class UKIRTOnlineQuery(WFAUQuery):
-    """
-    Class to query the UKIRT online database at the WFAU.
-    This is a subclass of the WFAUQuery.
-    """
-
-    def get_surveys(self, ra: float, dec: float) -> list[MOCSurvey]:
-        """
-        Function to get the surveys that overlap with the given coordinates
-        Args:
-            :param ra: ra that was queried
-            :param dec: dec that was queried
-        Returns:
-            :return: list of surveys
-        """
-        return find_ukirt_surveys(ra=ra, dec=dec, band=self.filter_name)
-
-    def get_query_class(self) -> BaseWFAUClass:
-        """
-        Function to get the query class
-        Returns:
-            :return: query class
-        """
-        return UkidssClass()
