@@ -14,8 +14,8 @@ It was created by `Robert Stein <https://robertdstein.github.io/>`_ and
 If you make use of mirar in your research, please cite the version using
 the DOI provided by Zenodo:
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.10888437.svg
-  :target: https://doi.org/10.5281/zenodo.10888437
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.10888436.svg
+  :target: https://doi.org/10.5281/zenodo.10888436
 
 
 Contents
