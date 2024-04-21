@@ -256,6 +256,22 @@ def load_winter_stack(
     return Image(data=data, header=header)
 
 
+def load_astrometried_winter_image(path: str | Path) -> Image:
+    """
+    Load astrometried image
+
+    :param path: Path to image
+    :return: Image object
+    """
+    logger.debug(f"Loading {path}")
+    data, header = open_fits(path)
+    dirname = path.split("/winter/")[0] + "/winter/"
+    scamp_path = header["SCMPHEAD"]
+    new_scamp_path = Path(dirname) / scamp_path.split("/winter/")[-1]
+    header["SCMPHEAD"] = new_scamp_path.as_posix()
+    return Image(data=data, header=header)
+
+
 def load_stacked_winter_image(
     path: str | Path,
 ) -> tuple[np.array, fits.Header]:
