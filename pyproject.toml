@@ -10,7 +10,7 @@ homepage = "https://github.com/winter-telescope/mirar"
 [tool.poetry.dependencies]
 python = ">=3.10.0,<3.12"
 astroplan = ">=0.8,<0.11"
-astropy = "6.0.0"
+astropy = "^6.0.0"
 astroquery = "^0.4.6"
 avro = "^1.11.3"
 certifi = ">=2023.7.22,<2025.0.0"
@@ -50,7 +50,7 @@ pylint-pydantic = ">=0.1.6,<0.4.0"
 astrosurveyutils = "^0.0.1"
 urllib3 = ">=1.26.16,<3.0.0"
 sqlalchemy-utils = "^0.41.1"
-wintertoo = "^1.2.0"
+wintertoo = "^1.5.0"
 scipy = "^1.12.0"
 python-dotenv = "^1.0.1"
 
@@ -99,6 +99,9 @@ disable=["logging-fstring-interpolation"]
 good-names=["i", "j", "k", "ex", "Run", "_", "ra", "pa", "x", "y", "nx", "ny", "dx", "dy"]
 exclude-too-few-public-methods=["pydantic.*"]
 extension-pkg-whitelist=["pydantic"]
+
+[tool.pylint.typecheck]
+generated-members=["u.*"]
 
 [build-system]
 requires = ["setuptools", "wheel", "poetry-core>=1.2.0",]
