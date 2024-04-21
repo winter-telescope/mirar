@@ -88,7 +88,8 @@ def find_wfcam_surveys(
     Returns:
         :return: list of surveys
     """
-    assert telescope.lower() in ["ukirt", "vista"], "Telescope must be UKIRT or VISTA"
+    if telescope.lower() not in ["ukirt", "vista"]:
+        raise KeyError(f"Telescope must be UKIRT or VISTA, got {telescope}.")
     if telescope.lower() == "ukirt":
         surveys = get_known_ukirt_surveys()
     else:
