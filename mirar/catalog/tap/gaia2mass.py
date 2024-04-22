@@ -21,7 +21,7 @@ class Gaia2MassTAP(BaseGaia2Mass):
     Crossmatched Gaia/2Mass catalog
     """
 
-    def __init__(self, *args, snr_threshold: DEFAULT_SNR_THRESHOLD, **kwargs):
+    def __init__(self, *args, snr_threshold: float = DEFAULT_SNR_THRESHOLD, **kwargs):
         super().__init__(*args, **kwargs)
         self.snr_threshold = snr_threshold
 
@@ -57,8 +57,12 @@ class Gaia2MassTAP(BaseGaia2Mass):
         src_list["ph_qual"] = src_list["ph_qual"].astype(str)
         src_list["ra_errdeg"] = src_list["ra_error"] / 3.6e6
         src_list["dec_errdeg"] = src_list["dec_error"] / 3.6e6
+
         src_list["FLAGS"] = 0
         src_list["magnitude"] = src_list[f"{self.filter_name.lower()}_m"]
         src_list["magnitude_err"] = src_list[f"{self.filter_name.lower()}_msigcom"]
+        src_list["h_m"] = src_list["hs_m"]
+        src_list["h_msigcom"] = src_list["hs_msigcom"]
+
         logger.debug(f"Found {len(src_list)} sources in Gaia")
         return src_list
