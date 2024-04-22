@@ -550,12 +550,16 @@ def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
             pd.DataFrame(src_df[SOURCE_HISTORY_KEY].loc[x]) for x in range(len(src_df))
         ]
 
-        src_df["ndet"] = [len(x) + 1 for x in hist_dfs]
+        src_df["ndet"] = [len(x) for x in hist_dfs]
 
         new_fields = []
 
+        # FIXME remove same detection by candid
+
         for i, hist_df in enumerate(hist_dfs):
-            if len(hist_df) == 0:
+            if len(hist_df) == 1:
+
+                new_hist_df = pd.DataFrame(columns=hist_df.columns)
 
                 new_fields.append(
                     {
@@ -566,6 +570,7 @@ def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
                         "jdstarthist": source["jd"],
                         "jdendhist": source["jd"],
                         "ndethist": 0,
+                        SOURCE_HISTORY_KEY: new_hist_df,
                     }
                 )
 
@@ -591,6 +596,8 @@ def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
                 min_jd = min(hist_df["jd"].tolist() + [source["jd"]])
                 max_jd = max(hist_df["jd"].tolist() + [source["jd"]])
 
+                new_hist_df = hist_df[hist_df["candid"] != src_df["candid"].iloc[i]]
+
                 new_fields.append(
                     {
                         "average_ra": av_ra,
@@ -599,7 +606,8 @@ def winter_source_entry_updater(source_table: SourceBatch) -> SourceBatch:
                         "latest_det_utc": Time(max_jd, format="jd").isot,
                         "jdstarthist": min_jd,
                         "jdendhist": max_jd,
-                        "ndethist": len(hist_df),
+                        "ndethist": len(new_hist_df),
+                        SOURCE_HISTORY_KEY: new_hist_df,
                     }
                 )
 

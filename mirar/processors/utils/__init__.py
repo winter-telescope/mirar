@@ -12,6 +12,7 @@ from mirar.processors.utils.image_saver import ImageSaver
 from mirar.processors.utils.image_selector import (
     ImageBatcher,
     ImageDebatcher,
+    ImageRebatcher,
     ImageSelector,
     select_from_images,
 )

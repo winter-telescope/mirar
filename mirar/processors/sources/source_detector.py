@@ -23,6 +23,8 @@ from mirar.paths import (
     REF_IMG_KEY,
     SCI_IMG_KEY,
     SCOR_IMG_KEY,
+    SOURCE_HISTORY_KEY,
+    SOURCE_NAME_KEY,
     XPOS_KEY,
     YPOS_KEY,
     get_output_dir,
@@ -87,6 +89,9 @@ def generate_candidates_table(
     det_srcs = det_srcs[det_srcs["scorr"] > 5]
 
     det_srcs = det_srcs.to_pandas()
+
+    det_srcs[SOURCE_HISTORY_KEY] = [pd.DataFrame() for _ in range(len(det_srcs))]
+    det_srcs[SOURCE_NAME_KEY] = None
 
     logger.debug(
         f"Filtered to {len(det_srcs)} candidates in image with " f"scorr peak > 5."

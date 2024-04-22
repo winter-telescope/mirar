@@ -109,10 +109,7 @@ from mirar.processors.database.database_inserter import (
     DatabaseImageInserter,
     DatabaseSourceInserter,
 )
-from mirar.processors.database.database_selector import (
-    SelectSourcesWithMetadata,
-    SingleSpatialCrossmatchSource,
-)
+from mirar.processors.database.database_selector import SelectSourcesWithMetadata
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.flat import FlatCalibrator
 from mirar.processors.mask import (  # MaskAboveThreshold,
@@ -128,6 +125,7 @@ from mirar.processors.sources import (
     CandidateNamer,
     CustomSourceTableModifier,
     ForcedPhotometryDetector,
+    SourceBatcher,
     SourceLoader,
     SourceWriter,
     ZOGYSourceDetector,
@@ -140,6 +138,7 @@ from mirar.processors.utils import (
     ImageDebatcher,
     ImageLoader,
     ImagePlotter,
+    ImageRebatcher,
     ImageRejector,
     ImageSaver,
     ImageSelector,
@@ -267,8 +266,7 @@ select_ref = [
         ("FIELDID", str(3944)),
         ("BOARD_ID", str(BOARD_ID)),
     ),
-    ImageDebatcher(),
-    ImageBatcher("STACKID"),
+    ImageRebatcher("STACKID"),
 ]
 
 # mask
@@ -292,8 +290,7 @@ mask_and_split = mask + split
 save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
+    ImageRebatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     CustomImageBatchModifier(winter_stackid_annotator),
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
@@ -307,8 +304,7 @@ save_raw = [
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
-    ImageDebatcher(),
-    ImageBatcher("UTCTIME"),
+    ImageRebatcher("UTCTIME"),
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -340,8 +336,7 @@ cal_hunter = [
 # Detrend blocks
 
 dark_calibrate = [
-    ImageDebatcher(),
-    ImageBatcher(
+    ImageRebatcher(
         ["BOARD_ID", EXPTIME_KEY, "SUBCOORD", "GAINCOLT", "GAINCOLB", "GAINROW"]
     ),
     DarkCalibrator(
@@ -349,15 +344,13 @@ dark_calibrate = [
         cache_image_name_header_keys=[EXPTIME_KEY, "BOARD_ID"],
     ),
     ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     ImageSaver(output_dir_name="darkcal"),
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
 ]
 
 flat_calibrate = [
-    ImageDebatcher(),
-    ImageBatcher(
+    ImageRebatcher(
         [
             "BOARD_ID",
             "FILTER",
@@ -373,8 +366,7 @@ flat_calibrate = [
         cache_image_name_header_keys=["FILTER", "BOARD_ID"],
     ),
     ImageSaver(output_dir_name="skyflatcal"),
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -395,8 +387,7 @@ fourier_filter = [
 ]
 
 astrometry = [
-    ImageDebatcher(),
-    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
+    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[1.0, 1.3],
@@ -410,8 +401,7 @@ astrometry = [
         cache=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
-    ImageDebatcher(),
-    ImageBatcher(
+    ImageRebatcher(
         [TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD", "DITHGRP"]
     ),
     Sextractor(
@@ -431,8 +421,7 @@ astrometry = [
 ]
 
 validate_astrometry = [
-    ImageDebatcher(),
-    ImageBatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "DITHGRP"]),
+    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "DITHGRP"]),
     Sextractor(
         **sextractor_astromstats_config,
         write_regions_bool=True,
@@ -467,8 +456,7 @@ stack_dithers = [
 ]
 
 photcal_and_export = [
-    ImageDebatcher(),
-    ImageBatcher([BASE_NAME_KEY]),
+    ImageRebatcher([BASE_NAME_KEY]),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
@@ -541,8 +529,7 @@ load_final_stack = [
 ]
 
 plot_stack = [
-    ImageDebatcher(),
-    ImageBatcher([TARGET_KEY, "BOARD_ID"]),
+    ImageRebatcher([TARGET_KEY, "BOARD_ID"]),
     ImagePlotter(
         output_sub_dir="final_stacks_plots",
         annotate_fields=[
@@ -559,15 +546,13 @@ plot_stack = [
 ]
 
 split_stack = [
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
+    ImageRebatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
     SwarpImageSplitter(swarp_config_path=swarp_config_path, n_x=2, n_y=1),
     ImageSaver(output_dir_name="split_stacks"),
 ]
 
 imsub = [
-    ImageDebatcher(),
-    ImageBatcher([BASE_NAME_KEY]),
+    ImageRebatcher([BASE_NAME_KEY]),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -651,6 +636,10 @@ crossmatch_candidates = [
     SourceWriter(output_dir_name="kowalski"),
 ]
 
+load_post_kowalski = [
+    SourceLoader(input_dir_name="kowalski"),
+]
+
 select_history = [
     SelectSourcesWithMetadata(
         db_query_columns=["sourceid"],
@@ -661,48 +650,42 @@ select_history = [
     ),
 ]
 
-name_candidates = (
-    [
-        # Check if the source is already in the source table
-        SingleSpatialCrossmatchSource(
-            db_table=Source,
-            db_output_columns=["sourceid", SOURCE_NAME_KEY],
-            crossmatch_radius_arcsec=2.0,
-            ra_field_name="average_ra",
-            dec_field_name="average_dec",
-        ),
-        # Assign names to the new sources
-        CandidateNamer(
-            db_table=Source,
-            base_name=SOURCE_PREFIX,
-            name_start=NAME_START,
-            db_name_field=SOURCE_NAME_KEY,
-        ),
-        # Add the new sources to the source table
-        CustomSourceTableModifier(modifier_function=winter_new_source_updater),
-        DatabaseSourceInserter(
-            db_table=Source,
-            duplicate_protocol="ignore",
-        ),
-        # Get all candidates associated with source
-    ]
-    + select_history
-    + [
-        # Update average ra and dec for source
-        CustomSourceTableModifier(modifier_function=winter_source_entry_updater),
-        # Update sources in the source table
-        DatabaseSourceInserter(
-            db_table=Source,
-            duplicate_protocol="replace",
-        ),
-        # Add candidates in the candidate table
-        DatabaseSourceInserter(
-            db_table=Candidate,
-            duplicate_protocol="fail",
-        ),
-        SourceWriter(output_dir_name="preavro"),
-    ]
-)
+name_candidates = [
+    SourceBatcher(BASE_NAME_KEY),
+    # Add the new sources to the source table
+    CustomSourceTableModifier(modifier_function=winter_new_source_updater),
+    # Assign names to the new sources
+    CandidateNamer(
+        db_table=Source,
+        db_output_columns=["sourceid", SOURCE_NAME_KEY],
+        base_name=SOURCE_PREFIX,
+        name_start=NAME_START,
+        db_name_field=SOURCE_NAME_KEY,
+        crossmatch_radius_arcsec=2.0,
+        ra_field_name="average_ra",
+        dec_field_name="average_dec",
+    ),
+    # Add candidates in the candidate table
+    DatabaseSourceInserter(
+        db_table=Candidate,
+        duplicate_protocol="fail",
+    ),
+    SelectSourcesWithMetadata(
+        db_query_columns=["sourceid"],
+        db_table=Candidate,
+        db_output_columns=prv_candidate_cols + [SOURCE_NAME_KEY],
+        base_output_column=SOURCE_HISTORY_KEY,
+        additional_query_constraints=winter_history_deprecated_constraint,
+    ),
+    # Update average ra and dec for source
+    CustomSourceTableModifier(modifier_function=winter_source_entry_updater),
+    # Update sources in the source table
+    DatabaseSourceInserter(
+        db_table=Source,
+        duplicate_protocol="replace",
+    ),
+    SourceWriter(output_dir_name="preavro"),
+]
 
 avro_write = [
     # Add in the skyportal fields and all save locally
@@ -844,8 +827,7 @@ focus_cals = (
 )
 
 stack_forced_photometry = [
-    ImageDebatcher(),
-    ImageBatcher([BASE_NAME_KEY]),
+    ImageRebatcher([BASE_NAME_KEY]),
     ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
     AperturePhotometry(
         aper_diameters=[5, 8, 10, 15],

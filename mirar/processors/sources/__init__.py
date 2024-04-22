@@ -10,4 +10,10 @@ from mirar.processors.sources.source_detector import ZOGYSourceDetector
 from mirar.processors.sources.source_exporter import SourceWriter
 from mirar.processors.sources.source_filter import BaseSourceFilter
 from mirar.processors.sources.source_loader import SourceLoader
+from mirar.processors.sources.source_selector import (
+    SourceBatcher,
+    SourceDebatcher,
+    SourceRebatcher,
+    SourceSelector,
+)
 from mirar.processors.sources.source_table_modifier import CustomSourceTableModifier

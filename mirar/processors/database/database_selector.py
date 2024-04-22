@@ -180,30 +180,36 @@ class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC)
             candidate_table = source_table.get_data()
             results = []
             for _, source in candidate_table.iterrows():
-                super_dict = self.generate_super_dict(metadata, source)
-                query_constraints = self.get_constraints(super_dict)
-                logger.debug(
-                    f"Query constraints: " f"{query_constraints.parse_constraints()}"
-                )
-                if self.additional_query_constraints is not None:
-                    query_constraints = (
-                        query_constraints + self.additional_query_constraints
-                    )
-                logger.debug(
-                    f"Query constraints: " f"{query_constraints.parse_constraints()}"
-                )
-                res = select_from_table(
-                    sql_table=self.db_table.sql_model,
-                    db_constraints=query_constraints,
-                    output_columns=self.db_output_columns,
-                    max_num_results=self.max_num_results,
-                )
+
+                res = self.query_for_source(source, metadata)
 
                 results.append(res)
 
             new_table = self.update_dataframe(candidate_table, results)
             source_table.set_data(new_table)
         return batch
+
+    def query_for_source(self, source: pd.Series, metadata: dict) -> pd.DataFrame:
+        """
+        Query the database for a single source
+
+        :param source: Source data
+        :param metadata: Source Batch metadata
+        :return: Results from the database
+        """
+        super_dict = self.generate_super_dict(metadata, source)
+        query_constraints = self.get_constraints(super_dict)
+        logger.debug(f"Query constraints: " f"{query_constraints.parse_constraints()}")
+        if self.additional_query_constraints is not None:
+            query_constraints = query_constraints + self.additional_query_constraints
+        logger.debug(f"Query constraints: " f"{query_constraints.parse_constraints()}")
+        res = select_from_table(
+            sql_table=self.db_table.sql_model,
+            db_constraints=query_constraints,
+            output_columns=self.db_output_columns,
+            max_num_results=self.max_num_results,
+        )
+        return res
 
 
 class DatabaseSingleMatchSelector(BaseDatabaseSourceSelector, ABC):

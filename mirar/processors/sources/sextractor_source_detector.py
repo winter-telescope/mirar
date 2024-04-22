@@ -17,6 +17,8 @@ from mirar.paths import (
     CAND_DEC_KEY,
     CAND_RA_KEY,
     SEXTRACTOR_HEADER_KEY,
+    SOURCE_HISTORY_KEY,
+    SOURCE_NAME_KEY,
     XPOS_KEY,
     YPOS_KEY,
     get_output_dir,
@@ -35,7 +37,10 @@ def generate_candidates_table(
 ) -> pd.DataFrame:
     """
     Generate a candidates table from a sextractor catalog
+
+    :param image: Image object
     :param sextractor_catalog_path: Path to the sextractor catalog
+    :param target_only: Whether to return only the target source
     :return: Candidates table
     """
     det_srcs = get_table_from_ldac(sextractor_catalog_path)
@@ -68,6 +73,8 @@ def generate_candidates_table(
     det_srcs[CAND_DEC_KEY] = det_srcs["DELTAWIN_J2000"]
     det_srcs["fwhm"] = det_srcs["FWHM_IMAGE"]
     det_srcs["elong"] = det_srcs["ELONGATION"]
+    det_srcs[SOURCE_HISTORY_KEY] = pd.DataFrame()
+    det_srcs[SOURCE_NAME_KEY] = None
 
     return det_srcs
 

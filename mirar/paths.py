@@ -20,11 +20,10 @@ __version__ = metadata.version(__package__)
 doc_dir = base_code_dir.joinpath("docs/")
 
 # Load environment variables for .env file
-variables_loaded = dotenv.load_dotenv()
+VARIABLES_LOADED = dotenv.load_dotenv()
 
-if variables_loaded:
-    info = "Environment variables were automatically loaded from .env file."
-    logger.info(info)
+if VARIABLES_LOADED:
+    logger.info("Environment variables were automatically loaded from .env file.")
 
 _n_cpu = os.cpu_count()
 if _n_cpu is None:
@@ -344,6 +343,13 @@ core_fields = [
     RAW_IMG_KEY,
     BASE_NAME_KEY,
     EXPTIME_KEY,
+]
+
+core_source_fields = [
+    CAND_RA_KEY,
+    CAND_DEC_KEY,
+    SOURCE_NAME_KEY,
+    SOURCE_HISTORY_KEY,
 ]
 
 MONITOR_EMAIL_KEY = "WATCHDOG_EMAIL"

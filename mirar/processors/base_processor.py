@@ -25,7 +25,7 @@ from mirar.errors import (
     NoncriticalProcessingError,
     ProcessorError,
 )
-from mirar.io import open_fits, save_fits
+from mirar.io import MissingCoreFieldError, open_fits, save_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     CAL_OUTPUT_SUB_DIR,
@@ -33,6 +33,7 @@ from mirar.paths import (
     PACKAGE_NAME,
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
+    core_source_fields,
     get_mask_path,
     get_output_path,
     max_n_cpu,
@@ -535,6 +536,15 @@ class BaseSourceGenerator(CleanupProcessor, ImageHandler, ABC):
         if len(source_batch) == 0:
             msg = "No sources found in image batch"
             logger.warning(msg)
+
+        for batch in source_batch:
+            cols = batch.get_data().columns
+            for field in core_source_fields:
+                if field not in cols:
+                    raise MissingCoreFieldError(
+                        f"Field {field} not found in source table. "
+                        f"Available fields are {cols}."
+                    )
 
         return source_batch
 
