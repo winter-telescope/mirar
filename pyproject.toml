@@ -34,7 +34,7 @@ setuptools = ">=67.8,<70.0"
 watchdog = ">=3,<5"
 wget = "^3.2"
 toml = "^0.10.2"
-sphinx-mdinclude = "^0.5.3"
+sphinx-mdinclude = ">=0.5.3,<0.7.0"
 black = "^24.1.1"
 pre-commit = "^3.6.0"
 isort = {extras = ["pyproject"], version = "^5.12.0"}
