@@ -175,7 +175,10 @@ class CandidateNamer(SingleSpatialCrossmatchSource):
 
                     # Insert the name into the source table
                     source[self.name_key] = source_name
-                    new = self.db_table(**source)
+
+                    metadata_dict = self.generate_super_dict(metadata, source)
+
+                    new = self.db_table(**metadata_dict)
                     match = new.insert_entry(
                         duplicate_protocol="fail",
                         returning_key_names=self.db_output_columns,

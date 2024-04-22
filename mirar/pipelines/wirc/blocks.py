@@ -247,6 +247,9 @@ process_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     SourceWriter(output_dir_name="kowalski"),
+    HeaderAnnotator(input_keys=[LATEST_SAVE_KEY], output_key="diffimgname"),
+    HeaderAnnotator(input_keys=[SCI_IMG_KEY], output_key="sciimgname"),
+    HeaderAnnotator(input_keys=[REF_IMG_KEY], output_key="refimgname"),
     CandidateNamer(
         db_table=Candidate,
         base_name=CANDIDATE_PREFIX,
@@ -260,10 +263,7 @@ process_candidates = [
         db_table=Candidate,
         db_output_columns=[SOURCE_NAME_KEY] + prv_candidate_cols,
     ),
-    HeaderAnnotator(input_keys=[LATEST_SAVE_KEY], output_key="diffimgname"),
-    HeaderAnnotator(input_keys=[SCI_IMG_KEY], output_key="sciimgname"),
-    HeaderAnnotator(input_keys=[REF_IMG_KEY], output_key="refimgname"),
-    DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="fail"),
+    DatabaseSourceInserter(db_table=Candidate, duplicate_protocol="replace"),
     SourceWriter(output_dir_name="candidates"),
     # EdgeCandidatesMask(edge_boundary_size=100)
     # FilterCandidates(),
