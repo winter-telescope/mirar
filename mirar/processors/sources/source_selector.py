@@ -2,6 +2,8 @@
 Module containing processors and functions to select a subset of sources from a batch
 """
 
+# pylint: disable=duplicate-code
+
 import logging
 
 from mirar.data import Dataset, SourceBatch
