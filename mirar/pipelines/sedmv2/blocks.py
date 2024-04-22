@@ -35,7 +35,10 @@ from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.mask import MaskPixelsFromPath
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
-from mirar.processors.photcal.zp_calculator import ZPWithColorTermCalculator
+from mirar.processors.photcal.zp_calculator import (
+    OutlierRejectionZPCalculator,
+    ZPWithColorTermCalculator,
+)
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.skyportal.skyportal_source import SkyportalSourceUploader
@@ -155,7 +158,6 @@ resample_stellar = [
 
 parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 
-# process_stellar = parse_stellar + process
 process_stellar = reduce_not0 + astrometry + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
@@ -188,17 +190,6 @@ image_photometry = [  # imported from wirc/blocks.py
         zp_key="ZP_AUTO",
     ),
     SourceWriter(output_dir_name="sourcetable"),
-]
-
-candidate_photometry = [  # imported from wirc/blocks.py
-    AperturePhotometry(
-        aper_diameters=[16, 70],
-        phot_cutout_half_size=100,
-        bkg_in_diameters=[25, 90],
-        bkg_out_diameters=[40, 100],
-        col_suffix_list=["", "big"],
-    ),
-    PSFPhotometry(),
 ]
 
 
@@ -240,7 +231,7 @@ transient_phot_psfexsex = [  # run phot on target in image with new PSF method
     SourceWriter(output_dir_name="sourcetable"),
 ]
 
-all_phot_psfexsex_calibrate = [  # run phot on all sources in image
+psf_all_sources_before_calibration = [  # run phot on all sources in image
     Sextractor(
         output_sub_dir="sextractor_before_psfex",
         checkimage_type="BACKGROUND_RMS",
@@ -253,6 +244,9 @@ all_phot_psfexsex_calibrate = [  # run phot on all sources in image
         use_psfex=True,
         **sextractor_PSF_photometry_config,
     ),  # Sextractor-based PSF mags, saves to catalog
+]
+
+photcal_withcolor = [
     PhotCalibrator(
         ref_catalog_generator=sedmv2_photometric_catalog_generator,
         catalogs_purifier=sedmv2_photcal_catalog_purifier,
@@ -261,6 +255,7 @@ all_phot_psfexsex_calibrate = [  # run phot on all sources in image
             reject_outliers=True,
             solver="odr",
         ),
+        write_regions=True,
     ),
     ImageSaver(
         output_dir_name="processed_after_psf",
@@ -268,31 +263,35 @@ all_phot_psfexsex_calibrate = [  # run phot on all sources in image
     ),
 ]
 
-all_phot = [  # run phot on all sources in image
+photcal_withoutcolor = [
+    PhotCalibrator(
+        ref_catalog_generator=sedmv2_photometric_catalog_generator,
+        catalogs_purifier=sedmv2_photcal_catalog_purifier,
+        zp_calculator=OutlierRejectionZPCalculator(),
+        write_regions=True,
+    ),
     ImageSaver(
-        output_dir_name="sources",
+        output_dir_name="processed_after_psf",
         write_mask=True,
     ),
-    PSFex(config_path=psfex_config_path, norm_fits=True),
-    SextractorSourceDetector(output_sub_dir="sources"),
-    PSFPhotometry(),
-    SourceWriter(output_dir_name="sourcetable"),
 ]
 
-upload_fritz = [
-    SkyportalSourceUploader(
-        origin="SEDMv2TEST",
-        group_ids=[1423],
-        instrument_id=1078,
-        update_thumbnails=False,
-    )
-]
+all_phot_psfexsex_calibrate_nocolor = (
+    psf_all_sources_before_calibration + photcal_withoutcolor
+)
+all_phot_psfexsex_calibrate = psf_all_sources_before_calibration + photcal_withcolor
+
 
 process_all_psf_then_cal = (
     reduce_not0 + astrometry + resample_transient + all_phot_psfexsex_calibrate
 )
-process_transient = reduce_not0 + astrometry + resample_transient + calibrate
-process_all = reduce_not0 + astrometry + resample_transient + calibrate + all_phot
+process_all_psf_then_cal_no_color_term = (
+    reduce_not0 + astrometry + resample_transient + all_phot_psfexsex_calibrate_nocolor
+)
+
+process_transient_using_magauto = (
+    reduce_not0 + astrometry + resample_transient + calibrate
+)
 
 imsub = [
     ImageBatcher(split_key=BASE_NAME_KEY),
@@ -323,6 +322,16 @@ imsub = [
 
 psf_phot_after_imsub = [
     ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
-    PSFPhotometry(phot_cutout_half_size=10),
+    PSFPhotometry(phot_cutout_half_size=10, zp_key="ZP_PSF", zp_std_key="ZP_PSF_std"),
     SourceWriter(output_dir_name="candidates"),
+]
+
+
+upload_fritz = [
+    SkyportalSourceUploader(
+        origin="SEDMv2TEST",
+        group_ids=[1423],
+        instrument_id=1078,
+        update_thumbnails=False,
+    )
 ]
