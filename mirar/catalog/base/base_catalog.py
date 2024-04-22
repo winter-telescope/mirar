@@ -17,6 +17,8 @@ from mirar.utils.ldac_tools import save_table_as_ldac
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_SNR_THRESHOLD = 3.0
+
 
 class ABCatalog:
     """
