@@ -95,7 +95,11 @@ class WINTERPipeline(Pipeline):
         "reftest": reftest,
         "only_ref": only_ref,
         "realtime": realtime,
-        "detect_candidates": load_final_stack + imsub + detect_candidates,
+        "detect_candidates": load_final_stack
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
         "full_imsub": load_final_stack
         + imsub
         + detect_candidates

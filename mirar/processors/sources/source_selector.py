@@ -1,36 +1,30 @@
 """
-Module containing processors and functions to select a subset of images from a batch
+Module containing processors and functions to select a subset of sources from a batch
 """
 
 import logging
 
-from mirar.data import Dataset, ImageBatch
-from mirar.errors import ProcessorError
+from mirar.data import Dataset, SourceBatch
 from mirar.paths import TARGET_KEY
-from mirar.processors.base_processor import BaseImageProcessor, CleanupProcessor
+from mirar.processors.base_processor import BaseSourceProcessor, CleanupProcessor
+from mirar.processors.utils.image_selector import ParsingError
 
 logger = logging.getLogger(__name__)
 
 
-class ParsingError(KeyError, ProcessorError):
-    """
-    Exception arising due to errors in parsing Image headers
-    """
-
-
-def select_from_images(
-    batch: ImageBatch,
+def select_from_sources(
+    batch: SourceBatch,
     key: str = TARGET_KEY,
     target_values: str | list[str] = "science",
-) -> ImageBatch:
+) -> SourceBatch:
     """
-    Returns a subset of images in a batch with have values of <key> equal to
+    Returns a subset of sources in a batch with have values of <key> equal to
     a value in <target values>
 
-    :param batch: image batch to sort
+    :param batch: source batch to sort
     :param key: header key to filter on
     :param target_values: accepted value(s) for key
-    :return: image batch containing the subset of images which pass
+    :return: source batch containing the subset of images which pass
     """
 
     # Enforce string in list for later matching
@@ -39,12 +33,12 @@ def select_from_images(
     else:
         target_values = [str(x) for x in target_values]
 
-    new_batch = ImageBatch()
+    new_batch = SourceBatch()
 
-    for image in batch:
+    for source_table in batch:
         try:
-            if str(image[key]) in target_values:
-                new_batch.append(image)
+            if str(source_table[key]) in target_values:
+                new_batch.append(source_table)
         except KeyError as exc:
             logger.error(exc)
             raise ParsingError(exc) from exc
@@ -52,7 +46,7 @@ def select_from_images(
     return new_batch
 
 
-class ImageSelector(BaseImageProcessor, CleanupProcessor):
+class SourceSelector(BaseSourceProcessor, CleanupProcessor):
     """
     Processor to only select a subset of images from a batch. Images can
     be selected using header keywords. For example, using:
@@ -76,20 +70,20 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
 
         return f"Processor to select images where {', and '.join(reqs)}"
 
-    def _apply_to_images(
+    def _apply_to_sources(
         self,
-        batch: ImageBatch,
-    ) -> ImageBatch:
+        batch: SourceBatch,
+    ) -> SourceBatch:
         for header_key, target_values in self.targets:
-            batch = select_from_images(
+            batch = select_from_sources(
                 batch, key=header_key, target_values=target_values
             )
 
         return batch
 
 
-def split_images_into_batches(
-    images: ImageBatch, split_key: str | list[str]
+def split_sources_into_batches(
+    sources: SourceBatch, split_key: str | list[str]
 ) -> Dataset:
     """
     Function to split a single :class:`~mirar.data.image_data.ImageBatch` object
@@ -97,7 +91,7 @@ def split_images_into_batches(
     Each new batch will have the same value of <split_key>.
     Returns a dataset containing the new batches
 
-    :param images: Image batch to split
+    :param sources: Image batch to split
     :param split_key: Key to split batch
     :return: Dataset containing new image batches
     """
@@ -107,38 +101,38 @@ def split_images_into_batches(
 
     groups = {}
 
-    for image in images:
+    for source_table in sources:
         uid = []
 
         for key in split_key:
-            uid.append(str(image[key]))
+            uid.append(str(source_table[key]))
 
         uid = "_".join(uid)
 
         if uid not in groups:
-            groups[uid] = [image]
+            groups[uid] = [source_table]
         else:
-            groups[uid] += [image]
+            groups[uid] += [source_table]
     logger.debug(groups)
-    res = Dataset([ImageBatch(x) for x in groups.values()])
+    res = Dataset([SourceBatch(x) for x in groups.values()])
 
     return res
 
 
-class ImageBatcher(BaseImageProcessor):
+class SourceBatcher(BaseSourceProcessor):
     """
-    Module to split :class:`~mirar.data.image_data.ImageBatch` object
+    Module to split :class:`~mirar.data.source_data.SourceBatch` object
     into multiple :class:`~mirar.data.base_data.DataBatch` objects.
 
     Images are batched using the `split_key` argument. For example,
     you can batch by filter, like this:
-        ImageBatcher(split_key="filter")
+        SourceBatcher(split_key="filter")
     which will return N batches for the N different filters present
     in the directory you are reducing.
     If you do not require batching at some point in your reductions,
     you can split by BASE_NAME_KEY:
-        ImageBatcher(split_key=BASE_NAME_KEY)
-    which returns ImageBatches of length 1, one for each file in the
+        SourceBatcher(split_key=BASE_NAME_KEY)
+    which returns SourceBatches of length 1, one for each file in the
     directory you're working with.
     """
 
@@ -155,29 +149,29 @@ class ImageBatcher(BaseImageProcessor):
             split = [self.split_key]
 
         return (
-            f"Groups images into batches, with each batch having "
+            f"Groups sources into batches, with each batch having "
             f"the same value of {' and '.join(split)}"
         )
 
-    def _apply_to_images(
+    def _apply_to_sources(
         self,
-        batch: ImageBatch,
-    ) -> ImageBatch:
+        batch: SourceBatch,
+    ) -> SourceBatch:
         return batch
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
         new_dataset = Dataset()
 
         for batch in dataset:
-            new = split_images_into_batches(batch, split_key=self.split_key)
+            new = split_sources_into_batches(batch, split_key=self.split_key)
             new_dataset += new
 
         return new_dataset
 
 
-class ImageDebatcher(BaseImageProcessor):
+class SourceDebatcher(BaseSourceProcessor):
     """
-    Processor to group all incoming :class:`~mirar.data.image_data.ImageBatch`
+    Processor to group all incoming :class:`~mirar.data.image_data.SourceBatch`
     objects into a single batch.
     This is helpful if you've already batched at an earlier stage in your workflow, and
     you want to start over and batch by a different split key.
@@ -185,17 +179,17 @@ class ImageDebatcher(BaseImageProcessor):
 
     base_key = "debatch"
 
-    def _apply_to_images(
+    def _apply_to_sources(
         self,
-        batch: ImageBatch,
-    ) -> ImageBatch:
+        batch: SourceBatch,
+    ) -> SourceBatch:
         return batch
 
     def __str__(self) -> str:
-        return "Processor to combine all images into a single ImageBatch"
+        return "Processor to combine all sources into a single SourceBatch"
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
-        combo_batch = ImageBatch()
+        combo_batch = SourceBatch()
 
         for batch in dataset:
             combo_batch += batch
@@ -203,9 +197,9 @@ class ImageDebatcher(BaseImageProcessor):
         return Dataset([combo_batch])
 
 
-class ImageRebatcher(ImageBatcher):
+class SourceRebatcher(SourceBatcher):
     """
-    Processor to regroup all incoming :class:`~mirar.data.image_data.ImageBatch`
+    Processor to regroup all incoming :class:`~mirar.data.image_data.SourceBatch`
     objects into a single batch, and then split by new keys.
     This is helpful if you've already batched at an earlier stage in your workflow, and
     you want to start over and batch by a different split key.
@@ -213,10 +207,10 @@ class ImageRebatcher(ImageBatcher):
 
     base_key = "rebatch"
 
-    def _apply_to_images(
+    def _apply_to_sources(
         self,
-        batch: ImageBatch,
-    ) -> ImageBatch:
+        batch: SourceBatch,
+    ) -> SourceBatch:
         return batch
 
     def __str__(self) -> str:
@@ -225,14 +219,14 @@ class ImageRebatcher(ImageBatcher):
         else:
             split = [self.split_key]
 
-        return f"Processor to regroup images into batches by {' and '.join(split)}"
+        return f"Processor to regroup sources into batches by {' and '.join(split)}"
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
-        combo_batch = ImageBatch()
+        combo_batch = SourceBatch()
 
         for batch in dataset:
             combo_batch += batch
 
-        dataset = split_images_into_batches(combo_batch, split_key=self.split_key)
+        dataset = split_sources_into_batches(combo_batch, split_key=self.split_key)
 
         return dataset

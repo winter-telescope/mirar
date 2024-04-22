@@ -11,12 +11,12 @@ from sqlalchemy import select
 from mirar.data import SourceBatch
 from mirar.database.transactions.select import run_select
 from mirar.paths import SOURCE_NAME_KEY, TIME_KEY
-from mirar.processors.database.database_selector import BaseDatabaseSourceSelector
+from mirar.processors.database.database_selector import SingleSpatialCrossmatchSource
 
 logger = logging.getLogger(__name__)
 
 
-class CandidateNamer(BaseDatabaseSourceSelector):
+class CandidateNamer(SingleSpatialCrossmatchSource):
     """Processor to sequentially assign names to sources, of the form a, aa, aba..."""
 
     base_key = "namer"
@@ -29,12 +29,20 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         base_name: str,
         name_start: str = "aaaaa",
         db_name_field: str = SOURCE_NAME_KEY,
+        name_key: str = SOURCE_NAME_KEY,
         **kwargs,
     ):
-        super().__init__(db_output_columns=[db_name_field], **kwargs)
+        super().__init__(**kwargs)
         self.db_name_field = db_name_field
+
+        # Ensure that the name field is in the output columns
+        self.db_output_columns = list(
+            set([self.db_name_field] + self.db_output_columns)
+        )
+
         self.base_name = base_name
         self.name_start = name_start
+        self.name_key = name_key
         self.lastname = None
 
     def __str__(self) -> str:
@@ -143,27 +151,42 @@ class CandidateNamer(BaseDatabaseSourceSelector):
         for source_table in batch:
             sources = source_table.get_data()
 
-            names = []
+            metadata = source_table.get_metadata()
 
             detection_time = Time(source_table[TIME_KEY])
+
+            matches = []
+
             for ind, source in sources.iterrows():
 
-                source_name = None
+                match = self.query_for_source(source, metadata)
 
-                if SOURCE_NAME_KEY in source:
-                    source_name = source[SOURCE_NAME_KEY]
+                if len(match) > 0:
+                    source_name = match[self.name_key].iloc[0]
+                    logger.debug(f"Source already has name: {source_name}")
+                    matches.append(match)
 
-                if pd.isnull(source_name):
+                else:
                     source_name = self.get_next_name(
                         detection_time, last_name=self.lastname
                     )
                     self.lastname = source_name
                     logger.debug(f"Assigning name: {source_name} to source # {ind}.")
-                else:
-                    logger.debug(f"Source # {ind} already has a name: {source_name}.")
-                names.append(source_name)
 
-            sources[self.db_name_field] = names
+                    # Insert the name into the source table
+                    source[self.name_key] = source_name
+                    new = self.db_table(**source)
+                    match = new.insert_entry(
+                        duplicate_protocol="fail",
+                        returning_key_names=self.db_output_columns,
+                    )
+                    matches.append(match)
+
+            match_df = pd.concat(matches, ignore_index=True, axis=0)
+
+            for column in self.db_output_columns:
+                sources[column] = match_df[column]
+
             source_table.set_data(sources)
 
         return batch
