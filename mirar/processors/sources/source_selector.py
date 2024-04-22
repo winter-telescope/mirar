@@ -26,7 +26,7 @@ def select_from_sources(
     :param batch: source batch to sort
     :param key: header key to filter on
     :param target_values: accepted value(s) for key
-    :return: source batch containing the subset of images which pass
+    :return: source batch containing the subset of sources which pass
     """
 
     # Enforce string in list for later matching
@@ -50,10 +50,10 @@ def select_from_sources(
 
 class SourceSelector(BaseSourceProcessor, CleanupProcessor):
     """
-    Processor to only select a subset of images from a batch. Images can
+    Processor to only select a subset of sources from a batch. Sources can
     be selected using header keywords. For example, using:
-        ImageSelector(("OBSCLASS", "SCIENCE"))
-    selects Images with header["OBSCLASS"]=="SCIENCE"
+        SourceSelector(("OBSCLASS", "SCIENCE"))
+    selects Sources with header["OBSCLASS"]=="SCIENCE"
     """
 
     base_key = "select"
@@ -70,7 +70,7 @@ class SourceSelector(BaseSourceProcessor, CleanupProcessor):
             else:
                 reqs.append(f"{target[0]} = {target[1]}")
 
-        return f"Processor to select images where {', and '.join(reqs)}"
+        return f"Processor to select sources where {', and '.join(reqs)}"
 
     def _apply_to_sources(
         self,
@@ -88,14 +88,14 @@ def split_sources_into_batches(
     sources: SourceBatch, split_key: str | list[str]
 ) -> Dataset:
     """
-    Function to split a single :class:`~mirar.data.image_data.ImageBatch` object
+    Function to split a single :class:`~mirar.data.source_data.SourceBatch` object
     into multiple :class:`~mirar.data.base_data.DataBatch` objects.
     Each new batch will have the same value of <split_key>.
     Returns a dataset containing the new batches
 
-    :param sources: Image batch to split
+    :param sources: Source batch to split
     :param split_key: Key to split batch
-    :return: Dataset containing new image batches
+    :return: Dataset containing new source batches
     """
 
     if isinstance(split_key, str):
@@ -126,7 +126,7 @@ class SourceBatcher(BaseSourceProcessor):
     Module to split :class:`~mirar.data.source_data.SourceBatch` object
     into multiple :class:`~mirar.data.base_data.DataBatch` objects.
 
-    Images are batched using the `split_key` argument. For example,
+    Sources are batched using the `split_key` argument. For example,
     you can batch by filter, like this:
         SourceBatcher(split_key="filter")
     which will return N batches for the N different filters present
@@ -173,7 +173,7 @@ class SourceBatcher(BaseSourceProcessor):
 
 class SourceDebatcher(BaseSourceProcessor):
     """
-    Processor to group all incoming :class:`~mirar.data.image_data.SourceBatch`
+    Processor to group all incoming :class:`~mirar.data.source_data.SourceBatch`
     objects into a single batch.
     This is helpful if you've already batched at an earlier stage in your workflow, and
     you want to start over and batch by a different split key.
@@ -201,7 +201,7 @@ class SourceDebatcher(BaseSourceProcessor):
 
 class SourceRebatcher(SourceBatcher):
     """
-    Processor to regroup all incoming :class:`~mirar.data.image_data.SourceBatch`
+    Processor to regroup all incoming :class:`~mirar.data.source_data.SourceBatch`
     objects into a single batch, and then split by new keys.
     This is helpful if you've already batched at an earlier stage in your workflow, and
     you want to start over and batch by a different split key.
