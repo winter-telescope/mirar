@@ -73,14 +73,6 @@ from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
 
-winter_cal_requirements = [
-    CalRequirement(
-        target_name="dark",
-        required_field="EXPTIME",
-        required_values=["60.0", "120.0"],
-    ),
-]
-
 
 class ReductionQualityError(ProcessorError):
     """Error raised when the quality of the reduction is too poor"""

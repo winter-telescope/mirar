@@ -6,6 +6,8 @@ import logging
 from typing import Type
 
 from mirar.catalog.base.base_catalog import BaseCatalog, BaseMultiBackendCatalog
+from mirar.catalog.kowalski import get_kowalski
+from mirar.catalog.kowalski.gaia2mass import Gaia2MassKowalski
 from mirar.catalog.tap.gaia2mass import Gaia, Gaia2MassTAP
 from mirar.catalog.vizier.gaia2mass import Gaia2MassVizier
 
@@ -23,7 +25,9 @@ class Gaia2Mass(BaseMultiBackendCatalog):
     def set_backend(backend: str | None) -> Type[BaseCatalog]:
 
         if backend is None:
-            backend = "vizier"
+            k = get_kowalski()
+            if k.ping():
+                backend = "kowalski"
 
         if backend is None:
             # pylint: disable=protected-access,no-member
@@ -36,6 +40,8 @@ class Gaia2Mass(BaseMultiBackendCatalog):
 
         logger.debug(f"Backend for Gaia2Mass: {backend}")
 
+        if backend == "kowalski":
+            return Gaia2MassKowalski
         if backend == "gaia_tap":
             return Gaia2MassTAP
         if backend == "vizier":

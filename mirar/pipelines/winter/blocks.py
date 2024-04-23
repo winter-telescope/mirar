@@ -33,6 +33,7 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
     winter_avro_schema_path,
+    winter_cal_requirements,
     winter_fritz_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
@@ -45,7 +46,6 @@ from mirar.pipelines.winter.generator import (
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_boardid_6_demasker,
-    winter_cal_requirements,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
     winter_candidate_quality_filterer,
