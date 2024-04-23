@@ -23,9 +23,6 @@ class Gaia2Mass(BaseMultiBackendCatalog):
     def set_backend(backend: str | None) -> Type[BaseCatalog]:
 
         if backend is None:
-            backend = "vizier"
-
-        if backend is None:
             # pylint: disable=protected-access,no-member
             if Gaia._TapPlus__getconnhandler().get_response_status() == 200:
                 # Gaia goes down sometimes
@@ -33,6 +30,9 @@ class Gaia2Mass(BaseMultiBackendCatalog):
                 backend = "gaia_tap"
             else:
                 logger.warning("Gaia TAP service is down, cannot use default backend.")
+
+        if backend is None:
+            backend = "vizier"
 
         logger.debug(f"Backend for Gaia2Mass: {backend}")
 
