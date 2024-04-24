@@ -259,6 +259,7 @@ select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
     ),
+    ImageSelector(("TARGNAME", ["S240422ed", "dark"])),
 ]
 
 select_ref = [
@@ -358,6 +359,7 @@ flat_calibrate = [
             "GAINCOLT",
             "GAINCOLB",
             "GAINROW",
+            TARGET_KEY,
         ]
     ),
     FlatCalibrator(
