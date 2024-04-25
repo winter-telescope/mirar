@@ -222,9 +222,6 @@ class ProcessReference(BaseImageProcessor):
             self.save_fits(final_ref_image, resampled_ref_path)
 
             # Copy over header keys from ref to sci
-            # resampled_sci_image[REF_PSF_KEY] = resampled_ref_sextractor_img[
-            #     NORM_PSFEX_KEY
-            # ]
             resampled_sci_image[REF_IMG_KEY] = resampled_ref_sextractor_psfex_img[
                 LATEST_SAVE_KEY
             ]

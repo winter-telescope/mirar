@@ -17,6 +17,7 @@ from mirar.errors import ProcessorError
 from mirar.io import MissingCoreFieldError, check_image_has_core_fields
 from mirar.paths import (
     BASE_NAME_KEY,
+    COADD_KEY,
     EXPTIME_KEY,
     LATEST_SAVE_KEY,
     LATEST_WEIGHT_SAVE_KEY,
@@ -291,6 +292,7 @@ class Swarp(BaseImageProcessor):
                         f"Please use only one."
                     )
                     raise SwarpError(err)
+
                 if SWARP_FLUX_SCALING_KEY not in image.header.keys():
                     if self.flux_scaling_factor is None:
                         image[SWARP_FLUX_SCALING_KEY] = 1
@@ -308,6 +310,7 @@ class Swarp(BaseImageProcessor):
                 weight_list.write(f"{temp_mask_path}\n")
 
                 temp_files += [temp_img_path, temp_mask_path]
+
                 if self.include_scamp:
                     temp_files += [temp_head_path]
 
@@ -383,8 +386,6 @@ class Swarp(BaseImageProcessor):
             if temp_output_image_path.exists():
                 shutil.copy(temp_output_image_path, output_image_path)
                 shutil.copy(temp_output_image_weight_path, output_image_weight_path)
-                # temp_output_image_path.rename(output_image_path)
-                # temp_output_image_weight_path.rename(output_image_weight_path)
                 temp_files.append(temp_output_image_path)
                 temp_files.append(temp_output_image_weight_path)
             else:
@@ -422,7 +423,7 @@ class Swarp(BaseImageProcessor):
                         except ValueError:
                             continue
 
-        new_image["COADDS"] = sum(x["COADDS"] for x in batch)
+        new_image[COADD_KEY] = sum(x[COADD_KEY] for x in batch)
         new_image[EXPTIME_KEY] = sum(float(x[EXPTIME_KEY]) for x in batch)
         new_image[TIME_KEY] = min(x[TIME_KEY] for x in batch)
 

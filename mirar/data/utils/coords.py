@@ -60,8 +60,8 @@ def get_image_center_wcs_coords(image: Image, origin: int = 0):
 
 
 def get_xy_from_wcs(
-    ra_deg: float | list[float],
-    dec_deg: float | list[float],
+    ra_deg: float,
+    dec_deg: float,
     header: fits.Header,
     origin: int = 0,
 ) -> (float, float):
@@ -79,7 +79,7 @@ def get_xy_from_wcs(
     """
     wcs = WCS(header)
     x, y = wcs.all_world2pix(ra_deg, dec_deg, origin)
-    return x, y
+    return float(x), float(y)
 
 
 def write_regions_file(

@@ -9,6 +9,7 @@ from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.git.git_pipeline import GITPipeline
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
 from mirar.pipelines.summer.summer_pipeline import SummerPipeline
+from mirar.pipelines.wasp.wasp_pipeline import WASPPipeline
 from mirar.pipelines.winter.winter_pipeline import WINTERPipeline
 from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
 
@@ -24,13 +25,15 @@ class PipelineConfigError(ProcessorError, KeyError):
     """
 
 
-def get_pipeline(instrument, selected_configurations=None, *args, **kwargs) -> Pipeline:
+def get_pipeline(
+    instrument: str, *args, selected_configurations=None, **kwargs
+) -> Pipeline:
     """
     Function to get pipeline
 
     :param instrument: Name of instrument
-    :param selected_configurations: Configurations to use
     :param args: args
+    :param selected_configurations: Configurations to use
     :param kwargs: kwargs
     :return: pipeline
     """

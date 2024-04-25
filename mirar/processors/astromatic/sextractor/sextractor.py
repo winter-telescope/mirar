@@ -180,30 +180,28 @@ class Sextractor(BaseImageProcessor):
                     msg = (
                         f"Missing parameter: {self.__module__} requires {param} "
                         f"to save PSF magnitudes, but this parameter was not found in "
-                        f"sextractor config file '{sextractor_param_path}' . Please add "
-                        f"the parameter to this list, ideally in a new param file as so "
+                        f"sextractor config file '{sextractor_param_path}' . "
+                        f"Please add the parameter to this list, ideally in a "
+                        f"new param file as so "
                         f"not to conflict with earlier Sextractor runs."
                     )
                     logger.warning(msg)
-            else:
+
+            elif param_found:
                 # Raise error if not using PSFex but PSF-related params are in param
                 # file (this crashes sextractor with a cryptic error message)
-                if param_found:
-                    err = (
-                        f"Parameter {param} found in sextractor config file "
-                        f"'{sextractor_param_path}' but use_psfex is set to False."
-                    )
-                    raise PrerequisiteError(err)
+                err = (
+                    f"Parameter {param} found in sextractor config file "
+                    f"'{sextractor_param_path}' but use_psfex is set to False."
+                )
+                logger.error(err)
+                raise PrerequisiteError(err)
 
     def _apply_to_images(  # pylint: disable=too-many-locals
         self, batch: ImageBatch
     ) -> ImageBatch:
         sextractor_out_dir = self.get_sextractor_output_dir()
-
-        try:
-            os.makedirs(sextractor_out_dir)
-        except OSError:
-            pass
+        sextractor_out_dir.mkdir(parents=True, exist_ok=True)
 
         for image in batch:
             if self.gain is None and "GAIN" in image.keys():
@@ -211,7 +209,7 @@ class Sextractor(BaseImageProcessor):
 
             temp_path = get_temp_path(sextractor_out_dir, image[BASE_NAME_KEY])
 
-            if not os.path.exists(temp_path):
+            if not temp_path.exists():
                 self.save_fits(image, temp_path)
 
             temp_files = [temp_path]
@@ -219,20 +217,20 @@ class Sextractor(BaseImageProcessor):
             weight_path = None
 
             if LATEST_WEIGHT_SAVE_KEY in image.keys():
-                image_weight_path = os.path.join(
-                    sextractor_out_dir, image[LATEST_WEIGHT_SAVE_KEY]
+                image_weight_path = sextractor_out_dir.joinpath(
+                    image[LATEST_WEIGHT_SAVE_KEY]
                 )
                 temp_weight_path = get_temp_path(
                     sextractor_out_dir, image[LATEST_WEIGHT_SAVE_KEY]
                 )
-                if os.path.exists(image_weight_path):
+                if image_weight_path.exists():
                     shutil.copyfile(image_weight_path, temp_weight_path)
                     weight_path = temp_weight_path
-                    temp_files.append(Path(weight_path))
+                    temp_files.append(weight_path)
 
             if weight_path is None:
                 weight_path = self.save_mask_image(image, temp_path)
-                temp_files.append(Path(weight_path))
+                temp_files.append(weight_path)
 
             if self.use_psfex:
                 if PSFEX_CAT_KEY in image.keys():
@@ -279,7 +277,7 @@ class Sextractor(BaseImageProcessor):
             logger.debug(f"Cache save is {self.cache}")
             if not self.cache:
                 for temp_file in temp_files:
-                    os.remove(temp_file)
+                    temp_file.unlink()
                     logger.debug(f"Deleted temporary file {temp_file}")
 
             if self.catalog_purifier is not None:

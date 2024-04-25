@@ -47,6 +47,9 @@ parser.add_argument(
 parser.add_argument(
     "--download", help="Download images from server", action="store_true", default=False
 )
+parser.add_argument(
+    "--failfast", help="Fail on first error", action="store_true", default=False
+)
 
 parser.add_argument("-m", "--monitor", action="store_true", default=False)
 parser.add_argument(
@@ -154,7 +157,9 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             night=night,
         )
 
-        batches, errorstack = pipe.reduce_images(catch_all_errors=True)
+        batches, errorstack = pipe.reduce_images(
+            catch_all_errors=not args.failfast,
+        )
 
         if args.postprocessconfig is not None:
             post_config = [

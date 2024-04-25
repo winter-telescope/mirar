@@ -137,8 +137,8 @@ def psf_photometry(
     unshifted_psf = psfmodels[:, :, numpsfmodels // 2 + 1]
 
     y_cen, x_cen = np.where(unshifted_psf == np.max(unshifted_psf))
-    yshift = ys_cen[0] - y_cen
-    xshift = xs_cen[0] - x_cen
+    yshift = (ys_cen[0] - y_cen)[0]
+    xshift = (xs_cen[0] - x_cen)[0]
 
     return (
         best_fit_psf_flux,

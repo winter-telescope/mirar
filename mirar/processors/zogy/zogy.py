@@ -121,6 +121,9 @@ class ZOGYPrepare(BaseImageProcessor):
         self.y_key = y_key
         self.flux_key = flux_key
 
+    def __str__(self) -> str:
+        return "Processor to prepare images for ZOGY."
+
     def get_sub_output_dir(self) -> Path:
         """
         Get output directory for this processor
@@ -260,7 +263,12 @@ class ZOGYPrepare(BaseImageProcessor):
         return rms_image
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+
+        output_dir = self.get_sub_output_dir()
+        output_dir.mkdir(parents=True, exist_ok=True)
+
         for image_ind, image in enumerate(batch):
+
             ref_img_path = image[REF_IMG_KEY]
             sci_img_path = image[BASE_NAME_KEY]
 
@@ -299,6 +307,7 @@ class ZOGYPrepare(BaseImageProcessor):
                 ref_img["NAXIS1"] = sci_x_imgsize
                 ref_img["NAXIS2"] = sci_y_imgsize
                 logger.debug(f"Saving trimmed reference image to {ref_img_path}")
+
                 self.save_fits(ref_img, ref_img_path)
 
                 logger.debug("Trimming science weight image")
@@ -448,10 +457,16 @@ class ZOGY(ZOGYPrepare):
         self.output_sub_dir = output_sub_dir
         self.sci_zp_header_key = sci_zp_header_key
 
+    def __str__(self) -> str:
+        return "Processor to produce difference images using ZOGY."
+
     def _apply_to_images(
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
+        output_dir = self.get_sub_output_dir()
+        output_dir.mkdir(parents=True, exist_ok=True)
+
         diff_batch = ImageBatch()
         for image in batch:
             ref_image_path = image[REF_IMG_KEY]

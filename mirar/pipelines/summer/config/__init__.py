@@ -2,6 +2,8 @@
 Module for summer-specific files
 """
 
+# pylint: disable=duplicate-code
+
 import os
 
 from mirar.pipelines.summer.config.constants import (
