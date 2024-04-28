@@ -19,6 +19,8 @@ logging.getLogger("astroquery").setLevel(logging.WARNING)
 # URL for Gaia backup
 ARI_URL = "https://gaia.ari.uni-heidelberg.de/tap"
 
+gaia_ari = TapPlus(url=ARI_URL)
+
 
 class Gaia2MassTAP(BaseGaia2Mass):
     """
@@ -93,7 +95,6 @@ class Gaia2MassARI(BaseGaia2Mass):
             f"Dec {dec_deg:.4f} with a radius of {self.search_radius_arcmin:.4f} arcmin"
         )
 
-        gaia = TapPlus(url=ARI_URL)
         cmd = (
             f"SELECT * FROM gaiadr3.gaia_source AS g, "
             f"gaiadr3.tmass_psc_xsc_best_neighbour AS tbest, "
@@ -104,7 +105,7 @@ class Gaia2MassARI(BaseGaia2Mass):
             f"CIRCLE('ICRS', {ra_deg:.4f}, {dec_deg:.4f}, "
             f"{self.search_radius_arcmin / 60:.4f}))=1;"
         )
-        job = gaia.launch_job_async(cmd)
+        job = gaia_ari.launch_job_async(cmd)
 
         src_list = job.get_results()
 
