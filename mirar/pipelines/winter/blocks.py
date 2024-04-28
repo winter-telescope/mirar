@@ -259,7 +259,6 @@ select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
     ),
-    ImageSelector(("TARGNAME", ["S240422ed", "dark"])),
 ]
 
 select_ref = [

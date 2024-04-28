@@ -6,7 +6,7 @@ import logging
 from typing import Type
 
 from mirar.catalog.base.base_catalog import BaseCatalog, BaseMultiBackendCatalog
-from mirar.catalog.tap.gaia2mass import Gaia, Gaia2MassTAP
+from mirar.catalog.tap.gaia2mass import Gaia, Gaia2MassARI, Gaia2MassTAP
 from mirar.catalog.vizier.gaia2mass import Gaia2MassVizier
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,8 @@ class Gaia2Mass(BaseMultiBackendCatalog):
 
         if backend == "gaia_tap":
             return Gaia2MassTAP
+        if backend == "gaia_ari":
+            return Gaia2MassARI
         if backend == "vizier":
             return Gaia2MassVizier
 
