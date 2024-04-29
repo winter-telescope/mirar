@@ -99,6 +99,7 @@ class Gaia2MassARI(BaseGaia2Mass):
 
         cmd = (
             f"SELECT g.source_id, g.ra_error, g.dec_error, g.ra, g.dec, g.ruwe, "
+            f"g.phot_rp_mean_mag, g.phot_bp_mean_mag, g.phot_g_mean_mag, "
             f"tbest.*, tmass.* FROM gaiadr3.gaia_source AS g, "
             f"gaiadr3.tmass_psc_xsc_best_neighbour AS tbest, "
             f"extcat.twomass AS tmass "
