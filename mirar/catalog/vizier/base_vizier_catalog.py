@@ -95,6 +95,7 @@ class VizierCatalog(BaseCatalog, ABC):
                 **self.get_column_filters(),
             },
             row_limit=-1,
+            timeout=300,
         )
 
         # pylint: disable=no-member

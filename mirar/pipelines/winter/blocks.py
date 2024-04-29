@@ -358,6 +358,7 @@ flat_calibrate = [
             "GAINCOLT",
             "GAINCOLB",
             "GAINROW",
+            TARGET_KEY,
         ]
     ),
     FlatCalibrator(
