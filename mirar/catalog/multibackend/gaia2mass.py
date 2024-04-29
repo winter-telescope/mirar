@@ -23,6 +23,9 @@ class Gaia2Mass(BaseMultiBackendCatalog):
     def set_backend(backend: str | None) -> Type[BaseCatalog]:
 
         if backend is None:
+            backend = "vizier"
+
+        if backend is None:
 
             # Check server is alive
             cmd = (
@@ -37,9 +40,6 @@ class Gaia2Mass(BaseMultiBackendCatalog):
                 # Gaia ARI also goes down sometimes
                 # Response status 0 means it's down, 200 when up and working
                 backend = "gaia_ari"
-
-        if backend is None:
-            backend = "vizier"
 
         if backend is None:
             # pylint: disable=protected-access,no-member
