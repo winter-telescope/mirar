@@ -106,7 +106,7 @@ class BaseGaia2Mass(BaseCatalog, ABC):
         phmask = j_phmask & h_phmask & k_phmask
 
         src_list = src_list[phmask]
-        src_list = src_list[src_list["magnitude_err"] < 1.086 / self.snr_threshold]
+        src_list = src_list[src_list["magnitude_err"] < (1.086 / self.snr_threshold)]
         if self.trim:
             if self.image_catalog_path is None:
                 err = (

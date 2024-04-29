@@ -55,7 +55,7 @@ class Gaia2MassVizier(BaseGaia2Mass, VizierCatalog):
         tmass_cat.rename_column("Jmag", "j_m")
         tmass_cat.rename_column("Hmag", "h_m")
         tmass_cat.rename_column("Kmag", "k_m")
-        self.convert_to_ab_mag(tmass_cat)
+        tmass_cat = self.convert_to_ab_mag(tmass_cat)
 
         # Previously, the magnitude was set in vegamag, but now it is in AB mag`
         tmass_cat["magnitude"] = tmass_cat[f"{self.filter_name.lower()}_m"]

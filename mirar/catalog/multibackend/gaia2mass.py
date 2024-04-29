@@ -50,11 +50,11 @@ class Gaia2Mass(BaseMultiBackendCatalog):
 
         logger.debug(f"Backend for Gaia2Mass: {backend}")
 
-        if backend == "gaia_tap":
-            return Gaia2MassTAP
         if backend == "gaia_ari":
             return Gaia2MassARI
         if backend == "vizier":
             return Gaia2MassVizier
+        if backend == "gaia_tap":
+            return Gaia2MassTAP
 
         raise NotImplementedError(f"Backend '{backend}' not implemented for Gaia2Mass")

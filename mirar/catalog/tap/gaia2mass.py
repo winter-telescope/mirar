@@ -42,35 +42,37 @@ class Gaia2MassTAP(BaseGaia2Mass):
         )
 
         cmd = (
-            f"SELECT * FROM gaiadr2.gaia_source AS g, "
-            f"gaiadr3.tmass_best_neighbour AS tbest, "
-            f"WHERE g.source_id = tbest.source_id "
-            f"AND CONTAINS(POINT('ICRS', g.ra, g.dec), "
+            f"SELECT * FROM gaiadr3.gaia_source AS g "
+            f"JOIN gaiadr3.tmass_psc_xsc_best_neighbour AS xmatch USING (source_id) "
+            f"JOIN gaiadr3.tmass_psc_xsc_join AS xjoin "
+            f"  ON xmatch.original_ext_source_id = xjoin.original_psc_source_id "
+            f"JOIN gaiadr1.tmass_original_valid AS tmass "
+            f"  ON xjoin.original_psc_source_id = tmass.designation "
+            f"WHERE CONTAINS(POINT('ICRS', g.ra, g.dec), "
             f"CIRCLE('ICRS', {ra_deg:.4f}, {dec_deg:.4f}, "
-            f"{self.search_radius_arcmin / 60:.4f}))=1 "
-            f"AND tmass.{self.filter_name}_m > {self.min_mag:.2f} "
-            f"AND tmass.{self.filter_name}_m < {self.max_mag:.2f} "
-            f"AND tmass.{self.filter_name}_msigcom < {1.086 / self.snr_threshold: .3f}"
-            f"AND tbest.number_of_mates=0 "
-            f"AND tbest.number_of_neighbours=1;"
+            f"{self.search_radius_arcmin / 60.:.4f}))=1 "
+            f"AND tmass.{self.filter_name.lower()[0]}_m > {self.min_mag:.2f} "
+            f"AND tmass.{self.filter_name.lower()[0]}_m < {self.max_mag:.2f} "
+            f"AND tmass.{self.filter_name.lower()[0]}_msigcom < "
+            f"{1.086 / self.snr_threshold:.3f} "
+            f"AND xmatch.number_of_mates=0 "
+            f"AND xmatch.number_of_neighbours=1"
+            f";"
         )
 
         job = Gaia.launch_job_async(cmd, dump_to_file=False)
         src_list = job.get_results()
 
+        src_list["k_m"] = src_list["ks_m"]
+        src_list["k_msigcom"] = src_list["ks_msigcom"]
         src_list = self.convert_to_ab_mag(src_list)
         src_list["ph_qual"] = src_list["ph_qual"].astype(str)
         src_list["ra_errdeg"] = src_list["ra_error"] / 3.6e6
         src_list["dec_errdeg"] = src_list["dec_error"] / 3.6e6
 
         src_list["FLAGS"] = 0
-        src_list["magnitude"] = src_list[f"{self.filter_name.lower()}_m"]
-        src_list["magnitude_err"] = src_list[f"{self.filter_name.lower()}_msigcom"]
-        src_list["h_m"] = src_list["hs_m"]
-        src_list["h_msigcom"] = src_list["hs_msigcom"]
-
-        src_list["magnitude"] = src_list[f"{self.filter_name.lower()}mag"]
-        src_list["magnitude_err"] = src_list[f"e_{self.filter_name.lower()}mag"]
+        src_list["magnitude"] = src_list[f"{self.filter_name.lower()[0]}_m"]
+        src_list["magnitude_err"] = src_list[f"{self.filter_name.lower()[0]}_msigcom"]
 
         logger.debug(f"Found {len(src_list)} sources in Gaia")
         return src_list
@@ -96,34 +98,41 @@ class Gaia2MassARI(BaseGaia2Mass):
         )
 
         cmd = (
-            f"SELECT * FROM gaiadr3.gaia_source AS g, "
+            f"SELECT g.source_id, g.ra_error, g.dec_error, g.ra, g.dec, g.ruwe, "
+            f"tbest.*, tmass.* FROM gaiadr3.gaia_source AS g, "
             f"gaiadr3.tmass_psc_xsc_best_neighbour AS tbest, "
             f"extcat.twomass AS tmass "
             f"WHERE g.source_id = tbest.source_id "
             f"AND tbest.original_ext_source_id = tmass.mainid "
             f"AND CONTAINS(POINT('ICRS', g.ra, g.dec), "
             f"CIRCLE('ICRS', {ra_deg:.4f}, {dec_deg:.4f}, "
-            f"{self.search_radius_arcmin / 60:.4f}))=1;"
+            f"{self.search_radius_arcmin / 60.:.4f}))=1 "
+            f"AND tmass.{self.filter_name}mag > {self.min_mag:.2f} "
+            f"AND tmass.{self.filter_name}mag < {self.max_mag:.2f} "
+            f"AND tmass.e_{self.filter_name}mag < {1.086 / self.snr_threshold: .3f} "
+            f"AND tbest.number_of_mates=0 "
+            f"AND tbest.number_of_neighbours=1;"
         )
         job = gaia_ari.launch_job_async(cmd)
-
         src_list = job.get_results()
 
-        src_list["j_m"] = src_list["jmag"]
-        src_list["j_msigcom"] = src_list["e_jmag"]
-        src_list["h_m"] = src_list["hmag"]
-        src_list["h_msigcom"] = src_list["e_hmag"]
-        src_list["k_m"] = src_list["kmag"]
-        src_list["k_msigcom"] = src_list["e_kmag"]
+        src_list.rename_column("jmag", "j_m")
+        src_list.rename_column("hmag", "h_m")
+        src_list.rename_column("kmag", "k_m")
+        src_list.rename_column("e_jmag", "j_msigcom")
+        src_list.rename_column("e_hmag", "h_msigcom")
+        src_list.rename_column("e_kmag", "k_msigcom")
+
         src_list = self.convert_to_ab_mag(src_list)
+
         src_list["ph_qual"] = src_list["qflg"].astype(str)
         src_list["ra_errdeg"] = src_list["ra_error"] / 3.6e6
         src_list["dec_errdeg"] = src_list["dec_error"] / 3.6e6
 
         src_list["FLAGS"] = 0
 
-        src_list["magnitude"] = src_list[f"{self.filter_name.lower()}mag"]
-        src_list["magnitude_err"] = src_list[f"e_{self.filter_name.lower()}mag"]
+        src_list["magnitude"] = src_list[f"{self.filter_name.lower()}_m"]
+        src_list["magnitude_err"] = src_list[f"{self.filter_name.lower()}_msigcom"]
 
         logger.debug(f"Found {len(src_list)} sources in Gaia")
         return src_list
