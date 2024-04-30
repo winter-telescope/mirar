@@ -37,6 +37,7 @@ from mirar.paths import (
 from mirar.pipelines.winter.config import (
     ref_psfex_path,
     sextractor_anet_config,
+    sextractor_astrometry_config,
     sextractor_reference_config,
     sextractor_reference_psf_phot_config,
     swarp_config_path,
@@ -53,7 +54,6 @@ from mirar.pipelines.winter.models import (
     RefQuery,
     RefStack,
 )
-from mirar.pipelines.wirc.wirc_files import sextractor_astrometry_config
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
