@@ -350,23 +350,26 @@ dark_calibrate = [
 ]
 
 flat_calibrate = [
-    ImageRebatcher(
-        [
-            "BOARD_ID",
-            "FILTER",
-            "SUBCOORD",
-            "GAINCOLT",
-            "GAINCOLB",
-            "GAINROW",
-            TARGET_KEY,
-        ]
-    ),
+    # ImageRebatcher(
+    #     [
+    #         "BOARD_ID",
+    #         "FILTER",
+    #         "SUBCOORD",
+    #         "GAINCOLT",
+    #         "GAINCOLB",
+    #         "GAINROW",
+    #         TARGET_KEY,
+    #     ]
+    # ),
+    ImageRebatcher(["BOARD_ID", "FILTER"]),
     FlatCalibrator(
         cache_sub_dir="calibration_flats",
-        select_flat_images=select_winter_flat_images,
+        # select_flat_images=select_winter_flat_images,
         cache_image_name_header_keys=["FILTER", "BOARD_ID"],
     ),
-    ImageSaver(output_dir_name="skyflatcal"),
+    # FIXME Add in the old sky flat thing here post dome flat
+    ImageSaver(output_dir_name="domeflatcal"),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
