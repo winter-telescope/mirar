@@ -18,7 +18,7 @@ from mirar.paths import (
     OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
     SATURATE_KEY,
-    get_output_dir,
+    get_output_dir
 )
 from mirar.pipelines.winter.config import sextractor_anet_config
 from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
