@@ -906,9 +906,7 @@ def select_winter_flat_images(images: ImageBatch) -> ImageBatch:
     """
     Selects the flat for the winter data, get the top 250 images sorted by median counts
     """
-    flat_images = select_from_images(
-        images, key=OBSCLASS_KEY, target_values="flat"
-    )
+    flat_images = select_from_images(images, key=OBSCLASS_KEY, target_values="flat")
     return flat_images
 
 
