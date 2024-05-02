@@ -9,6 +9,15 @@ from collections.abc import Callable
 from copy import copy
 
 import numpy as np
+<<<<<<< HEAD
+<<<<<<< HEAD
+from astropy.convolution import Tophat2DKernel, convolve_fft
+=======
+from astropy.convolution import Tophat2DKernel, convolve, convolve_fft
+>>>>>>> 60685c68 (working)
+=======
+from astropy.convolution import Tophat2DKernel, convolve_fft
+>>>>>>> 822f21d8 (Nanfill)
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
@@ -24,6 +33,28 @@ from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWith
 from mirar.processors.utils.image_selector import select_from_images
 
 logger = logging.getLogger(__name__)
+
+
+def get_convolution(data: np.ndarray, kernel_width: int) -> np.ndarray:
+    """
+    Convolve data with a tophat kernel
+
+    :param data: Image data
+    :param kernel_width: Width of the kernel (pixels)
+    :return: Smoothed image
+    """
+    pad_top = np.array([data[0] for _ in range(kernel_width)])
+    pad_bottom = np.array([data[-1] for _ in range(kernel_width)])
+    extended = np.vstack([pad_top, data, pad_bottom])
+    pad_left = np.array([extended.T[0] for _ in range(kernel_width)])
+    pad_right = np.array([extended.T[-1] for _ in range(kernel_width)])
+    extended = np.hstack([pad_left.T, extended, pad_right.T])
+
+    tophat_kernel = Tophat2DKernel(kernel_width)
+    smooth_illumination = convolve_fft(
+        extended, tophat_kernel, nan_treatment="interpolate"
+    )[kernel_width:-kernel_width, kernel_width:-kernel_width]
+    return smooth_illumination
 
 
 class MissingFlatError(ImageNotFoundError):
@@ -61,6 +92,7 @@ class FlatCalibrator(ProcessorWithCache):
         flat_nan_threshold: float = 0.0,
         select_flat_images: Callable[[ImageBatch], ImageBatch] = default_select_flat,
         flat_mask_key: str = None,
+        flat_mode: str = "median",
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -71,6 +103,9 @@ class FlatCalibrator(ProcessorWithCache):
         self.flat_nan_threshold = flat_nan_threshold
         self.select_cache_images = select_flat_images
         self.flat_mask_key = flat_mask_key
+        self.flat_mode = flat_mode
+        if not self.flat_mode in ["median", "pixel", "structure"]:
+            raise ValueError(f"Flat mode {self.flat_mode} not supported")
 
     def description(self) -> str:
         return "Creates a flat image, divides other images by this image."
@@ -151,6 +186,53 @@ class FlatCalibrator(ProcessorWithCache):
         logger.debug(f"Median combining {n_frames} flats")
 
         master_flat = np.nanmedian(flats, axis=2)
+
+        if self.flat_mode != "median":
+
+            if self.flat_mode == "pixel":
+                flatdata_norm_smooth = get_convolution(master_flat, 40)
+
+                pixel_variation = master_flat / flatdata_norm_smooth
+
+                # Clip outliers (they'll get worked out in stacking)
+                std = np.nanstd(pixel_variation)
+                sig = abs(pixel_variation - np.nanmedian(pixel_variation)) / std
+
+                mask = sig > 2.0
+
+                logger.debug(
+                    f"Masking {np.sum(mask)} pixels "
+                    f"out of {len(mask.flatten()) }in flat"
+                )
+                pixel_variation[mask] = np.nan
+                master_flat = pixel_variation / np.nanmedian(pixel_variation)
+
+            elif self.flat_mode == "structure":
+                flatdata_norm_smooth = get_convolution(master_flat, 100)
+                flatdata_norm_smooth[np.isnan(master_flat)] = np.nan
+
+                pixel_variation = master_flat / flatdata_norm_smooth
+
+                # Clip outliers (they'll get worked out in stacking)
+                std = np.nanstd(pixel_variation)
+                sig = abs(pixel_variation - np.nanmedian(pixel_variation)) / std
+
+                mask = sig > 3.0
+
+                logger.debug(
+                    f"Masking {np.sum(mask)} pixels "
+                    f"out of {len(mask.flatten()) }in flat"
+                )
+
+                pixel_variation[sig > 3.0] = np.nan
+                master_flat = (
+                    pixel_variation
+                    * flatdata_norm_smooth
+                    / np.nanmedian(pixel_variation)
+                )
+
+            else:
+                raise ValueError(f"Flat mode {self.flat_mode} not supported")
 
         master_flat_image = Image(master_flat, header=copy(images[0].get_header()))
         master_flat_image[COADD_KEY] = n_frames
