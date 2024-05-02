@@ -579,7 +579,7 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[1060:, :] = 1.0
 
         # Mask a vertical strip
-        mask[:, 998:1002] = 1.0
+        mask[:, 992:1002] = 1.0
 
         # Mask another vertical strip
         mask[:, 1266:1273] = 1.0
