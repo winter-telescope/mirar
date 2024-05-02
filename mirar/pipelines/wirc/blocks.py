@@ -13,11 +13,12 @@ from mirar.paths import (
     SATURATE_KEY,
     SCI_IMG_KEY,
     SOURCE_NAME_KEY,
+    BASE_NAME_KEY,
 )
 from mirar.pipelines.wirc.generator import (
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
-    wirc_reference_image_generator,
+    # wirc_reference_image_generator,
     wirc_reference_image_resampler,
     wirc_reference_psfex,
     wirc_reference_sextractor,
@@ -84,10 +85,19 @@ from mirar.processors.utils import (
     ImageLoader,
     ImageSaver,
     ImageSelector,
+    ImageRebatcher,
+    HeaderAnnotator,
 )
 from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
+from mirar.pipelines.winter.generator import (
+    winter_reference_generator,
+    winter_reference_image_resampler_for_zogy,
+    winter_reference_sextractor,
+    winter_reference_psfex,
+    winter_reference_psf_phot_sextractor
+)
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
 load_stack = [ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image)]
@@ -95,7 +105,7 @@ load_stack = [ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image)
 # load_image=load_raw_wirc_image)]
 
 log = [
-    ImageBatcher("UTSHUT"),
+    ImageRebatcher("UTSHUT"),
     CSVLog(
         export_keys=[
             "OBJECT",
@@ -109,7 +119,10 @@ log = [
     ImageDebatcher(),
 ]
 
-masking = [MaskPixelsFromPath(mask_path=wirc_mask_path)]
+masking = [
+    ImageSelector((OBSCLASS_KEY, ["science", "dark"])),
+    MaskPixelsFromPath(mask_path=wirc_mask_path)
+]
 
 dark_calibration = [ImageBatcher("EXPTIME"), DarkCalibrator()]
 
@@ -123,6 +136,7 @@ reduction = [
     ImageBatcher(split_key=["filter", "object"]),
     SkyFlatCalibrator(),
     NightSkyMedianCalibrator(),
+    ImageBatcher(BASE_NAME_KEY),
     AutoAstrometry(catalog="tmc"),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Scamp(
@@ -130,6 +144,7 @@ reduction = [
         scamp_config_path=scamp_fp_path,
         cache=True,
     ),
+    ImageRebatcher(split_key=["filter", "object"]),
     ImageSaver(output_dir_name="firstpass"),
     Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
     ImageSaver(output_dir_name="firstpassstack"),
@@ -189,13 +204,26 @@ reduction = [
 
 reduce = log + masking + dark_calibration + reduction
 
+
+def wirc_reference_generator(*args, **kwargs):
+    return winter_reference_generator(*args, **kwargs, check_db=False)
+
+
 reference = [
+    ImageRebatcher(split_key=[BASE_NAME_KEY]),
     ProcessReference(
-        ref_image_generator=wirc_reference_image_generator,
-        swarp_resampler=wirc_reference_image_resampler,
-        sextractor=wirc_reference_sextractor,
-        ref_psfex=wirc_reference_psfex,
-    )
+        ref_image_generator=wirc_reference_generator,
+        swarp_resampler=winter_reference_image_resampler_for_zogy,
+        sextractor=winter_reference_sextractor,
+        ref_psfex=winter_reference_psfex,
+        phot_sextractor=winter_reference_psf_phot_sextractor,
+    ),
+    # ProcessReference(
+    #     ref_image_generator=wirc_reference_image_generator,
+    #     swarp_resampler=wirc_reference_image_resampler,
+    #     sextractor=wirc_reference_sextractor,
+    #     ref_psfex=wirc_reference_psfex,
+    # )
 ]
 
 subtract = [
@@ -220,6 +248,8 @@ candidate_photometry = [
     ),
     PSFPhotometry(),
 ]
+
+forced_photometry = export_candidates_from_header + candidate_photometry
 
 detect_candidates = [
     ZOGYSourceDetector(
@@ -300,3 +330,4 @@ package_candidates = [
 
 candidates = detect_candidates + process_candidates + package_candidates
 imsub = reference + subtract + candidates
+imsub_fp = reference + subtract + forced_photometry

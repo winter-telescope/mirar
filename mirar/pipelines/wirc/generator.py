@@ -81,24 +81,104 @@ def wirc_photometric_catalog_generator(image: Image) -> Gaia2Mass:
     )
 
 
-def wirc_reference_image_generator(
-    image: Image,
-    images_directory: str = os.getenv("REF_IMG_DIR"),
-) -> WIRCRef:
-    """
-    Function to match a new wirc image to a reference image directory
+# def wirc_reference_image_generator(
+#     image: Image,
+#     images_directory: str = os.getenv("REF_IMG_DIR"),
+# ) -> WIRCRef:
+#     """
+#     Function to match a new wirc image to a reference image directory
+#
+#     :param image: image
+#     :param images_directory: ref image directory
+#     :return: wirc ref
+#     """
+#     object_name = image["OBJECT"]
+#     filter_name = image["FILTER"]
+#     return WIRCRef(
+#         object_name=object_name,
+#         filter_name=filter_name,
+#         images_directory_path=images_directory,
+#     )
 
-    :param image: image
-    :param images_directory: ref image directory
-    :return: wirc ref
-    """
-    object_name = image["OBJECT"]
-    filter_name = image["FILTER"]
-    return WIRCRef(
-        object_name=object_name,
-        filter_name=filter_name,
-        images_directory_path=images_directory,
-    )
+# def wirc_reference_image_generator(
+#     image: Image,
+# ):
+#     def winter_reference_generator(image: Image):
+#         """
+#         Generates a reference image for the winter data
+#         Args:
+#             db_table: Database table to search for existing image
+#             image: Image
+#
+#         Returns:
+#
+#         """
+#         components_image_dir = get_output_dir(
+#             dir_root="components", sub_dir="winter/references"
+#         )
+#         components_image_dir.mkdir(parents=True, exist_ok=True)
+#
+#         filtername = image["FILTER"]
+#
+#         if filtername not in ["Y", "J", "H"]:
+#             raise ValueError(f"Filter {filtername} not recognized for WINTER")
+#
+#         # TODO if in_ukirt and in_vista, different processing
+#         fieldid = int(image["FIELDID"])
+#         subdetid = int(image[SUB_ID_KEY])
+#         logger.debug(f"Fieldid: {fieldid}, subdetid: {subdetid}")
+#
+#         cache_ref_stack = False
+#         if filtername in ["J", "H"]:
+#             if fieldid != DEFAULT_FIELD:
+#                 cache_ref_stack = True
+#                 constraints = DBQueryConstraints(
+#                     columns=["fieldid", SUB_ID_KEY.lower()],
+#                     accepted_values=[fieldid, subdetid],
+#                 )
+#
+#                 db_results = select_from_table(
+#                     db_constraints=constraints,
+#                     sql_table=RefStack.sql_model,
+#                     output_columns=["savepath"],
+#                 )
+#
+#                 if len(db_results) > 0:
+#                     savepath = db_results["savepath"].iloc[0]
+#                     if os.path.exists(savepath):
+#                         logger.debug(f"Found reference image in database: {savepath}")
+#                         return RefFromPath(path=savepath, filter_name=filtername)
+#
+#             skip_online_query = filtername == "H"
+#
+#             wfcam_query = WFAUQuery(
+#                 num_query_points=16,
+#                 filter_name=filtername,
+#                 use_db_for_component_queries=True,
+#                 components_db_table=RefComponent,
+#                 query_db_table=RefQuery,
+#                 skip_online_query=skip_online_query,
+#                 component_image_subdir="winter/references/components",
+#             )
+#
+#             return WFCAMStackedRef(
+#                 filter_name=filtername,
+#                 wfcam_query=wfcam_query,
+#                 image_resampler_generator=winter_wfau_component_image_stacker,
+#                 write_stacked_image=cache_ref_stack,
+#                 write_stack_sub_dir="winter/references/ref_stacks",
+#                 write_stack_to_db=cache_ref_stack,
+#                 stacks_db_table=RefStack,
+#                 component_image_sub_dir="components",
+#                 references_base_subdir_name="winter/references",
+#                 stack_image_annotator=winter_reference_stack_annotator,
+#             )
+#
+#         assert filtername == "Y", f"Filter {filtername} not recognized for WINTER"
+#
+#         # Use PS1 references for Y-band
+#         logger.debug("Will query reference image from PS1")
+#         return PS1Ref(filter_name=filtername)
 
 
 def wirc_reference_image_resampler(**kwargs) -> Swarp:

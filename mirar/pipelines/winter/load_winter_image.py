@@ -131,6 +131,7 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["MIRCOVER"] = None
 
     header["EXPTIME"] = np.rint(header["EXPTIME"])
+    header["EXPTIME"] = np.rint(header["EXPTIME"])
 
     # Set up the target name
 

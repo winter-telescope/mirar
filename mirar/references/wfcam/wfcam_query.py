@@ -529,10 +529,12 @@ def download_wfcam_archive_images(
         else:
             # Download the actual image. This is copied from what happens in
             # astroquery
+            print(f"Downloading {url}") #FIXME
+            print(f"Timeout is {wfau_query.TIMEOUT}")
             obj = FileContainer(
                 url,
                 encoding="binary",
-                remote_timeout=wfau_query.TIMEOUT,
+                remote_timeout=300,
                 show_progress=True,
             )
             wfcam_img_hdulist = obj.get_fits()
