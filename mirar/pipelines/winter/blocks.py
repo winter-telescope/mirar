@@ -43,6 +43,8 @@ from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     apply_rb_to_table,
     mask_stamps_around_bright_stars,
+    select_winter_dome_flats_images,
+    select_winter_flat_images,
     select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
@@ -149,6 +151,7 @@ from mirar.processors.utils import (
     ImageSaver,
     ImageSelector,
     MEFLoader,
+    NanFiller,
 )
 from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.xmatch import XMatch
@@ -315,7 +318,6 @@ save_raw = [
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
-    ImageRebatcher("EXPID"),
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -333,6 +335,7 @@ load_unpacked = [
             "T_ROIC",
             "FIELDID",
             "MEDCOUNT",
+            "DITHGRP",
         ]
     ),
     ImageRebatcher(BASE_NAME_KEY),
@@ -359,7 +362,15 @@ dark_calibrate = [
 ]
 
 flat_calibrate = [
+    ImageRebatcher(["SUBCOORD", "FILTER"]),
+    FlatCalibrator(
+        cache_sub_dir="calibration_flats",
+        select_flat_images=select_winter_dome_flats_images,
+        cache_image_name_header_keys=["FILTER", "BOARD_ID"],
+        flat_mode="pixel",
+    ),
     ImageSelector((OBSCLASS_KEY, ["science"])),
+    ImageSaver(output_dir_name="domeflatcal"),
     ImageRebatcher(
         [
             "BOARD_ID",
@@ -374,9 +385,10 @@ flat_calibrate = [
     FlatCalibrator(
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
+        flat_mode="structure",
     ),
-    ImageRebatcher(BASE_NAME_KEY),
-    ImageSaver(output_dir_name="skyflatcal"),
+    ImageSaver(output_dir_name="allskyflatcal"),
+    ImageRebatcher([BASE_NAME_KEY]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -469,6 +481,7 @@ validate_astrometry = [
 stack_dithers = [
     CustomImageBatchModifier(winter_boardid_6_demasker),
     ImageRebatcher("STACKID"),
+    NanFiller(),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
