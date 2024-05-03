@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase
 
 from mirar.database.base_table import BaseTable
-from mirar.database.credentials import DB_PASSWORD, DB_USER
+from mirar.database.credentials import DB_PASSWORD, DB_SCHEMA, DB_USER
 from mirar.database.engine import get_engine
 from mirar.database.user import PostgresAdmin, PostgresUser
 
@@ -41,6 +41,16 @@ def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
         pg_user.validate_credentials()
 
     pg_user.create_db(db_name=db_name)
+
+    if not pg_user.has_schema(schema_name=DB_SCHEMA, db_name=db_name):
+        logger.info(
+            f"No schema named {DB_SCHEMA} found. Creating it now for db "
+            f"{db_name} with admin user."
+        )
+
+        pg_admin = PostgresAdmin()
+        pg_admin.validate_credentials()
+        pg_admin.create_schema(db_name=db_name, db_user=DB_USER, schema_name=DB_SCHEMA)
 
     db_base.metadata.create_all(engine)
 
