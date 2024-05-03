@@ -99,6 +99,8 @@ def clean_header(header: fits.Header) -> fits.Header:
     # Sometimes darks come with wrong fieldids
     if header[OBSCLASS_KEY] == "dark":
         header["FIELDID"] = DEFAULT_FIELD
+        # Set targname to dark
+        header["TARGNAME"] = "dark"
 
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
