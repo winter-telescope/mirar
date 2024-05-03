@@ -5,6 +5,7 @@ Module containing standard processing blocks for WIRC
 # pylint: disable=duplicate-code
 from mirar.catalog.kowalski import PS1, TMASS
 from mirar.paths import (
+    BASE_NAME_KEY,
     FITS_MASK_KEY,
     LATEST_SAVE_KEY,
     OBSCLASS_KEY,
@@ -13,12 +14,17 @@ from mirar.paths import (
     SATURATE_KEY,
     SCI_IMG_KEY,
     SOURCE_NAME_KEY,
-    BASE_NAME_KEY,
 )
-from mirar.pipelines.wirc.generator import (
+from mirar.pipelines.winter.generator import (
+    winter_reference_generator,
+    winter_reference_image_resampler_for_zogy,
+    winter_reference_psf_phot_sextractor,
+    winter_reference_psfex,
+    winter_reference_sextractor,
+)
+from mirar.pipelines.wirc.generator import (  # wirc_reference_image_generator,
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
-    # wirc_reference_image_generator,
     wirc_reference_image_resampler,
     wirc_reference_psfex,
     wirc_reference_sextractor,
@@ -83,21 +89,13 @@ from mirar.processors.utils import (
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
+    ImageRebatcher,
     ImageSaver,
     ImageSelector,
-    ImageRebatcher,
-    HeaderAnnotator,
 )
 from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
-from mirar.pipelines.winter.generator import (
-    winter_reference_generator,
-    winter_reference_image_resampler_for_zogy,
-    winter_reference_sextractor,
-    winter_reference_psfex,
-    winter_reference_psf_phot_sextractor
-)
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
 load_stack = [ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image)]
@@ -121,7 +119,7 @@ log = [
 
 masking = [
     ImageSelector((OBSCLASS_KEY, ["science", "dark"])),
-    MaskPixelsFromPath(mask_path=wirc_mask_path)
+    MaskPixelsFromPath(mask_path=wirc_mask_path),
 ]
 
 dark_calibration = [ImageBatcher("EXPTIME"), DarkCalibrator()]
@@ -148,7 +146,6 @@ reduction = [
     ImageSaver(output_dir_name="firstpass"),
     Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
     ImageSaver(output_dir_name="firstpassstack"),
-    # ImageSelector(("BASENAME", "image0125.fits_stack.fits")),
     Sextractor(
         output_sub_dir="firstpasssextractor",
         **sextractor_astrometry_config,
