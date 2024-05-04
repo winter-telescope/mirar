@@ -102,6 +102,10 @@ def clean_header(header: fits.Header) -> fits.Header:
         # Set targname to dark
         header["TARGNAME"] = "dark"
 
+    # Tag dome flats as flats
+    if header[OBSCLASS_KEY].lower() == "domeflat":
+        header[OBSCLASS_KEY] = "flat"
+
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
     # Set up the target name
