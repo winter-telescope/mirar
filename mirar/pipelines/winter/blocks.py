@@ -343,7 +343,7 @@ dark_calibrate = [
         cache_sub_dir="calibration_darks",
         cache_image_name_header_keys=[EXPTIME_KEY, "BOARD_ID"],
     ),
-    ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     ImageSaver(output_dir_name="darkcal"),
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
