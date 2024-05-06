@@ -45,7 +45,7 @@ if _base_raw_dir is None:
         "The raw data directory will need to be specified manually for path function."
         f"The raw directory is being set to {default_dir}."
     )
-    logger.warning(warning)
+    logger.info(warning)
     base_raw_dir: Path = default_dir
 else:
     base_raw_dir = Path(_base_raw_dir)
@@ -58,7 +58,7 @@ if _base_output_dir is None:
         f"Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. "
         f"The output directory is being set to {default_dir}."
     )
-    logger.warning(warning)
+    logger.info(warning)
     base_output_dir = default_dir
 else:
     base_output_dir = Path(_base_output_dir)
@@ -69,6 +69,9 @@ TEMP_DIR.mkdir(exist_ok=True)
 
 RAW_IMG_SUB_DIR = "raw"
 CAL_OUTPUT_SUB_DIR = "calibration"
+
+ml_models_dir = base_output_dir.joinpath("ml_models")
+ml_models_dir.mkdir(exist_ok=True)
 
 
 def raw_img_dir(
