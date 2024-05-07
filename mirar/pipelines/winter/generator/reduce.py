@@ -14,13 +14,13 @@ from mirar.data import Image, ImageBatch
 from mirar.database.constraints import DBQueryConstraints
 from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
+    BASE_NAME_KEY,
+    EXPTIME_KEY,
     FILTER_KEY,
     OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
     SATURATE_KEY,
     get_output_dir,
-BASE_NAME_KEY,
-EXPTIME_KEY
 )
 from mirar.pipelines.winter.config import sextractor_anet_config
 from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
@@ -124,7 +124,9 @@ def select_winter_dome_flats_images(images: ImageBatch) -> ImageBatch:
     Selects the flat for the winter data, get the top 250 images sorted by median counts
     """
     flat_images = select_from_images(images, key=OBSCLASS_KEY, target_values="flat")
-    flat_images = ImageBatch([image for image in flat_images if image["MEDCOUNT"] > 20000.])
+    flat_images = ImageBatch(
+        [image for image in flat_images if image["MEDCOUNT"] > 20000.0]
+    )
     return flat_images
 
 

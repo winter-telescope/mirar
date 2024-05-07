@@ -24,13 +24,13 @@ from mirar.pipelines.winter.generator.photometry import (
 )
 from mirar.pipelines.winter.generator.reduce import (
     mask_stamps_around_bright_stars,
+    select_winter_dome_flats_images,
     winter_anet_sextractor_config_path_generator,
     winter_boardid_6_demasker,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_imsub_catalog_purifier,
     winter_stackid_annotator,
-    select_winter_dome_flats_images
 )
 from mirar.pipelines.winter.generator.references import (
     winter_astrometric_ref_catalog_namer,

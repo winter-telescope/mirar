@@ -39,6 +39,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     mask_stamps_around_bright_stars,
+    select_winter_dome_flats_images,
     winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
     winter_astrometric_ref_catalog_namer,
@@ -64,7 +65,6 @@ from mirar.pipelines.winter.generator import (
     winter_skyportal_annotator,
     winter_source_entry_updater,
     winter_stackid_annotator,
-    select_winter_dome_flats_images
 )
 from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
