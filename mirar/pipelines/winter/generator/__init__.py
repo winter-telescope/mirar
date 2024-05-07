@@ -30,6 +30,7 @@ from mirar.pipelines.winter.generator.reduce import (
     winter_history_deprecated_constraint,
     winter_imsub_catalog_purifier,
     winter_stackid_annotator,
+    select_winter_dome_flats_images
 )
 from mirar.pipelines.winter.generator.references import (
     winter_astrometric_ref_catalog_namer,

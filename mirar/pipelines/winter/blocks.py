@@ -64,6 +64,7 @@ from mirar.pipelines.winter.generator import (
     winter_skyportal_annotator,
     winter_source_entry_updater,
     winter_stackid_annotator,
+    select_winter_dome_flats_images
 )
 from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
@@ -342,9 +343,9 @@ dark_calibrate = [
         cache_sub_dir="calibration_darks",
         cache_image_name_header_keys=[EXPTIME_KEY, "BOARD_ID"],
     ),
-    ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     ImageSaver(output_dir_name="darkcal"),
+    ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
 ]
 
@@ -363,12 +364,12 @@ flat_calibrate = [
     ImageRebatcher(["BOARD_ID", "FILTER"]),
     FlatCalibrator(
         cache_sub_dir="calibration_flats",
-        # select_flat_images=select_winter_flat_images,
+        select_flat_images=select_winter_dome_flats_images,
         cache_image_name_header_keys=["FILTER", "BOARD_ID"],
     ),
     # FIXME Add in the old sky flat thing here post dome flat
-    ImageSaver(output_dir_name="domeflatcal"),
     ImageSelector((OBSCLASS_KEY, ["science"])),
+    ImageSaver(output_dir_name="domeflatcal"),
     ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
