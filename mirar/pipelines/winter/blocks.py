@@ -33,19 +33,18 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
     winter_avro_schema_path,
+    winter_cal_requirements,
     winter_fritz_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     mask_stamps_around_bright_stars,
-    select_winter_flat_images,
     winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_boardid_6_demasker,
-    winter_cal_requirements,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
     winter_candidate_quality_filterer,
