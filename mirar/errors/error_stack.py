@@ -151,7 +151,7 @@ class ErrorStack:
             err_df.append(
                 {
                     "error_name": report.get_error_name(),
-                    "image_paths": ",".join(report.contents),
+                    "image_paths": ",".join(sorted(report.contents)),
                 }
             )
 
