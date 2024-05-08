@@ -359,10 +359,17 @@ class ImageHandler:
 
         mask = image.get_mask()
         if LATEST_WEIGHT_SAVE_KEY in image.header:
-            weight_data = self.open_fits(
-                image.header[LATEST_WEIGHT_SAVE_KEY]
-            ).get_data()
-            mask = mask * weight_data
+
+            path = Path(image.header[LATEST_WEIGHT_SAVE_KEY])
+            if path.exists():
+                weight_data = self.open_fits(
+                    image.header[LATEST_WEIGHT_SAVE_KEY]
+                ).get_data()
+                mask = mask * weight_data
+            else:
+                logger.warning(
+                    f"Could not find weight file {image.header[LATEST_WEIGHT_SAVE_KEY]}"
+                )
         self.save_fits(Image(mask.astype(float), header), mask_path)
 
         return mask_path

@@ -47,6 +47,7 @@ from mirar.pipelines.winter.blocks import (
     send_to_skyportal,
     stack_dithers,
     stack_forced_photometry,
+    stack_stacks,
     unpack_all,
     unpack_all_no_calhunter,
     unpack_subset,
@@ -120,6 +121,7 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
+        "stack_stacks": stack_stacks,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,
