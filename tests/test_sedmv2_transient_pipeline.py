@@ -8,10 +8,10 @@ import shutil
 from mirar.data import Dataset, ImageBatch
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import get_output_dir
-from mirar.pipelines.sedmv2.blocks import process_transient
+from mirar.pipelines.sedmv2.blocks import process_transient_using_magauto
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
-from mirar.processors.utils import MEFLoader  # MultiExtParser
+from mirar.processors.utils import MEFLoader
 from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ test_configuration = [
         input_sub_dir="raw/",
         load_image=load_sedmv2_mef_image,
     ),
-] + process_transient
+] + process_transient_using_magauto
 
 pipeline = SEDMv2Pipeline(night="20230526", selected_configurations="test_transient")
 pipeline.add_configuration(

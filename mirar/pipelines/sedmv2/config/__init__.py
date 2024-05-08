@@ -40,7 +40,7 @@ sextractor_astrometry_config = {
 }
 
 
-sextractor_candidates_config = {
+sextractor_candidate_config = {
     "cand_det_sextractor_config": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "cand_det_sextractor_nnw": os.path.join(astromatic_config_dir, "default.nnw"),
     "cand_det_sextractor_filter": os.path.join(astromatic_config_dir, "default.conv"),
