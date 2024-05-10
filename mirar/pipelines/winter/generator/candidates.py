@@ -260,7 +260,7 @@ def winter_skyportal_annotator(source_batch: SourceBatch) -> SourceBatch:
             mjds = [Time(x, format="jd").mjd for x in hist_df["jd"]]
             hist_df["mjd"] = mjds
             sncosmo_fs = [
-                sncosmo_filters[winter_inv_filters_map[x].lower()]
+                sncosmo_filters[winter_inv_filters_map[x].lower()[0]]
                 for x in hist_df["fid"]
             ]
             hist_df[SNCOSMO_KEY] = sncosmo_fs
