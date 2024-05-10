@@ -33,19 +33,19 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
     winter_avro_schema_path,
+    winter_cal_requirements,
     winter_fritz_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     mask_stamps_around_bright_stars,
-    select_winter_flat_images,
+    select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_boardid_6_demasker,
-    winter_cal_requirements,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
     winter_candidate_quality_filterer,
@@ -343,27 +343,18 @@ dark_calibrate = [
         cache_sub_dir="calibration_darks",
         cache_image_name_header_keys=[EXPTIME_KEY, "BOARD_ID"],
     ),
-    ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     ImageSaver(output_dir_name="darkcal"),
+    ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
 ]
 
 flat_calibrate = [
-    ImageRebatcher(
-        [
-            "BOARD_ID",
-            "FILTER",
-            "SUBCOORD",
-            "GAINCOLT",
-            "GAINCOLB",
-            "GAINROW",
-            TARGET_KEY,
-        ]
-    ),
+    ImageRebatcher(["BOARD_ID", "FILTER"]),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     FlatCalibrator(
         cache_sub_dir="calibration_flats",
-        select_flat_images=select_winter_flat_images,
+        select_flat_images=select_winter_sky_flat_images,
         cache_image_name_header_keys=["FILTER", "BOARD_ID"],
     ),
     ImageSaver(output_dir_name="skyflatcal"),
@@ -402,9 +393,7 @@ astrometry = [
         cache=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
-    ImageRebatcher(
-        [TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD", "DITHGRP"]
-    ),
+    ImageRebatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -422,7 +411,7 @@ astrometry = [
 ]
 
 validate_astrometry = [
-    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "DITHGRP"]),
+    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         **sextractor_astromstats_config,
         write_regions_bool=True,
@@ -442,7 +431,7 @@ validate_astrometry = [
 stack_dithers = [
     ImageDebatcher(),
     CustomImageBatchModifier(winter_boardid_6_demasker),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD", "DITHGRP"]),
+    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,

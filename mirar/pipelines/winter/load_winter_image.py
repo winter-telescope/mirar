@@ -105,6 +105,7 @@ def clean_header(header: fits.Header) -> fits.Header:
     # Tag dome flats as flats
     if header[OBSCLASS_KEY].lower() == "domeflat":
         header[OBSCLASS_KEY] = "flat"
+        header[TARGET_KEY] = "flat"
 
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
@@ -207,7 +208,6 @@ def clean_header(header: fits.Header) -> fits.Header:
     if header["FILTER"].lower() in ["y", "j", "h"]:
         header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
 
-    header["DITHGRP"] = int(header["DITHNUM"] <= 5)
     if "GAINCOLT" not in header.keys():
         header["GAINCOLT"] = "[]"
     if "GAINCOLB" not in header.keys():
@@ -530,10 +530,11 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[1030:, 1800:] = 1.0
 
     if header["BOARD_ID"] == 4:
+
         # # Mask the region to the top left
         mask[610:, :250] = 1.0
         # # There seems to be a dead spot in the middle of the image
-        mask[503:518, 390:405] = 1.0
+        mask[503:518, 384:405] = 1.0
 
         # Mask the edges with low sensitivity due to masking
         mask[:, 1948:] = 1.0
@@ -543,6 +544,9 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
 
         # Mask a vertical strip
         mask[:, 998:1002] = 1.0
+
+        # Mask another vertical strip
+        mask[:, 1266:1273] = 1.0
 
         # Mask the outage to the right
         mask[145:, 1735:] = 1.0
