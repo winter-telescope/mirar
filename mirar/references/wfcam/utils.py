@@ -2,6 +2,7 @@
 Utility functions for WFCAM
 """
 
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -34,6 +35,8 @@ COMPID_KEY = "COMPID"
 QUERY_RA_KEY = "QRY_RA"
 QUERY_DEC_KEY = "QRY_DEC"
 QUERY_FILT_KEY = "QRY_FILT"
+
+logger = logging.getLogger(__name__)
 
 
 def get_query_coordinates_from_header(
@@ -243,6 +246,14 @@ def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
         :return: data, header
     """
     _, extension_data_list, extension_header_list = open_mef_fits(path)
+    if len(extension_data_list) == 0:
+        err = f"Compressed fits file {path} has no extensions."
+        logger.error(err)
+        raise ValueError(err)
+    if len(extension_data_list) != 1:
+        err = f"Compressed fits file {path} has more than one extension."
+        logger.error(err)
+        raise ValueError(err)
     return extension_data_list[0], extension_header_list[0]
 
 
