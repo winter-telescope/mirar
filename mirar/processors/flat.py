@@ -9,15 +9,7 @@ from collections.abc import Callable
 from copy import copy
 
 import numpy as np
-<<<<<<< HEAD
-<<<<<<< HEAD
 from astropy.convolution import Tophat2DKernel, convolve_fft
-=======
-from astropy.convolution import Tophat2DKernel, convolve, convolve_fft
->>>>>>> 60685c68 (working)
-=======
-from astropy.convolution import Tophat2DKernel, convolve_fft
->>>>>>> 822f21d8 (Nanfill)
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
@@ -104,7 +96,7 @@ class FlatCalibrator(ProcessorWithCache):
         self.select_cache_images = select_flat_images
         self.flat_mask_key = flat_mask_key
         self.flat_mode = flat_mode
-        if not self.flat_mode in ["median", "pixel", "structure"]:
+        if self.flat_mode not in ["median", "pixel", "structure"]:
             raise ValueError(f"Flat mode {self.flat_mode} not supported")
 
     def description(self) -> str:
