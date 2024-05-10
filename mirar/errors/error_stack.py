@@ -157,8 +157,9 @@ class ErrorStack:
 
         err_df = pd.DataFrame(err_df)
 
-        err_df.sort_values(by=["error_name", "image_paths"], inplace=True)
-        err_df.reset_index(drop=True, inplace=True)
+        if len(err_df) > 0:
+            err_df.sort_values(by=["error_name", "image_paths"], inplace=True)
+            err_df.reset_index(drop=True, inplace=True)
 
         if output_path is not None:
             logger.error(f"Saving tracebacks of caught errors to {output_path}")
