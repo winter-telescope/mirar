@@ -145,4 +145,4 @@ You can try installing things via conda:
 
 .. code-block:: bash
 
-    conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex
+    conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
