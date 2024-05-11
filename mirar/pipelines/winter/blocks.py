@@ -328,6 +328,7 @@ save_raw = [
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
+    ImageRebatcher("UTCTIME"),
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -396,6 +397,7 @@ flat_calibrate = [
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
         flat_mode="structure",
+        #     flat_mode="median",
     ),
     ImageSaver(output_dir_name="allskyflatcal"),
     ImageRebatcher([BASE_NAME_KEY]),
