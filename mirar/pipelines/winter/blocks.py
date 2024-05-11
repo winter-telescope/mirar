@@ -14,6 +14,7 @@ from mirar.paths import (
     LATEST_SAVE_KEY,
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
+    PROC_HISTORY_KEY,
     RAW_IMG_KEY,
     SOURCE_HISTORY_KEY,
     SOURCE_NAME_KEY,
@@ -134,6 +135,7 @@ from mirar.processors.split import SUB_ID_KEY, SplitImage, SwarpImageSplitter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
+    HeaderEditor,
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
@@ -510,8 +512,8 @@ photcal_and_export = [
 # Stack stacks together
 
 stack_stacks = [
-    ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
     ImageRebatcher([BASE_NAME_KEY]),
+    HeaderEditor(PROC_HISTORY_KEY, "load"),
     ImageSaver(output_dir_name="restack_masks", write_mask=True),
     Sextractor(
         **sextractor_astrometry_config,
@@ -529,7 +531,7 @@ stack_stacks = [
     ImageSaver(output_dir_name="post_scamp"),
     ImageDebatcher(),
     HeaderAnnotator(input_keys=["TARGNAME", "FIELDID"], output_key=TARGET_KEY),
-    ImageRebatcher(["SUBCOORD", "FILTER", "EXPTIME", "BOARD_ID", TARGET_KEY]),
+    ImageRebatcher(["SUBCOORD", "FILTER", TARGET_KEY]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,

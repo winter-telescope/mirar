@@ -2,9 +2,9 @@
 Module for general utility processors such as I/O and interacting with metadata
 """
 
-from mirar.processors.utils.header_annotate import HeaderAnnotator
+from mirar.processors.utils.header_annotate import HeaderAnnotator, HeaderEditor
 from mirar.processors.utils.header_reader import HeaderReader
-from mirar.processors.utils.image_loader import ImageLoader, MEFLoader
+from mirar.processors.utils.image_loader import ImageListLoader, ImageLoader, MEFLoader
 from mirar.processors.utils.image_modifier import CustomImageBatchModifier
 from mirar.processors.utils.image_plotter import ImagePlotter
 from mirar.processors.utils.image_rejector import ImageRejector

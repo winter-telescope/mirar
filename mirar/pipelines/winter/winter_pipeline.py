@@ -121,7 +121,8 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
-        "stack_stacks": stack_stacks,
+        "stack_stacks": load_final_stack + stack_stacks,
+        "stack_stacks_db": stack_stacks,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,

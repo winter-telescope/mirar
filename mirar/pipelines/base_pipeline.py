@@ -203,7 +203,7 @@ class Pipeline:
         """
         error_output_path = Path(
             get_output_path(
-                base_name=f"{self.night}_error_stack.txt",
+                base_name=f"{Path(self.night).name}_error_stack.txt",
                 dir_root=self.night_sub_dir,
             )
         )
