@@ -6,11 +6,13 @@ build:
     python: "3.11"
   jobs:
     post_create_environment:
-      - echo "Command run at 'post_create_environment' step"
-      - python -m pip install --upgrade --no-cache-dir pip setuptools
-      - pip install poetry
-      - poetry install
-      - pip install -e .
+      # Install poetry
+      # https://python-poetry.org/docs/#installing-manually
+      - python -m pip install poetry
+    post_install:
+      # Install dependencies with 'docs' dependency group
+      # https://python-poetry.org/docs/managing-dependencies/#dependency-groups
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
 
 sphinx:
   builder: html
