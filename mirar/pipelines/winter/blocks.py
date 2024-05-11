@@ -507,6 +507,74 @@ photcal_and_export = [
     ),
 ]
 
+# Stack stacks together
+
+stack_stacks = [
+    ImageLoader(input_sub_dir="final", input_img_dir=base_output_dir),
+    ImageRebatcher([BASE_NAME_KEY]),
+    ImageSaver(output_dir_name="restack_masks", write_mask=True),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="scamp",
+        catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
+    ),
+    CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
+    Scamp(
+        scamp_config_path=scamp_config_path,
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+        copy_scamp_header_to_image=True,
+        cache=True,
+    ),
+    ImageSaver(output_dir_name="post_scamp"),
+    ImageDebatcher(),
+    HeaderAnnotator(input_keys=["TARGNAME", "FIELDID"], output_key=TARGET_KEY),
+    ImageRebatcher(["SUBCOORD", "FILTER", "EXPTIME", "BOARD_ID", TARGET_KEY]),
+    Swarp(
+        swarp_config_path=swarp_config_path,
+        calculate_dims_in_swarp=True,
+        include_scamp=True,
+        subtract_bkg=False,
+        cache=False,
+        center_type="ALL",
+        temp_output_sub_dir="stacks_weights",
+        header_keys_to_combine=["RAWID"],
+    ),
+    ImageSaver(output_dir_name="stack_of_stacks"),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    CustomImageBatchModifier(masked_images_rejector),
+    Sextractor(
+        **sextractor_photometry_config,
+        output_sub_dir="stack_psf",
+        checkimage_type="BACKGROUND_RMS",
+    ),
+    PSFex(config_path=psfex_path, output_sub_dir="phot", norm_fits=True),
+    Sextractor(
+        **sextractor_photometry_psf_config,
+        output_sub_dir="phot",
+        checkimage_type="BACKGROUND_RMS",
+        use_psfex=True,
+    ),
+    CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
+    PhotCalibrator(
+        ref_catalog_generator=winter_photometric_catalog_generator,
+        catalogs_purifier=winter_photometric_catalogs_purifier,
+        temp_output_sub_dir="phot",
+        write_regions=True,
+        cache=True,
+        zp_calculator=ZPWithColorTermCalculator(
+            color_colnames_guess_generator=winter_photcal_color_columns_generator,
+            reject_outliers=True,
+            solver="curve_fit",
+        ),
+        zp_column_name="MAG_AUTO",
+    ),
+    CatalogLimitingMagnitudeCalculator(
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
+    ),
+    ImageSaver(output_dir_name="final_stack_of_stacks"),
+]
+
 # Image subtraction
 
 load_final_stack = [
