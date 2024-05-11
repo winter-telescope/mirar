@@ -3,12 +3,13 @@ version: 2
 build:
   os: ubuntu-22.04
   tools:
-    python: "3.10"
+    python: "3.11"
   jobs:
     post_create_environment:
       - echo "Command run at 'post_create_environment' step"
       - python -m pip install --upgrade --no-cache-dir pip setuptools
-      - pip install -e .
+      - pip install poetry
+      - poetry install
 
 sphinx:
   builder: html
