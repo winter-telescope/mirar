@@ -10,6 +10,7 @@ build:
       - python -m pip install --upgrade --no-cache-dir pip setuptools
       - pip install poetry
       - poetry install
+      - pip install -e .
 
 sphinx:
   builder: html
