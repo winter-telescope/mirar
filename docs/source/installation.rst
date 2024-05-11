@@ -118,11 +118,30 @@ astrometry-net folder somewhere on your machine. If you used Homebrew, it should
     /opt/homebrew/Cellar/astrometry-net/
 
 Then, make sure to also grab index files from
-`this directory <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_ and save them under
+`this directory <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_ and then link in the astrometry.cfg config file.
+
+It is stored under an etc/ directory. For conda, for example, I find my python path:
 
 .. code-block:: bash
 
-    .../astrometry-net/<version>/data
+    which python
+    >>> /Users/robertstein/anaconda3/envs/mirar/bin/python
+
+The astrometry.cfg file should be stored in the parent directory of the python path. So in this case, it would be:
+
+.. code-block:: bash
+
+    /Users/robertstein/anaconda3/envs/mirar/etc/astrometry.cfg
+
+In that file, you should add modify following line:
+
+.. code-block:: bash
+
+    '# In which directories should we search for indices?'
+    add_path /path/to/your/astrometry-net/catalogs
+
+The location of the file will be different if you install via e.g brew or apt-get.
+In the worst case, you can try running solve-field on an image, and you should see the path to the astrometry.cfg file in the error message.
 
 astromatic software with apt-get (Linux only)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -145,4 +164,4 @@ You can try installing things via conda:
 
 .. code-block:: bash
 
-    conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex
+    conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
