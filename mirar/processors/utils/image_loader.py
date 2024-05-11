@@ -47,6 +47,43 @@ def unzip(zipped_list: list[str]) -> list[str]:
     return unzipped_list
 
 
+def load_from_list(
+    img_list: list[str | Path],
+    open_f: Callable[[str | Path], Image | list[Image]],
+) -> ImageBatch:
+    """
+    Load images from a list of files
+
+    :param img_list: Image list
+    :param open_f: Function to open images
+    :return: ImageBatch object
+    """
+    images = ImageBatch()
+
+    for path in tqdm(img_list):
+        if check_file_is_complete(path):
+            try:
+                image_list = open_f(path)
+
+                if not isinstance(image_list, list):
+                    image_list = [image_list]
+
+                for image in image_list:
+                    try:
+                        check_image_has_core_fields(image)
+                    except MissingCoreFieldError as err:
+                        raise BadImageError(err) from err
+                    images.append(image)
+            except InvalidImage:
+                logger.warning(f"Image {path} is invalid. Skipping!")
+            except BadImageError:
+                logger.error(f"Image {path} cannot be parsed. Skipping!")
+        else:
+            logger.warning(f"File {path} is not complete. Skipping!")
+
+    return images
+
+
 def load_from_dir(
     input_dir: str | Path,
     open_f: Callable[[str | Path], Image | list[Image]],
@@ -72,30 +109,7 @@ def load_from_dir(
         logger.error(err)
         raise ImageNotFoundError(err)
 
-    images = ImageBatch()
-
-    for path in tqdm(img_list):
-        if check_file_is_complete(path):
-            try:
-                image_list = open_f(path)
-
-                if not isinstance(image_list, list):
-                    image_list = [image_list]
-
-                for image in image_list:
-                    try:
-                        check_image_has_core_fields(image)
-                    except MissingCoreFieldError as err:
-                        raise BadImageError(err) from err
-                    images.append(image)
-            except InvalidImage:
-                logger.warning(f"Image {path} is invalid. Skipping!")
-            except BadImageError:
-                logger.error(f"Image {path} cannot be parsed. Skipping!")
-        else:
-            logger.warning(f"File {path} is not complete. Skipping!")
-
-    return images
+    return load_from_list(img_list, open_f)
 
 
 class ImageLoader(BaseImageProcessor):
@@ -179,6 +193,49 @@ class LoadImageFromHeader(BaseImageProcessor):
             new_batch.append(new_image)
 
         return new_batch
+
+
+class ImageListLoader(BaseImageProcessor):
+    """Processor to load raw images."""
+
+    base_key = "loadlist"
+
+    image_type = Image
+    default_load_image = staticmethod(open_raw_image)
+
+    def __init__(
+        self,
+        img_list: list[Path],
+        load_image: Callable[[str], Image | list[Image]] = None,
+    ):
+        super().__init__()
+        self.img_list = img_list
+        if len(self.img_list) < 1:
+            err = "No images found in list. Please check path is correct!"
+            logger.error(err)
+            raise ImageNotFoundError(err)
+        if load_image is None:
+            load_image = self.default_load_image
+        self.load_image = load_image
+
+    def __str__(self):
+        return f"Processor to load {len(self.img_list)} images from list"
+
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+        """
+        Load images from a list of files
+
+        :param batch: Batch of images
+        :return: New batch of images
+        """
+
+        if len(batch) > 0:
+            logger.warning("Batch is not empty. Overwriting images!")
+
+        return load_from_list(
+            self.img_list,
+            open_f=self.load_image,
+        )
 
 
 class MEFLoader(ImageLoader):
