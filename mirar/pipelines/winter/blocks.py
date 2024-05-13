@@ -352,15 +352,24 @@ dark_calibrate = [
 ]
 
 flat_calibrate = [
-    ImageRebatcher(["BOARD_ID", "FILTER"]),
     ImageSelector((OBSCLASS_KEY, ["science"])),
+    ImageRebatcher(
+        [
+            "BOARD_ID",
+            "FILTER",
+            "SUBCOORD",
+            "GAINCOLT",
+            "GAINCOLB",
+            "GAINROW",
+            TARGET_KEY,
+        ]
+    ),
     FlatCalibrator(
-        cache_sub_dir="calibration_flats",
+        cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
-        cache_image_name_header_keys=["FILTER", "BOARD_ID"],
     ),
     ImageSaver(output_dir_name="skyflatcal"),
-    ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    ImageRebatcher([BASE_NAME_KEY]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
