@@ -105,6 +105,9 @@ winter_cal_requirements = [
             # "5.0",  # Hs flats
         ],
     ),
+    CalRequirement(
+        target_name="domeflat", required_field="FILTER", required_values=["Y", "J", "Hs"]
+    ),
 ]
 
 winter_avro_schema_path = winter_file_dir.joinpath("avro_schema/winter.alert.avsc")
