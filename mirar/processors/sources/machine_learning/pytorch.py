@@ -1,45 +1,46 @@
 """
-Module with classes to use apply an ML score
+Module with classes to use apply an ML score from pytorch
 """
 
-from typing import Callable
 import logging
-import pickle
 from pathlib import Path
+from typing import Callable
 
 import pandas as pd
 import requests
+import torch
+from torch import nn
+
 from mirar.data import SourceBatch
 from mirar.paths import ml_models_dir
 from mirar.processors.base_processor import BaseSourceProcessor
-import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 
-class MLScore(BaseSourceProcessor):
+class Pytorch(BaseSourceProcessor):
     """
-    Class to apply an ML model to a source table
+    Class to apply a pytorch model to a source table
     """
 
-    base_key = "MLScore"
+    base_key = "pytorch"
 
     def __init__(
         self,
-        model_url: str,
-        apply_to_row: Callable[[object, pd.Series], pd.Series] = None,
+        model: nn.Module,
+        model_weights_url: str,
+        apply_to_table: Callable[[nn.Module, pd.DataFrame], pd.DataFrame],
     ):
         super().__init__()
-        self.model_url = model_url
-        self.model_name = Path(self.model_url).name
-        self.apply_to_row = apply_to_row
+        self._model = model
+        self.model_weights_url = model_weights_url
+        self.model_name = Path(self.model_weights_url).name
+        self.apply_to_table = apply_to_table
 
-        self._model = None
+        self.model = None
 
     def __str__(self) -> str:
-        return (
-            f"Processor to use ML model {self.model_name} to score sources"
-        )
+        return f"Processor to use Pytorch model {self.model_name} to score sources"
 
     def get_ml_path(self) -> Path:
         """
@@ -54,17 +55,16 @@ class MLScore(BaseSourceProcessor):
         Download the ML model
         """
 
-        url = self.model_url
+        url = self.model_weights_url
         local_path = self.get_ml_path()
 
         logger.info(
-            f"Downloading model {self.model_name} "
-            f"from {url} to {local_path}"
+            f"Downloading model {self.model_name} " f"from {url} to {local_path}"
         )
 
-        with requests.get(url, stream=True, timeout=120.) as r:
+        with requests.get(url, stream=True, timeout=120.0) as r:
             r.raise_for_status()
-            with open(local_path, 'wb') as f:
+            with open(local_path, "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     # If you have chunk encoded response uncomment if
                     # and set chunk_size parameter to None.
@@ -78,63 +78,55 @@ class MLScore(BaseSourceProcessor):
 
     @staticmethod
     def load_model(path):
+        """
+        Function to load a pytorch model dict from a path
+
+        :param path: Path to the model
+        :return: Pytorch model dict
+        """
         if not path.exists():
             err = f"Model {path} not found"
             logger.error(err)
             raise FileNotFoundError(err)
 
-        if path.suffix in [".h5", ".hdf5", ".keras"]:
-            return tf.keras.models.load_model(path)
-        if path.suffix == ".pkl":
-            with open(path, "rb") as model_file:
-                return pickle.load(model_file)
+        if path.suffix in [".pth", ".pt"]:
+            return torch.load(path)
 
         raise ValueError(f"Unknown model type {path.suffix}")
 
     def get_model(self):
         """
-        Load the ML model. Download it if it doesn't exist.
+        Load the ML model weights. Download it if it doesn't exist.
 
         :return: ML model
         """
 
-        if self._model is None:
+        if self.model is None:
+
+            model = self._model
 
             local_path = self.get_ml_path()
 
             if not local_path.exists():
                 self.download_model()
 
-            self._model = self.load_model(local_path)
+            model.load_state_dict(torch.load(local_path))
+            model.eval()
 
-        return self._model
+            self.model = model
+
+        return self.model
 
     def _apply_to_sources(
         self,
         batch: SourceBatch,
     ) -> SourceBatch:
 
-        print("Applying ML model to sources")
-
         model = self.get_model()
 
-        print(model)
-
         for source_table in batch:
-
             sources = source_table.get_data()
-
-            new = []
-
-            for _, source in sources.iterrow():
-                row = self.apply_to_row(model, source)
-                new.append(row)
-
-            new = pd.DataFrame(new)
+            new = self.apply_to_table(model, sources)
             source_table.set_data(new)
 
         return batch
-
-
-ml = MLScore(model_url='https://github.com//winter-telescope/winter_rb_models/raw/v1.0.0/models/winterdrb_VGG6_20240410_051006.keras') #FIXME: Update URL
-ml.apply(SourceBatch())

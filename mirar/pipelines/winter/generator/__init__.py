@@ -22,6 +22,7 @@ from mirar.pipelines.winter.generator.photometry import (
     winter_ref_photometric_catalogs_purifier,
     winter_reference_phot_calibrator,
 )
+from mirar.pipelines.winter.generator.realbogus import apply_rb_to_table
 from mirar.pipelines.winter.generator.reduce import (
     mask_stamps_around_bright_stars,
     select_winter_dome_flats_images,
