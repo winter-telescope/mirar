@@ -346,7 +346,6 @@ load_unpacked = [
             "T_ROIC",
             "FIELDID",
             "MEDCOUNT",
-            "DITHGRP",
         ]
     ),
     ImageRebatcher(BASE_NAME_KEY),
@@ -397,7 +396,7 @@ flat_calibrate = [
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
         flat_mode="structure",
-        #     flat_mode="median",
+        # flat_mode="median",
     ),
     ImageSaver(output_dir_name="allskyflatcal"),
     ImageRebatcher([BASE_NAME_KEY]),

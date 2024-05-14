@@ -128,6 +128,13 @@ def clean_header(header: fits.Header) -> fits.Header:
     else:
         header["MIRCOVER"] = None
 
+    # Throw out flats with low counts
+
+    if header[OBSCLASS_KEY].lower() == "flat":
+        if header["MEDCOUNT"] < 20000.0:
+            header[OBSCLASS_KEY] = "test"
+            header[TARGET_KEY] = "test"
+
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
     # Set up the target name
