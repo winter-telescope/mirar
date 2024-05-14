@@ -8,8 +8,6 @@ import torch
 from torch import nn
 from winterrb.utils import make_triplet
 
-# ML_KEYS =
-
 
 def apply_rb_to_table(model: nn.Module, table: pd.DataFrame) -> pd.DataFrame:
     """
