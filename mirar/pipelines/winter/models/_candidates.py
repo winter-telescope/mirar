@@ -59,6 +59,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     deprecated = Column(Boolean, nullable=False, default=False)
     jd = Column(Float, nullable=False)
     utctime = Column(DateTime(timezone=True))
+    sent = Column(Boolean, nullable=False, default=False)
 
     # Image properties
 
@@ -223,6 +224,8 @@ class Candidate(BaseDB):
 
     jd: float = Field(ge=0)
     utctime: datetime = Field()
+
+    sent: bool = Field(default=False)
 
     diffid: int | None = Field(ge=0, default=None)
     stackid: int = Field(ge=0)

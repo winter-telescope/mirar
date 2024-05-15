@@ -785,6 +785,9 @@ avro_write = [
     ),
 ]
 
+# configure to broadcast to IPAC
+BROADCAST_BOOL = str(os.getenv("BROADCAST_AVRO", None)) in ["True", "t", "1", "true"]
+
 avro_broadcast = [
     # Filter out low quality candidates
     CustomSourceTableModifier(modifier_function=winter_candidate_quality_filterer),
@@ -793,10 +796,14 @@ avro_broadcast = [
         output_sub_dir="avro_ipac",
         topic_prefix="winter",
         base_name="WNTR",
-        # configure to broadcast to IPAC
-        broadcast=str(os.getenv("BROADCAST_AVRO", None)) in ["True", "t", "1", "true"],
+        broadcast=BROADCAST_BOOL,
         save_local=True,
         avro_schema_path=winter_avro_schema_path,
+    ),
+    HeaderEditor(edit_keys="sent", values=BROADCAST_BOOL),
+    DatabaseSourceInserter(
+        db_table=Candidate,
+        duplicate_protocol="replace",
     ),
     SourceWriter(output_dir_name="preskyportal"),
 ]
