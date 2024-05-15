@@ -143,7 +143,7 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     # Real/bogus properties
 
     rb = Column(Float, nullable=True)
-    rbversion = Column(Float, nullable=True)
+    rbversion = Column(VARCHAR(10), nullable=True)
 
     # Solar system properties
 
@@ -284,7 +284,7 @@ class Candidate(BaseDB):
     scorr: float = Field(ge=0)
 
     rb: float | None = Field(ge=0, default=None)
-    rbversion: float | None = Field(ge=0, default=None)
+    rbversion: str | None = Field(default=None, max_length=10)
 
     ssdistnr: float | None = Field(ge=0, default=None)
     ssmagnr: float | None = Field(ge=0, default=None)

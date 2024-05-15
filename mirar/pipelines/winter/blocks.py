@@ -5,6 +5,8 @@ Module for WINTER data reduction
 # pylint: disable=duplicate-code
 import os
 
+from winterrb.model import WINTERNet
+
 from mirar.catalog.kowalski import PS1, TMASS, Gaia, GaiaBright, PS1SGSc
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
@@ -39,6 +41,7 @@ from mirar.pipelines.winter.config import (
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
+    apply_rb_to_table,
     mask_stamps_around_bright_stars,
     select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
@@ -127,10 +130,12 @@ from mirar.processors.sources import (
     CustomSourceTableModifier,
     ForcedPhotometryDetector,
     SourceBatcher,
+    SourceDebatcher,
     SourceLoader,
     SourceWriter,
     ZOGYSourceDetector,
 )
+from mirar.processors.sources.machine_learning import Pytorch
 from mirar.processors.split import SUB_ID_KEY, SplitImage, SwarpImageSplitter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
@@ -691,9 +696,21 @@ detect_candidates = [
 
 load_sources = [
     SourceLoader(input_dir_name="candidates"),
+    SourceBatcher(BASE_NAME_KEY),
+]
+
+ml_classify = [
+    Pytorch(
+        model=WINTERNet(),
+        model_weights_url="https://github.com/winter-telescope/winterrb/raw/"
+        "v1.0.0/models/winterrb_v1_0_0_weights.pth",
+        apply_to_table=apply_rb_to_table,
+    ),
+    HeaderEditor(edit_keys="rbversion", values="v1.0.0"),
 ]
 
 crossmatch_candidates = [
+    SourceDebatcher(),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
@@ -786,7 +803,7 @@ avro_broadcast = [
 
 avro_export = avro_write + avro_broadcast
 
-process_candidates = crossmatch_candidates + name_candidates + avro_write
+process_candidates = ml_classify + crossmatch_candidates + name_candidates + avro_write
 
 load_avro = [SourceLoader(input_dir_name="preavro")]
 
