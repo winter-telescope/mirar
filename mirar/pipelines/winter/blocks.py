@@ -803,7 +803,7 @@ avro_broadcast = [
     HeaderEditor(edit_keys="sent", values=BROADCAST_BOOL),
     DatabaseSourceInserter(
         db_table=Candidate,
-        duplicate_protocol="fail",
+        duplicate_protocol="replace",
     ),
     SourceWriter(output_dir_name="preskyportal"),
 ]
