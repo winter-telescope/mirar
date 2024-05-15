@@ -282,7 +282,7 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
         mask = (
             (src_df["nbad"] < 2)
             & (src_df["ndethist"] > 0)
-            & ((src_df["rb"] > 0.5) | pd.isnull(src_df["rb"]))
+            & ((src_df["rb"] > 0.1) | pd.isnull(src_df["rb"]))
             & (src_df["sumrat"] > 0.6)
             & (src_df["fwhm"] < 10.0)
             & (src_df["magdiff"] < 1.6)
