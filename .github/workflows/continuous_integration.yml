@@ -46,7 +46,7 @@ jobs:
           android: true
           dotnet: true
           haskell: true
-          large-packages: true
+          large-packages: false
           docker-images: true
           swap-storage: true
 
@@ -109,7 +109,7 @@ jobs:
           git clone https://github.com/segasai/q3c.git
           make -C q3c
           sudo make -C q3c install
-          
+
       - name: Print disk space
         run: df -h
 
