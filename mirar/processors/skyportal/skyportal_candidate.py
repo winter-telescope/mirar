@@ -23,11 +23,13 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         *args,
         stream_id: int,
         fritz_filter_id: int,
+        annotation_keys: list[str] | None = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.stream_id = stream_id
         self.fritz_filter_id = fritz_filter_id
+        self.annotation_keys = annotation_keys
 
     def skyportal_post_candidate(self, alert):
         """
@@ -74,20 +76,10 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         """
         data = {}
 
-        for key in [
-            "chipsf",
-            "fwhm",
-            "scorr",
-            "nneg",
-            "mindtoedge",
-            "diffmaglim",
-            "distpsnr1",
-            "sgmag1",
-            "srmag1",
-            "simag1",
-        ]:
-            if key in alert:
-                data[key] = alert[key]
+        if self.annotation_keys is not None:
+            for key in self.annotation_keys:
+                if key in alert:
+                    data[key] = alert[key]
 
         payload = {"origin": self.origin, "data": data, "group_ids": self.group_ids}
 

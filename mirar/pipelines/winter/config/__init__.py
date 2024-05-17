@@ -107,4 +107,17 @@ winter_fritz_config = {
     "stream_id": 1005,
     "update_thumbnails": True,
     "skyportal_client": SkyportalClient(base_url="https://fritz.science/api/"),
+    "annotation_keys": [
+        "rb",
+        "chipsf",
+        "fwhm",
+        "scorr",
+        "nneg",
+        "mindtoedge",
+        "diffmaglim",
+        "distpsnr1",
+        "sgmag1",
+        "srmag1",
+        "simag1",
+    ],
 }
