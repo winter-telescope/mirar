@@ -812,7 +812,10 @@ process_candidates = ml_classify + crossmatch_candidates + name_candidates + avr
 
 load_avro = [SourceLoader(input_dir_name="preavro")]
 
-load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
+load_skyportal = [
+    SourceLoader(input_dir_name="preskyportal"),
+    SourceBatcher(BASE_NAME_KEY),
+]
 
 send_to_skyportal = [
     SkyportalCandidateUploader(**winter_fritz_config),
