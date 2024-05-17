@@ -67,12 +67,12 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             )
             logger.error(response.json())
 
-    def skyportal_post_annotation(self, alert):
+    def get_annotations(self, alert) -> dict:
         """
-        Post an annotation. Works for both candidates and sources.
+        Retrieve annotations from alert data.
 
-        :param alert: alert data
-        :return: None
+        :param alert: Alert data
+        :return: Annotations
         """
         data = {}
 
@@ -80,6 +80,16 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             for key in self.annotation_keys:
                 if key in alert:
                     data[key] = alert[key]
+        return data
+
+    def skyportal_post_annotation(self, alert):
+        """
+        Post an annotation. Works for both candidates and sources.
+
+        :param alert: alert data
+        :return: None
+        """
+        data = self.get_annotations(alert)
 
         payload = {"origin": self.origin, "data": data, "group_ids": self.group_ids}
 
@@ -129,11 +139,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         # annotation from this(WNTR) origin exists
         else:
             # annotation data
-            data = {
-                "fwhm": source["fwhm"],
-                "scorr": source["scorr"],
-                "chipsf": source["chipsf"],
-            }
+            data = self.get_annotations(source)
             new_annotation = {
                 "author_id": existing_annotations[self.origin]["author_id"],
                 "obj_id": source[SOURCE_NAME_KEY],
