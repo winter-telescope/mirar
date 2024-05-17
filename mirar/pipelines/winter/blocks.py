@@ -816,6 +816,11 @@ load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
 
 send_to_skyportal = [
     SkyportalCandidateUploader(**winter_fritz_config),
+    HeaderEditor(edit_keys="sent", values=True),
+    DatabaseSourceInserter(
+        db_table=Candidate,
+        duplicate_protocol="replace",
+    ),
 ]
 
 # To make a mosaic by stacking all boards
