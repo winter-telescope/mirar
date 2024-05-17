@@ -20,6 +20,8 @@ class XMatch(BaseSourceProcessor):
     Class to cross-match a candidate_table to a catalog
     """
 
+    max_n_cpu = 4
+
     base_key = "XMATCH"
 
     def __init__(

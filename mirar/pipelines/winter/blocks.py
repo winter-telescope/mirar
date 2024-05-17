@@ -130,7 +130,6 @@ from mirar.processors.sources import (
     CustomSourceTableModifier,
     ForcedPhotometryDetector,
     SourceBatcher,
-    SourceDebatcher,
     SourceLoader,
     SourceWriter,
     ZOGYSourceDetector,
@@ -710,7 +709,6 @@ ml_classify = [
 ]
 
 crossmatch_candidates = [
-    SourceDebatcher(),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
