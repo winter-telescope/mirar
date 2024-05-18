@@ -130,7 +130,6 @@ from mirar.processors.sources import (
     CustomSourceTableModifier,
     ForcedPhotometryDetector,
     SourceBatcher,
-    SourceDebatcher,
     SourceLoader,
     SourceWriter,
     ZOGYSourceDetector,
@@ -710,7 +709,6 @@ ml_classify = [
 ]
 
 crossmatch_candidates = [
-    SourceDebatcher(),
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
@@ -814,10 +812,18 @@ process_candidates = ml_classify + crossmatch_candidates + name_candidates + avr
 
 load_avro = [SourceLoader(input_dir_name="preavro")]
 
-load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
+load_skyportal = [
+    SourceLoader(input_dir_name="preskyportal"),
+    SourceBatcher(BASE_NAME_KEY),
+]
 
 send_to_skyportal = [
     SkyportalCandidateUploader(**winter_fritz_config),
+    HeaderEditor(edit_keys="sent", values=True),
+    DatabaseSourceInserter(
+        db_table=Candidate,
+        duplicate_protocol="replace",
+    ),
 ]
 
 # To make a mosaic by stacking all boards

@@ -20,6 +20,15 @@ class KowalskiError(ProcessorError):
 
 
 PROTOCOL, HOST, PORT = "https", "kowalski.caltech.edu", 443
+KOWALSKI_TIMEOUT = 300.0
+
+kowalski_args = {
+    "protocol": PROTOCOL,
+    "host": HOST,
+    "port": PORT,
+    "verbose": False,
+    "timeout": KOWALSKI_TIMEOUT,
+}
 
 
 def get_kowalski() -> Kowalski:
@@ -34,9 +43,7 @@ def get_kowalski() -> Kowalski:
     if token_kowalski is not None:
         logger.debug("Using kowalski token")
 
-        kowalski_instance = Kowalski(
-            token=token_kowalski, protocol=PROTOCOL, host=HOST, port=PORT
-        )
+        kowalski_instance = Kowalski(token=token_kowalski, **kowalski_args)
 
     else:
         username_kowalski = os.getenv("KOWALSKI_USER")
@@ -61,9 +68,7 @@ def get_kowalski() -> Kowalski:
         kowalski_instance = Kowalski(
             username=username_kowalski,
             password=password_kowalski,
-            protocol=PROTOCOL,
-            host=HOST,
-            port=PORT,
+            **kowalski_args,
         )
 
     if not kowalski_instance.ping():
