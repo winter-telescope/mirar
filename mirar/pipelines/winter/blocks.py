@@ -789,6 +789,8 @@ BROADCAST_BOOL = str(os.getenv("BROADCAST_AVRO", None)) in ["True", "t", "1", "t
 avro_broadcast = [
     # Filter out low quality candidates
     CustomSourceTableModifier(modifier_function=winter_candidate_quality_filterer),
+    # Save candidates before sending to IPAC
+    SourceWriter(output_dir_name="preskyportal"),
     # Only send a subset of the candidates to IPAC
     IPACAvroExporter(
         output_sub_dir="avro_ipac",
@@ -803,7 +805,6 @@ avro_broadcast = [
         db_table=Candidate,
         duplicate_protocol="replace",
     ),
-    SourceWriter(output_dir_name="preskyportal"),
 ]
 
 avro_export = avro_write + avro_broadcast
