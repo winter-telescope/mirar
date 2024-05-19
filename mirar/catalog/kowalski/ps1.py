@@ -76,3 +76,50 @@ class PS1SGSc(BaseKowalskiXMatch):
 
     ra_column_name = f"{abbreviation}ra"
     dec_column_name = f"{abbreviation}dec"
+
+
+class PS1STRM(BaseKowalskiXMatch):
+    """
+    PS1 STRM Kowalski catalog
+    """
+
+    catalog_name = "PS1_STRM"
+    abbreviation = "ps1strm"
+    projection = {
+        "_id": 1,
+        "ra": 1,
+        "dec": 1,
+        "class": 1,
+        "z_phot": 1,
+        "z_phot_err": 1,
+        "prob_QSO": 1,
+        "prob_Galaxy": 1,
+        "prob_Star": 1,
+    }
+
+    column_names = {
+        "_id": f"{abbreviation}objid",
+        "ra": f"{abbreviation}ra",
+        "dec": f"{abbreviation}dec",
+        "class": "ps1strmclass",
+        "z_phot": "ps1strmzphot",
+        "z_phot_err": "ps1strmzphoterr",
+        "prob_QSO": "ps1strmprobqso",
+        "prob_Galaxy": "ps1strmprobgalaxy",
+        "prob_Star": "ps1strmprobstar",
+    }
+
+    column_dtypes = {
+        "ps1strmobjid": float,
+        "ps1strmra": float,
+        "ps1strmdec": float,
+        "ps1strmclass": str,
+        "ps1strmzphot": float,
+        "ps1strmzphoterr": float,
+        "ps1strmprobqso": float,
+        "ps1strmprobgalaxy": float,
+        "ps1strmprobstar": float,
+    }
+
+    ra_column_name = f"{abbreviation}ra"
+    dec_column_name = f"{abbreviation}dec"

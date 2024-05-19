@@ -7,7 +7,7 @@ import os
 
 from winterrb.model import WINTERNet
 
-from mirar.catalog.kowalski import PS1, TMASS, Gaia, GaiaBright, PS1SGSc
+from mirar.catalog.kowalski import PS1, TMASS, Gaia, GaiaBright, PS1SGSc, PS1STRM
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -712,6 +712,7 @@ crossmatch_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
+    XMatch(catalog=PS1STRM(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=Gaia(num_sources=1, search_radius_arcmin=1.5)),
     XMatch(catalog=GaiaBright(num_sources=1, search_radius_arcmin=1.5)),
     CustomSourceTableModifier(
@@ -771,6 +772,10 @@ name_candidates = [
     SourceWriter(output_dir_name="preavro"),
 ]
 
+load_preavro = [
+    SourceLoader(input_dir_name="preavro"),
+]
+
 avro_write = [
     # Add in the skyportal fields and all save locally
     CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
@@ -811,7 +816,7 @@ avro_export = avro_write + avro_broadcast
 
 process_candidates = ml_classify + crossmatch_candidates + name_candidates + avro_write
 
-load_avro = [SourceLoader(input_dir_name="preavro")]
+load_avro = [SourceLoader(input_dir_name="preavro"), SourceBatcher(BASE_NAME_KEY)]
 
 load_skyportal = [
     SourceLoader(input_dir_name="preskyportal"),
