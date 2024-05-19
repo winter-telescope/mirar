@@ -16,6 +16,7 @@
 		{"name": "programid", "type": "int", "doc": "Program ID: encodes either public, collab, MIT or caltech mode"},
 		{"name": "isdiffpos", "type": "boolean", "doc": "boolean true => candidate is from positive (sci minus ref) subtraction; false => candidate is from negative (ref minus sci) subtraction"},
 		{"name": "fieldid", "type": "int", "doc": "WINTER field ID"},
+		{"name": "boardid", "type": "int", "doc": "WINTER board ID"},
 		{"name": "ra", "type": "double", "doc": "Right Ascension of candidate; J2000 [deg]"},
 		{"name": "dec", "type": "double",  "doc": "Declination of candidate; J2000 [deg]"},
 		{"name": "magzpsci", "type": ["float", "null"], "doc": "Magnitude zero point for photometry estimates [mag]"},

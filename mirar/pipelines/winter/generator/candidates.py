@@ -59,6 +59,7 @@ def winter_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatc
         source["programid"] = source["PROGID"]
         source["field"] = source["FIELDID"]
         source["jd"] = Time(source[TIME_KEY]).jd
+        source["boardid"] = source["BOARD_ID"]
 
         source.set_data(filtered_df)
         if len(filtered_df) > 0:
