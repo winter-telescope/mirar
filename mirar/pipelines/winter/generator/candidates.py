@@ -287,8 +287,16 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
             & (src_df["fwhm"] < 10.0)
             & (src_df["mindtoedge"] > 50.0)
             & (src_df["isdiffpos"])
-            & ((src_df["sgscore1"] < 0.5) | pd.isnull(src_df["sgscore1"]) | (src_df["distpsnr1"] > min_dist_to_star))
-            & ((src_df["ps1strmprobstar1"] < 0.5) | pd.isnull(src_df["ps1strmprobstar1"]) | (src_df["distpsnr1"] > min_dist_to_star))
+            & (  # Cut on sgscore1
+                (src_df["sgscore1"] < 0.5)
+                | pd.isnull(src_df["sgscore1"])
+                | (src_df["distpsnr1"] > min_dist_to_star)
+            )
+            & (  # Cut on PS1STRM Star Probability
+                (src_df["ps1strmprobstar1"] < 0.5)
+                | pd.isnull(src_df["ps1strmprobstar1"])
+                | (src_df["distpsnr1"] > min_dist_to_star)
+            )
             & (src_df["ndethist"] > 0)
         )
         filtered_df = src_df[mask].reset_index(drop=True)

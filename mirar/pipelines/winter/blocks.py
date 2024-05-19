@@ -7,7 +7,7 @@ import os
 
 from winterrb.model import WINTERNet
 
-from mirar.catalog.kowalski import PS1, TMASS, Gaia, GaiaBright, PS1SGSc, PS1STRM
+from mirar.catalog.kowalski import PS1, PS1STRM, TMASS, Gaia, GaiaBright, PS1SGSc
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
