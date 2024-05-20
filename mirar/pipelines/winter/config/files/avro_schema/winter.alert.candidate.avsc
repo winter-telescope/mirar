@@ -69,7 +69,8 @@
 		{"name": "nmtchps", "type": "int", "doc": "Number of source matches from PS1 catalog falling within 30 arcsec"},
 		{"name": "psra1", "type": ["float", "null"],  "doc": "Right Ascension of nearest source in reference image PSF-catalog; J2000 [deg]"},
 		{"name": "psdec1", "type": ["float", "null"],  "doc": "Declination of nearest source in reference image PSF-catalog; J2000 [deg]"},
-		{"name": "psobjectid1", "type": ["float", "null"], "doc": "Object ID of closest source from PS1 catalog; if exists within 30 arcsec"},        {"name": "sgmag1", "type": ["float", "null"], "doc": "g-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
+		{"name": "psobjectid1", "type": ["float", "null"], "doc": "Object ID of closest source from PS1 catalog; if exists within 30 arcsec"},
+		{"name": "sgmag1", "type": ["float", "null"], "doc": "g-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
 		{"name": "sgmag1", "type": ["float", "null"], "doc": "g-band PSF-fit magnitude of second closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
 		{"name": "srmag1", "type": ["float", "null"], "doc": "r-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
 		{"name": "simag1", "type": ["float", "null"], "doc": "i-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
@@ -94,7 +95,7 @@
 		{"name": "ps1probqso2", "type": ["float", "null"], "doc": "QSO probability of second source in PS1 STRM catalog; if exists within 30 arcsec [arcsec]"},
 		{"name": "ps1probgalaxy2", "type": ["float", "null"], "doc": "Galaxy probability of second source in PS1 STRM catalog; if exists within 30 arcsec [arcsec]"},
 		{"name": "ps1photoz2", "type": ["float", "null"], "doc": "Photo-z of second closest source from PS1 STRM catalog; if exists within 30 arcsec [arcsec]"},
-		{"name": "ps1photozerr2", "type": ["float", "null"], "doc": "Photo-z error of second closest source from PS1 STRM catalog; if exists within 30 arcsec [arcsec]"}
+		{"name": "ps1photozerr2", "type": ["float", "null"], "doc": "Photo-z error of second closest source from PS1 STRM catalog; if exists within 30 arcsec [arcsec]"},
 		{"name": "psobjectid3", "type": ["float", "null"], "doc": "Object ID of third closest source from PS1 catalog; if exists within 30 arcsec"},
 		{"name": "sgmag3", "type": ["float", "null"], "doc": "g-band PSF-fit magnitude of third closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
 		{"name": "srmag3", "type": ["float", "null"], "doc": "r-band PSF-fit magnitude of third closest source from PS1 catalog; if exists within 30 arcsec [mag]"},
