@@ -1,6 +1,8 @@
 About
 =====
 
+.. image:: ./MIRAR_logo.png
+
 What is mirar? Good question!
 
 Errors

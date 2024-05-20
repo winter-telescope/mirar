@@ -17,10 +17,17 @@ from mirar.processors.base_processor import (
     BaseProcessor,
     BaseSourceGenerator,
     BaseSourceProcessor,
-    PrerequisiteError,
 )
 
 logger = logging.getLogger(__name__)
+
+docs_source_dir = doc_dir / "source"
+
+docs_extra_dir = docs_source_dir / "extra"
+docs_extra_dir.mkdir(exist_ok=True)
+
+flowchart_dir = docs_extra_dir / "flowcharts"
+flowchart_dir.mkdir(exist_ok=True)
 
 
 def get_save_path(pipeline: str, configs: str) -> Path:
@@ -31,7 +38,7 @@ def get_save_path(pipeline: str, configs: str) -> Path:
     :param configs: Configs used
     :return: path to save
     """
-    return doc_dir.joinpath(f"flowcharts/{pipeline}/{configs}.png")
+    return flowchart_dir.joinpath(f"{pipeline}/{configs}.png")
 
 
 def flowify(processor_list: list[BaseProcessor], output_path: Path):
@@ -155,15 +162,11 @@ def iterate_flowify(
 
         for single_config in config_list:
             logger.info(f"Visualising {single_config} configuration")
-            try:
-                flowify(
-                    pipe.set_configuration(single_config),
-                    get_save_path(pipeline, single_config),
-                )
-            except PrerequisiteError as exc:
-                err = (
-                    f"Error for '{pipeline}' pipeline, "
-                    f"'{single_config}' configuration"
-                )
-                logger.error(err)
-                raise PrerequisiteError(err) from exc
+            flowify(
+                pipe.set_configuration(single_config),
+                get_save_path(pipeline, single_config),
+            )
+
+
+if __name__ == "__main__":
+    iterate_flowify()
