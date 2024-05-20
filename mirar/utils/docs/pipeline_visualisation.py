@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 
 docs_source_dir = doc_dir / "source"
 
-docs_extra_dir = docs_source_dir / "extra"
-docs_extra_dir.mkdir(exist_ok=True)
+base_autogen_dir = docs_source_dir / "autogen"
+base_autogen_dir.mkdir(parents=True, exist_ok=True)
 
-flowchart_dir = docs_extra_dir / "flowcharts"
+flowchart_dir = base_autogen_dir / "flowcharts"
 flowchart_dir.mkdir(exist_ok=True)
 
 
