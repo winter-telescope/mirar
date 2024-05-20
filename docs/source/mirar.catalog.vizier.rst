@@ -17,6 +17,14 @@ mirar.catalog.vizier.base\_vizier\_catalog module
    :undoc-members:
    :show-inheritance:
 
+mirar.catalog.vizier.gaia2mass module
+-------------------------------------
+
+.. automodule:: mirar.catalog.vizier.gaia2mass
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mirar.catalog.vizier.ps1 module
 -------------------------------
 

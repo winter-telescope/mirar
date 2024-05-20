@@ -57,6 +57,14 @@ mirar.processors.utils.image\_modifier module
    :undoc-members:
    :show-inheritance:
 
+mirar.processors.utils.image\_plotter module
+--------------------------------------------
+
+.. automodule:: mirar.processors.utils.image_plotter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mirar.processors.utils.image\_rejector module
 ---------------------------------------------
 

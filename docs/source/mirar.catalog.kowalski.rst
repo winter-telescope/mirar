@@ -17,6 +17,14 @@ mirar.catalog.kowalski.base\_kowalski\_catalog module
    :undoc-members:
    :show-inheritance:
 
+mirar.catalog.kowalski.gaia module
+----------------------------------
+
+.. automodule:: mirar.catalog.kowalski.gaia
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mirar.catalog.kowalski.ps1 module
 ---------------------------------
 

@@ -14,6 +14,7 @@ Subpackages
 
    mirar.pipelines.sedmv2
    mirar.pipelines.summer
+   mirar.pipelines.wasp
    mirar.pipelines.winter
    mirar.pipelines.wirc
 

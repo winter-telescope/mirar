@@ -13,6 +13,7 @@ Subpackages
    :maxdepth: 4
 
    mirar.pipelines.winter.config
+   mirar.pipelines.winter.generator
    mirar.pipelines.winter.models
 
 Submodules
@@ -58,14 +59,6 @@ mirar.pipelines.winter.fourier\_bkg\_model module
    :undoc-members:
    :show-inheritance:
 
-mirar.pipelines.winter.generator module
----------------------------------------
-
-.. automodule:: mirar.pipelines.winter.generator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 mirar.pipelines.winter.ingest\_references module
 ------------------------------------------------
 
@@ -78,6 +71,14 @@ mirar.pipelines.winter.load\_winter\_image module
 -------------------------------------------------
 
 .. automodule:: mirar.pipelines.winter.load_winter_image
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mirar.pipelines.winter.run module
+---------------------------------
+
+.. automodule:: mirar.pipelines.winter.run
    :members:
    :undoc-members:
    :show-inheritance:

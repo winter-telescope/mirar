@@ -12,10 +12,19 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   mirar.processors.sources.machine_learning
    mirar.processors.sources.utils
 
 Submodules
 ----------
+
+mirar.processors.sources.csv\_exporter module
+---------------------------------------------
+
+.. automodule:: mirar.processors.sources.csv_exporter
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 mirar.processors.sources.edge\_mask module
 ------------------------------------------
@@ -37,6 +46,22 @@ mirar.processors.sources.namer module
 -------------------------------------
 
 .. automodule:: mirar.processors.sources.namer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mirar.processors.sources.parquet\_loader module
+-----------------------------------------------
+
+.. automodule:: mirar.processors.sources.parquet_loader
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mirar.processors.sources.parquet\_writer module
+-----------------------------------------------
+
+.. automodule:: mirar.processors.sources.parquet_writer
    :members:
    :undoc-members:
    :show-inheritance:
@@ -77,6 +102,14 @@ mirar.processors.sources.source\_loader module
 ----------------------------------------------
 
 .. automodule:: mirar.processors.sources.source_loader
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mirar.processors.sources.source\_selector module
+------------------------------------------------
+
+.. automodule:: mirar.processors.sources.source_selector
    :members:
    :undoc-members:
    :show-inheritance:
