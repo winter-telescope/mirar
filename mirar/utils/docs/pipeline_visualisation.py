@@ -21,7 +21,12 @@ from mirar.processors.base_processor import (
 
 logger = logging.getLogger(__name__)
 
-flowchart_dir = doc_dir.joinpath("source/flowcharts")
+docs_source_dir = doc_dir / "source"
+
+docs_extra_dir = docs_source_dir / "extra"
+docs_extra_dir.mkdir(exist_ok=True)
+
+flowchart_dir = docs_extra_dir / "flowcharts"
 flowchart_dir.mkdir(exist_ok=True)
 
 

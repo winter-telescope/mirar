@@ -15,7 +15,10 @@ build:
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
 
     pre_build:
-      # Generate latest API documentation
+      # Generate latest various flowcharts
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry run python ./mirar/utils/pipeline_visualisation.py
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry run python ./mirar/utils/auto_config_docs.py
+      # Generate API documentation
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry run sphinx-apidoc -o ./docs/source/ ./mirar --module-first --force
 
 sphinx:
