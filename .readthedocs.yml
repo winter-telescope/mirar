@@ -15,7 +15,7 @@ build:
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
 
     pre_build:
-      - # Generate latest API documentation
+      # Generate latest API documentation
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry run sphinx-apidoc -o ./docs/source/ ./mirar --module-first --force
 
 sphinx:
