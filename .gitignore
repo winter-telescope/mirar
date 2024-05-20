@@ -10,11 +10,12 @@ __pycache__/
 
 docs/source/mirar*.rst
 docs/source/autogen/
-docs/source/extra/flowcharts/
+docs/pdf/
 
 # Distribution / packaging
 bin/
 build/
+_build/
 develop-eggs/
 dist/
 eggs/

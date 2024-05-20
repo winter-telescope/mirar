@@ -11,16 +11,12 @@ from rstcloth import RstCloth
 
 from mirar.pipelines import Pipeline, get_pipeline
 from mirar.utils.docs.pipeline_visualisation import (
-    docs_extra_dir,
-    docs_source_dir,
+    base_autogen_dir,
     get_save_path,
     iterate_flowify,
 )
 
 logger = logging.getLogger(__name__)
-
-base_autogen_dir = docs_source_dir / "autogen"
-base_autogen_dir.mkdir(parents=True, exist_ok=True)
 
 
 def get_rst_pipeline_path(pipeline: str) -> Path:
@@ -140,7 +136,7 @@ def auto_rst_config(pipeline: str, config: str):
     if not image_path.exists():
         iterate_flowify(config=config, pipelines=[pipeline])
 
-    relative_image_path = image_path.relative_to(docs_extra_dir)
+    relative_image_path = image_path.relative_to(base_autogen_dir)
 
     with open(output_path, "w", encoding="utf8") as output_file:
         doc = RstCloth(output_file)
@@ -155,7 +151,7 @@ def auto_rst_config(pipeline: str, config: str):
             )
         )
         doc.newline()
-        doc.content(f".. image:: ../../{relative_image_path}")
+        doc.content(f".. image:: {relative_image_path}")
         doc.newline()
 
 
