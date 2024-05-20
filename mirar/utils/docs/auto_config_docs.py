@@ -155,7 +155,7 @@ def auto_rst_config(pipeline: str, config: str):
             )
         )
         doc.newline()
-        doc.content(f".. image:: {relative_image_path}")
+        doc.content(f".. image:: ../../{relative_image_path}")
         doc.newline()
 
 

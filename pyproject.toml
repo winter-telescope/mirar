@@ -112,6 +112,7 @@ generated-members=["u.*"]
 
 [tool.poetry.scripts]
 mirar-run = 'mirar.__main__:main'
+mirar-docs-autogen = "mirar.utils.docs:iterate_rst_generation"
 winter-stack = 'mirar.pipelines.winter.run:run_stack_of_stacks'
 
 [build-system]

@@ -24,6 +24,7 @@ Contents
 --------
 
 .. toctree::
+    :maxdepth: 2
 
     about
     installation
@@ -31,8 +32,12 @@ Contents
     usage
     contributors
     contributing-guide
-    modules
+
+.. toctree::
+    :maxdepth: 3
+
     autogen/pipelines
+    modules
 
 Indices and tables
 ==================
