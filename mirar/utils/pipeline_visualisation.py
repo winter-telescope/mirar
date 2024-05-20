@@ -167,3 +167,7 @@ def iterate_flowify(
                 )
                 logger.error(err)
                 raise PrerequisiteError(err) from exc
+
+
+if __name__ == "__main__":
+    iterate_flowify()

@@ -6,6 +6,7 @@ It was created by `Robert Stein <https://robertdstein.github.io/>`_ and
 `Viraj Karambelkar <https://github.com/virajkaram>`_ (see everyone who contributed at :doc:`contributors`).
 
 * How does mirar work? Check out :doc:`about`.
+* How is mirar designed? See :doc:`design`.
 * How can you install mirar? You can find instructions at :doc:`installation`.
 * How can you use mirar? Have a look at :doc:`usage`, where there is a guide with examples.
 * Want to use mirar for your own telescope? Great! Have a look at our :doc:`contributing-guide`. This also describes what to do if you find a bug or want to request a new feature.
@@ -25,12 +26,11 @@ Contents
 
     about
     installation
+    design
     usage
     contributors
     contributing-guide
     modules
-
-    mirar.data
 
 Indices and tables
 ==================
