@@ -39,7 +39,7 @@ class SplitImage(BaseImageProcessor):
         self.n_x = n_x
         self.n_y = n_y
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Processor to split images into "
             f"{self.n_x}x{self.n_y}={self.n_x*self.n_y} smaller images."

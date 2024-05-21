@@ -27,6 +27,9 @@ class SextractorBkgSubtractor(BaseImageProcessor):
 
     base_key = "sextractorbkgsubtractor"
 
+    def description(self) -> str:
+        return "Subtract background from image using recent Sextractor output"
+
     def _apply_to_images(
         self,
         batch: ImageBatch,

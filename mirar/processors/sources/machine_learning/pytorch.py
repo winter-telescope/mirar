@@ -39,7 +39,7 @@ class Pytorch(BaseSourceProcessor):
 
         self.model = None
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return f"Processor to use Pytorch model {self.model_name} to score sources"
 
     def get_ml_path(self) -> Path:

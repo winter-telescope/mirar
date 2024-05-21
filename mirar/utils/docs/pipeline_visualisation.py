@@ -106,7 +106,7 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
         )
 
         plt.annotate(
-            text=str(processor),
+            text=processor.description(),
             xy=xy_description,
             xytext=xytext_description,
             **annotate_args,

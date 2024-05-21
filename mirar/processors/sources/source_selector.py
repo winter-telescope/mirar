@@ -62,7 +62,7 @@ class SourceSelector(BaseSourceProcessor, CleanupProcessor):
         super().__init__()
         self.targets = args
 
-    def __str__(self):
+    def description(self):
         reqs = []
         for target in self.targets:
             if isinstance(target[1], list):
@@ -144,7 +144,7 @@ class SourceBatcher(BaseSourceProcessor):
         super().__init__()
         self.split_key = split_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         if isinstance(self.split_key, list):
             split = self.split_key
         else:
@@ -187,7 +187,7 @@ class SourceDebatcher(BaseSourceProcessor):
     ) -> SourceBatch:
         return batch
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to combine all sources into a single SourceBatch"
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
@@ -215,7 +215,7 @@ class SourceRebatcher(SourceBatcher):
     ) -> SourceBatch:
         return batch
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         if isinstance(self.split_key, list):
             split = self.split_key
         else:

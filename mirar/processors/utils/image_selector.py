@@ -66,7 +66,7 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
         super().__init__()
         self.targets = args
 
-    def __str__(self):
+    def description(self):
         reqs = []
         for target in self.targets:
             if isinstance(target[1], list):
@@ -148,7 +148,7 @@ class ImageBatcher(BaseImageProcessor):
         super().__init__()
         self.split_key = split_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         if isinstance(self.split_key, list):
             split = self.split_key
         else:
@@ -191,7 +191,7 @@ class ImageDebatcher(BaseImageProcessor):
     ) -> ImageBatch:
         return batch
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to combine all images into a single ImageBatch"
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
@@ -219,7 +219,7 @@ class ImageRebatcher(ImageBatcher):
     ) -> ImageBatch:
         return batch
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         if isinstance(self.split_key, list):
             split = self.split_key
         else:

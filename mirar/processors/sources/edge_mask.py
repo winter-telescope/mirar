@@ -35,6 +35,9 @@ class EdgeSourcesMask(BaseSourceProcessor):
         self.x_column_key = x_column_key
         self.y_column_key = y_column_key
 
+    def description(self) -> str:
+        return f"Mask sources within {self.edge_boundary_size} pixels of image edge"
+
     def _apply_to_sources(
         self,
         batch: SourceBatch,

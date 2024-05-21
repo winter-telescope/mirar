@@ -72,7 +72,7 @@ class FlatCalibrator(ProcessorWithCache):
         self.select_cache_images = select_flat_images
         self.flat_mask_key = flat_mask_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Creates a flat image, divides other images by this image."
 
     def _apply_to_images(
@@ -166,12 +166,12 @@ class SkyFlatCalibrator(FlatCalibrator):
     Processor to do flat calibration using sky flats
     """
 
-    def __init__(self, flat_mask_key=None, *args, **kwargs):
+    def __init__(self, *args, flat_mask_key=None, **kwargs):
         super().__init__(
             *args,
-            **kwargs,
             select_flat_images=self.select_sky_flat,
             flat_mask_key=flat_mask_key,
+            **kwargs,
         )
 
     @staticmethod
@@ -186,7 +186,7 @@ class SkyFlatCalibrator(FlatCalibrator):
         """
         return select_from_images(images, key=OBSCLASS_KEY, target_values="science")
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             "Processor to create a sky flat image, divides other images by this image."
         )

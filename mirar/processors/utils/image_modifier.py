@@ -22,7 +22,7 @@ class CustomImageBatchModifier(BaseImageProcessor):
         super().__init__()
         self.image_batch_modifier = image_batch_modifier
 
-    def __str__(self):
+    def description(self):
         return (
             f"Processor to modify image batches using "
             f"'{self.image_batch_modifier.__name__}' function."

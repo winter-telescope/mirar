@@ -95,6 +95,17 @@ class BaseProcessor:
         super().__init_subclass__(**kwargs)
         cls.subclasses[cls.base_key] = cls
 
+    def description(self) -> str:
+        """
+        Return a description of the processor
+
+        :return: A description of the processor
+        """
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        return f"[{self.description()}]"
+
     def set_preceding_steps(self, previous_steps: list):
         """
         Provides processor with the list of preceding processors, and saves this

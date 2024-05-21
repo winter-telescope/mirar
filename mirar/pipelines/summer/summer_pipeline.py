@@ -39,6 +39,7 @@ class SummerPipeline(Pipeline):
 
     name = PIPELINE_NAME
     default_cal_requirements = summer_cal_requirements
+    non_linear_level = 40000
 
     all_pipeline_configurations = {
         "default": load_raw + build_log + export_raw + cal_hunter + process_raw,

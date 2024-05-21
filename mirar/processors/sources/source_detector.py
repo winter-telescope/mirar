@@ -194,7 +194,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         self.write_regions = write_regions
         self.detect_negative_sources = detect_negative_sources
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             "Extracts detected sources from images, "
             "and converts them to a pandas dataframe"
