@@ -72,6 +72,7 @@ class Pipeline:
         if not isinstance(selected_configurations, list):
             selected_configurations = [selected_configurations]
         self.selected_configurations = selected_configurations
+        self.latest_configuration = None
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -183,6 +184,17 @@ class Pipeline:
         logger.debug("Pipeline initialisation complete.")
         return processors
 
+    def get_latest_configuration(self) -> list[BaseProcessor]:
+        """
+        Get the latest configuration used by the pipeline
+
+        :return: list of processors
+        """
+        if self.latest_configuration is None:
+            raise ValueError("No configuration has been set yet.")
+
+        return self.latest_configuration
+
     @staticmethod
     def download_raw_images_for_night(night: str | int):
         """
@@ -238,7 +250,7 @@ class Pipeline:
         output_error_path: Optional[str] = None,
         catch_all_errors: bool = True,
         selected_configurations: Optional[str | list[str]] = None,
-    ) -> tuple[Dataset, ErrorStack, list[BaseProcessor]]:
+    ) -> tuple[Dataset, ErrorStack]:
         """
         Function to process a given dataset.
 
@@ -296,11 +308,13 @@ class Pipeline:
 
             all_processors += processors
 
+        self.latest_configuration = all_processors
+
         err_stack.summarise_error_stack(output_path=output_error_path)
         err_stack.summarise_error_stack_tsv(
             output_path=output_error_path.with_suffix(".tsv")
         )
-        return dataset, err_stack, all_processors
+        return dataset, err_stack
 
     def postprocess_configuration(
         self,

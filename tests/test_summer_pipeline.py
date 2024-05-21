@@ -66,9 +66,7 @@ class TestSummerPipeline(BaseTestCase):
         """
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, _, _ = pipeline.reduce_images(
-            Dataset([ImageBatch()]), catch_all_errors=False
-        )
+        res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         # Cleanup - delete non-empty ouptut dir
         output_dir = get_output_dir(dir_root="summer/20220402")

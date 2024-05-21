@@ -72,9 +72,7 @@ class TestSEDMv2TransientPipeline(BaseTestCase):
         """
         self.logger.info("\n\n Testing SEDMv2 transient pipeline \n\n")
 
-        res, _, _ = pipeline.reduce_images(
-            Dataset([ImageBatch()]), catch_all_errors=False
-        )
+        res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         # Cleanup
         output_dir = get_output_dir("sedmv2/20230526")

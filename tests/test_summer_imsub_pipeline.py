@@ -39,9 +39,7 @@ class TestSummerImsubPipeline(BaseTestCase):
         """
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        res, _, _ = pipeline.reduce_images(
-            Dataset([ImageBatch()]), catch_all_errors=False
-        )
+        res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res), 1)
 

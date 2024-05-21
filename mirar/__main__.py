@@ -158,10 +158,11 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             night=night,
         )
 
-        batches, errorstack, processors = pipe.reduce_images(
+        batches, errorstack = pipe.reduce_images(
             catch_all_errors=not args.failfast,
         )
 
+        processors = pipe.get_latest_configuration()
         flowify(processors, pipe.get_flowchart_output_path(), include_stats=True)
 
         if args.postprocessconfig is not None:

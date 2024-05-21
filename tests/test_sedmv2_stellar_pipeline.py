@@ -97,9 +97,7 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
         """
         self.logger.info("\n\n Testing SEDMv2 stellar pipeline \n\n")
 
-        res, _, _ = pipeline.reduce_images(
-            Dataset([ImageBatch()]), catch_all_errors=False
-        )
+        res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         self.assertEqual(len(res), 29)
 
