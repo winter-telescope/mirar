@@ -72,6 +72,7 @@ class Pipeline:
         if not isinstance(selected_configurations, list):
             selected_configurations = [selected_configurations]
         self.selected_configurations = selected_configurations
+        self.latest_configuration = None
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -183,6 +184,17 @@ class Pipeline:
         logger.debug("Pipeline initialisation complete.")
         return processors
 
+    def get_latest_configuration(self) -> list[BaseProcessor]:
+        """
+        Get the latest configuration used by the pipeline
+
+        :return: list of processors
+        """
+        if self.latest_configuration is None:
+            raise ValueError("No configuration has been set yet.")
+
+        return self.latest_configuration
+
     @staticmethod
     def download_raw_images_for_night(night: str | int):
         """
@@ -212,6 +224,25 @@ class Pipeline:
             error_output_path.parent.mkdir(parents=True)
 
         return error_output_path
+
+    def get_flowchart_output_path(self) -> Path:
+        """
+        Generates a unique path for the flowchart summary,
+        in the output data directory.
+        Makes the parent directory structure if needed.
+
+        :return: path for error summary
+        """
+        flowchart = Path(
+            get_output_path(
+                base_name=f"{Path(self.night).name}_processing_flowchart.png",
+                dir_root=self.night_sub_dir,
+            )
+        )
+
+        flowchart.parent.mkdir(parents=True, exist_ok=True)
+
+        return flowchart
 
     def reduce_images(
         self,
@@ -244,6 +275,8 @@ class Pipeline:
         if not isinstance(selected_configurations, list):
             selected_configurations = [selected_configurations]
 
+        all_processors = []
+
         for j, configuration in enumerate(selected_configurations):
             logger.info(
                 f"Using pipeline configuration {configuration} "
@@ -272,6 +305,10 @@ class Pipeline:
                         f"({processor.__class__.__name__})."
                     )
                     break
+
+            all_processors += processors
+
+        self.latest_configuration = all_processors
 
         err_stack.summarise_error_stack(output_path=output_error_path)
         err_stack.summarise_error_stack_tsv(

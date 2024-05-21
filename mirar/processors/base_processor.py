@@ -90,6 +90,13 @@ class BaseProcessor:
         self.err_stack = {}
         self.progress = {}
 
+        # For tracking processing history
+        self.latest_n_input_blocks = 0
+        self.latest_n_input_batches = 0
+        self.latest_n_output_blocks = 0
+        self.latest_n_output_batches = 0
+        self.latest_error_stack = ErrorStack()
+
     @classmethod
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -178,6 +185,9 @@ class BaseProcessor:
         self.passed_batches[cache_id] = {}
         self.err_stack[cache_id] = ErrorStack()
 
+        self.latest_n_input_batches = len(dataset)
+        self.latest_n_input_blocks = sum(len(x) for x in dataset)
+
         if len(dataset) > 0:
             n_cpu = min([self.max_n_cpu, len(dataset)])
 
@@ -220,6 +230,10 @@ class BaseProcessor:
         err_stack = self.err_stack[cache_id]
 
         self.clean_cache(cache_id=cache_id)
+
+        self.latest_n_output_batches = len(dataset)
+        self.latest_n_output_blocks = sum(len(x) for x in dataset)
+        self.latest_error_stack = err_stack
 
         return dataset, err_stack
 

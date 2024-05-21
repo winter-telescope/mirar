@@ -123,7 +123,7 @@ def test_pipeline(pipeline: Pipeline):
 
     try:
         all_configs = pipeline.all_pipeline_configurations
-    except NotImplementedError:
+    except NotImplementedError as exc:
         raise InvalidClassError(
             f"{pipeline.__class__.__name__} is missing "
             f"an all_pipeline_configurations method"
