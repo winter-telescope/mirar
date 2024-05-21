@@ -103,7 +103,9 @@ class TestWinterPipeline(BaseTestCase):
         """
         self.logger.info("\n\n Testing winter pipeline \n\n")
 
-        res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
+        res, _, _ = pipeline.reduce_images(
+            Dataset([ImageBatch()]), catch_all_errors=False
+        )
 
         # Cleanup - delete ouptut dir
         output_dir = get_output_dir(dir_root="winter/20230726")

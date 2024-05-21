@@ -33,7 +33,7 @@ class TestErrors(BaseTestCase):
     def test_pipeline(self):
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
-        _, errorstack = pipeline.reduce_images(
+        _, errorstack, _ = pipeline.reduce_images(
             Dataset(ImageBatch()), catch_all_errors=True
         )
 

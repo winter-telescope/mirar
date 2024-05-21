@@ -131,7 +131,7 @@ class TestWircImsubPipeline(BaseTestCase):
         """
         self.logger.info("\n\n Testing wirc imsub pipeline \n\n")
 
-        res, _ = pipeline.reduce_images(
+        res, _, _ = pipeline.reduce_images(
             dataset=Dataset(ImageBatch()), catch_all_errors=False
         )
 

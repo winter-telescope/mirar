@@ -60,7 +60,7 @@ class TestIRReferencePipeline(BaseTestCase):
         """
         self.logger.info("\n\n Testing WINTER reference building pipeline \n\n")
 
-        res, _ = run_winter_reference_build_pipeline(
+        res, _, _ = run_winter_reference_build_pipeline(
             subdet_id=0, field_id=TEST_WINTER_FIELD_ID, catch_all_errors=False
         )
 
