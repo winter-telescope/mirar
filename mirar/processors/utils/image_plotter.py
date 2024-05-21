@@ -41,7 +41,7 @@ class ImagePlotter(BaseImageProcessor):
             annotate_fields = [annotate_fields]
         self.annotate_fields = annotate_fields
 
-    def __str__(self):
+    def description(self):
         return (
             f"Processor to plot images as {self.plot_format} and save them "
             f"in the '{self.output_sub_dir}' sub-directory"

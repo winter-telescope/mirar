@@ -95,7 +95,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
             required_parameters=REQUIRED_PARAMETERS,
         )
 
-    def __str__(self):
+    def description(self):
         return (
             "Processor to calculate astrometry statistics and "
             "update the image headers"

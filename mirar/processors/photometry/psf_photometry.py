@@ -33,6 +33,9 @@ class PSFPhotometry(BasePhotometryProcessor):
 
     base_key = "PSFPHOT"
 
+    def description(self) -> str:
+        return "Perform PSF photometry"
+
     def perform_photometry(
         self,
         image_cutout: np.ndarray,

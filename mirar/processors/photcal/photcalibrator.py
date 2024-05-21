@@ -125,7 +125,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         self.zp_calculator = zp_calculator
         self.zp_column_name = zp_column_name
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to perform photometric calibration."
 
     def get_phot_output_dir(self):

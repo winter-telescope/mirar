@@ -45,7 +45,7 @@ class SourceLoader(BaseSourceProcessor):
         self.input_dir_name = input_dir_name
         self.input_dir = Path(input_dir)
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Processor to load sources from '{SOURCE_SUFFIX}' "
             f"files in {self.input_dir_name} . "

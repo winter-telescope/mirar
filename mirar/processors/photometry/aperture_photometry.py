@@ -49,9 +49,19 @@ class AperturePhotometry(BasePhotometryProcessor):
         if self.col_suffix_list is None:
             self.col_suffix_list = self.aper_diameters
 
+    def description(self) -> str:
+        return f"Perform aperture photometry with apertures={self.aper_diameters}"
+
     def perform_photometry(
         self, image_cutout: np.array, unc_image_cutout: np.array
     ) -> tuple[list[float], list[float]]:
+        """
+        Perform aperture photometry on a cutout
+
+        :param image_cutout: Image cutout
+        :param unc_image_cutout: Image uncertainty cutout
+        :return: List of fluxes and list of flux uncertainties
+        """
         fluxes, fluxuncs = [], []
         for ind, aper_diam in enumerate(self.aper_diameters):
             flux, fluxunc = aper_photometry(

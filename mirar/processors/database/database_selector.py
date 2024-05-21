@@ -141,6 +141,9 @@ class CrossmatchDatabaseWithHeader(BaseImageDatabaseSelector, BaseValuesCrossmat
     Processor to crossmatch to a database using keys
     """
 
+    def description(self) -> str:
+        return f"Crossmatch to database using keys {self.db_query_columns}"
+
 
 class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC):
     """
@@ -326,6 +329,9 @@ class SingleSpatialCrossmatchSource(
     Processor to import a single source from a database using spatial crossmatch
     """
 
+    def description(self) -> str:
+        return f"Crossmatch to db using radius {self.xmatch_radius_arcsec}, limit 1"
+
 
 class SpatialCrossmatchSourceWithDatabase(
     BaseSpatialCrossmatchSource, DatabaseMultimatchSelector
@@ -334,11 +340,17 @@ class SpatialCrossmatchSourceWithDatabase(
     Processor to import multiple sources from a database using spatial crossmatch
     """
 
+    def description(self) -> str:
+        return f"Crossmatch to db using radius {self.xmatch_radius_arcsec}"
+
 
 class SelectSourcesWithMetadata(DatabaseMultimatchSelector, BaseValuesCrossmatch):
     """
     Processor to import sources from a database using metadata values
     """
+
+    def description(self) -> str:
+        return f"Crossmatch to db using keys {self.db_query_columns}"
 
 
 class DatabaseHistorySelector(SpatialCrossmatchSourceWithDatabase):

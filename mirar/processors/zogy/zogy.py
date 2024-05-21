@@ -121,7 +121,7 @@ class ZOGYPrepare(BaseImageProcessor):
         self.y_key = y_key
         self.flux_key = flux_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to prepare images for ZOGY."
 
     def get_sub_output_dir(self) -> Path:
@@ -457,7 +457,7 @@ class ZOGY(ZOGYPrepare):
         self.output_sub_dir = output_sub_dir
         self.sci_zp_header_key = sci_zp_header_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to produce difference images using ZOGY."
 
     def _apply_to_images(

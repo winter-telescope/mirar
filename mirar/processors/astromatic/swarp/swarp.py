@@ -159,7 +159,7 @@ class Swarp(BaseImageProcessor):
             self.header_keys_to_combine = [self.header_keys_to_combine]
         self.coordinate_tolerance_deg = coordinate_tolerance_deg
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
 
     def get_swarp_output_dir(self) -> Path:

@@ -133,7 +133,7 @@ class ImageLoader(BaseImageProcessor):
             load_image = self.default_load_image
         self.load_image = load_image
 
-    def __str__(self):
+    def description(self):
         return (
             f"Processor to load images from the '{self.input_sub_dir}' subdirectory "
             f"using the '{self.load_image.__name__}' function"
@@ -170,7 +170,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         if isinstance(self.copy_header_keys, str):
             self.copy_header_keys = [self.copy_header_keys]
 
-    def __str__(self):
+    def description(self):
         return f"Processor to load images from header key {self.header_key}"
 
     def _apply_to_images(
@@ -218,7 +218,7 @@ class ImageListLoader(BaseImageProcessor):
             load_image = self.default_load_image
         self.load_image = load_image
 
-    def __str__(self):
+    def description(self):
         return f"Processor to load {len(self.img_list)} images from list"
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:

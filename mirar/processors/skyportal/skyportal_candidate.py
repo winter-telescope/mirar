@@ -31,6 +31,12 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         self.fritz_filter_id = fritz_filter_id
         self.annotation_keys = annotation_keys
 
+    def description(self) -> str:
+        return (
+            f"Sending candidates via API to {self.skyportal_client.base_url} "
+            f"(filter={self.fritz_filter_id})"
+        )
+
     def skyportal_post_candidate(self, alert):
         """
         Post a candidate on SkyPortal. Creates new candidate(s) (one per filter)

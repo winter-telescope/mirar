@@ -129,7 +129,7 @@ class AstrometryNet(BaseImageProcessor):
 
         self.cache = cache
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             "Processor to perform astrometric calibration "
             "locally with astrometry.net."

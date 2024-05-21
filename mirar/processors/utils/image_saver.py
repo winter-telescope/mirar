@@ -32,7 +32,7 @@ class ImageSaver(BaseImageProcessor):
         self.write_mask = write_mask
         self.output_dir = Path(output_dir)
 
-    def __str__(self):
+    def description(self):
         return f"Processor to save images to the '{self.output_dir_name}' subdirectory"
 
     def _apply_to_images(

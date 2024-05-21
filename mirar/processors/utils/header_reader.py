@@ -25,6 +25,9 @@ class HeaderReader(BaseImageProcessor):
         super().__init__()
         self.keys = keys
 
+    def description(self) -> str:
+        return f"Read header keys into terminal: {self.keys}"
+
     def _apply_to_images(
         self,
         batch: ImageBatch,

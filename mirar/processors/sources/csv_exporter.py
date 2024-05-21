@@ -33,7 +33,7 @@ class CSVExporter(BaseSourceProcessor):
         self.output_dir = Path(output_dir)
         self.export_keys = export_keys
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to save sources to csv files."
 
     def _apply_to_sources(

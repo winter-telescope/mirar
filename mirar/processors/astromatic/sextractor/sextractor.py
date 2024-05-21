@@ -138,7 +138,7 @@ class Sextractor(BaseImageProcessor):
         if (not self.use_psfex) & (self.psf_path is not None):
             raise ValueError("Cannot specify psf_path without setting use_psfex=True")
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Processor to apply sextractor to images, "
             f"and save detected sources to the '{self.output_sub_dir}' directory."

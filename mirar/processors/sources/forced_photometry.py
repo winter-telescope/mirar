@@ -50,6 +50,12 @@ class ForcedPhotometryDetector(BaseSourceGenerator):
         self.dec_header_key = dec_header_key
         self.name_header_key = name_header_key
 
+    def description(self) -> str:
+        return (
+            f"Perform forced photometry using metadata keys "
+            f"'{self.ra_header_key}'&'{self.dec_header_key}'"
+        )
+
     def _apply_to_images(self, batch: ImageBatch) -> SourceBatch:
         all_cands = SourceBatch()
         for image in batch:

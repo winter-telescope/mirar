@@ -111,6 +111,11 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
+        "default": reduce
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
         "full_subset": reduce_unpacked_subset
         + imsub
         + detect_candidates

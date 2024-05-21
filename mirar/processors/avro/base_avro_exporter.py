@@ -50,7 +50,7 @@ class BaseAvroExporter(BaseSourceProcessor):
 
         self.schema = load_schema(self.avro_schema_path)
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Creates avros with '{self.avro_schema_path.name}' schema, "
             f" saves to '{self.output_sub_dir}' directory. Broadcast: {self.broadcast}"

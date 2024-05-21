@@ -79,7 +79,7 @@ class ParquetWriter(BaseSourceProcessor):
         self.output_dir_name = output_dir_name
         self.output_dir = Path(output_dir)
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Processor to save sources to parquet files "
             f"with '{PARQUET_SUFFIX}' suffix."
