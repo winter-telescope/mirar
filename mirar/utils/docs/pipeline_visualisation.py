@@ -41,7 +41,11 @@ def get_save_path(pipeline: str, configs: str) -> Path:
     return flowchart_dir.joinpath(f"{pipeline}/{configs}.png")
 
 
-def flowify(processor_list: list[BaseProcessor], output_path: Path):
+def flowify(
+    processor_list: list[BaseProcessor],
+    output_path: Path,
+    include_stats: bool = False,
+):
     """
     Function to generate a diagram summarising all
     :class:`~wintedrp.processors.BaseProcessor` objects
@@ -49,10 +53,14 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
 
     :param processor_list: list of processors to visualise
     :param output_path: Path to save diagram
+    :param include_stats: Include statistics in diagram
     :return: None
     """
 
-    plt.figure(figsize=(12.0, 2.0 + 0.3 * len(processor_list)), dpi=300.0)
+    plt.figure(
+        figsize=(12.0 + 6.0 * include_stats, 2.0 + 0.35 * len(processor_list)),
+        dpi=300.0,
+    )
     plt.subplot(111)
 
     y_scale = 1.0 / float(len(processor_list))
@@ -60,6 +68,9 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
     base_offset = 0.8
     x_offset_name = 0.1
     x_offset_description = 0.6
+
+    x_offset_stats = 1.1
+    x_offset_errors = 1.25
 
     for i, processor in enumerate(processor_list):
         y_0 = 1.0 - y_scale * (i + base_offset + 0.7)
@@ -72,10 +83,13 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
 
         if isinstance(processor, BaseImageProcessor):
             class_kwargs = {"color": "g"}
+            blocks = "images"
         elif isinstance(processor, BaseSourceGenerator):
             class_kwargs = {"color": "purple"}
+            blocks = "images"
         elif isinstance(processor, BaseSourceProcessor):
             class_kwargs = {"color": "red"}
+            blocks = "errors"
         else:
             raise ValueError(f"processor type ({type(processor)} not recognised")
 
@@ -112,6 +126,42 @@ def flowify(processor_list: list[BaseProcessor], output_path: Path):
             **annotate_args,
             **class_kwargs,
         )
+
+        if include_stats:
+
+            err_stack = processor.latest_error_stack
+
+            msg = (
+                f"{processor.latest_n_input_blocks} {blocks}, "
+                f"{processor.latest_n_input_batches} batches, "
+                f"{len(err_stack.reports)} errors"
+            )
+
+            plt.annotate(
+                text=msg,
+                xy=(x_offset_stats, y_0),
+                xytext=(x_offset_stats, y_1),
+                **annotate_args,
+                **class_kwargs,
+            )
+
+            if len(err_stack.reports) > 0:
+                err_names = [err.get_error_name() for err in err_stack.reports]
+                err_counts = {name: err_names.count(name) for name in set(err_names)}
+                err_msg = ", ".join([f"{v}x{k}" for k, v in err_counts.items()])
+
+                annotate_args["ha"] = "left"
+                annotate_args["arrowprops"] = {
+                    "arrowstyle": "<-",
+                }
+
+                plt.annotate(
+                    text=err_msg,
+                    xy=(x_offset_stats + 0.1, y_1),
+                    xytext=(x_offset_errors, y_1),
+                    **annotate_args,
+                    **class_kwargs,
+                )
 
     logger.info(f"Saving to {output_path}")
 

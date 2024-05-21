@@ -18,6 +18,7 @@ from mirar.monitor.base_monitor import Monitor
 from mirar.paths import PACKAGE_NAME, RAW_IMG_SUB_DIR, TEMP_DIR
 from mirar.pipelines import Pipeline, get_pipeline
 from mirar.processors.utils import ImageLoader
+from mirar.utils.docs.pipeline_visualisation import flowify
 
 logger = logging.getLogger(__name__)
 
@@ -157,9 +158,11 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             night=night,
         )
 
-        batches, errorstack = pipe.reduce_images(
+        batches, errorstack, processors = pipe.reduce_images(
             catch_all_errors=not args.failfast,
         )
+
+        flowify(processors, pipe.get_flowchart_output_path(), include_stats=True)
 
         if args.postprocessconfig is not None:
             post_config = [
@@ -175,7 +178,7 @@ with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
             pipe.add_configuration(PROTECTED_KEY, post_config)
             pipe.set_configuration(PROTECTED_KEY)
 
-            _, new_errorstack = pipe.reduce_images(
+            _, new_errorstack, _ = pipe.reduce_images(
                 selected_configurations=PROTECTED_KEY,
                 catch_all_errors=True,
             )

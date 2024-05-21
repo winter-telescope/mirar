@@ -213,13 +213,32 @@ class Pipeline:
 
         return error_output_path
 
+    def get_flowchart_output_path(self) -> Path:
+        """
+        Generates a unique path for the flowchart summary,
+        in the output data directory.
+        Makes the parent directory structure if needed.
+
+        :return: path for error summary
+        """
+        flowchart = Path(
+            get_output_path(
+                base_name=f"{Path(self.night).name}_processing_flowchart.png",
+                dir_root=self.night_sub_dir,
+            )
+        )
+
+        flowchart.parent.mkdir(parents=True, exist_ok=True)
+
+        return flowchart
+
     def reduce_images(
         self,
         dataset: Optional[Dataset] = None,
         output_error_path: Optional[str] = None,
         catch_all_errors: bool = True,
         selected_configurations: Optional[str | list[str]] = None,
-    ) -> tuple[Dataset, ErrorStack]:
+    ) -> tuple[Dataset, ErrorStack, list[BaseProcessor]]:
         """
         Function to process a given dataset.
 
@@ -243,6 +262,8 @@ class Pipeline:
 
         if not isinstance(selected_configurations, list):
             selected_configurations = [selected_configurations]
+
+        all_processors = []
 
         for j, configuration in enumerate(selected_configurations):
             logger.info(
@@ -273,11 +294,13 @@ class Pipeline:
                     )
                     break
 
+            all_processors += processors
+
         err_stack.summarise_error_stack(output_path=output_error_path)
         err_stack.summarise_error_stack_tsv(
             output_path=output_error_path.with_suffix(".tsv")
         )
-        return dataset, err_stack
+        return dataset, err_stack, all_processors
 
     def postprocess_configuration(
         self,
