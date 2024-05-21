@@ -74,7 +74,7 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
             else:
                 reqs.append(f"{target[0]} = {target[1]}")
 
-        return f"Processor to select images where {', and '.join(reqs)}"
+        return f"Processor to select images where {'&'.join(reqs)}"
 
     def _apply_to_images(
         self,
@@ -154,10 +154,7 @@ class ImageBatcher(BaseImageProcessor):
         else:
             split = [self.split_key]
 
-        return (
-            f"Groups images into batches, with each batch having "
-            f"the same value of {' and '.join(split)}"
-        )
+        return f"Groups images into batches sharing {'&'.join(split)}"
 
     def _apply_to_images(
         self,
@@ -225,7 +222,7 @@ class ImageRebatcher(ImageBatcher):
         else:
             split = [self.split_key]
 
-        return f"Processor to regroup images into batches by {' and '.join(split)}"
+        return f"Regroup images into batches sharing {'&'.join(split)}"
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
         combo_batch = ImageBatch()
