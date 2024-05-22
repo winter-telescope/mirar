@@ -296,7 +296,6 @@ mask_and_split = mask + split
 save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
-    ImageRebatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     CustomImageBatchModifier(winter_stackid_annotator),
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
@@ -330,6 +329,7 @@ load_unpacked = [
             "MEDCOUNT",
         ]
     ),
+    ImageRebatcher(BASE_NAME_KEY),
 ]
 
 export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
@@ -349,7 +349,7 @@ dark_calibrate = [
         cache_sub_dir="calibration_darks",
         cache_image_name_header_keys=[EXPTIME_KEY, "BOARD_ID"],
     ),
-    ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="darkcal"),
     ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
@@ -373,7 +373,7 @@ flat_calibrate = [
         select_flat_images=select_winter_sky_flat_images,
     ),
     ImageSaver(output_dir_name="skyflatcal"),
-    ImageRebatcher([BASE_NAME_KEY]),
+    ImageRebatcher(BASE_NAME_KEY),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -394,7 +394,7 @@ fourier_filter = [
 ]
 
 astrometry = [
-    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
+    # ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[1.0, 1.3],
@@ -408,7 +408,6 @@ astrometry = [
         cache=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
-    ImageRebatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -416,17 +415,18 @@ astrometry = [
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
     ),
     CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
+    ImageRebatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
     Scamp(
         scamp_config_path=scamp_config_path,
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         copy_scamp_header_to_image=True,
         cache=True,
     ),
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="post_scamp"),
 ]
 
 validate_astrometry = [
-    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         **sextractor_astromstats_config,
         write_regions_bool=True,
@@ -444,9 +444,8 @@ validate_astrometry = [
 ]
 
 stack_dithers = [
-    ImageDebatcher(),
     CustomImageBatchModifier(winter_boardid_6_demasker),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
+    ImageRebatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -457,11 +456,11 @@ stack_dithers = [
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
     ),
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="stack"),
 ]
 
 photcal_and_export = [
-    ImageRebatcher([BASE_NAME_KEY]),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
@@ -525,7 +524,7 @@ photcal_and_export = [
 # Stack stacks together
 
 stack_stacks = [
-    ImageRebatcher([BASE_NAME_KEY]),
+    ImageRebatcher(BASE_NAME_KEY),
     HeaderEditor(PROC_HISTORY_KEY, "load"),
     ImageSaver(output_dir_name="restack_masks", write_mask=True),
     Sextractor(
@@ -542,7 +541,6 @@ stack_stacks = [
         cache=True,
     ),
     ImageSaver(output_dir_name="post_scamp"),
-    ImageDebatcher(),
     HeaderAnnotator(input_keys=["TARGNAME", "FIELDID"], output_key=TARGET_KEY),
     ImageRebatcher(["SUBCOORD", "FILTER", TARGET_KEY]),
     Swarp(
@@ -599,6 +597,7 @@ load_final_stack = [
         load_image=load_winter_stack,
     ),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
+    ImageRebatcher(BASE_NAME_KEY),
 ]
 
 plot_stack = [
@@ -625,7 +624,6 @@ split_stack = [
 ]
 
 imsub = [
-    ImageRebatcher([BASE_NAME_KEY]),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
