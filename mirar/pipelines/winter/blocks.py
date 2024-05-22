@@ -394,7 +394,6 @@ fourier_filter = [
 ]
 
 astrometry = [
-    # ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[1.0, 1.3],
