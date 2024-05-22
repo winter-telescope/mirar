@@ -73,6 +73,7 @@ class Pipeline:
             selected_configurations = [selected_configurations]
         self.selected_configurations = selected_configurations
         self.latest_configuration = None
+        self.set_up_pipeline()
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -86,6 +87,13 @@ class Pipeline:
             logger.error(err)
             raise ValueError(err)
         cls.pipelines[cls.name] = cls
+
+    def set_up_pipeline(self):
+        """
+        Function to do any additional pipeline setup.
+
+        :return: None
+        """
 
     def load_pipeline_configuration(
         self,

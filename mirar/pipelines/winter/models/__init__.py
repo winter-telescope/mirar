@@ -84,21 +84,31 @@ def set_up_q3c(db_name: str, db_table: BaseTable):
     )
 
 
-if DB_USER is not None:
-    setup_database(db_base=WinterBase)
+def set_up_winter_databases():
+    """
+    Setup the winter databases
 
-    for table in [
-        ExposuresTable,
-        AstrometryStatsTable,
-        CandidatesTable,
-        RefQueriesTable,
-        StacksTable,
-        SourcesTable,
-    ]:
-        set_up_q3c(db_name=WinterBase.db_name, db_table=table)
+    :return: None
+    """
 
-    populate_fields()
-    populate_itid()
-    populate_filters()
-    populate_programs()
-    populate_subdets()
+    if DB_USER is not None:
+        setup_database(db_base=WinterBase)
+
+        for table in [
+            ExposuresTable,
+            AstrometryStatsTable,
+            CandidatesTable,
+            RefQueriesTable,
+            StacksTable,
+            SourcesTable,
+        ]:
+            set_up_q3c(db_name=WinterBase.db_name, db_table=table)
+
+        populate_fields()
+        populate_itid()
+        populate_filters()
+        populate_programs()
+        populate_subdets()
+
+    else:
+        logger.warning("No database user provided. Skipping WINTER database setup.")

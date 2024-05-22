@@ -55,6 +55,7 @@ from mirar.pipelines.winter.blocks import (
 )
 from mirar.pipelines.winter.config import PIPELINE_NAME, winter_cal_requirements
 from mirar.pipelines.winter.load_winter_image import load_raw_winter_mef
+from mirar.pipelines.winter.models import set_up_winter_databases
 
 logger = logging.getLogger(__name__)
 
@@ -154,3 +155,6 @@ class WINTERPipeline(Pipeline):
             pipeline=PIPELINE_NAME,
             server_sub_dir="raw",
         )
+
+    def set_up_pipeline(self):
+        set_up_winter_databases()
