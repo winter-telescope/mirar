@@ -103,7 +103,7 @@ class MaskPixelsFromPath(BaseMask):
             only_write_mask=only_write_mask,
         )
         self.mask_path = Path(mask_path) if mask_path is not None else None
-        self.mask_path_key = Path(mask_path_key) if mask_path_key is not None else None
+        self.mask_path_key = mask_path_key
         if mask_path is None and mask_path_key is None:
             raise ValueError("Must specify either mask_path or mask_path_key")
         if mask_path is not None and mask_path_key is not None:
