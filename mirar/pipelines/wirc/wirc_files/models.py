@@ -146,5 +146,11 @@ class Candidate(BaseDB):
     isdiffpos: bool = Field(default=True)
 
 
-if DB_USER is not None:
-    setup_database(WircBase)
+def set_up_wirc_database():
+    """
+    Function to set up the wirc database
+    """
+    if DB_USER is not None:
+        setup_database(WircBase)
+    else:
+        logger.warning("No database user set, skipping WIRC database setup")
