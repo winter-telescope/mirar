@@ -102,16 +102,23 @@ class MaskPixelsFromPath(BaseMask):
             output_dir=output_dir,
             only_write_mask=only_write_mask,
         )
-        self.mask_path = mask_path
-        self.mask_path_key = mask_path_key
+        self.mask_path = Path(mask_path) if mask_path is not None else None
+        self.mask_path_key = Path(mask_path_key) if mask_path_key is not None else None
         if mask_path is None and mask_path_key is None:
             raise ValueError("Must specify either mask_path or mask_path_key")
         if mask_path is not None and mask_path_key is not None:
             raise ValueError("Must specify either mask_path or mask_path_key, not both")
 
     def description(self) -> str:
+
+        if self.mask_path is None:
+            return (
+                f"Mask bad pixels using a pre-defined map with key"
+                f"{self.mask_path_key}"
+            )
+
         return (
-            f"Mask bad pixels using a pre-defined map: "
+            f"Mask bad pixels using a pre-defined map at "
             f"{self.mask_path.relative_to(base_code_dir)}"
         )
 
