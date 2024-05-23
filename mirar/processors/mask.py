@@ -13,7 +13,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch
-from mirar.paths import BASE_NAME_KEY, FITS_MASK_KEY, get_output_dir
+from mirar.paths import BASE_NAME_KEY, FITS_MASK_KEY, base_code_dir, get_output_dir
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ class MaskPixelsFromPath(BaseMask):
             output_dir=output_dir,
             only_write_mask=only_write_mask,
         )
-        self.mask_path = mask_path
+        self.mask_path = Path(mask_path) if mask_path is not None else None
         self.mask_path_key = mask_path_key
         if mask_path is None and mask_path_key is None:
             raise ValueError("Must specify either mask_path or mask_path_key")
@@ -110,7 +110,17 @@ class MaskPixelsFromPath(BaseMask):
             raise ValueError("Must specify either mask_path or mask_path_key, not both")
 
     def description(self) -> str:
-        return f"Processor to mask bad pixels using a pre-defined map: {self.mask_path}"
+
+        if self.mask_path is None:
+            return (
+                f"Mask bad pixels using a pre-defined map with key"
+                f"{self.mask_path_key}"
+            )
+
+        return (
+            f"Mask bad pixels using a pre-defined map at "
+            f"{self.mask_path.relative_to(base_code_dir)}"
+        )
 
     def get_mask(self, image) -> np.ndarray:
         """
