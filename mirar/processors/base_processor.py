@@ -360,15 +360,17 @@ class ImageHandler:
     def save_fits(
         image: Image,
         path: str | Path,
+        compress: bool = True,
     ):
         """
         Save an Image to path
 
         :param image: Image to save
         :param path: path
+        :param compress: whether to compress the fits file
         :return: None
         """
-        save_fits(image, path)
+        save_fits(image, path, compress=compress)
 
     def save_mask_image(self, image: Image, img_path: Path) -> Path:
         """
@@ -395,7 +397,7 @@ class ImageHandler:
                 logger.warning(
                     f"Could not find weight file {image.header[LATEST_WEIGHT_SAVE_KEY]}"
                 )
-        self.save_fits(Image(mask.astype(float), header), mask_path)
+        self.save_fits(Image(mask.astype(float), header), mask_path, compress=True)
 
         return mask_path
 

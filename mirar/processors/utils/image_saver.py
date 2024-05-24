@@ -26,11 +26,13 @@ class ImageSaver(BaseImageProcessor):
         output_dir_name: str,
         write_mask: bool = False,
         output_dir: str | Path = base_output_dir,
+        compress: bool = True,
     ):
         super().__init__()
         self.output_dir_name = output_dir_name
         self.write_mask = write_mask
         self.output_dir = Path(output_dir)
+        self.compress = compress
 
     def description(self):
         return f"Processor to save images to the '{self.output_dir_name}' subdirectory"
@@ -55,6 +57,6 @@ class ImageSaver(BaseImageProcessor):
             if self.write_mask:
                 self.save_mask_image(image, img_path=path)
 
-            self.save_fits(image, path)
+            self.save_fits(image, path, compress=self.compress)
 
         return batch

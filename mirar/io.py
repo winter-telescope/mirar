@@ -43,7 +43,25 @@ def create_fits(data: np.ndarray, header: fits.Header | None) -> fits.PrimaryHDU
     return proc_hdu
 
 
-def save_hdu_as_fits(hdu: fits.PrimaryHDU, path: str | Path, overwrite: bool = True):
+def create_compressed_fits(
+    data: np.ndarray, header: fits.Header | None
+) -> fits.CompImageHDU:
+    """
+    Return an astropy CompImageHDU object created with <data> and <header>
+
+    :param data: numpy ndarray containing image data
+    :param header: astropy Header object
+    :return: astropy CompImageHDU object containing the image data and header
+    """
+    proc_hdu = fits.CompImageHDU(data)
+    if header is not None:
+        proc_hdu.header = header
+    return proc_hdu
+
+
+def save_hdu_as_fits(
+    hdu: fits.PrimaryHDU | fits.CompImageHDU, path: str | Path, overwrite: bool = True
+):
     """
     Wrapper function to save an astropy hdu to file
 
@@ -61,6 +79,7 @@ def save_to_path(
     header: fits.Header | None,
     path: str | Path,
     overwrite: bool = True,
+    compress: bool = True,
 ):
     """
     Function to save an image with <data> and <header> to <path>.
@@ -70,9 +89,13 @@ def save_to_path(
     :param path: output path to save to
     :param overwrite: boolean variable opn whether to overwrite of an
         image exists at <path>. Defaults to True.
+    :param compress: boolean variable on whether to compress the image
     :return: None
     """
-    img = create_fits(data, header=header)
+    if compress:
+        img = create_compressed_fits(data, header=header)
+    else:
+        img = create_fits(data, header=header)
     save_hdu_as_fits(hdu=img, path=path, overwrite=overwrite)
 
 
@@ -118,12 +141,14 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
 def save_fits(
     image: Image,
     path: str | Path,
+    compress: bool = True,
 ):
     """
     Save an Image to path
 
     :param image: Image to save
     :param path: path
+    :param compress: boolean on whether to compress the image
     :return: None
     """
     if isinstance(path, str):
@@ -134,7 +159,7 @@ def save_fits(
     if header is not None:
         header[LATEST_SAVE_KEY] = path.as_posix()
     logger.debug(f"Saving to {path.as_posix()}")
-    save_to_path(data, header, path)
+    save_to_path(data, header, path, compress=compress)
 
 
 def open_raw_image(
