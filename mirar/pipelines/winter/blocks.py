@@ -502,7 +502,7 @@ photcal_and_export = [
         cache=False,
         crossmatch_radius_arcsec=5.0,
     ),
-    ImageSaver(output_dir_name="final"),
+    ImageSaver(output_dir_name="final", compress=False),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
     ImageDatabaseMultiEntryUpdater(
         sequence_key="rawid",

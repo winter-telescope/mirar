@@ -36,7 +36,7 @@ class ImageSaver(BaseImageProcessor):
 
     def description(self):
         return (
-            f"Processor to save{['', 'compressed '][int(self.compress)]} "
+            f"Save {['uncompressed', 'compressed'][int(self.compress)]} "
             f"images to the '{self.output_dir_name}' subdirectory"
         )
 
