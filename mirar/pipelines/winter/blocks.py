@@ -296,7 +296,11 @@ mask_and_split = mask + split
 save_raw = [
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
+    # Group into planned stacks, and label each image with the intended stackid
+    ImageRebatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     CustomImageBatchModifier(winter_stackid_annotator),
+    # Process each raw image in parallel
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageRejector(("BOARD_ID", "0")),
@@ -444,7 +448,7 @@ validate_astrometry = [
 
 stack_dithers = [
     CustomImageBatchModifier(winter_boardid_6_demasker),
-    ImageRebatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
+    ImageRebatcher("STACKID"),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,

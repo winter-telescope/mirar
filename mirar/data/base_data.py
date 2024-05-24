@@ -37,6 +37,9 @@ class DataBlock:
     def __setitem__(self, key, value):
         raise NotImplementedError
 
+    def __str__(self):
+        return f"<An {self.__class__.__name__} object, built from {self.get_name()}>"
+
     def get_name(self) -> str:
         """Function to retrieve the :variable:`mirar.paths.BASE_NAME_KEY`
         of the parent image

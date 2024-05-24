@@ -181,6 +181,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         for image in batch:
             new_image_file = image.header[self.header_key]
             new_image = self.load_image(new_image_file)
+
             if self.copy_header_keys is not None:
                 for key in self.copy_header_keys:
                     new_image.header[key] = image.header[key]
@@ -219,7 +220,10 @@ class ImageListLoader(BaseImageProcessor):
         self.load_image = load_image
 
     def description(self):
-        return f"Processor to load {len(self.img_list)} images from list"
+        return (
+            f"Load {len(self.img_list)} images from "
+            f"list of {len(self.img_list)} files"
+        )
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         """

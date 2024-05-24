@@ -119,7 +119,11 @@ def split_images_into_batches(
             groups[uid] = [image]
         else:
             groups[uid] += [image]
-    logger.debug(groups)
+
+    logger.debug(
+        " & ".join(f"({key}: {[str(x) for x in val]})" for key, val in groups.items())
+    )
+
     res = Dataset([ImageBatch(x) for x in groups.values()])
 
     return res
