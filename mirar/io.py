@@ -53,9 +53,7 @@ def create_compressed_fits(
     :param header: astropy Header object
     :return: astropy CompImageHDU object containing the image data and header
     """
-    proc_hdu = fits.CompImageHDU(data)
-    if header is not None:
-        proc_hdu.header = header
+    proc_hdu = fits.CompImageHDU(data, header=header)
     return proc_hdu
 
 
@@ -114,6 +112,25 @@ def save_mef_to_path(data_list, header_list, primary_header, path):
     hdulist.writeto(path, overwrite=True)
 
 
+def open_compressed_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
+    """
+    Opens a compressed fits file and returns the data and header
+
+    :param path: path to the compressed fits file
+    :return: data, header
+    """
+    _, extension_data_list, extension_header_list = open_mef_fits(path)
+    if len(extension_data_list) == 0:
+        err = f"Compressed fits file {path} has no extensions."
+        logger.error(err)
+        raise ValueError(err)
+    if len(extension_data_list) != 1:
+        err = f"Compressed fits file {path} has more than one extension."
+        logger.error(err)
+        raise ValueError(err)
+    return extension_data_list[0], extension_header_list[0]
+
+
 def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     """
     Function to open a fits file saved to <path>
@@ -123,11 +140,21 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     """
     if isinstance(path, str):
         path = Path(path)
+
     with fits.open(path, memmap=False, ignore_missing_simple=True) as img:
-        hdu = img.pop(0)
-        hdu.verify("silentfix+ignore")
-        data = hdu.data
-        header = hdu.header
+
+        if (
+            sum(isinstance(x, fits.hdu.compressed.compressed.CompImageHDU) for x in img)
+            > 0
+        ):
+            data, header = open_compressed_fits(path)
+
+        else:
+
+            hdu = img.pop(0)
+            hdu.verify("silentfix+ignore")
+            data = hdu.data
+            header = hdu.header
 
     if BASE_NAME_KEY not in header:
         header[BASE_NAME_KEY] = Path(path).name

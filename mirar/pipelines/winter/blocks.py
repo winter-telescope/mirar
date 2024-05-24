@@ -376,8 +376,8 @@ flat_calibrate = [
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
     ),
-    ImageSaver(output_dir_name="skyflatcal"),
     ImageRebatcher(BASE_NAME_KEY),
+    ImageSaver(output_dir_name="skyflatcal"),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -408,7 +408,7 @@ astrometry = [
         sextractor_config_path=winter_anet_sextractor_config_path_generator,
         use_weight=True,
         timeout=120,
-        cache=True,
+        cache=False,
     ),
     ImageSaver(output_dir_name="post_anet"),
     Sextractor(
