@@ -76,6 +76,8 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
     readoutm = Column(VARCHAR(20), nullable=True)
     readoutv = Column(VARCHAR(10), nullable=True)
 
+    mircover = Column(VARCHAR(10), nullable=True)
+
     utctime = Column(DateTime(timezone=True))
 
     exptime = Column(Float, nullable=False)
@@ -124,6 +126,7 @@ class Exposure(BaseDB):
     rawpath: str = Field(min_length=1)
     readoutm: str | None = Field(default=None)
     readoutv: str | None = Field(default=None)
+    mircover: str | None = Field(default=None)
 
     utctime: datetime = Field()
     exptime: float = Field(ge=0)
