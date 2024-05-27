@@ -50,7 +50,7 @@ class AutoAstrometry(BaseImageProcessor):
 
         for i, image in enumerate(batch):
             temp_path = sextractor_out_dir.joinpath(image[BASE_NAME_KEY])
-            self.save_fits(image, temp_path)
+            self.save_fits(image, temp_path, compress=False)
 
             run_autoastrometry_single(
                 img_path=temp_path,

@@ -360,23 +360,28 @@ class ImageHandler:
     def save_fits(
         image: Image,
         path: str | Path,
+        compress: bool = False,
     ):
         """
         Save an Image to path
 
         :param image: Image to save
         :param path: path
+        :param compress: whether to compress the fits file
         :return: None
         """
-        save_fits(image, path)
+        save_fits(image, path, compress=compress)
 
-    def save_mask_image(self, image: Image, img_path: Path) -> Path:
+    def save_mask_image(
+        self, image: Image, img_path: Path, compress: bool = False
+    ) -> Path:
         """
         Saves a mask image, following the astromatic software convention of
         masked value = 0. and non-masked value = 1.
 
         :param image: Science image
         :param img_path: Path of parent image
+        :param compress: Whether to compress the mask image
         :return: Path of mask image
         """
         mask_path = get_mask_path(img_path)
@@ -395,7 +400,7 @@ class ImageHandler:
                 logger.warning(
                     f"Could not find weight file {image.header[LATEST_WEIGHT_SAVE_KEY]}"
                 )
-        self.save_fits(Image(mask.astype(float), header), mask_path)
+        self.save_fits(Image(mask.astype(float), header), mask_path, compress=compress)
 
         return mask_path
 

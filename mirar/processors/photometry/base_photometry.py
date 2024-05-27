@@ -8,7 +8,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from astropy.io import fits
 
 from mirar.data import Image
 from mirar.paths import (
@@ -126,7 +125,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         """
         imagename = metadata[self.image_key]
 
-        image = Image(header=fits.getheader(imagename), data=fits.getdata(imagename))
+        image = self.open_fits(imagename)
 
         image_filename = self.save_temp_image(image)
         unc_filename = self.save_uncertainty_image(image)
