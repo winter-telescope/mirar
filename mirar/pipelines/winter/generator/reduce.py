@@ -14,8 +14,6 @@ from mirar.data import Image, ImageBatch
 from mirar.database.constraints import DBQueryConstraints
 from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
-    BASE_NAME_KEY,
-    EXPTIME_KEY,
     FILTER_KEY,
     OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
@@ -101,9 +99,9 @@ def select_winter_sky_flat_images(images: ImageBatch) -> ImageBatch:
     if len(flat_images) == 0:
         # To enable current version of realtime processing?
         logger.warning(
-            "No good flat images found, using all images in batch."
+            "No good flat images found, using all images in batch. "
             f"The filter and subdetid of the first image in batch is "
-            f" {images[0]['FILTER']} and {images[0][SUB_ID_KEY]}"
+            f"{images[0]['FILTER']} and {images[0][SUB_ID_KEY]}"
         )
         flat_images = select_from_images(
             images, key=OBSCLASS_KEY, target_values="science"
