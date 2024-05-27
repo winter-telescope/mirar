@@ -143,6 +143,16 @@ In that file, you should add modify following line:
 The location of the file will be different if you install via e.g brew or apt-get.
 In the worst case, you can try running solve-field on an image, and you should see the path to the astrometry.cfg file in the error message.
 
+PostgreSQL
+^^^^^^^^^^
+
+Database management is done through PostgreSQL. You can install it via the `official website <https://www.postgresql.org/download/>`_.
+
+Some pipelines require a database to store the results. If you want to use this functionality, you will need to install PostgreSQL.
+These pipelines also typically require q3c, which is a PostgreSQL extension. You can install it via the `official website <https://github.com/segasai/q3c>`_.
+
+
+
 astromatic software with apt-get (Linux only)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
