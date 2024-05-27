@@ -107,6 +107,26 @@ def clean_header(header: fits.Header) -> fits.Header:
         header[OBSCLASS_KEY] = "flat"
         header[TARGET_KEY] = "flat"
 
+    # Mirror cover should be open for science images, and open or closed for darks
+    if "MIRCOVER" in header.keys():
+
+        bad_mirror_cover = False
+
+        if header[OBSCLASS_KEY] in ["dark", "bias"]:
+            if not header["MIRCOVER"].lower() in ["open", "closed"]:
+                bad_mirror_cover = True
+
+        elif header[OBSCLASS_KEY] not in ["corrupted", "test"]:
+            if not header["MIRCOVER"] == "open":
+                bad_mirror_cover = True
+
+        if bad_mirror_cover:
+            logger.error(
+                f"Bad MIRCOVER value: {header['MIRCOVER']} "
+                f"(img class={header[OBSCLASS_KEY]})"
+            )
+            header[OBSCLASS_KEY] = "corrupted"
+
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
     # Set up the target name
