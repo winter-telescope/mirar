@@ -89,7 +89,7 @@ def flowify(
             blocks = "images"
         elif isinstance(processor, BaseSourceProcessor):
             class_kwargs = {"color": "red"}
-            blocks = "errors"
+            blocks = "sourcetables"
         else:
             raise ValueError(f"processor type ({type(processor)} not recognised")
 

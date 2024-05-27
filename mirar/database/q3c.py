@@ -27,7 +27,7 @@ def create_q3c_extension(
     :return:
     """
 
-    logger.info(f"Checking if q3c index exists on table {table_name}...")
+    logger.debug(f"Checking if q3c index exists on table {table_name}...")
     trig_ddl = DDL(f"SELECT indexname FROM pg_indexes WHERE tablename='{table_name}';")
     engine = get_engine(db_name=db_name)
 
@@ -36,7 +36,7 @@ def create_q3c_extension(
         if len(res) > 0:
             for index in res:
                 if f"{table_name}_q3c_ang2ipix_idx" in index:
-                    logger.info(f"q3c index already exists on table {table_name}")
+                    logger.debug(f"q3c index already exists on table {table_name}")
                     return
 
     logger.info(f"Creating q3c extension and index on table {table_name}...")
