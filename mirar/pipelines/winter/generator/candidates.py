@@ -277,7 +277,7 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
     """
     new_batch = []
 
-    min_dist_to_star = 5.0
+    min_dist_to_star = 7.0
 
     for source in source_table:
         src_df = source.get_data()
