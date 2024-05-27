@@ -117,7 +117,7 @@ def clean_header(header: fits.Header) -> fits.Header:
                 bad_mirror_cover = True
 
         elif header[OBSCLASS_KEY] not in ["corrupted", "test"]:
-            if not header["MIRCOVER"] == "open":
+            if not header["MIRCOVER"].lower() == "open":
                 bad_mirror_cover = True
 
         if bad_mirror_cover:

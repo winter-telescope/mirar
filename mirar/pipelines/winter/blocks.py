@@ -245,6 +245,7 @@ csvlog = [
             EXPTIME_KEY,
             OBSCLASS_KEY,
             "BOARD_ID",
+            "MIRCOVER",
             "BASENAME",
             TARGET_KEY,
             "RADEG",
