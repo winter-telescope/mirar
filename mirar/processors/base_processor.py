@@ -360,7 +360,7 @@ class ImageHandler:
     def save_fits(
         image: Image,
         path: str | Path,
-        compress: bool = True,
+        compress: bool = False,
     ):
         """
         Save an Image to path
@@ -373,7 +373,7 @@ class ImageHandler:
         save_fits(image, path, compress=compress)
 
     def save_mask_image(
-        self, image: Image, img_path: Path, compress: bool = True
+        self, image: Image, img_path: Path, compress: bool = False
     ) -> Path:
         """
         Saves a mask image, following the astromatic software convention of
@@ -381,6 +381,7 @@ class ImageHandler:
 
         :param image: Science image
         :param img_path: Path of parent image
+        :param compress: Whether to compress the mask image
         :return: Path of mask image
         """
         mask_path = get_mask_path(img_path)

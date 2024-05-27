@@ -77,7 +77,7 @@ def save_to_path(
     header: fits.Header | None,
     path: str | Path,
     overwrite: bool = True,
-    compress: bool = True,
+    compress: bool = False,
 ):
     """
     Function to save an image with <data> and <header> to <path>.
@@ -141,20 +141,25 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     if isinstance(path, str):
         path = Path(path)
 
-    with fits.open(path, memmap=False, ignore_missing_simple=True) as img:
+    try:
+        with fits.open(path, memmap=False) as img:
 
-        if (
-            sum(isinstance(x, fits.hdu.compressed.compressed.CompImageHDU) for x in img)
-            > 0
-        ):
-            data, header = open_compressed_fits(path)
-
-        else:
+            if (
+                sum(
+                    isinstance(x, fits.hdu.compressed.compressed.CompImageHDU)
+                    for x in img
+                )
+                > 0
+            ):
+                raise ExtensionParsingError("This is a compressed fits file")
 
             hdu = img.pop(0)
             hdu.verify("silentfix+ignore")
             data = hdu.data
             header = hdu.header
+
+    except ExtensionParsingError:
+        data, header = open_compressed_fits(path)
 
     if BASE_NAME_KEY not in header:
         header[BASE_NAME_KEY] = Path(path).name
@@ -168,7 +173,7 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
 def save_fits(
     image: Image,
     path: str | Path,
-    compress: bool = True,
+    compress: bool = False,
 ):
     """
     Save an Image to path

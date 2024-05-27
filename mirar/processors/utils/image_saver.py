@@ -26,7 +26,7 @@ class ImageSaver(BaseImageProcessor):
         output_dir_name: str,
         write_mask: bool = False,
         output_dir: str | Path = base_output_dir,
-        compress: bool = True,
+        compress: bool = False,
     ):
         super().__init__()
         self.output_dir_name = output_dir_name
