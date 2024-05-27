@@ -127,6 +127,9 @@ def clean_header(header: fits.Header) -> fits.Header:
             )
             header[OBSCLASS_KEY] = "corrupted"
 
+    else:
+        header["MIRCOVER"] = None
+
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
     # Set up the target name
