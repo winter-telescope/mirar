@@ -222,6 +222,7 @@ load_raw = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
+    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements),
 ]
 
 load_astrometry = [
@@ -229,9 +230,8 @@ load_astrometry = [
 ]
 
 extract_all = [
-    ImageBatcher("UTCTIME"),
+    ImageRebatcher("EXPID"),
     DatabaseImageBatchInserter(db_table=Exposure, duplicate_protocol="replace"),
-    ImageSelector((OBSCLASS_KEY, ["dark", "science", "flat"])),
 ]
 
 csvlog = [
@@ -255,6 +255,7 @@ csvlog = [
             "READOUTV",
         ]
     ),
+    ImageRebatcher(BASE_NAME_KEY),
 ]
 
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
@@ -277,7 +278,7 @@ select_ref = [
 
 # mask
 mask = [
-    ImageBatcher(BASE_NAME_KEY),
+    ImageSelector((OBSCLASS_KEY, ["dark", "science", "flat"])),
     # MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
@@ -294,16 +295,15 @@ mask_and_split = mask + split
 # Save raw images
 
 save_raw = [
-    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
-    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
     # Group into planned stacks, and label each image with the intended stackid
     ImageRebatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     CustomImageBatchModifier(winter_stackid_annotator),
     # Process each raw image in parallel
     ImageRebatcher(BASE_NAME_KEY),
-    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageRejector(("BOARD_ID", "0")),
+    # HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
+    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -313,7 +313,7 @@ save_raw = [
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
-    ImageRebatcher("UTCTIME"),
+    ImageRebatcher("EXPID"),
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -339,10 +339,7 @@ load_unpacked = [
 export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
 load_and_export_unpacked = load_unpacked + export_unpacked
 
-#
-cal_hunter = [
-    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements)
-]
+
 # Detrend blocks
 
 dark_calibrate = [
@@ -860,22 +857,10 @@ focus_subcoord = [
 process_and_stack = astrometry + validate_astrometry + stack_dithers
 
 unpack_subset = (
-    load_raw
-    + cal_hunter
-    + extract_all
-    + csvlog
-    + select_subset
-    + mask_and_split
-    + save_raw
-)
-
-unpack_all = load_raw + cal_hunter + extract_all + csvlog + mask_and_split + save_raw
-
-unpack_subset_no_calhunter = (
     load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
 )
 
-unpack_all_no_calhunter = load_raw + extract_all + csvlog + mask_and_split + save_raw
+unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
 full_reduction = (
     dark_calibrate
@@ -900,8 +885,6 @@ reduce_unpacked_subset = (
 )
 
 reduce = unpack_all + full_reduction
-
-reduce_no_calhunter = unpack_all_no_calhunter + full_reduction
 
 reftest = (
     unpack_subset
