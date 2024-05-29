@@ -66,7 +66,7 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
         super().__init__()
         self.targets = args
 
-    def __str__(self):
+    def description(self):
         reqs = []
         for target in self.targets:
             if isinstance(target[1], list):
@@ -74,7 +74,7 @@ class ImageSelector(BaseImageProcessor, CleanupProcessor):
             else:
                 reqs.append(f"{target[0]} = {target[1]}")
 
-        return f"Processor to select images where {', and '.join(reqs)}"
+        return f"Processor to select images where {'&'.join(reqs)}"
 
     def _apply_to_images(
         self,
@@ -119,7 +119,11 @@ def split_images_into_batches(
             groups[uid] = [image]
         else:
             groups[uid] += [image]
-    logger.debug(groups)
+
+    logger.debug(
+        " & ".join(f"({key}: {[str(x) for x in val]})" for key, val in groups.items())
+    )
+
     res = Dataset([ImageBatch(x) for x in groups.values()])
 
     return res
@@ -148,16 +152,13 @@ class ImageBatcher(BaseImageProcessor):
         super().__init__()
         self.split_key = split_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         if isinstance(self.split_key, list):
             split = self.split_key
         else:
             split = [self.split_key]
 
-        return (
-            f"Groups images into batches, with each batch having "
-            f"the same value of {' and '.join(split)}"
-        )
+        return f"Groups images into batches sharing {'&'.join(split)}"
 
     def _apply_to_images(
         self,
@@ -191,7 +192,7 @@ class ImageDebatcher(BaseImageProcessor):
     ) -> ImageBatch:
         return batch
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to combine all images into a single ImageBatch"
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
@@ -219,13 +220,13 @@ class ImageRebatcher(ImageBatcher):
     ) -> ImageBatch:
         return batch
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         if isinstance(self.split_key, list):
             split = self.split_key
         else:
             split = [self.split_key]
 
-        return f"Processor to regroup images into batches by {' and '.join(split)}"
+        return f"Regroup images into batches sharing {'&'.join(split)}"
 
     def update_dataset(self, dataset: Dataset) -> Dataset:
         combo_batch = ImageBatch()

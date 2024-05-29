@@ -25,7 +25,7 @@ class AstrometryFromFile(BaseImageProcessor):
         super().__init__()
         self.astrometry_file_key = astrometry_file_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to add astrometry headers to images from file."
 
     def _apply_to_images(
@@ -53,7 +53,7 @@ class AstrometryFromFile(BaseImageProcessor):
                 f"to {image[BASE_NAME_KEY]}"
             )
 
-            with open(astrometry_file, "r") as f:
+            with open(astrometry_file, "r", encoding="utf8") as f:
                 header_data = f.read()
                 # Scamp v 2.10.0 writes this annoying character in a comment
                 header_data = header_data.replace("é", "e")

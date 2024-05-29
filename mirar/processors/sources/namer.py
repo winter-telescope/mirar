@@ -45,7 +45,7 @@ class CandidateNamer(SingleSpatialCrossmatchSource):
         self.name_key = name_key
         self.lastname = None
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Sequentially assign names to new sources, e.g "
             f"{self.base_name}24{self.name_start}"

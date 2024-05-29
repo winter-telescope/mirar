@@ -10,6 +10,7 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.wirc.blocks import imsub, load_raw, reduce
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from mirar.pipelines.wirc.wirc_files.models import set_up_wirc_database
 
 logger = logging.getLogger(__name__)
 
@@ -45,3 +46,6 @@ class WircPipeline(Pipeline):
     @staticmethod
     def _load_raw_image(path: str | Path) -> Image | list[Image]:
         return load_raw_wirc_image(path)
+
+    def set_up_pipeline(self):
+        set_up_wirc_database()

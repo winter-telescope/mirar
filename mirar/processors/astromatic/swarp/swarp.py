@@ -159,7 +159,7 @@ class Swarp(BaseImageProcessor):
             self.header_keys_to_combine = [self.header_keys_to_combine]
         self.coordinate_tolerance_deg = coordinate_tolerance_deg
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
 
     def get_swarp_output_dir(self) -> Path:
@@ -301,10 +301,12 @@ class Swarp(BaseImageProcessor):
 
                 temp_img_path = get_temp_path(swarp_output_dir, image[BASE_NAME_KEY])
 
-                self.save_fits(image, temp_img_path)
+                self.save_fits(image, temp_img_path, compress=False)
 
                 logger.debug(f"Saving mask image for {temp_img_path}")
-                temp_mask_path = self.save_mask_image(image, temp_img_path)
+                temp_mask_path = self.save_mask_image(
+                    image, temp_img_path, compress=False
+                )
 
                 img_list.write(f"{temp_img_path}\n")
                 weight_list.write(f"{temp_mask_path}\n")

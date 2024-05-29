@@ -3,6 +3,8 @@ Models for database and pydantic dataclass models
 """
 
 # pylint: disable=duplicate-code
+import logging
+
 from mirar.database.credentials import DB_USER
 from mirar.database.setup import setup_database
 from mirar.pipelines.summer.models._diff import Diff, DiffTable
@@ -47,10 +49,19 @@ from mirar.pipelines.summer.models._subdets import (
 )
 from mirar.pipelines.summer.models.base_model import SummerBase
 
-if DB_USER is not None:
-    setup_database(SummerBase)
-    populate_fields()
-    populate_itid()
-    populate_filters()
-    populate_programs()
-    populate_subdets()
+logger = logging.getLogger(__name__)
+
+
+def set_up_summer_databases():
+    """
+    Function to set up the summer databases
+    """
+    if DB_USER is not None:
+        setup_database(SummerBase)
+        populate_fields()
+        populate_itid()
+        populate_filters()
+        populate_programs()
+        populate_subdets()
+    else:
+        logging.warning("DB_USER not set, skipping SUMMER database setup")

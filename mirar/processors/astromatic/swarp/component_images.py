@@ -40,6 +40,9 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
             copy_header_keys = [copy_header_keys]
         self.copy_header_keys = copy_header_keys
 
+    def description(self) -> str:
+        return "Reload the component images used to make a swarp stack"
+
     def _apply_to_images(
         self,
         batch: ImageBatch,

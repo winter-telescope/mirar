@@ -21,7 +21,6 @@ from mirar.pipelines.winter.blocks import (
     focus_cals,
     full_reduction,
     imsub,
-    load_astrometry,
     load_avro,
     load_calibrated,
     load_final_stack,
@@ -30,14 +29,12 @@ from mirar.pipelines.winter.blocks import (
     load_test,
     mask_and_split,
     mosaic,
-    name_candidates,
     only_ref,
     photcal_stacks,
     plot_stack,
     process_candidates,
     realtime,
     reduce,
-    reduce_no_calhunter,
     reduce_unpacked,
     reduce_unpacked_subset,
     refbuild,
@@ -45,15 +42,14 @@ from mirar.pipelines.winter.blocks import (
     save_raw,
     select_split_subset,
     send_to_skyportal,
-    stack_dithers,
     stack_forced_photometry,
+    stack_stacks,
     unpack_all,
-    unpack_all_no_calhunter,
     unpack_subset,
-    unpack_subset_no_calhunter,
 )
 from mirar.pipelines.winter.config import PIPELINE_NAME, winter_cal_requirements
 from mirar.pipelines.winter.load_winter_image import load_raw_winter_mef
+from mirar.pipelines.winter.models import set_up_winter_databases
 
 logger = logging.getLogger(__name__)
 
@@ -70,14 +66,10 @@ class WINTERPipeline(Pipeline):
         "astrometry": load_calibrated + astrometry,
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
-        "unpack_subset_no_calhunter": unpack_subset_no_calhunter,
-        "unpack_all_no_calhunter": unpack_all_no_calhunter,
         "detrend_unpacked": detrend_unpacked,
         "imsub": load_final_stack + imsub,
         "reduce": reduce,
-        "reduce_no_calhunter": reduce_no_calhunter,
         "reduce_unpacked": reduce_unpacked,
-        "stack": load_astrometry + stack_dithers + photcal_stacks,
         "photcal_stacks": photcal_stacks,
         "plot_stacks": load_final_stack + plot_stack,
         "buildtest": build_test,
@@ -100,34 +92,24 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
-        "full_imsub": load_final_stack
+        "default": reduce
         + imsub
         + detect_candidates
         + process_candidates
         + avro_broadcast,
-        "full": reduce
+        "default_subset": reduce_unpacked_subset
         + imsub
         + detect_candidates
         + process_candidates
         + avro_broadcast,
-        "full_subset": reduce_unpacked_subset
-        + imsub
-        + detect_candidates
-        + process_candidates
-        + avro_broadcast,
-        "full_no_calhunter": reduce_no_calhunter
-        + imsub
-        + detect_candidates
-        + process_candidates
-        + avro_broadcast,
+        "stack_stacks": load_final_stack + stack_stacks,
+        "stack_stacks_db": stack_stacks,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,
         "skyportal": load_skyportal + send_to_skyportal,
-        "name_candidates": name_candidates,
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
-        "detrend": unpack_all + detrend_unpacked,
         "rebroadcast_avro": load_avro + avro_export,
     }
 
@@ -146,3 +128,6 @@ class WINTERPipeline(Pipeline):
             pipeline=PIPELINE_NAME,
             server_sub_dir="raw",
         )
+
+    def set_up_pipeline(self):
+        set_up_winter_databases()

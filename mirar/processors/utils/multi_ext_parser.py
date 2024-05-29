@@ -73,7 +73,7 @@ class MultiExtParser(BaseImageProcessor):
         if isinstance(self.output_img_dir, str):
             self.output_img_dir = Path(self.output_img_dir)
 
-    def __str__(self):
+    def description(self):
         return (
             f"Processor to parse MEF images from the {self.input_sub_dir} subdirectory "
         )

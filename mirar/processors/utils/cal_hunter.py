@@ -20,6 +20,12 @@ from mirar.processors.utils.image_selector import select_from_images
 logger = logging.getLogger(__name__)
 
 
+class MissingCalibrationsError(ImageNotFoundError):
+    """
+    Error to raise if calibration files are missing
+    """
+
+
 class CalRequirement:
     """
     Class to specify particular calibration files that must be present for processing
@@ -150,7 +156,7 @@ def find_required_cals(
                 if not req.success:
                     err += str(req)
             logger.error(err)
-            raise ImageNotFoundError(err)
+            raise MissingCalibrationsError(err)
 
         dir_to_load = ordered_nights[0].joinpath(subdir)
 
@@ -201,7 +207,7 @@ class CalHunter(ImageLoader):
 
         self.requirements = requirements
 
-    def __str__(self):
+    def description(self):
         reqs = [f"{req.target_name.upper()} images" for req in self.requirements]
         return (
             f"Processor to search through archival data to find any missing "

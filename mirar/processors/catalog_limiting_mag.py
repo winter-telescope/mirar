@@ -30,6 +30,10 @@ def default_lim_mag_sextractor_catalog_purifier(
 ) -> Table:
     """
     Default function to purify the photometric image catalog
+
+    :param catalog: Catalog to purify
+    :param image: Image object
+    :return: Purified catalog
     """
     clean_catalog, _ = default_image_sextractor_catalog_purifier(
         sci_catalog=catalog, ref_catalog=None, image=image, fwhm_threshold_arcsec=20
@@ -69,6 +73,9 @@ class CatalogLimitingMagnitudeCalculator(BaseImageProcessor):
         self.image_photometric_catalog_purifier = image_photometric_catalog_purifier
         self.sextractor_mag_key_name = sextractor_mag_key_name
         self.write_regions = write_regions
+
+    def description(self) -> str:
+        return "Calculate the limiting mag of image with the SEXTRACTOR catalog."
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         for image in batch:

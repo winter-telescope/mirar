@@ -75,9 +75,9 @@ BACK_FILTERSIZE        6               # Background map filter range (meshes)
 #------------------------------ Memory management -----------------------------
  
 VMEM_DIR               .               # Directory path for swap files
-VMEM_MAX               2047            # Maximum amount of virtual memory (MB)
-MEM_MAX                256             # Maximum amount of usable RAM (MB)
-COMBINE_BUFSIZE        256             # RAM dedicated to co-addition(MB)
+VMEM_MAX               2056            # Maximum amount of virtual memory (MB)
+MEM_MAX                2056             # Maximum amount of usable RAM (MB)
+COMBINE_BUFSIZE        2056             # RAM dedicated to co-addition(MB)
  
 #------------------------------ Miscellaneous ---------------------------------
  
@@ -94,3 +94,5 @@ VERBOSE_TYPE           NORMAL          # QUIET,NORMAL or FULL
 NTHREADS               0               # Number of simultaneous threads for
                                        # the SMP version of SWarp
                                        # 0 = automatic
+
+NOPENFILES_MAX         512             # Maximum number of files opened by SWarp

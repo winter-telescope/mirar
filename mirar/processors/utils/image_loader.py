@@ -47,31 +47,17 @@ def unzip(zipped_list: list[str]) -> list[str]:
     return unzipped_list
 
 
-def load_from_dir(
-    input_dir: str | Path,
+def load_from_list(
+    img_list: list[str | Path],
     open_f: Callable[[str | Path], Image | list[Image]],
 ) -> ImageBatch:
     """
-    Function to load all images in a directory
+    Load images from a list of files
 
-    :param input_dir: Input directory
+    :param img_list: Image list
     :param open_f: Function to open images
     :return: ImageBatch object
     """
-    img_list = sorted(glob(f"{input_dir}/*.fits"))
-
-    # check for zipped files too
-    zipped_list = sorted(glob(f"{input_dir}/*.fz"))
-    if len(zipped_list) > 0:
-        unzipped_list = unzip(zipped_list)
-        for file in unzipped_list:
-            img_list.append(file)
-
-    if len(img_list) < 1:
-        err = f"No images found in {input_dir}. Please check path is correct!"
-        logger.error(err)
-        raise ImageNotFoundError(err)
-
     images = ImageBatch()
 
     for path in tqdm(img_list):
@@ -98,6 +84,34 @@ def load_from_dir(
     return images
 
 
+def load_from_dir(
+    input_dir: str | Path,
+    open_f: Callable[[str | Path], Image | list[Image]],
+) -> ImageBatch:
+    """
+    Function to load all images in a directory
+
+    :param input_dir: Input directory
+    :param open_f: Function to open images
+    :return: ImageBatch object
+    """
+    img_list = sorted(glob(f"{input_dir}/*.fits"))
+
+    # check for zipped files too
+    zipped_list = sorted(glob(f"{input_dir}/*.fz"))
+    if len(zipped_list) > 0:
+        unzipped_list = unzip(zipped_list)
+        for file in unzipped_list:
+            img_list.append(file)
+
+    if len(img_list) < 1:
+        err = f"No images found in {input_dir}. Please check path is correct!"
+        logger.error(err)
+        raise ImageNotFoundError(err)
+
+    return load_from_list(img_list, open_f)
+
+
 class ImageLoader(BaseImageProcessor):
     """Processor to load raw images."""
 
@@ -119,7 +133,7 @@ class ImageLoader(BaseImageProcessor):
             load_image = self.default_load_image
         self.load_image = load_image
 
-    def __str__(self):
+    def description(self):
         return (
             f"Processor to load images from the '{self.input_sub_dir}' subdirectory "
             f"using the '{self.load_image.__name__}' function"
@@ -156,7 +170,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         if isinstance(self.copy_header_keys, str):
             self.copy_header_keys = [self.copy_header_keys]
 
-    def __str__(self):
+    def description(self):
         return f"Processor to load images from header key {self.header_key}"
 
     def _apply_to_images(
@@ -167,6 +181,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         for image in batch:
             new_image_file = image.header[self.header_key]
             new_image = self.load_image(new_image_file)
+
             if self.copy_header_keys is not None:
                 for key in self.copy_header_keys:
                     new_image.header[key] = image.header[key]
@@ -179,6 +194,52 @@ class LoadImageFromHeader(BaseImageProcessor):
             new_batch.append(new_image)
 
         return new_batch
+
+
+class ImageListLoader(BaseImageProcessor):
+    """Processor to load raw images."""
+
+    base_key = "loadlist"
+
+    image_type = Image
+    default_load_image = staticmethod(open_raw_image)
+
+    def __init__(
+        self,
+        img_list: list[Path],
+        load_image: Callable[[str], Image | list[Image]] = None,
+    ):
+        super().__init__()
+        self.img_list = img_list
+        if len(self.img_list) < 1:
+            err = "No images found in list. Please check path is correct!"
+            logger.error(err)
+            raise ImageNotFoundError(err)
+        if load_image is None:
+            load_image = self.default_load_image
+        self.load_image = load_image
+
+    def description(self):
+        return (
+            f"Load {len(self.img_list)} images from "
+            f"list of {len(self.img_list)} files"
+        )
+
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
+        """
+        Load images from a list of files
+
+        :param batch: Batch of images
+        :return: New batch of images
+        """
+
+        if len(batch) > 0:
+            logger.warning("Batch is not empty. Overwriting images!")
+
+        return load_from_list(
+            self.img_list,
+            open_f=self.load_image,
+        )
 
 
 class MEFLoader(ImageLoader):

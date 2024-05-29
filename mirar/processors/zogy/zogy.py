@@ -121,7 +121,7 @@ class ZOGYPrepare(BaseImageProcessor):
         self.y_key = y_key
         self.flux_key = flux_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to prepare images for ZOGY."
 
     def get_sub_output_dir(self) -> Path:
@@ -457,7 +457,7 @@ class ZOGY(ZOGYPrepare):
         self.output_sub_dir = output_sub_dir
         self.sci_zp_header_key = sci_zp_header_key
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to produce difference images using ZOGY."
 
     def _apply_to_images(
@@ -487,20 +487,19 @@ class ZOGY(ZOGYPrepare):
             logger.debug(f"Running zogy on image {image[BASE_NAME_KEY]}")
 
             # Load the PSFs into memory
-            with fits.open(sci_psf_path, memmap=False) as img_psf_f:
-                new_psf = img_psf_f[0].data  # pylint: disable=no-member
-                new_psf[new_psf < 0] = 0
+            sci_psf_image = self.open_fits(sci_psf_path)
+            new_psf = sci_psf_image.get_data()  # pylint: disable=no-member
+            new_psf[new_psf < 0] = 0
 
-            with fits.open(ref_psf_path, memmap=False) as ref_psf_f:
-                ref_psf = ref_psf_f[0].data  # pylint: disable=no-member
-                ref_psf[ref_psf < 0] = 0
+            ref_psf_image = self.open_fits(ref_psf_path)
+            ref_psf = ref_psf_image.get_data()  # pylint: disable=no-member
+            ref_psf[ref_psf < 0] = 0
 
-            # Load the sigma images into memory
-            with fits.open(sci_rms_path, memmap=False) as img_sigma_f:
-                new_sigma = img_sigma_f[0].data  # pylint: disable=no-member
+            sci_rms_image = self.open_fits(sci_rms_path)
+            new_sigma = sci_rms_image.get_data()  # pylint: disable=no-member
 
-            with fits.open(ref_rms_path, memmap=False) as ref_sigma_f:
-                ref_sigma = ref_sigma_f[0].data  # pylint: disable=no-member
+            ref_rms_image = self.open_fits(ref_rms_path)
+            ref_sigma = ref_rms_image.get_data()  # pylint: disable=no-member
 
             diff_data, diff_psf_data, scorr_data = pyzogy(
                 new_data=image.get_data(),

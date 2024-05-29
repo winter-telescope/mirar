@@ -32,7 +32,7 @@ class RegionsWriter(BaseSourceProcessor):
         self.region_pix_radius = region_pix_radius
         self.output_dir = Path(output_dir)
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Processor to save 'region files' to "
             f"the {self.output_dir_name} directory. "

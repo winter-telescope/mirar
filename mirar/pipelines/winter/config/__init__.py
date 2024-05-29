@@ -78,7 +78,15 @@ ref_psfex_path = winter_file_dir.joinpath("reference.psfex")
 
 winter_cal_requirements = [
     CalRequirement(
-        target_name="dark", required_field="EXPTIME", required_values=["120.0"]
+        target_name="dark",
+        required_field="EXPTIME",
+        required_values=[
+            "120.0",  # J/Y
+            "60.0",  # Hs
+            "3.0",  # J flats
+            "4.0",  # Y flats
+            "5.0",  # Hs flats
+        ],
     ),
 ]
 
@@ -107,4 +115,17 @@ winter_fritz_config = {
     "stream_id": 1005,
     "update_thumbnails": True,
     "skyportal_client": SkyportalClient(base_url="https://fritz.science/api/"),
+    "annotation_keys": [
+        "rb",
+        "chipsf",
+        "fwhm",
+        "scorr",
+        "nneg",
+        "mindtoedge",
+        "diffmaglim",
+        "distpsnr1",
+        "sgmag1",
+        "srmag1",
+        "simag1",
+    ],
 }

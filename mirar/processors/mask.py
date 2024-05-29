@@ -3,6 +3,7 @@ Module containing processors which mask pixels
 """
 
 import logging
+from abc import ABC
 from pathlib import Path
 from typing import Callable
 
@@ -12,7 +13,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch
-from mirar.paths import BASE_NAME_KEY, FITS_MASK_KEY, get_output_dir
+from mirar.paths import BASE_NAME_KEY, FITS_MASK_KEY, base_code_dir, get_output_dir
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 MASK_VALUE = np.nan
 
 
-class BaseMask(BaseImageProcessor):
+class BaseMask(BaseImageProcessor, ABC):
     """
     Base class for masking processors
     """
@@ -101,15 +102,25 @@ class MaskPixelsFromPath(BaseMask):
             output_dir=output_dir,
             only_write_mask=only_write_mask,
         )
-        self.mask_path = mask_path
+        self.mask_path = Path(mask_path) if mask_path is not None else None
         self.mask_path_key = mask_path_key
         if mask_path is None and mask_path_key is None:
             raise ValueError("Must specify either mask_path or mask_path_key")
         if mask_path is not None and mask_path_key is not None:
             raise ValueError("Must specify either mask_path or mask_path_key, not both")
 
-    def __str__(self) -> str:
-        return f"Processor to mask bad pixels using a pre-defined map: {self.mask_path}"
+    def description(self) -> str:
+
+        if self.mask_path is None:
+            return (
+                f"Mask bad pixels using a pre-defined map with key"
+                f"{self.mask_path_key}"
+            )
+
+        return (
+            f"Mask bad pixels using a pre-defined map at "
+            f"{self.mask_path.relative_to(base_code_dir)}"
+        )
 
     def get_mask(self, image) -> np.ndarray:
         """
@@ -179,7 +190,7 @@ class MaskPixelsFromFunction(BaseMask):
         """
         return self.mask_function(image)
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Processor to mask pixels using the function "
             f"'{self.mask_function.__name__}'"
@@ -218,7 +229,7 @@ class MaskAboveThreshold(BaseMask):
         if threshold is not None and threshold_key is not None:
             raise ValueError("Must specify either threshold or threshold_key, not both")
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return f"Processor to mask pixels above a threshold '{self.threshold}'"
 
     def get_mask(self, image) -> np.ndarray:
@@ -262,7 +273,7 @@ class MaskPixelsFromWCS(BaseMask):
         if self.mask_pixels_ra is not None:
             self.mask_file_key = None
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to mask pixels using a list of RA/Dec coordinates."
 
     def get_mask(self, image) -> np.ndarray:
@@ -322,7 +333,7 @@ class WriteMaskedCoordsToFile(BaseMask):
             only_write_mask=only_write_mask,
         )
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return f"Processor to save image masks to the {self.output_dir} directory"
 
     def get_mask(self, image) -> np.ndarray:
@@ -363,5 +374,5 @@ class MaskDatasecPixels(BaseMask):
         mask[datasec_ymax:, :] = 1.0
         return mask.astype(bool)
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Processor to mask pixels using a 'datasec' keyword in the header."

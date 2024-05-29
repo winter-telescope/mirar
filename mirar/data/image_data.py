@@ -107,9 +107,6 @@ class Image(DataBlock):
         name = f"{hashlib.sha1(base.encode()).hexdigest()}.npy"
         return cache.get_cache_dir().joinpath(name)
 
-    def __str__(self):
-        return f"<An {self.__class__.__name__} object, built from {self.get_name()}>"
-
     def set_data(self, data: np.ndarray):
         """
         Set the data with cache
