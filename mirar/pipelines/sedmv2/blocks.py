@@ -62,7 +62,6 @@ load_raw = [
         input_sub_dir="",
         load_image=load_sedmv2_mef_image,
     ),
-    ImageSaver(output_dir_name="loaded"),
 ]
 
 mask_all = [  # masks cals and science, assuming run just after load_raw
@@ -98,7 +97,6 @@ skysub = [
         checkimage_type=["-BACKGROUND"],
     ),
     SextractorBkgSubtractor(),
-    ImageSaver(output_dir_name="skysub", write_mask=True),
 ]
 
 reduce_not0 = mask_all + bias_all + dark_all + flat_all + skysub
@@ -161,7 +159,6 @@ parse_stellar = [ImageSelector(("SOURCE", ["stellar", "None"]))]
 process_stellar = reduce_not0 + astrometry + resample_stellar + calibrate
 
 image_photometry = [  # imported from wirc/blocks.py
-    ImageSaver(output_dir_name="photometry"),
     ForcedPhotometryDetector(ra_header_key="OBJRAD", dec_header_key="OBJDECD"),
     AperturePhotometry(
         aper_diameters=[
