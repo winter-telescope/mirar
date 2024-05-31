@@ -7,6 +7,7 @@ from datetime import date, datetime
 from typing import ClassVar
 
 import pandas as pd
+from astropy.coordinates import SkyCoord
 from pydantic import Field, computed_field
 from sqlalchemy import (  # event,
     VARCHAR,
@@ -78,6 +79,13 @@ class ExposuresTable(WinterBase):  # pylint: disable=too-few-public-methods
 
     mircover = Column(VARCHAR(10), nullable=True)
 
+    numdiths = Column(Integer, nullable=True)
+    dithnum = Column(Integer, nullable=True)
+    dithstep = Column(Float, nullable=True)
+
+    galactic_b = Column(Float, nullable=True)
+    galactic_l = Column(Float, nullable=True)
+
     utctime = Column(DateTime(timezone=True))
 
     exptime = Column(Float, nullable=False)
@@ -128,6 +136,10 @@ class Exposure(BaseDB):
     readoutv: str | None = Field(default=None)
     mircover: str | None = Field(default=None)
 
+    numdiths: int | None = Field(default=None)
+    dithnum: int | None = Field(default=None)
+    dithstep: float | None = Field(default=None, ge=0)
+
     utctime: datetime = Field()
     exptime: float = Field(ge=0)
     expmjd: float = Field(ge=59000)
@@ -146,6 +158,26 @@ class Exposure(BaseDB):
     dec: float = dec_field
     altitude: float = alt_field
     azimuth: float = az_field
+
+    @computed_field()
+    @property
+    def galactic_b(self) -> float:
+        """
+        Returns the galactic latitude of the exposure
+
+        :return: galactic latitude
+        """
+        return SkyCoord(ra=self.ra, dec=self.dec, unit="deg").galactic.b.deg
+
+    @computed_field()
+    @property
+    def galactic_l(self) -> float:
+        """
+        Returns the galactic longitude of the exposure
+
+        :return: galactic longitude
+        """
+        return SkyCoord(ra=self.ra, dec=self.dec, unit="deg").galactic.l.deg
 
     @computed_field
     @property
