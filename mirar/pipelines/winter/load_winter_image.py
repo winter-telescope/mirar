@@ -238,6 +238,21 @@ def clean_header(header: fits.Header) -> fits.Header:
     if "GAINROW" not in header.keys():
         header["GAINROW"] = "[]"
 
+    if "NUMDITHS" not in header.keys():
+        header["NUMDITHS"] = None
+    else:
+        header["NUMDITHS"] = int(header["NUMDITHS"])
+
+    if "DITHNUM" not in header.keys():
+        header["DITHNUM"] = None
+    else:
+        header["DITHNUM"] = int(header["DITHNUM"])
+
+    if "DITHSTEP" not in header.keys():
+        header["DITHSTEP"] = None
+    else:
+        header["DITHSTEP"] = float(header["DITHSTEP"])
+
     try:
         header["BOARD_ID"] = int(header["BOARD_ID"])
         assert (
