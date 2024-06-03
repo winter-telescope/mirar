@@ -44,6 +44,12 @@ jobs:
         shell: bash -el {0}
         run: conda install poetry
 
+      - name: Update setuptools
+        shell: bash -el {0}
+        run:
+            conda install setuptools
+            conda install -c conda-forge setuptools_scm
+
       - name: install packages with conda
         shell: bash -el {0}
         run: |
@@ -55,19 +61,6 @@ jobs:
           pip install --upgrade pip
           python -m pip install --upgrade poetry coveralls
           poetry install
-
-      # Set up database
-      - name: postgres
-        run: |
-          sudo apt-get update
-          sudo apt-get install postgresql
-          sudo apt-get install postgresql-common
-          sudo apt-get install postgresql-server-dev-14
-          sudo service postgresql restart
-          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runner_password'; GRANT ALL PRIVILEGES ON DATABASE postgres TO runner; ALTER USER runner WITH SUPERUSER;"
-          git clone https://github.com/segasai/q3c.git
-          make -C q3c
-          sudo make -C q3c install
 
       # Make sure the doc tests are up to date
       - name: Run doc tests
