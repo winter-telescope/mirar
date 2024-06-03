@@ -36,7 +36,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: "latest"
-          subdir: osx-64
+          CONDA_SUBDIR: osx-64
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
 
@@ -48,7 +48,6 @@ jobs:
         shell: bash -el {0}
         run:
             conda install setuptools
-            conda install -c conda-forge setuptools_scm
 
       - name: install packages with conda
         shell: bash -el {0}
