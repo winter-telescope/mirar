@@ -212,7 +212,7 @@ def sedmv2_photcal_catalog_purifier(
     y_lower_limit = edge_width_pixels
     y_upper_limit = image.get_data().shape[0] - edge_width_pixels
 
-    # remove sources with spread_model > sm_cutoff (they are likely galaxies)
+    # sources with spread_model > sm_cutoff are likely galaxies
     sm_cutoff = 0.0015
     # raise warning if most sources don't pass this cut
     ind_bad = np.where(sci_catalog["SPREAD_MODEL"] > sm_cutoff)[0]
@@ -230,7 +230,6 @@ def sedmv2_photcal_catalog_purifier(
         & (sci_catalog["X_IMAGE"] < x_upper_limit)
         & (sci_catalog["Y_IMAGE"] > y_lower_limit)
         & (sci_catalog["Y_IMAGE"] < y_upper_limit)
-        & (sci_catalog["SPREAD_MODEL"] < sm_cutoff)
     )
 
     logger.debug(
