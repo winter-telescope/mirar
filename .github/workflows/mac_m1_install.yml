@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Mac
 
 # Controls when the action will run.
 on:
@@ -59,7 +59,7 @@ jobs:
           scamp -v
           sex -v
           solve-field --version
-          pip install --upgrade pip
+          pip install --upgrade pip setuptools
           python -m pip install --upgrade poetry coveralls
           poetry install
 
