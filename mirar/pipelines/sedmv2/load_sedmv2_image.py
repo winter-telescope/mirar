@@ -144,7 +144,7 @@ def clean_cal_header(
 
     # flat/bias-specific keys
     if hdr0["IMGTYPE"] == "flat":
-        flat_time_ugriz = [0.5, 0.1, 0.03, 0.01, 0.1]
+        flat_time_ugriz = [60, 3, 0.8, 0.3, 1]
         filt_list = np.array(["u", "g", "r", "i", "z"])
 
         filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
