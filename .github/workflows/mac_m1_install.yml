@@ -1,0 +1,97 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+  pull_request:
+  merge_group:
+
+  # run the pipeline on the 0th minute of the 0th hour of day 1 and 15 every month
+  schedule:
+    - cron: '0 0 1,15 * *'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  mac_m1_install:
+    # The type of runner that the job will run on
+    runs-on: macos-14
+
+    # Specify the python versions to test
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Print disk space
+        run: df -h
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: true
+
+      - name: Print disk space
+        run: df -h
+
+      - uses: actions/checkout@v3
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          subdir: osx-64
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install poetry
+        shell: bash -el {0}
+        run: conda install poetry
+
+      - name: install packages with conda
+        shell: bash -el {0}
+        run: |
+          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
+          swarp -v
+          scamp -v
+          sex -v
+          solve-field --version
+          pip install --upgrade pip
+          python -m pip install --upgrade poetry coveralls
+          poetry install
+
+      # Set up database
+      - name: postgres
+        run: |
+          sudo apt-get update
+          sudo apt-get install postgresql
+          sudo apt-get install postgresql-common
+          sudo apt-get install postgresql-server-dev-14
+          sudo service postgresql restart
+          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runner_password'; GRANT ALL PRIVILEGES ON DATABASE postgres TO runner; ALTER USER runner WITH SUPERUSER;"
+          git clone https://github.com/segasai/q3c.git
+          make -C q3c
+          sudo make -C q3c install
+
+      # Make sure the doc tests are up to date
+      - name: Run doc tests
+        shell: bash -el {0}
+        run: |
+          poetry run make -C docs/ doctest
