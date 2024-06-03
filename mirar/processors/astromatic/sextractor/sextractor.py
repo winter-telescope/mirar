@@ -62,12 +62,13 @@ def check_sextractor_prerequisite(processor: BaseProcessor):
         raise PrerequisiteError(err)
 
 
-class Sextractor(BaseImageProcessor):
+class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attributes
     """
     Processor to run sextractor on images
     """
 
     base_key = "sextractor"
+    max_n_cpu = 1
 
     def __init__(  # pylint: disable=too-many-locals
         self,  # pylint: disable=too-many-instance-attributes
@@ -138,7 +139,7 @@ class Sextractor(BaseImageProcessor):
         if (not self.use_psfex) & (self.psf_path is not None):
             raise ValueError("Cannot specify psf_path without setting use_psfex=True")
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Processor to apply sextractor to images, "
             f"and save detected sources to the '{self.output_sub_dir}' directory."
@@ -197,7 +198,7 @@ class Sextractor(BaseImageProcessor):
                 logger.error(err)
                 raise PrerequisiteError(err)
 
-    def _apply_to_images(  # pylint: disable=too-many-locals
+    def _apply_to_images(  # pylint: disable=too-many-locals, too-many-branches
         self, batch: ImageBatch
     ) -> ImageBatch:
         sextractor_out_dir = self.get_sextractor_output_dir()

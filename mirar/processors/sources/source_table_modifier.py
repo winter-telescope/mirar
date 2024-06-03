@@ -22,7 +22,7 @@ class CustomSourceTableModifier(BaseSourceProcessor):
         super().__init__()
         self.modifier_function = modifier_function
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             f"Processor to modify a source dataframe using the"
             f" {self.modifier_function.__name__} function."

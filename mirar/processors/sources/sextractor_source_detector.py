@@ -130,7 +130,7 @@ class SextractorSourceDetector(BaseSourceGenerator):
         self.output_sub_dir = output_sub_dir
         self.target_only = target_only
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return "Retrieves a sextractor catalog and converts it to a sourcetable"
 
     def get_sub_output_dir(self) -> Path:

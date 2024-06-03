@@ -48,6 +48,9 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         self.update_thumbnails = update_thumbnails
         self.skyportal_client = skyportal_client
 
+    def description(self) -> str:
+        return f"Sending sources via API to {self.skyportal_client.base_url}"
+
     def _apply_to_sources(
         self,
         batch: SourceBatch,

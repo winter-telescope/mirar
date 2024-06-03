@@ -10,16 +10,17 @@ from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
-from mirar.pipelines.sedmv2.blocks import (
+from mirar.pipelines.sedmv2.blocks import (  # transient_phot_psfexsex,
     image_photometry,
+    imsub,
     load_raw,
-    process_all,
     process_all_psf_then_cal,
+    process_all_psf_then_cal_no_color_term,
     process_stellar,
-    process_transient,
+    process_transient_using_magauto,
+    psf_phot_after_imsub,
     reduce_not0,
     transient_phot,
-    transient_phot_psfexsex,
     upload_fritz,
 )
 from mirar.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
@@ -42,15 +43,23 @@ class SEDMv2Pipeline(Pipeline):
     all_pipeline_configurations = {
         "default": load_raw + process_stellar,
         "default_stellar": load_raw + process_stellar + image_photometry,
-        "default_transient": load_raw + process_transient + transient_phot,  # +imsub,
+        "default_transient": load_raw
+        + process_transient_using_magauto
+        + transient_phot,  # +imsub,
         "realtime": load_raw + reduce_not0,  # +much more...
         "psf_all_then_calibrate": load_raw + process_all_psf_then_cal,
         "transient_upload": load_raw
-        + process_transient
+        + process_transient_using_magauto
         + transient_phot
         + upload_fritz,
-        "all_phot": load_raw + process_all,
-        "transient_PSF": load_raw + process_transient + transient_phot_psfexsex,
+        "transient_PSF": load_raw
+        + process_all_psf_then_cal
+        + imsub
+        + psf_phot_after_imsub,  # + upload_fritz
+        "transient_PSF_nocolor": load_raw
+        + process_all_psf_then_cal_no_color_term
+        + imsub
+        + psf_phot_after_imsub,
     }
 
     @staticmethod

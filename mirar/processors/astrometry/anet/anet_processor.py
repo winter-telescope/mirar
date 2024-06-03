@@ -13,12 +13,7 @@ from mirar.data import Image, ImageBatch
 from mirar.data.utils import write_regions_file
 from mirar.errors.exceptions import ProcessorError
 from mirar.io import open_fits
-from mirar.paths import (
-    BASE_NAME_KEY,
-    LATEST_WEIGHT_SAVE_KEY,
-    get_output_dir,
-    get_temp_path,
-)
+from mirar.paths import BASE_NAME_KEY, get_output_dir, get_temp_path
 from mirar.processors.astromatic.sextractor.settings import (
     default_conv_path,
     default_starnnw_path,
@@ -129,7 +124,7 @@ class AstrometryNet(BaseImageProcessor):
 
         self.cache = cache
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             "Processor to perform astrometric calibration "
             "locally with astrometry.net."
@@ -202,18 +197,15 @@ class AstrometryNet(BaseImageProcessor):
             new_img_path = anet_out_dir.joinpath(base_name)
 
             temp_path = get_temp_path(anet_out_dir, base_name)
-            self.save_fits(image, temp_path)
+            self.save_fits(image, temp_path, compress=False)
 
             temp_files = [temp_path, new_img_path]
 
             sextractor_path = f"{self.sextractor_path}"
             if self.use_sextractor & self.use_weight:
-                if LATEST_WEIGHT_SAVE_KEY in image:
-                    weight_path = image[LATEST_WEIGHT_SAVE_KEY]
 
-                else:
-                    weight_path = self.save_mask_image(image, temp_path)
-                    temp_files.append(Path(weight_path))
+                weight_path = self.save_mask_image(image, temp_path, compress=False)
+                temp_files.append(Path(weight_path))
 
                 sextractor_path = (
                     f"{self.sextractor_path} -WEIGHT_TYPE MAP_WEIGHT"

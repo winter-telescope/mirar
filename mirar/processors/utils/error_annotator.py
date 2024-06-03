@@ -25,6 +25,9 @@ class ErrorStackAnnotator(BaseImageProcessor):
         self.image_dict = self.unpack_errorstack()
         self.processed_images = processed_images
 
+    def description(self) -> str:
+        return "Annotate image headers with processing errors"
+
     def unpack_errorstack(self) -> dict:
         """
         Convert an errorstack to an image-indexed dictionary

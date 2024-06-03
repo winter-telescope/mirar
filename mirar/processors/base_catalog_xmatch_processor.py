@@ -3,6 +3,7 @@ Base processor for any functionality requiring cross-matching a
 reference catalog to a Sextractor catalog
 """
 
+from abc import ABC
 from pathlib import Path
 from typing import Callable
 
@@ -80,7 +81,7 @@ def xmatch_catalogs(
     return matched_img_cat, matched_ref_cat, d2d[match_mask]
 
 
-class BaseProcessorWithCrossMatch(BaseImageProcessor):
+class BaseProcessorWithCrossMatch(BaseImageProcessor, ABC):
     """
     Photometric calibrator processor
     Attributes:
@@ -114,7 +115,7 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor):
 
         self.write_regions = write_regions
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             "Base processor for any functionality requiring "
             "cross-matching a reference catalog to a Sextractor catalog"

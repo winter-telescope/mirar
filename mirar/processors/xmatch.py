@@ -20,6 +20,8 @@ class XMatch(BaseSourceProcessor):
     Class to cross-match a candidate_table to a catalog
     """
 
+    max_n_cpu = 4
+
     base_key = "XMATCH"
 
     def __init__(
@@ -29,7 +31,7 @@ class XMatch(BaseSourceProcessor):
         self.catalog = catalog
         super().__init__()
 
-    def __str__(self):
+    def description(self):
         return (
             f"Processor to cross-match sources with "
             f"'{self.catalog.catalog_name}' catalog."

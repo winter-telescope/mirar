@@ -8,7 +8,6 @@ from pathlib import Path
 
 from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
-from mirar.io import open_raw_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.summer.blocks import (
     build_log,
@@ -26,6 +25,7 @@ from mirar.pipelines.summer.blocks import (
 )
 from mirar.pipelines.summer.config import PIPELINE_NAME, summer_cal_requirements
 from mirar.pipelines.summer.load_summer_image import load_raw_summer_image
+from mirar.pipelines.summer.models import set_up_summer_databases
 
 summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
@@ -39,6 +39,7 @@ class SummerPipeline(Pipeline):
 
     name = PIPELINE_NAME
     default_cal_requirements = summer_cal_requirements
+    non_linear_level = 40000
 
     all_pipeline_configurations = {
         "default": load_raw + build_log + export_raw + cal_hunter + process_raw,
@@ -68,3 +69,6 @@ class SummerPipeline(Pipeline):
     @staticmethod
     def _load_raw_image(path: str | Path) -> Image | list[Image]:
         return load_raw_summer_image(path)
+
+    def set_up_pipeline(self):
+        set_up_summer_databases()

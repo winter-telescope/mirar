@@ -10,6 +10,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 
 from mirar.errors.error_report import ErrorReport
 from mirar.paths import PACKAGE_NAME, __version__
@@ -135,25 +136,31 @@ class ErrorStack:
 
         return summary
 
-    def summarise_error_stack_tsv(self, output_path=None) -> str:
+    def summarise_error_stack_tsv(self, output_path=None):
         """
         Returns a tsv summary of all ErrorReports in format
         error_name, image_paths
         :param output_path: Path to write summary in .csv format (optional)
-        :return: str
+        :return: None
         """
         all_reports = self.get_all_reports()
-        error_names = [err.get_error_name() for err in all_reports]
-        error_paths = [err.contents for err in all_reports]
-        error_paths = [",".join(x) for x in error_paths]
 
-        tsv_summary = "error_name\timage_paths\n"
-        for name, paths in zip(error_names, error_paths):
-            tsv_summary += f"{name}\t{paths}\n"
+        err_df = []
+
+        for report in all_reports:
+            err_df.append(
+                {
+                    "error_name": report.get_error_name(),
+                    "image_paths": ",".join(sorted(report.contents)),
+                }
+            )
+
+        err_df = pd.DataFrame(err_df)
+
+        if len(err_df) > 0:
+            err_df.sort_values(by=["error_name", "image_paths"], inplace=True)
+            err_df.reset_index(drop=True, inplace=True)
 
         if output_path is not None:
             logger.error(f"Saving tracebacks of caught errors to {output_path}")
-            with open(output_path, "w", encoding="utf-8") as err_file:
-                err_file.write(tsv_summary)
-
-        return tsv_summary
+            err_df.to_csv(output_path, sep="\t", index=False)

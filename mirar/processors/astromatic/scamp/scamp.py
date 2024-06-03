@@ -41,19 +41,18 @@ def run_scamp(
 ):
     """
     Function to run scamp.
-    NOTE : By default, the scamp instance here is only designed to run for astrometry.
+    NOTE: By default, the scamp instance here is only designed to run for astrometry.
     This function thus enforces SOLVE_PHOTOM = N as otherwise Scamp behaves weirdly and
     can output FLXSCALE != 1 in the output header. This can cause incosistencies down
     the line, e.g. with Swarp.
-    Args:
-        scamp_list_path:
-        scamp_config_path:
-        ast_ref_cat_path:
-        output_dir:
-        timeout_seconds:
 
-    Returns:
+    :param scamp_list_path: Path to the list of images to run scamp on
+    :param scamp_config_path: Path to the scamp config file
+    :param ast_ref_cat_path: Path to the reference catalog
+    :param output_dir: Output directory
+    :param timeout_seconds: Timeout for scamp
 
+    :return: None
     """
     scamp_cmd = (
         f"scamp @{scamp_list_path} "
@@ -109,28 +108,28 @@ class Scamp(BaseImageProcessor):
         copy_scamp_header_to_image: bool = False,
     ):
         super().__init__()
-        self.scamp_config = scamp_config_path
+        self.scamp_config = Path(scamp_config_path)
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir
         self.cache = cache
         self.copy_scamp_header_to_image = copy_scamp_header_to_image
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         """
-        Description of processor
-        Returns:
+        Function to get description of the processor
 
+        :return: description
         """
         return (
             f"Processor to apply Scamp to images and calculate astrometry, "
-            f"using the config at {self.scamp_config}."
+            f"using the config at {self.scamp_config.name}."
         )
 
     def get_scamp_output_dir(self) -> Path:
         """
         Function to get scamp output directory
-        Returns:
-        Path
+
+        :return: output directory
         """
         return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
 

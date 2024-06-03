@@ -52,6 +52,16 @@ class ImageRejector(BaseImageProcessor, CleanupProcessor):
         super().__init__()
         self.rejects = args
 
+    def description(self):
+        reqs = []
+        for target in self.rejects:
+            if isinstance(target[1], list):
+                reqs.append(f"{target[0]} = {' or '.join(target[1])}")
+            else:
+                reqs.append(f"{target[0]} = {target[1]}")
+
+        return f"Processor to reject images where {'&'.join(reqs)}"
+
     def _apply_to_images(
         self,
         batch: ImageBatch,

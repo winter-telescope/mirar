@@ -9,6 +9,7 @@ Other people who contributed to the code include:
 * Sulekha Kishore
 * Saarah Hall
 * Benjamin Roulston
+* Jamie Soon
 
 We especially thank Saarah for her suggestion of the code name, and Ben for creating the logo.
 

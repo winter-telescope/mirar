@@ -102,6 +102,34 @@ def clean_header(header: fits.Header) -> fits.Header:
         # Set targname to dark
         header["TARGNAME"] = "dark"
 
+    # Tag dome flats as flats
+    if header[OBSCLASS_KEY].lower() == "domeflat":
+        header[OBSCLASS_KEY] = "flat"
+        header[TARGET_KEY] = "flat"
+
+    # Mirror cover should be open for science images, and open or closed for darks
+    if "MIRCOVER" in header.keys():
+
+        bad_mirror_cover = False
+
+        if header[OBSCLASS_KEY] in ["dark", "bias"]:
+            if not header["MIRCOVER"].lower() in ["open", "closed"]:
+                bad_mirror_cover = True
+
+        elif header[OBSCLASS_KEY] not in ["corrupted", "test"]:
+            if not header["MIRCOVER"].lower() == "open":
+                bad_mirror_cover = True
+
+        if bad_mirror_cover:
+            logger.error(
+                f"Bad MIRCOVER value: {header['MIRCOVER']} "
+                f"(img class={header[OBSCLASS_KEY]})"
+            )
+            header[OBSCLASS_KEY] = "corrupted"
+
+    else:
+        header["MIRCOVER"] = None
+
     header["EXPTIME"] = np.rint(header["EXPTIME"])
 
     # Set up the target name
@@ -203,13 +231,27 @@ def clean_header(header: fits.Header) -> fits.Header:
     if header["FILTER"].lower() in ["y", "j", "h"]:
         header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
 
-    header["DITHGRP"] = int(header["DITHNUM"] <= 5)
     if "GAINCOLT" not in header.keys():
         header["GAINCOLT"] = "[]"
     if "GAINCOLB" not in header.keys():
         header["GAINCOLB"] = "[]"
     if "GAINROW" not in header.keys():
         header["GAINROW"] = "[]"
+
+    if "NUMDITHS" not in header.keys():
+        header["NUMDITHS"] = None
+    else:
+        header["NUMDITHS"] = int(header["NUMDITHS"])
+
+    if "DITHNUM" not in header.keys():
+        header["DITHNUM"] = None
+    else:
+        header["DITHNUM"] = int(header["DITHNUM"])
+
+    if "DITHSTEP" not in header.keys():
+        header["DITHSTEP"] = None
+    else:
+        header["DITHSTEP"] = float(header["DITHSTEP"])
 
     try:
         header["BOARD_ID"] = int(header["BOARD_ID"])
@@ -526,10 +568,11 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[1030:, 1800:] = 1.0
 
     if header["BOARD_ID"] == 4:
+
         # # Mask the region to the top left
         mask[610:, :250] = 1.0
         # # There seems to be a dead spot in the middle of the image
-        mask[503:518, 390:405] = 1.0
+        mask[503:518, 384:405] = 1.0
 
         # Mask the edges with low sensitivity due to masking
         mask[:, 1948:] = 1.0
@@ -539,6 +582,9 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
 
         # Mask a vertical strip
         mask[:, 998:1002] = 1.0
+
+        # Mask another vertical strip
+        mask[:, 1266:1273] = 1.0
 
         # Mask the outage to the right
         mask[145:, 1735:] = 1.0

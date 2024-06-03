@@ -1,5 +1,5 @@
 
-![alt text](./docs/MIRAR_logo.png?raw=true)
+![alt text](docs/source/MIRAR_logo.png?raw=true)
 
 # Modular Image Reduction and Analysis Resource (MIRAR)
 

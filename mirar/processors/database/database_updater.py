@@ -68,6 +68,12 @@ class ImageSequenceDatabaseUpdater(ImageDatabaseUpdater):
         super().__init__(**kwargs)
         self.sequence_key = sequence_key
 
+    def description(self) -> str:
+        return (
+            f"Update entries in '{self.db_table.__name__}' "
+            f"table of db using {self.sequence_key}"
+        )
+
     def get_constraints(self, data) -> DBQueryConstraints:
         """
         Function to get the constraints for a database query

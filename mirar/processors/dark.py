@@ -61,7 +61,7 @@ class DarkCalibrator(ProcessorWithCache):
         super().__init__(*args, **kwargs)
         self.select_cache_images = select_cache_images
 
-    def __str__(self) -> str:
+    def description(self) -> str:
         return (
             "Processor to create a dark image, "
             "and subtracts this from the other images."

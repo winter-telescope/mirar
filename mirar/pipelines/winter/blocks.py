@@ -5,7 +5,9 @@ Module for WINTER data reduction
 # pylint: disable=duplicate-code
 import os
 
-from mirar.catalog.kowalski import PS1, TMASS, Gaia, GaiaBright, PS1SGSc
+from winterrb.model import WINTERNet
+
+from mirar.catalog.kowalski import PS1, PS1STRM, TMASS, Gaia, GaiaBright, PS1SGSc
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -14,6 +16,7 @@ from mirar.paths import (
     LATEST_SAVE_KEY,
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
+    PROC_HISTORY_KEY,
     RAW_IMG_KEY,
     SOURCE_HISTORY_KEY,
     SOURCE_NAME_KEY,
@@ -33,19 +36,20 @@ from mirar.pipelines.winter.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
     winter_avro_schema_path,
+    winter_cal_requirements,
     winter_fritz_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
+    apply_rb_to_table,
     mask_stamps_around_bright_stars,
-    select_winter_flat_images,
+    select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_boardid_6_demasker,
-    winter_cal_requirements,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
     winter_candidate_quality_filterer,
@@ -130,10 +134,12 @@ from mirar.processors.sources import (
     SourceWriter,
     ZOGYSourceDetector,
 )
+from mirar.processors.sources.machine_learning import Pytorch
 from mirar.processors.split import SUB_ID_KEY, SplitImage, SwarpImageSplitter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
+    HeaderEditor,
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
@@ -216,6 +222,7 @@ load_raw = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
+    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements),
 ]
 
 load_astrometry = [
@@ -223,9 +230,8 @@ load_astrometry = [
 ]
 
 extract_all = [
-    ImageBatcher("UTCTIME"),
+    ImageRebatcher("EXPID"),
     DatabaseImageBatchInserter(db_table=Exposure, duplicate_protocol="replace"),
-    ImageSelector((OBSCLASS_KEY, ["dark", "science", "flat"])),
 ]
 
 csvlog = [
@@ -239,6 +245,7 @@ csvlog = [
             EXPTIME_KEY,
             OBSCLASS_KEY,
             "BOARD_ID",
+            "MIRCOVER",
             "BASENAME",
             TARGET_KEY,
             "RADEG",
@@ -249,6 +256,7 @@ csvlog = [
             "READOUTV",
         ]
     ),
+    ImageRebatcher(BASE_NAME_KEY),
 ]
 
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
@@ -271,7 +279,7 @@ select_ref = [
 
 # mask
 mask = [
-    ImageBatcher(BASE_NAME_KEY),
+    ImageSelector((OBSCLASS_KEY, ["dark", "science", "flat"])),
     # MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
@@ -288,13 +296,15 @@ mask_and_split = mask + split
 # Save raw images
 
 save_raw = [
-    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
-    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
+    # Group into planned stacks, and label each image with the intended stackid
     ImageRebatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD"]),
     CustomImageBatchModifier(winter_stackid_annotator),
-    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    # Process each raw image in parallel
+    ImageRebatcher(BASE_NAME_KEY),
     ImageRejector(("BOARD_ID", "0")),
+    # HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
+    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -304,7 +314,7 @@ save_raw = [
 
 load_unpacked = [
     ImageLoader(input_sub_dir="raw_unpacked", input_img_dir=base_output_dir),
-    ImageRebatcher("UTCTIME"),
+    ImageRebatcher("EXPID"),
     CSVLog(
         export_keys=[
             "UTCTIME",
@@ -324,15 +334,13 @@ load_unpacked = [
             "MEDCOUNT",
         ]
     ),
+    ImageRebatcher(BASE_NAME_KEY),
 ]
 
 export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
 load_and_export_unpacked = load_unpacked + export_unpacked
 
-#
-cal_hunter = [
-    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements)
-]
+
 # Detrend blocks
 
 dark_calibrate = [
@@ -343,13 +351,14 @@ dark_calibrate = [
         cache_sub_dir="calibration_darks",
         cache_image_name_header_keys=[EXPTIME_KEY, "BOARD_ID"],
     ),
-    ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
-    ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="darkcal"),
+    ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
 ]
 
 flat_calibrate = [
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageRebatcher(
         [
             "BOARD_ID",
@@ -362,12 +371,11 @@ flat_calibrate = [
         ]
     ),
     FlatCalibrator(
-        cache_sub_dir="calibration_flats",
-        select_flat_images=select_winter_flat_images,
-        cache_image_name_header_keys=["FILTER", "BOARD_ID"],
+        cache_sub_dir="sky_dither_flats",
+        select_flat_images=select_winter_sky_flat_images,
     ),
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="skyflatcal"),
-    ImageRebatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -388,7 +396,6 @@ fourier_filter = [
 ]
 
 astrometry = [
-    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD"]),
     AstrometryNet(
         output_sub_dir="anet",
         scale_bounds=[1.0, 1.3],
@@ -399,12 +406,9 @@ astrometry = [
         sextractor_config_path=winter_anet_sextractor_config_path_generator,
         use_weight=True,
         timeout=120,
-        cache=True,
+        cache=False,
     ),
     ImageSaver(output_dir_name="post_anet"),
-    ImageRebatcher(
-        [TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD", "DITHGRP"]
-    ),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -412,17 +416,18 @@ astrometry = [
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
     ),
     CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
+    ImageRebatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
     Scamp(
         scamp_config_path=scamp_config_path,
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         copy_scamp_header_to_image=True,
         cache=True,
     ),
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="post_scamp"),
 ]
 
 validate_astrometry = [
-    ImageRebatcher(["UTCTIME", "BOARD_ID", "SUBCOORD", "DITHGRP"]),
     Sextractor(
         **sextractor_astromstats_config,
         write_regions_bool=True,
@@ -440,9 +445,8 @@ validate_astrometry = [
 ]
 
 stack_dithers = [
-    ImageDebatcher(),
     CustomImageBatchModifier(winter_boardid_6_demasker),
-    ImageBatcher(["BOARD_ID", "FILTER", "EXPTIME", TARGET_KEY, "SUBCOORD", "DITHGRP"]),
+    ImageRebatcher("STACKID"),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -453,11 +457,11 @@ stack_dithers = [
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
     ),
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="stack"),
 ]
 
 photcal_and_export = [
-    ImageRebatcher([BASE_NAME_KEY]),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
@@ -496,7 +500,7 @@ photcal_and_export = [
         cache=False,
         crossmatch_radius_arcsec=5.0,
     ),
-    ImageSaver(output_dir_name="final"),
+    ImageSaver(output_dir_name="final", compress=False),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
     ImageDatabaseMultiEntryUpdater(
         sequence_key="rawid",
@@ -518,6 +522,73 @@ photcal_and_export = [
     ),
 ]
 
+# Stack stacks together
+
+stack_stacks = [
+    ImageRebatcher(BASE_NAME_KEY),
+    HeaderEditor(PROC_HISTORY_KEY, "load"),
+    ImageSaver(output_dir_name="restack_masks", write_mask=True),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="scamp",
+        catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
+    ),
+    CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
+    Scamp(
+        scamp_config_path=scamp_config_path,
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+        copy_scamp_header_to_image=True,
+        cache=True,
+    ),
+    ImageSaver(output_dir_name="post_scamp"),
+    HeaderAnnotator(input_keys=["TARGNAME", "FIELDID"], output_key=TARGET_KEY),
+    ImageRebatcher(["SUBCOORD", "FILTER", TARGET_KEY]),
+    Swarp(
+        swarp_config_path=swarp_config_path,
+        calculate_dims_in_swarp=True,
+        include_scamp=True,
+        subtract_bkg=False,
+        cache=False,
+        center_type="ALL",
+        temp_output_sub_dir="stacks_weights",
+        header_keys_to_combine=["RAWID"],
+    ),
+    ImageSaver(output_dir_name="stack_of_stacks"),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    CustomImageBatchModifier(masked_images_rejector),
+    Sextractor(
+        **sextractor_photometry_config,
+        output_sub_dir="stack_psf",
+        checkimage_type="BACKGROUND_RMS",
+    ),
+    PSFex(config_path=psfex_path, output_sub_dir="phot", norm_fits=True),
+    Sextractor(
+        **sextractor_photometry_psf_config,
+        output_sub_dir="phot",
+        checkimage_type="BACKGROUND_RMS",
+        use_psfex=True,
+    ),
+    CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
+    PhotCalibrator(
+        ref_catalog_generator=winter_photometric_catalog_generator,
+        catalogs_purifier=winter_photometric_catalogs_purifier,
+        temp_output_sub_dir="phot",
+        write_regions=True,
+        cache=True,
+        zp_calculator=ZPWithColorTermCalculator(
+            color_colnames_guess_generator=winter_photcal_color_columns_generator,
+            reject_outliers=True,
+            solver="curve_fit",
+        ),
+        zp_column_name="MAG_AUTO",
+    ),
+    CatalogLimitingMagnitudeCalculator(
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
+    ),
+    ImageSaver(output_dir_name="final_stack_of_stacks"),
+]
+
 # Image subtraction
 
 load_final_stack = [
@@ -527,6 +598,7 @@ load_final_stack = [
         load_image=load_winter_stack,
     ),
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
+    ImageRebatcher(BASE_NAME_KEY),
 ]
 
 plot_stack = [
@@ -553,7 +625,6 @@ split_stack = [
 ]
 
 imsub = [
-    ImageRebatcher([BASE_NAME_KEY]),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -623,12 +694,24 @@ detect_candidates = [
 
 load_sources = [
     SourceLoader(input_dir_name="candidates"),
+    SourceBatcher(BASE_NAME_KEY),
+]
+
+ml_classify = [
+    Pytorch(
+        model=WINTERNet(),
+        model_weights_url="https://github.com/winter-telescope/winterrb/raw/"
+        "v1.0.0/models/winterrb_v1_0_0_weights.pth",
+        apply_to_table=apply_rb_to_table,
+    ),
+    HeaderEditor(edit_keys="rbversion", values="v1.0.0"),
 ]
 
 crossmatch_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
+    XMatch(catalog=PS1STRM(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=Gaia(num_sources=1, search_radius_arcmin=1.5)),
     XMatch(catalog=GaiaBright(num_sources=1, search_radius_arcmin=1.5)),
     CustomSourceTableModifier(
@@ -688,6 +771,10 @@ name_candidates = [
     SourceWriter(output_dir_name="preavro"),
 ]
 
+load_preavro = [
+    SourceLoader(input_dir_name="preavro"),
+]
+
 avro_write = [
     # Add in the skyportal fields and all save locally
     CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
@@ -700,32 +787,48 @@ avro_write = [
     ),
 ]
 
+# configure to broadcast to IPAC
+BROADCAST_BOOL = str(os.getenv("BROADCAST_AVRO", None)) in ["True", "t", "1", "true"]
+
 avro_broadcast = [
     # Filter out low quality candidates
     CustomSourceTableModifier(modifier_function=winter_candidate_quality_filterer),
+    # Save candidates before sending to IPAC
+    SourceWriter(output_dir_name="preskyportal"),
     # Only send a subset of the candidates to IPAC
     IPACAvroExporter(
         output_sub_dir="avro_ipac",
         topic_prefix="winter",
         base_name="WNTR",
-        # configure to broadcast to IPAC
-        broadcast=str(os.getenv("BROADCAST_AVRO", None)) in ["True", "t", "1", "true"],
+        broadcast=BROADCAST_BOOL,
         save_local=True,
         avro_schema_path=winter_avro_schema_path,
     ),
-    SourceWriter(output_dir_name="preskyportal"),
+    HeaderEditor(edit_keys="sent", values=BROADCAST_BOOL),
+    DatabaseSourceInserter(
+        db_table=Candidate,
+        duplicate_protocol="replace",
+    ),
 ]
 
 avro_export = avro_write + avro_broadcast
 
-process_candidates = crossmatch_candidates + name_candidates + avro_write
+process_candidates = ml_classify + crossmatch_candidates + name_candidates + avro_write
 
-load_avro = [SourceLoader(input_dir_name="preavro")]
+load_avro = [SourceLoader(input_dir_name="preavro"), SourceBatcher(BASE_NAME_KEY)]
 
-load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
+load_skyportal = [
+    SourceLoader(input_dir_name="preskyportal"),
+    SourceBatcher(BASE_NAME_KEY),
+]
 
 send_to_skyportal = [
     SkyportalCandidateUploader(**winter_fritz_config),
+    HeaderEditor(edit_keys="sent", values=True),
+    DatabaseSourceInserter(
+        db_table=Candidate,
+        duplicate_protocol="replace",
+    ),
 ]
 
 # To make a mosaic by stacking all boards
@@ -755,22 +858,10 @@ focus_subcoord = [
 process_and_stack = astrometry + validate_astrometry + stack_dithers
 
 unpack_subset = (
-    load_raw
-    + cal_hunter
-    + extract_all
-    + csvlog
-    + select_subset
-    + mask_and_split
-    + save_raw
-)
-
-unpack_all = load_raw + cal_hunter + extract_all + csvlog + mask_and_split + save_raw
-
-unpack_subset_no_calhunter = (
     load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
 )
 
-unpack_all_no_calhunter = load_raw + extract_all + csvlog + mask_and_split + save_raw
+unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
 full_reduction = (
     dark_calibrate
@@ -795,8 +886,6 @@ reduce_unpacked_subset = (
 )
 
 reduce = unpack_all + full_reduction
-
-reduce_no_calhunter = unpack_all_no_calhunter + full_reduction
 
 reftest = (
     unpack_subset

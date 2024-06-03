@@ -23,11 +23,19 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         *args,
         stream_id: int,
         fritz_filter_id: int,
+        annotation_keys: list[str] | None = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.stream_id = stream_id
         self.fritz_filter_id = fritz_filter_id
+        self.annotation_keys = annotation_keys
+
+    def description(self) -> str:
+        return (
+            f"Sending candidates via API to {self.skyportal_client.base_url} "
+            f"(filter={self.fritz_filter_id})"
+        )
 
     def skyportal_post_candidate(self, alert):
         """
@@ -65,6 +73,21 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             )
             logger.error(response.json())
 
+    def get_annotations(self, alert) -> dict:
+        """
+        Retrieve annotations from alert data.
+
+        :param alert: Alert data
+        :return: Annotations
+        """
+        data = {}
+
+        if self.annotation_keys is not None:
+            for key in self.annotation_keys:
+                if key in alert:
+                    data[key] = alert[key]
+        return data
+
     def skyportal_post_annotation(self, alert):
         """
         Post an annotation. Works for both candidates and sources.
@@ -72,22 +95,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         :param alert: alert data
         :return: None
         """
-        data = {}
-
-        for key in [
-            "chipsf",
-            "fwhm",
-            "scorr",
-            "nneg",
-            "mindtoedge",
-            "diffmaglim",
-            "distpsnr1",
-            "sgmag1",
-            "srmag1",
-            "simag1",
-        ]:
-            if key in alert:
-                data[key] = alert[key]
+        data = self.get_annotations(alert)
 
         payload = {"origin": self.origin, "data": data, "group_ids": self.group_ids}
 
@@ -137,11 +145,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         # annotation from this(WNTR) origin exists
         else:
             # annotation data
-            data = {
-                "fwhm": source["fwhm"],
-                "scorr": source["scorr"],
-                "chipsf": source["chipsf"],
-            }
+            data = self.get_annotations(source)
             new_annotation = {
                 "author_id": existing_annotations[self.origin]["author_id"],
                 "obj_id": source[SOURCE_NAME_KEY],
