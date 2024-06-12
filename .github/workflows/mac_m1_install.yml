@@ -59,7 +59,7 @@ jobs:
           scamp -v
           sex -v
           solve-field --version
-          pip install --upgrade pip setuptools
+          python -m pip install --upgrade pip setuptools wheel packaging platformdirs
           python -m pip install --upgrade poetry coveralls
           poetry install
 
