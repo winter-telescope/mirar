@@ -49,7 +49,15 @@ jobs:
       - name: Update setuptools
         shell: bash -el {0}
         run:
-            conda update setuptools
+          python -m pip install --upgrade pip setuptools wheel packaging platformdirs poetry coveralls setuptools-scm
+
+
+      - name: Install python packages with poetry
+        shell: bash -el {0}
+        env:
+          SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT: 120
+        run: |
+          poetry install
 
       - name: install packages with conda
         shell: bash -el {0}
@@ -59,9 +67,6 @@ jobs:
           scamp -v
           sex -v
           solve-field --version
-          pip install --upgrade pip setuptools
-          python -m pip install --upgrade poetry coveralls
-          poetry install
 
       # Make sure the doc tests are up to date
       - name: Run doc tests
