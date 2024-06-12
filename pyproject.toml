@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mirar"
-version = "0.15.0"
+version = "0.15.1"
 description = "Modular Image Reduction and Analysis Resource (MIRAR)"
 authors = ["Robert Stein <rdstein@caltech.edu>", "Viraj Karambelkar <viraj@astro.caltech.edu>"]
 license = "MIT"
