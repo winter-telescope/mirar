@@ -48,20 +48,19 @@ jobs:
 
       - name: Update setuptools
         shell: bash -el {0}
+        env:
+          SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT: 90
         run:
-            conda update setuptools
+          python -m pip install --upgrade pip setuptools wheel packaging platformdirs poetry coveralls setuptools-scm
 
       - name: install packages with conda
         shell: bash -el {0}
-        env:
-          SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT: 90
         run: |
           conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
           swarp -v
           scamp -v
           sex -v
           solve-field --version
-          python -m pip install --upgrade pip setuptools wheel packaging platformdirs poetry coveralls setuptools-scm
           poetry install
 
       # Make sure the doc tests are up to date
