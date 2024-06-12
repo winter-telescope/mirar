@@ -665,6 +665,7 @@ imsub = [
     ImageSaver(output_dir_name="diffs"),
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
     ImageSaver(output_dir_name="subtract"),
+    ImageRejector(("PROGNAME", ["2023A007"])),  # Filter out galactic data
 ]
 
 load_sub = [
