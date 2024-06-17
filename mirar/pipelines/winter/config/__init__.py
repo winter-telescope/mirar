@@ -106,7 +106,7 @@ winter_cal_requirements = [
         ],
     ),
     CalRequirement(
-        target_name="domeflat", required_field="FILTER", required_values=["Y", "J", "Hs"]
+        target_name="flat", required_field="FILTER", required_values=["Y", "J", "H"]
     ),
 ]
 
