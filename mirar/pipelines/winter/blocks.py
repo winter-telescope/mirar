@@ -93,6 +93,7 @@ from mirar.pipelines.winter.models import (
     Source,
     Stack,
 )
+from mirar.pipelines.winter.nlc import apply_winter_nlc
 from mirar.pipelines.winter.validator import (
     masked_images_rejector,
     poor_astrometric_quality_rejector,
@@ -151,6 +152,7 @@ from mirar.processors.utils import (
     ImageSaver,
     ImageSelector,
     MEFLoader,
+    ModeMasker,
     NanFiller,
 )
 from mirar.processors.utils.cal_hunter import CalHunter
@@ -225,7 +227,9 @@ load_raw = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
-    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements),
+    CalHunter(
+        load_image=load_winter_mef_image, requirements=winter_cal_requirements
+    ),  # FIXME: add back in
 ]
 
 load_astrometry = [
@@ -339,6 +343,12 @@ load_unpacked = [
         ]
     ),
     ImageRebatcher(BASE_NAME_KEY),
+    # FIXME: Remove this line
+    ImageSelector(
+        ("FILTER", ["dark", "J"]),
+        ("PROGNAME", ["2024A000", "2023A014"]),
+        # ("TARGET", ["dark", "flat", "request_2024A000_2024_06_12_01_16_59.db_0"])
+    ),
 ]
 
 export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
@@ -346,6 +356,11 @@ load_and_export_unpacked = load_unpacked + export_unpacked
 
 
 # Detrend blocks
+
+non_linear_correction = [
+    ImageRebatcher(BASE_NAME_KEY),
+    CustomImageBatchModifier(apply_winter_nlc),
+]
 
 dark_calibrate = [
     ImageRebatcher(
@@ -483,6 +498,8 @@ stack_dithers = [
     CustomImageBatchModifier(winter_boardid_6_demasker),
     ImageRebatcher("STACKID"),
     NanFiller(),
+    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
+    ImageSaver(output_dir_name="prestack"),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -495,7 +512,14 @@ stack_dithers = [
         min_required_coadds=3,
     ),
     ImageRebatcher(BASE_NAME_KEY),
+    ModeMasker(),
     ImageSaver(output_dir_name="stack"),
+]
+
+remask = [
+    ImageLoader(input_sub_dir="stack", input_img_dir=base_output_dir),
+    ModeMasker(),  # Mask out the pixels which are stacked nans
+    ImageSaver(output_dir_name="stack_masks"),
 ]
 
 photcal_and_export = [
@@ -906,7 +930,8 @@ unpack_subset = (
 unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
 full_reduction = (
-    dark_calibrate
+    non_linear_correction
+    + dark_calibrate
     + flat_calibrate
     + fourier_filter
     + process_and_stack
