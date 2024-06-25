@@ -535,7 +535,7 @@ def download_wfcam_archive_images(
             obj = FileContainer(
                 url,
                 encoding="binary",
-                remote_timeout=300,
+                remote_timeout=wfau_query.TIMEOUT,
                 show_progress=True,
             )
             wfcam_img_hdulist = obj.get_fits()

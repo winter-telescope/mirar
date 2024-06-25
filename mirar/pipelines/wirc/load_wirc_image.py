@@ -48,7 +48,6 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     if GAIN_KEY not in header.keys():
         header[GAIN_KEY] = 1.2
     header["FILTER"] = header["AFT"].split("__")[0][0]
-    header["SUBDETID"] = 0
 
     header[SNCOSMO_KEY] = sncosmo_filters[header["FILTER"].lower()]
 
