@@ -39,6 +39,7 @@ from mirar.pipelines.winter.blocks import (
     reduce_unpacked_subset,
     refbuild,
     reftest,
+    remask,
     save_raw,
     select_split_subset,
     send_to_skyportal,
@@ -97,6 +98,7 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
+        "remask": remask,
         "default_subset": reduce_unpacked_subset
         + imsub
         + detect_candidates
