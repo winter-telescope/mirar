@@ -191,7 +191,7 @@ class FlatCalibrator(ProcessorWithCache):
                 std = np.nanstd(pixel_variation)
                 sig = abs(pixel_variation - np.nanmedian(pixel_variation)) / std
 
-                mask = sig > 2.0
+                mask = sig > 1.0
 
                 logger.debug(
                     f"Masking {np.sum(mask)} pixels "
@@ -210,14 +210,14 @@ class FlatCalibrator(ProcessorWithCache):
                 std = np.nanstd(pixel_variation)
                 sig = abs(pixel_variation - np.nanmedian(pixel_variation)) / std
 
-                mask = sig > 3.0
+                mask = sig > 1.0
 
                 logger.debug(
                     f"Masking {np.sum(mask)} pixels "
                     f"out of {len(mask.flatten()) }in flat"
                 )
 
-                pixel_variation[sig > 3.0] = np.nan
+                pixel_variation[mask] = np.nan
                 master_flat = (
                     pixel_variation
                     * flatdata_norm_smooth
