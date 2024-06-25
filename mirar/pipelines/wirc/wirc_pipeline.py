@@ -11,7 +11,6 @@ from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.wirc.blocks import (
     forced_photometry,
     imsub,
-    imsub_fp,
     load_raw,
     load_stack,
     log,
@@ -39,8 +38,7 @@ class WircPipeline(Pipeline):
 
     all_pipeline_configurations = {
         "default": load_raw + reduce + reference + subtract + forced_photometry,
-        "imsub": load_stack + imsub_fp,
-        "imsub_detect": load_stack + imsub,
+        "imsub": load_stack + imsub,
         "log": load_raw + log,
     }
 

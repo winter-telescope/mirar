@@ -169,8 +169,8 @@ class WFAUQuery(BaseWFCAMQuery):
         ] = get_query_coordinates_from_header,
         component_image_subdir: str = "wfau_components",
         use_db_for_component_queries: bool = False,
-        components_db_table: Type[BaseDB] = None,
-        query_db_table: Type[BaseDB] = None,
+        components_db_table: Type[BaseDB] | None = None,
+        query_db_table: Type[BaseDB] | None = None,
         skip_online_query: bool = False,
     ):
         """
@@ -204,11 +204,14 @@ class WFAUQuery(BaseWFCAMQuery):
         self.query_db_table = query_db_table
         self.use_db_for_component_queries = use_db_for_component_queries
         self.skip_online_query = skip_online_query
-        self.dbexporter = DatabaseImageInserter(
-            db_table=self.query_db_table, duplicate_protocol="ignore"
-        )
+        self.dbexporter = None
 
         if self.use_db_for_component_queries:
+
+            self.dbexporter = DatabaseImageInserter(
+                db_table=self.query_db_table, duplicate_protocol="ignore"
+            )
+
             if self.components_db_table is None:
                 raise ValueError(
                     "components_table must be provided if "
@@ -529,8 +532,6 @@ def download_wfcam_archive_images(
         else:
             # Download the actual image. This is copied from what happens in
             # astroquery
-            print(f"Downloading {url}") #FIXME
-            print(f"Timeout is {wfau_query.TIMEOUT}")
             obj = FileContainer(
                 url,
                 encoding="binary",

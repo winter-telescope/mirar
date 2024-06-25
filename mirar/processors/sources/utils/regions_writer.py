@@ -8,7 +8,13 @@ from pathlib import Path
 from typing import Optional
 
 from mirar.data import SourceBatch
-from mirar.paths import BASE_NAME_KEY, base_output_dir, get_output_path
+from mirar.paths import (
+    BASE_NAME_KEY,
+    XPOS_KEY,
+    YPOS_KEY,
+    base_output_dir,
+    get_output_path,
+)
 from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
@@ -61,7 +67,7 @@ class RegionsWriter(BaseSourceProcessor):
                 regions_f.write("image\n")
                 for _, row in candidate_table.iterrows():
                     regions_f.write(
-                        f"CIRCLE({row['X_IMAGE']},{row['Y_IMAGE']},"
+                        f"CIRCLE({row[XPOS_KEY]},{row[YPOS_KEY]},"
                         f"{self.region_pix_radius})\n"
                     )
 
