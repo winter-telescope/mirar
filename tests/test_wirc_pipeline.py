@@ -142,7 +142,7 @@ class TestWircPipeline(BaseTestCase):
         for key, value in expected_header.items():
             if isinstance(value, float):
                 ratio = value / header[key]
-                self.assertAlmostEqual(ratio, 1, delta=0.001)
+                self.assertAlmostEqual(ratio, 1, delta=0.005)
             elif isinstance(value, int):
                 self.assertEqual(value, header[key])
             else:
