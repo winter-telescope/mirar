@@ -62,7 +62,7 @@ class JSONLoader(BaseSourceProcessor):
     def description(self) -> str:
         return (
             f"Processor to load sources from '{JSON_SUFFIX}' "
-            f"parquet files in '{self.input_dir_name}' directory."
+            f"json files in '{self.input_dir_name}' directory."
         )
 
     def _apply_to_sources(
