@@ -11,7 +11,7 @@ homepage = "https://github.com/winter-telescope/mirar"
 python = ">=3.10.0,<3.12"
 astroplan = ">=0.8,<0.11"
 astropy = "^6.0.0"
-astroquery = "^0.4.6"
+astroquery = {version="^0.4.8.dev9334", allow-prereleases = true}
 avro = "^1.11.3"
 certifi = ">=2023.7.22,<2025.0.0"
 coveralls = {extras = ["toml"], version = ">=3.3.1,<5.0.0"}

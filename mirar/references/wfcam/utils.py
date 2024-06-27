@@ -126,6 +126,20 @@ def combine_headers(primary_header: fits.Header, header_to_append: fits.Header):
     return primary_header
 
 
+def get_wfcam_basename(
+    multiframeid: int,
+    extension_id: int,
+) -> str:
+    """
+    Get the WFCAM basename
+
+    :param multiframeid: Multiframeid of the UKIRT image
+    :param extension_id: Extension id of the UKIRT image
+    :return: Compressed file name
+    """
+    return f"{multiframeid}_{extension_id}.fit"
+
+
 def make_wfcam_image_from_hdulist(
     ukirt_hdulist: [fits.hdu.image.PrimaryHDU, fits.hdu.image.ImageHDU],
     multiframeid: int,
@@ -146,7 +160,7 @@ def make_wfcam_image_from_hdulist(
     # combined_header = ukirt_hdulist[1].header.copy()
 
     # WFCAM convention of compressed file names.
-    basename = f"{multiframeid}_{extension_id}.fit"
+    basename = get_wfcam_basename(multiframeid=multiframeid, extension_id=extension_id)
 
     combined_header = combine_headers(
         primary_header=ukirt_hdulist[1].header,
