@@ -46,8 +46,21 @@ class JSONExporter(BaseSourceProcessor):
         batch: SourceBatch,
     ) -> SourceBatch:
         for source_list in batch:
-            source_table = source_list.get_data()
+            source_table = source_list.get_data().copy()
             metadata = source_list.get_metadata()
+
+            binary_cols = [
+                x
+                for x in source_table.columns
+                if pd.api.types.infer_dtype(source_table[x]) == "bytes"
+            ]
+
+            if len(binary_cols) > 0:
+                logger.debug(
+                    f"The following columns contain binary data: {binary_cols}. "
+                    f"These will not be exported to json."
+                )
+                source_table = source_table.drop(columns=binary_cols)
 
             # Use pandas to convert the source table to a json object and back
             # This ensures json-able data types are used

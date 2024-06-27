@@ -47,10 +47,9 @@ def generate_candidates_table(
     isdiffpos: bool = True,
 ) -> pd.DataFrame:
     """
-    Generate a candidates table from a difference image
+    Generate a candidates table from a difference image and scorr catalog
     :param diff: Difference image
     :param scorr_catalog_path: Path to the scorr catalog
-    :param scorr_stats_catalog_path: Path to the scorr stats catalog
     :param sci_resamp_image_path: Path to the resampled science image
     :param ref_resamp_image_path: Path to the resampled reference image
     :param diff_scorr_path: Path to the scorr image
@@ -339,4 +338,4 @@ class ZOGYSourceDetector(BaseSourceGenerator):
     def check_prerequisites(self):
         check = np.sum([isinstance(x, ZOGY) for x in self.preceding_steps])
         if check != 1:
-            raise PrerequisiteError("ZOGY must be run before ZOGYSourceDetector")
+            logger.warning("ZOGY must be run before ZOGYSourceDetector")
