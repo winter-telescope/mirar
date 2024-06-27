@@ -47,13 +47,11 @@ def export_parquet(source_table: pd.DataFrame, metadata: dict, parquet_path: Pat
     :param parquet_path: Output path
     :return: None
     """
-    df = source_table
+    # Cast through pandas/json to ensure json-able data types are used
+    df = pd.DataFrame(json.loads(source_table.to_json(orient="records")))
     table = pa.Table.from_pandas(df)
 
-    custom_metadata_json = metadata
-    custom_metadata_bytes = json.dumps(custom_metadata_json, cls=NpEncoder).encode(
-        "utf8"
-    )
+    custom_metadata_bytes = pd.Series(metadata).to_json().encode("utf8")
     existing_metadata = table.schema.metadata
     merged_metadata = {
         **{PARQUET_METADATA_KEY: custom_metadata_bytes},
