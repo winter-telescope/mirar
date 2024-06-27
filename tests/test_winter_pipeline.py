@@ -151,5 +151,5 @@ class TestWinterPipeline(BaseTestCase):
             if isinstance(value, list):
                 for ind, val in enumerate(value):
                     self.assertAlmostEqual(
-                        candidates_table.iloc[ind][key], val, delta=0.05
+                        candidates_table.iloc[ind][key.upper()], val, delta=0.05
                     )
