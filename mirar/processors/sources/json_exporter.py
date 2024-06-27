@@ -15,6 +15,10 @@ from mirar.processors.base_processor import BaseSourceProcessor
 
 logger = logging.getLogger(__name__)
 
+JSON_METADATA_KEY = "metadata"
+JSON_SOURCE_KEY = "sources"
+JSON_SUFFIX = ".json"
+
 
 class JSONExporter(BaseSourceProcessor):
     """
@@ -45,16 +49,11 @@ class JSONExporter(BaseSourceProcessor):
             source_table = source_list.get_data()
             metadata = source_list.get_metadata()
 
-            df_list = []
-            for _, source_row in source_table.iterrows():
-                super_dict = self.generate_super_dict({}, source_row)
-                df_list.append(super_dict)
-
-            df = pd.DataFrame(df_list)
-            parsed = df.to_json(orient="records")
+            # Use pandas to convert the source table to a json object and back
+            # This ensures json-able data types are used
             json_data = {
-                "sources": json.loads(parsed),
-                "metadata": json.loads(pd.Series(metadata).to_json()),
+                JSON_SOURCE_KEY: json.loads(source_table.to_json(orient="records")),
+                JSON_METADATA_KEY: json.loads(pd.Series(metadata).to_json()),
             }
 
             output_dir = get_output_dir(
@@ -65,7 +64,7 @@ class JSONExporter(BaseSourceProcessor):
 
             output_dir.mkdir(parents=True, exist_ok=True)
             json_path = output_dir.joinpath(
-                Path(metadata[BASE_NAME_KEY]).with_suffix(".json").name
+                Path(metadata[BASE_NAME_KEY]).with_suffix(JSON_SUFFIX).name
             )
 
             logger.debug(f"Writing source table to {json_path}")
