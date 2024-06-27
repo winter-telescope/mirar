@@ -19,6 +19,7 @@ from mirar.pipelines.wirc.generator import (
     wirc_reference_image_resampler,
     wirc_reference_psfex,
     wirc_reference_sextractor,
+    wirc_source_table_filter_annotator,
     wirc_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
@@ -26,6 +27,7 @@ from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     scamp_fp_path,
     sextractor_astrometry_config,
+    sextractor_candidate_config,
     sextractor_photometry_config,
     sextractor_reference_config,
     swarp_sp_path,
@@ -53,7 +55,15 @@ from mirar.processors.photcal import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sky import NightSkyMedianCalibrator
-from mirar.processors.sources import CSVExporter, ForcedPhotometryDetector
+from mirar.processors.sources import (
+    ForcedPhotometryDetector,
+    ImageUpdater,
+    JSONExporter,
+    ParquetWriter,
+    SourceWriter,
+    ZOGYSourceDetector,
+)
+from mirar.processors.sources.source_table_modifier import CustomSourceTableModifier
 from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
@@ -69,9 +79,11 @@ from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
-load_stack = [ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image)]
-# load_raw = [ImageLoader(input_sub_dir="firstpassstack",
-# load_image=load_raw_wirc_image)]
+
+load_stack = [
+    ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image),
+    ImageBatcher(split_key=[BASE_NAME_KEY]),
+]
 
 log = [
     ImageRebatcher("UTSHUT"),
@@ -83,6 +95,7 @@ log = [
             "EXPTIME",
             "COADDS",
             OBSCLASS_KEY,
+            BASE_NAME_KEY,
         ]
     ),
     ImageDebatcher(),
@@ -154,6 +167,7 @@ reduction = [
     NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
+    ImageSaver(output_dir_name="stack"),
     Sextractor(
         **sextractor_photometry_config,
         output_sub_dir="final_sextractor",
@@ -194,7 +208,7 @@ export_candidates_from_header = [
     RegionsWriter(output_dir_name="diffs"),
 ]
 
-candidate_photometry = [
+calculate_photometry = [
     AperturePhotometry(
         aper_diameters=[16, 70],
         phot_cutout_half_size=100,
@@ -203,10 +217,18 @@ candidate_photometry = [
         col_suffix_list=["", "big"],
     ),
     PSFPhotometry(),
-    CSVExporter(output_dir_name="photometry"),
 ]
 
-forced_photometry = export_candidates_from_header + candidate_photometry
+export_photometry = [
+    SourceWriter(output_dir_name="photometry"),
+    JSONExporter(output_dir_name="photometry"),
+    ParquetWriter(output_dir_name="photometry"),
+    ImageUpdater(modify_dir_name="diffs"),
+]
+
+forced_photometry = (
+    export_candidates_from_header + calculate_photometry + export_photometry
+)
 
 image_photometry = [
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
@@ -215,5 +237,23 @@ image_photometry = [
 ]
 
 imsub = reference + subtract + forced_photometry
+
+candidates = (
+    [
+        ImageLoader(input_sub_dir="diffs"),
+        ZOGYSourceDetector(
+            output_sub_dir="subtract",
+            **sextractor_candidate_config,
+        ),
+        RegionsWriter(output_dir_name="candidates"),
+    ]
+    + calculate_photometry
+    + [
+        CustomSourceTableModifier(modifier_function=wirc_source_table_filter_annotator),
+        JSONExporter(output_dir_name="candidates"),
+        ParquetWriter(output_dir_name="candidates"),
+        SourceWriter(output_dir_name="candidates"),
+    ]
+)
 
 test = reduction + imsub

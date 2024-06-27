@@ -9,14 +9,12 @@ from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.wirc.blocks import (
-    forced_photometry,
+    candidates,
     imsub,
     load_raw,
     load_stack,
     log,
     reduce,
-    reference,
-    subtract,
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 
@@ -36,9 +34,10 @@ class WircPipeline(Pipeline):
     non_linear_level = 30000
 
     all_pipeline_configurations = {
-        "default": load_raw + reduce + reference + subtract + forced_photometry,
+        "default": load_raw + reduce + imsub,
         "imsub": load_stack + imsub,
         "log": load_raw + log,
+        "candidates": candidates,
     }
 
     @staticmethod
