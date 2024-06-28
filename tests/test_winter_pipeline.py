@@ -128,7 +128,7 @@ class TestWinterPipeline(BaseTestCase):
         new_exp_dataframe = "expected_dataframe_values = { \n"
         for key in expected_dataframe_values:
             new_exp_dataframe += (
-                f'    "{key.upper()}": {list(new_candidates_table[key][:10])}, \n'
+                f'    "{key}": {list(new_candidates_table[key][:10])}, \n'
             )
         new_exp_dataframe += "}"
 
@@ -136,9 +136,9 @@ class TestWinterPipeline(BaseTestCase):
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
-                self.assertAlmostEqual(value, source_table[key.upper()], places=2)
+                self.assertAlmostEqual(value, source_table[key], places=2)
             elif isinstance(value, int):
-                self.assertEqual(value, source_table[key.upper()])
+                self.assertEqual(value, source_table[key])
             else:
                 raise TypeError(
                     f"Type for value ({type(value)} is neither float not int."
@@ -151,5 +151,5 @@ class TestWinterPipeline(BaseTestCase):
             if isinstance(value, list):
                 for ind, val in enumerate(value):
                     self.assertAlmostEqual(
-                        candidates_table.iloc[ind][key.upper()], val, delta=0.05
+                        candidates_table.iloc[ind][key], val, delta=0.05
                     )

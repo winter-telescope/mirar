@@ -160,13 +160,13 @@ class TestWircPipeline(BaseTestCase):
         print("New Results:")
         new_exp = "expected_table = { \n"
         for header_key in expected_table:
-            new_exp += f'    "{header_key.lower()}": {row[header_key.lower()]}, \n'
+            new_exp += f'    "{header_key}": {row[header_key]}, \n'
         new_exp += "}"
         print(new_exp)
 
         for key, value in expected_table.items():
             if isinstance(value, float):
-                ratio = value / header[key]
+                ratio = value / row[key]
                 self.assertAlmostEqual(ratio, 1, delta=0.005)
             elif isinstance(value, int):
                 self.assertEqual(value, row[key])
