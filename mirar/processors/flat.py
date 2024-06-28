@@ -115,7 +115,7 @@ class FlatCalibrator(ProcessorWithCache):
 
         flat_exptimes = []
         for i, img in enumerate(images):
-            data = img.get_data()
+            data = img.get_data().copy()
 
             if self.flat_mask_key is not None:
                 if self.flat_mask_key not in img.header.keys():

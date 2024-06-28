@@ -64,7 +64,7 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
                     f"Are you sure it was saved using ImageSaver to this path just "
                     f"before the Swarp processor that stacked it?"
                 )
-            component_image = self.load_image(component_image_path)
+            component_image = self.open_fits(component_image_path)
             if self.copy_header_keys is not None:
                 for key in self.copy_header_keys:
                     if key in image.keys():

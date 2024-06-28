@@ -8,6 +8,7 @@ import logging
 import warnings
 from pathlib import Path
 from typing import Callable, Type
+from urllib.error import HTTPError
 
 import numpy as np
 import pandas as pd
@@ -29,7 +30,7 @@ from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.errors import ProcessorError
 from mirar.io import open_raw_image
-from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, get_output_dir, get_output_path
+from mirar.paths import LATEST_SAVE_KEY, get_output_dir, get_output_path
 from mirar.processors.database import DatabaseImageInserter
 from mirar.references.wfcam.files import wfcam_undeprecated_compid_file
 from mirar.references.wfcam.utils import (
@@ -41,6 +42,7 @@ from mirar.references.wfcam.utils import (
     QUERY_RA_KEY,
     find_wfcam_surveys,
     get_query_coordinates_from_header,
+    get_wfcam_basename,
     get_wfcam_file_identifiers_from_url,
     make_wfcam_image_from_hdulist,
     open_compressed_wfcam_fits,
@@ -169,9 +171,10 @@ class WFAUQuery(BaseWFCAMQuery):
         ] = get_query_coordinates_from_header,
         component_image_subdir: str = "wfau_components",
         use_db_for_component_queries: bool = False,
-        components_db_table: Type[BaseDB] = None,
-        query_db_table: Type[BaseDB] = None,
+        components_db_table: Type[BaseDB] | None = None,
+        query_db_table: Type[BaseDB] | None = None,
         skip_online_query: bool = False,
+        include_vista: bool = False,
     ):
         """
         Parameters:
@@ -191,8 +194,7 @@ class WFAUQuery(BaseWFCAMQuery):
             The following keys need to be present in the db : qry_ra, qry_dec,
             qry_filt and compid.
             :param skip_online_query: Whether to skip the online query and only use the
-            local
-            databases.
+            local databases.
         """
         super().__init__(
             num_query_points=num_query_points,
@@ -204,11 +206,15 @@ class WFAUQuery(BaseWFCAMQuery):
         self.query_db_table = query_db_table
         self.use_db_for_component_queries = use_db_for_component_queries
         self.skip_online_query = skip_online_query
-        self.dbexporter = DatabaseImageInserter(
-            db_table=self.query_db_table, duplicate_protocol="ignore"
-        )
+        self.dbexporter = None
+        self.include_vista = include_vista
 
         if self.use_db_for_component_queries:
+
+            self.dbexporter = DatabaseImageInserter(
+                db_table=self.query_db_table, duplicate_protocol="ignore"
+            )
+
             if self.components_db_table is None:
                 raise ValueError(
                     "components_table must be provided if "
@@ -269,6 +275,9 @@ class WFAUQuery(BaseWFCAMQuery):
         if len(ukirt_surveys) > 0:
             # Prioritize UKIRT images as they are smaller and usually better
             return ukirt_surveys, UkidssClass()
+
+        if not self.include_vista:
+            return [], UkidssClass()
 
         return vista_surveys, VsaClass()
 
@@ -514,7 +523,15 @@ def download_wfcam_archive_images(
                 )
                 continue
 
-        if use_local_database:
+        base_name = get_wfcam_basename(
+            multiframeid=multiframe_id, extension_id=extension_id
+        )
+        imagepath = get_output_path(base_name, dir_root=save_dir_path.as_posix())
+
+        if imagepath.exists():
+            local_imagepaths = [imagepath]
+
+        elif use_local_database:
             # Check if the image exists locally.
             local_imagepaths = check_multiframe_exists_locally(
                 db_table=components_table,
@@ -526,16 +543,21 @@ def download_wfcam_archive_images(
 
         if image_exists_locally:
             imagepath = local_imagepaths[0]
+            logger.debug(f"Image already exists locally at {imagepath}")
         else:
             # Download the actual image. This is copied from what happens in
             # astroquery
-            obj = FileContainer(
-                url,
-                encoding="binary",
-                remote_timeout=wfau_query.TIMEOUT,
-                show_progress=True,
-            )
-            wfcam_img_hdulist = obj.get_fits()
+            try:
+                obj = FileContainer(
+                    url,
+                    encoding="binary",
+                    remote_timeout=300.0,
+                    show_progress=True,
+                )
+                wfcam_img_hdulist = obj.get_fits()
+            except HTTPError as e:
+                logger.error(f"Failed to download image from {url}. Error: {e}")
+                continue
 
             # UKIRT ref images are stored as multiHDU files, need to combine the
             # hdus so no info from the headers is lost. This also adds in core_fields.
@@ -544,9 +566,6 @@ def download_wfcam_archive_images(
                 ukirt_filename=ukirt_filename,
                 multiframeid=multiframe_id,
                 extension_id=extension_id,
-            )
-            imagepath = get_output_path(
-                wfcam_image[BASE_NAME_KEY], dir_root=save_dir_path.as_posix()
             )
             wfcam_image[QUERY_RA_KEY] = crd.ra.deg
             wfcam_image[QUERY_DEC_KEY] = crd.dec.deg

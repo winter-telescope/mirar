@@ -48,12 +48,16 @@ def export_parquet(source_table: pd.DataFrame, metadata: dict, parquet_path: Pat
     :return: None
     """
     df = source_table
+
+    # Parquet cannot export empty dataframes
+    for col in df.columns:
+        if isinstance(df[col].iloc[0], pd.DataFrame):
+            if len(df[col].iloc[0]) == 0:
+                df[col] = [[] for _ in df[col]]
+
     table = pa.Table.from_pandas(df)
 
-    custom_metadata_json = metadata
-    custom_metadata_bytes = json.dumps(custom_metadata_json, cls=NpEncoder).encode(
-        "utf8"
-    )
+    custom_metadata_bytes = pd.Series(metadata).to_json().encode("utf8")
     existing_metadata = table.schema.metadata
     merged_metadata = {
         **{PARQUET_METADATA_KEY: custom_metadata_bytes},
@@ -98,7 +102,7 @@ class ParquetWriter(BaseSourceProcessor):
         output_dir.mkdir(parents=True, exist_ok=True)
 
         for source_list in batch:
-            source_table = source_list.get_data()
+            source_table = source_list.get_data().copy()
             metadata = source_list.get_metadata()
             parquet_path = output_dir.joinpath(
                 Path(metadata[BASE_NAME_KEY]).with_suffix(PARQUET_SUFFIX).name

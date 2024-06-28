@@ -21,7 +21,7 @@ jobs:
   # This workflow contains a single job called "build"
   ci:
     # The type of runner that the job will run on
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     # Specify the python versions to test
     strategy:
@@ -59,10 +59,6 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-
-      - name: Install poetry
-        shell: bash -el {0}
-        run: conda install poetry
 
       # Runs a set of commands using the runners shell
       - name: set up ssh
