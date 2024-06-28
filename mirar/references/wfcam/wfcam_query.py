@@ -174,7 +174,7 @@ class WFAUQuery(BaseWFCAMQuery):
         components_db_table: Type[BaseDB] | None = None,
         query_db_table: Type[BaseDB] | None = None,
         skip_online_query: bool = False,
-        include_vista: bool = True,
+        include_vista: bool = False,
     ):
         """
         Parameters:
