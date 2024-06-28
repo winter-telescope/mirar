@@ -116,8 +116,8 @@ reduction = [
     ImageSelector((OBSCLASS_KEY, "science")),
     ImageBatcher(split_key=["filter", "object"]),
     CustomImageBatchModifier(annotate_target_coordinates),
-    SkyFlatCalibrator(),
-    NightSkyMedianCalibrator(),
+    SkyFlatCalibrator(cache_sub_dir="firstpasscal"),
+    NightSkyMedianCalibrator(cache_sub_dir="firstpasscal"),
     ImageBatcher(BASE_NAME_KEY),
     AutoAstrometry(catalog="tmc"),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
@@ -125,10 +125,15 @@ reduction = [
         ref_catalog_generator=wirc_astrometric_catalog_generator,
         scamp_config_path=scamp_fp_path,
         cache=True,
+        temp_output_sub_dir="firstpassscamp",
     ),
     ImageRebatcher(split_key=["filter", "object"]),
     ImageSaver(output_dir_name="firstpass"),
-    Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
+    Swarp(
+        swarp_config_path=swarp_sp_path,
+        calculate_dims_in_swarp=True,
+        temp_output_sub_dir="firstpassswarp",
+    ),
     ImageSaver(output_dir_name="firstpassstack"),
     Sextractor(
         output_sub_dir="firstpasssextractor",
@@ -154,6 +159,7 @@ reduction = [
     LoadImageFromHeader(
         header_key=RAW_IMG_KEY,
         copy_header_keys=[SCAMP_HEADER_KEY, FITS_MASK_KEY, "TARGRA", "TARGDEC"],
+        load_image=load_raw_wirc_image,
     ),
     AstrometryFromFile(astrometry_file_key=SCAMP_HEADER_KEY),
     ImageSaver(output_dir_name="firstpassastrom", write_mask=True),
@@ -163,10 +169,22 @@ reduction = [
         only_write_mask=True,
     ),
     ImageSaver(output_dir_name="firstpassmasked", write_mask=True),
-    SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY),
-    NightSkyMedianCalibrator(flat_mask_key=FITS_MASK_KEY),
+    LoadImageFromHeader(
+        header_key=RAW_IMG_KEY,
+        copy_header_keys=[SCAMP_HEADER_KEY, FITS_MASK_KEY, "TARGRA", "TARGDEC"],
+        load_image=load_raw_wirc_image,
+    ),
+    AstrometryFromFile(astrometry_file_key=SCAMP_HEADER_KEY),
+    SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir="secondpasscal"),
+    NightSkyMedianCalibrator(
+        flat_mask_key=FITS_MASK_KEY, cache_sub_dir="secondpasscal"
+    ),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
-    Swarp(swarp_config_path=swarp_sp_path, calculate_dims_in_swarp=True),
+    Swarp(
+        swarp_config_path=swarp_sp_path,
+        calculate_dims_in_swarp=True,
+        temp_output_sub_dir="secondpassswarp",
+    ),
     ImageSaver(output_dir_name="stack"),
     Sextractor(
         **sextractor_photometry_config,
@@ -176,6 +194,7 @@ reduction = [
     PhotCalibrator(
         ref_catalog_generator=wirc_photometric_catalog_generator,
         write_regions=True,
+        temp_output_sub_dir="photcal",
     ),
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
