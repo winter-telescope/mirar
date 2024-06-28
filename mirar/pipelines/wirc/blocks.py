@@ -169,12 +169,6 @@ reduction = [
         only_write_mask=True,
     ),
     ImageSaver(output_dir_name="firstpassmasked", write_mask=True),
-    LoadImageFromHeader(
-        header_key=RAW_IMG_KEY,
-        copy_header_keys=[SCAMP_HEADER_KEY, FITS_MASK_KEY, "TARGRA", "TARGDEC"],
-        load_image=load_raw_wirc_image,
-    ),
-    AstrometryFromFile(astrometry_file_key=SCAMP_HEADER_KEY),
     SkyFlatCalibrator(flat_mask_key=FITS_MASK_KEY, cache_sub_dir="secondpasscal"),
     NightSkyMedianCalibrator(
         flat_mask_key=FITS_MASK_KEY, cache_sub_dir="secondpasscal"
