@@ -13,6 +13,7 @@ from mirar.paths import (
 )
 from mirar.pipelines.wirc.generator import (
     annotate_target_coordinates,
+    label_stack_id,
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
     wirc_reference_generator,
@@ -69,6 +70,7 @@ from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
     ImageBatcher,
+    ImageDebatcher,
     ImageLoader,
     ImageRebatcher,
     ImageRejector,
@@ -88,10 +90,18 @@ load_stack = [
 log = [
     ImageRejector((BASE_NAME_KEY, "_diff.fits")),
     ImageRejector(("object", "test")),
+    ImageDebatcher(),
+    CustomImageBatchModifier(label_stack_id),
+    ImageRebatcher("stackid"),
+    CustomImageBatchModifier(annotate_target_coordinates),
     ImageRebatcher("UTSHUT"),
     CSVLog(
         export_keys=[
             "OBJECT",
+            "TARGRA",
+            "TARGDEC",
+            "TARGNUM",
+            "STACKID",
             "FILTER",
             "UTSHUT",
             "EXPTIME",
@@ -108,15 +118,14 @@ masking = [
     MaskPixelsFromPath(mask_path=wirc_mask_path),
 ]
 
-dark_calibration = [ImageBatcher("EXPTIME"), DarkCalibrator()]
+dark_calibration = [ImageRebatcher("EXPTIME"), DarkCalibrator()]
 
 
 reduction = [
     ImageSaver(output_dir_name="darkcal"),
     ImageSelector((OBSCLASS_KEY, "science")),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    ImageRebatcher(split_key=["filter", "object", "EXPTIME"]),
-    CustomImageBatchModifier(annotate_target_coordinates),
+    ImageRebatcher("stackid"),
     SkyFlatCalibrator(cache_sub_dir="firstpasscal"),
     NightSkyMedianCalibrator(cache_sub_dir="firstpasscal"),
     ImageRebatcher(BASE_NAME_KEY),
@@ -128,7 +137,7 @@ reduction = [
         cache=True,
         temp_output_sub_dir="firstpassscamp",
     ),
-    ImageRebatcher(split_key=["filter", "object", "exptime", "telfocus"]),
+    ImageRebatcher(split_key=["stackid"]),
     ImageSaver(output_dir_name="firstpass"),
     Swarp(
         swarp_config_path=swarp_sp_path,
