@@ -69,7 +69,6 @@ from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
     ImageBatcher,
-    ImageDebatcher,
     ImageLoader,
     ImageRebatcher,
     ImageRejector,
@@ -102,7 +101,6 @@ log = [
             BASE_NAME_KEY,
         ]
     ),
-    ImageDebatcher(),
 ]
 
 masking = [
