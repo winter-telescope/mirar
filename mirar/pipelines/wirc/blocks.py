@@ -10,6 +10,7 @@ from mirar.paths import (
     OBSCLASS_KEY,
     RAW_IMG_KEY,
     SATURATE_KEY,
+    TARGET_KEY,
 )
 from mirar.pipelines.wirc.generator import (
     annotate_target_coordinates,
@@ -97,7 +98,7 @@ log = [
     ImageRebatcher("UTSHUT"),
     CSVLog(
         export_keys=[
-            "OBJECT",
+            TARGET_KEY,
             "TARGRA",
             "TARGDEC",
             "TARGNUM",

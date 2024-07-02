@@ -479,13 +479,13 @@ def download_wfcam_archive_images(
     into a database.
     :param components_table: Table to use for the components database.
     :param duplicate_protocol: Protocol to follow if the image already exists locally.
-    :param q3c_bool: Is q3c setup?
     :param undeprecated_compids_file: Path to the file with the list of undeprecated
     component ids.
     :return imagepaths: List of paths to the downloaded images.
     """
     # ukirt_query = UkidssClass()
     wfau_query.database = survey_name
+    wfau_query.TIMEOUT = 300.0
 
     # First get a list with details of the images that overlap with the
     # coordinates.

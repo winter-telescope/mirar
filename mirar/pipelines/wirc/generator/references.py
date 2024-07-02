@@ -35,8 +35,8 @@ def wirc_reference_generator(image: Image):
 
     filtername = image["FILTER"]
 
-    if filtername not in ["J", "H", "Ks"]:
-        raise ValueError(f"Filter {filtername} not recognized for WINTER")
+    if filtername not in ["J", "H", "K"]:
+        raise ValueError(f"Filter {filtername} not recognized for WIRC")
 
     cache_ref_stack = False
 
