@@ -72,6 +72,7 @@ from mirar.processors.utils import (
     ImageDebatcher,
     ImageLoader,
     ImageRebatcher,
+    ImageRejector,
     ImageSaver,
     ImageSelector,
 )
@@ -86,6 +87,8 @@ load_stack = [
 ]
 
 log = [
+    ImageRejector((BASE_NAME_KEY, "_diff.fits")),
+    ImageRejector(("object", "test")),
     ImageRebatcher("UTSHUT"),
     CSVLog(
         export_keys=[
@@ -94,6 +97,7 @@ log = [
             "UTSHUT",
             "EXPTIME",
             "COADDS",
+            "TELFOCUS",
             OBSCLASS_KEY,
             BASE_NAME_KEY,
         ]
@@ -111,14 +115,13 @@ dark_calibration = [ImageBatcher("EXPTIME"), DarkCalibrator()]
 
 reduction = [
     ImageSaver(output_dir_name="darkcal"),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    ImageDebatcher(),
     ImageSelector((OBSCLASS_KEY, "science")),
-    ImageBatcher(split_key=["filter", "object"]),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageRebatcher(split_key=["filter", "object", "EXPTIME"]),
     CustomImageBatchModifier(annotate_target_coordinates),
     SkyFlatCalibrator(cache_sub_dir="firstpasscal"),
     NightSkyMedianCalibrator(cache_sub_dir="firstpasscal"),
-    ImageBatcher(BASE_NAME_KEY),
+    ImageRebatcher(BASE_NAME_KEY),
     AutoAstrometry(catalog="tmc"),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Scamp(
@@ -127,7 +130,7 @@ reduction = [
         cache=True,
         temp_output_sub_dir="firstpassscamp",
     ),
-    ImageRebatcher(split_key=["filter", "object"]),
+    ImageRebatcher(split_key=["filter", "object", "exptime", "telfocus"]),
     ImageSaver(output_dir_name="firstpass"),
     Swarp(
         swarp_config_path=swarp_sp_path,
