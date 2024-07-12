@@ -43,7 +43,7 @@ class DiffsTable(WinterBase):  # pylint: disable=too-few-public-methods
     zp = Column(Float, nullable=True)
     savepath = Column(VARCHAR(255), unique=True)
 
-    candidates = relationship("CandidatesTable", back_populates="diff_id")
+    # candidates = relationship("CandidatesTable", back_populates="diff_id")
 
 
 class Diff(BaseDB):

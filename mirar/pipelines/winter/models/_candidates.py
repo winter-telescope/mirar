@@ -66,11 +66,8 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     sourceid: Mapped[int] = mapped_column(ForeignKey("sources.sourceid"))
     source: Mapped["SourcesTable"] = relationship(back_populates="candidates")
 
-    diffid: Mapped[int] = mapped_column(ForeignKey("diffs.diffid"))
-    diff_id: Mapped["DiffsTable"] = relationship(back_populates="candidates")
-
-    stackid: Mapped[int] = mapped_column(ForeignKey("stacks.stackid"))
-    stack_id: Mapped["StacksTable"] = relationship(back_populates="candidates")
+    diffid = Column(Integer, nullable=False, unique=False)
+    stackid = Column(Integer, nullable=False, unique=False)
 
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
     exptime = Column(Float, nullable=False)

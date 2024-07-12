@@ -29,7 +29,7 @@ class StacksTable(WinterBase):  # pylint: disable=too-few-public-methods
         primary_key=True,
     )
     stackid = Column(BigInteger, primary_key=False, unique=True, autoincrement=False)
-    candidates = relationship("CandidatesTable", back_populates="stack_id")
+    # candidates = relationship("CandidatesTable", back_populates="stack_id")
     raw = relationship("RawsTable", back_populates="stacks")
     diff = relationship("DiffsTable", back_populates="stack_id")
 
