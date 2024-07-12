@@ -669,15 +669,31 @@ imsub = [
 ]
 
 load_sub = [
-    ImageLoader(input_sub_dir="subtract"),
+    ImageLoader(input_sub_dir="diffs"),
 ]
-detect_candidates = [
+
+select_galactic = [ImageSelector(("PROGNAME", ["2023A007"]))]
+
+galactic_plane_source_detector = [
+    ZOGYSourceDetector(
+        output_sub_dir="subtract",
+        **sextractor_candidate_config,
+        write_regions=True,
+        detect_negative_sources=False,
+        scorr_thresh=8.0,
+    ),
+]
+
+extragalactic_source_detector = [
     ZOGYSourceDetector(
         output_sub_dir="subtract",
         **sextractor_candidate_config,
         write_regions=True,
         detect_negative_sources=True,
     ),
+]
+
+photometer_and_save_candidates = [
     PSFPhotometry(phot_cutout_half_size=10),
     AperturePhotometry(
         temp_output_sub_dir="aper_photometry",
@@ -690,6 +706,11 @@ detect_candidates = [
     CustomSourceTableModifier(winter_candidate_annotator_filterer),
     SourceWriter(output_dir_name="candidates"),
 ]
+detect_candidates = extragalactic_source_detector + photometer_and_save_candidates
+
+detect_galactic_candidates = (
+    galactic_plane_source_detector + photometer_and_save_candidates
+)
 #
 # candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 

@@ -15,6 +15,7 @@ from mirar.pipelines.winter.blocks import (
     build_test,
     csvlog,
     detect_candidates,
+    detect_galactic_candidates,
     detrend_unpacked,
     diff_forced_photometry,
     extract_all,
@@ -26,6 +27,7 @@ from mirar.pipelines.winter.blocks import (
     load_final_stack,
     load_raw,
     load_skyportal,
+    load_sub,
     load_test,
     mask_and_split,
     mosaic,
@@ -40,6 +42,7 @@ from mirar.pipelines.winter.blocks import (
     refbuild,
     reftest,
     save_raw,
+    select_galactic,
     select_split_subset,
     send_to_skyportal,
     stack_forced_photometry,
@@ -111,6 +114,10 @@ class WINTERPipeline(Pipeline):
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
         "rebroadcast_avro": load_avro + avro_export,
+        "galactic_plane_candidates": load_sub
+        + select_galactic
+        + detect_galactic_candidates
+        + process_candidates,
     }
 
     non_linear_level = 40000.0
