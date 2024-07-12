@@ -45,6 +45,7 @@ def generate_candidates_table(
     ref_resamp_image_path: str | Path,
     diff_scorr_path: str | Path,
     isdiffpos: bool = True,
+    scorr_thresh: float = 5.0,
 ) -> pd.DataFrame:
     """
     Generate a candidates table from a difference image and scorr catalog
@@ -54,6 +55,8 @@ def generate_candidates_table(
     :param ref_resamp_image_path: Path to the resampled reference image
     :param diff_scorr_path: Path to the scorr image
     :param isdiffpos: Is the difference image positive?
+    :param scorr_thresh: Only candidates with scorr above this threshold will be
+    processed
     :return: Candidates table
     """
     det_srcs = get_table_from_ldac(scorr_catalog_path)
@@ -85,7 +88,7 @@ def generate_candidates_table(
     scorr_peaks = scorr_data[ypeaks, xpeaks]
     det_srcs["scorr"] = scorr_peaks
 
-    det_srcs = det_srcs[det_srcs["scorr"] > 5]
+    det_srcs = det_srcs[det_srcs["scorr"] > scorr_thresh]
 
     det_srcs = det_srcs.to_pandas()
 
@@ -171,6 +174,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         output_sub_dir: str = "candidates",
         write_regions: bool = False,
         detect_negative_sources: bool = False,
+        scorr_thresh: float = 5.0,
     ):
         """
         Parameters
@@ -183,6 +187,8 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         :param detect_negative_sources: Detect negative sources in addition to
         positive sources? If true, sources are also detected in the negative scorr
         image, and are marked with isdiffpos=False
+        :param scorr_thresh: Only candidates with scorr above this threshold will be
+        processed
         """
         super().__init__()
         self.output_sub_dir = output_sub_dir
@@ -192,6 +198,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         self.cand_det_sextractor_params = cand_det_sextractor_params
         self.write_regions = write_regions
         self.detect_negative_sources = detect_negative_sources
+        self.scorr_thresh = scorr_thresh
 
     def description(self) -> str:
         return (
@@ -248,6 +255,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                 sci_resamp_image_path=sci_image_path,
                 ref_resamp_image_path=ref_image_path,
                 diff_scorr_path=scorr_image_path,
+                scorr_thresh=self.scorr_thresh,
             )
 
             logger.debug(f"Found {len(srcs_table)} candidates in positive image")
@@ -284,7 +292,9 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                     ref_resamp_image_path=ref_image_path,
                     diff_scorr_path=negative_scorr_path,
                     isdiffpos=False,
+                    scorr_thresh=self.scorr_thresh,
                 )
+
                 srcs_table = pd.concat(
                     [srcs_table, negative_srcs_table],
                     axis=0,
