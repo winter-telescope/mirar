@@ -672,7 +672,10 @@ load_sub = [
     ImageLoader(input_sub_dir="diffs"),
 ]
 
-select_galactic = [ImageSelector(("PROGNAME", ["2023A007"]))]
+select_galactic = [
+    ImageSelector(("PROGNAME", ["2023A007"])),
+    ImageBatcher(BASE_NAME_KEY),
+]
 
 galactic_plane_source_detector = [
     ZOGYSourceDetector(
