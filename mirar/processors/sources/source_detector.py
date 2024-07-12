@@ -96,7 +96,9 @@ def generate_candidates_table(
     det_srcs[SOURCE_NAME_KEY] = None
 
     logger.debug(
-        f"Filtered to {len(det_srcs)} candidates in image with " f"scorr peak > 5."
+        f"Filtered to {len(det_srcs)} candidates in image with "
+        f"scorr peak "
+        f"> {scorr_thresh}."
     )
     # Rename sextractor keys
     ydims, xdims = diff.get_data().shape
