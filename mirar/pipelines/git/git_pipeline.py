@@ -9,6 +9,7 @@ from mirar.pipelines.git.blocks import (
     build_log,
     imsub,
     load_raw,
+    load_stack_decam,
     load_stack_lt,
     reduce_raw_lt,
 )
@@ -29,6 +30,7 @@ class GITPipeline(Pipeline):
         "default": load_raw + build_log + imsub,
         "lt": reduce_raw_lt,
         "lt_sub": load_stack_lt + imsub,
+        "decam_sub": load_stack_decam + imsub,
     }
 
     def download_raw_images_for_night(night: str | int):

@@ -11,10 +11,12 @@ from mirar.data.image_data import Image
 from mirar.pipelines.git.config import (
     psfex_config_path,
     sextractor_photometry_config,
+    sextractor_PSF_photometry_config,
     swarp_config_path,
 )
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
+from mirar.references.local import RefFromPath
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,29 @@ def git_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     return PS1Ref(filter_name=filter_name)
 
 
+from pathlib import Path
+
+from mirar.io import save_fits
+from mirar.pipelines.git.load_git_image import load_proc_decam_image
+
+
+def decam_reference_image_generator(image: Image) -> BaseReferenceGenerator:
+    """
+    Get a reference image generator for a decam image
+    :param image:
+    :return:
+    """
+    ref_path = "/Users/viraj/winter_data/git/decam_24hit/Template/c4d_190117_055624_ooi_z_decaps2.S23.skysub.fits"
+    ref_image = load_proc_decam_image(path=ref_path)
+
+    ref_dir = Path("/Users/viraj/winter_data/git/decam_24hit/reference/")
+    ref_dir.mkdir(exist_ok=True)
+
+    ref_image_path = ref_dir / Path(ref_path).name
+    save_fits(path=ref_image_path.as_posix(), image=ref_image)
+    return RefFromPath(path=ref_path, filter_name="z")
+
+
 def git_reference_image_resampler(**kwargs) -> Swarp:
     """
     Generates a resampler for reference images
@@ -70,7 +95,7 @@ def git_sdss_reference_cat_purifier(catalog, image: Image):
     return catalog[good_sources_mask]
 
 
-def git_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
+def git_reference_sextractor(output_sub_dir: str) -> Sextractor:
     """
     Generates a sextractor processor for reference images
 
@@ -79,7 +104,6 @@ def git_reference_sextractor(output_sub_dir: str, gain: float) -> Sextractor:
     :return: Sextractor processor
     """
     return Sextractor(
-        gain=gain,
         output_sub_dir=output_sub_dir,
         cache=True,
         saturation=10,
@@ -112,16 +136,27 @@ def git_zogy_catalogs_purifier(sci_catalog, ref_catalog):
         & (sci_catalog["SNR_WIN"] > 5)
         & (sci_catalog["FWHM_WORLD"] < 4.0 / 3600)
         & (sci_catalog["FWHM_WORLD"] > 0.5 / 3600)
-        & (sci_catalog["SNR_WIN"] < 1000)
+        & (sci_catalog["SNR_WIN"] < 100)
     )
 
     good_ref_sources = (
         (ref_catalog["SNR_WIN"] > 5)
         & (ref_catalog["FWHM_WORLD"] < 5.0 / 3600)
         & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
+        & (ref_catalog["SNR_WIN"] < 100)
     )
 
     return good_sci_sources, good_ref_sources
+
+
+def git_reference_psf_phot_sextractor(output_sub_dir: str) -> Sextractor:
+    """Returns a Sextractor processor for WINTER reference images"""
+    return Sextractor(
+        **sextractor_PSF_photometry_config,
+        output_sub_dir=output_sub_dir,
+        cache=False,
+        use_psfex=True,
+    )
 
 
 def lt_photometric_catalog_generator(image: Image) -> BaseCatalog:

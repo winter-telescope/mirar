@@ -21,14 +21,20 @@ from mirar.pipelines.git.config import (
 )
 from mirar.pipelines.git.config.constants import GIT_PIXEL_SCALE
 from mirar.pipelines.git.generator import (
+    decam_reference_image_generator,
     git_reference_image_generator,
     git_reference_image_resampler,
+    git_reference_psf_phot_sextractor,
     git_reference_psfex,
     git_reference_sextractor,
     git_zogy_catalogs_purifier,
     lt_photometric_catalog_generator,
 )
-from mirar.pipelines.git.load_git_image import load_raw_git_image, load_raw_lt_image
+from mirar.pipelines.git.load_git_image import (
+    load_proc_decam_image,
+    load_raw_git_image,
+    load_raw_lt_image,
+)
 from mirar.processors.astromatic import PSFex, Sextractor
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
@@ -48,6 +54,7 @@ from mirar.processors.utils import (
     ImageSaver,
     ImageSelector,
 )
+from mirar.processors.zogy.reference_aligner import AlignReference
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
@@ -140,8 +147,15 @@ candidate_photometry = [  # imported from wirc/blocks.py
 subtract = [
     ImageBatcher(split_key=BASE_NAME_KEY),
     ImageSelector((OBSCLASS_KEY, "science")),
+    # ProcessReference(
+    #     ref_image_generator=git_reference_image_generator,
+    #     ref_psfex=git_reference_psfex,
+    #     sextractor=git_reference_sextractor,
+    #     swarp_resampler=git_reference_image_resampler,  # pylint: disable=duplicate-code
+    #     temp_output_subtract_dir="subtract_sdss",
+    # ),
     ProcessReference(
-        ref_image_generator=git_reference_image_generator,
+        ref_image_generator=decam_reference_image_generator,
         ref_psfex=git_reference_psfex,
         sextractor=git_reference_sextractor,
         swarp_resampler=git_reference_image_resampler,  # pylint: disable=duplicate-code
@@ -157,6 +171,13 @@ subtract = [
         config_path=psfex_sci_config_path,
         output_sub_dir="subtract_sdss",
         norm_fits=True,
+    ),
+    AlignReference(
+        order=1,
+        sextractor=git_reference_sextractor,
+        psfex=git_reference_psfex,
+        phot_sextractor=git_reference_psf_phot_sextractor,
+        catalog_purifier=git_zogy_catalogs_purifier,
     ),
     ImageSaver(output_dir_name="ref"),
     ZOGYPrepare(
@@ -200,3 +221,5 @@ reduce_raw_lt = [
 
 
 load_stack_lt = [ImageLoader(input_sub_dir="stack")]
+
+load_stack_decam = [ImageLoader(input_sub_dir="proc", load_image=load_proc_decam_image)]
