@@ -683,7 +683,7 @@ galactic_plane_source_detector = [
         **sextractor_candidate_config,
         write_regions=True,
         detect_negative_sources=False,
-        scorr_thresh=8.0,
+        scorr_thresh=10.0,
     ),
 ]
 
