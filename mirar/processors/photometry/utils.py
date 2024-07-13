@@ -3,7 +3,6 @@ Module with utis for photometry
 """
 
 import logging
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +25,7 @@ class CutoutError(ProcessorError):
 
 
 def make_cutouts(
-    image_paths: Path | list[Path], position: tuple, half_size: int
+    image_data_list: np.ndarray | list[np.ndarray], position: tuple, half_size: int
 ) -> list[np.array]:
     """
     Function to make cutouts
@@ -38,19 +37,16 @@ def make_cutouts(
     Returns:
         :return: cutout_list: list of 2D numpy arrays
     """
-    if not isinstance(image_paths, list):
-        image_paths = [image_paths]
+    if not isinstance(image_data_list, list):
+        image_data_list = [image_data_list]
 
     cutout_list = []
-    for image_path in image_paths:
-        data = fits.getdata(image_path)
+    for data in image_data_list:
         y_image_size, x_image_size = np.shape(data)
         x, y = position
 
         if x < 0 or x > x_image_size or y < 0 or y > y_image_size:
-            raise CutoutError(
-                f"Cutout position {x},{y} is outside the image {image_path}"
-            )
+            raise CutoutError(f"Cutout position {x},{y} is outside the image data.")
 
         if x < half_size:
             xmin, xmax = 0, x + half_size + 1

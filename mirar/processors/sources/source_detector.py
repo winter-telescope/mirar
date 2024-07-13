@@ -14,6 +14,7 @@ from astropy.wcs import WCS
 
 from mirar.data import Image, ImageBatch, SourceBatch, SourceTable
 from mirar.data.utils import encode_img, write_regions_file
+from mirar.io import open_fits
 from mirar.paths import (
     BASE_NAME_KEY,
     CAND_DEC_KEY,
@@ -133,11 +134,14 @@ def generate_candidates_table(
     display_diff_ims = []
 
     # Cutouts
+    sci_data, _ = open_fits(sci_resamp_image_path)
+    ref_data, _ = open_fits(ref_resamp_image_path)
+    diff_data, _ = open_fits(diff_path)
     for _, row in det_srcs.iterrows():
         xpeak, ypeak = int(row["xpeak"]), int(row["ypeak"])
 
         display_sci_cutout, display_ref_cutout, display_diff_cutout = make_cutouts(
-            [sci_resamp_image_path, ref_resamp_image_path, diff_path],
+            [sci_data, ref_data, diff_data],
             (xpeak, ypeak),
             cutout_size_display,
         )

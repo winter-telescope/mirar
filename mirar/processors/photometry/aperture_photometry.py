@@ -5,6 +5,7 @@ Module with processors to perform aperture photometry
 import numpy as np
 
 from mirar.data import SourceBatch
+from mirar.io import open_fits
 from mirar.paths import (
     APFLUX_PREFIX_KEY,
     APFLUXUNC_PREFIX_KEY,
@@ -86,13 +87,15 @@ class AperturePhotometry(BasePhotometryProcessor):
 
             all_fluxes, all_fluxuncs = [], []
             temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(metadata)
+            image_data, _ = open_fits(temp_imagename)
+            image_unc_data, _ = open_fits(temp_unc_imagename)
 
             for cand_ind in range(len(candidate_table)):
                 row = candidate_table.iloc[cand_ind]
 
                 image_cutout, unc_image_cutout = self.generate_cutouts(
-                    imagename=temp_imagename,
-                    unc_imagename=temp_unc_imagename,
+                    image_data=image_data,
+                    image_unc_data=image_unc_data,
                     data_item=row,
                 )
 

@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from mirar.data import SourceBatch
+from mirar.io import open_fits
 from mirar.paths import (
     MAG_PSF_KEY,
     MAGERR_PSF_KEY,
@@ -94,11 +95,13 @@ class PSFPhotometry(BasePhotometryProcessor):
                 )
             psf_filename = source_table[self.psf_file_key]
             temp_imagename, temp_unc_imagename = self.save_temp_image_uncimage(metadata)
+            image_data, _ = open_fits(temp_imagename)
+            image_unc_data, _ = open_fits(temp_unc_imagename)
 
             for ind, row in candidate_table.iterrows():
                 image_cutout, unc_image_cutout = self.generate_cutouts(
-                    imagename=temp_imagename,
-                    unc_imagename=temp_unc_imagename,
+                    image_data=image_data,
+                    image_unc_data=image_unc_data,
                     data_item=row,
                 )
                 (

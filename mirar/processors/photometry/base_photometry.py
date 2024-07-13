@@ -94,22 +94,26 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         return unc_filename
 
     def generate_cutouts(
-        self, imagename: Path, unc_imagename: Path, data_item: Image | pd.Series
+        self,
+        image_data: np.ndarray,
+        image_unc_data: np.ndarray,
+        data_item: Image | pd.Series,
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate image and uncertainty image cutouts. This function first saves the
         image and uncertainty image to temporary files, then generates the cutouts,
         then deletes the temporary files.
-        :param imagename: Path to the image
-        :param unc_imagename: Path to the uncertainty image
+        :param image_data: image data
+        :param image_unc_data: uncertainty image data
         :param data_item: pandas DataFrame Series or astropy fits Header
 
         :returns tuple: 2D numpy arrays of the image cutout and uncertainty image cutout
         """
 
         x, y = self.get_physical_coordinates(data_item)
+
         image_cutout, unc_image_cutout = make_cutouts(
-            image_paths=[imagename, unc_imagename],
+            image_data_list=[image_data, image_unc_data],
             position=(x, y),
             half_size=self.phot_cutout_half_size,
         )
