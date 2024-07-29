@@ -29,7 +29,7 @@ penquins = "^2.3.1"
 photutils = "^1.8.0"
 psycopg = {extras = ["binary"], version = "^3.1.9"}
 pydl = "^1.0.0"
-pyFFTW = "^0.13.1"
+pyFFTW = ">=0.13.1,<0.15.0"
 setuptools = ">=67.8,<72.0"
 watchdog = ">=3,<5"
 wget = "^3.2"
