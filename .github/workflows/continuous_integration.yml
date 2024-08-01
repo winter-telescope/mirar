@@ -67,7 +67,6 @@ jobs:
           ssh-private-key: |
             ${{ secrets.WIRC_STARTERPACK_TOKEN }}
 
-
       - name: install packages with conda
         shell: bash -el {0}
         run: |
