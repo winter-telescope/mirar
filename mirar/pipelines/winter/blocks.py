@@ -343,12 +343,6 @@ load_unpacked = [
         ]
     ),
     ImageRebatcher(BASE_NAME_KEY),
-    # FIXME: Remove this line
-    ImageSelector(
-        ("FILTER", ["dark", "J"]),
-        ("PROGNAME", ["2024A000", "2023A014"]),
-        # ("TARGET", ["dark", "flat", "request_2024A000_2024_06_12_01_16_59.db_0"])
-    ),
 ]
 
 export_unpacked = [DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace")]
