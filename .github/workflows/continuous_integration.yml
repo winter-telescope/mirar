@@ -26,7 +26,7 @@ jobs:
     # Specify the python versions to test
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -70,7 +70,7 @@ jobs:
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
+          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry=0.95 gsl wcstools
           swarp -v
           scamp -v
           sex -v

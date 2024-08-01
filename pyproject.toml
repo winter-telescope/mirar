@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/winter-telescope/mirar"
 
 [tool.poetry.dependencies]
-python = ">=3.10.0,<3.12"
+python = ">=3.10.0,<3.13"
 astroplan = ">=0.8,<0.11"
 astropy = "^6.0.0"
 astroquery = "^0.4.7"
@@ -40,7 +40,7 @@ sqlalchemy = "^2.0.15"
 pydantic = "^2.1.1"
 pylint-pydantic = ">=0.1.6,<0.4.0"
 astrosurveyutils = "^0.0.1"
-urllib3 = ">=1.26.16,<3.0.0"
+urllib3 = "^2.0.7"
 sqlalchemy-utils = "^0.41.1"
 wintertoo = "^1.5.0"
 scipy = "^1.12.0"
@@ -116,5 +116,5 @@ mirar-docs-autogen = "mirar.utils.docs:iterate_rst_generation"
 winter-stack = 'mirar.pipelines.winter.run:run_stack_of_stacks'
 
 [build-system]
-requires = ["setuptools", "wheel", "poetry-core>=1.2.0",]
+requires = ["setuptools", "wheel", "poetry-core>=1.8.0",]
 build-backend = "poetry.core.masonry.api"
