@@ -486,6 +486,7 @@ def download_wfcam_archive_images(
     """
     # ukirt_query = UkidssClass()
     wfau_query.database = survey_name
+    wfau_query.TIMEOUT = 300.0
 
     # First get a list with details of the images that overlap with the
     # coordinates.
