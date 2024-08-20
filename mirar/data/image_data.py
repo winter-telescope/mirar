@@ -49,7 +49,7 @@ You can change this via an environment variable.
 
 .. code-block:: bash
 
-    export USE_WINTER_CACHE = false
+    export USE_MIRAR_CACHE = false
 
 See :doc:`usage` for more information about selecting cache mode,
 and setting the output data directory.

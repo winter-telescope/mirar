@@ -10,7 +10,16 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-USE_CACHE: bool = os.getenv("USE_WINTER_CACHE", "true") in ["true", "True", True]
+USE_CACHE: bool = os.getenv("USE_MIRAR_CACHE", "true") in ["true", "True", True]
+
+if not USE_CACHE:
+    if os.getenv("USE_WINTER_CACHE") is not None:
+        logger.warning(
+            "The environment variable 'USE_WINTER_CACHE' is deprecated. "
+            "Please use 'USE_MIRAR_CACHE' instead. "
+            "This will be removed in a future version."
+        )
+        USE_CACHE = os.getenv("USE_WINTER_CACHE") in ["true", "True", True]
 
 
 class CacheError(Exception):
