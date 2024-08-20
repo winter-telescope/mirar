@@ -209,6 +209,10 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     plxgaiabright = Column(Float, nullable=True)
     ruwegaiabright = Column(Float, nullable=True)
 
+    # ZTF properties
+    ztfname = Column(VARCHAR(12), nullable=True)
+    distztf = Column(Float, nullable=True)
+
 
 class Candidate(BaseDB):
     """
@@ -342,6 +346,9 @@ class Candidate(BaseDB):
     distgaiabright: float | None = Field(ge=0, default=None)
     plxgaiabright: float | None = Field(default=None)
     ruwegaiabright: float | None = Field(ge=0, default=None)
+
+    ztfname: str | None = Field(default=None, max_length=12)
+    distztf: float | None = Field(ge=0, default=None)
 
     def insert_entry(
         self, duplicate_protocol, returning_key_names=None

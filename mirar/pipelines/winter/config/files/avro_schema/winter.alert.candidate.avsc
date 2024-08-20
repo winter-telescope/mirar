@@ -127,6 +127,8 @@
 		{"name": "ruwegaia", "type": ["float", "null"], "doc": "Random Unit Weighted Error of closest source from Gaia EDR3 catalog; if exists within 90 arcsec [mas]"},
 		{"name": "distgaiabright", "type": ["float", "null"], "doc": "Distance to closest source from Gaia DR3 catalog brighter than magnitude 14; if exists within 90 arcsec [arcsec]"},
 		{"name": "plxgaiabright", "type": ["float", "null"], "doc": "Absolute (parallax/sigma) of closest source from Gaia EDR3 catalog brighter than magnitude 14; if exists within 90 arcsec [mag]"},
-		{"name": "ruwegaiabright", "type": ["float", "null"], "doc": "Random Unit Weighted Error of closest source from Gaia EDR3 catalog brighter than magnitude 14; if exists within 90 arcsec [mas]"}
+		{"name": "ruwegaiabright", "type": ["float", "null"], "doc": "Random Unit Weighted Error of closest source from Gaia EDR3 catalog brighter than magnitude 14; if exists within 90 arcsec [mas]"},
+		{"name": "ztfname", "type": ["string", "null"], "doc": "ZTF name of candidate if exists within 2 arcsec, e.g. ZTF20abzqkxg"},
+		{"name": "distztf", "type": ["float", "null"], "doc": "Distance to closest source from ZTF alert catalog; if exists within 2 arcsec [arcsec]"}
 	]
 }
