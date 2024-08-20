@@ -2,6 +2,6 @@
 Module for configs of astrometry
 """
 
-import os
+from pathlib import Path
 
-astromatic_config_dir = os.path.dirname(__file__)
+astromatic_config_dir = Path(__file__).parent

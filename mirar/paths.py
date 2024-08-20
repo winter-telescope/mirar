@@ -73,6 +73,9 @@ CAL_OUTPUT_SUB_DIR = "calibration"
 ml_models_dir = base_output_dir.joinpath("ml_models")
 ml_models_dir.mkdir(exist_ok=True)
 
+config_dir = base_output_dir.joinpath("configs")
+config_dir.mkdir(exist_ok=True)
+
 
 def raw_img_dir(
     sub_dir: str = "", raw_dir: Path = base_raw_dir, img_sub_dir: str = RAW_IMG_SUB_DIR
