@@ -13,18 +13,21 @@ class ZTF(BaseKowalskiXMatch):
     catalog_name = "ZTF_alerts"
     abbreviation = "ztf"
     projection = {
+        "_id": 1,
         "objectId": 1,
-        "ra": 1,
-        "dec": 1,
+        "candidate.ra": 1,
+        "candidate.dec": 1,
     }
 
     column_names = {
+        "_id": "ztfid",
         "objectId": "ztfname",
-        "ra": f"{abbreviation}ra",
-        "dec": f"{abbreviation}dec",
+        "candidate.ra": f"{abbreviation}ra",
+        "candidate.dec": f"{abbreviation}dec",
     }
 
     column_dtypes = {
+        "ztfid": str,
         "ztfname": str,
         "ztfra": float,
         "ztfdec": float,

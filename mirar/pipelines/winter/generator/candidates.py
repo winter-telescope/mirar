@@ -228,7 +228,7 @@ def winter_candidate_avro_fields_calculator(source_table: SourceBatch) -> Source
         src_df["plxgaiabright"] = src_df["gaiabright_parallax_over_error1"]
         src_df["ruwegaiabright"] = src_df["gaiabright_ruwe1"]
 
-        src_df["distztf"] = src_df["distztf1"]
+        src_df["distztf"] = src_df["distztfnr1"]
         src_df["ztfname"] = src_df["ztfname1"]
 
         source.set_data(src_df)

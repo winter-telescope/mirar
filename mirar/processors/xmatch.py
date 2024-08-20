@@ -6,6 +6,7 @@ import logging
 
 import astropy.units as u
 import numpy as np
+import pandas as pd
 from astropy.coordinates import SkyCoord
 
 from mirar.catalog.base.base_xmatch_catalog import BaseXMatchCatalog
@@ -89,7 +90,7 @@ class XMatch(BaseSourceProcessor):
                 result_dec_colname = self.catalog.dec_column_name + f"{num + 1}"
                 dist_colname = f"dist{self.catalog.abbreviation}nr{num + 1}"
                 candidate_table[dist_colname] = np.array(np.nan, dtype=float)
-                crd_nanmask = np.invert(np.isnan(candidate_table[result_ra_colname]))
+                crd_nanmask = pd.notnull(candidate_table[result_ra_colname])
                 result_crds = SkyCoord(
                     ra=candidate_table[result_ra_colname][crd_nanmask],
                     dec=candidate_table[result_dec_colname][crd_nanmask],
