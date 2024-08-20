@@ -2,15 +2,31 @@
 Module with sextractor utilities
 """
 
-import os
+import shutil
 from pathlib import Path
 
+from mirar.paths import config_dir
 from mirar.processors.astromatic.config import astromatic_config_dir
 
-default_param_path = os.path.join(astromatic_config_dir, "temp.param")
-default_conv_path = os.path.join(astromatic_config_dir, "sex.conv")
-default_config_path = os.path.join(astromatic_config_dir, "sex.config")
-default_starnnw_path = os.path.join(astromatic_config_dir, "default.nnw")
+readonly_param_path = astromatic_config_dir / "temp.param"
+default_param_path = config_dir / "default.param"
+if not default_param_path.exists():
+    shutil.copy(readonly_param_path, default_param_path)
+
+readonly_conv_path = astromatic_config_dir / "sex.conv"
+default_conv_path = config_dir / "default.conv"
+if not default_conv_path.exists():
+    shutil.copy(readonly_conv_path, default_conv_path)
+
+readonly_config_path = astromatic_config_dir / "sex.conv"
+default_config_path = config_dir / "default.config"
+if not default_config_path.exists():
+    shutil.copy(readonly_config_path, default_config_path)
+
+readonly_starnnw_path = astromatic_config_dir / "default.nnw"
+default_starnnw_path = config_dir / "default.nnw"
+if not default_starnnw_path.exists():
+    shutil.copy(readonly_starnnw_path, default_starnnw_path)
 
 
 def parse_sextractor_config(config_file: str | Path):
@@ -18,7 +34,7 @@ def parse_sextractor_config(config_file: str | Path):
     Parse a sextractor config file into a dictionary
     param config_file: path to sextractor config file
     """
-    with open(config_file, "r") as f:
+    with open(config_file, "r", encoding="utf8") as f:
         data = f.readlines()
 
     keys, values = [], []
@@ -48,12 +64,12 @@ def write_sextractor_config_to_file(config_dict: dict, config_filename: str | Pa
     param config_dict: dictionary of sextractor config parameters
     param config_filename: path to write config file
     """
-    with open(config_filename, "w") as f:
+    with open(config_filename, "w", encoding="utf8") as f:
         for key in config_dict:
             f.write(f"{key.ljust(20, ' ')}   {config_dict[key]} \n")
 
 
-def write_param_file(param_path: str = default_param_path, params: list = None):
+def write_param_file(param_path: str | Path = default_param_path, params: list = None):
     """
     Write a default parameter file for sextractor
     param param_path: path to write parameter file
@@ -76,7 +92,7 @@ def write_param_file(param_path: str = default_param_path, params: list = None):
             param_f.write(f"{param}\n")
 
 
-def write_conv_file(conv_path: str = default_conv_path):
+def write_conv_file(conv_path: str | Path = default_conv_path):
     """
     Write a default convolution file for sextractor
     """
@@ -91,9 +107,9 @@ def write_conv_file(conv_path: str = default_conv_path):
 
 
 def write_config_file(
-    param_path: str = default_param_path,
-    conv_path: str = default_conv_path,
-    config_path: str = default_config_path,
+    param_path: str | Path = default_param_path,
+    conv_path: str | Path = default_conv_path,
+    config_path: str | Path = default_config_path,
     saturation_key: str = "SATURATE",
 ):
     """
