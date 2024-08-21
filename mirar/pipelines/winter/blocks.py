@@ -7,7 +7,7 @@ import os
 
 from winterrb.model import WINTERNet
 
-from mirar.catalog.kowalski import PS1, PS1STRM, TMASS, Gaia, GaiaBright, PS1SGSc
+from mirar.catalog.kowalski import PS1, PS1STRM, TMASS, ZTF, Gaia, GaiaBright, PS1SGSc
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -715,6 +715,7 @@ crossmatch_candidates = [
     XMatch(catalog=PS1STRM(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=Gaia(num_sources=1, search_radius_arcmin=1.5)),
     XMatch(catalog=GaiaBright(num_sources=1, search_radius_arcmin=1.5)),
+    XMatch(catalog=ZTF(num_sources=1, search_radius_arcmin=2.0 / 60.0)),
     CustomSourceTableModifier(
         modifier_function=winter_candidate_avro_fields_calculator
     ),

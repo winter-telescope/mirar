@@ -4,7 +4,7 @@
     "name": "alert",
     "doc": "avro alert schema for WINTER",
     "fields": [
-        {"name": "schemavsn", "type": "string", "doc": "schema version used", "default": "0.3"},
+        {"name": "schemavsn", "type": "string", "doc": "schema version used", "default": "0.4"},
         {"name": "publisher", "type": "string", "doc": "origin of alert packet", "default": "WINTER-mirar"},
         {"name": "objectid", "type": "string", "doc": "name of parent source, e.g 'WNTR24aaaab'"},
         {"name": "candid", "type": "long"},

@@ -79,6 +79,31 @@ def get_kowalski() -> Kowalski:
     return kowalski_instance
 
 
+def flatten_kowalski_data(matches: list[dict]) -> list[dict]:
+    """
+    Flatten a Kowalski data dict
+
+    :param matches: List of matches
+    :return: Flattened list of depth-1 dictionaries
+    """
+
+    new = []
+
+    if len(matches) > 0:
+        for match in matches:
+            new_dict = {}
+            if isinstance(match, dict):
+                for key, val in match.items():
+                    if isinstance(val, dict):
+                        for subkey, subval in val.items():
+                            new_dict[f"{key}.{subkey}"] = subval
+                    else:
+                        new_dict[key] = val
+            new.append(new_dict)
+
+    return new
+
+
 class BaseKowalskiXMatch(BaseXMatchCatalog, ABC):
     """
     Base class for a catalog using Kowalski
@@ -133,7 +158,14 @@ class BaseKowalskiXMatch(BaseXMatchCatalog, ABC):
         response = self.kowalski.query(query=query)
         data = response.get("default").get("data")
 
-        return data[self.catalog_name]
+        res = {}
+
+        # Flatten if Kowalski data is nested
+        for key, matches in data[self.catalog_name].items():
+            new = flatten_kowalski_data(matches)
+            res[key] = new
+
+        return res
 
     def query(self, coords) -> dict:
         """
