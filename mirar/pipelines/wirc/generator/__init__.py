@@ -16,4 +16,5 @@ from mirar.pipelines.wirc.generator.references import (
     wirc_reference_psfex,
     wirc_reference_sextractor,
 )
+from mirar.pipelines.wirc.generator.stacks import label_stack_id
 from mirar.pipelines.wirc.generator.target import annotate_target_coordinates

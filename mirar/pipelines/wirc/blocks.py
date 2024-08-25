@@ -10,9 +10,11 @@ from mirar.paths import (
     OBSCLASS_KEY,
     RAW_IMG_KEY,
     SATURATE_KEY,
+    TARGET_KEY,
 )
 from mirar.pipelines.wirc.generator import (
     annotate_target_coordinates,
+    label_stack_id,
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
     wirc_reference_generator,
@@ -72,6 +74,7 @@ from mirar.processors.utils import (
     ImageDebatcher,
     ImageLoader,
     ImageRebatcher,
+    ImageRejector,
     ImageSaver,
     ImageSelector,
 )
@@ -86,14 +89,26 @@ load_stack = [
 ]
 
 log = [
+    ImageRejector((BASE_NAME_KEY, "_diff.fits")),
+    ImageRejector(("object", "test")),
+    ImageDebatcher(),
+    CustomImageBatchModifier(label_stack_id),
+    ImageRebatcher("stackid"),
+    CustomImageBatchModifier(annotate_target_coordinates),
     ImageRebatcher("UTSHUT"),
     CSVLog(
         export_keys=[
+            TARGET_KEY,
+            "TARGRA",
+            "TARGDEC",
+            "TARGNUM",
+            "STACKID",
             "OBJECT",
             "FILTER",
             "UTSHUT",
             "EXPTIME",
             "COADDS",
+            "TELFOCUS",
             OBSCLASS_KEY,
             BASE_NAME_KEY,
             "CRVAL1",
@@ -109,19 +124,17 @@ masking = [
     MaskPixelsFromPath(mask_path=wirc_mask_path),
 ]
 
-dark_calibration = [ImageBatcher("EXPTIME"), DarkCalibrator()]
+dark_calibration = [ImageRebatcher("EXPTIME"), DarkCalibrator()]
 
 
 reduction = [
     ImageSaver(output_dir_name="darkcal"),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    ImageDebatcher(),
     ImageSelector((OBSCLASS_KEY, "science")),
-    ImageBatcher(split_key=["filter", "object"]),
-    CustomImageBatchModifier(annotate_target_coordinates),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageRebatcher("stackid"),
     SkyFlatCalibrator(cache_sub_dir="firstpasscal"),
     NightSkyMedianCalibrator(cache_sub_dir="firstpasscal"),
-    ImageBatcher(BASE_NAME_KEY),
+    ImageRebatcher(BASE_NAME_KEY),
     AutoAstrometry(catalog="tmc"),
     Sextractor(output_sub_dir="postprocess", **sextractor_astrometry_config),
     Scamp(
@@ -131,7 +144,7 @@ reduction = [
         temp_output_sub_dir="firstpassscamp",
         timeout=120.0,
     ),
-    ImageRebatcher(split_key=["filter", "object"]),
+    ImageRebatcher(split_key=["stackid"]),
     ImageSaver(output_dir_name="firstpass"),
     Swarp(
         swarp_config_path=swarp_sp_path,
