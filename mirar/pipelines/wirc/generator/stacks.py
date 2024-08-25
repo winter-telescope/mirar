@@ -10,7 +10,7 @@ from mirar.data import ImageBatch
 from mirar.paths import OBSCLASS_KEY
 from mirar.processors.utils.image_selector import split_images_into_batches
 
-MAX_RADIUS_DEG = 0.2
+MAX_RADIUS_DEG = 5.0 / 60.0  # WIRC is 10 arc minutes each side
 
 
 def label_stack_id(batch: ImageBatch) -> ImageBatch:
@@ -29,8 +29,8 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
             image["targnum"] = -1
             continue
 
-        target_ra = Angle(image["RA"], unit="hourangle").degree
-        target_dec = Angle(image["DEC"], unit="degree").degree
+        target_ra = Angle(image["CRVAL1"], unit="hourangle").degree
+        target_dec = Angle(image["CRVAL2"], unit="degree").degree
 
         position = coords.SkyCoord(target_ra, target_dec, unit="deg")
 
@@ -41,7 +41,7 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
                 coords.SkyCoord(ra=ras, dec=decs, unit="deg")
             )
 
-            mask = d2d < MAX_RADIUS_DEG * u.deg
+            mask = d2d < (MAX_RADIUS_DEG * u.deg)
             if mask:
                 match = idx
 
