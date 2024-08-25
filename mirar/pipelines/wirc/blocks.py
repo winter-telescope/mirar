@@ -96,12 +96,15 @@ log = [
             "COADDS",
             OBSCLASS_KEY,
             BASE_NAME_KEY,
+            "CRVAL1",
+            "CRVAL2",
         ]
     ),
     ImageDebatcher(),
 ]
 
 masking = [
+    ImageSelector(("CORRUPT", ["False"])),
     ImageSelector((OBSCLASS_KEY, ["science", "dark"])),
     MaskPixelsFromPath(mask_path=wirc_mask_path),
 ]
@@ -126,6 +129,7 @@ reduction = [
         scamp_config_path=scamp_fp_path,
         cache=True,
         temp_output_sub_dir="firstpassscamp",
+        timeout=120.0,
     ),
     ImageRebatcher(split_key=["filter", "object"]),
     ImageSaver(output_dir_name="firstpass"),
