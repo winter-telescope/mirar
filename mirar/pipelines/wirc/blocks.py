@@ -91,6 +91,7 @@ load_stack = [
 log = [
     ImageRejector((BASE_NAME_KEY, "_diff.fits")),
     ImageRejector(("object", "test")),
+    ImageRejector(("CORRUPT", "True")),
     ImageDebatcher(),
     CustomImageBatchModifier(label_stack_id),
     ImageRebatcher("stackid"),
@@ -119,7 +120,6 @@ log = [
 ]
 
 masking = [
-    ImageSelector(("CORRUPT", ["False"])),
     ImageSelector((OBSCLASS_KEY, ["science", "dark"])),
     MaskPixelsFromPath(mask_path=wirc_mask_path),
 ]
