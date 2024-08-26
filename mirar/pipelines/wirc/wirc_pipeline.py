@@ -35,6 +35,7 @@ class WircPipeline(Pipeline):
 
     all_pipeline_configurations = {
         "default": load_raw + reduce + imsub,
+        "reduce": load_raw + reduce,
         "imsub": load_stack + imsub,
         "log": load_raw + log,
         "candidates": candidates,

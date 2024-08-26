@@ -106,6 +106,7 @@ class Scamp(BaseImageProcessor):
         temp_output_sub_dir: str = "scamp",
         cache: bool = False,
         copy_scamp_header_to_image: bool = False,
+        timeout: float = 60.0,
     ):
         super().__init__()
         self.scamp_config = Path(scamp_config_path)
@@ -113,6 +114,7 @@ class Scamp(BaseImageProcessor):
         self.temp_output_sub_dir = temp_output_sub_dir
         self.cache = cache
         self.copy_scamp_header_to_image = copy_scamp_header_to_image
+        self.timeout = timeout
 
     def description(self) -> str:
         """
@@ -173,7 +175,7 @@ class Scamp(BaseImageProcessor):
             scamp_config_path=self.scamp_config,
             ast_ref_cat_path=ref_cat_path,
             output_dir=scamp_output_dir,
-            timeout_seconds=30.0 * num_files,
+            timeout_seconds=self.timeout * num_files,
         )
 
         if not self.cache:

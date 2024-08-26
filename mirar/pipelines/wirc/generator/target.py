@@ -5,7 +5,7 @@ Module to annotate target coordinates on images.
 from astropy.coordinates import Angle
 
 from mirar.data import ImageBatch
-from mirar.paths import TIME_KEY
+from mirar.paths import TARGET_KEY, TIME_KEY
 
 
 def annotate_target_coordinates(image_batch: ImageBatch) -> ImageBatch:
@@ -24,8 +24,13 @@ def annotate_target_coordinates(image_batch: ImageBatch) -> ImageBatch:
     target_ra = Angle(first_image["RA"], unit="hourangle").degree
     target_dec = Angle(first_image["DEC"], unit="degree").degree
 
+    # In case one of the dithers is mis-named, we'll use the most common name
+    names = [x[TARGET_KEY] for x in image_batch]
+    most_common_name = max(set(names), key=names.count)
+
     for image in image_batch:
         image["TARGRA"] = target_ra
         image["TARGDEC"] = target_dec
+        image[TARGET_KEY] = most_common_name
 
     return image_batch

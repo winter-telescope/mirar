@@ -6,7 +6,9 @@ import logging
 from pathlib import Path
 
 import astropy
+import astropy.units as u
 import numpy as np
+from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
 from mirar.data import Image
@@ -45,6 +47,9 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     :return: data and header of image
     """
     data, header = open_fits(path)
+
+    corrupted = False
+
     if GAIN_KEY not in header.keys():
         header[GAIN_KEY] = 1.2
     header["FILTER"] = header["AFT"].split("__")[0][0]
@@ -78,6 +83,14 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
     header[PROC_HISTORY_KEY] = ""
     header[PROC_FAIL_KEY] = ""
 
+    try:
+        crd = SkyCoord(header["RA"], header["DEC"], unit=(u.hour, u.deg))
+        header["CRVAL1"] = crd.ra.deg
+        header["CRVAL2"] = crd.dec.deg
+    except KeyError:
+        header["CRVAL1"] = 0
+        header["CRVAL2"] = 0
+
     if "FILTERID" not in header.keys():
         header["FILTERID"] = wirc_filter_dict[header["FILTER"]]
 
@@ -96,6 +109,17 @@ def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Head
         if "ZP_AUTO" in header.keys():
             header[ZP_KEY] = float(header["ZP_AUTO"])
             header[ZP_STD_KEY] = float(header["ZP_AUTO_std"])
+
+    for key in ["TELFOCUS", "RA", "DEC"]:
+        if key not in header.keys():
+            logger.warning(
+                f"No '{key}' entry in header for image {path}. "
+                f"Setting as corrupted, will ignore."
+            )
+            corrupted = True
+
+    header["CORRUPT"] = str(corrupted)
+
     data = data.astype(float)
     data[data == 0.0] = np.nan
     return data, header
