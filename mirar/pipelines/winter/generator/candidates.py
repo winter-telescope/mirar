@@ -280,8 +280,6 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
     """
     new_batch = []
 
-    min_dist_to_star = 7.0
-
     for source in source_table:
         src_df = source.get_data()
 
@@ -290,15 +288,17 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
             & (src_df["fwhm"] < 10.0)
             & (src_df["mindtoedge"] > 50.0)
             & (src_df["isdiffpos"])
-            & (  # Cut on sgscore1
-                (src_df["sgscore1"] < 0.5)
-                | pd.isnull(src_df["sgscore1"])
-                | (src_df["distpsnr1"] > min_dist_to_star)
-            )
-            & (  # Cut on PS1STRM Star Probability
-                (src_df["ps1strmprobstar1"] < 0.5)
-                | pd.isnull(src_df["ps1strmprobstar1"])
-                | (src_df["distpsnr1"] > min_dist_to_star)
+            & ~(  # Not a star according to PS1 or PS1STRM
+                (
+                    (src_df["distpsnr1"] < 7.0)
+                    & (src_df["srmag"] < 15)
+                    & ((src_df["sgscore"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
+                )
+                | (
+                    (src_df["distpsnr1"] < 3.0)
+                    & (src_df["srmag"] < 18)
+                    & ((src_df["sgscore"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
+                )
             )
             & (src_df["ndethist"] > 0)
         )
