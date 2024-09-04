@@ -302,8 +302,8 @@ save_raw = [
     # Process each raw image in parallel
     ImageRebatcher(BASE_NAME_KEY),
     ImageRejector(("BOARD_ID", "0")),
-    # HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageSaver(output_dir_name="raw_unpacked", write_mask=False),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
