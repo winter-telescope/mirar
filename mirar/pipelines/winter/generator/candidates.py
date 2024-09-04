@@ -291,13 +291,13 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
             & ~(  # Not a star according to PS1 or PS1STRM
                 (
                     (src_df["distpsnr1"] < 7.0)
-                    & (src_df["srmag"] < 15)
-                    & ((src_df["sgscore"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
+                    & (src_df["srmag1"] < 15)
+                    & ((src_df["sgscore1"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
                 )
                 | (
                     (src_df["distpsnr1"] < 3.0)
-                    & (src_df["srmag"] < 18)
-                    & ((src_df["sgscore"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
+                    & (src_df["srmag1"] < 18)
+                    & ((src_df["sgscore1"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
                 )
             )
             & (src_df["ndethist"] > 0)
