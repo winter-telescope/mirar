@@ -72,7 +72,7 @@ def run_astrometry_net_single(
         f"--dir {output_dir} "
         f"--new-fits {newname} "
         f"--overwrite "
-        f"--out {basename} "  # use this base name for outputs (instead of 'temp_...')
+        f"--out {basename} --no-tweak "  # use this base name for outputs (instead of 'temp_...')
     )
 
     if scale_bounds is not None:
