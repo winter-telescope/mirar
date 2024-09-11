@@ -3,11 +3,8 @@ Module containing reference-related functions for the winter pipeline.
 """
 
 import logging
-import os
 
 from mirar.data import Image, ImageBatch
-from mirar.database.constraints import DBQueryConstraints
-from mirar.database.transactions import select_from_table
 from mirar.paths import REF_CAT_PATH_KEY, get_output_dir
 from mirar.pipelines.winter.config import (
     ref_psfex_path,
@@ -18,16 +15,10 @@ from mirar.pipelines.winter.config import (
 )
 from mirar.pipelines.winter.constants import winter_filters_map
 from mirar.pipelines.winter.generator.utils import winter_ref_catalog_namer
-from mirar.pipelines.winter.models import (
-    DEFAULT_FIELD,
-    RefComponent,
-    RefQuery,
-    RefStack,
-)
+from mirar.pipelines.winter.models import RefComponent, RefQuery, RefStack
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.split import SUB_ID_KEY
 from mirar.references import PS1Ref
-from mirar.references.local import RefFromPath
 from mirar.references.wfcam.wfcam_query import WFAUQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 
@@ -188,25 +179,6 @@ def winter_reference_generator(image: Image):
 
     cache_ref_stack = False
     if filtername in ["J", "H"]:
-        if fieldid != DEFAULT_FIELD:
-            cache_ref_stack = True
-            constraints = DBQueryConstraints(
-                columns=["fieldid", SUB_ID_KEY.lower()],
-                accepted_values=[fieldid, subdetid],
-            )
-
-            db_results = select_from_table(
-                db_constraints=constraints,
-                sql_table=RefStack.sql_model,
-                output_columns=["savepath"],
-            )
-
-            if len(db_results) > 0:
-                savepath = db_results["savepath"].iloc[0]
-                if os.path.exists(savepath):
-                    logger.debug(f"Found reference image in database: {savepath}")
-                    return RefFromPath(path=savepath, filter_name=filtername)
-
         skip_online_query = filtername == "H"
 
         wfcam_query = WFAUQuery(
