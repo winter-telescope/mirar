@@ -262,7 +262,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 4
+BOARD_ID = 5
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -413,6 +413,7 @@ astrometry = [
         **sextractor_astrometry_config,
         write_regions_bool=True,
         output_sub_dir="scamp",
+        cache=False,
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
     ),
     CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
