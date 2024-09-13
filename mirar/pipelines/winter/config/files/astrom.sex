@@ -11,11 +11,11 @@ CATALOG_TYPE     FITS_LDAC     # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
 #------------------------------- Extraction ----------------------------------
  
 DETECT_TYPE      CCD            # CCD (linear) or PHOTO (with gamma correction)
-DETECT_MINAREA   3              # minimum number of pixels above threshold
+DETECT_MINAREA   5              # minimum number of pixels above threshold
 THRESH_TYPE	 RELATIVE	# threshold type: RELATIVE (in sigmas) or ABSOLUTE (in ADUs)
 
-DETECT_THRESH    3            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
-ANALYSIS_THRESH  3            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+DETECT_THRESH    10            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+ANALYSIS_THRESH  10            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
  
 FILTER           Y              # apply filter for detection (Y or N)?
 
