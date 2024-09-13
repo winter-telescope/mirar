@@ -51,10 +51,14 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
     """
 
     try:
-        # Run command
+        # Run command so that output is printed at terminal and captured in rval
 
         rval = subprocess.run(
-            cmd, check=True, capture_output=True, shell=True, timeout=timeout
+            cmd,
+            check=True,
+            capture_output=True,
+            shell=True,
+            timeout=timeout,
         )
 
         msg = "Successfully executed command. "
