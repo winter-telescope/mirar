@@ -408,6 +408,7 @@ astrometry = [
         use_weight=True,
         timeout=120,
         cache=False,
+        no_tweak=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
     Sextractor(
