@@ -51,7 +51,7 @@ def winter_astrometric_ref_catalog_generator(
             )
 
     search_radius_arcmin = (
-        np.max([image["NAXIS1"], image["NAXIS2"]])
+        np.sqrt(image["NAXIS1"] ** 2 + image["NAXIS2"] ** 2)
         * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
         * 60
     ) / 2.0
