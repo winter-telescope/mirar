@@ -38,6 +38,8 @@ def run_scamp(
     ast_ref_cat_path: str | Path,
     output_dir: str | Path,
     timeout_seconds: float = 60.0,
+    make_checkplots: bool = False,
+    checkplot_basename: str = "scamp_checkplot",
 ):
     """
     Function to run scamp.
@@ -51,6 +53,8 @@ def run_scamp(
     :param ast_ref_cat_path: Path to the reference catalog
     :param output_dir: Output directory
     :param timeout_seconds: Timeout for scamp
+    :param make_checkplots: Whether to make checkplots
+    :param checkplot_basename: Basename for checkplots
 
     :return: None
     """
@@ -58,9 +62,23 @@ def run_scamp(
         f"scamp @{scamp_list_path} "
         f"-c {scamp_config_path} "
         f"-ASTREFCAT_NAME {ast_ref_cat_path} "
-        f"-VERBOSE_TYPE QUIET -SOLVE_PHOTOM N"
+        f"-VERBOSE_TYPE LOG -SOLVE_PHOTOM N"
     )
 
+    if make_checkplots:
+        scamp_cmd += (
+            f" -CHECKPLOT_TYPE FGROUPS,DISTORTION,ASTR_INTERROR2D,"
+            f"ASTR_INTERROR1D,ASTR_REFERROR2D,ASTR_REFERROR1D,"
+            f"ASTR_CHI2,PHOT_ERROR "
+            f"-CHECKPLOT_NAME {checkplot_basename}_fgroups,"
+            f"{checkplot_basename}_distortion,"
+            f"{checkplot_basename}_astrom_interror2d,"
+            f"{checkplot_basename}_astrom_interror1d,"
+            f"{checkplot_basename}_astrom_referror2d,"
+            f"{checkplot_basename}_astrom_referror1d,"
+            f"{checkplot_basename}_astrom_chi2,"
+            f"{checkplot_basename}_phot_error"
+        )
     execute(scamp_cmd, output_dir=output_dir, timeout=np.max([60.0, timeout_seconds]))
 
 
@@ -107,6 +125,7 @@ class Scamp(BaseImageProcessor):
         cache: bool = False,
         copy_scamp_header_to_image: bool = False,
         timeout: float = 60.0,
+        make_checkplots: bool = False,
     ):
         super().__init__()
         self.scamp_config = Path(scamp_config_path)
@@ -115,6 +134,7 @@ class Scamp(BaseImageProcessor):
         self.cache = cache
         self.copy_scamp_header_to_image = copy_scamp_header_to_image
         self.timeout = timeout
+        self.make_checkplots = make_checkplots
 
     def description(self) -> str:
         """
@@ -151,6 +171,10 @@ class Scamp(BaseImageProcessor):
             Path(batch[0][BASE_NAME_KEY]).name + "_scamp_list.txt",
         )
 
+        scamp_checkplot_basename = scamp_output_dir.joinpath(
+            Path(batch[0][BASE_NAME_KEY]).name.split(".fits")[0] + "_cplot",
+        )
+
         logger.debug(f"Writing file list to {scamp_image_list_path}")
 
         temp_files = [scamp_image_list_path, ref_cat_path]
@@ -176,6 +200,8 @@ class Scamp(BaseImageProcessor):
             ast_ref_cat_path=ref_cat_path,
             output_dir=scamp_output_dir,
             timeout_seconds=self.timeout * num_files,
+            make_checkplots=self.make_checkplots,
+            checkplot_basename=scamp_checkplot_basename,
         )
 
         if not self.cache:
