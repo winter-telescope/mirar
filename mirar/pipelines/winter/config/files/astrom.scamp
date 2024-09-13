@@ -108,7 +108,7 @@ PHOT_IMAFLAGSMASK      0x0             # Photometry rejection mask on IMAFLAGS
 CHECKPLOT_CKEY         SCAMPCOL        # FITS keyword for PLPLOT field colour
 CHECKPLOT_RES          0               # Check-plot resolution (0 = default)
 CHECKPLOT_ANTIALIAS    N               # Anti-aliasing using convert (Y/N) ?
-CHECKPLOT_DEV          PNG             # NULL, XWIN, TK, PS, PSC, XFIG, PNG,
+CHECKPLOT_DEV          PSC             # NULL, XWIN, TK, PS, PSC, XFIG, PNG,
                                        # JPEG, AQT, PDF or SVG
 CHECKPLOT_TYPE         NONE
 CHECKPLOT_NAME         NONE # Check-plot filename(s)
