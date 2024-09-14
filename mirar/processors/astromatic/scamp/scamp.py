@@ -66,6 +66,12 @@ def run_scamp(
     )
 
     if make_checkplots:
+        checkplot_dev = os.getenv("PLPLOT_DEV", None)
+        if checkplot_dev is None:
+            raise ValueError(
+                "PLPLOT_DEV environment variable must be set to make scamp checkplots."
+                "See https://plplot.sourceforge.io/ for more information."
+            )
         scamp_cmd += (
             f" -CHECKPLOT_TYPE FGROUPS,DISTORTION,ASTR_INTERROR2D,"
             f"ASTR_INTERROR1D,ASTR_REFERROR2D,ASTR_REFERROR1D,"
@@ -78,6 +84,7 @@ def run_scamp(
             f"{checkplot_basename}_astrom_referror1d,"
             f"{checkplot_basename}_astrom_chi2,"
             f"{checkplot_basename}_phot_error"
+            f" -CHECKPLOT_DEV {checkplot_dev}"
         )
     execute(scamp_cmd, output_dir=output_dir, timeout=np.max([60.0, timeout_seconds]))
 
