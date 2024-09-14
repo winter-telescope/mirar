@@ -40,6 +40,7 @@ def run_scamp(
     timeout_seconds: float = 60.0,
     make_checkplots: bool = False,
     checkplot_basename: str = "scamp_checkplot",
+    checkplot_dev: str = None,
 ):
     """
     Function to run scamp.
@@ -55,6 +56,7 @@ def run_scamp(
     :param timeout_seconds: Timeout for scamp
     :param make_checkplots: Whether to make checkplots
     :param checkplot_basename: Basename for checkplots
+    :param checkplot_dev: What device to make checkplots
 
     :return: None
     """
@@ -66,12 +68,6 @@ def run_scamp(
     )
 
     if make_checkplots:
-        checkplot_dev = os.getenv("PLPLOT_DEV", None)
-        if checkplot_dev is None:
-            raise ValueError(
-                "PLPLOT_DEV environment variable must be set to make scamp checkplots."
-                "See https://plplot.sourceforge.io/ for more information."
-            )
         scamp_cmd += (
             f" -CHECKPLOT_TYPE FGROUPS,DISTORTION,ASTR_INTERROR2D,"
             f"ASTR_INTERROR1D,ASTR_REFERROR2D,ASTR_REFERROR1D,"
@@ -142,6 +138,14 @@ class Scamp(BaseImageProcessor):
         self.copy_scamp_header_to_image = copy_scamp_header_to_image
         self.timeout = timeout
         self.make_checkplots = make_checkplots
+        self.checkplot_dev = os.getenv("PLPLOT_DEV", None)
+        if self.make_checkplots:
+            if self.checkplot_dev is None:
+                raise ValueError(
+                    "PLPLOT_DEV environment variable must be set to make scamp "
+                    "checkplots."
+                    "See https://plplot.sourceforge.io/ for more information."
+                )
 
     def description(self) -> str:
         """
@@ -209,6 +213,7 @@ class Scamp(BaseImageProcessor):
             timeout_seconds=self.timeout * num_files,
             make_checkplots=self.make_checkplots,
             checkplot_basename=scamp_checkplot_basename,
+            checkplot_dev=self.checkplot_dev,
         )
 
         if not self.cache:
