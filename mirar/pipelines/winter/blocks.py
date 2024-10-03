@@ -262,7 +262,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 3
+BOARD_ID = 6
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -443,6 +443,7 @@ astrometry = [
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         copy_scamp_header_to_image=True,
         cache=True,
+        make_checkplots=True,
     ),
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="post_scamp"),
