@@ -56,8 +56,9 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
         rval = subprocess.run(
             cmd,
             check=True,
-            capture_output=True,
+            capture_output=False,
             shell=True,
+            stdout=subprocess.PIPE,
             timeout=timeout,
         )
 
