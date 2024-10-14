@@ -231,9 +231,11 @@ def open_mef_fits(
         primary_header = hdu[0].header  # pylint: disable=no-member
         num_ext = len(hdu)
         for ext in range(1, num_ext):
-            split_data.append(
-                hdu[ext].data.astype(np.float64)
-            )  # pylint: disable=no-member
+            try:
+                data = hdu[ext].data.astype(np.float64)  # pylint: disable=no-member
+            except TypeError:
+                data = hdu[ext].data
+            split_data.append(data)
             split_headers.append(hdu[ext].header)  # pylint: disable=no-member
 
     return primary_header, split_data, split_headers
