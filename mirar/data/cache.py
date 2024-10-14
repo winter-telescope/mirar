@@ -10,7 +10,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-USE_CACHE: bool = os.getenv("USE_MIRAR_CACHE", "true") in ["true", "True", True]
+USE_CACHE: bool = os.getenv("USE_MIRAR_CACHE", "true") in ["true", "True", True, 1, "1"]
 
 if not USE_CACHE:
     if os.getenv("USE_WINTER_CACHE") is not None:
@@ -19,7 +19,7 @@ if not USE_CACHE:
             "Please use 'USE_MIRAR_CACHE' instead. "
             "This will be removed in a future version."
         )
-        USE_CACHE = os.getenv("USE_WINTER_CACHE") in ["true", "True", True]
+        USE_CACHE = os.getenv("USE_WINTER_CACHE") in ["true", "True", True, 1, "1"]
 
 
 class CacheError(Exception):

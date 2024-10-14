@@ -48,12 +48,20 @@ from mirar.processors.utils import (
     ImageSaver,
     ImageSelector,
 )
+from mirar.processors.utils.cal_hunter import CalHunter, CalRequirement
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
+
+WASP_CALS = [
+    CalRequirement(
+        target_name="bias", required_field="EXPTIME", required_values=["0.0"]
+    ),
+]
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_wasp_image),
     ImageBatcher(BASE_NAME_KEY),
 ]
+
 
 build_log = [  # pylint: disable=duplicate-code
     CSVLog(
@@ -71,8 +79,9 @@ build_log = [  # pylint: disable=duplicate-code
 ]  # pylint: disable=duplicate-code
 
 calibrate = [
-    ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
     ImageDebatcher(),
+    CalHunter(load_image=load_raw_wasp_image, requirements=WASP_CALS),
+    ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
     BiasCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
     ImageBatcher(split_key="filter"),
