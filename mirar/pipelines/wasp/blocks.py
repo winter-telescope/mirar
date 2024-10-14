@@ -64,7 +64,9 @@ WASP_CALS = [
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_wasp_image),
     CustomImageBatchModifier(label_stack_id),
-    ImageBatcher(BASE_NAME_KEY),
+    ImageRebatcher(split_key="stackid"),
+    CustomImageBatchModifier(annotate_target_coordinates),
+    ImageRebatcher(BASE_NAME_KEY),
 ]
 
 
@@ -105,7 +107,6 @@ calibrate = [
         cache=False,
     ),
     ImageRebatcher(split_key=["stackid"]),
-    CustomImageBatchModifier(annotate_target_coordinates),
     Swarp(
         swarp_config_path=swarp_config_path,
         include_scamp=True,
