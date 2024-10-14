@@ -31,6 +31,8 @@ def annotate_target_coordinates(image_batch: ImageBatch) -> ImageBatch:
     for image in image_batch:
         image["OBJRA"] = target_ra
         image["OBJDEC"] = target_dec
+        image["RA"] = first_image["RA"]
+        image["DEC"] = first_image["DEC"]
         image[TARGET_KEY] = most_common_name
 
     return image_batch
