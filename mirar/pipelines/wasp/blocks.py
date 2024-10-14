@@ -17,6 +17,7 @@ from mirar.pipelines.wasp.config import (
 )
 from mirar.pipelines.wasp.config.constants import WASP_PIXEL_SCALE
 from mirar.pipelines.wasp.generator import (
+    annotate_target_coordinates,
     wasp_astrometric_catalog_generator,
     wasp_photometric_catalog_generator,
     wasp_reference_image_generator,
@@ -26,6 +27,7 @@ from mirar.pipelines.wasp.generator import (
     wasp_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wasp.load_wasp_image import load_raw_wasp_image
+from mirar.pipelines.wirc.generator import label_stack_id
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
@@ -42,9 +44,11 @@ from mirar.processors.sources import (
     ParquetWriter,
 )
 from mirar.processors.utils import (
+    CustomImageBatchModifier,
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
+    ImageRebatcher,
     ImageSaver,
     ImageSelector,
 )
@@ -59,6 +63,7 @@ WASP_CALS = [
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_wasp_image),
+    CustomImageBatchModifier(label_stack_id),
     ImageBatcher(BASE_NAME_KEY),
 ]
 
@@ -71,6 +76,7 @@ build_log = [  # pylint: disable=duplicate-code
             "OBJDEC",
             "DATE-OBS",
             "FILTER",
+            "STACKID",
             OBSCLASS_KEY,
             BASE_NAME_KEY,
         ]
@@ -98,8 +104,8 @@ calibrate = [
         scamp_config_path=scamp_path,
         cache=False,
     ),
-    ImageDebatcher(),
-    ImageBatcher(split_key=["target", "filter"]),
+    ImageRebatcher(split_key=["stackid"]),
+    CustomImageBatchModifier(annotate_target_coordinates),
     Swarp(
         swarp_config_path=swarp_config_path,
         include_scamp=True,
