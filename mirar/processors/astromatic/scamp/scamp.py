@@ -141,10 +141,11 @@ class Scamp(BaseImageProcessor):
         self.checkplot_dev = os.getenv("PLPLOT_DEV", None)
         if self.make_checkplots:
             if self.checkplot_dev is None:
-                raise ValueError(
+                self.make_checkplots = False
+                # Raise a warning
+                logger.warning(
                     "PLPLOT_DEV environment variable must be set to make scamp "
-                    "checkplots."
-                    "See https://plplot.sourceforge.io/ for more information."
+                    "checkplots. Will not make any checkplots."
                 )
 
     def description(self) -> str:
