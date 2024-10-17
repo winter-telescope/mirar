@@ -78,7 +78,7 @@ def generate_candidates_table(
 
     logger.debug(f"Found {len(det_srcs)} candidates in image.")
 
-    xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"] - 1, det_srcs["YPEAK_IMAGE"] - 1
+    xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"], det_srcs["YPEAK_IMAGE"]
     det_srcs["xpeak"] = xpeaks
     det_srcs["ypeak"] = ypeaks
     scorr_data = fits.getdata(diff_scorr_path)
@@ -99,8 +99,8 @@ def generate_candidates_table(
     ydims, xdims = diff.get_data().shape
     det_srcs["NAXIS1"] = xdims
     det_srcs["NAXIS2"] = ydims
-    det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"] - 1
-    det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"] - 1
+    det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"]
+    det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"]
 
     det_srcs["SEXTR_RA"] = det_srcs["ALPHAWIN_J2000"]
     det_srcs["SEXTR_DEC"] = det_srcs["DELTAWIN_J2000"]
