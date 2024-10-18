@@ -53,7 +53,7 @@ def winter_reference_image_resampler_for_zogy(**kwargs) -> Swarp:
     :return: Swarp processor
     """
     return Swarp(
-        swarp_config_path=swarp_config_path, cache=True, subtract_bkg=False, **kwargs
+        swarp_config_path=swarp_config_path, cache=False, subtract_bkg=False, **kwargs
     )
 
 
