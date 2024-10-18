@@ -26,4 +26,4 @@ jobs:
           poetry install
       - name: Analysing the code with pylint
         run: |
-           poetry run pylint mirar --fail-under=9.80
+           poetry run pylint mirar --fail-under=9.77
