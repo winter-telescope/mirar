@@ -63,6 +63,7 @@ class AstrometryNet(BaseImageProcessor):
         use_weight: bool = True,
         write_regions: bool = True,
         cache: bool = False,
+        no_tweak: bool = False,
     ):
         """
         :param output_sub_dir: subdirectory to output astrometry.net results
@@ -87,6 +88,7 @@ class AstrometryNet(BaseImageProcessor):
         to Y_IMAGE, the default from astrometry.net
         :param sort_key_name: key for sorting sextractor catalog, defaults
         to MAG_AUTO, the default from astrometry.net
+        :param no_tweak: do not calculate SIP distortion corrections
         """
         super().__init__()
 
@@ -123,6 +125,7 @@ class AstrometryNet(BaseImageProcessor):
         self.write_regions = write_regions
 
         self.cache = cache
+        self.no_tweak = no_tweak
 
     def description(self) -> str:
         return (
@@ -227,6 +230,7 @@ class AstrometryNet(BaseImageProcessor):
                 x_image_key=self.x_image_key,
                 y_image_key=self.y_image_key,
                 sort_key_name=self.sort_key_name,
+                no_tweak=self.no_tweak,
             )
 
             anet_output_filees_basepath = new_img_path.as_posix().replace(".fits", "")

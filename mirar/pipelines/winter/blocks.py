@@ -262,7 +262,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 4
+BOARD_ID = 1
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -289,6 +289,7 @@ mask = [
 split = [
     SplitImage(n_x=NXSPLIT, n_y=NYSPLIT),
     CustomImageBatchModifier(annotate_winter_subdet_headers),
+    ImageSelector(("SUBCOORD", "0_0")),
 ]
 
 mask_and_split = mask + split
@@ -407,13 +408,33 @@ astrometry = [
         use_weight=True,
         timeout=120,
         cache=False,
+        no_tweak=True,
     ),
     ImageSaver(output_dir_name="post_anet"),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
         output_sub_dir="scamp",
+        cache=False,
         catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
+        verbose_type="FULL",
+    ),
+    CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
+    ImageRebatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
+    Scamp(
+        scamp_config_path=scamp_config_path,
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+        copy_scamp_header_to_image=True,
+        cache=False,
+        make_checkplots=True,
+    ),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="scamp",
+        cache=False,
+        catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
+        verbose_type="FULL",
     ),
     CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
     ImageRebatcher([TARGET_KEY, "FILTER", EXPTIME_KEY, "BOARD_ID", "SUBCOORD"]),
@@ -422,6 +443,7 @@ astrometry = [
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         copy_scamp_header_to_image=True,
         cache=True,
+        make_checkplots=True,
     ),
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="post_scamp"),

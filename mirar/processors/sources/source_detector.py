@@ -75,17 +75,24 @@ def generate_candidates_table(
             raise PrerequisiteError(f"Required key {key} not found in scorr catalog.")
 
     diff_path = diff[LATEST_SAVE_KEY]
+    diff_wght_path = diff[LATEST_WEIGHT_SAVE_KEY]
 
     logger.debug(f"Found {len(det_srcs)} candidates in image.")
 
-    xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"] - 1, det_srcs["YPEAK_IMAGE"] - 1
+    xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"], det_srcs["YPEAK_IMAGE"]
     det_srcs["xpeak"] = xpeaks
     det_srcs["ypeak"] = ypeaks
     scorr_data = fits.getdata(diff_scorr_path)
     scorr_peaks = scorr_data[ypeaks, xpeaks]
     det_srcs["scorr"] = scorr_peaks
 
-    det_srcs = det_srcs[det_srcs["scorr"] > 5]
+    weight_data = fits.getdata(diff_wght_path)
+    det_srcs["weight"] = weight_data[ypeaks, xpeaks]
+
+    weight_percentile_lolim = np.nanpercentile(weight_data[weight_data > 0], q=10)
+    det_srcs = det_srcs[
+        (det_srcs["scorr"] > 5) & (det_srcs["weight"] > weight_percentile_lolim)
+    ]
 
     det_srcs = det_srcs.to_pandas()
 
@@ -99,8 +106,8 @@ def generate_candidates_table(
     ydims, xdims = diff.get_data().shape
     det_srcs["NAXIS1"] = xdims
     det_srcs["NAXIS2"] = ydims
-    det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"] - 1
-    det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"] - 1
+    det_srcs[XPOS_KEY] = det_srcs["X_IMAGE"]
+    det_srcs[YPOS_KEY] = det_srcs["Y_IMAGE"]
 
     det_srcs["SEXTR_RA"] = det_srcs["ALPHAWIN_J2000"]
     det_srcs["SEXTR_DEC"] = det_srcs["DELTAWIN_J2000"]
@@ -126,7 +133,7 @@ def generate_candidates_table(
     display_sci_ims = []
     display_ref_ims = []
     display_diff_ims = []
-
+    nan_fracs = []
     # Cutouts
     for _, row in det_srcs.iterrows():
         xpeak, ypeak = int(row["xpeak"]), int(row["ypeak"])
@@ -144,10 +151,14 @@ def generate_candidates_table(
         display_sci_ims.append(display_sci_bit)
         display_ref_ims.append(display_ref_bit)
         display_diff_ims.append(display_diff_bit)
+        nan_fracs.append(
+            np.sum(np.isnan(display_diff_cutout)) / np.prod(display_diff_cutout.shape)
+        )
 
     det_srcs["cutout_science"] = display_sci_ims
     det_srcs["cutout_template"] = display_ref_ims
     det_srcs["cutout_difference"] = display_diff_ims
+    det_srcs["maskfrac"] = nan_fracs
 
     det_srcs["isdiffpos"] = isdiffpos
 
@@ -318,7 +329,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                         regions_path=reg_name,
                         x_coords=srcs_table["X_IMAGE"],
                         y_coords=srcs_table["Y_IMAGE"],
-                        text=[str(round(x, 2)) for x in srcs_table["scorr"]],
+                        text=[str(round(x, 2)) for x in srcs_table["maskfrac"]],
                     )
 
                     write_regions_file(
@@ -327,7 +338,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                         y_coords=srcs_table[CAND_DEC_KEY],
                         region_radius=5.0 / 3600.0,
                         system="wcs",
-                        text=[str(round(x, 2)) for x in srcs_table["scorr"]],
+                        text=[str(round(x, 2)) for x in srcs_table["maskfrac"]],
                     )
 
                 logger.debug(msg)

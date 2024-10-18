@@ -57,6 +57,7 @@ def run_astrometry_net_single(
     x_image_key: str = "X_IMAGE",
     y_image_key: str = "Y_IMAGE",
     sort_key_name: str = "MAG_AUTO",
+    no_tweak: bool = False,
 ):
     """
     function to run astrometry.net locally on one image, with options to adjust settings
@@ -74,6 +75,9 @@ def run_astrometry_net_single(
         f"--overwrite "
         f"--out {basename} "  # use this base name for outputs (instead of 'temp_...')
     )
+
+    if no_tweak:
+        cmd += " --no-tweak "
 
     if scale_bounds is not None:
         cmd += f" --scale-high {max(scale_bounds)} "
