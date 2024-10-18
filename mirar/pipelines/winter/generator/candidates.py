@@ -300,7 +300,9 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
                     & ((src_df["sgscore1"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
                 )
             )
-            & (src_df["ndethist"] > 0)
+            & (  # 2 WINTER detections or a ZTF name (and therefore a ZTF detection)
+                (src_df["ndethist"] > 0) | (pd.notnull(src_df["ztfname"]))
+            )
         )
         filtered_df = src_df[mask].reset_index(drop=True)
 
