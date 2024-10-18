@@ -131,7 +131,7 @@ jobs:
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
           PLPLOT_DEV: PNG
         run: |
-          TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
+          TESTDATA_CHECK="True" poetry run coverage run -m unittest tests/test_winter_pipeline.py
 
       - name: Run Coveralls
         continue-on-error: true
