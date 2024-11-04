@@ -26,7 +26,7 @@ lacosmic = "^1.0.0"
 numpy = ">=1.24.3,<1.27.0"
 pandas = "^2.0.2"
 penquins = "^2.3.1"
-photutils = "^1.8.0"
+photutils = ">=1.8,<3.0"
 psycopg = {extras = ["binary"], version = "^3.1.9"}
 pydl = "^1.0.0"
 pyFFTW = ">=0.13.1,<0.15.0"
