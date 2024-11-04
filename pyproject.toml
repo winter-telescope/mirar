@@ -31,7 +31,7 @@ psycopg = {extras = ["binary"], version = "^3.1.9"}
 pydl = "^1.0.0"
 pyFFTW = ">=0.13.1,<0.15.0"
 setuptools = ">=67.8,<75.0"
-watchdog = ">=3,<6"
+watchdog = ">=3,<7"
 wget = "^3.2"
 toml = "^0.10.2"
 pandas-stubs = "^2.0.1.230501"
