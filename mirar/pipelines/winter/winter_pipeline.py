@@ -26,7 +26,6 @@ from mirar.pipelines.winter.blocks import (
     load_final_stack,
     load_raw,
     load_skyportal,
-    load_sources,
     load_sub,
     load_test,
     mask_and_split,
@@ -89,15 +88,15 @@ class WINTERPipeline(Pipeline):
         "reftest": reftest,
         "only_ref": only_ref,
         "realtime": realtime,
-        # "detect_candidates": load_final_stack
-        # + imsub
-        # + detect_candidates
-        # + process_candidates
-        # + avro_broadcast,
-        "detect_candidates": load_sub + detect_candidates,
-        # + process_candidates
-        # + avro_broadcast,
-        "recandidates": load_sources + process_candidates + avro_broadcast,
+        "detect_candidates": load_final_stack
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
+        "detect_candidates_from_sub": load_sub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
         "default": reduce
         + imsub
         + detect_candidates

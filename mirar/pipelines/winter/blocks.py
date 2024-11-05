@@ -692,6 +692,9 @@ imsub = [
 
 load_sub = [
     ImageLoader(input_sub_dir="diffs"),
+    ImageBatcher(BASE_NAME_KEY),
+    DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
+    ImageSaver(output_dir_name="subtract"),
 ]
 detect_candidates = [
     ZOGYSourceDetector(
