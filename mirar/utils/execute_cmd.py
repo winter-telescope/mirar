@@ -64,7 +64,7 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
 
         msg = "Successfully executed command. "
 
-        if rval.stdout.decode() != "":
+        if rval.stdout is not None:
             msg += f"Found the following output: {rval.stdout.decode()}"
         logger.debug(msg)
 
