@@ -68,7 +68,7 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
     above 1.0 arcsec
     3. Rejects images with median FWHM above 6.0 arcsec
     """
-    astrometric_unc_threshold_arcsec = 3.0
+    astrometric_unc_threshold_arcsec = 1.0
     fwhm_threshold_arcsec = 6.0
     for image in batch:
         if image["ASTUNC"] > astrometric_unc_threshold_arcsec / 3600:
@@ -76,6 +76,11 @@ def poor_astrometric_quality_rejector(batch: ImageBatch) -> ImageBatch:
                 f"Uncertainty in astrometric solution from Scamp "
                 f"({image['ASTUNC'] * 3600}) arcsec is above threshold "
                 f"{astrometric_unc_threshold_arcsec} arcsec"
+            )
+
+        if (image["ASTRRMS1"] == 0) or (image["ASTRRMS2"] == 0):
+            raise PoorAstrometryError(
+                "RMS error in astrometric solution from Scamp is 0"
             )
 
         if image["FWHM_MED"] > fwhm_threshold_arcsec:
