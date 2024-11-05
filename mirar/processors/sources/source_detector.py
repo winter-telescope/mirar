@@ -79,7 +79,7 @@ def generate_candidates_table(
 
     logger.debug(f"Found {len(det_srcs)} candidates in image.")
 
-    xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"], det_srcs["YPEAK_IMAGE"]
+    xpeaks, ypeaks = det_srcs["XPEAK_IMAGE"] - 1, det_srcs["YPEAK_IMAGE"] - 1
     det_srcs["xpeak"] = xpeaks
     det_srcs["ypeak"] = ypeaks
     scorr_data = fits.getdata(diff_scorr_path)
@@ -89,7 +89,7 @@ def generate_candidates_table(
     weight_data = fits.getdata(diff_wght_path)
     det_srcs["weight"] = weight_data[ypeaks, xpeaks]
 
-    weight_percentile_lolim = np.nanpercentile(weight_data[weight_data > 0], q=10)
+    weight_percentile_lolim = np.nanpercentile(weight_data[weight_data > 0], q=20)
     det_srcs = det_srcs[
         (det_srcs["scorr"] > 5) & (det_srcs["weight"] > weight_percentile_lolim)
     ]
@@ -329,7 +329,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                         regions_path=reg_name,
                         x_coords=srcs_table["X_IMAGE"],
                         y_coords=srcs_table["Y_IMAGE"],
-                        text=[str(round(x, 2)) for x in srcs_table["maskfrac"]],
+                        text=[str(round(x, 2)) for x in srcs_table["scorr"]],
                     )
 
                     write_regions_file(
@@ -338,7 +338,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                         y_coords=srcs_table[CAND_DEC_KEY],
                         region_radius=5.0 / 3600.0,
                         system="wcs",
-                        text=[str(round(x, 2)) for x in srcs_table["maskfrac"]],
+                        text=[str(round(x, 2)) for x in srcs_table["scorr"]],
                     )
 
                 logger.debug(msg)
