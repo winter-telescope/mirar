@@ -691,7 +691,7 @@ imsub = [
 ]
 
 load_sub = [
-    ImageLoader(input_sub_dir="subtract"),
+    ImageLoader(input_sub_dir="diffs"),
 ]
 detect_candidates = [
     ZOGYSourceDetector(
