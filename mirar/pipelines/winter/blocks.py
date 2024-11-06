@@ -478,6 +478,7 @@ stack_dithers = [
         center_type="ALL",
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
+        min_required_coadds=3,
     ),
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="stack"),

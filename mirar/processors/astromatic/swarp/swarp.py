@@ -37,6 +37,12 @@ from mirar.processors.base_processor import BaseImageProcessor
 logger = logging.getLogger(__name__)
 
 
+class TooFewCoaddsErrors(ProcessorError):
+    """
+    Error for when too few coadds are present
+    """
+
+
 class SwarpError(ProcessorError):
     """Error relating to swarp"""
 
@@ -72,6 +78,7 @@ class Swarp(BaseImageProcessor):
         calculate_dims_in_swarp: bool = False,
         header_keys_to_combine: Optional[str | list[str]] = None,
         coordinate_tolerance_deg: float = 10,
+        min_required_coadds: int = 1,
     ):
         """
 
@@ -134,6 +141,7 @@ class Swarp(BaseImageProcessor):
             corresponding header keys to a comma-separated value in the stacked images
             coordinate_tolerance_deg: float Will raise an error if the input images are
             not within this tolerance of each other in terms of their coordinates.
+            min_required_coadds: int Minimum number of coadds required to run Swarp.
         """
         super().__init__()
         self.swarp_config = swarp_config_path
@@ -158,6 +166,7 @@ class Swarp(BaseImageProcessor):
         if isinstance(self.header_keys_to_combine, str):
             self.header_keys_to_combine = [self.header_keys_to_combine]
         self.coordinate_tolerance_deg = coordinate_tolerance_deg
+        self.min_required_coadds = min_required_coadds
 
     def description(self) -> str:
         return "Processor to apply swarp to images, stacking them together."
@@ -174,6 +183,11 @@ class Swarp(BaseImageProcessor):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
+        if len(batch) < self.min_required_coadds:
+            raise TooFewCoaddsErrors(
+                f"Too few coadds in batch, found {len(batch)}, "
+                f"required at least {self.min_required_coadds}"
+            )
         basenames = [x[BASE_NAME_KEY] for x in batch]
         sort_inds = np.argsort(basenames)
         batch = ImageBatch([batch[i] for i in sort_inds])
