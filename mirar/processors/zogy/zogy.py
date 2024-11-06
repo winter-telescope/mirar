@@ -55,6 +55,11 @@ class ZOGYError(ProcessorError):
     """Error derived from running ZOGY"""
 
 
+class ZOGYXMatchError(ProcessorError):
+    """Error when not enough sources are cross-matched between reference and science
+    image"""
+
+
 def default_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
     """
 
@@ -207,10 +212,10 @@ class ZOGYPrepare(BaseImageProcessor):
         if len(d2d) == 0:
             err = (
                 "No stars matched between science and reference data catalogs. "
-                "Likely there is a huge mismatch in the sensitivites of the two."
+                "Likely there is a huge mismatch in the sensitivites of the two:"
             )
             logger.error(err)
-            raise ZOGYError(err)
+            raise ZOGYXMatchError(err)
 
         xpos_sci = sci_catalog[self.x_key]
         ypos_sci = sci_catalog[self.y_key]
