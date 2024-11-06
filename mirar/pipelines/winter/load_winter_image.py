@@ -77,7 +77,7 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["JD"] = date_t.jd
     header["DATE-OBS"] = date_t.isot
 
-    header[OBSCLASS_KEY] = header["OBSTYPE"].lower()
+    header[OBSCLASS_KEY] = header["OBSTYPE"].lower().strip()
 
     # Check to ensure that biases and darks are tagged appropriately
     if header["EXPTIME"] == 0.0:
@@ -87,8 +87,6 @@ def clean_header(header: fits.Header) -> fits.Header:
     if header["FILTERID"] == "dark":
         if header[OBSCLASS_KEY] not in ["dark", "bias", "test", "science", "corrupted"]:
             header[OBSCLASS_KEY] = "test"
-        elif header[OBSCLASS_KEY] not in ["corrupted"]:
-            header[OBSCLASS_KEY] = "dark"
 
     # Discard pre-sunset, post-sunset darks
     if header[OBSCLASS_KEY] == "dark":
