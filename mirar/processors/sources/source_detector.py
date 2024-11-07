@@ -89,9 +89,9 @@ def generate_candidates_table(
     weight_data = fits.getdata(diff_wght_path)
     det_srcs["weight"] = weight_data[ypeaks, xpeaks]
 
-    weight_percentile_lolim = np.nanpercentile(weight_data[weight_data > 0], q=20)
+    weight_percentile_lolim = np.nanpercentile(weight_data[weight_data > 0], q=30)
     det_srcs = det_srcs[
-        (det_srcs["scorr"] > 5) & (det_srcs["weight"] > weight_percentile_lolim)
+        (det_srcs["scorr"] > 4) & (det_srcs["weight"] > weight_percentile_lolim)
     ]
 
     det_srcs = det_srcs.to_pandas()
@@ -100,7 +100,7 @@ def generate_candidates_table(
     det_srcs[SOURCE_NAME_KEY] = None
 
     logger.debug(
-        f"Filtered to {len(det_srcs)} candidates in image with " f"scorr peak > 5."
+        f"Filtered to {len(det_srcs)} candidates in image with " f"scorr peak > 3."
     )
     # Rename sextractor keys
     ydims, xdims = diff.get_data().shape
