@@ -475,7 +475,7 @@ stack_dithers = [
         include_scamp=True,
         subtract_bkg=False,
         cache=False,
-        center_type="ALL",
+        center_type="MOST",
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
         min_required_coadds=3,
@@ -702,7 +702,7 @@ detect_candidates = [
         output_sub_dir="subtract",
         **sextractor_candidate_config,
         write_regions=True,
-        detect_negative_sources=True,
+        detect_negative_sources=False,
     ),
     PSFPhotometry(phot_cutout_half_size=10),
     AperturePhotometry(
