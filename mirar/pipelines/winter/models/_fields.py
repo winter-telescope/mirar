@@ -68,7 +68,7 @@ def populate_fields():
         all_winter_fields["fieldid"] = all_winter_fields["ID"]
         all_winter_fields["ra"] = all_winter_fields["RA"]
         all_winter_fields["dec"] = all_winter_fields["Dec"]
-        all_winter_fields["ebv"] = all_winter_fields["Ebv"]
+        all_winter_fields["ebv"] = all_winter_fields["EBV"]
         all_winter_fields["gall"] = all_winter_fields["Gal_Long"]
         all_winter_fields["galb"] = all_winter_fields["Gal_Lat"]
 
