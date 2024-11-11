@@ -50,7 +50,7 @@ torch = "^2.2.0,<2.3.0"
 winterrb = "^1.0.0"
 
 [tool.poetry.group.docs.dependencies]
-sphinx = "^7.0.1"
+sphinx = ">=7.0.1,<9.0.0"
 sphinx-rtd-theme = ">=2,<4"
 sphinx-mdinclude = ">=0.5.3,<0.7.0"
 rstcloth = "^0.6.0"
