@@ -113,6 +113,13 @@ def run_stack_of_stacks():
     df = run_select(sel, StacksTable)
     df.sort_values(by="utctime", inplace=True)
 
+    times = np.array(
+        [
+            Time(str(x["utctime"].to_datetime64()), format="isot").mjd
+            for _, x in df.iterrows()
+        ]
+    )
+
     if args.startdate is not None:
         print(f"Only including images after {args.startdate}")
         start_date = Time.strptime(args.startdate, "%Y%m%d")
