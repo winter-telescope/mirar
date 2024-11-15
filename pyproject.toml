@@ -9,6 +9,7 @@ authors =[
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/winter-telescope/mirar"
+
 requires-python = ">=3.10,<3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -64,7 +65,8 @@ dependencies = [
     "torch>=2.2.0,<2.3.0",
     "winterrb>=2.0.1",
     "xgboost",
-    "rstcloth"
+    "rstcloth",
+    "winternlc>=1.1.0",
 ]
 [project.optional-dependencies]
 dev = [
