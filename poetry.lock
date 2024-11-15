@@ -5793,6 +5793,26 @@ files = [
 ]
 
 [[package]]
+name = "winternlc"
+version = "1.1.0"
+description = ""
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "winternlc-1.1.0-py3-none-any.whl", hash = "sha256:f6acd7f0e551b8ef8ec57129a2ea38e6c7de625267e7f1d8f03d754f5df23c8b"},
+]
+
+[package.dependencies]
+astropy = "*"
+matplotlib = "*"
+numpy = "*"
+pre-commit = "*"
+scipy = "*"
+
+[package.extras]
+dev = ["black (==24.4.2)", "coveralls", "isort (==5.13.2)", "pylint (==3.2.2)"]
+
+[[package]]
 name = "winterrb"
 version = "1.0.0"
 description = ""
@@ -5871,4 +5891,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.13"
-content-hash = "8d5811a0980504f155dcbd932233c3ab7cda76d115f81723365e07391aff1b8b"
+content-hash = "b99f31f166df0bb24bb3f3caaeda4c9b272f2c805ab29f4a883fbfc2e3a4d09c"
