@@ -79,6 +79,9 @@ def run_stack_of_stacks():
     parser.add_argument(
         "--bindays", help="Window, in days, for bin", type=int, default=None
     )
+    parser.add_argument(
+        "-s", "--startdate", help="Start date (e.g., 20240820)", type=str, default=None
+    )
     args = parser.parse_args()
 
     if args.target is not None:
@@ -109,6 +112,21 @@ def run_stack_of_stacks():
 
     df = run_select(sel, StacksTable)
     df.sort_values(by="utctime", inplace=True)
+
+    times = np.array(
+        [
+            Time(str(x["utctime"].to_datetime64()), format="isot").mjd
+            for _, x in df.iterrows()
+        ]
+    )
+
+    if args.startdate is not None:
+        print(f"Only including images after {args.startdate}")
+        start_date = Time.strptime(args.startdate, "%Y%m%d")
+        mask = times >= start_date.mjd
+        df = df[mask]
+        times = times[mask]
+
     df.reset_index(drop=True, inplace=True)
 
     with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
@@ -133,13 +151,6 @@ def run_stack_of_stacks():
         img_batch = load_from_list(savepaths, open_raw_image)
 
         if args.bindays is not None:
-
-            times = np.array(
-                [
-                    Time(str(x["utctime"].to_datetime64()), format="isot").mjd
-                    for _, x in df.iterrows()
-                ]
-            )
 
             bins = np.arange(min(times), max(times) + args.bindays, step=args.bindays)
 
