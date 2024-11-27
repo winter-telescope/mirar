@@ -5794,12 +5794,13 @@ files = [
 
 [[package]]
 name = "winternlc"
-version = "1.1.0"
+version = "1.3.0"
 description = ""
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "winternlc-1.1.0-py3-none-any.whl", hash = "sha256:f6acd7f0e551b8ef8ec57129a2ea38e6c7de625267e7f1d8f03d754f5df23c8b"},
+    {file = "winternlc-1.3.0-py3-none-any.whl", hash = "sha256:dcd9cb36ef6cec184ff172e49ceeeef21fbdd03bf1723809470e226a984b8d67"},
+    {file = "winternlc-1.3.0.tar.gz", hash = "sha256:ccc76851eb4a7d0c32103e2ddec99daac81477d333f59a0778c681e3f77b3ba5"},
 ]
 
 [package.dependencies]
@@ -5891,4 +5892,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.13"
-content-hash = "b99f31f166df0bb24bb3f3caaeda4c9b272f2c805ab29f4a883fbfc2e3a4d09c"
+content-hash = "bd0c0fba9d7f7c62fa5e84d5fe842337538423c36bcde9d361fae68c1d0742ca"
