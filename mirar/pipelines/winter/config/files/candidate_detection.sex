@@ -11,11 +11,11 @@ CATALOG_TYPE     FITS_LDAC     # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
 #------------------------------- Extraction ----------------------------------
  
 DETECT_TYPE      CCD            # CCD (linear) or PHOTO (with gamma correction)
-DETECT_MINAREA   3              # minimum number of pixels above threshold
+DETECT_MINAREA   5              # minimum number of pixels above threshold
 THRESH_TYPE	 RELATIVE	# threshold type: RELATIVE (in sigmas) or ABSOLUTE (in ADUs)
 
-DETECT_THRESH    1.5           # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
-ANALYSIS_THRESH  1.5           # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+DETECT_THRESH    2.0           # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+ANALYSIS_THRESH  2.0           # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
  
 FILTER           Y              # apply filter for detection (Y or N)?
 
@@ -60,8 +60,8 @@ SEEING_FWHM      2            # stellar FWHM in arcsec
 
 #------------------------------ Background -----------------------------------
  
-BACK_SIZE        256             # Background mesh: <size> or <width>,<height>
-BACK_FILTERSIZE  6              # Background filter: <size> or <width>,<height>
+BACK_SIZE        64             # Background mesh: <size> or <width>,<height>
+BACK_FILTERSIZE  6             # Background filter: <size> or <width>,<height>
  
 BACK_TYPE        AUTO           # AUTO or MANUAL
 BACKPHOTO_TYPE   LOCAL        # can be GLOBAL or LOCAL

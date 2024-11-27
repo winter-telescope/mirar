@@ -475,9 +475,10 @@ stack_dithers = [
         include_scamp=True,
         subtract_bkg=False,
         cache=False,
-        center_type="ALL",
+        center_type="MOST",
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
+        min_required_coadds=3,
     ),
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="stack"),
@@ -691,14 +692,17 @@ imsub = [
 ]
 
 load_sub = [
-    ImageLoader(input_sub_dir="subtract"),
+    ImageLoader(input_sub_dir="diffs"),
+    ImageBatcher(BASE_NAME_KEY),
+    DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
+    ImageSaver(output_dir_name="subtract"),
 ]
 detect_candidates = [
     ZOGYSourceDetector(
         output_sub_dir="subtract",
         **sextractor_candidate_config,
         write_regions=True,
-        detect_negative_sources=True,
+        detect_negative_sources=False,
     ),
     PSFPhotometry(phot_cutout_half_size=10),
     AperturePhotometry(

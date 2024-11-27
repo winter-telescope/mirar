@@ -64,7 +64,7 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
 
         msg = "Successfully executed command. "
 
-        if rval.stdout.decode() != "":
+        if rval.stdout is not None:
             msg += f"Found the following output: {rval.stdout.decode()}"
         logger.debug(msg)
 
@@ -72,7 +72,7 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
         msg = (
             f"Execution Error found when running with command: \n \n '{err.cmd}' \n \n"
             f"This yielded a return code of {err.returncode}. "
-            f"The following traceback was found: \n {err.stderr.decode()}"
+            f"The following traceback was found: \n {err.stderr}"
         )
         logger.error(msg)
         raise ExecutionError(msg) from err
@@ -81,7 +81,7 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
         msg = (
             f"Timeout error found when running with command: \n \n '{err.cmd}' \n \n"
             f"The timeout was set to {timeout} seconds. "
-            f"The following traceback was found: \n {err.stderr.decode()}"
+            f"The following traceback was found: \n {err.stderr}"
         )
         logger.error(msg)
         raise TimeoutExecutionError(msg) from err
