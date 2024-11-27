@@ -467,7 +467,6 @@ class Swarp(BaseImageProcessor):
         except MissingCoreFieldError as err:
             raise SwarpError(err) from err
 
-        logger.debug("6.")
         if not self.cache:
             for temp_file in temp_files:
                 temp_file.unlink()
@@ -477,5 +476,4 @@ class Swarp(BaseImageProcessor):
             # keywords we added above.
             output_image_path.unlink()
 
-        logger.debug("7.")
         return ImageBatch([new_image])
