@@ -9,7 +9,7 @@ from pydantic import Field
 from sqlalchemy import REAL, Column, Insert, Integer
 from sqlalchemy.orm import Mapped, relationship
 from tqdm import tqdm
-from wintertoo.data import winter_fields
+from wintertoo.data import all_winter_fields
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.database.engine import get_engine
@@ -65,21 +65,21 @@ def populate_fields():
     if not is_populated(FieldsTable):
         chunk = 10000
 
-        winter_fields["fieldid"] = winter_fields["ID"]
-        winter_fields["ra"] = winter_fields["RA"]
-        winter_fields["dec"] = winter_fields["Dec"]
-        winter_fields["ebv"] = winter_fields["Ebv"]
-        winter_fields["gall"] = winter_fields["Gal_Long"]
-        winter_fields["galb"] = winter_fields["Gal_Lat"]
+        all_winter_fields["fieldid"] = all_winter_fields["ID"]
+        all_winter_fields["ra"] = all_winter_fields["RA"]
+        all_winter_fields["dec"] = all_winter_fields["Dec"]
+        all_winter_fields["ebv"] = all_winter_fields["EBV"]
+        all_winter_fields["gall"] = all_winter_fields["Gal_Long"]
+        all_winter_fields["galb"] = all_winter_fields["Gal_Lat"]
 
         keys = list(FieldEntry.__fields__)
 
-        idx = list(range(0, len(winter_fields), chunk)) + [len(winter_fields)]
+        idx = list(range(0, len(all_winter_fields), chunk)) + [len(all_winter_fields)]
 
         for k, i in tqdm(enumerate(idx[:-1]), total=len(idx) - 1):
             j = idx[k + 1]
 
-            res = winter_fields[i:j]
+            res = all_winter_fields[i:j]
 
             stmt = Insert(FieldsTable).values(
                 res[keys].to_dict(orient="records"),
