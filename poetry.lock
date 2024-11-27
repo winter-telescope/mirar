@@ -7393,5 +7393,9 @@ python-versions = ">=3.10,<3.13"
 content-hash = "e745ae9d39f16491ae20d40dc960d26a34d00677f44388f424d8ddccc55f78ae"
 =======
 python-versions = ">=3.10.0,<3.13"
+<<<<<<< HEAD
 content-hash = "548ace4059a04869e76a19fba85fa3ce31ff5c501f80779e741b8cd35a1ead75"
 >>>>>>> 8e1ba8ff (Fix download)
+=======
+content-hash = "09940e91f932498e83e9d63e35a981091627a6affff64d826d1f3dda82930775"
+>>>>>>> 956a43da (New nlc mode)
