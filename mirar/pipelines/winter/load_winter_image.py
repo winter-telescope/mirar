@@ -128,7 +128,10 @@ def clean_header(header: fits.Header) -> fits.Header:
     else:
         header["MIRCOVER"] = None
 
-    header["EXPTIME"] = np.rint(header["EXPTIME"])
+    if float(header["EXPTIME"]) >= 1.0:
+        header["EXPTIME"] = np.rint(header["EXPTIME"])
+    else:
+        header["EXPTIME"] = np.round(header["EXPTIME"], 2)
 
     # Set up the target name
 
