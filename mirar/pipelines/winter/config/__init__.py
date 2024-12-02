@@ -93,7 +93,7 @@ if winter_calhunter_directory is None:
 else:
     winter_calhunter_directory = Path(winter_calhunter_directory)
 
-winter_cal_requirements = [
+base_winter_cal_requirements = [
     CalRequirement(
         target_name="dark",
         required_field="EXPTIME",
@@ -103,6 +103,18 @@ winter_cal_requirements = [
             # "3.0",  # J flats
             # "4.0",  # Y flats
             # "5.0",  # Hs flats
+        ],
+    ),
+]
+
+winter_cal_requirements = base_winter_cal_requirements + [
+    CalRequirement(
+        target_name="dark",
+        required_field="EXPTIME",
+        required_values=[
+            "0.35",  # J flats
+            "0.57",  # Y flats
+            "0.46",  # Hs flats
         ],
     ),
     CalRequirement(
