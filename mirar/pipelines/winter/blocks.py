@@ -387,11 +387,11 @@ dome_flats = [
         cache_image_name_header_keys=["FILTER", "BOARD_ID"],
         flat_mode="pixel",
     ),
-    ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageSaver(output_dir_name="domeflatcal"),
 ]
 
 sky_flats = [
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageRebatcher(
         [
             "BOARD_ID",
