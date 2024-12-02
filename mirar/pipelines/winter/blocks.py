@@ -379,7 +379,7 @@ dark_calibrate = [
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
 ]
 
-dome_flats = [
+flat_calibrate = [
     ImageRebatcher(["SUBCOORD", "FILTER"]),
     FlatCalibrator(
         cache_sub_dir="calibration_flats",
@@ -387,11 +387,8 @@ dome_flats = [
         cache_image_name_header_keys=["FILTER", "BOARD_ID"],
         flat_mode="pixel",
     ),
-    ImageSaver(output_dir_name="domeflatcal"),
-]
-
-sky_flats = [
     ImageSelector((OBSCLASS_KEY, ["science"])),
+    ImageSaver(output_dir_name="domeflatcal"),
     ImageRebatcher(
         [
             "BOARD_ID",
@@ -421,7 +418,35 @@ sky_flats = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
-flat_calibrate = dome_flats + sky_flats
+sky_flat_calibrate = [
+    ImageSelector((OBSCLASS_KEY, ["science"])),
+    ImageRebatcher(
+        [
+            "BOARD_ID",
+            "FILTER",
+            "SUBCOORD",
+            "GAINCOLT",
+            "GAINCOLB",
+            "GAINROW",
+            TARGET_KEY,
+        ]
+    ),
+    FlatCalibrator(
+        cache_sub_dir="sky_dither_flats",
+        select_flat_images=select_winter_sky_flat_images,
+        flat_mode="median",
+    ),
+    ImageRebatcher(BASE_NAME_KEY),
+    ImageSaver(output_dir_name="skyflatcal"),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="skysub",
+        checkimage_type=["-BACKGROUND"],
+    ),
+    SextractorBkgSubtractor(),
+    ImageSaver(output_dir_name="skysub"),
+]
 
 load_calibrated = [
     ImageLoader(input_sub_dir="skysub", input_img_dir=base_output_dir),
@@ -953,7 +978,7 @@ full_reduction = (
 full_reduction_no_dome_flats = (
     non_linear_correction
     + dark_calibrate
-    + sky_flats  # Only sky flats
+    + sky_flat_calibrate  # Only sky flats
     + fourier_filter
     + process_and_stack
     + photcal_and_export
