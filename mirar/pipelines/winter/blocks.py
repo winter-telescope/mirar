@@ -25,6 +25,7 @@ from mirar.paths import (
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
+    base_winter_cal_requirements,
     prv_candidate_cols,
     psfex_path,
     scamp_config_path,
@@ -227,9 +228,17 @@ load_raw = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
+    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements),
+]
+
+load_raw_no_dome_flats = [
+    MEFLoader(
+        input_sub_dir="raw",
+        load_image=load_winter_mef_image,
+    ),
     CalHunter(
-        load_image=load_winter_mef_image, requirements=winter_cal_requirements
-    ),  # FIXME: add back in
+        load_image=load_winter_mef_image, requirements=base_winter_cal_requirements
+    ),
 ]
 
 load_astrometry = [
@@ -370,7 +379,7 @@ dark_calibrate = [
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
 ]
 
-flat_calibrate = [
+dome_flats = [
     ImageRebatcher(["SUBCOORD", "FILTER"]),
     FlatCalibrator(
         cache_sub_dir="calibration_flats",
@@ -380,6 +389,9 @@ flat_calibrate = [
     ),
     ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageSaver(output_dir_name="domeflatcal"),
+]
+
+sky_flats = [
     ImageRebatcher(
         [
             "BOARD_ID",
@@ -408,6 +420,8 @@ flat_calibrate = [
     SextractorBkgSubtractor(),
     ImageSaver(output_dir_name="skysub"),
 ]
+
+flat_calibrate = dome_flats + sky_flats
 
 load_calibrated = [
     ImageLoader(input_sub_dir="skysub", input_img_dir=base_output_dir),
@@ -923,10 +937,23 @@ unpack_subset = (
 
 unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
 
+unpack_all_no_dome_flats = (
+    load_raw_no_dome_flats + extract_all + csvlog + mask_and_split + save_raw
+)
+
 full_reduction = (
     non_linear_correction
     + dark_calibrate
     + flat_calibrate
+    + fourier_filter
+    + process_and_stack
+    + photcal_and_export
+)
+
+full_reduction_no_dome_flats = (
+    non_linear_correction
+    + dark_calibrate
+    + sky_flats  # Only sky flats
     + fourier_filter
     + process_and_stack
     + photcal_and_export
@@ -947,6 +974,8 @@ reduce_unpacked_subset = (
 )
 
 reduce = unpack_all + full_reduction
+
+reduce_no_dome_flats = unpack_all_no_dome_flats + full_reduction_no_dome_flats
 
 reftest = (
     unpack_subset
