@@ -1458,13 +1458,13 @@ zstandard = ["zstandard"]
 
 [[package]]
 name = "fastjsonschema"
-version = "2.20.0"
+version = "2.21.0"
 description = "Fastest Python implementation of JSON schema"
 optional = false
 python-versions = "*"
 files = [
-    {file = "fastjsonschema-2.20.0-py3-none-any.whl", hash = "sha256:5875f0b0fa7a0043a91e93a9b8f793bcbbba9691e7fd83dca95c28ba26d21f0a"},
-    {file = "fastjsonschema-2.20.0.tar.gz", hash = "sha256:3d48fc5300ee96f5d116f10fe6f28d938e6008f59a6a025c2649475b87f76a23"},
+    {file = "fastjsonschema-2.21.0-py3-none-any.whl", hash = "sha256:5b23b8e7c9c6adc0ecb91c03a0768cb48cd154d9159378a69c8318532e0b5cbf"},
+    {file = "fastjsonschema-2.21.0.tar.gz", hash = "sha256:a02026bbbedc83729da3bfff215564b71902757f33f60089f1abae193daa4771"},
 ]
 
 [package.extras]
@@ -5793,6 +5793,27 @@ files = [
 ]
 
 [[package]]
+name = "winternlc"
+version = "1.3.0"
+description = ""
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "winternlc-1.3.0-py3-none-any.whl", hash = "sha256:dcd9cb36ef6cec184ff172e49ceeeef21fbdd03bf1723809470e226a984b8d67"},
+    {file = "winternlc-1.3.0.tar.gz", hash = "sha256:ccc76851eb4a7d0c32103e2ddec99daac81477d333f59a0778c681e3f77b3ba5"},
+]
+
+[package.dependencies]
+astropy = "*"
+matplotlib = "*"
+numpy = "*"
+pre-commit = "*"
+scipy = "*"
+
+[package.extras]
+dev = ["black (==24.4.2)", "coveralls", "isort (==5.13.2)", "pylint (==3.2.2)"]
+
+[[package]]
 name = "winterrb"
 version = "1.0.0"
 description = ""
@@ -5871,4 +5892,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.13"
-content-hash = "8d5811a0980504f155dcbd932233c3ab7cda76d115f81723365e07391aff1b8b"
+content-hash = "bd0c0fba9d7f7c62fa5e84d5fe842337538423c36bcde9d361fae68c1d0742ca"

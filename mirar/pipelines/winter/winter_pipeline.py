@@ -36,10 +36,12 @@ from mirar.pipelines.winter.blocks import (
     process_candidates,
     realtime,
     reduce,
+    reduce_no_dome_flats,
     reduce_unpacked,
     reduce_unpacked_subset,
     refbuild,
     reftest,
+    remask,
     save_raw,
     select_split_subset,
     send_to_skyportal,
@@ -102,6 +104,12 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
+        "skyflat": reduce_no_dome_flats
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
+        "remask": remask,
         "default_subset": reduce_unpacked_subset
         + imsub
         + detect_candidates
