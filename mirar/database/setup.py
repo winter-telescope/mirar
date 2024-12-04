@@ -29,12 +29,15 @@ def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
     pg_user = PostgresUser()
 
     try:
+        # Check if user + db exists
         pg_user.validate_credentials()
     except OperationalError:
         alt_pg_user = PostgresUser(db_name="postgres")
         try:
+            # Check if user exists in 'postgres' db instead
             alt_pg_user.validate_credentials()
         except OperationalError:
+            # Create new user
             logger.warning(
                 f"Failed to validate credentials for user {DB_USER}. "
                 f"Will try creating new user with this name using admin credentials."
