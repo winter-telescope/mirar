@@ -403,8 +403,8 @@ flat_calibrate = [
     FlatCalibrator(
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
-        flat_mode="structure",
-        # flat_mode="median",
+        # flat_mode="structure",
+        flat_mode="median",
     ),
     ImageSaver(output_dir_name="allskyflatcal"),
     ImageRebatcher([BASE_NAME_KEY]),
