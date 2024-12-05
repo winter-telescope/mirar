@@ -241,17 +241,17 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     if "NUMDITHS" not in header.keys():
         header["NUMDITHS"] = None
-    else:
+    elif header["NUMDITHS"] is not None:
         header["NUMDITHS"] = int(header["NUMDITHS"])
 
     if "DITHNUM" not in header.keys():
         header["DITHNUM"] = None
-    else:
+    elif header["DITHNUM"] is not None:
         header["DITHNUM"] = int(header["DITHNUM"])
 
     if "DITHSTEP" not in header.keys():
         header["DITHSTEP"] = None
-    else:
+    elif header["DITHSTEP"] is not None:
         header["DITHSTEP"] = float(header["DITHSTEP"])
 
     try:
