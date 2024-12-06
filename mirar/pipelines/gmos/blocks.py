@@ -27,18 +27,21 @@ from mirar.pipelines.gmos.generator import (
     gmos_reference_sextractor,
     gmos_zogy_catalogs_purifier,
 )
+from mirar.pipelines.gmos.gmos_mask import generate_gmos_mask
 from mirar.pipelines.gmos.load_gmos_image import load_detrended_gmos_image
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.csvlog import CSVLog
+from mirar.processors.mask import MaskPixelsFromFunction
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import (
     CSVExporter,
     ForcedPhotometryDetector,
+    ImageUpdater,
     ParquetWriter,
 )
 from mirar.processors.sources.utils import RegionsWriter
@@ -48,6 +51,8 @@ from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 load_raw = [
     ImageLoader(input_sub_dir="detrend", load_image=load_detrended_gmos_image),
     ImageBatcher(BASE_NAME_KEY),
+    MaskPixelsFromFunction(mask_function=generate_gmos_mask),
+    ImageSaver(output_dir_name="mask"),
 ]
 
 build_log = [  # pylint: disable=duplicate-code
@@ -128,7 +133,7 @@ subtract = [
     ZOGY(output_sub_dir="zogy"),
     ImageSaver(output_dir_name="diff"),
     ForcedPhotometryDetector(ra_header_key="OBJRA", dec_header_key="OBJDEC"),
-    RegionsWriter(output_dir_name="diffs"),
+    RegionsWriter(output_dir_name="diff"),
     AperturePhotometry(
         aper_diameters=[
             2 / GMOS_PIXEL_SCALE,
@@ -158,4 +163,5 @@ subtract = [
     PSFPhotometry(),
     ParquetWriter(output_dir_name="sources"),
     CSVExporter(output_dir_name="sources"),
+    ImageUpdater(modify_dir_name="diff"),
 ]
