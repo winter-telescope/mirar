@@ -19,6 +19,7 @@ from mirar.pipelines.wasp.config import (
 from mirar.pipelines.wasp.config.constants import WASP_PIXEL_SCALE
 from mirar.pipelines.wasp.generator import (
     annotate_target_coordinates,
+    label_stack_id,
     wasp_astrometric_catalog_generator,
     wasp_photometric_catalog_generator,
     wasp_reference_image_generator,
@@ -28,7 +29,6 @@ from mirar.pipelines.wasp.generator import (
     wasp_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wasp.load_wasp_image import load_raw_wasp_image
-from mirar.pipelines.wirc.generator import label_stack_id
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
@@ -42,8 +42,10 @@ from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import (
     CSVExporter,
     ForcedPhotometryDetector,
+    ImageUpdater,
     ParquetWriter,
 )
+from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
     ImageBatcher,
@@ -152,6 +154,8 @@ subtract = [
     ZOGY(output_sub_dir="zogy"),
     ImageSaver(output_dir_name="diff"),
     ForcedPhotometryDetector(ra_header_key="OBJRA", dec_header_key="OBJDEC"),
+    RegionsWriter(output_dir_name="diff"),
+    RegionsWriter(output_dir_name="processed"),
     AperturePhotometry(
         aper_diameters=[
             2 / WASP_PIXEL_SCALE,
@@ -181,4 +185,5 @@ subtract = [
     PSFPhotometry(),
     ParquetWriter(output_dir_name="sources"),
     CSVExporter(output_dir_name="sources"),
+    ImageUpdater(modify_dir_name="diff"),
 ]

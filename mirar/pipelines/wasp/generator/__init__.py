@@ -16,6 +16,7 @@ from mirar.pipelines.git.config import (
     sextractor_photometry_config,
     swarp_config_path,
 )
+from mirar.pipelines.wasp.generator.stacks import label_stack_id
 from mirar.pipelines.wasp.generator.target import annotate_target_coordinates
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.astromatic.sextractor.sextractor import SEXTRACTOR_HEADER_KEY
