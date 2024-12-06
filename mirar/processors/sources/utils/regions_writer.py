@@ -73,9 +73,7 @@ class RegionsWriter(BaseSourceProcessor):
             if self.use_ra_dec:
                 # Write regions file in ra/dec coordinates
                 with open(f"{regions_path}", "w", encoding="utf8") as regions_f:
-                    regions_f.write("fk5\n")
                     for _, row in candidate_table.iterrows():
-
                         ra = Angle(row[CAND_RA_KEY] * u.deg).to_string(
                             unit=u.hourangle, sep=":"
                         )
