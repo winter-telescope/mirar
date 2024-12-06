@@ -195,6 +195,8 @@ class CalHunter(ImageLoader):
     by searching previous nights of data
     """
 
+    max_n_cpu = 1
+
     base_key = "calhunt"
 
     def __init__(

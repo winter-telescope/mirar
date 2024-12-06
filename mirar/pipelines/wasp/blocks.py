@@ -14,6 +14,7 @@ from mirar.pipelines.wasp.config import (
     sextractor_astrometry_config,
     sextractor_photometry_config,
     swarp_config_path,
+    wasp_cal_requirements,
 )
 from mirar.pipelines.wasp.config.constants import WASP_PIXEL_SCALE
 from mirar.pipelines.wasp.generator import (
@@ -52,14 +53,8 @@ from mirar.processors.utils import (
     ImageSaver,
     ImageSelector,
 )
-from mirar.processors.utils.cal_hunter import CalHunter, CalRequirement
+from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
-
-WASP_CALS = [
-    CalRequirement(
-        target_name="bias", required_field="EXPTIME", required_values=["0.0"]
-    ),
-]
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_wasp_image),
@@ -88,7 +83,7 @@ build_log = [  # pylint: disable=duplicate-code
 
 calibrate = [
     ImageDebatcher(),
-    CalHunter(load_image=load_raw_wasp_image, requirements=WASP_CALS),
+    CalHunter(load_image=load_raw_wasp_image, requirements=wasp_cal_requirements),
     ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
     BiasCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
