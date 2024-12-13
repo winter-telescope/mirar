@@ -16,6 +16,8 @@ from mirar.pipelines.git.config import (
     sextractor_photometry_config,
     swarp_config_path,
 )
+from mirar.pipelines.wasp.generator.stacks import label_stack_id
+from mirar.pipelines.wasp.generator.target import annotate_target_coordinates
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.astromatic.sextractor.sextractor import SEXTRACTOR_HEADER_KEY
 from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
@@ -58,10 +60,11 @@ def wasp_photometric_catalog_generator(image: Image) -> BaseCatalog:
     :return: catalog at image position
     """
     filter_name = image["FILTER"].replace("'", "")
-    dec = image["OBJDEC"]
+
+    ra, dec = image["CRVAL1"], image["CRVAL2"]
 
     if filter_name in ["u", "U"]:
-        if in_sdss(image["OBJRA"], image["OBJDEC"]):
+        if in_sdss(ra, dec):
             return SDSS(
                 min_mag=10,
                 max_mag=WASP_PHOTOMETRIC_MAX_MAG,
