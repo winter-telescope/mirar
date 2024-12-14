@@ -2,12 +2,17 @@
 This file contains the configuration for the winter pipeline.
 """
 
+import logging
+import os
 from pathlib import Path
 
 from fastavro.schema import load_schema
 
+from mirar.paths import base_raw_dir
 from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
+
+logger = logging.getLogger(__name__)
 
 PIPELINE_NAME = "winter"
 
@@ -75,6 +80,18 @@ winter_mask_path = winter_file_dir.joinpath("winter_mask.fits")
 
 psfex_path = winter_file_dir.joinpath("photom.psfex")
 ref_psfex_path = winter_file_dir.joinpath("reference.psfex")
+
+winter_calhunter_directory = os.getenv("WINTER_CAL_DIRECTORY", None)
+if winter_calhunter_directory is None:
+    winter_calhunter_directory = base_raw_dir
+    logger.warning(
+        f"No specific calibration directory set. Using "
+        f"{winter_calhunter_directory} as the directory for CalHunter. "
+        f"If you want to change it, set the WINTER_CAL_DIRECTORY "
+        f"environment variable."
+    )
+else:
+    winter_calhunter_directory = Path(winter_calhunter_directory)
 
 winter_cal_requirements = [
     CalRequirement(
