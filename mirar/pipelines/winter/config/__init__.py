@@ -100,9 +100,6 @@ winter_cal_requirements = [
         required_values=[
             "120.0",  # J/Y
             "60.0",  # Hs
-            "3.0",  # J flats
-            "4.0",  # Y flats
-            "5.0",  # Hs flats
         ],
     ),
 ]
