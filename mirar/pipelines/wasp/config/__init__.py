@@ -7,6 +7,7 @@ Module containing WASP-specific paths
 import os
 
 from mirar.pipelines.wasp.config.constants import PIPELINE_NAME
+from mirar.processors.utils.cal_hunter import CalRequirement
 
 wasp_dir = os.path.dirname(__file__)
 
@@ -31,3 +32,9 @@ scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
 swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 
 psfex_sci_config_path = os.path.join(astromatic_config_dir, "photom_sci.psfex")
+
+wasp_cal_requirements = [
+    CalRequirement(
+        target_name="bias", required_field="EXPTIME", required_values=["0.0"]
+    ),
+]

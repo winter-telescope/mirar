@@ -14,9 +14,12 @@ from mirar.pipelines.wasp.config import (
     sextractor_astrometry_config,
     sextractor_photometry_config,
     swarp_config_path,
+    wasp_cal_requirements,
 )
 from mirar.pipelines.wasp.config.constants import WASP_PIXEL_SCALE
 from mirar.pipelines.wasp.generator import (
+    annotate_target_coordinates,
+    label_stack_id,
     wasp_astrometric_catalog_generator,
     wasp_photometric_catalog_generator,
     wasp_reference_image_generator,
@@ -39,21 +42,30 @@ from mirar.processors.reference import ProcessReference
 from mirar.processors.sources import (
     CSVExporter,
     ForcedPhotometryDetector,
+    ImageUpdater,
     ParquetWriter,
 )
+from mirar.processors.sources.utils import RegionsWriter
 from mirar.processors.utils import (
+    CustomImageBatchModifier,
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
+    ImageRebatcher,
     ImageSaver,
     ImageSelector,
 )
+from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_wasp_image),
-    ImageBatcher(BASE_NAME_KEY),
+    CustomImageBatchModifier(label_stack_id),
+    ImageRebatcher(split_key="stackid"),
+    CustomImageBatchModifier(annotate_target_coordinates),
+    ImageRebatcher(BASE_NAME_KEY),
 ]
+
 
 build_log = [  # pylint: disable=duplicate-code
     CSVLog(
@@ -63,6 +75,7 @@ build_log = [  # pylint: disable=duplicate-code
             "OBJDEC",
             "DATE-OBS",
             "FILTER",
+            "STACKID",
             OBSCLASS_KEY,
             BASE_NAME_KEY,
         ]
@@ -71,8 +84,9 @@ build_log = [  # pylint: disable=duplicate-code
 ]  # pylint: disable=duplicate-code
 
 calibrate = [
-    ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
     ImageDebatcher(),
+    CalHunter(load_image=load_raw_wasp_image, requirements=wasp_cal_requirements),
+    ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
     BiasCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
     ImageBatcher(split_key="filter"),
@@ -89,8 +103,7 @@ calibrate = [
         scamp_config_path=scamp_path,
         cache=False,
     ),
-    ImageDebatcher(),
-    ImageBatcher(split_key=["target", "filter"]),
+    ImageRebatcher(split_key=["stackid"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         include_scamp=True,
@@ -141,6 +154,8 @@ subtract = [
     ZOGY(output_sub_dir="zogy"),
     ImageSaver(output_dir_name="diff"),
     ForcedPhotometryDetector(ra_header_key="OBJRA", dec_header_key="OBJDEC"),
+    RegionsWriter(output_dir_name="diff"),
+    RegionsWriter(output_dir_name="processed"),
     AperturePhotometry(
         aper_diameters=[
             2 / WASP_PIXEL_SCALE,
@@ -170,4 +185,5 @@ subtract = [
     PSFPhotometry(),
     ParquetWriter(output_dir_name="sources"),
     CSVExporter(output_dir_name="sources"),
+    ImageUpdater(modify_dir_name="diff"),
 ]
