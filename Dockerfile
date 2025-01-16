@@ -25,7 +25,7 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERSION}-Lin
     rm miniconda.sh && \
     conda clean -afy
 
-RUN conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl wcstools
+RUN conda install -y -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl wcstools
 
 # Create a layer for Poetry
 FROM miniconda as poetry
@@ -70,7 +70,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 #RUN make -C q3c install
 
 # Create a final layer for the application
-FROM rust as final
+FROM rust as install
 WORKDIR /app
 
 # Copy only dependency files first to leverage Docker cache
@@ -80,7 +80,15 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root
 
 # Copy the rest of the application code
-COPY . .
+COPY . ./
+#COPY README.md /
+
+RUN poetry install
+
+FROM install as final
+
+ENV RAW_DATA_DIR=/data
+ENV DATA_DIR=/data
 
 # Set the entry point for the container
 ENTRYPOINT ["bash"]
