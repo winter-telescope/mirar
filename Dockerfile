@@ -81,14 +81,13 @@ RUN poetry install --no-root
 
 # Copy the rest of the application code
 COPY . ./
-#COPY README.md /
 
 RUN poetry install
 
 FROM install as final
 
 ENV RAW_DATA_DIR=/data
-ENV DATA_DIR=/data
+ENV OUTPUT_DATA_DIR=/data
 
 # Set the entry point for the container
-ENTRYPOINT ["bash"]
+ENTRYPOINT ["mirar-run"]
