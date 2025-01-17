@@ -11,7 +11,10 @@ ENV LANG=C.UTF-8 \
 
 # Install required tools and dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget curl bzip2 build-essential && \
+    wget curl bzip2 build-essential \
+    git file pkg-config swig libcairo2-dev libnetpbm10-dev  \
+    netpbm libpng-dev libjpeg-dev zlib1g-dev  \
+    libbz2-dev libcfitsio-dev wcslib-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a layer for Miniconda

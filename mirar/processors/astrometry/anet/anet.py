@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
+ANET_INDEX_DIR = os.getenv("ANET_INDEX_DIR", None)
 
 
 class AstrometryNetExecutionError(ProcessorError):
@@ -75,6 +76,9 @@ def run_astrometry_net_single(
         f"--overwrite "
         f"--out {basename} "  # use this base name for outputs (instead of 'temp_...')
     )
+
+    if ANET_INDEX_DIR is not None:
+        cmd += f"--index-dir {ANET_INDEX_DIR} "
 
     if no_tweak:
         cmd += " --no-tweak "
