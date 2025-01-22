@@ -210,4 +210,5 @@ def main():
             logger.info("End of mirar execution")
 
 
-main()
+if __name__ == "__main__":
+    main()
