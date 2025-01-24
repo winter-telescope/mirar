@@ -78,7 +78,7 @@ jobs:
           pip install --upgrade pip
           python3 -m pip install --user pipx
           python -m pipx install poetry
-          poetry install --with d
+          poetry install --with dev
 
       # Set up astrometry.net
       - name: astrometry.net index files
