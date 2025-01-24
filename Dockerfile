@@ -44,33 +44,10 @@ VOLUME /cache/poetry
 # Create a layer for rust
 FROM poetry as rust
 
-RUN echo "here"
-
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 ENV PATH="/root/.cargo/bin:${PATH}"
-
-## Create a layer for postgres
-#FROM rust as postgres
-#
-## Set up database
-#RUN apt-get update
-#RUN apt-get install -y postgresql postgresql-common
-##RUN apt-get install -y postgresql-server-dev-14
-#RUN #service postgresql status
-#RUN ls -a /var/run/postgresql/
-#RUN postgres
-#RUN service postgresql start
-#RUN service postgresql status
-#RUN psql -U postgres -c "CREATE USER runner WITH PASSWORD 'runner_password'; GRANT ALL PRIVILEGES ON DATABASE postgres TO runner; ALTER USER runner WITH SUPERUSER;"
-#
-## Create a layer for q3c
-#FROM postgres as q3c
-#
-#RUN git clone https://github.com/segasai/q3c.git
-#RUN make -C q3c
-#RUN make -C q3c install
 
 # Create a final layer for the application
 FROM rust as install
