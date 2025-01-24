@@ -45,9 +45,9 @@ jobs:
       - name: Update setuptools
         shell: bash -el {0}
         run:
-          python3 -m pip install --upgrade pip setuptools wheel packaging platformdirs setuptools-scm
-          python3 -m pip install --user pipx
-          python3 -m pipx install poetry
+          python -m pip install --upgrade pip setuptools wheel packaging platformdirs setuptools-scm
+          python -m pip install --user pipx
+          python -m pipx install poetry
 
 
       - name: Install python packages with poetry
