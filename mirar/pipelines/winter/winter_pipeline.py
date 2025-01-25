@@ -23,6 +23,7 @@ from mirar.pipelines.winter.blocks import (
     imsub,
     load_avro,
     load_calibrated,
+    astrometry_detrended,
     load_final_stack,
     load_raw,
     load_skyportal,
@@ -124,6 +125,7 @@ class WINTERPipeline(Pipeline):
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
         "rebroadcast_avro": load_avro + avro_export,
+        "astrometry_detrended": astrometry_detrended,
     }
 
     non_linear_level = 40000.0

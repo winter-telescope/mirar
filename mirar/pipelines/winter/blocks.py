@@ -5,6 +5,7 @@ Module for WINTER data reduction
 # pylint: disable=duplicate-code
 import os
 
+import numpy as np
 from winterrb.model import WINTERNet
 
 from mirar.catalog.kowalski import PS1, PS1STRM, TMASS, ZTF, Gaia, GaiaBright, PS1SGSc
@@ -954,8 +955,26 @@ focus_subcoord = [
     HeaderAnnotator(input_keys=["BOARD_ID"], output_key="SUBDETID"),
 ]
 
+from astropy.io import fits
+def apply_winter_bad_pixel_mask(batch):
+    mask = fits.getdata('/Users/viraj/winter_data/winter/20250114_nlc/smooth_bad_pixel_mask_darkcal_nlc_4_0_0.fits')
+    for image in batch:
+        data = image.get_data()
+        data[mask>0.0] = np.nan
+        image.set_data(data)
+
+    return batch
+
+
+load_detrended = [ImageLoader(input_sub_dir="skyflatcal_manual"),
+                    ImageBatcher(BASE_NAME_KEY),
+                    CustomImageBatchModifier(apply_winter_bad_pixel_mask)
+                  ]
+
 # Combinations of different blocks, to be used in configurations
 process_and_stack = astrometry + validate_astrometry + stack_dithers
+
+astrometry_detrended = load_detrended + astrometry + stack_dithers
 
 unpack_subset = (
     load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
