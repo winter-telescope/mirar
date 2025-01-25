@@ -10,6 +10,7 @@ from mirar.io import open_mef_image
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.winter.blocks import (
     astrometry,
+    astrometry_detrended,
     avro_broadcast,
     avro_export,
     build_test,
@@ -23,7 +24,6 @@ from mirar.pipelines.winter.blocks import (
     imsub,
     load_avro,
     load_calibrated,
-    astrometry_detrended,
     load_final_stack,
     load_raw,
     load_skyportal,

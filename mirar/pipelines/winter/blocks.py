@@ -956,20 +956,25 @@ focus_subcoord = [
 ]
 
 from astropy.io import fits
+
+
 def apply_winter_bad_pixel_mask(batch):
-    mask = fits.getdata('/Users/viraj/winter_data/winter/20250114_nlc/smooth_bad_pixel_mask_darkcal_nlc_4_0_0.fits')
+    mask = fits.getdata(
+        "/Users/viraj/winter_data/winter/20250114_nlc/smooth_bad_pixel_mask_darkcal_nlc_4_0_0.fits"
+    )
     for image in batch:
         data = image.get_data()
-        data[mask>0.0] = np.nan
+        data[mask > 0.0] = np.nan
         image.set_data(data)
 
     return batch
 
 
-load_detrended = [ImageLoader(input_sub_dir="skyflatcal_manual"),
-                    ImageBatcher(BASE_NAME_KEY),
-                    CustomImageBatchModifier(apply_winter_bad_pixel_mask)
-                  ]
+load_detrended = [
+    ImageLoader(input_sub_dir="skyflatcal_manual"),
+    ImageBatcher(BASE_NAME_KEY),
+    CustomImageBatchModifier(apply_winter_bad_pixel_mask),
+]
 
 # Combinations of different blocks, to be used in configurations
 process_and_stack = astrometry + validate_astrometry + stack_dithers
