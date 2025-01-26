@@ -137,7 +137,9 @@ def run_astrometry_net_single(
 
     if not solved:
         try:
-            logger.debug(f"Running a-net without ra,dec guess.\n" f"A-net command:\n {cmd}")
+            logger.debug(
+                f"Running a-net without ra,dec guess.\n" f"A-net command:\n {cmd}"
+            )
 
             execute(cmd, output_dir, timeout=timeout)
 
