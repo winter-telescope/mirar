@@ -95,7 +95,8 @@ def run_astrometry_net_single(
     if sextractor_config_path is not None:
         cmd += f"--source-extractor-config {sextractor_config_path} "
 
-    cmd += f"-X {x_image_key} -Y {y_image_key} -s {sort_key_name} --sort-ascending "
+    if x_image_key is not None and y_image_key is not None:
+        cmd += f"-X {x_image_key} -Y {y_image_key} -s {sort_key_name} --sort-ascending "
 
     if parity is not None:
         assert parity in ["pos", "neg"]
@@ -113,6 +114,7 @@ def run_astrometry_net_single(
     elif "RA" in header and "DEC" in header:
         ra_req, dec_req = header["RA"], header["DEC"]  # requested ra, dec
 
+    solved = False
     if ra_req is not None and dec_req is not None:
         try:
 
@@ -128,22 +130,24 @@ def run_astrometry_net_single(
             execute(cmd_loc, output_dir, timeout=timeout)
 
             assert os.path.isfile(img_path), "Astrometry.net did not solve the image."
+            solved = True
 
         except (ExecutionError, TimeoutExecutionError, KeyError, AssertionError):
             logger.debug("Could not run a-net with ra,dec guess.")
 
-    try:
-        logger.debug(f"Running a-net without ra,dec guess.\n" f"A-net command:\n {cmd}")
+    if not solved:
+        try:
+            logger.debug(f"Running a-net without ra,dec guess.\n" f"A-net command:\n {cmd}")
 
-        execute(cmd, output_dir, timeout=timeout)
+            execute(cmd, output_dir, timeout=timeout)
 
-        if not os.path.isfile(img_path):
-            logger.debug("Second attempt failed.")
-            err = "Astrometry.net did not solve the image on second attempt."
-            logger.error(err)
-            raise AstrometryNetExecutionError(err)
+            if not os.path.isfile(img_path):
+                logger.debug("Second attempt failed.")
+                err = "Astrometry.net did not solve the image on second attempt."
+                logger.error(err)
+                raise AstrometryNetExecutionError(err)
 
-    except (ExecutionError, TimeoutExecutionError) as err:
-        raise AstrometryNetExecutionError(err) from err
+        except (ExecutionError, TimeoutExecutionError) as err:
+            raise AstrometryNetExecutionError(err) from err
 
     return img_path
