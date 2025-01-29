@@ -130,7 +130,7 @@ jobs:
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}
           KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
-          ANET_INDEX_DIR: /usr/share/miniconda/envs/test/data/
+          ANET_INDEX_DIR: /usr/share/miniconda/envs/test/data
         run: |
           TESTDATA_CHECK="True" poetry run coverage run -m unittest discover tests/
 
