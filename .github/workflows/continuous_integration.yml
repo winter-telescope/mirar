@@ -69,6 +69,8 @@ jobs:
 
       - name: install packages with conda
         shell: bash -el {0}
+        environment:
+          POETRY_HOME: /opt/poetry
         run: |
           conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry=0.95 gsl wcstools
           swarp -v
@@ -77,7 +79,6 @@ jobs:
           solve-field --version
           pip install --upgrade pip
           # Poetry install with poetry in an isolated environment
-          export POETRY_HOME=/opt/poetry
           python3 -m venv $POETRY_HOME
           $POETRY_HOME/bin/pip install poetry==2.0.0
           $POETRY_HOME/bin/poetry --version
@@ -95,7 +96,6 @@ jobs:
           curl -o /usr/share/miniconda/envs/test/data/index-5203-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5203-11.fits
           curl -o /usr/share/miniconda/envs/test/data/index-5206-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5206-11.fits
           curl -o /usr/share/miniconda/envs/test/data/index-5204-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5204-11.fits
-
 
       # Set up database
       - name: postgres
@@ -117,7 +117,7 @@ jobs:
       - name: Run doc tests
         shell: bash -el {0}
         run: |
-          poetry run make -C docs/ doctest
+          $POETRY_HOME/bin/poetry run make -C docs/ doctest
 
       # Runs a set of commands using the runners shell
       - name: Test the code
