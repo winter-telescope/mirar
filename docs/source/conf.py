@@ -25,7 +25,7 @@ extensions = [
 ]
 
 doctest_global_setup = """
-from astroquery.gaia import Gaia  # doctest: +SKIP
+from astroquery.gaia import Gaia  # doctest: +ELLIPSIS
 """
 
 
