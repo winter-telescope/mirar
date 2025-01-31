@@ -73,7 +73,7 @@ def run_astrometry_net_single(
         f"solve-field {img_path} "
         f"--dir {output_dir} "
         f"--new-fits {newname} "
-        f"--overwrite -vvv"
+        f"--overwrite "
         f"--out {basename} "  # use this base name for outputs (instead of 'temp_...')
     )
 

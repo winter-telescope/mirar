@@ -75,9 +75,7 @@ jobs:
           scamp -v
           sex -v
           solve-field --version
-          pip install --upgrade pip
-          python3 -m pip install --user pipx
-          python -m pipx install poetry
+          pip install --upgrade pip poetry
           poetry install --with dev
 
       # Set up astrometry.net
