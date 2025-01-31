@@ -25,7 +25,10 @@ extensions = [
 ]
 
 doctest_global_setup = """
-from astroquery.gaia import Gaia  # doctest: +ELLIPSIS
+import contextlib
+with contextlib.redirect_stdout(None):
+    print("Setting up doctest")
+    from astroquery.gaia import Gaia
 """
 
 
