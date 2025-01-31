@@ -75,8 +75,13 @@ jobs:
           scamp -v
           sex -v
           solve-field --version
-          pip install --upgrade pip poetry
-          poetry install --with dev
+          pip install --upgrade pip
+          # Poetry install with poetry in an isolated environment
+          export POETRY_HOME=/opt/poetry
+          python3 -m venv $POETRY_HOME
+          $POETRY_HOME/bin/pip install poetry==2.0.0
+          $POETRY_HOME/bin/poetry --version
+          $POETRY_HOME/bin/poetry install --with dev
 
       # Set up astrometry.net
       - name: astrometry.net index files
