@@ -24,6 +24,11 @@ extensions = [
     "sphinx_mdinclude",
 ]
 
+doctest_global_setup = """
+from astroquery.gaia import Gaia  # disable gaia crap
+"""
+
+
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
