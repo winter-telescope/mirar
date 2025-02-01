@@ -26,8 +26,8 @@ extensions = [
 
 doctest_global_setup = """
 import contextlib
+
 with contextlib.redirect_stdout(None):
-    print("Setting up doctest")
     from astroquery.gaia import Gaia
 """
 

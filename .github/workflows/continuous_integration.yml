@@ -21,7 +21,7 @@ jobs:
   # This workflow contains a single job called "build"
   ci:
     # The type of runner that the job will run on
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     # Specify the python versions to test
     strategy:
