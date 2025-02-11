@@ -91,7 +91,7 @@ load_stack = [
 assign_stack_id = [
     ImageDebatcher(),
     CustomImageBatchModifier(label_stack_id),
-    ImageRebatcher("stackid"),
+    # ImageRebatcher("stackid"),
 ]
 
 log = (
@@ -141,7 +141,13 @@ reduction = (
         ImageSaver(output_dir_name="darkcal"),
         ImageSelector((OBSCLASS_KEY, "science")),
         HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-        ImageRebatcher("stackid"),
+        # ImageRebatcher("stackid"),
+        ImageRebatcher(
+            [
+                "OBJECT",
+                "FILTER",
+            ]
+        ),
         SkyFlatCalibrator(cache_sub_dir="firstpasscal"),
         NightSkyMedianCalibrator(cache_sub_dir="firstpasscal"),
         ImageRebatcher(BASE_NAME_KEY),
@@ -155,7 +161,15 @@ reduction = (
             timeout=120.0,
         ),
     ]
-    + assign_stack_id
+    # + assign_stack_id
+    + [
+        ImageRebatcher(
+            [
+                "OBJECT",
+                "FILTER",
+            ]
+        ),
+    ]
     + [
         ImageSaver(output_dir_name="firstpass"),
         Swarp(
