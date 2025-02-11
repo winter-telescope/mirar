@@ -99,6 +99,7 @@ log = (
         ImageRejector((BASE_NAME_KEY, "_diff.fits")),
         ImageRejector(("object", "test")),
         ImageRejector(("CORRUPT", "True")),
+        ImageSelector((OBSCLASS_KEY, ["science", "dark"])),
     ]
     + assign_stack_id
     + [
