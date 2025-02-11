@@ -10,7 +10,7 @@ from mirar.data import ImageBatch
 from mirar.paths import OBSCLASS_KEY
 from mirar.processors.utils.image_selector import split_images_into_batches
 
-MAX_RADIUS_DEG = 10.0 / 60.0  # WIRC is 10 arc minutes each side
+MAX_RADIUS_DEG = 60.0 / 60.0  # WIRC is 10 arc minutes each side
 
 
 def label_stack_id(batch: ImageBatch) -> ImageBatch:
