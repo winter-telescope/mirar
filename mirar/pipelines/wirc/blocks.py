@@ -120,6 +120,7 @@ log = (
                 BASE_NAME_KEY,
                 "CRVAL1",
                 "CRVAL2",
+                "stackid",
             ]
         ),
         ImageDebatcher(),
