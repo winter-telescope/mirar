@@ -53,7 +53,7 @@ def wirc_zogy_catalogs_purifier(
     good_sci_sources = (
         (sci_catalog["FLAGS"] == 0)
         & (sci_catalog["SNR_WIN"] > 5)
-        & (sci_catalog["FWHM_WORLD"] < 4.0 / 3600)
+        & (sci_catalog["FWHM_WORLD"] < 6.0 / 3600)
         & (sci_catalog["FWHM_WORLD"] > 0.5 / 3600)
         & (sci_catalog["SNR_WIN"] < 1000)
     )

@@ -41,7 +41,7 @@ def wirc_reference_generator(image: Image):
     cache_ref_stack = False
 
     wfcam_query = WFAUQuery(
-        num_query_points=16,
+        num_query_points=4,
         filter_name=filtername,
         use_db_for_component_queries=False,
         skip_online_query=False,

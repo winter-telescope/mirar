@@ -24,7 +24,10 @@ from mirar.pipelines.wirc.generator import (
     wirc_source_table_filter_annotator,
     wirc_zogy_catalogs_purifier,
 )
-from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from mirar.pipelines.wirc.load_wirc_image import (
+    load_raw_wirc_image,
+    load_wircpipe_stack_image,
+)
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     scamp_fp_path,
@@ -84,7 +87,7 @@ from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
 
 load_stack = [
-    ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image),
+    ImageLoader(input_sub_dir="final", load_image=load_wircpipe_stack_image),
     ImageBatcher(split_key=[BASE_NAME_KEY]),
 ]
 
