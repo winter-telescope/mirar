@@ -980,6 +980,7 @@ perform_astrometry = load_calibrated + fourier_filter + astrometry
 
 make_bad_pixel_masks = [
     ImageLoader(input_sub_dir="darkcal"),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageRebatcher([FILTER_KEY, "BOARD_ID"]),
     CustomImageBatchModifier(compute_winter_bad_pixel_mask),
     ImageSaver(output_dir_name="bad_pixel_masks"),
