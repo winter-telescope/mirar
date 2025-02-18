@@ -95,6 +95,7 @@ class BaseProcessor:
         self.latest_n_input_batches = 0
         self.latest_n_output_blocks = 0
         self.latest_n_output_batches = 0
+        self.processor_run_time_minutes = 0
         self.latest_error_stack = ErrorStack()
 
     @classmethod
@@ -187,7 +188,7 @@ class BaseProcessor:
 
         self.latest_n_input_batches = len(dataset)
         self.latest_n_input_blocks = sum(len(x) for x in dataset)
-
+        processor_start_time = datetime.datetime.now()
         if len(dataset) > 0:
             n_cpu = min([self.max_n_cpu, len(dataset)])
 
@@ -234,7 +235,10 @@ class BaseProcessor:
         self.latest_n_output_batches = len(dataset)
         self.latest_n_output_blocks = sum(len(x) for x in dataset)
         self.latest_error_stack = err_stack
-
+        processor_end_time = datetime.datetime.now()
+        self.processor_run_time_minutes = (
+            processor_end_time - processor_start_time
+        ).total_seconds() / 60.0
         return dataset, err_stack
 
     def apply_to_batch(self, queue, cache_id: int):

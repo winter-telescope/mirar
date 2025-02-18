@@ -13,6 +13,7 @@ The pipeline will process data using a chosen list of these individual
 import copy
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -74,6 +75,7 @@ class Pipeline:
         self.selected_configurations = selected_configurations
         self.latest_configuration = None
         self.set_up_pipeline()
+        self.pipeline_run_time_minutes = 0
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -252,6 +254,42 @@ class Pipeline:
 
         return flowchart
 
+    def get_runtime_output_path(self) -> Path:
+        """
+        Generates a unique path for the runtime summary,
+        in the output data directory.
+        Makes the parent directory structure if needed.
+
+        :return: path for runtime summary
+        """
+        runtime_output_path = Path(
+            get_output_path(
+                base_name=f"{Path(self.night).name}_runtime_summary.txt",
+                dir_root=self.night_sub_dir,
+            )
+        )
+
+        runtime_output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        return runtime_output_path
+
+    def write_runtime_summary(self):
+        """
+        Write a runtime summary to the output directory
+        """
+        runtime_summary_path = self.get_runtime_output_path()
+        with open(runtime_summary_path, "w") as f:
+            f.write(
+                f"Runtime summary for night {self.night}, finished processing "
+                f"at {datetime.now()} \n"
+            )
+            f.write(f"Total runtime: {self.pipeline_run_time_minutes} minutes \n")
+            for processor in self.latest_configuration:
+                f.write(
+                    f"{processor.__class__} took "
+                    f"{processor.processor_run_time_minutes} minutes \n"
+                )
+
     def reduce_images(
         self,
         dataset: Optional[Dataset] = None,
@@ -269,6 +307,7 @@ class Pipeline:
         :return: Post-processing dataset and summary of errors caught
         """
 
+        pipeline_start_time = datetime.now()
         if dataset is None:
             dataset = Dataset([ImageBatch()])
 
@@ -284,7 +323,6 @@ class Pipeline:
             selected_configurations = [selected_configurations]
 
         all_processors = []
-
         for j, configuration in enumerate(selected_configurations):
             logger.info(
                 f"Using pipeline configuration {configuration} "
@@ -322,6 +360,11 @@ class Pipeline:
         err_stack.summarise_error_stack_tsv(
             output_path=output_error_path.with_suffix(".tsv")
         )
+        pipeline_end_time = datetime.now()
+        self.pipeline_run_time_minutes = (
+            pipeline_end_time - pipeline_start_time
+        ).total_seconds() / 60.0
+        self.write_runtime_summary()
         return dataset, err_stack
 
     def postprocess_configuration(
