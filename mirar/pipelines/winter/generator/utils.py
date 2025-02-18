@@ -3,6 +3,7 @@ Some utility functions for the WINTER pipeline
 """
 
 import logging
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -83,7 +84,8 @@ def get_outlier_pixel_mask(img: np.ndarray, thresh: float = 3.0) -> np.ndarray:
     :param img: np.ndarray
     :param thresh: float
     """
-    _, median, std = sigma_clipped_stats(img, sigma=3.0)
+    with warnings.catch_warnings():
+        _, median, std = sigma_clipped_stats(img, sigma=3.0)
     return (img < median - thresh * std) | (img > median + thresh * std)
 
 
