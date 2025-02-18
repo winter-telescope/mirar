@@ -28,6 +28,7 @@ from mirar.pipelines.winter.blocks import (
     load_skyportal,
     load_sub,
     load_test,
+    make_bad_pixel_masks,
     mask_and_split,
     mosaic,
     only_ref,
@@ -116,6 +117,7 @@ class WINTERPipeline(Pipeline):
         "diff_forced_phot": diff_forced_photometry,
         "stack_forced_phot": stack_forced_photometry,
         "rebroadcast_avro": load_avro + avro_export,
+        "make_bad_pixel_masks": make_bad_pixel_masks,
     }
 
     non_linear_level = 40000.0
