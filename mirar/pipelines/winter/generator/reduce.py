@@ -264,5 +264,7 @@ def compute_winter_bad_pixel_mask(batch: ImageBatch) -> ImageBatch:
     bad_pixel_mask = get_smoothened_outlier_pixel_mask_from_list(img_data_list)
     bad_pixel_image = Image(bad_pixel_mask.astype(int), header=batch[0].get_header())
     bad_pixel_image[BASE_NAME_KEY] = f"bad_pixel_mask_{filter_name}_{board_id}.fits"
+    bad_pixel_image["COADDS"] = len(batch)
+    bad_pixel_image[OBSCLASS_KEY] = "CALIBRATION"
     bad_pixel_batch = ImageBatch([bad_pixel_image])
     return bad_pixel_batch
