@@ -24,6 +24,7 @@ from mirar.pipelines.winter.generator.photometry import (
 )
 from mirar.pipelines.winter.generator.realbogus import apply_rb_to_table
 from mirar.pipelines.winter.generator.reduce import (
+    compute_winter_bad_pixel_mask,
     mask_stamps_around_bright_stars,
     select_winter_dome_flats_images,
     select_winter_sky_flat_images,

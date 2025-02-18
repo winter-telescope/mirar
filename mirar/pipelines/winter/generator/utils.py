@@ -6,12 +6,14 @@ import logging
 from pathlib import Path
 
 import numpy as np
+from astropy.stats import sigma_clipped_stats
 from astropy.wcs import NoConvergence
 
 from mirar.data import Image
 from mirar.data.utils.coords import check_coords_within_image
 from mirar.paths import TIME_KEY
 from mirar.pipelines.winter.models import DEFAULT_FIELD
+from mirar.processors.flat import get_convolution
 from mirar.utils import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
@@ -73,3 +75,50 @@ def winter_ref_catalog_namer(image: Image, output_dir: Path) -> Path:
             f"_{image['FILTER']}.ldac.cat"
         )
     return ref_cat_path
+
+
+def get_outlier_pixel_mask(img: np.ndarray, thresh: float = 3.0) -> np.ndarray:
+    """
+    Get oulier pixels that are above or below a threshold
+    :param img: np.ndarray
+    :param thresh: float
+    """
+    _, median, std = sigma_clipped_stats(img, sigma=3.0)
+    return (img < median - thresh * std) | (img > median + thresh * std)
+
+
+def construct_smooth_gradient_for_image(data: np.ndarray) -> np.ndarray:
+    """
+    Construct a smooth gradient for the image
+    :param data: np.ndarray
+    :return: np.ndarray
+    """
+    smooth_img = get_convolution(data, 100)
+    return smooth_img
+
+
+def smooth_and_normalize_image(data: np.ndarray) -> np.ndarray:
+    """
+    Smooth and normalize the image
+    :param data: np.ndarray
+    :return: np.ndarray
+    """
+    smooth_img = get_convolution(data, 100)
+    return data / smooth_img
+
+
+def get_smoothened_outlier_pixel_mask_from_list(
+    img_data_list: list[np.ndarray],
+) -> np.ndarray:
+    """
+    Take a list of images and return a mask of outlier pixels after removing a smooth
+    gradient from them
+    :param img_data_list: list[np.ndarray]
+    :return: np.ndarray
+    """
+    masks = []
+    for data in img_data_list:
+        smooth_img = smooth_and_normalize_image(data)
+        mask = get_outlier_pixel_mask(smooth_img, thresh=3.0)
+        masks.append(mask)
+    return np.logical_and.reduce(masks)

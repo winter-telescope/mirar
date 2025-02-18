@@ -14,6 +14,7 @@ from mirar.data import Image, ImageBatch
 from mirar.database.constraints import DBQueryConstraints
 from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
+    BASE_NAME_KEY,
     FILTER_KEY,
     OBSCLASS_KEY,
     REF_CAT_PATH_KEY,
@@ -22,6 +23,9 @@ from mirar.paths import (
 )
 from mirar.pipelines.winter.config import sextractor_anet_config
 from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
+from mirar.pipelines.winter.generator.utils import (
+    get_smoothened_outlier_pixel_mask_from_list,
+)
 from mirar.processors.split import SUB_ID_KEY
 from mirar.processors.utils.image_selector import select_from_images
 from mirar.utils.ldac_tools import get_table_from_ldac
@@ -237,3 +241,28 @@ def winter_boardid_6_demasker(images: ImageBatch) -> ImageBatch:
             image.set_data(img_data)
 
     return images
+
+
+def compute_winter_bad_pixel_mask(batch: ImageBatch) -> ImageBatch:
+    """
+    Computes the bad pixel mask for the winter images
+    :param batch: ImageBatch
+    :return: np.ndarray
+    """
+    uniq_filters = np.unique([image[FILTER_KEY] for image in batch])
+    uniq_boardids = np.unique([image["BOARD_ID"] for image in batch])
+    assert len(uniq_filters) == 1, (
+        f"More than one filter in batch, " f"found {uniq_filters}"
+    )
+    assert len(uniq_boardids) == 1, (
+        f"More than one board id in batch, " f"found {uniq_boardids}"
+    )
+
+    filter_name = uniq_filters[0]
+    board_id = uniq_boardids[0]
+    img_data_list = [image.get_data() for image in batch]
+    bad_pixel_mask = get_smoothened_outlier_pixel_mask_from_list(img_data_list)
+    bad_pixel_image = Image(bad_pixel_mask, header=batch[0].get_header())
+    bad_pixel_image[BASE_NAME_KEY] = f"bad_pixel_mask_{filter_name}_{board_id}.fits"
+    bad_pixel_batch = ImageBatch([bad_pixel_image])
+    return bad_pixel_batch

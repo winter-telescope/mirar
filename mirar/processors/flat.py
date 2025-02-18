@@ -9,6 +9,7 @@ from collections.abc import Callable
 from copy import copy
 
 import numpy as np
+from astropy.convolution import Tophat2DKernel, convolve_fft
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
@@ -24,6 +25,28 @@ from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWith
 from mirar.processors.utils.image_selector import select_from_images
 
 logger = logging.getLogger(__name__)
+
+
+def get_convolution(data: np.ndarray, kernel_width: int) -> np.ndarray:
+    """
+    Convolve data with a tophat kernel
+
+    :param data: Image data
+    :param kernel_width: Width of the kernel (pixels)
+    :return: Smoothed image
+    """
+    pad_top = np.array([data[0] for _ in range(kernel_width)])
+    pad_bottom = np.array([data[-1] for _ in range(kernel_width)])
+    extended = np.vstack([pad_top, data, pad_bottom])
+    pad_left = np.array([extended.T[0] for _ in range(kernel_width)])
+    pad_right = np.array([extended.T[-1] for _ in range(kernel_width)])
+    extended = np.hstack([pad_left.T, extended, pad_right.T])
+
+    tophat_kernel = Tophat2DKernel(kernel_width)
+    smooth_illumination = convolve_fft(
+        extended, tophat_kernel, nan_treatment="interpolate"
+    )[kernel_width:-kernel_width, kernel_width:-kernel_width]
+    return smooth_illumination
 
 
 class MissingFlatError(ImageNotFoundError):

@@ -13,6 +13,7 @@ from mirar.paths import (
     BASE_NAME_KEY,
     DITHER_N_KEY,
     EXPTIME_KEY,
+    FILTER_KEY,
     LATEST_SAVE_KEY,
     MAX_DITHER_KEY,
     OBSCLASS_KEY,
@@ -43,6 +44,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     apply_rb_to_table,
+    compute_winter_bad_pixel_mask,
     mask_stamps_around_bright_stars,
     select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
@@ -975,3 +977,10 @@ diff_forced_photometry = [
 
 perform_astrometry = load_calibrated + fourier_filter + astrometry
 # + validate_astrometry
+
+make_bad_pixel_masks = [
+    ImageLoader(input_sub_dir="darkcal"),
+    ImageRebatcher([FILTER_KEY, "BOARD_ID"]),
+    CustomImageBatchModifier(compute_winter_bad_pixel_mask),
+    ImageSaver(output_dir_name="bad_pixel_masks"),
+]
