@@ -35,7 +35,7 @@ from mirar.paths import (
     TARGET_KEY,
     core_fields,
 )
-from mirar.pipelines.winter.config import winter_bad_pixel_mask_base_dir
+from mirar.pipelines.winter.config import winter_bad_pixel_mask_dir
 from mirar.pipelines.winter.constants import (
     all_winter_board_ids,
     imgtype_dict,
@@ -525,8 +525,8 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
     header = image.header
 
     bad_pixel_mask_version = image["BADPIXV"]
-    bad_pixel_mask_dir = winter_bad_pixel_mask_base_dir.joinpath(
-        "bad_pixel_maps/v" + bad_pixel_mask_version
+    bad_pixel_mask_dir = winter_bad_pixel_mask_dir.joinpath(
+        "v" + bad_pixel_mask_version
     )
     # TODO: Implement auto-download of bad-pixel  masks from zenodo
     if not bad_pixel_mask_dir.exists():
@@ -538,7 +538,7 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         )
 
     bad_pixel_mask_path = bad_pixel_mask_dir.joinpath(
-        f"bad_pixel_map_{header['FILTER']}" f"_{header['BOARD_ID']}.fits"
+        f"bad_pixel_mask_{header['FILTER']}" f"_{header['BOARD_ID']}.fits"
     )
 
     mask = fits.getdata(bad_pixel_mask_path, memmap=False)

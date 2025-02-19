@@ -155,6 +155,5 @@ if winter_bad_pixel_mask_base_dir is None:
 else:
     winter_bad_pixel_mask_base_dir = Path(winter_bad_pixel_mask_base_dir)
 winter_bad_pixel_mask_base_dir.mkdir(exist_ok=True, parents=True)
-winter_bad_pixel_mask_base_dir.joinpath("bad_pixel_masks").mkdir(
-    exist_ok=True, parents=True
-)
+winter_bad_pixel_mask_dir = winter_bad_pixel_mask_base_dir.joinpath("bad_pixel_masks")
+winter_bad_pixel_mask_dir.joinpath("bad_pixel_masks").mkdir(exist_ok=True, parents=True)
