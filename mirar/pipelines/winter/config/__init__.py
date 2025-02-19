@@ -8,7 +8,7 @@ from pathlib import Path
 
 from fastavro.schema import load_schema
 
-from mirar.paths import base_raw_dir
+from mirar.paths import base_output_dir, base_raw_dir
 from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
 
@@ -146,3 +146,17 @@ winter_fritz_config = {
         "simag1",
     ],
 }
+
+winter_bad_pixel_mask_base_dir = os.getenv("WINTER_BAD_PIXEL_MASK_DIR", base_output_dir)
+if winter_bad_pixel_mask_base_dir is None:
+    winter_bad_pixel_mask_base_dir = base_output_dir
+    logger.warning(
+        f"No specific bad pixel mask directory set. Using "
+        f"{winter_bad_pixel_mask_base_dir} as the directory for bad pixel masks. "
+    )
+else:
+    winter_bad_pixel_mask_base_dir = Path(winter_bad_pixel_mask_base_dir)
+winter_bad_pixel_mask_base_dir.mkdir(exist_ok=True, parents=True)
+winter_bad_pixel_mask_base_dir.joinpath("bad_pixel_masks").mkdir(
+    exist_ok=True, parents=True
+)
