@@ -147,7 +147,7 @@ winter_fritz_config = {
     ],
 }
 
-winter_bad_pixel_mask_base_dir = os.getenv("WINTER_BAD_PIXEL_MASK_DIR", base_output_dir)
+winter_bad_pixel_mask_base_dir = os.getenv("WINTER_BAD_PIXEL_MASK_DIR", None)
 if winter_bad_pixel_mask_base_dir is None:
     winter_bad_pixel_mask_base_dir = base_output_dir
     logger.warning(
