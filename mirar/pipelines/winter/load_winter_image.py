@@ -626,4 +626,5 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         # Mask channel 0
         mask[0::2, 0::4] = 1.0
 
+    header["BPXPATH"] = bad_pixel_mask_path.as_posix()
     return mask.astype(bool)
