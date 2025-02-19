@@ -18,6 +18,7 @@ from mirar.pipelines.winter.blocks import (
     detrend_unpacked,
     diff_forced_photometry,
     extract_all,
+    flatcal_and_reduce,
     focus_cals,
     full_reduction,
     imsub,
@@ -118,6 +119,7 @@ class WINTERPipeline(Pipeline):
         "stack_forced_phot": stack_forced_photometry,
         "rebroadcast_avro": load_avro + avro_export,
         "make_bad_pixel_masks": make_bad_pixel_masks,
+        "flatcal_and_reduce": flatcal_and_reduce,
     }
 
     non_linear_level = 40000.0

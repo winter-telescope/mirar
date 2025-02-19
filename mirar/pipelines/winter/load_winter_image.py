@@ -9,7 +9,7 @@ from pathlib import Path
 
 import astropy
 import numpy as np
-from astropy.convolution import Box1DKernel, convolve
+from astropy.convolution import Box2DKernel, convolve
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
@@ -619,7 +619,7 @@ def apply_bad_pixel_mask(batch: ImageBatch) -> ImageBatch:
     """
 
     new_batch = []
-    kernel = Box1DKernel(3)
+    kernel = Box2DKernel(3)
     for image in batch:
         bad_pixel_mask_version = image["BADPIXV"]
         bad_pixel_mask_dir = winter_bad_pixel_mask_dir.joinpath(

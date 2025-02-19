@@ -909,6 +909,15 @@ full_reduction = (
     + photcal_and_export
 )
 
+load_dark_calibrated = [ImageLoader(input_sub_dir="darkcal")]
+flatcal_and_reduce = (
+    load_dark_calibrated
+    + flat_calibrate
+    + fourier_filter
+    + process_and_stack
+    + photcal_and_export
+)
+
 photcal_stacks = [
     ImageLoader(
         input_sub_dir="stack",
