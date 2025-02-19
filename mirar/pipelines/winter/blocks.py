@@ -75,6 +75,7 @@ from mirar.pipelines.winter.generator import (
 )
 from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
+    apply_bad_pixel_mask,
     get_raw_winter_mask,
     load_astrometried_winter_image,
     load_stacked_winter_image,
@@ -384,6 +385,8 @@ flat_calibrate = [
     ),
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="skyflatcal"),
+    CustomImageBatchModifier(apply_bad_pixel_mask),
+    ImageSaver(output_dir_name="bad_pix_corrected"),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,

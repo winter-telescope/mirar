@@ -9,6 +9,7 @@ from pathlib import Path
 
 import astropy
 import numpy as np
+from astropy.convolution import Box1DKernel, convolve
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
@@ -523,30 +524,7 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
     Get mask for raw winter image.
     """
     header = image.header
-
-    if header["FILTER"] == "dark":
-        mask = np.zeros_like(image.get_data(), dtype=bool)
-    else:
-        bad_pixel_mask_version = image["BADPIXV"]
-        bad_pixel_mask_dir = winter_bad_pixel_mask_dir.joinpath(
-            "v" + bad_pixel_mask_version
-        )
-        # TODO: Implement auto-download of bad-pixel  masks from zenodo
-        if not bad_pixel_mask_dir.exists():
-            logger.error(
-                f"Bad pixel mask directory {bad_pixel_mask_dir} does not exist."
-            )
-            raise FileNotFoundError(
-                f"Bad pixel mask directory {bad_pixel_mask_dir} does not exist."
-                f"Please download the bad pixel masks and place them in the"
-                f"directory {bad_pixel_mask_dir}"
-            )
-
-        bad_pixel_mask_path = bad_pixel_mask_dir.joinpath(
-            f"bad_pixel_mask_{header['FILTER']}" f"_{header['BOARD_ID']}.fits"
-        )
-
-        mask = fits.getdata(bad_pixel_mask_path, memmap=False)
+    mask = np.zeros_like(image.get_data())
     if header["BOARD_ID"] == 0:
         # Mask the outage in the bottom center
         mask[:500, 700:1600] = 1.0
@@ -632,3 +610,44 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[0::2, 0::4] = 1.0
 
     return mask.astype(bool)
+
+
+def apply_bad_pixel_mask(batch: ImageBatch) -> ImageBatch:
+    """
+    Apply bad pixel mask to images in batch and replace bad pixel values with
+    a convolved kernel
+    """
+
+    new_batch = []
+    kernel = Box1DKernel(3)
+    for image in batch:
+        bad_pixel_mask_version = image["BADPIXV"]
+        bad_pixel_mask_dir = winter_bad_pixel_mask_dir.joinpath(
+            "v" + bad_pixel_mask_version
+        )
+        # TODO: Implement auto-download of bad-pixel  masks from zenodo
+        if not bad_pixel_mask_dir.exists():
+            logger.error(
+                f"Bad pixel mask directory {bad_pixel_mask_dir} does not exist."
+            )
+            raise FileNotFoundError(
+                f"Bad pixel mask directory {bad_pixel_mask_dir} does not exist."
+                f"Please download the bad pixel masks and place them in the"
+                f"directory {bad_pixel_mask_dir}"
+            )
+
+        bad_pixel_mask_path = bad_pixel_mask_dir.joinpath(
+            f"bad_pixel_mask_{image['FILTER']}" f"_{image['BOARD_ID']}.fits"
+        )
+
+        mask = fits.getdata(bad_pixel_mask_path, memmap=False)
+        data = image.get_data()
+        nanmask = np.isnan(data)
+        data[mask > 0] = np.nan
+        convolved_img = convolve(data, kernel)
+        data[np.isnan(data)] = convolved_img[np.isnan(data)]
+        data[nanmask > 0] = np.nan
+        image.set_data(data)
+        new_batch.append(image)
+    new_batch = ImageBatch(new_batch)
+    return new_batch
