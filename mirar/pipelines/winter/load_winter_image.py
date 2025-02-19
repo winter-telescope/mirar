@@ -524,24 +524,29 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
     """
     header = image.header
 
-    bad_pixel_mask_version = image["BADPIXV"]
-    bad_pixel_mask_dir = winter_bad_pixel_mask_dir.joinpath(
-        "v" + bad_pixel_mask_version
-    )
-    # TODO: Implement auto-download of bad-pixel  masks from zenodo
-    if not bad_pixel_mask_dir.exists():
-        logger.error(f"Bad pixel mask directory {bad_pixel_mask_dir} does not exist.")
-        raise FileNotFoundError(
-            f"Bad pixel mask directory {bad_pixel_mask_dir} does not exist."
-            f"Please download the bad pixel masks and place them in the"
-            f"directory {bad_pixel_mask_dir}"
+    if header["FILTER"] == "dark":
+        mask = np.zeros_like(image.get_data(), dtype=bool)
+    else:
+        bad_pixel_mask_version = image["BADPIXV"]
+        bad_pixel_mask_dir = winter_bad_pixel_mask_dir.joinpath(
+            "v" + bad_pixel_mask_version
+        )
+        # TODO: Implement auto-download of bad-pixel  masks from zenodo
+        if not bad_pixel_mask_dir.exists():
+            logger.error(
+                f"Bad pixel mask directory {bad_pixel_mask_dir} does not exist."
+            )
+            raise FileNotFoundError(
+                f"Bad pixel mask directory {bad_pixel_mask_dir} does not exist."
+                f"Please download the bad pixel masks and place them in the"
+                f"directory {bad_pixel_mask_dir}"
+            )
+
+        bad_pixel_mask_path = bad_pixel_mask_dir.joinpath(
+            f"bad_pixel_mask_{header['FILTER']}" f"_{header['BOARD_ID']}.fits"
         )
 
-    bad_pixel_mask_path = bad_pixel_mask_dir.joinpath(
-        f"bad_pixel_mask_{header['FILTER']}" f"_{header['BOARD_ID']}.fits"
-    )
-
-    mask = fits.getdata(bad_pixel_mask_path, memmap=False)
+        mask = fits.getdata(bad_pixel_mask_path, memmap=False)
     if header["BOARD_ID"] == 0:
         # Mask the outage in the bottom center
         mask[:500, 700:1600] = 1.0
