@@ -20,6 +20,7 @@ from mirar.paths import TEMP_DIR
 from mirar.pipelines.winter.models import ExposuresTable, RawsTable, StacksTable
 from mirar.pipelines.winter.winter_pipeline import WINTERPipeline
 from mirar.processors.utils.image_loader import load_from_list
+from mirar.processors.utils.image_selector import split_images_into_batches
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,16 @@ def run_stack_of_stacks():
     )
     parser.add_argument(
         "-s", "--startdate", help="Start date (e.g., 20240820)", type=str, default=None
+    )
+    parser.add_argument(
+        "--same_boards",
+        help="Only stack images from the same board together",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--run_diffs",
+        help="Run image subtraction on the stacked stacks",
+        action="store_true",
     )
     args = parser.parse_args()
 
@@ -174,7 +185,10 @@ def run_stack_of_stacks():
 
             img_batch = new_batch
 
-        dataset = Dataset(img_batch)
+        if args.same_boards:
+            dataset = split_images_into_batches(img_batch, "BOARD_ID")
+        else:
+            dataset = Dataset(img_batch)
 
         run_winter(
             config="stack_stacks_db",
