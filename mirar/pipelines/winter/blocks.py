@@ -558,24 +558,9 @@ photcal_and_export = [
 # Stack stacks together
 
 stack_stacks = [
-    ImageRebatcher(BASE_NAME_KEY),
-    HeaderEditor(PROC_HISTORY_KEY, "load"),
-    ImageSaver(output_dir_name="restack_masks", write_mask=True),
-    Sextractor(
-        **sextractor_astrometry_config,
-        write_regions_bool=True,
-        output_sub_dir="scamp",
-        catalog_purifier=winter_astrometry_sextractor_catalog_purifier,
+    HeaderAnnotator(
+        input_keys=["TARGNAME", "FIELDID", "BOARD_ID"], output_key=TARGET_KEY
     ),
-    CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
-    Scamp(
-        scamp_config_path=scamp_config_path,
-        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
-        copy_scamp_header_to_image=True,
-        cache=True,
-    ),
-    ImageSaver(output_dir_name="post_scamp"),
-    HeaderAnnotator(input_keys=["TARGNAME", "FIELDID"], output_key=TARGET_KEY),
     ImageRebatcher(["SUBCOORD", "FILTER", TARGET_KEY]),
     Swarp(
         swarp_config_path=swarp_config_path,
