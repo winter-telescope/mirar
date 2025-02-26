@@ -558,9 +558,7 @@ photcal_and_export = [
 # Stack stacks together
 
 stack_stacks = [
-    HeaderAnnotator(
-        input_keys=["TARGNAME", "FIELDID", "BOARD_ID"], output_key=TARGET_KEY
-    ),
+    HeaderAnnotator(input_keys=["TARGNAME", "FIELDID"], output_key=TARGET_KEY),
     ImageRebatcher(["SUBCOORD", "FILTER", TARGET_KEY]),
     Swarp(
         swarp_config_path=swarp_config_path,
