@@ -20,7 +20,6 @@ from mirar.paths import TEMP_DIR
 from mirar.pipelines.winter.models import ExposuresTable, RawsTable, StacksTable
 from mirar.pipelines.winter.winter_pipeline import WINTERPipeline
 from mirar.processors.utils.image_loader import load_from_list
-from mirar.processors.utils.image_selector import split_images_into_batches
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +82,8 @@ def run_stack_of_stacks():
     parser.add_argument(
         "-s", "--startdate", help="Start date (e.g., 20240820)", type=str, default=None
     )
-    parser.add_argument(
-        "--same_boards",
-        help="Only stack images from the same board together",
-        action="store_true",
-    )
+    parser.add_argument("--ra", help="RA", type=float, default=None)
+    parser.add_argument("--dec", help="DEC", type=float, default=None)
     parser.add_argument(
         "--run_diffs",
         help="Run image subtraction on the stacked stacks",
@@ -105,8 +101,11 @@ def run_stack_of_stacks():
     elif args.fieldid is not None:
         db_constraint = f"fieldid = '{args.fieldid}'"
         subdir = args.fieldid
+    elif args.ra is not None and args.dec is not None:
+        db_constraint = f"q3c_radial_query(crval1, crval2, {args.ra}, {args.dec}, 0.1)"
+        subdir = f"RA{args.ra}_DEC{args.dec}"
     else:
-        err = "Must specify either target or fieldid"
+        err = "Must specify either target or fieldid or RA-Dec"
         logger.error(err)
         raise ValueError(err)
 
@@ -185,10 +184,7 @@ def run_stack_of_stacks():
 
             img_batch = new_batch
 
-        if args.same_boards:
-            dataset = split_images_into_batches(img_batch, "BOARD_ID")
-        else:
-            dataset = Dataset(img_batch)
+        dataset = Dataset(img_batch)
 
         run_winter(
             config="stack_stacks_db",
