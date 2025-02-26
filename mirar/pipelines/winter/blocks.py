@@ -565,7 +565,7 @@ stack_stacks = [
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
-        include_scamp=True,
+        include_scamp=False,
         subtract_bkg=False,
         cache=False,
         center_type="ALL",
