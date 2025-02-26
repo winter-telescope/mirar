@@ -572,7 +572,6 @@ stack_stacks = [
     ),
     ImageSaver(output_dir_name="stack_of_stacks"),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
         **sextractor_photometry_config,
         output_sub_dir="stack_psf",
