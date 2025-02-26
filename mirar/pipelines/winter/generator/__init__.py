@@ -33,6 +33,7 @@ from mirar.pipelines.winter.generator.reduce import (
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_imsub_catalog_purifier,
+    winter_stack_of_stacks_subdetid_annotator,
     winter_stackid_annotator,
 )
 from mirar.pipelines.winter.generator.references import (

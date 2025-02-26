@@ -268,3 +268,27 @@ def compute_winter_bad_pixel_mask(batch: ImageBatch) -> ImageBatch:
     bad_pixel_image[OBSCLASS_KEY] = "CALIBRATION"
     bad_pixel_batch = ImageBatch([bad_pixel_image])
     return bad_pixel_batch
+
+
+def winter_stack_of_stacks_subdetid_annotator(batch: ImageBatch) -> ImageBatch:
+    """
+    Annotates the subdetid of the stack of stacks for WINTER images
+    If multiple subdetids are present, the one that appears most is used,
+    with a warning.
+    :param batch: ImageBatch
+    :return: ImageBatch with subdetid added to the header
+    """
+    uniq_subdetids, counts = np.unique(
+        [image[SUB_ID_KEY] for image in batch], return_counts=True
+    )
+    logger.warn(
+        f"Multiple subdetids found: {uniq_subdetids}, "
+        f"using {uniq_subdetids[np.argmax(counts)]}"
+    )
+    subdetid = uniq_subdetids[np.argmax(counts)]
+    new_batch = []
+    for image in batch:
+        image[SUB_ID_KEY] = subdetid
+        new_batch.append(image)
+    new_batch = ImageBatch(new_batch)
+    return new_batch

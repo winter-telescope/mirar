@@ -71,6 +71,7 @@ from mirar.pipelines.winter.generator import (
     winter_reference_sextractor,
     winter_skyportal_annotator,
     winter_source_entry_updater,
+    winter_stack_of_stacks_subdetid_annotator,
     winter_stackid_annotator,
 )
 from mirar.pipelines.winter.load_winter_image import (
@@ -559,6 +560,7 @@ photcal_and_export = [
 
 stack_stacks = [
     HeaderAnnotator(input_keys=["TARGNAME", "FIELDID"], output_key=TARGET_KEY),
+    CustomImageBatchModifier(winter_stack_of_stacks_subdetid_annotator),
     ImageRebatcher(["SUBCOORD", "FILTER", TARGET_KEY]),
     Swarp(
         swarp_config_path=swarp_config_path,
