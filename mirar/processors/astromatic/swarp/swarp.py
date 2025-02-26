@@ -336,8 +336,11 @@ class Swarp(BaseImageProcessor):
                 # header of resampled image, and save again
                 # Omit any astrometric keywords
                 tmp_dict = combined_header_dict.copy()
+                img_hdr = image.get_header()
                 for key in combined_header_dict.keys():
                     if key not in tmp_dict.keys():
+                        continue
+                    if key not in img_hdr.keys():
                         continue
                     if image[key] != tmp_dict[key]:
                         tmp_dict.pop(key)
