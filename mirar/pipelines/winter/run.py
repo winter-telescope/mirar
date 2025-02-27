@@ -189,8 +189,12 @@ def run_stack_of_stacks():
 
         dataset = Dataset(img_batch)
 
+        if args.run_diff:
+            config = "stack_stacks_imsub_db"
+        else:
+            config = "stack_stacks_db"
         run_winter(
-            config="stack_stacks_db",
+            config=config,
             dataset=dataset,
             log_level=args.level,
             subdir=f"restacks/{subdir}",
