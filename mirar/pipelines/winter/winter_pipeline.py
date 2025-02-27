@@ -22,6 +22,7 @@ from mirar.pipelines.winter.blocks import (
     focus_cals,
     full_reduction,
     imsub,
+    imsub_superstacks,
     load_avro,
     load_calibrated,
     load_final_stack,
@@ -36,6 +37,7 @@ from mirar.pipelines.winter.blocks import (
     photcal_stacks,
     plot_stack,
     process_candidates,
+    process_candidates_superstacks,
     realtime,
     reduce,
     reduce_unpacked,
@@ -111,6 +113,9 @@ class WINTERPipeline(Pipeline):
         + avro_broadcast,
         "stack_stacks": load_final_stack + stack_stacks,
         "stack_stacks_db": stack_stacks,
+        "stack_stacks_imsub_db": stack_stacks
+        + imsub_superstacks
+        + process_candidates_superstacks,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
         "log": load_raw + extract_all + csvlog,

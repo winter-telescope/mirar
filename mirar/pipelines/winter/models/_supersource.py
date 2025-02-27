@@ -24,10 +24,10 @@ from mirar.pipelines.winter.models.base_model import WinterBase
 
 logger = logging.getLogger(__name__)
 
-SOURCE_PREFIX = "WNTR"
+SUPERSOURCE_PREFIX = "SWNTR"
 NAME_START = "aaaaa"
 
-MIN_NAME_LENGTH = len(SOURCE_PREFIX) + len(NAME_START) + 2
+MIN_NAME_LENGTH = len(SUPERSOURCE_PREFIX) + len(NAME_START) + 2
 
 
 class SuperSourcesTable(WinterBase):  # pylint: disable=too-few-public-methods

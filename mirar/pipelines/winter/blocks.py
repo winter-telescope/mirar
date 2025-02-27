@@ -88,6 +88,7 @@ from mirar.pipelines.winter.models import (
     DEFAULT_FIELD,
     NAME_START,
     SOURCE_PREFIX,
+    SUPERSOURCE_PREFIX,
     AstrometryStat,
     Candidate,
     Diff,
@@ -560,8 +561,7 @@ photcal_and_export = [
     ),
 ]
 
-# Stack stacks together
-
+# stack of stacks
 stack_stacks = [
     HeaderAnnotator(input_keys=["TARGNAME", "FIELDID"], output_key=TARGET_KEY),
     CustomImageBatchModifier(winter_stack_of_stacks_subdetid_annotator),
@@ -653,7 +653,7 @@ split_stack = [
     ImageSaver(output_dir_name="split_stacks"),
 ]
 
-imsub = [
+imsub_steps = [
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -692,10 +692,22 @@ imsub = [
         output_sub_dir="subtract", sci_zp_header_key="ZP_AUTO", ref_zp_header_key=ZP_KEY
     ),
     ImageSaver(output_dir_name="diffs"),
+]
+
+imsub_db = [
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
     ImageSaver(output_dir_name="subtract"),
-    ImageRejector(("PROGNAME", ["2023A007"])),  # Filter out galactic data
+    ImageRejector(("PROGNAME", ["2023A007"])),
 ]
+
+imsub_superstacks_db = [
+    DatabaseImageInserter(db_table=SuperDiff, duplicate_protocol="replace"),
+    ImageSaver(output_dir_name="subtract"),
+    ImageRejector(("PROGNAME", ["2023A007"])),
+]
+
+imsub = imsub_steps + imsub_db
+imsub_superstacks = imsub_steps + imsub_superstacks_db
 
 load_sub = [
     ImageLoader(input_sub_dir="diffs"),
@@ -703,6 +715,7 @@ load_sub = [
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
     ImageSaver(output_dir_name="subtract"),
 ]
+
 detect_candidates = [
     ZOGYSourceDetector(
         output_sub_dir="subtract",
@@ -722,6 +735,7 @@ detect_candidates = [
     CustomSourceTableModifier(winter_candidate_annotator_filterer),
     SourceWriter(output_dir_name="candidates"),
 ]
+
 #
 # candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
@@ -805,6 +819,43 @@ name_candidates = [
     SourceWriter(output_dir_name="preavro"),
 ]
 
+name_candidates_superstacks = [
+    SourceBatcher(BASE_NAME_KEY),
+    # Add the new sources to the source table
+    CustomSourceTableModifier(modifier_function=winter_new_source_updater),
+    # Assign names to the new sources
+    CandidateNamer(
+        db_table=SuperSource,
+        db_output_columns=["sourceid", SOURCE_NAME_KEY],
+        base_name=SUPERSOURCE_PREFIX,
+        name_start=NAME_START,
+        db_name_field=SOURCE_NAME_KEY,
+        crossmatch_radius_arcsec=2.0,
+        ra_field_name="average_ra",
+        dec_field_name="average_dec",
+    ),
+    # Add candidates in the candidate table
+    DatabaseSourceInserter(
+        db_table=SuperCandidate,
+        duplicate_protocol="fail",
+    ),
+    SelectSourcesWithMetadata(
+        db_query_columns=["sourceid"],
+        db_table=SuperCandidate,
+        db_output_columns=prv_candidate_cols + [SOURCE_NAME_KEY],
+        base_output_column=SOURCE_HISTORY_KEY,
+        additional_query_constraints=winter_history_deprecated_constraint,
+    ),
+    # Update average ra and dec for source
+    CustomSourceTableModifier(modifier_function=winter_source_entry_updater),
+    # Update sources in the source table
+    DatabaseSourceInserter(
+        db_table=SuperSource,
+        duplicate_protocol="replace",
+    ),
+    SourceWriter(output_dir_name="preavro"),
+]
+
 load_preavro = [
     SourceLoader(input_dir_name="preavro"),
 ]
@@ -848,6 +899,9 @@ avro_broadcast = [
 avro_export = avro_write + avro_broadcast
 
 process_candidates = ml_classify + crossmatch_candidates + name_candidates + avro_write
+process_candidates_superstacks = (
+    ml_classify + crossmatch_candidates + name_candidates_superstacks + avro_write
+)
 
 load_avro = [SourceLoader(input_dir_name="preavro"), SourceBatcher(BASE_NAME_KEY)]
 

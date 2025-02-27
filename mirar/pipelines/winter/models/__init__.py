@@ -68,7 +68,11 @@ from mirar.pipelines.winter.models._supercandidate import (
     SuperCandidatesTable,
 )
 from mirar.pipelines.winter.models._superdiff import SuperDiff, SuperDiffsTable
-from mirar.pipelines.winter.models._supersource import SuperSource, SuperSourcesTable
+from mirar.pipelines.winter.models._supersource import (
+    SUPERSOURCE_PREFIX,
+    SuperSource,
+    SuperSourcesTable,
+)
 from mirar.pipelines.winter.models._superstack import SuperStack, SuperStacksTable
 from mirar.pipelines.winter.models.base_model import WinterBase
 
