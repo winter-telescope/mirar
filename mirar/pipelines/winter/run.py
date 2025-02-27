@@ -91,7 +91,13 @@ def run_stack_of_stacks():
     )
     args = parser.parse_args()
 
-    if args.target is not None:
+    if args.ra is not None and args.dec is not None:
+        db_constraint = f"q3c_radial_query(crval1, crval2, {args.ra}, {args.dec}, 0.1)"
+        if args.target is not None:
+            subdir = args.target
+        else:
+            subdir = f"RA{args.ra}_DEC{args.dec}"
+    elif args.target is not None:
         db_constraint = f"targname = '{args.target}'"
         subdir = args.target
         if args.fieldid is not None:
@@ -101,9 +107,6 @@ def run_stack_of_stacks():
     elif args.fieldid is not None:
         db_constraint = f"fieldid = '{args.fieldid}'"
         subdir = args.fieldid
-    elif args.ra is not None and args.dec is not None:
-        db_constraint = f"q3c_radial_query(crval1, crval2, {args.ra}, {args.dec}, 0.1)"
-        subdir = f"RA{args.ra}_DEC{args.dec}"
     else:
         err = "Must specify either target or fieldid or RA-Dec"
         logger.error(err)
