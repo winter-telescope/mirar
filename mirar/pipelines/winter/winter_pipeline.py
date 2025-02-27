@@ -115,6 +115,7 @@ class WINTERPipeline(Pipeline):
         "stack_stacks_db": stack_stacks,
         "stack_stacks_imsub_db": stack_stacks
         + imsub_superstacks
+        + detect_candidates
         + process_candidates_superstacks,
         "focus_cals": focus_cals,
         "mosaic": mosaic,
