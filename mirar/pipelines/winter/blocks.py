@@ -616,6 +616,19 @@ stack_stacks = [
     ),
     ImageSaver(output_dir_name="final_stack_of_stacks"),
     DatabaseImageInserter(db_table=SuperStack, duplicate_protocol="replace"),
+    ImagePlotter(
+        output_sub_dir="final_stacks_plots",
+        annotate_fields=[
+            BASE_NAME_KEY,
+            "COADDS",
+            TARGET_KEY,
+            "CRVAL1",
+            "CRVAL2",
+            "FILTER",
+            "ZP",
+            "ZPSTD",
+        ],
+    ),
 ]
 
 # Image subtraction
