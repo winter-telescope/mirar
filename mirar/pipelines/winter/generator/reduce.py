@@ -281,14 +281,19 @@ def winter_stack_of_stacks_subdetid_annotator(batch: ImageBatch) -> ImageBatch:
     uniq_subdetids, counts = np.unique(
         [image[SUB_ID_KEY] for image in batch], return_counts=True
     )
+    uniq_boardids, bid_counts = np.unique(
+        [image["BOARD_ID"] for image in batch], return_counts=True
+    )
     logger.warn(
         f"Multiple subdetids found: {uniq_subdetids}, "
         f"using {uniq_subdetids[np.argmax(counts)]}"
     )
     subdetid = uniq_subdetids[np.argmax(counts)]
+    boardid = uniq_boardids[np.argmax(bid_counts)]
     new_batch = []
     for image in batch:
         image[SUB_ID_KEY] = subdetid
+        image["BOARD_ID"] = boardid
         new_batch.append(image)
     new_batch = ImageBatch(new_batch)
     return new_batch
