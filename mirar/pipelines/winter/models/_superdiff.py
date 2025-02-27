@@ -22,7 +22,7 @@ class SuperDiffsTable(WinterBase):  # pylint: disable=too-few-public-methods
     Diffs table in database
     """
 
-    __tablename__ = "diffs"
+    __tablename__ = "superdiffs"
     __table_args__ = {"extend_existing": True}
 
     diffid = Column(
