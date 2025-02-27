@@ -607,6 +607,13 @@ stack_stacks = [
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
+    AstrometryStatsWriter(
+        ref_catalog_generator=winter_astrometric_ref_catalog_generator,
+        image_catalog_purifier=winter_astrostat_catalog_purifier,
+        write_regions=True,
+        cache=False,
+        crossmatch_radius_arcsec=5.0,
+    ),
     ImageSaver(output_dir_name="final_stack_of_stacks"),
     DatabaseImageInserter(db_table=SuperStack, duplicate_protocol="replace"),
 ]
