@@ -189,7 +189,7 @@ def run_stack_of_stacks():
 
         dataset = Dataset(img_batch)
 
-        if args.run_diff:
+        if args.run_diffs:
             config = "stack_stacks_imsub_db"
         else:
             config = "stack_stacks_db"
