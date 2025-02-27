@@ -63,6 +63,13 @@ from mirar.pipelines.winter.models._subdets import (
     SubdetsTable,
     populate_subdets,
 )
+from mirar.pipelines.winter.models._supercandidate import (
+    SuperCandidate,
+    SuperCandidatesTable,
+)
+from mirar.pipelines.winter.models._superdiff import SuperDiff, SuperDiffsTable
+from mirar.pipelines.winter.models._supersource import SuperSource, SuperSourcesTable
+from mirar.pipelines.winter.models._superstack import SuperStack, SuperStacksTable
 from mirar.pipelines.winter.models.base_model import WinterBase
 
 logger = logging.getLogger(__name__)
