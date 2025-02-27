@@ -21,14 +21,13 @@ class SuperStacksTable(WinterBase):  # pylint: disable=too-few-public-methods
     __tablename__ = "superstacks"
     __table_args__ = {"extend_existing": True}
 
-    ustackid = Column(
+    stackid = Column(
         Integer,
         Sequence(start=1, name="superstacks_ustackid_seq"),
         autoincrement=True,
         unique=True,
         primary_key=True,
     )
-    stackid = Column(BigInteger, primary_key=False, unique=True, autoincrement=False)
     supercandidates = relationship(
         "SuperCandidatesTable", back_populates="superstack_id"
     )
@@ -69,7 +68,6 @@ class SuperStack(BaseDB):
     sql_model: ClassVar = SuperStacksTable
 
     # rawid: int = Field(ge=0)
-    stackid: int = Field(ge=0)
     savepath: str = Field(min_length=1)
     wghtpath: str = Field(min_length=1)
 
