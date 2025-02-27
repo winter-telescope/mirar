@@ -95,6 +95,10 @@ from mirar.pipelines.winter.models import (
     Raw,
     Source,
     Stack,
+    SuperCandidate,
+    SuperDiff,
+    SuperSource,
+    SuperStack,
 )
 from mirar.pipelines.winter.validator import (
     masked_images_rejector,
@@ -604,6 +608,7 @@ stack_stacks = [
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
     ImageSaver(output_dir_name="final_stack_of_stacks"),
+    DatabaseImageInserter(db_table=SuperStack, duplicate_protocol="replace"),
 ]
 
 # Image subtraction
