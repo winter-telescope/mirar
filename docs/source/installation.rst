@@ -61,11 +61,24 @@ This method is recommended if you want to contribute to the code.
 Installing python dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Next you need to actually install mirar. We use `poetry <https://python-poetry.org/>`_ to manage dependencies:
+Next you need to actually install mirar. We use `poetry <https://python-poetry.org/>`_ to manage dependencies.
+Firstly ensure you have poetry installed, in an isolated environment:
 
 .. code-block:: bash
 
-    pip install poetry
+    conda deactivate
+    conda create -n pipx python=3.11
+    conda activate pipx
+    pip install pipx
+    pipx install poetry
+    pipx ensurepath
+
+
+Then exit the terminal and open a new one. You should now be able to run poetry commands.
+You can now install the dependencies. Navigate to the root of the mirar directory,  and run:
+
+.. code-block:: bash
+    conda activate mirar
     poetry install
 
 Lastly, you need to install the `pre-commit hooks <https://pre-commit.com/>`_ (see :doc:`contributing-guide` for more info about what these do):
