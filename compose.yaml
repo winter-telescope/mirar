@@ -3,9 +3,9 @@ services:
     image: robertdstein/mirar:latest
     platform: linux/amd64
     depends_on:
-      - db
-    profiles:
-      - manual
+      db:
+        condition: "service_started"
+        required: false
     env_file:
       - .env
     environment:
@@ -19,7 +19,6 @@ services:
       - ${OUTPUT_DATA_DIR:?error}:/outputdata
       - ${REF_DATA_DIR:-/dev/null/}:/refdata
       - ${ANET_INDEX_DIR:-/dev/null/}:/anetindex
-#    entrypoint: bash
   db:
     image: robertdstein/q3cdocker:v1.0.0
     platform: linux/amd64
@@ -33,6 +32,8 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    profiles:
+      - database
 
 volumes:
   pgdata:

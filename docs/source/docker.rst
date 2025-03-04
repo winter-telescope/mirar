@@ -69,12 +69,10 @@ You must create a `.env` file by copying the `env.example` file in the mirar rep
 At a minimum, you will need to set the following environment variables:
 * RAW_DATA_DIR: The location of the data on your machine. This is where the pipeline will read the input files.
 * OUTPUT_DATA_DIR: The location of the data on your machine. This is where the pipeline will write the output files. It can be the same as RAW_DATA_DIR.
-* PG_ADMIN_USER: The username for the postgres admin user. Even if you only use a pipeline without psql integration, you must set this to some value.
-* PG_ADMIN_PWD: The password for the postgres admin user. Even if you only use a pipeline without psql integration, you must set this to some value.
 
 Other environment variables that are required will depend on the specific pipeline. For example, many pipelines use Astromertry.net, and will therefore require the ANET_INDEX_DIR environment variable to be set.
 
-Step 6: Run the docker-compose up command
+Step 6: Run mirar via docker-compose
 
 You can run the docker-compose up command by running the following command:
 
@@ -82,9 +80,21 @@ You can run the docker-compose up command by running the following command:
 docker-compose run --rm mirar-pipeline -p winter -n 20250116 -c log
 ```
 
-This will remove the container after execution. However, the database will persist. You can modify the pipeline command to suit your needs. See the full list of commands in the mirar documentation.
+This will remove the container after execution.
 
-The database is configured to be accessible on your machine via port 5433.
+Step 6b (Optional): Run mirar via docker-compose with postgres integration
+
+Some pipelines have integration with a postgres database. To use them, you must first specify the postgres admin credentials using your .env file.
+
+Once this is done, you can instead use the following command to run mirar and spin up a database in the background:
+
+```
+docker-compose --profile database run --rm mirar-pipeline -p wasp -n 20250116 -c log
+```
+
+Though the main container will be removed after execution, the database will persist.
+
+The database is configured to be accessible on your local machine via port 5433. You can
 You can bring the database up and down manually with the following commands:
 
 ```
