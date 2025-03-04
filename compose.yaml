@@ -1,8 +1,7 @@
-version: '0.20.0'
-
 services:
   mirar-pipeline:
-    image: winter-telescope/mirar:v0.20.0
+    image: robertdstein/mirar:latest
+    platform: linux/amd64
     depends_on:
       - db
     profiles:
@@ -22,7 +21,8 @@ services:
       - ${ANET_INDEX_DIR:-/dev/null/}:/anetindex
 #    entrypoint: bash
   db:
-    image: winter-telescope/q3c:latest
+    image: robertdstein/q3cdocker:v1.0.0
+    platform: linux/amd64
     restart: always
     env_file:
       - .env

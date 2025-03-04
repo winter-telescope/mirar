@@ -23,30 +23,66 @@ Important environment variables that must be set:
 The following environment variables are often needed:
 * ANET_INDEX_DIR: The location of the anet index on your machine. This is where the pipeline will read the anet index files.
 
+Installation
+------------
 
-Commands to run
-----------------------
+Step 1: Install Docker
 
-To build or rebuild the images, run the following command:
+Docker is a platform for developing, shipping, and running applications in containers. You can download Docker from the following link: https://docs.docker.com/get-docker/`
+
+Step 2: Install Docker Compose
+
+Docker Compose is a tool for defining and running multi-container Docker applications. You can download Docker Compose from the following link: https://docs.docker.com/compose/install/
+
+Step 3: Ensure that Docker is running
+
+You can check if Docker is running by running the following command:
 
 ```
-docker build --progress=plain --platform=linux/amd64 -t winter-telescope/mirar:v0.20.0 .
+docker --version
 ```
 
-and:
+If not, you should start Docker.
+
+Step 4: Clone the mirar repository
+
+You can clone the mirar repository by running the following command:
 
 ```
-docker build --progress=plain --platform=linux/amd64 -t winter-telescope/mirar-db:v0.20.0 .
+git clone git@github.com:winter-telescope/mirar.git
 ```
 
-To reduce data:
+Step 4b (Optional): Build the Docker images
+
+You can build a docker image, using your local copy of the mirar repository, by running the following command:
+
+```
+docker build --progress=plain --platform=linux/amd64 -t winter-telescope/mirar:latest .
+```
+
+If you want to edit the code, you should build the image afterwards. Expect building to take a few minutes. If you only want to run the latest version of the code, you can skip this step. Instead, the latest version of the pipeline will be pulled from DockerHub.
+
+Step 5: Create a .env file
+
+You must create a `.env` file by copying the `env.example` file in the mirar repository.
+
+At a minimum, you will need to set the following environment variables:
+* RAW_DATA_DIR: The location of the data on your machine. This is where the pipeline will read the input files.
+* OUTPUT_DATA_DIR: The location of the data on your machine. This is where the pipeline will write the output files. It can be the same as RAW_DATA_DIR.
+* PG_ADMIN_USER: The username for the postgres admin user. Even if you only use a pipeline without psql integration, you must set this to some value.
+* PG_ADMIN_PWD: The password for the postgres admin user. Even if you only use a pipeline without psql integration, you must set this to some value.
+
+Other environment variables that are required will depend on the specific pipeline. For example, many pipelines use Astromertry.net, and will therefore require the ANET_INDEX_DIR environment variable to be set.
+
+Step 6: Run the docker-compose up command
+
+You can run the docker-compose up command by running the following command:
 
 ```
 docker-compose run --rm mirar-pipeline -p winter -n 20250116 -c log
 ```
 
-You do not need to explicitly start up the database, since the `docker-compose run` command will start it up for you.
-This will remove the container after execution. However, the database will persist.
+This will remove the container after execution. However, the database will persist. You can modify the pipeline command to suit your needs. See the full list of commands in the mirar documentation.
 
 The database is configured to be accessible on your machine via port 5433.
 You can bring the database up and down manually with the following commands:
