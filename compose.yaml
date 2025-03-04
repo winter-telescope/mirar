@@ -1,0 +1,39 @@
+services:
+  mirar-pipeline:
+    image: robertdstein/mirar:latest
+    platform: linux/amd64
+    depends_on:
+      db:
+        condition: "service_started"
+        required: false
+    env_file:
+      - .env
+    environment:
+      DB_HOSTNAME: db
+      RAW_DATA_DIR: /rawdata
+      OUTPUT_DATA_DIR: /outputdata
+      REF_DATA_DIR: /refdata
+      ANET_INDEX_DIR: /anetindex
+    volumes:
+      - ${RAW_DATA_DIR:?error}:/rawdata
+      - ${OUTPUT_DATA_DIR:?error}:/outputdata
+      - ${REF_DATA_DIR:-/dev/null/}:/refdata
+      - ${ANET_INDEX_DIR:-/dev/null/}:/anetindex
+  db:
+    image: robertdstein/q3cdocker:v1.0.0
+    platform: linux/amd64
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${PG_ADMIN_USER:-postgres}
+      - POSTGRES_PASSWORD=${PG_ADMIN_PWD:?error}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    profiles:
+      - database
+
+volumes:
+  pgdata:

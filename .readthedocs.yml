@@ -12,7 +12,7 @@ build:
     post_install:
       # Install dependencies with 'docs' dependency group
       # https://python-poetry.org/docs/managing-dependencies/#dependency-groups
-      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with dev
 
     pre_build:
       # Generate latest various flowcharts
@@ -24,6 +24,7 @@ build:
 sphinx:
   builder: html
   fail_on_warning: false
+  configuration: docs/source/conf.py
 
 formats:
   - epub

@@ -39,13 +39,13 @@ default_dir = Path.home()
 _base_raw_dir: str | None = os.getenv("RAW_DATA_DIR")
 
 if _base_raw_dir is None:
-    warning = (
+    WARNING_MSG = (
         "No raw data directory specified. "
         "Run 'export RAW_DATA_DIR=/path/to/data' to set. "
         "The raw data directory will need to be specified manually for path function."
         f"The raw directory is being set to {default_dir}."
     )
-    logger.info(warning)
+    logger.info(WARNING_MSG)
     base_raw_dir: Path = default_dir
 else:
     base_raw_dir = Path(_base_raw_dir)
@@ -53,19 +53,19 @@ else:
 _base_output_dir = os.getenv("OUTPUT_DATA_DIR")
 
 if _base_output_dir is None:
-    warning = (
+    WARNING_MSG = (
         f"No output data directory specified. "
         f"Run 'export OUTPUT_DATA_DIR=/path/to/data' to set this. "
         f"The output directory is being set to {default_dir}."
     )
-    logger.info(warning)
+    logger.info(WARNING_MSG)
     base_output_dir = default_dir
 else:
     base_output_dir = Path(_base_output_dir)
 
 # Set up special directories
 TEMP_DIR = base_output_dir.joinpath(f"{PACKAGE_NAME}_temp")
-TEMP_DIR.mkdir(exist_ok=True)
+TEMP_DIR.mkdir(exist_ok=True, parents=True)
 
 RAW_IMG_SUB_DIR = "raw"
 CAL_OUTPUT_SUB_DIR = "calibration"

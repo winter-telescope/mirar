@@ -79,4 +79,4 @@ class Gaia2MassVizier(BaseGaia2Mass, VizierCatalog):
         :param query:
         :return:
         """
-        return join(query[0], query[1], keys="_2MASS")
+        return join(query[0], query[1], keys="2MASS")
