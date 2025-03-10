@@ -3552,14 +3552,14 @@ xml = ["lxml (>=4.9.2)"]
 
 [[package]]
 name = "pandas-stubs"
-version = "2.2.3.241126"
+version = "2.2.3.250308"
 description = "Type annotations for pandas"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "pandas_stubs-2.2.3.241126-py3-none-any.whl", hash = "sha256:74aa79c167af374fe97068acc90776c0ebec5266a6e5c69fe11e9c2cf51f2267"},
-    {file = "pandas_stubs-2.2.3.241126.tar.gz", hash = "sha256:cf819383c6d9ae7d4dabf34cd47e1e45525bb2f312e6ad2939c2c204cb708acd"},
+    {file = "pandas_stubs-2.2.3.250308-py3-none-any.whl", hash = "sha256:a377edff3b61f8b268c82499fdbe7c00fdeed13235b8b71d6a1dc347aeddc74d"},
+    {file = "pandas_stubs-2.2.3.250308.tar.gz", hash = "sha256:3a6e9daf161f00b85c83772ed3d5cff9522028f07a94817472c07b91f46710fd"},
 ]
 
 [package.dependencies]
@@ -3646,7 +3646,6 @@ description = "An Astropy package for source detection and photometry"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "python_version < \"3.11\""
 files = [
     {file = "photutils-2.0.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f2cb47f72c0661e2f71280899a28daf5bf820e1637618566df86be50b492faf2"},
     {file = "photutils-2.0.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:0c2ecbf659d2a7e72622486ef006fe95eb77bd23933a342a92f0d0d169680000"},
@@ -3675,40 +3674,6 @@ scipy = ">=1.10"
 [package.extras]
 all = ["bottleneck", "gwcs (>=0.19)", "matplotlib (>=3.7)", "rasterio", "regions (>=0.9)", "scikit-image (>=0.20)", "shapely", "tqdm"]
 docs = ["photutils[all]", "sphinx", "sphinx-astropy[confv2] (>=1.9.1)", "sphinx-design", "tomli ; python_version < \"3.11\""]
-test = ["pytest-astropy (>=0.11)", "pytest-xdist (>=2.5.0)"]
-
-[[package]]
-name = "photutils"
-version = "2.2.0"
-description = "An Astropy package for source detection and photometry"
-optional = false
-python-versions = ">=3.11"
-groups = ["main"]
-markers = "python_version >= \"3.11\""
-files = [
-    {file = "photutils-2.2.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:3cd722c993bda135ea84404391ffd214cba22609ceadf1dc1a73f0d36ce123f5"},
-    {file = "photutils-2.2.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:624a44dab6d77f3c8f8a505d768cc4c0102fa4eace41258e53afd9916a6a0b84"},
-    {file = "photutils-2.2.0-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:752fc5da64b7ba3e181ed37275ea5b418685ce417472bbec78fa56d058e0ab6f"},
-    {file = "photutils-2.2.0-cp311-cp311-win_amd64.whl", hash = "sha256:760df044bd2841e5967f8e21d9b98025a9169e48c69c3b94ae93aa7d626d06be"},
-    {file = "photutils-2.2.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:088600af5a6608accb26095d499ea3f897ffb112432dd792f91da91567b16886"},
-    {file = "photutils-2.2.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a7c0e67d91b9bb2c2d8836ae789b0a6d6ab221011578e5ba0f75369b1197f20a"},
-    {file = "photutils-2.2.0-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4367095feaeb3f1048b0ca34bfc2fa233dfff1403af0d7795c4101be99585d1b"},
-    {file = "photutils-2.2.0-cp312-cp312-win_amd64.whl", hash = "sha256:2ec551ea83c90b7d9c2d3bd96e170fb62c62bd11e276042f4a7b8faab0734680"},
-    {file = "photutils-2.2.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:3f739cf5073ee400821267114a1d5ecdbef96ad482ec7fa079a9cf6ce5c094b8"},
-    {file = "photutils-2.2.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:66bd1c215f57c27be74fb43a1163c5b4761a22e7dbb25810e180360bb9e4bf93"},
-    {file = "photutils-2.2.0-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d3930e552416d77eb8d8d3db05d1f7743672398d1502ea0cbe17d43a337ca9d5"},
-    {file = "photutils-2.2.0-cp313-cp313-win_amd64.whl", hash = "sha256:cbd94d51035946ac61e6b9de80a7cc7ea9a8b9ff85d69a56e9f09c9ce463a85d"},
-    {file = "photutils-2.2.0.tar.gz", hash = "sha256:eb5b67f335df594c954605c9bcfc6808cc66361909b89776c3c95d920c722bc0"},
-]
-
-[package.dependencies]
-astropy = ">=5.3"
-numpy = ">=1.24"
-scipy = ">=1.10"
-
-[package.extras]
-all = ["bottleneck", "gwcs (>=0.20)", "matplotlib (>=3.7)", "rasterio", "regions (>=0.9)", "scikit-image (>=0.20)", "shapely", "tqdm"]
-docs = ["photutils[all]", "sphinx", "sphinx-astropy[confv2] (>=1.9.1)", "sphinx_design"]
 test = ["pytest-astropy (>=0.11)", "pytest-xdist (>=2.5.0)"]
 
 [[package]]
