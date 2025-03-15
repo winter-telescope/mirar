@@ -64,7 +64,9 @@ At a minimum, you will need to set the following environment variables:
 - RAW_DATA_DIR: The location of raw data on your machine. This is where the pipeline will read the input files.
 - OUTPUT_DATA_DIR: The location for mirar to output data on your machine. It can be the same as RAW_DATA_DIR.
 
-Other environment variables that are required will depend on the specific pipeline. For example, many pipelines use Astromertry.net, and will therefore require the ANET_INDEX_DIR environment variable to be set.
+Other environment variables that are required will depend on the specific pipeline.
+For example, many pipelines use Astromertry.net, and will therefore require the ANET_INDEX_DIR environment variable to be set.
+You will need to follow the instructions in :doc:`installation` for downloading these files.
 
 Step 6: Run mirar via docker-compose
 .....................................
