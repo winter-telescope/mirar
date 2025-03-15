@@ -1,11 +1,14 @@
 Installation
 ============
 
+You can either install mirar on your machine (using the steps below)
+or you can alternatively follow the separate instructions for docker :doc:`docker`.
 
 Installing the package
 ----------------------
 
 You need to install the package itself. The code is built using python.
+
 We suggest creating a dedicated `conda <https://www.anaconda.com/products/distribution>`_ environment, but you could also use a virtual environment.
 
 Prerequisite: Creating a conda environment

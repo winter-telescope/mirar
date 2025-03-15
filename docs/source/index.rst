@@ -7,7 +7,7 @@ It was created by `Robert Stein <https://robertdstein.github.io/>`_ and
 
 * How does mirar work? Check out :doc:`about`.
 * How is mirar designed? See :doc:`design`.
-* How can you install mirar? You can find instructions at :doc:`installation`.
+* How can you install mirar? You can find instructions at :doc:`installation` or :doc:`docker`.
 * How can you use mirar? Have a look at :doc:`usage`, where there is a guide with examples.
 * Want to use mirar for your own telescope? Great! Have a look at our :doc:`contributing-guide`. This also describes what to do if you find a bug or want to request a new feature.
 * What does x piece of mirar do? See the full documentation at :doc:`modules`.
@@ -28,6 +28,7 @@ Contents
 
     about
     installation
+    docker
     design
     usage
     contributors
