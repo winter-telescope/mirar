@@ -284,7 +284,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 1
+BOARD_ID = 4
 select_subset = [
     ImageSelector(
         ("BOARD_ID", str(BOARD_ID)),
@@ -1017,15 +1017,7 @@ full_reduction = (
 full_reduction_no_dome_flats = (
     non_linear_correction
     + dark_calibrate
-<<<<<<< HEAD
-<<<<<<< HEAD
     + sky_flat_calibrate  # Only sky flats
-=======
-    + sky_flats  # Only sky flats
->>>>>>> c54e57d6 (Update to skyflat config)
-=======
-    + sky_flat_calibrate  # Only sky flats
->>>>>>> d80b79c5 (Fallback old flat mode)
     + fourier_filter
     + process_and_stack
     + photcal_and_export
