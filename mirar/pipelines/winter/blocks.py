@@ -2,6 +2,8 @@
 Module with blocks for WINTER data reduction
 """
 
+from mirar.catalog.kowalski import PS1, TMASS
+
 # pylint: disable=duplicate-code
 
 import os
@@ -52,6 +54,7 @@ from mirar.paths import (
     base_output_dir,
 )
 from mirar.pipelines.winter.config import (
+    prv_candidate_cols,
     psfex_path,
     scamp_config_path,
     sextractor_astrometry_config,
@@ -60,22 +63,41 @@ from mirar.pipelines.winter.config import (
     sextractor_photometry_psf_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
+
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
+    mask_stamps_around_bright_stars,
     winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
     winter_fourier_filtered_image_generator,
+    winter_candidate_annotator_filterer,
+    winter_candidate_avro_fields_calculator,
+    winter_candidate_quality_filterer,
+    winter_fourier_filtered_image_generator,
+    winter_history_deprecated_constraint,
+    winter_imsub_catalog_purifier,
+    winter_new_source_updater,
     winter_photcal_color_columns_generator,
     winter_photometric_catalog_generator,
     winter_photometric_catalogs_purifier,
     winter_photometric_ref_catalog_namer,
+    winter_reference_generator,
+    winter_reference_image_resampler_for_zogy,
+    winter_reference_psf_phot_sextractor,
+    winter_reference_psfex,
+    winter_reference_sextractor,
+    winter_skyportal_annotator,
+    winter_source_entry_updater,
+
     winter_stackid_annotator,
 )
 from mirar.pipelines.winter.load_winter_image import (
     annotate_winter_subdet_headers,
     get_raw_winter_mask,
+    load_test_winter_image,
     load_winter_mef_image,
     load_winter_stack,
 )
@@ -84,6 +106,16 @@ from mirar.pipelines.winter.models import (
     Exposure,
     FirstPassAstrometryStat,
     Raw,
+    DEFAULT_FIELD,
+    NAME_START,
+    SOURCE_PREFIX,
+    AstrometryStat,
+    Candidate,
+    Diff,
+    Exposure,
+    FirstPassAstrometryStat,
+    Raw,
+    Source,
     Stack,
 )
 from mirar.pipelines.winter.validator import (
@@ -92,11 +124,13 @@ from mirar.pipelines.winter.validator import (
     winter_dark_oversubtraction_rejector,
 )
 from mirar.processors.astromatic import Scamp
+from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.scamp.scamp import SCAMP_HEADER_KEY
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
 )
 from mirar.processors.astromatic.sextractor.sextractor import (
+    Sextractor,
     sextractor_checkimg_map,
 )
 from mirar.processors.astromatic.swarp import ReloadSwarpComponentImages
@@ -104,16 +138,24 @@ from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.astrometry.utils import AstrometryFromFile
 from mirar.processors.astrometry.validate import AstrometryStatsWriter
+from mirar.processors.avro import IPACAvroExporter
 from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database.database_inserter import (
     DatabaseImageBatchInserter,
+    DatabaseImageInserter,
+    DatabaseSourceInserter,
+)
+from mirar.processors.database.database_selector import (
+    SelectSourcesWithMetadata,
+    SingleSpatialCrossmatchSource,
 )
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.flat import FlatCalibrator, SkyFlatCalibrator
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
+    MaskPixelsFromFunction,
     MaskPixelsFromPathInverted,
     MaskPixelsFromWCS,
     WriteMaskedCoordsToFile,
@@ -186,13 +228,35 @@ from mirar.processors.sources import (
     ZOGYSourceDetector,
 )
 from mirar.processors.split import SUB_ID_KEY, SwarpImageSplitter
+
+from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
+from mirar.processors.reference import GetReferenceImage, ProcessReference
+from mirar.processors.skyportal.skyportal_candidate import SkyportalCandidateUploader
+from mirar.processors.sources import (
+    CandidateNamer,
+    CustomSourceTableModifier,
+    ForcedPhotometryDetector,
+    SourceLoader,
+    SourceWriter,
+    ZOGYSourceDetector,
+)
+from mirar.processors.split import SUB_ID_KEY, SplitImage, SwarpImageSplitter
 from mirar.processors.utils import (
+    CustomImageBatchModifier,
     HeaderAnnotator,
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
+    ImagePlotter,
+    ImageRejector,
     ImageSaver,
 )
+from mirar.processors.xmatch import XMatch
+from mirar.processors.zogy.reference_aligner import AlignReference
+from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
+
+from mirar.processors.utils.cal_hunter import CalHunter
+from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.xmatch import XMatch
 from mirar.processors.zogy.reference_aligner import AlignReference
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
@@ -827,13 +891,23 @@ plot_stack = [
     ),
 ]
 
+# Reference building
+refbuild = [
+    GetReferenceImage(ref_image_generator=winter_reference_generator),
+    ImageSaver(output_dir_name="stacked_ref"),
+]
+
+# Image subtraction
 split_stack = [
-    ImageRebatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
     SwarpImageSplitter(swarp_config_path=swarp_config_path, n_x=2, n_y=1),
     ImageSaver(output_dir_name="split_stacks"),
 ]
 
 imsub = [
+    ImageDebatcher(),
+    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -882,7 +956,9 @@ load_sub = [
     ImageBatcher(BASE_NAME_KEY),
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
     ImageSaver(output_dir_name="subtract"),
+
 ]
+
 detect_candidates = [
     ZOGYSourceDetector(
         output_sub_dir="subtract",
@@ -1133,6 +1209,21 @@ reduce_unpacked_subset = (
 )
 
 reduce = unpack_all + full_reduction
+
+process_candidates = crossmatch_candidates + name_candidates + avro_export
+
+load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
+
+send_to_skyportal = [
+    CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
+    SkyportalCandidateUploader(**winter_fritz_config),
+]
+
+realtime = extract_all + mask_and_split + save_raw + full_reduction
+
+full = realtime + imsub
+
+candidates = detect_candidates + process_candidates
 
 reftest = (
     unpack_subset
