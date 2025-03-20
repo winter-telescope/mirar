@@ -26,6 +26,10 @@ from mirar.pipelines.winter.models._filters import (
     FiltersTable,
     populate_filters,
 )
+from mirar.pipelines.winter.models._fp_astrometry_stats import (
+    FirstPassAstrometryStat,
+    FirstPassAstrometryStatsTable,
+)
 from mirar.pipelines.winter.models._img_type import (
     ALL_ITID,
     ImgType,
