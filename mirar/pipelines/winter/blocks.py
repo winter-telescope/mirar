@@ -1131,11 +1131,7 @@ perform_astrometry = load_calibrated + fourier_filter + astrometry
 
 lab_flat_calibrate = [
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    ImageRebatcher(
-        [
-            "BOARD_ID",
-        ]
-    ),
+    ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
     MasterFlatCalibrator(
         master_image_path_generator=winter_lab_master_flat_path_generator,
     ),
