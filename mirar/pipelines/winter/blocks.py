@@ -403,28 +403,31 @@ dark_calibrate = [
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
 ]
 
-flat_calibrate = [
+mask_flats = [
     ImageRebatcher(["SUBCOORD", "FILTER"]),
-    # ImageSelector((OBSCLASS_KEY, ["science"])),
-    # ImageRebatcher(
-    #     [
-    #         "BOARD_ID",
-    #         "FILTER",
-    #         "SUBCOORD",
-    #         "GAINCOLT",
-    #         "GAINCOLB",
-    #         "GAINROW",
-    #         TARGET_KEY,
-    #     ]
-    # ),
-    # FlatCalibrator(
-    #     cache_sub_dir="sky_dither_mask",
-    #     select_flat_images=select_winter_sky_flat_images,
-    #     # select_flat_images=select_winter_dome_flats_images,
-    #     flat_mode="pixel",
-    #     try_load_cache=False,
-    # ),
-    # ImageSaver(output_dir_name="domeflatcal"),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
+    ImageRebatcher(
+        [
+            "BOARD_ID",
+            "FILTER",
+            "SUBCOORD",
+            "GAINCOLT",
+            "GAINCOLB",
+            "GAINROW",
+            TARGET_KEY,
+        ]
+    ),
+    FlatCalibrator(
+        cache_sub_dir="sky_dither_mask",
+        select_flat_images=select_winter_sky_flat_images,
+        # select_flat_images=select_winter_dome_flats_images,
+        flat_mode="pixel",
+        try_load_cache=False,
+    ),
+    ImageSaver(output_dir_name="domeflatcal"),
+]
+
+flat_calibrate = mask_flats + [
     ImageRebatcher(
         [
             "BOARD_ID",
@@ -1045,19 +1048,6 @@ full_reduction = (
     + photcal_and_export
 )
 
-reduce_single = (
-    load_and_export_unpacked
-    # + non_linear_correction
-    + dark_calibrate
-    + flat_calibrate
-    # + fourier_filter
-    + astrometry
-    + validate_astrometry
-    + photcal
-    + process_and_stack
-    + photcal
-)
-
 full_reduction_no_dome_flats = (
     non_linear_correction
     + dark_calibrate
@@ -1290,20 +1280,70 @@ first_pass_processing = (
     load_unpacked
     + dark_calibrate
     + first_pass_flat_calibrate
-    + fourier_filter
+    # + fourier_filter
     + first_pass_stacking
+)
+
+two_pass_flatfield_and_astrometry = (
+    first_pass_flat_calibrate
+    # + fourier_filter
+    + first_pass_stacking
+    + second_pass_calibration
 )
 
 full_reduction_two_pass = (
     dark_calibrate
-    + first_pass_flat_calibrate
-    + fourier_filter
-    + first_pass_stacking
-    + second_pass_calibration
-    + fourier_filter
+    + two_pass_flatfield_and_astrometry
     + second_pass_stack
     + photcal_and_export
 )
+
+reduce_single = (
+    load_and_export_unpacked
+    + non_linear_correction
+    + dark_calibrate
+    # Not two pass
+    # + flat_calibrate
+    # Do 2 pass
+    + two_pass_flatfield_and_astrometry
+    + mask_flats
+    # + astrometry
+    + validate_astrometry
+    + photcal
+    + process_and_stack
+    + photcal
+)
+
+c2mnlc = (
+    load_and_export_unpacked
+    + non_linear_correction
+    + dark_calibrate
+    # Not two pass
+    # + flat_calibrate
+    # Do 2 pass
+    + two_pass_flatfield_and_astrometry
+    + mask_flats
+    # + astrometry
+    + validate_astrometry
+    + photcal
+    + process_and_stack
+    + photcal
+)
+
+# full_reduction_two_pass = (
+#     dark_calibrate
+#     + first_pass_flat_calibrate
+#     # + fourier_filter
+#     + first_pass_stacking
+#     + second_pass_calibration
+#     + astrometry
+#     + validate_astrometry
+#     + photcal
+#
+#     # + fourier_filter
+#     + second_pass_stack
+#     + photcal_and_export
+# )
 
 full_reduction_lab_flats = (
     non_linear_correction
