@@ -261,6 +261,7 @@ def clean_header(header: fits.Header) -> fits.Header:
         ), f"Board ID {header['BOARD_ID']} not in {all_winter_board_ids}"
     except KeyError:
         pass
+    header["LABFLATV"] = "0.1"
 
     return header
 
