@@ -1309,11 +1309,23 @@ full_reduction_two_pass = (
     + photcal_and_export
 )
 
-reduce_two_pass = unpack_all + full_reduction_two_pass
+full_reduction_lab_flats = (
+    non_linear_correction
+    + dark_calibrate
+    + lab_flat_calibrate
+    + flat_calibrate
+    + fourier_filter
+    + process_and_stack
+    + photcal_and_export
+)
 
 reduce_two_pass = unpack_all + full_reduction_two_pass
 
 reduce_unpacked_two_pass = load_and_export_unpacked + full_reduction_two_pass
+
+reduce_lab_flats = unpack_all + full_reduction_lab_flats
+
+reduce_unpacked_lab_flats = load_and_export_unpacked + full_reduction_lab_flats
 
 second_pass_processing = (
     load_astrometried + stack_dithers + second_pass_calibration + second_pass_stack
