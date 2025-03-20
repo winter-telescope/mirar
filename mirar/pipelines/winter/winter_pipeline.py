@@ -4,6 +4,8 @@ Module with pipeline for building reference images in the IR from WFAU
 
 import logging
 
+from winternlc import check_for_files
+
 from mirar.data import Image
 from mirar.downloader.caltech import download_via_ssh
 from mirar.io import open_mef_image
@@ -37,6 +39,7 @@ from mirar.pipelines.winter.blocks import (
     realtime,
     reduce,
     reduce_no_dome_flats,
+    reduce_single,
     reduce_unpacked,
     reduce_unpacked_subset,
     refbuild,
@@ -70,6 +73,7 @@ class WINTERPipeline(Pipeline):
         "unpack_subset": unpack_subset,
         "unpack_all": unpack_all,
         "detrend_unpacked": detrend_unpacked,
+        "reduce_single": reduce_single,
         "imsub": load_final_stack + imsub,
         "reduce": reduce,
         "reduce_unpacked": reduce_unpacked,
@@ -144,3 +148,5 @@ class WINTERPipeline(Pipeline):
 
     def set_up_pipeline(self):
         set_up_winter_databases()
+        logger.info("Checking that NLC files are present")
+        check_for_files()

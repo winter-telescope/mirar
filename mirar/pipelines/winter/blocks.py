@@ -5,7 +5,6 @@ Module for WINTER data reduction
 # pylint: disable=duplicate-code
 import os
 
-import numpy as np
 from winterrb.model import WINTERNet
 
 from mirar.catalog.kowalski import PS1, PS1STRM, TMASS, ZTF, Gaia, GaiaBright, PS1SGSc
@@ -363,7 +362,7 @@ load_and_export_unpacked = load_unpacked + export_unpacked
 
 non_linear_correction = [
     ImageRebatcher(BASE_NAME_KEY),
-    CustomImageBatchModifier(apply_winter_nlc),
+    CustomImageBatchModifier(apply_winter_nlc),  # FIXME: Add back in
     ImageSaver(output_dir_name="nlc_corrected"),
 ]
 
@@ -383,14 +382,26 @@ dark_calibrate = [
 
 flat_calibrate = [
     ImageRebatcher(["SUBCOORD", "FILTER"]),
-    FlatCalibrator(
-        cache_sub_dir="calibration_flats",
-        select_flat_images=select_winter_dome_flats_images,
-        cache_image_name_header_keys=["FILTER", "BOARD_ID"],
-        flat_mode="pixel",
-    ),
-    ImageSelector((OBSCLASS_KEY, ["science"])),
-    ImageSaver(output_dir_name="domeflatcal"),
+    # ImageSelector((OBSCLASS_KEY, ["science"])),
+    # ImageRebatcher(
+    #     [
+    #         "BOARD_ID",
+    #         "FILTER",
+    #         "SUBCOORD",
+    #         "GAINCOLT",
+    #         "GAINCOLB",
+    #         "GAINROW",
+    #         TARGET_KEY,
+    #     ]
+    # ),
+    # FlatCalibrator(
+    #     cache_sub_dir="sky_dither_mask",
+    #     select_flat_images=select_winter_sky_flat_images,
+    #     # select_flat_images=select_winter_dome_flats_images,
+    #     flat_mode="pixel",
+    #     try_load_cache=False,
+    # ),
+    # ImageSaver(output_dir_name="domeflatcal"),
     ImageRebatcher(
         [
             "BOARD_ID",
@@ -402,11 +413,13 @@ flat_calibrate = [
             TARGET_KEY,
         ]
     ),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
     FlatCalibrator(
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
         # flat_mode="structure",
         flat_mode="median",
+        try_load_cache=False,
     ),
     ImageSaver(output_dir_name="allskyflatcal"),
     ImageRebatcher([BASE_NAME_KEY]),
@@ -557,7 +570,7 @@ remask = [
     ImageSaver(output_dir_name="stack_masks"),
 ]
 
-photcal_and_export = [
+photcal = [
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
@@ -597,6 +610,9 @@ photcal_and_export = [
         crossmatch_radius_arcsec=5.0,
     ),
     ImageSaver(output_dir_name="final", compress=False),
+]
+
+photcal_and_export = photcal + [
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
     ImageDatabaseMultiEntryUpdater(
         sequence_key="rawid",
@@ -617,6 +633,7 @@ photcal_and_export = [
         ],
     ),
 ]
+
 
 # Stack stacks together
 
@@ -955,25 +972,10 @@ focus_subcoord = [
     HeaderAnnotator(input_keys=["BOARD_ID"], output_key="SUBDETID"),
 ]
 
-from astropy.io import fits
-
-
-def apply_winter_bad_pixel_mask(batch):
-    mask = fits.getdata(
-        "/Users/viraj/winter_data/winter/20250114_nlc/smooth_bad_pixel_mask_darkcal_nlc_4_0_0.fits"
-    )
-    for image in batch:
-        data = image.get_data()
-        data[mask > 0.0] = np.nan
-        image.set_data(data)
-
-    return batch
-
 
 load_detrended = [
     ImageLoader(input_sub_dir="skyflatcal_manual"),
     ImageBatcher(BASE_NAME_KEY),
-    CustomImageBatchModifier(apply_winter_bad_pixel_mask),
 ]
 
 # Combinations of different blocks, to be used in configurations
@@ -998,6 +1000,19 @@ full_reduction = (
     + fourier_filter
     + process_and_stack
     + photcal_and_export
+)
+
+reduce_single = (
+    load_and_export_unpacked
+    # + non_linear_correction
+    + dark_calibrate
+    + flat_calibrate
+    # + fourier_filter
+    + astrometry
+    + validate_astrometry
+    + photcal
+    + process_and_stack
+    + photcal
 )
 
 full_reduction_no_dome_flats = (
@@ -1036,7 +1051,9 @@ reftest = (
     + refbuild
 )
 
+
 detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
+# detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
 
 only_ref = load_ref + select_ref + refbuild
 

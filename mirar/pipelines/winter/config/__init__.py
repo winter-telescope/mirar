@@ -118,7 +118,13 @@ winter_cal_requirements = base_winter_cal_requirements + [
         ],
     ),
     CalRequirement(
-        target_name="flat", required_field="FILTER", required_values=["Y", "J", "H"]
+        target_name="flat",
+        required_field="FILTER",
+        required_values=[
+            "Y",
+            "J",
+            # "H"  # FIXME: Add back in
+        ],
     ),
 ]
 
