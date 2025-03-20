@@ -14,6 +14,7 @@ services:
       OUTPUT_DATA_DIR: /outputdata
       REF_DATA_DIR: /refdata
       ANET_INDEX_DIR: /anetindex
+      WINTERNLC_DIR: /outputdata/winternlc
     volumes:
       - ${RAW_DATA_DIR:?error}:/rawdata
       - ${OUTPUT_DATA_DIR:?error}:/outputdata

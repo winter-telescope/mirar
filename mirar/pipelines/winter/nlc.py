@@ -2,9 +2,13 @@
 Module for applying WINTER non-linear correction to images
 """
 
-from winternlc.non_linear_correction import apply_nlc_single
+import logging
+
+from winternlc import apply_nlc_single, check_for_files
 
 from mirar.data import ImageBatch
+
+logger = logging.getLogger(__name__)
 
 
 def apply_winter_nlc(images: ImageBatch) -> ImageBatch:
@@ -15,7 +19,7 @@ def apply_winter_nlc(images: ImageBatch) -> ImageBatch:
     :param images: ImageBatch to apply non-linear correction to
     :return: Corrected ImageBatch
     """
-
+    logger.debug("Applying WINTER non-linear correction")
     for image in images:
         data = image.get_data()
         header = image.get_header()
