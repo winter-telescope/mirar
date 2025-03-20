@@ -57,6 +57,7 @@ from mirar.pipelines.winter.generator import (
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_imsub_catalog_purifier,
+    winter_lab_master_flat_path_generator,
     winter_new_source_updater,
     winter_photcal_color_columns_generator,
     winter_photometric_catalog_generator,
@@ -123,7 +124,11 @@ from mirar.processors.database.database_inserter import (
 )
 from mirar.processors.database.database_selector import SelectSourcesWithMetadata
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
-from mirar.processors.flat import FlatCalibrator, SkyFlatCalibrator
+from mirar.processors.flat import (
+    FlatCalibrator,
+    MasterFlatCalibrator,
+    SkyFlatCalibrator,
+)
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -367,6 +372,18 @@ dark_calibrate = [
     ImageSaver(output_dir_name="darkcal"),
     ImageSelector((OBSCLASS_KEY, ["science", "flat"])),
     CustomImageBatchModifier(winter_dark_oversubtraction_rejector),
+]
+
+lab_flat_calibrate = [
+    ImageSelector((OBSCLASS_KEY, ["science"])),
+    ImageRebatcher(
+        [
+            "BOARD_ID",
+        ]
+    ),
+    MasterFlatCalibrator(
+        master_image_path_generator=winter_lab_master_flat_path_generator,
+    ),
 ]
 
 flat_calibrate = [
