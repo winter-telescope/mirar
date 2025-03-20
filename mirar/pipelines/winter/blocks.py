@@ -808,15 +808,13 @@ refbuild = [
 
 # Image subtraction
 split_stack = [
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
+    ImageRebatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
     SwarpImageSplitter(swarp_config_path=swarp_config_path, n_x=2, n_y=1),
     ImageSaver(output_dir_name="split_stacks"),
 ]
 
 imsub = [
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
+    ImageRebatcher(["BOARD_ID", "FILTER", TARGET_KEY, "SUBCOORD", "STACKID"]),
     HeaderAnnotator(input_keys=[SUB_ID_KEY], output_key="SUBDETID"),
     ProcessReference(
         ref_image_generator=winter_reference_generator,
@@ -1130,15 +1128,6 @@ reduce = unpack_all + full_reduction
 
 reduce_two_pass = unpack_all + full_reduction_two_pass
 
-process_candidates = crossmatch_candidates + name_candidates + avro_export
-
-load_skyportal = [SourceLoader(input_dir_name="preskyportal")]
-
-send_to_skyportal = [
-    CustomSourceTableModifier(modifier_function=winter_skyportal_annotator),
-    SkyportalCandidateUploader(**winter_fritz_config),
-]
-
 realtime = extract_all + mask_and_split + save_raw + full_reduction
 
 full = realtime + imsub
@@ -1157,13 +1146,6 @@ reftest = (
 detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
 
 detrend_unpacked_firstpass = load_unpacked + dark_calibrate + first_pass_flat_calibrate
-
-
-realtime = extract_all + mask_and_split + save_raw + full_reduction
-
-candidates = detect_candidates + process_candidates
-
-full = realtime + imsub
 
 focus_cals = (
     load_raw
