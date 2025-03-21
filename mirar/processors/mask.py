@@ -47,6 +47,7 @@ class BaseMask(BaseImageProcessor, ABC):
         self,
         batch: ImageBatch,
     ) -> ImageBatch:
+        new_batch = []
         for image in batch:
             data = image.get_data()
             logger.debug(f"Masking {image[BASE_NAME_KEY]}")
@@ -55,6 +56,10 @@ class BaseMask(BaseImageProcessor, ABC):
             if not self.only_write_mask:
                 data[pixels_to_mask] = MASK_VALUE
                 image.set_data(data)
+                logger.debug(
+                    f"Masked {np.sum(pixels_to_mask)}/{pixels_to_mask.size} "
+                    f"pixels in {image[BASE_NAME_KEY]}"
+                )
 
             logger.debug(
                 f"Masked {np.sum(pixels_to_mask)}/{pixels_to_mask.size} pixels "
@@ -76,8 +81,13 @@ class BaseMask(BaseImageProcessor, ABC):
 
                 self.save_fits(mask_image, mask_file_path)
                 image[FITS_MASK_KEY] = mask_file_path.as_posix()
-
-        return batch
+                logger.debug(
+                    f"Saved mask to {mask_file_path} with "
+                    f"{np.sum(mask_data==0)} masked pixels"
+                )
+            new_batch.append(image)
+        new_batch = ImageBatch(new_batch)
+        return new_batch
 
 
 class MaskPixelsFromPath(BaseMask):
@@ -160,6 +170,7 @@ class MaskPixelsFromPathInverted(MaskPixelsFromPath):
         :return: Boolean mask
         """
         mask = super().get_mask(image)
+
         return ~mask
 
 
