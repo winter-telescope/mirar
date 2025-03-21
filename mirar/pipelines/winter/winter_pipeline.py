@@ -60,6 +60,7 @@ from mirar.pipelines.winter.blocks import (
     stack_forced_photometry,
     stack_stacks,
     unpack_all,
+    unpack_all_no_dome_flats,
     unpack_subset,
     unpack_subset_no_dome_flats,
 )
@@ -147,10 +148,10 @@ class WINTERPipeline(Pipeline):
         "detrend": unpack_all + detrend_unpacked,
         "send_with_history": select_history + send_to_skyportal,
         "unpack_subset_no_dome_flats": unpack_subset_no_dome_flats,
-        "c2mnlc_subset_reduce": unpack_subset + c2mnlc,
-        "cmnlc_subset_reduce": unpack_subset + cmnlc,
-        "c2mnlc_full_reduce": unpack_all + c2mnlc,
-        "cmnlc_full_reduce": unpack_all + cmnlc,
+        "c2mnlc_subset_reduce": unpack_subset_no_dome_flats + c2mnlc,
+        "cmnlc_subset_reduce": unpack_subset_no_dome_flats + cmnlc,
+        "c2mnlc_full_reduce": unpack_all_no_dome_flats + c2mnlc,
+        "cmnlc_full_reduce": unpack_all_no_dome_flats + cmnlc,
         "cmnlc_full": unpack_all
         + cmnlc
         + imsub
