@@ -546,7 +546,7 @@ astrometry_scamp = [
         make_checkplots=True,
     ),
     ImageRebatcher(BASE_NAME_KEY),
-    ImageSaver(output_dir_name="post_scamp"),
+    # ImageSaver(output_dir_name="post_scamp"),
 ]
 
 astrometry = (
@@ -1223,6 +1223,7 @@ second_pass_calibration = [
         input_img_dir=base_output_dir,
         load_image=load_winter_stack,
     ),
+    ImageRebatcher([TARGET_KEY, "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         output_sub_dir="sp_stack_source_mask",
         **sextractor_astrometry_config,
