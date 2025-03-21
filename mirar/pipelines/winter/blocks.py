@@ -1330,7 +1330,7 @@ reduce_single = (
 )
 
 c2mnlc = (
-    +non_linear_correction
+    non_linear_correction
     + dark_calibrate
     # Not two pass
     # + flat_calibrate
@@ -1345,7 +1345,7 @@ c2mnlc = (
 )
 
 cmnlc = (
-    +non_linear_correction
+    non_linear_correction
     + dark_calibrate
     + mask_flats
     # Not two pass
