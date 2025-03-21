@@ -609,6 +609,7 @@ remask = [
 ]
 
 photcal = [
+    ImageRebatcher(BASE_NAME_KEY),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     CustomImageBatchModifier(masked_images_rejector),
     Sextractor(
