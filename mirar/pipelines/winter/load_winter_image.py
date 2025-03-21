@@ -105,7 +105,6 @@ def clean_header(header: fits.Header) -> fits.Header:
         header[OBSCLASS_KEY] = "flat"
         header[TARGET_KEY] = "flat"
 
-    logger.debug(f"Header {header[BASE_NAME_KEY]}: {header['MIRCOVER']}")
     # Mirror cover should be open for science images, and open or closed for darks
     if "MIRCOVER" in header.keys():
 
@@ -127,7 +126,7 @@ def clean_header(header: fits.Header) -> fits.Header:
             header[OBSCLASS_KEY] = "corrupted"
 
     else:
-        header["MIRCOVER"] = None
+        header["MIRCOVER"] = "open"
 
     if float(header["EXPTIME"]) >= 1.0:
         header["EXPTIME"] = np.rint(header["EXPTIME"])
