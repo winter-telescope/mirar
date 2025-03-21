@@ -15,7 +15,10 @@ from mirar.pipelines.winter.blocks import (
     avro_broadcast,
     avro_export,
     build_test,
+    c2m_lab_nlc,
     c2mnlc,
+    cm_lab_nlc,
+    cmnlc,
     csvlog,
     detect_candidates,
     detrend_unpacked,
@@ -147,6 +150,9 @@ class WINTERPipeline(Pipeline):
         "send_with_history": select_history + send_to_skyportal,
         "c2mnlc": c2mnlc,
         "unpack_subset_no_dome_flats": unpack_subset_no_dome_flats,
+        "cmnlc": cmnlc,
+        "cm_lab_nlc": cm_lab_nlc,
+        "c2m_lab_nlc": c2m_lab_nlc,
     }
 
     non_linear_level = 40000.0
