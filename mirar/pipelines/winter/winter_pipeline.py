@@ -15,9 +15,7 @@ from mirar.pipelines.winter.blocks import (
     avro_broadcast,
     avro_export,
     build_test,
-    c2m_lab_nlc,
     c2mnlc,
-    cm_lab_nlc,
     cmnlc,
     csvlog,
     detect_candidates,
@@ -148,11 +146,19 @@ class WINTERPipeline(Pipeline):
         "secpass": second_pass_processing,
         "detrend": unpack_all + detrend_unpacked,
         "send_with_history": select_history + send_to_skyportal,
-        "c2mnlc": c2mnlc,
         "unpack_subset_no_dome_flats": unpack_subset_no_dome_flats,
-        "cmnlc": cmnlc,
-        "cm_lab_nlc": cm_lab_nlc,
-        "c2m_lab_nlc": c2m_lab_nlc,
+        "c2mnlc_subset_reduce": unpack_subset + c2mnlc,
+        "cmnlc_subset_reduce": unpack_subset + cmnlc,
+        "cmnlc_full": unpack_all
+        + cmnlc
+        + imsub
+        + detect_candidates
+        + process_candidates,
+        "c2mnlc_full": unpack_all
+        + c2mnlc
+        + imsub
+        + detect_candidates
+        + process_candidates,
     }
 
     non_linear_level = 40000.0
