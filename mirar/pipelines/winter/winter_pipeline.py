@@ -60,6 +60,7 @@ from mirar.pipelines.winter.blocks import (
     stack_stacks,
     unpack_all,
     unpack_subset,
+    unpack_subset_no_dome_flats,
 )
 from mirar.pipelines.winter.config import PIPELINE_NAME, winter_cal_requirements
 from mirar.pipelines.winter.load_winter_image import load_raw_winter_mef
@@ -145,6 +146,7 @@ class WINTERPipeline(Pipeline):
         "detrend": unpack_all + detrend_unpacked,
         "send_with_history": select_history + send_to_skyportal,
         "c2mnlc": c2mnlc,
+        "unpack_subset_no_dome_flats": unpack_subset_no_dome_flats,
     }
 
     non_linear_level = 40000.0
