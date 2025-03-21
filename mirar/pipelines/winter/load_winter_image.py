@@ -105,6 +105,7 @@ def clean_header(header: fits.Header) -> fits.Header:
         header[OBSCLASS_KEY] = "flat"
         header[TARGET_KEY] = "flat"
 
+    logger.debug(f"Header {header[BASE_NAME_KEY]}: {header[OBSCLASS_KEY]}")
     # Mirror cover should be open for science images, and open or closed for darks
     if "MIRCOVER" in header.keys():
 
