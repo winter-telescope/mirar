@@ -443,6 +443,7 @@ flat_calibrate = mask_flats + [
     FlatCalibrator(
         cache_sub_dir="sky_dither_flats",
         select_flat_images=select_winter_sky_flat_images,
+        cache_image_name_header_keys=["FILTER", "BOARD_ID", TARGET_KEY],
         # flat_mode="structure",
         flat_mode="median",
         try_load_cache=False,
@@ -567,6 +568,7 @@ validate_astrometry = [
         write_regions_bool=True,
         output_sub_dir="astrostats",
     ),
+    CustomImageBatchModifier(winter_astrometric_ref_catalog_namer),
     AstrometryStatsWriter(
         ref_catalog_generator=winter_astrometric_ref_catalog_generator,
         image_catalog_purifier=winter_astrostat_catalog_purifier,
@@ -1168,10 +1170,11 @@ first_pass_flat_calibrate = [
         cache_sub_dir="fp_flats",
         select_flat_images=select_winter_sky_flat_images,
         cache_image_name_header_keys=["FILTER", "BOARD_ID", TARGET_KEY],
+        flat_mode="median",
+        try_load_cache=False,
     ),
     ImageSaver(output_dir_name="fp_skyflatcal"),
-    ImageDebatcher(),
-    ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
+    ImageRebatcher([BASE_NAME_KEY]),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -1238,6 +1241,7 @@ second_pass_calibration = [
     #     load_image=load_winter_stack,
     # ),
     ImageRebatcher([TARGET_KEY, "BOARD_ID", "SUBCOORD"]),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     Sextractor(
         output_sub_dir="sp_stack_source_mask",
         **sextractor_astrometry_config,
@@ -1331,12 +1335,12 @@ c2mnlc = (
     # Not two pass
     # + flat_calibrate
     # Do 2 pass
-    + two_pass_flatfield_and_astrometry
     + mask_flats
+    + two_pass_flatfield_and_astrometry
     # + astrometry
-    + validate_astrometry
+    # + validate_astrometry
     + photcal
-    + process_and_stack
+    + stack_dithers
     + photcal
 )
 
@@ -1352,7 +1356,7 @@ cmnlc = (
     + astrometry
     + validate_astrometry
     + photcal
-    + process_and_stack
+    + stack_dithers
     + photcal
 )
 
@@ -1382,12 +1386,12 @@ c2m_lab_nlc = (
     # Not two pass
     # + flat_calibrate
     # Do 2 pass
-    + two_pass_flatfield_and_astrometry
     + mask_flats
+    + two_pass_flatfield_and_astrometry
     # + astrometry
-    + validate_astrometry
+    # + validate_astrometry
     + photcal
-    + process_and_stack
+    + stack_dithers
     + photcal
 )
 # full_reduction_two_pass = (
