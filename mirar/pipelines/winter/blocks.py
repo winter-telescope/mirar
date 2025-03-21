@@ -1324,7 +1324,7 @@ reduce_single = (
 )
 
 c2mnlc = (
-    load_and_export_unpacked
+    unpack_subset_no_dome_flats
     + non_linear_correction
     + dark_calibrate
     # Not two pass
@@ -1339,6 +1339,56 @@ c2mnlc = (
     + photcal
 )
 
+cmnlc = (
+    unpack_subset_no_dome_flats
+    + non_linear_correction
+    + dark_calibrate
+    + mask_flats
+    # Not two pass
+    + flat_calibrate
+    # Do 2 pass
+    # + two_pass_flatfield_and_astrometry
+    + astrometry
+    + validate_astrometry
+    + photcal
+    + process_and_stack
+    + photcal
+)
+
+cm_lab_nlc = (
+    unpack_subset_no_dome_flats
+    + non_linear_correction
+    + dark_calibrate
+    + mask_flats
+    + lab_flat_calibrate
+    # Not two pass
+    + flat_calibrate
+    # Do 2 pass
+    # + two_pass_flatfield_and_astrometry
+    + astrometry
+    + validate_astrometry
+    + photcal
+    + process_and_stack
+    + photcal
+)
+
+c2m_lab_nlc = (
+    unpack_subset_no_dome_flats
+    + non_linear_correction
+    + dark_calibrate
+    # Lab flat calibrate
+    + lab_flat_calibrate
+    # Not two pass
+    # + flat_calibrate
+    # Do 2 pass
+    + two_pass_flatfield_and_astrometry
+    + mask_flats
+    # + astrometry
+    + validate_astrometry
+    + photcal
+    + process_and_stack
+    + photcal
+)
 # full_reduction_two_pass = (
 #     dark_calibrate
 #     + first_pass_flat_calibrate
