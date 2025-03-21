@@ -1232,11 +1232,11 @@ second_pass_astrometry = (
 )
 
 second_pass_calibration = [
-    ImageLoader(
-        input_sub_dir="fp_stack",
-        input_img_dir=base_output_dir,
-        load_image=load_winter_stack,
-    ),
+    # ImageLoader(
+    #     input_sub_dir="fp_stack",
+    #     input_img_dir=base_output_dir,
+    #     load_image=load_winter_stack,
+    # ),
     ImageRebatcher([TARGET_KEY, "BOARD_ID", "SUBCOORD"]),
     Sextractor(
         output_sub_dir="sp_stack_source_mask",
