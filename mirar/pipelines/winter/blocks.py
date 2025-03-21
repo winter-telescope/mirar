@@ -1039,6 +1039,15 @@ unpack_all_no_dome_flats = (
     load_raw_no_dome_flats + extract_all + csvlog + mask_and_split + save_raw
 )
 
+unpack_subset_no_dome_flats = (
+    load_raw_no_dome_flats
+    + extract_all
+    + csvlog
+    + select_subset
+    + mask_and_split
+    + save_raw
+)
+
 full_reduction = (
     non_linear_correction
     + dark_calibrate
