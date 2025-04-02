@@ -643,10 +643,9 @@ photcal = [
         cache=False,
         crossmatch_radius_arcsec=5.0,
     ),
-    ImageSaver(output_dir_name="final", compress=False),
 ]
 
-photcal_and_export = photcal + [
+export_stacks = [
     DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
     ImageDatabaseMultiEntryUpdater(
         sequence_key="rawid",
@@ -668,6 +667,13 @@ photcal_and_export = photcal + [
     ),
 ]
 
+photcal_and_export = (
+    photcal
+    + [
+        ImageSaver(output_dir_name="final", compress=False),
+    ]
+    + export_stacks
+)
 
 # Stack stacks together
 
@@ -1055,13 +1061,16 @@ full_reduction_no_dome_flats = (
     + photcal_and_export
 )
 
-photcal_stacks = [
+load_photcaled_stacks = [
     ImageLoader(
-        input_sub_dir="stack",
+        input_sub_dir="final",
         input_img_dir=base_output_dir,
         load_image=load_winter_stack,
     ),
-] + photcal_and_export
+    ImageRebatcher(BASE_NAME_KEY),
+]
+
+photcal_stacks = load_photcaled_stacks + photcal_and_export
 
 reduce_unpacked = load_and_export_unpacked + full_reduction
 
@@ -1327,7 +1336,7 @@ c2mnlc = (
     # + validate_astrometry
     + photcal
     + stack_dithers
-    + photcal
+    + photcal_and_export
 )
 
 cmnlc = (
