@@ -59,3 +59,27 @@ class PS1(VizierCatalog):
             )
             logger.error(err)
             raise NotInPS1Error(err)
+
+
+class PS1StarGal(VizierCatalog):
+    """
+    PanStarrs 1 (PS1) Point Source Catalog (PSC) catalog with Star/Galaxy
+    separation by A. A. Miller & X. J. Hall
+    ref: https://iopscience.iop.org/article/10.1088/1538-3873/abf038
+    """
+
+    catalog_vizier_code = "II/381/hlsp_ps1_mh"
+    abbreviation = "ps1_stargal"
+
+    ra_key = "RAJ2000"
+    dec_key = "DEJ2000"
+
+    @staticmethod
+    def check_coverage(ra_deg: float, dec_deg: float):
+        if not in_ps1(dec_deg):
+            err = (
+                f"Querying for PS1_stargal sources, but the field "
+                f"({ra_deg}, {dec_deg}) was not observed in PS1_stargal."
+            )
+            logger.error(err)
+            raise NotInPS1Error(err)
