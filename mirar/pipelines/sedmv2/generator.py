@@ -9,7 +9,7 @@ import numpy as np
 from astropy.table import Table
 
 from mirar.catalog import BaseCatalog, Gaia2Mass
-from mirar.catalog.vizier import PS1, SkyMapper
+from mirar.catalog.vizier import PS1StarGal, SkyMapper
 from mirar.catalog.vizier.sdss import SDSS, NotInSDSSError, in_sdss
 from mirar.data.image_data import Image
 from mirar.pipelines.sedmv2.config import (
@@ -51,7 +51,7 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
     Generate a photometric calibration catalog for sedmv2 images
 
     For u band: SDSS if possible, otherwise Skymapper (otherwise fail)
-    For g/r1: use PS1
+    For g/r/i/z: use PS1StarGal
 
     :param image: Image
     :return: catalog at image position
@@ -79,7 +79,9 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
         err = "U band image is in a field with no reference image."
         logger.error(err)
         raise NotInSDSSError(err)
-    return PS1(min_mag=10, max_mag=20, search_radius_arcmin=5, filter_name=filter_name)
+    return PS1StarGal(
+        min_mag=10, max_mag=20, search_radius_arcmin=5, filter_name=filter_name
+    )
 
 
 def sedmv2_reference_image_generator(image: Image) -> BaseReferenceGenerator:
