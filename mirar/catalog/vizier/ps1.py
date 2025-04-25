@@ -87,7 +87,8 @@ class PS1StarGal(VizierCatalog):
 
     def join_query(self, query: dict) -> astropy.table.Table:
         """
-        Join the two queries together
+        Join the two queries (PS1 and PS1_TM catalogs) together,
+        since PS1_TM only has columns {objid, position, psScore}.
 
         :param query:
         :return:
