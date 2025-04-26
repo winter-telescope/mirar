@@ -1,5 +1,9 @@
 """
+<<<<<<< HEAD
 Module containing LMI-specific paths
+=======
+Module containing WASP-specific paths
+>>>>>>> b8447513 (First draft LMI pipeline)
 """
 
 # pylint: disable=duplicate-code
