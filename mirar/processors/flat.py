@@ -146,6 +146,9 @@ class FlatCalibrator(ProcessorWithCache):
             median = np.nanmedian(
                 data[self.x_min : self.x_max, self.y_min : self.y_max]
             )
+
+            print("Nanmedian", np.nanmedian(data[self.x_min: self.x_max, self.y_min: self.y_max]))
+
             flats[:, :, i] = data / median
 
         logger.debug(f"Median combining {n_frames} flats")
