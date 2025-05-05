@@ -89,7 +89,7 @@ def sedmv2_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     Get a reference image generator for an sedmv2 image
 
     For u band: SDSS if possible, otherwise fail
-    For g/r: use PS1
+    For g/r/i/z: use PS1
 
     :param image: image
     :return: Reference image generator
