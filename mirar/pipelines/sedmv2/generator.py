@@ -186,7 +186,7 @@ def sedmv2_zogy_catalogs_purifier(
 
 
 def sedmv2_photcal_catalog_purifier(
-    sci_catalog: Table, ref_catalog: Table, image: Image
+    sci_catalog: Table, ref_catalog: Table, image: Image, stargal_threshold: float = 0.5
 ) -> tuple[Table, Table]:
     """
     To hand to PhotCalibrator catalogs_purifier;
@@ -195,9 +195,9 @@ def sedmv2_photcal_catalog_purifier(
             sources with PSF mag = -99
             sources near edge of image
             sources with large SPREAD_MODEL, (likely galaxies)
-            [pending] sources near shadow edge
         purifies reference catalog by removing:
             sources with 0 reported error
+            sources that are likely galaxies according to PS1StarGal 'psScore'
 
     :param sci_catalog: SEDMv2 Sextractor catalog
     :param ref_catalog: reference catalog
@@ -244,10 +244,21 @@ def sedmv2_photcal_catalog_purifier(
     # remove sources where PS1 reports 0 error
     error_cols = [col for col in ref_catalog.colnames if col.startswith("e_")]
     # diagnostic: the last error column is likely a magnitude error (not astrometry).
-    good_ref_sources = (
-        ref_catalog[error_cols[-1]].mask  # pylint: disable=singleton-comparison
-        == False  # pylint: disable=singleton-comparison
-    )
+    try:
+        good_ref_sources = (
+            ref_catalog[error_cols[-1]].mask  # pylint: disable=singleton-comparison
+            == False
+        ) & (  # pylint: disable=singleton-comparison
+            ref_catalog["psScore"] > stargal_threshold
+        )
+    except ValueError:
+        logger.debug(
+            "Tried to filter reference catalog by psScore, but column doesn't exist."
+        )
+        good_ref_sources = (
+            ref_catalog[error_cols[-1]].mask  # pylint: disable=singleton-comparison
+            == False  # pylint: disable=singleton-comparison
+        )
     logger.debug(
         f"Original reference catalog length = "
         f"{len(ref_catalog)}, \npure length = {len(ref_catalog[good_ref_sources])}"
