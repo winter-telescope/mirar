@@ -194,7 +194,6 @@ def sedmv2_photcal_catalog_purifier(
             sources with nonzero Sextractor FLAGS
             sources with PSF mag = -99
             sources near edge of image
-            sources with large SPREAD_MODEL, (likely galaxies)
         purifies reference catalog by removing:
             sources with 0 reported error
             sources that are likely galaxies according to PS1StarGal 'psScore'
@@ -214,17 +213,6 @@ def sedmv2_photcal_catalog_purifier(
     y_lower_limit = edge_width_pixels
     y_upper_limit = image.get_data().shape[0] - edge_width_pixels
 
-    # remove sources with spread_model > sm_cutoff (they are likely galaxies)
-    sm_cutoff = 0.0015
-    # raise warning if most sources don't pass this cut
-    ind_bad = np.where(sci_catalog["SPREAD_MODEL"] > sm_cutoff)[0]
-    if (len(sci_catalog[ind_bad]) / len(sci_catalog)) > 0.4:
-        logger.warning(
-            f"Many sources with large SPREAD_MODEL value: "
-            f"{len(sci_catalog[ind_bad])} out of {len(sci_catalog)} "
-            f"sources. Likely caused by bad observing conditions."
-        )
-
     good_sci_sources = (
         (sci_catalog["FLAGS"] == 0)
         & (sci_catalog["MAG_PSF"] != 99)
@@ -232,7 +220,6 @@ def sedmv2_photcal_catalog_purifier(
         & (sci_catalog["X_IMAGE"] < x_upper_limit)
         & (sci_catalog["Y_IMAGE"] > y_lower_limit)
         & (sci_catalog["Y_IMAGE"] < y_upper_limit)
-        & (sci_catalog["SPREAD_MODEL"] < sm_cutoff)
     )
 
     logger.debug(
