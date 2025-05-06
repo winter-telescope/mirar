@@ -103,5 +103,5 @@ class PS1StarGal(VizierCatalog):
             query[1],
             keys_left=["objid"],
             keys_right=["objID"],
-            join_type="left",
+            join_type="inner",
         )
