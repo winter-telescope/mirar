@@ -9,7 +9,7 @@ import numpy as np
 from astropy.table import Table
 
 from mirar.catalog import BaseCatalog, Gaia2Mass
-from mirar.catalog.vizier import PS1, SkyMapper
+from mirar.catalog.vizier import PS1StarGal, SkyMapper
 from mirar.catalog.vizier.sdss import SDSS, NotInSDSSError, in_sdss
 from mirar.data.image_data import Image
 from mirar.pipelines.sedmv2.config import (
@@ -51,7 +51,7 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
     Generate a photometric calibration catalog for sedmv2 images
 
     For u band: SDSS if possible, otherwise Skymapper (otherwise fail)
-    For g/r1: use PS1
+    For g/r/i/z: use PS1StarGal
 
     :param image: Image
     :return: catalog at image position
@@ -79,7 +79,9 @@ def sedmv2_photometric_catalog_generator(image: Image) -> BaseCatalog:
         err = "U band image is in a field with no reference image."
         logger.error(err)
         raise NotInSDSSError(err)
-    return PS1(min_mag=10, max_mag=20, search_radius_arcmin=5, filter_name=filter_name)
+    return PS1StarGal(
+        min_mag=10, max_mag=20, search_radius_arcmin=5, filter_name=filter_name
+    )
 
 
 def sedmv2_reference_image_generator(image: Image) -> BaseReferenceGenerator:
@@ -87,7 +89,7 @@ def sedmv2_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     Get a reference image generator for an sedmv2 image
 
     For u band: SDSS if possible, otherwise fail
-    For g/r: use PS1
+    For g/r/i/z: use PS1
 
     :param image: image
     :return: Reference image generator
@@ -184,7 +186,7 @@ def sedmv2_zogy_catalogs_purifier(
 
 
 def sedmv2_photcal_catalog_purifier(
-    sci_catalog: Table, ref_catalog: Table, image: Image
+    sci_catalog: Table, ref_catalog: Table, image: Image, stargal_threshold: float = 0.5
 ) -> tuple[Table, Table]:
     """
     To hand to PhotCalibrator catalogs_purifier;
@@ -192,10 +194,9 @@ def sedmv2_photcal_catalog_purifier(
             sources with nonzero Sextractor FLAGS
             sources with PSF mag = -99
             sources near edge of image
-            sources with large SPREAD_MODEL, (likely galaxies)
-            [pending] sources near shadow edge
         purifies reference catalog by removing:
             sources with 0 reported error
+            sources that are likely galaxies according to PS1StarGal 'psScore'
 
     :param sci_catalog: SEDMv2 Sextractor catalog
     :param ref_catalog: reference catalog
@@ -212,17 +213,6 @@ def sedmv2_photcal_catalog_purifier(
     y_lower_limit = edge_width_pixels
     y_upper_limit = image.get_data().shape[0] - edge_width_pixels
 
-    # remove sources with spread_model > sm_cutoff (they are likely galaxies)
-    sm_cutoff = 0.0015
-    # raise warning if most sources don't pass this cut
-    ind_bad = np.where(sci_catalog["SPREAD_MODEL"] > sm_cutoff)[0]
-    if (len(sci_catalog[ind_bad]) / len(sci_catalog)) > 0.4:
-        logger.warning(
-            f"Many sources with large SPREAD_MODEL value: "
-            f"{len(sci_catalog[ind_bad])} out of {len(sci_catalog)} "
-            f"sources. Likely caused by bad observing conditions."
-        )
-
     good_sci_sources = (
         (sci_catalog["FLAGS"] == 0)
         & (sci_catalog["MAG_PSF"] != 99)
@@ -230,7 +220,6 @@ def sedmv2_photcal_catalog_purifier(
         & (sci_catalog["X_IMAGE"] < x_upper_limit)
         & (sci_catalog["Y_IMAGE"] > y_lower_limit)
         & (sci_catalog["Y_IMAGE"] < y_upper_limit)
-        & (sci_catalog["SPREAD_MODEL"] < sm_cutoff)
     )
 
     logger.debug(
@@ -242,10 +231,21 @@ def sedmv2_photcal_catalog_purifier(
     # remove sources where PS1 reports 0 error
     error_cols = [col for col in ref_catalog.colnames if col.startswith("e_")]
     # diagnostic: the last error column is likely a magnitude error (not astrometry).
-    good_ref_sources = (
-        ref_catalog[error_cols[-1]].mask  # pylint: disable=singleton-comparison
-        == False  # pylint: disable=singleton-comparison
-    )
+    try:
+        good_ref_sources = (
+            ref_catalog[error_cols[-1]].mask  # pylint: disable=singleton-comparison
+            == False
+        ) & (  # pylint: disable=singleton-comparison
+            ref_catalog["psScore"] > stargal_threshold
+        )
+    except ValueError:
+        logger.debug(
+            "Tried to filter reference catalog by psScore, but column doesn't exist."
+        )
+        good_ref_sources = (
+            ref_catalog[error_cols[-1]].mask  # pylint: disable=singleton-comparison
+            == False  # pylint: disable=singleton-comparison
+        )
     logger.debug(
         f"Original reference catalog length = "
         f"{len(ref_catalog)}, \npure length = {len(ref_catalog[good_ref_sources])}"
