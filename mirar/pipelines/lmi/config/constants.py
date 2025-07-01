@@ -1,5 +1,5 @@
 """
-Module for WASP-specific constants
+Module for LMI-specific constants
 """
 
 # pylint: disable=duplicate-code

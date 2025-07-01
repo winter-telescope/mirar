@@ -1,5 +1,5 @@
 """
-Module containing WASP-specific paths
+Module containing LMI-specific paths
 """
 
 # pylint: disable=duplicate-code
