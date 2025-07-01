@@ -1,6 +1,7 @@
 """
 Module to group images based on the target coordinates into planned stack groups
 """
+
 # pylint: disable=duplicate-code
 
 from astropy import coordinates as coords
