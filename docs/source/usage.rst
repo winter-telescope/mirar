@@ -50,6 +50,6 @@ Alternatively, you can check via the code:
 
     >>> from mirar.pipelines import Pipeline
         >>> print(sorted([x for x in Pipeline.pipelines.keys()]))
-        ['git', 'gmos', 'sedmv2', 'summer', 'wasp', 'winter', 'wirc']
+        ['git', 'gmos', 'lmi', 'sedmv2', 'summer', 'wasp', 'winter', 'wirc']
     >>> print(sorted([x for x in Pipeline.pipelines.keys()]))
-    ['git', 'gmos', 'sedmv2', 'summer', 'wasp', 'winter', 'wirc']
+    ['git', 'gmos', 'lmi', 'sedmv2', 'summer', 'wasp', 'winter', 'wirc']
