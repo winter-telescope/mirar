@@ -302,7 +302,7 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 # Optional subset selection
 BOARD_ID = 6
 select_subset = [
-    ImageSelector(("BOARD_ID", str(BOARD_ID))),
+    # ImageSelector(("BOARD_ID", str(BOARD_ID))),
     ImageSelector(
         ("TARGET", ["dark", "nightly_20250709.db_14"]),
     ),
@@ -1214,7 +1214,24 @@ first_pass_stacking = (
     + [
         ImageSaver(output_dir_name="fp_post_astrometry"),
     ]
-    + stack_dithers
+    + [
+        CustomImageBatchModifier(winter_boardid_6_demasker),
+        ImageRebatcher("STACKID"),
+        ImageSaver(output_dir_name="fp_prestack"),
+        Swarp(
+            swarp_config_path=swarp_config_path,
+            calculate_dims_in_swarp=True,
+            include_scamp=True,
+            subtract_bkg=False,
+            cache=False,
+            center_type="MOST",
+            temp_output_sub_dir="fp_stacks_weights",
+            header_keys_to_combine=["RAWID"],
+            min_required_coadds=3,
+        ),
+        ImageRebatcher(BASE_NAME_KEY),
+        ModeMasker(),
+    ]
     + [
         ImageSaver(output_dir_name="fp_stack"),
     ]
@@ -1293,8 +1310,23 @@ second_pass_calibration = [
 second_pass_stack = (
     second_pass_astrometry
     + second_pass_validate_astrometry_export_and_filter
-    + stack_dithers
     + [
+        CustomImageBatchModifier(winter_boardid_6_demasker),
+        ImageRebatcher("STACKID"),
+        ImageSaver(output_dir_name="sp_prestack"),
+        Swarp(
+            swarp_config_path=swarp_config_path,
+            calculate_dims_in_swarp=True,
+            include_scamp=True,
+            subtract_bkg=False,
+            cache=False,
+            center_type="MOST",
+            temp_output_sub_dir="sp_stacks_weights",
+            header_keys_to_combine=["RAWID"],
+            min_required_coadds=3,
+        ),
+        ImageRebatcher(BASE_NAME_KEY),
+        ModeMasker(),
         ImageSaver(output_dir_name="stack"),
     ]
 )
