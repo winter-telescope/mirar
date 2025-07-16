@@ -288,8 +288,8 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
         )
 
         mask = (
-            ((src_df["rb"] > 0.1) | pd.isnull(src_df["rb"]))
-            & (src_df["fwhm"] < 10.0)
+            # ((src_df["rb"] > 0.1) | pd.isnull(src_df["rb"])) # turn off rb
+            (src_df["fwhm"] < 10.0)
             & (src_df["mindtoedge"] > 50.0)
             & (src_df["isdiffpos"])
             & ~(  # Not a star according to PS1 or PS1STRM
@@ -303,6 +303,13 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
                     & (src_df["srmag1"] < 18)
                     & ((src_df["sgscore1"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
                 )
+            )
+            & ~(  # Not near a bright 2MASS source
+                (src_df["disttmnr1"] < 2.0) & (src_df["tmjmag1"] < 11.0)
+            )
+            & ~(  # Not a 2MASS source that hasn't brightened by 4 mag
+                (src_df["disttmnr1"] < 2.0)
+                & (src_df["tmjmag1"] - src_df["magpsf"] < 4.0)
             )
             & (  # 2 WINTER detections or a ZTF name (and therefore a ZTF detection)
                 (src_df["ndethist"] > 0) | has_ztf
