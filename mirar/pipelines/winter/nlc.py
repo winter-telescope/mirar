@@ -23,7 +23,7 @@ def apply_winter_nlc(images: ImageBatch) -> ImageBatch:
     for image in images:
         data = image.get_data()
         header = image.get_header()
-        if int(header["BOARD_ID"]) in [2, 3, 4, 5]:
+        if int(header["BOARD_ID"]) in [2, 3, 4, 5, 6]:
             corrected_data = apply_nlc_single(data, header)
             image.set_data(corrected_data)
 
