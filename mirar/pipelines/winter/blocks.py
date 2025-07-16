@@ -584,8 +584,6 @@ validate_astrometry = [
 stack_dithers = [
     CustomImageBatchModifier(winter_boardid_6_demasker),
     ImageRebatcher("STACKID"),
-    NanFiller(),
-    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
     ImageSaver(output_dir_name="prestack"),
     Swarp(
         swarp_config_path=swarp_config_path,
