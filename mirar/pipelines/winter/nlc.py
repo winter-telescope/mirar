@@ -4,7 +4,7 @@ Module for applying WINTER non-linear correction to images
 
 import logging
 
-from winternlc import apply_nlc_single, check_for_files
+from winternlc import apply_nlc_single
 
 from mirar.data import ImageBatch
 
@@ -23,7 +23,8 @@ def apply_winter_nlc(images: ImageBatch) -> ImageBatch:
     for image in images:
         data = image.get_data()
         header = image.get_header()
-        corrected_data = apply_nlc_single(data, header)
-        image.set_data(corrected_data)
+        if int(header["BOARD_ID"]) in [2, 3, 4, 5]:
+            corrected_data = apply_nlc_single(data, header)
+            image.set_data(corrected_data)
 
     return images
