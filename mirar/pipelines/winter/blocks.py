@@ -1313,7 +1313,7 @@ second_pass_stack = (
         ),
         ImageRebatcher(BASE_NAME_KEY),
         ModeMasker(),
-        ImageSaver(output_dir_name="stack"),
+        ImageSaver(output_dir_name="sp_stack"),
     ]
 )
 
