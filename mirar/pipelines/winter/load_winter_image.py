@@ -259,6 +259,7 @@ def clean_header(header: fits.Header) -> fits.Header:
     except KeyError:
         pass
 
+    header["LABFLATV"] = "0.1"
     return header
 
 
