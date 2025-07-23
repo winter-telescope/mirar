@@ -17,6 +17,8 @@ class ZTF(BaseKowalskiXMatch):
         "objectId": 1,
         "candidate.ra": 1,
         "candidate.dec": 1,
+        "candidate.rb": 1,
+        "candidate.drb": 1,
     }
 
     column_names = {
@@ -24,6 +26,8 @@ class ZTF(BaseKowalskiXMatch):
         "objectId": "ztfname",
         "candidate.ra": f"{abbreviation}ra",
         "candidate.dec": f"{abbreviation}dec",
+        "candidate.rb": f"{abbreviation}rb",
+        "candidate.drb": f"{abbreviation}drb",
     }
 
     column_dtypes = {
@@ -31,6 +35,8 @@ class ZTF(BaseKowalskiXMatch):
         "ztfname": str,
         "ztfra": float,
         "ztfdec": float,
+        "ztfrb": float,
+        "ztfdrb": float,
     }
 
     ra_column_name = f"{abbreviation}ra"
