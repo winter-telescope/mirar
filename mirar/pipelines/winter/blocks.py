@@ -54,6 +54,7 @@ from mirar.pipelines.winter.generator import (
     winter_astrometric_ref_catalog_namer,
     winter_astrometry_sextractor_catalog_purifier,
     winter_astrostat_catalog_purifier,
+    winter_boardid_6_channel_masker,
     winter_boardid_6_demasker,
     winter_candidate_annotator_filterer,
     winter_candidate_avro_fields_calculator,
@@ -322,6 +323,7 @@ mask = [
     # MaskAboveThreshold(threshold=40000.0),
     MaskDatasecPixels(),
     MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
+    CustomImageBatchModifier(winter_boardid_6_channel_masker),
 ]
 
 # Split
@@ -1217,6 +1219,8 @@ first_pass_stacking = (
     + [
         CustomImageBatchModifier(winter_boardid_6_demasker),
         ImageRebatcher("STACKID"),
+        NanFiller(),
+        MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
         ImageSaver(output_dir_name="fp_prestack"),
         Swarp(
             swarp_config_path=swarp_config_path,
@@ -1313,6 +1317,8 @@ second_pass_stack = (
     + [
         CustomImageBatchModifier(winter_boardid_6_demasker),
         ImageRebatcher("STACKID"),
+        NanFiller(),
+        MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
         ImageSaver(output_dir_name="sp_prestack"),
         Swarp(
             swarp_config_path=swarp_config_path,

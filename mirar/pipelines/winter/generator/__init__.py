@@ -32,6 +32,7 @@ from mirar.pipelines.winter.generator.reduce import (
     select_winter_flat_images,
     select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
+    winter_boardid_6_channel_masker,
     winter_boardid_6_demasker,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,

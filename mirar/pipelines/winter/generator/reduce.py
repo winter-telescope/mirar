@@ -221,6 +221,23 @@ def mask_stamps_around_bright_stars(image: Image):
     return mask
 
 
+def winter_boardid_6_channel_masker(images: ImageBatch) -> ImageBatch:
+    """
+    Masks the bad channel pixels for board 6 images. This is required because swarp does not
+    handle masked pixels distributed across the image well, producing a fully masked image.
+    :param images: ImageBatch
+    :return: ImageBatch with masked bad channel pixels
+    """
+    for image in images:
+        boardid = image.header["BOARD_ID"]
+        if boardid == 6:
+            img_data = image.get_data()
+            img_data[0::2, 0::4] = np.nan
+            image.set_data(img_data)
+
+    return images
+
+
 def winter_boardid_6_demasker(images: ImageBatch) -> ImageBatch:
     """
     Demasks images from board 6 by replacing the bad channel pixels with the median of
