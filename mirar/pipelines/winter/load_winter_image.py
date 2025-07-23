@@ -602,8 +602,4 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[:, 1940:] = 1.0
         mask[:15, :] = 1.0
 
-    if header["BOARD_ID"] == 6:
-        # Mask channel 0
-        mask[0::2, 0::4] = 1.0
-
     return mask.astype(bool)
