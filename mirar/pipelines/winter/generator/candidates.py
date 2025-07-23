@@ -283,13 +283,22 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
     for source in source_table:
         src_df = source.get_data()
 
-        has_ztf = pd.notnull(src_df["ztfname"]) & src_df["ztfname"].str.startswith(
-            "ZTF", na=False
+        has_ztf = (
+            pd.notnull(src_df["ztfname"])
+            & src_df["ztfname"].str.startswith("ZTF", na=False)
+            & (src_df["ztfdrb"] > 0.5)
+        )
+
+        src_df["peak_detection_offset"] = np.sqrt(
+            (src_df["X_IMAGE"] - src_df["XPEAK_IMAGE"]) ** 2
+            + (src_df["Y_IMAGE"] - src_df["YPEAK_IMAGE"]) ** 2
         )
 
         mask = (
-            # ((src_df["rb"] > 0.1) | pd.isnull(src_df["rb"])) # turn off rb
-            (src_df["fwhm"] < 10.0)
+            # ((src_df["rb"] > 0.1) | pd.isnull(src_df["rb"])) # turn off rb'
+            (src_df["scorr"] >= 5.0)
+            & (src_df["peak_detection_offset"] < 3.0)
+            & (src_df["fwhm"] < 10.0)
             & (src_df["mindtoedge"] > 50.0)
             & (src_df["isdiffpos"])
             & ~(  # Not a star according to PS1 or PS1STRM
@@ -304,7 +313,7 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
                     & ((src_df["sgscore1"] > 0.7) | (src_df["ps1strmprobstar1"] > 0.7))
                 )
             )
-            & ~(  # Not near a bright 2MASS source
+            & ~(  # Not near a very bright 2MASS source
                 (src_df["disttmnr1"] < 2.0) & (src_df["tmjmag1"] < 11.0)
             )
             & ~(  # Not a 2MASS source that hasn't brightened by 4 mag
