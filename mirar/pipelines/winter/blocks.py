@@ -143,7 +143,10 @@ from mirar.processors.mask import (  # MaskAboveThreshold,
     WriteMaskedCoordsToFile,
 )
 from mirar.processors.photcal import ZPWithColorTermCalculator
-from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.processors.photcal.photcalibrator import (
+    ImageBatchReferenceCatalogDownloader,
+    PhotCalibrator,
+)
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import GetReferenceImage, ProcessReference
 from mirar.processors.skyportal.skyportal_candidate import SkyportalCandidateUploader
@@ -304,9 +307,9 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 BOARD_ID = 6
 select_subset = [
     ImageSelector(("BOARD_ID", str(BOARD_ID))),
-    ImageSelector(
-        ("TARGET", ["dark", "nightly_20250709.db_14"]),
-    ),
+    # ImageSelector(
+    #     ("TARGET", ["dark", "nightly_20250709.db_14"]),
+    # ),
 ]
 
 select_ref = [
@@ -603,6 +606,28 @@ stack_dithers = [
     ImageSaver(output_dir_name="stack"),
 ]
 
+second_pass_stack_dithers = [
+    CustomImageBatchModifier(winter_boardid_6_demasker),
+    ImageRebatcher("STACKID"),
+    NanFiller(),
+    MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
+    ImageSaver(output_dir_name="sp_prestack"),
+    Swarp(
+        swarp_config_path=swarp_config_path,
+        calculate_dims_in_swarp=True,
+        include_scamp=True,
+        subtract_bkg=False,
+        cache=False,
+        center_type="MOST",
+        temp_output_sub_dir="sp_stacks_weights",
+        header_keys_to_combine=["RAWID"],
+        min_required_coadds=3,
+    ),
+    ImageRebatcher(BASE_NAME_KEY),
+    ModeMasker(),
+    ImageSaver(output_dir_name="sp_stack"),
+]
+
 remask = [
     ImageLoader(input_sub_dir="stack", input_img_dir=base_output_dir),
     ModeMasker(),  # Mask out the pixels which are stacked nans
@@ -626,6 +651,11 @@ photcal = [
         use_psfex=True,
     ),
     CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
+    ImageRebatcher(TARGET_KEY),
+    ImageBatchReferenceCatalogDownloader(
+        ref_catalog_generator=winter_photometric_catalog_generator
+    ),
+    ImageRebatcher(BASE_NAME_KEY),
     PhotCalibrator(
         ref_catalog_generator=winter_photometric_catalog_generator,
         catalogs_purifier=winter_photometric_catalogs_purifier,
@@ -1304,37 +1334,17 @@ second_pass_calibration = [
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
-        output_sub_dir="skysub",
+        output_sub_dir="sp_skysub",
         checkimage_type=["-BACKGROUND"],
     ),
     SextractorBkgSubtractor(),
-    ImageSaver(output_dir_name="skysub"),
+    ImageSaver(output_dir_name="sp_skysub"),
 ]
 
-second_pass_stack = (
+second_pass_astrometry_and_stack = (
     second_pass_astrometry
     + second_pass_validate_astrometry_export_and_filter
-    + [
-        CustomImageBatchModifier(winter_boardid_6_demasker),
-        ImageRebatcher("STACKID"),
-        NanFiller(),
-        MaskPixelsFromFunction(mask_function=get_raw_winter_mask),
-        ImageSaver(output_dir_name="sp_prestack"),
-        Swarp(
-            swarp_config_path=swarp_config_path,
-            calculate_dims_in_swarp=True,
-            include_scamp=True,
-            subtract_bkg=False,
-            cache=False,
-            center_type="MOST",
-            temp_output_sub_dir="sp_stacks_weights",
-            header_keys_to_combine=["RAWID"],
-            min_required_coadds=3,
-        ),
-        ImageRebatcher(BASE_NAME_KEY),
-        ModeMasker(),
-        ImageSaver(output_dir_name="sp_stack"),
-    ]
+    + second_pass_stack_dithers
 )
 
 first_pass_processing = (
@@ -1355,7 +1365,7 @@ two_pass_flatfield_and_astrometry = (
 full_reduction_two_pass = (
     dark_calibrate
     + two_pass_flatfield_and_astrometry
-    + second_pass_stack
+    + second_pass_stack_dithers
     + photcal_and_export
 )
 
@@ -1386,7 +1396,7 @@ c2mnlc = (
     # + astrometry
     # + validate_astrometry
     + photcal
-    + stack_dithers
+    + second_pass_stack_dithers
     + photcal_and_export
 )
 
@@ -1473,7 +1483,10 @@ reduce_lab_flats = unpack_all + full_reduction_lab_flats
 reduce_unpacked_lab_flats = load_and_export_unpacked + full_reduction_lab_flats
 
 second_pass_processing = (
-    load_astrometried + stack_dithers + second_pass_calibration + second_pass_stack
+    load_astrometried
+    + stack_dithers
+    + second_pass_calibration
+    + second_pass_astrometry_and_stack
 )
 
 
