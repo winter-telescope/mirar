@@ -651,7 +651,7 @@ photcal = [
         use_psfex=True,
     ),
     CustomImageBatchModifier(winter_photometric_ref_catalog_namer),
-    ImageRebatcher(TARGET_KEY),
+    ImageRebatcher(["SUBCOORD", "FILTER", TARGET_KEY]),
     ImageBatchReferenceCatalogDownloader(
         ref_catalog_generator=winter_photometric_catalog_generator
     ),
