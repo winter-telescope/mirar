@@ -286,7 +286,7 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
         has_ztf = (
             pd.notnull(src_df["ztfname"])
             & src_df["ztfname"].str.startswith("ZTF", na=False)
-            & (src_df["ztfdrb"] > 0.5)
+            & (src_df["ztfdrb1"] > 0.5)
         )
 
         src_df["peak_detection_offset"] = np.sqrt(
