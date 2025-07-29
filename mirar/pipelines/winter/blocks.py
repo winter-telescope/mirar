@@ -306,10 +306,7 @@ select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 # Optional subset selection
 BOARD_ID = 6
 select_subset = [
-    ImageSelector(("BOARD_ID", ["3", "6"])),
-    # ImageSelector(
-    #     ("TARGET", ["dark", "nightly_20250709.db_14"]),
-    # ),
+    ImageSelector(("BOARD_ID", str(BOARD_ID))),
 ]
 
 select_ref = [
