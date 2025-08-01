@@ -47,6 +47,7 @@ python-dotenv = "^1.0.1"
 pyarrow = ">=15.0.2,<20.0.0"
 torch = "^2.2.0,<2.3.0"
 winterrb = "^1.0.0"
+winternlc = "2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.1.1"

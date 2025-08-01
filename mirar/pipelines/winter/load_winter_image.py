@@ -126,9 +126,12 @@ def clean_header(header: fits.Header) -> fits.Header:
             header[OBSCLASS_KEY] = "corrupted"
 
     else:
-        header["MIRCOVER"] = None
+        header["MIRCOVER"] = "open"
 
-    header["EXPTIME"] = np.rint(header["EXPTIME"])
+    if float(header["EXPTIME"]) >= 1.0:
+        header["EXPTIME"] = np.rint(header["EXPTIME"])
+    else:
+        header["EXPTIME"] = np.round(header["EXPTIME"], 2)
 
     # Set up the target name
 
@@ -238,17 +241,17 @@ def clean_header(header: fits.Header) -> fits.Header:
 
     if "NUMDITHS" not in header.keys():
         header["NUMDITHS"] = None
-    else:
+    elif header["NUMDITHS"] is not None:
         header["NUMDITHS"] = int(header["NUMDITHS"])
 
     if "DITHNUM" not in header.keys():
         header["DITHNUM"] = None
-    else:
+    elif header["DITHNUM"] is not None:
         header["DITHNUM"] = int(header["DITHNUM"])
 
     if "DITHSTEP" not in header.keys():
         header["DITHSTEP"] = None
-    else:
+    elif header["DITHSTEP"] is not None:
         header["DITHSTEP"] = float(header["DITHSTEP"])
 
     try:
@@ -258,6 +261,7 @@ def clean_header(header: fits.Header) -> fits.Header:
         ), f"Board ID {header['BOARD_ID']} not in {all_winter_board_ids}"
     except KeyError:
         pass
+    header["LABFLATV"] = "0.1"
 
     return header
 
@@ -579,7 +583,7 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[1060:, :] = 1.0
 
         # Mask a vertical strip
-        mask[:, 998:1002] = 1.0
+        mask[:, 992:1002] = 1.0
 
         # Mask another vertical strip
         mask[:, 1266:1273] = 1.0
@@ -597,9 +601,5 @@ def get_raw_winter_mask(image: Image) -> np.ndarray:
         mask[1072:, :] = 1.0
         mask[:, 1940:] = 1.0
         mask[:15, :] = 1.0
-
-    if header["BOARD_ID"] == 6:
-        # Mask channel 0
-        mask[0::2, 0::4] = 1.0
 
     return mask.astype(bool)

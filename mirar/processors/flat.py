@@ -9,6 +9,7 @@ from collections.abc import Callable
 from copy import copy
 
 import numpy as np
+from astropy.convolution import Tophat2DKernel, convolve_fft
 
 from mirar.data import Image, ImageBatch
 from mirar.errors import ImageNotFoundError
@@ -24,6 +25,83 @@ from mirar.processors.base_processor import ProcessorPremadeCache, ProcessorWith
 from mirar.processors.utils.image_selector import select_from_images
 
 logger = logging.getLogger(__name__)
+
+
+def get_convolution(data: np.ndarray, kernel_width: int) -> np.ndarray:
+    """
+    Convolve data with a tophat kernel
+
+    :param data: Image data
+    :param kernel_width: Width of the kernel (pixels)
+    :return: Smoothed image
+    """
+    pad_top = np.array([data[0] for _ in range(kernel_width)])
+    pad_bottom = np.array([data[-1] for _ in range(kernel_width)])
+    extended = np.vstack([pad_top, data, pad_bottom])
+    pad_left = np.array([extended.T[0] for _ in range(kernel_width)])
+    pad_right = np.array([extended.T[-1] for _ in range(kernel_width)])
+    extended = np.hstack([pad_left.T, extended, pad_right.T])
+
+    tophat_kernel = Tophat2DKernel(kernel_width)
+    smooth_illumination = convolve_fft(
+        extended, tophat_kernel, nan_treatment="interpolate"
+    )[kernel_width:-kernel_width, kernel_width:-kernel_width]
+    return smooth_illumination
+
+
+import warnings
+
+from astropy.stats import sigma_clipped_stats
+
+
+def get_outlier_pixel_mask(img: np.ndarray, thresh: float = 3.0) -> np.ndarray:
+    """
+    Get oulier pixels that are above or below a threshold
+    :param img: np.ndarray
+    :param thresh: float
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        _, median, std = sigma_clipped_stats(img, sigma=3.0)
+    return (img < (median - thresh * std)) | (img > (median + thresh * std))
+
+
+def construct_smooth_gradient_for_image(data: np.ndarray) -> np.ndarray:
+    """
+    Construct a smooth gradient for the image
+    :param data: np.ndarray
+    :return: np.ndarray
+    """
+    smooth_img = get_convolution(data, 100)
+    return smooth_img
+
+
+def smooth_and_normalize_image(data: np.ndarray) -> np.ndarray:
+    """
+    Smooth and normalize the image
+    :param data: np.ndarray
+    :return: np.ndarray
+    """
+    smooth_img = get_convolution(data, 100)
+    return data / smooth_img
+
+
+def get_smoothened_outlier_pixel_mask_from_list(
+    img_data_list: list[np.ndarray], threshold: float = 3.0
+) -> np.ndarray:
+    """
+    Take a list of images and return a mask of outlier pixels after removing a smooth
+    gradient from them
+    :param img_data_list: list[np.ndarray]
+    :param threshold: float
+    :return: np.ndarray
+    """
+    masks = []
+    for data in img_data_list:
+        smooth_img = smooth_and_normalize_image(data)
+        mask = get_outlier_pixel_mask(smooth_img, thresh=threshold)
+        masks.append(mask)
+    return np.logical_and.reduce(masks)
 
 
 class MissingFlatError(ImageNotFoundError):
@@ -61,6 +139,7 @@ class FlatCalibrator(ProcessorWithCache):
         flat_nan_threshold: float = 0.0,
         select_flat_images: Callable[[ImageBatch], ImageBatch] = default_select_flat,
         flat_mask_key: str = None,
+        flat_mode: str = "median",
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -71,6 +150,9 @@ class FlatCalibrator(ProcessorWithCache):
         self.flat_nan_threshold = flat_nan_threshold
         self.select_cache_images = select_flat_images
         self.flat_mask_key = flat_mask_key
+        self.flat_mode = flat_mode
+        if self.flat_mode not in ["median", "pixel", "structure"]:
+            raise ValueError(f"Flat mode {self.flat_mode} not supported")
 
     def description(self) -> str:
         return "Creates a flat image, divides other images by this image."
@@ -152,6 +234,66 @@ class FlatCalibrator(ProcessorWithCache):
         logger.debug(f"Median combining {n_frames} flats")
 
         master_flat = np.nanmedian(flats, axis=2)
+
+        if self.flat_mode != "median":
+
+            if self.flat_mode == "pixel":
+
+                mask = get_smoothened_outlier_pixel_mask_from_list(
+                    [x.get_data() for x in images]
+                )
+
+                # flatdata_norm_smooth = get_convolution(master_flat, 100)
+                #
+                # pixel_variation = master_flat / flatdata_norm_smooth
+                #
+                # # Clip outliers (they'll get worked out in stacking)
+                # std = np.nanstd(pixel_variation)
+                # sig = abs(pixel_variation - np.nanmedian(pixel_variation)) / std
+                #
+                # mask = sig > 1.0
+
+                # mask = get_outlier_pixel_mask(master_flat, thresh=1.5)
+
+                frac = np.sum(mask) / len(mask.flatten())
+
+                logger.info(  # FIXME: Change to debug
+                    f"Masking {100.*frac:.1f}% of pixels in image"
+                )
+                # pixel_variation[mask] = np.nan
+                # master_flat = pixel_variation / np.nanmedian(pixel_variation)
+                master_flat = np.ones_like(master_flat)
+                master_flat[mask] = np.nan
+
+            elif self.flat_mode == "structure":
+                flatdata_norm_smooth = get_convolution(master_flat, 100)
+                flatdata_norm_smooth[np.isnan(master_flat)] = np.nan
+
+                pixel_variation = master_flat / flatdata_norm_smooth
+
+                # Clip outliers (they'll get worked out in stacking)
+                std = np.nanstd(pixel_variation)
+                sig = abs(pixel_variation - np.nanmedian(pixel_variation)) / std
+
+                mask = sig > 1.0
+
+                logger.debug(
+                    f"Masking {np.sum(mask)} pixels "
+                    f"out of {len(mask.flatten()) }in flat"
+                )
+
+                master_flat = np.ones_like(master_flat)
+                master_flat[mask] = np.nan
+
+                # pixel_variation[mask] = np.nan
+                # master_flat = (
+                #     pixel_variation
+                #     * flatdata_norm_smooth
+                #     / np.nanmedian(pixel_variation)
+                # )
+
+            else:
+                raise ValueError(f"Flat mode {self.flat_mode} not supported")
 
         master_flat_image = Image(master_flat, header=copy(images[0].get_header()))
         master_flat_image[COADD_KEY] = n_frames
