@@ -339,6 +339,13 @@ class Swarp(BaseImageProcessor):
                 for key in combined_header_dict.keys():
                     if key not in tmp_dict.keys():
                         continue
+                    if key not in image.keys():
+                        logger.debug(
+                            f"Key {key} not found in image {image[BASE_NAME_KEY]}, "
+                            f"not adding to combined header."
+                        )
+                        tmp_dict.pop(key)
+                        continue
                     if image[key] != tmp_dict[key]:
                         tmp_dict.pop(key)
                 combined_header_dict = tmp_dict

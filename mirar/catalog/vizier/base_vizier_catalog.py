@@ -3,6 +3,7 @@ Module containing base class for a Vizier catalog
 """
 
 import logging
+import time
 from abc import ABC
 
 import astropy.table
@@ -10,6 +11,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from astroquery.vizier import Vizier
+from requests.exceptions import ChunkedEncodingError
 
 from mirar.catalog.base.base_catalog import DEFAULT_SNR_THRESHOLD, BaseCatalog
 from mirar.errors import ProcessorError
@@ -98,13 +100,42 @@ class VizierCatalog(BaseCatalog, ABC):
             timeout=300,
         )
 
-        # pylint: disable=no-member
-        query = viz_cat.query_region(
-            SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
-            radius=str(self.search_radius_arcmin) + "m",
-            catalog=self.catalog_vizier_code,
-            cache=False,
-        )
+        # Catching ChunkedEncodingError to handle network issues gracefully.
+        # Try 5 times with increasing time delays,
+        # if chunkencodingerror still persists then
+        # raise an error
+        for attempt in range(5):
+            try:
+                # pylint: disable=no-member
+                query = viz_cat.query_region(
+                    SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
+                    radius=str(self.search_radius_arcmin) + "m",
+                    catalog=self.catalog_vizier_code,
+                    cache=False,
+                )
+                break
+            except ChunkedEncodingError as e:
+                if attempt < 4:
+                    logger.warning(
+                        f"ChunkedEncodingError encountered, retrying {attempt + 1}/5"
+                    )
+
+                    time.sleep(2**attempt)
+                else:
+                    err = (
+                        f"ChunkedEncodingError encountered after 5 attempts. "
+                        f"Unable to query {self.abbreviation} catalog."
+                    )
+                    logger.error(err)
+                    raise VizierError(err) from e
+
+            except Exception as e:
+                err = (
+                    f"Error querying {self.abbreviation} catalog: {e}. "
+                    "Please check the catalog code and network connection."
+                )
+                logger.error(err)
+                raise VizierError(err) from e
 
         if len(query) == 0:
             err = f"No matches found in the given radius in {self.abbreviation}"

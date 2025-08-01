@@ -317,7 +317,8 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
                 (src_df["disttmnr1"] < 2.0) & (src_df["tmjmag1"] < 11.0)
             )
             & ~(  # Not a 2MASS source that hasn't brightened by 4 mag
-                (src_df["disttmnr1"] < 2.0)
+                (src_df["tmjmag1"] < 16)
+                & (src_df["disttmnr1"] < 2.0)
                 & (src_df["tmjmag1"] - src_df["magpsf"] < 4.0)
             )
             & (  # 2 WINTER detections or a ZTF name (and therefore a ZTF detection)
