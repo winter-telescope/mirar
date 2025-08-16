@@ -8,7 +8,7 @@ from pathlib import Path
 
 from fastavro.schema import load_schema
 
-from mirar.paths import base_raw_dir
+from mirar.paths import base_output_dir, base_raw_dir
 from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
 
@@ -93,19 +93,50 @@ if winter_calhunter_directory is None:
 else:
     winter_calhunter_directory = Path(winter_calhunter_directory)
 
-winter_cal_requirements = [
+base_winter_cal_requirements = [
     CalRequirement(
         target_name="dark",
         required_field="EXPTIME",
         required_values=[
             "120.0",  # J/Y
-            "60.0",  # Hs
+            # "60.0",  # Hs
             # "3.0",  # J flats
             # "4.0",  # Y flats
             # "5.0",  # Hs flats
         ],
     ),
 ]
+
+winter_cal_requirements = base_winter_cal_requirements + [
+    CalRequirement(
+        target_name="dark",
+        required_field="EXPTIME",
+        required_values=[
+            "0.35",  # J flats
+            "0.57",  # Y flats
+            "0.46",  # Hs flats
+        ],
+    ),
+    CalRequirement(
+        target_name="flat",
+        required_field="FILTER",
+        required_values=[
+            "Y",
+            "J",
+            # "H"  # FIXME: Add back in
+        ],
+    ),
+]
+
+winter_lab_flat_dir = os.getenv("WINTER_LAB_FLAT_DIR", None)
+if winter_lab_flat_dir is None:
+    winter_lab_flat_dir = base_output_dir.joinpath("winter/lab_flats")
+    logger.warning(
+        f"No specific lab flat directory set. Using "
+        f"{winter_lab_flat_dir} as the directory for lab flats. "
+        f"If you want to change it, set the WINTER_LAB_FLAT_DIR "
+        f"environment variable."
+    )
 
 winter_avro_schema_path = winter_file_dir.joinpath("avro_schema/winter.alert.avsc")
 winter_avro_schema = load_schema(winter_avro_schema_path)

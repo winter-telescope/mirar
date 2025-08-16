@@ -20,7 +20,7 @@ from mirar.paths import (
     SATURATE_KEY,
     get_output_dir,
 )
-from mirar.pipelines.winter.config import sextractor_anet_config
+from mirar.pipelines.winter.config import sextractor_anet_config, winter_lab_flat_dir
 from mirar.pipelines.winter.fourier_bkg_model import subtract_fourier_background_model
 from mirar.processors.split import SUB_ID_KEY
 from mirar.processors.utils.image_selector import select_from_images
@@ -221,6 +221,23 @@ def mask_stamps_around_bright_stars(image: Image):
     return mask
 
 
+def winter_boardid_6_channel_masker(images: ImageBatch) -> ImageBatch:
+    """
+    Masks the bad channel pixels for board 6 images. This is required because swarp does not
+    handle masked pixels distributed across the image well, producing a fully masked image.
+    :param images: ImageBatch
+    :return: ImageBatch with masked bad channel pixels
+    """
+    for image in images:
+        boardid = image.header["BOARD_ID"]
+        if boardid == 6:
+            img_data = image.get_data()
+            img_data[0::2, 0::4] = np.nan
+            image.set_data(img_data)
+
+    return images
+
+
 def winter_boardid_6_demasker(images: ImageBatch) -> ImageBatch:
     """
     Demasks images from board 6 by replacing the bad channel pixels with the median of
@@ -237,3 +254,22 @@ def winter_boardid_6_demasker(images: ImageBatch) -> ImageBatch:
             image.set_data(img_data)
 
     return images
+
+
+def winter_lab_master_flat_path_generator(images: ImageBatch) -> Path:
+    """
+    Generates a master flat for the winter data using the lab flats
+    :param images: ImageBatch
+    :return: ImageBatch with master flat applied
+    """
+    assert len(images) == 1, (
+        "More than one image found for lab master flat calibration, "
+        "please use ImageRebatcher before this step."
+    )
+
+    image = images[0]
+    board_id = image.header["BOARD_ID"]
+    lab_flat_version = image.header["LABFLATV"]
+    return winter_lab_flat_dir.joinpath(
+        f"{lab_flat_version}/" f"master_lab_flat_boardid_{board_id}.fits"
+    )
