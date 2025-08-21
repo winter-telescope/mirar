@@ -79,116 +79,128 @@ parser.add_argument(
     help="Subdirectory to look in for raw images of a given night",
 )
 
-args = parser.parse_args()
 
-if args.download:
-    Pipeline.pipelines[args.pipeline.lower()].download_raw_images_for_night(
-        night=args.night
-    )
+def main():
+    """
+    CLI function to run the mirar pipeline.
+    """
 
-    logger.info("Download complete")
+    args = parser.parse_args()
 
-night = args.night
+    if args.download:
+        Pipeline.pipelines[args.pipeline.lower()].download_raw_images_for_night(
+            night=args.night
+        )
 
-with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
-    print(f"Using cache {temp_dir_path}")
+        logger.info("Download complete")
 
-    cache.set_cache_dir(temp_dir_path)
+    night = args.night
 
-    if args.monitor:
-        if args.emailrecipients is not None:
-            EMAIL_RECIPIENTS = args.emailrecipients.split(",")
+    with tempfile.TemporaryDirectory(dir=TEMP_DIR) as temp_dir_path:
+        print(f"Using cache {temp_dir_path}")
+
+        cache.set_cache_dir(temp_dir_path)
+
+        if args.monitor:
+            if args.emailrecipients is not None:
+                email_recipients = args.emailrecipients.split(",")
+            else:
+                email_recipients = None
+
+            config = args.config
+            if config is None:
+                config = "realtime"
+
+            if night is None:
+                ln = Time.now()
+                night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
+
+            monitor = Monitor(
+                pipeline=args.pipeline,
+                night=night,
+                realtime_configurations=config,
+                postprocess_configurations=(
+                    args.postprocessconfig.split(",")
+                    if args.postprocessconfig is not None
+                    else None
+                ),
+                log_level=args.level,
+                final_postprocess_hours=args.finalpostprocesshours,
+                midway_postprocess_hours=args.midwaypostprocesshours,
+                email_sender=args.emailsender,
+                email_recipients=email_recipients,
+                raw_dir=args.rawdir,
+            )
+            monitor.process_realtime()
+
         else:
-            EMAIL_RECIPIENTS = None
+            # Set up logging
 
-        CONFIG = args.config
-        if CONFIG is None:
-            CONFIG = "realtime"
+            log = logging.getLogger("mirar")
 
-        if night is None:
-            ln = Time.now()
-            night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
+            if args.logfile is None:
+                handler = logging.StreamHandler(sys.stdout)
+            else:
+                handler = logging.FileHandler(args.logfile)
 
-        monitor = Monitor(
-            pipeline=args.pipeline,
-            night=night,
-            realtime_configurations=CONFIG,
-            postprocess_configurations=(
-                args.postprocessconfig.split(",")
-                if args.postprocessconfig is not None
-                else None
-            ),
-            log_level=args.level,
-            final_postprocess_hours=args.finalpostprocesshours,
-            midway_postprocess_hours=args.midwaypostprocesshours,
-            email_sender=args.emailsender,
-            email_recipients=EMAIL_RECIPIENTS,
-            raw_dir=args.rawdir,
-        )
-        monitor.process_realtime()
+            formatter = logging.Formatter(
+                "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
+            )
+            handler.setFormatter(formatter)
+            log.addHandler(handler)
+            log.setLevel(args.level)
 
-    else:
-        # Set up logging
+            config = args.config
+            if config is None:
+                config = "default"
 
-        log = logging.getLogger("mirar")
+            if night is None:
+                ln = Time.now() - 1.0 * u.day
+                night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
 
-        if args.logfile is None:
-            handler = logging.StreamHandler(sys.stdout)
-        else:
-            handler = logging.FileHandler(args.logfile)
-
-        formatter = logging.Formatter(
-            "%(name)s [l %(lineno)d] - %(levelname)s - %(message)s"
-        )
-        handler.setFormatter(formatter)
-        log.addHandler(handler)
-        log.setLevel(args.level)
-
-        CONFIG = args.config
-        if CONFIG is None:
-            CONFIG = "default"
-
-        if night is None:
-            ln = Time.now() - 1.0 * u.day
-            night = str(ln).split(" ", maxsplit=1)[0].replace("-", "")
-
-        pipe = get_pipeline(
-            args.pipeline,
-            selected_configurations=CONFIG,
-            night=night,
-        )
-
-        batches, errorstack = pipe.reduce_images(
-            catch_all_errors=not args.failfast,
-        )
-
-        processors = pipe.get_latest_configuration()
-        flowify(processors, pipe.get_flowchart_output_path(), include_stats=True)
-
-        if args.postprocessconfig is not None:
-            post_config = [
-                x for x in pipe.set_configuration(CONFIG) if isinstance(x, ImageLoader)
-            ][:1]
-            post_config += pipe.postprocess_configuration(
-                errorstack=errorstack,
-                selected_configurations=args.postprocessconfig.split(","),
+            pipe = get_pipeline(
+                args.pipeline,
+                selected_configurations=config,
+                night=night,
             )
 
-            PROTECTED_KEY = "_new_postprocess"
-
-            pipe.add_configuration(PROTECTED_KEY, post_config)
-            pipe.set_configuration(PROTECTED_KEY)
-
-            _, new_errorstack, _ = pipe.reduce_images(
-                selected_configurations=PROTECTED_KEY,
-                catch_all_errors=True,
+            _, errorstack = pipe.reduce_images(
+                catch_all_errors=not args.failfast,
             )
-            errorstack += new_errorstack
 
-        print(errorstack.summarise_error_stack(verbose=False))
+            processors = pipe.get_latest_configuration()
+            flowify(processors, pipe.get_flowchart_output_path(), include_stats=True)
 
-        errorstack.summarise_error_stack(
-            output_path=pipe.get_error_output_path(), verbose=True
-        )
+            if args.postprocessconfig is not None:
+                post_config = [
+                    x
+                    for x in pipe.set_configuration(config)
+                    if isinstance(x, ImageLoader)
+                ][:1]
+                post_config += pipe.postprocess_configuration(
+                    errorstack=errorstack,
+                    selected_configurations=args.postprocessconfig.split(","),
+                )
 
-        logger.info("End of mirar execution")
+                protected_key = "_new_postprocess"
+
+                pipe.add_configuration(protected_key, post_config)
+                pipe.set_configuration(protected_key)
+
+                _, new_errorstack = pipe.reduce_images(
+                    selected_configurations=protected_key,
+                    catch_all_errors=True,
+                )
+                errorstack += new_errorstack
+
+            print(errorstack.summarise_error_stack(verbose=False))
+
+            errorstack.summarise_error_stack(
+                output_path=pipe.get_error_output_path(), verbose=True
+            )
+
+            logger.info("End of mirar execution")
+
+
+if __name__ == "__main__":
+    main()
