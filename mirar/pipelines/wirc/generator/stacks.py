@@ -16,6 +16,7 @@ MAX_RADIUS_DEG = 5.0 / 60.0  # WIRC is 10 arc minutes each side
 def label_stack_id(batch: ImageBatch) -> ImageBatch:
     """
     Label the stack id of the images in the batch
+
     :param batch: Original batch of images
     :return: Labeled batch of images
     """
@@ -41,7 +42,7 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
                 coords.SkyCoord(ra=ras, dec=decs, unit="deg")
             )
 
-            mask = d2d < (MAX_RADIUS_DEG * u.deg)
+            mask = d2d < (MAX_RADIUS_DEG * u.deg * 2.0)
             if mask:
                 match = idx
 
