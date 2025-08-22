@@ -84,7 +84,7 @@ from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
 
 load_stack = [
-    ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image),
+    ImageLoader(input_sub_dir="final"),
     ImageBatcher(split_key=[BASE_NAME_KEY]),
 ]
 
@@ -307,3 +307,21 @@ candidates = (
 )
 
 test = reduction + imsub
+
+debug = [
+    ImageLoader(input_sub_dir="stack"),
+    Sextractor(
+        **sextractor_photometry_config,
+        output_sub_dir="final_sextractor",
+        checkimage_type="BACKGROUND_RMS",
+    ),
+    PhotCalibrator(
+        ref_catalog_generator=wirc_photometric_catalog_generator,
+        write_regions=True,
+        temp_output_sub_dir="photcal",
+    ),
+    CatalogLimitingMagnitudeCalculator(
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
+    ),
+    ImageSaver(output_dir_name="final"),
+]

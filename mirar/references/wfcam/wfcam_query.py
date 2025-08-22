@@ -496,6 +496,9 @@ def download_wfcam_archive_images(
         waveband=waveband,
     )
 
+    print(url_list)
+    print(wfau_query.database)
+
     imagepaths = []
     for url_ind, url in enumerate(url_list):
         logger.debug(f"Downloading {url_ind}/{len(url_list)}")
@@ -516,7 +519,8 @@ def download_wfcam_archive_images(
             undeprecated_compids = pd.read_csv(undeprecated_compids_file)[
                 "COMPID"
             ].values
-            if compid not in undeprecated_compids:
+
+            if (compid not in undeprecated_compids) & (survey_name != "UHSDR2"):
                 logger.debug(
                     f"File with multiframeid {multiframe_id} and "
                     f"extension {extension_id} is deprecated. Skipping."
