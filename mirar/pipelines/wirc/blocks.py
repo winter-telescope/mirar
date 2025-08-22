@@ -17,6 +17,7 @@ from mirar.pipelines.wirc.generator import (
     label_stack_id,
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
+    wirc_reference_from_dir_generator,
     wirc_reference_generator,
     wirc_reference_image_resampler,
     wirc_reference_psfex,
@@ -287,6 +288,18 @@ image_photometry = [
 ]
 
 imsub = reference + subtract + forced_photometry
+
+reference_dir = [
+    ImageRebatcher(split_key=[BASE_NAME_KEY]),
+    ProcessReference(
+        ref_image_generator=wirc_reference_from_dir_generator,
+        swarp_resampler=wirc_reference_image_resampler,
+        sextractor=wirc_reference_sextractor,
+        ref_psfex=wirc_reference_psfex,
+    ),
+]
+
+imsub_dir = reference_dir + subtract + forced_photometry
 
 candidates = (
     [

@@ -10,7 +10,9 @@ from mirar.downloader.caltech import download_via_ssh
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.wirc.blocks import (
     candidates,
+    debug,
     imsub,
+    imsub_dir,
     load_raw,
     load_stack,
     log,
@@ -37,8 +39,10 @@ class WircPipeline(Pipeline):
         "default": load_raw + reduce + imsub,
         "reduce": load_raw + reduce,
         "imsub": load_stack + imsub,
+        "imsubdir": load_stack + imsub_dir,
         "log": load_raw + log,
         "candidates": candidates,
+        "debug": debug,
     }
 
     @staticmethod

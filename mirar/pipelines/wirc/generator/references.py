@@ -5,7 +5,7 @@ Module for generating reference images for the WIRC pipeline
 import logging
 
 from mirar.data import Image
-from mirar.paths import get_output_dir
+from mirar.paths import TARGET_KEY, get_output_dir
 from mirar.pipelines.winter.generator.references import (
     winter_wfau_component_image_stacker,
 )
@@ -15,6 +15,7 @@ from mirar.pipelines.wirc.wirc_files import (
     wirc_file_dir,
 )
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
+from mirar.references.directory import RefFromDirectory
 from mirar.references.wfcam.wfcam_query import WFAUQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 
@@ -58,6 +59,20 @@ def wirc_reference_generator(image: Image):
         component_image_sub_dir="components",
         references_base_subdir_name="wirc/references",
         # stack_image_annotator=winter_reference_stack_annotator,
+    )
+
+
+def wirc_reference_from_dir_generator(image: Image):
+    """
+    Gets a reference image generator for the wirc data
+
+    :param image: Image
+    :return: Reference image generator
+    """
+
+    ref_file_base_name = f"wirc_{image[TARGET_KEY]}_{image['FILTER']}"
+    return RefFromDirectory(
+        file_base_name=ref_file_base_name, filter_name=image["FILTER"]
     )
 
 

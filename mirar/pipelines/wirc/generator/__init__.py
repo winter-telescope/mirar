@@ -11,6 +11,7 @@ from mirar.pipelines.wirc.generator.imsub import (
     wirc_zogy_catalogs_purifier,
 )
 from mirar.pipelines.wirc.generator.references import (
+    wirc_reference_from_dir_generator,
     wirc_reference_generator,
     wirc_reference_image_resampler,
     wirc_reference_psfex,
