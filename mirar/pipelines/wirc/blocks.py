@@ -133,7 +133,11 @@ masking = [
     MaskPixelsFromPath(mask_path=wirc_mask_path),
 ]
 
-dark_calibration = [ImageRebatcher("EXPTIME"), DarkCalibrator()]
+dark_calibration = [
+    ImageRejector((OBSCLASS_KEY, ["focus", "pointing"])),
+    ImageRebatcher("EXPTIME"),
+    DarkCalibrator(),
+]
 
 
 reduction = (
