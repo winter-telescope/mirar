@@ -87,12 +87,14 @@ def load_from_list(
 def load_from_dir(
     input_dir: str | Path,
     open_f: Callable[[str | Path], Image | list[Image]],
+    bad_image_file: Path | None = None,
 ) -> ImageBatch:
     """
     Function to load all images in a directory
 
     :param input_dir: Input directory
     :param open_f: Function to open images
+    :param bad_image_file: File containing list of bad images to skip
     :return: ImageBatch object
     """
     img_list = sorted(glob(f"{input_dir}/*.fits"))
@@ -103,6 +105,19 @@ def load_from_dir(
         unzipped_list = unzip(zipped_list)
         for file in unzipped_list:
             img_list.append(file)
+
+    if bad_image_file is not None:
+
+        with open(bad_image_file, "rb") as f:
+            bad_images = f.read().decode().splitlines()
+
+        clean_list = [x for x in img_list if os.path.basename(x) not in bad_images]
+
+        n_skipped = len(img_list) - len(clean_list)
+
+        logger.info(f"Skipping {n_skipped} bad images listed in {bad_image_file}")
+
+        img_list = clean_list
 
     if len(img_list) < 1:
         err = f"No images found in {input_dir}. Please check path is correct!"
@@ -125,6 +140,7 @@ class ImageLoader(BaseImageProcessor):
         input_sub_dir: str = RAW_IMG_SUB_DIR,
         input_img_dir: str | Path = base_raw_dir,
         load_image: Callable[[str], Image | list[Image]] = None,
+        bad_image_file: str = "bad_images.txt",
     ):
         super().__init__()
         self.input_sub_dir = input_sub_dir
@@ -132,6 +148,7 @@ class ImageLoader(BaseImageProcessor):
         if load_image is None:
             load_image = self.default_load_image
         self.load_image = load_image
+        self.bad_image_file = bad_image_file
 
     def description(self):
         return (
@@ -143,10 +160,14 @@ class ImageLoader(BaseImageProcessor):
         input_dir = self.input_img_dir.joinpath(
             os.path.join(self.night_sub_dir, self.input_sub_dir)
         )
+        bad_image_path = input_dir / self.bad_image_file
+
+        bad_image_file = bad_image_path if bad_image_path.is_file() else None
 
         return load_from_dir(
             input_dir,
             open_f=self.load_image,
+            bad_image_file=bad_image_file,
         )
 
 
