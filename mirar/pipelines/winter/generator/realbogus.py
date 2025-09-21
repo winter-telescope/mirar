@@ -6,7 +6,9 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
+from winterrb.tree import get_numpy_from_df
 from winterrb.utils import make_triplet
+from xgboost import XGBClassifier
 
 
 def apply_rb_to_table(model: nn.Module, table: pd.DataFrame) -> pd.DataFrame:
@@ -29,5 +31,23 @@ def apply_rb_to_table(model: nn.Module, table: pd.DataFrame) -> pd.DataFrame:
         rb_scores.append(float(outputs[0]))
 
     table["rb"] = rb_scores
+
+    return table
+
+
+def apply_xrb_to_table(clf: XGBClassifier, table: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply the realbogus score to a table of sources
+
+    :param model: xgboost model
+    :param table: DataFrame of sources
+    :return: Table of sources with 'xrealbogus' score
+    """
+
+    numpy_array = get_numpy_from_df(table)
+
+    scores = clf.predict_proba(numpy_array).T[1]
+
+    table["xrb"] = scores
 
     return table

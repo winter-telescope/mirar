@@ -43,6 +43,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     apply_rb_to_table,
+    apply_xrb_to_table,
     mask_stamps_around_bright_stars,
     select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
@@ -135,7 +136,7 @@ from mirar.processors.sources import (
     SourceWriter,
     ZOGYSourceDetector,
 )
-from mirar.processors.sources.machine_learning import Pytorch
+from mirar.processors.sources.machine_learning import Pytorch, XGBoost
 from mirar.processors.split import SUB_ID_KEY, SplitImage, SwarpImageSplitter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
@@ -732,11 +733,19 @@ load_sources = [
 ml_classify = [
     Pytorch(
         model=WINTERNet(),
-        model_weights_url="https://github.com/winter-telescope/winterrb/raw/"
-        "v1.0.0/models/winterrb_v1_0_0_weights.pth",
+        # model_weights_url="https://github.com/winter-telescope/winterrb/raw/"
+        # "v2.0.0/models/winterrb_v2_0_0_weights.pth",
+        model_weights_url="https://github.com/winter-telescope/winterrb/raw/refs/heads/v2/models/winterrb_v2_0_0_weights.pth",  # FIXME: update once v2.0.0 is tagged
         apply_to_table=apply_rb_to_table,
     ),
-    HeaderEditor(edit_keys="rbversion", values="v1.0.0"),
+    HeaderEditor(edit_keys="rbversion", values="v2.0.0"),
+    XGBoost(
+        # model_json_url="https://github.com/winter-telescope/winterrb/raw/"
+        # "v2.0.0/models/xgboost_v2.0.0.json",
+        model_json_url="https://github.com/winter-telescope/winterrb/raw/refs/heads/v2/models/xgboost_v2.0.0.json",  # FIXME: update once v2.0.0 is tagged
+        apply_to_table=apply_xrb_to_table,
+    ),
+    HeaderEditor(edit_keys="xrbversion", values="v2.0.0"),
 ]
 
 crossmatch_candidates = [
