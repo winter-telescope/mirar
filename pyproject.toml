@@ -134,5 +134,5 @@ mirar-docs-autogen = "mirar.utils.docs:iterate_rst_generation"
 winter-stack = 'mirar.pipelines.winter.run:run_stack_of_stacks'
 
 [build-system]
-requires = ["setuptools", "wheel", "poetry-core>=1.8.0",]
+requires = ["setuptools", "wheel", "poetry-core>=2.0.0",]
 build-backend = "poetry.core.masonry.api"
