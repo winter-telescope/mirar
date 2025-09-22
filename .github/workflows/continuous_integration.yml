@@ -74,8 +74,6 @@ jobs:
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-          sudo apt-get update
-          sudo apt-get install libstdc++6
           conda install -c conda-forge astromatic-source-extractor astromatic-scamp==2.10.0 astromatic-swarp astromatic-psfex astrometry=0.95 gsl wcstools
           swarp -v
           scamp -v
@@ -104,6 +102,7 @@ jobs:
       # Set up database
       - name: postgres
         run: |
+          sudo apt-get update
           sudo apt-get install postgresql
           sudo apt-get install postgresql-common
           sudo apt-get install postgresql-server-dev-14
