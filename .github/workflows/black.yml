@@ -22,8 +22,7 @@ jobs:
         run: |
           pip install --upgrade pip
           python -m pip install --upgrade poetry
-          poetry install
-          pip install ".[dev]"
+          poetry install -E dev
       - name: Reformat the code with black
         run: |
           poetry run black . --check

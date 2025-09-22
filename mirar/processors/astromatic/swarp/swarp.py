@@ -257,9 +257,10 @@ class Swarp(BaseImageProcessor):
         combined_header_dict = {
             x: batch[0][x] for x in batch[0].keys() if x not in all_astrometric_keywords
         }
-        with open(swarp_image_list_path, "w", encoding="utf8") as img_list, open(
-            swarp_weight_list_path, "w", encoding="utf8"
-        ) as weight_list:
+        with (
+            open(swarp_image_list_path, "w", encoding="utf8") as img_list,
+            open(swarp_weight_list_path, "w", encoding="utf8") as weight_list,
+        ):
             for image in batch:
                 pixscale_to_use = self.pixscale
                 x_imgpixsize_to_use = self.x_imgpixsize

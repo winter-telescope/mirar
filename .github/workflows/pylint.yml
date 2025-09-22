@@ -23,8 +23,7 @@ jobs:
         run: |
           pip install --upgrade pip
           python -m pip install --upgrade poetry
-          poetry install
-          pip install ".[dev]"
+          poetry install -E dev
       - name: Analysing the code with pylint
         run: |
            poetry run pylint mirar --fail-under=9.77
