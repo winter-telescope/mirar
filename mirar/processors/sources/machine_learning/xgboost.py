@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class XGBoost(BaseSourceProcessor):
     """
-    Class to apply an exgboost model to a source table
+    Class to apply a xgboost model to a source table
     """
 
     base_key = "xgboost"
@@ -37,7 +37,7 @@ class XGBoost(BaseSourceProcessor):
         self.model = None
 
     def description(self) -> str:
-        return f"Processor to use Pytorch model {self.model_name} to score sources"
+        return f"Processor to use XGBoost model {self.model_name} to score sources"
 
     def get_ml_path(self) -> Path:
         """

@@ -25,10 +25,15 @@ def apply_rb_to_table(model: nn.Module, table: pd.DataFrame) -> pd.DataFrame:
     for _, row in table.iterrows():
         triplet = make_triplet(row, normalize=True)
         triplet_reshaped = np.transpose(np.expand_dims(triplet, axis=0), (0, 3, 1, 2))
+
         with torch.no_grad():
-            outputs = model(torch.from_numpy(triplet_reshaped))
+            logits = model(torch.from_numpy(triplet_reshaped))
+            outputs = torch.sigmoid(logits).cpu().numpy().ravel()
 
         rb_scores.append(float(outputs[0]))
+
+    print(rb_scores)
+    raise
 
     table["rb"] = rb_scores
 
