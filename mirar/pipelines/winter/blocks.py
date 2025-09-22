@@ -734,7 +734,7 @@ load_sources = [
     SourceBatcher(BASE_NAME_KEY),
 ]
 
-ml_classify = [
+rb_classify = [
     Pytorch(
         model=WINTERNet(),
         # model_weights_url="https://github.com/winter-telescope/winterrb/raw/"
@@ -743,13 +743,6 @@ ml_classify = [
         apply_to_table=apply_rb_to_table,
     ),
     HeaderEditor(edit_keys="rbversion", values="v2.0.0"),
-    XGBoost(
-        # model_json_url="https://github.com/winter-telescope/winterrb/raw/"
-        # "v2.0.0/models/xgboost_v2.0.0.json",
-        model_json_url="https://github.com/winter-telescope/winterrb/raw/refs/heads/v2/models/xgboost_v2.0.0.json",  # FIXME: update once v2.0.0 is tagged
-        apply_to_table=apply_xrb_to_table,
-    ),
-    HeaderEditor(edit_keys="xrbversion", values="v2.0.0"),
 ]
 
 crossmatch_candidates = [
@@ -763,6 +756,14 @@ crossmatch_candidates = [
     CustomSourceTableModifier(
         modifier_function=winter_candidate_avro_fields_calculator
     ),
+    XGBoost(
+        # model_json_url="https://github.com/winter-telescope/winterrb/raw/"
+        # "v2.0.0/models/xgboost_v2.0.0.json",
+        model_json_url="https://github.com/winter-telescope/winterrb/raw/refs/heads/v2/models/xgboost_v2.0.0.json",
+        # FIXME: update once v2.0.0 is tagged
+        apply_to_table=apply_xrb_to_table,
+    ),
+    HeaderEditor(edit_keys="xrbversion", values="v2.0.0"),
     SourceWriter(output_dir_name="kowalski"),
 ]
 
@@ -859,7 +860,7 @@ avro_broadcast = [
 
 avro_export = avro_write + avro_broadcast
 
-process_candidates = ml_classify + crossmatch_candidates + name_candidates + avro_write
+process_candidates = rb_classify + crossmatch_candidates + name_candidates + avro_write
 
 load_avro = [
     SourceLoader(input_dir_name="preavro", input_dir=base_output_dir),

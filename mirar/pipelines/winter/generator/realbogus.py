@@ -37,9 +37,9 @@ def apply_rb_to_table(model: nn.Module, table: pd.DataFrame) -> pd.DataFrame:
 
 def apply_xrb_to_table(clf: XGBClassifier, table: pd.DataFrame) -> pd.DataFrame:
     """
-    Apply the realbogus score to a table of sources
+    Apply the xrealbogus score to a table of sources
 
-    :param model: xgboost model
+    :param clf: xgboost model
     :param table: DataFrame of sources
     :return: Table of sources with 'xrealbogus' score
     """
