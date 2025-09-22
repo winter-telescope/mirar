@@ -82,7 +82,7 @@ You can now install the dependencies. Navigate to the root of the mirar director
 
 .. code-block:: bash
     conda activate mirar
-    poetry install
+    poetry install -E dev
 
 Lastly, you need to install the `pre-commit hooks <https://pre-commit.com/>`_ (see :doc:`contributing-guide` for more info about what these do):
 
