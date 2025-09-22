@@ -737,9 +737,8 @@ load_sources = [
 rb_classify = [
     Pytorch(
         model=WINTERNet(),
-        # model_weights_url="https://github.com/winter-telescope/winterrb/raw/"
-        # "v2.0.0/models/winterrb_v2_0_0_weights.pth",
-        model_weights_url="https://github.com/winter-telescope/winterrb/raw/refs/heads/v2/models/winterrb_v2_0_0_weights.pth",  # FIXME: update once v2.0.0 is tagged
+        model_weights_url="https://github.com/winter-telescope/winterrb/raw/"
+        "v2.0.0/models/winterrb_v2_0_0_weights.pth",
         apply_to_table=apply_rb_to_table,
     ),
     HeaderEditor(edit_keys="rbversion", values="v2.0.0"),
@@ -757,10 +756,8 @@ crossmatch_candidates = [
         modifier_function=winter_candidate_avro_fields_calculator
     ),
     XGBoost(
-        # model_json_url="https://github.com/winter-telescope/winterrb/raw/"
-        # "v2.0.0/models/xgboost_v2.0.0.json",
-        model_json_url="https://github.com/winter-telescope/winterrb/raw/refs/heads/v2/models/xgboost_v2.0.0.json",
-        # FIXME: update once v2.0.0 is tagged
+        model_json_url="https://github.com/winter-telescope/winterrb/raw/"
+        "v2.0.0/models/xgboost_v2.0.0.json",
         apply_to_table=apply_xrb_to_table,
     ),
     HeaderEditor(edit_keys="xrbversion", values="v2.0.0"),
