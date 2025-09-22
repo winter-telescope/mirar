@@ -232,7 +232,11 @@ load_raw = [
 ]
 
 load_astrometry = [
-    ImageLoader(input_sub_dir="post_scamp", load_image=load_astrometried_winter_image)
+    ImageLoader(
+        input_sub_dir="post_scamp",
+        load_image=load_astrometried_winter_image,
+        input_img_dir=base_output_dir,
+    )
 ]
 
 extract_all = [
@@ -698,7 +702,7 @@ imsub = [
 ]
 
 load_sub = [
-    ImageLoader(input_sub_dir="diffs"),
+    ImageLoader(input_sub_dir="diffs", input_img_dir=base_output_dir),
     ImageBatcher(BASE_NAME_KEY),
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
     ImageSaver(output_dir_name="subtract"),
@@ -726,7 +730,7 @@ detect_candidates = [
 # candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
 load_sources = [
-    SourceLoader(input_dir_name="candidates"),
+    SourceLoader(input_dir_name="candidates", input_dir=base_output_dir),
     SourceBatcher(BASE_NAME_KEY),
 ]
 
@@ -763,7 +767,7 @@ crossmatch_candidates = [
 ]
 
 load_post_kowalski = [
-    SourceLoader(input_dir_name="kowalski"),
+    SourceLoader(input_dir_name="kowalski", input_dir=base_output_dir),
 ]
 
 select_history = [
@@ -814,7 +818,7 @@ name_candidates = [
 ]
 
 load_preavro = [
-    SourceLoader(input_dir_name="preavro"),
+    SourceLoader(input_dir_name="preavro", input_dir=base_output_dir),
 ]
 
 avro_write = [
@@ -857,10 +861,13 @@ avro_export = avro_write + avro_broadcast
 
 process_candidates = ml_classify + crossmatch_candidates + name_candidates + avro_write
 
-load_avro = [SourceLoader(input_dir_name="preavro"), SourceBatcher(BASE_NAME_KEY)]
+load_avro = [
+    SourceLoader(input_dir_name="preavro", input_dir=base_output_dir),
+    SourceBatcher(BASE_NAME_KEY),
+]
 
 load_skyportal = [
-    SourceLoader(input_dir_name="preskyportal"),
+    SourceLoader(input_dir_name="preskyportal", input_dir=base_output_dir),
     SourceBatcher(BASE_NAME_KEY),
 ]
 
