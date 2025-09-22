@@ -90,7 +90,7 @@ class Pytorch(BaseSourceProcessor):
             raise FileNotFoundError(err)
 
         if path.suffix in [".pth", ".pt"]:
-            return torch.load(path)
+            return torch.load(path, map_location="cpu")
 
         raise ValueError(f"Unknown model type {path.suffix}")
 
