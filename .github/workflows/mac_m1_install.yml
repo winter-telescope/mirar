@@ -55,7 +55,8 @@ jobs:
         env:
           SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT: 120
         run: |
-          poetry install --with dev
+          poetry install
+          pip install ".[dev]"
 
       - name: install packages with conda
         shell: bash -el {0}
