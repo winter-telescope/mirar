@@ -101,14 +101,12 @@ class XGBoost(BaseSourceProcessor):
 
         if self.model is None:
 
-            model = self._model
-
             local_path = self.get_ml_path()
 
             if not local_path.exists():
                 self.download_model()
 
-            model = self.load_model(str(local_path))
+            model = self.load_model(local_path)
 
             self.model = model
 
