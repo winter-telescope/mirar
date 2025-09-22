@@ -110,7 +110,7 @@ class Pytorch(BaseSourceProcessor):
             if not local_path.exists():
                 self.download_model()
 
-            model.load_state_dict(torch.load(local_path))
+            model.load_state_dict(self.load_model(local_path))
             model.eval()
 
             self.model = model
