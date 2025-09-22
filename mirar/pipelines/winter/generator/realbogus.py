@@ -32,9 +32,6 @@ def apply_rb_to_table(model: nn.Module, table: pd.DataFrame) -> pd.DataFrame:
 
         rb_scores.append(float(outputs[0]))
 
-    print(rb_scores)
-    raise
-
     table["rb"] = rb_scores
 
     return table
