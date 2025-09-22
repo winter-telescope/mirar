@@ -6758,14 +6758,14 @@ files = [
 
 [[package]]
 name = "winterrb"
-version = "2.0.0"
+version = "2.0.1"
 description = ""
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "winterrb-2.0.0-py3-none-any.whl", hash = "sha256:2e5f4950b3812a48872566fccef0d8533caca69b095de909fdff657ae84e0a94"},
-    {file = "winterrb-2.0.0.tar.gz", hash = "sha256:a17ae5e7cbf36809004717e0194686a76ee7750cdd8a9cf7af046b45065aefcd"},
+    {file = "winterrb-2.0.1-py3-none-any.whl", hash = "sha256:34d44788b40cbb8d755d8b48d8e1fba89b2316a05d1f23306628e7646d3078d4"},
+    {file = "winterrb-2.0.1.tar.gz", hash = "sha256:6d88f8f4157f4a692eb2ab668c7c544475341df6685715936a2e960d1c156e84"},
 ]
 
 [package.dependencies]
@@ -6874,4 +6874,4 @@ dev = ["black", "coveralls", "isort", "mypy", "pre-commit", "pylint", "rstcloth"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "f1bc9ceea321e457ba7efcf85fc3cb3e9e61ee3006e3d5e2349c2a3f78685b53"
+content-hash = "c8e5ef5711b8f891d40fc271528eed3627929d07013cf7b664a45f686601badf"
