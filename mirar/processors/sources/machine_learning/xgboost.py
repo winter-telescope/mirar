@@ -8,8 +8,7 @@ from typing import Callable
 
 import pandas as pd
 import requests
-import torch
-from torch import nn
+from xgboost import XGBClassifier
 
 from mirar.data import SourceBatch
 from mirar.paths import ml_models_dir
@@ -18,29 +17,27 @@ from mirar.processors.base_processor import BaseSourceProcessor
 logger = logging.getLogger(__name__)
 
 
-class Pytorch(BaseSourceProcessor):
+class XGBoost(BaseSourceProcessor):
     """
-    Class to apply a pytorch model to a source table
+    Class to apply a xgboost model to a source table
     """
 
-    base_key = "pytorch"
+    base_key = "xgboost"
 
     def __init__(
         self,
-        model: nn.Module,
-        model_weights_url: str,
-        apply_to_table: Callable[[nn.Module, pd.DataFrame], pd.DataFrame],
+        model_json_url: str,
+        apply_to_table: Callable[[XGBClassifier, pd.DataFrame], pd.DataFrame],
     ):
         super().__init__()
-        self._model = model
-        self.model_weights_url = model_weights_url
-        self.model_name = Path(self.model_weights_url).name
+        self.model_json_url = model_json_url
+        self.model_name = Path(self.model_json_url).name
         self.apply_to_table = apply_to_table
 
         self.model = None
 
     def description(self) -> str:
-        return f"Processor to use Pytorch model {self.model_name} to score sources"
+        return f"Processor to use XGBoost model {self.model_name} to score sources"
 
     def get_ml_path(self) -> Path:
         """
@@ -55,7 +52,7 @@ class Pytorch(BaseSourceProcessor):
         Download the ML model
         """
 
-        url = self.model_weights_url
+        url = self.model_json_url
         local_path = self.get_ml_path()
 
         logger.info(
@@ -79,7 +76,7 @@ class Pytorch(BaseSourceProcessor):
     @staticmethod
     def load_model(path):
         """
-        Function to load a pytorch model dict from a path
+        Function to load an xgboost model dict from a path
 
         :param path: Path to the model
         :return: Pytorch model dict
@@ -89,9 +86,10 @@ class Pytorch(BaseSourceProcessor):
             logger.error(err)
             raise FileNotFoundError(err)
 
-        if path.suffix in [".pth", ".pt"]:
-            return torch.load(path, map_location="cpu")
-
+        if path.suffix in [".json"]:
+            clf = XGBClassifier()
+            clf.load_model(str(path))
+            return clf
         raise ValueError(f"Unknown model type {path.suffix}")
 
     def get_model(self):
@@ -103,15 +101,12 @@ class Pytorch(BaseSourceProcessor):
 
         if self.model is None:
 
-            model = self._model
-
             local_path = self.get_ml_path()
 
             if not local_path.exists():
                 self.download_model()
 
-            model.load_state_dict(self.load_model(local_path))
-            model.eval()
+            model = self.load_model(local_path)
 
             self.model = model
 

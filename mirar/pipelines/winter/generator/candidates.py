@@ -295,11 +295,11 @@ def winter_candidate_quality_filterer(source_table: SourceBatch) -> SourceBatch:
         )
 
         mask = (
-            # ((src_df["rb"] > 0.1) | pd.isnull(src_df["rb"])) # turn off rb'
-            (src_df["scorr"] >= 5.0)
+            ((src_df["rb"] > 0.001) | pd.isnull(src_df["rb"]))
+            # & (src_df["scorr"] >= 5.0)
+            # & (src_df["fwhm"] < 10.0)
+            # & (src_df["mindtoedge"] > 50.0)
             & (src_df["peak_detection_offset"] < 3.0)
-            & (src_df["fwhm"] < 10.0)
-            & (src_df["mindtoedge"] > 50.0)
             & (src_df["isdiffpos"])
             & ~(  # Not a star according to PS1 or PS1STRM
                 (

@@ -146,6 +146,9 @@ class CandidatesTable(WinterBase):  # pylint: disable=too-few-public-methods
     rb = Column(Float, nullable=True)
     rbversion = Column(VARCHAR(10), nullable=True)
 
+    xrb = Column(Float, nullable=True)
+    xrbversion = Column(VARCHAR(10), nullable=True)
+
     # Solar system properties
 
     ssdistnr = Column(Float, nullable=True)
@@ -292,6 +295,9 @@ class Candidate(BaseDB):
 
     rb: float | None = Field(ge=0, default=None)
     rbversion: str | None = Field(default=None, max_length=10)
+
+    xrb: float | None = Field(ge=0, default=None)
+    xrbversion: str | None = Field(default=None, max_length=10)
 
     ssdistnr: float | None = Field(ge=0, default=None)
     ssmagnr: float | None = Field(ge=0, default=None)

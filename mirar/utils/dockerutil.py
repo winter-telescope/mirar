@@ -93,9 +93,10 @@ def docker_put(container: Container, local_path: str | Path):
     """
     stream = io.BytesIO()
 
-    with tarfile.open(fileobj=stream, mode="w|") as tar, open(
-        local_path, "rb"
-    ) as local_file:
+    with (
+        tarfile.open(fileobj=stream, mode="w|") as tar,
+        open(local_path, "rb") as local_file,
+    ):
         info = tar.gettarinfo(fileobj=local_file)
         info.name = os.path.basename(local_path)
         tar.addfile(info, local_file)

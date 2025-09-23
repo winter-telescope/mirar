@@ -43,6 +43,7 @@ from mirar.pipelines.winter.config import (
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
 from mirar.pipelines.winter.generator import (
     apply_rb_to_table,
+    apply_xrb_to_table,
     mask_stamps_around_bright_stars,
     select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
@@ -135,7 +136,7 @@ from mirar.processors.sources import (
     SourceWriter,
     ZOGYSourceDetector,
 )
-from mirar.processors.sources.machine_learning import Pytorch
+from mirar.processors.sources.machine_learning import Pytorch, XGBoost
 from mirar.processors.split import SUB_ID_KEY, SplitImage, SwarpImageSplitter
 from mirar.processors.utils import (
     CustomImageBatchModifier,
@@ -231,7 +232,11 @@ load_raw = [
 ]
 
 load_astrometry = [
-    ImageLoader(input_sub_dir="post_scamp", load_image=load_astrometried_winter_image)
+    ImageLoader(
+        input_sub_dir="post_scamp",
+        load_image=load_astrometried_winter_image,
+        input_img_dir=base_output_dir,
+    )
 ]
 
 extract_all = [
@@ -697,7 +702,7 @@ imsub = [
 ]
 
 load_sub = [
-    ImageLoader(input_sub_dir="diffs"),
+    ImageLoader(input_sub_dir="diffs", input_img_dir=base_output_dir),
     ImageBatcher(BASE_NAME_KEY),
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
     ImageSaver(output_dir_name="subtract"),
@@ -725,18 +730,18 @@ detect_candidates = [
 # candidate_colnames = get_column_names_from_schema(winter_candidate_config)
 
 load_sources = [
-    SourceLoader(input_dir_name="candidates"),
+    SourceLoader(input_dir_name="candidates", input_dir=base_output_dir),
     SourceBatcher(BASE_NAME_KEY),
 ]
 
-ml_classify = [
+rb_classify = [
     Pytorch(
         model=WINTERNet(),
         model_weights_url="https://github.com/winter-telescope/winterrb/raw/"
-        "v1.0.0/models/winterrb_v1_0_0_weights.pth",
+        "v2.0.0/models/winterrb_v2_0_0_weights.pth",
         apply_to_table=apply_rb_to_table,
     ),
-    HeaderEditor(edit_keys="rbversion", values="v1.0.0"),
+    HeaderEditor(edit_keys="rbversion", values="v2.0.0"),
 ]
 
 crossmatch_candidates = [
@@ -750,11 +755,17 @@ crossmatch_candidates = [
     CustomSourceTableModifier(
         modifier_function=winter_candidate_avro_fields_calculator
     ),
+    XGBoost(
+        model_json_url="https://github.com/winter-telescope/winterrb/raw/"
+        "v2.0.0/models/xgboost_v2.0.0.json",
+        apply_to_table=apply_xrb_to_table,
+    ),
+    HeaderEditor(edit_keys="xrbversion", values="v2.0.0"),
     SourceWriter(output_dir_name="kowalski"),
 ]
 
 load_post_kowalski = [
-    SourceLoader(input_dir_name="kowalski"),
+    SourceLoader(input_dir_name="kowalski", input_dir=base_output_dir),
 ]
 
 select_history = [
@@ -805,7 +816,7 @@ name_candidates = [
 ]
 
 load_preavro = [
-    SourceLoader(input_dir_name="preavro"),
+    SourceLoader(input_dir_name="preavro", input_dir=base_output_dir),
 ]
 
 avro_write = [
@@ -846,12 +857,15 @@ avro_broadcast = [
 
 avro_export = avro_write + avro_broadcast
 
-process_candidates = ml_classify + crossmatch_candidates + name_candidates + avro_write
+process_candidates = rb_classify + crossmatch_candidates + name_candidates + avro_write
 
-load_avro = [SourceLoader(input_dir_name="preavro"), SourceBatcher(BASE_NAME_KEY)]
+load_avro = [
+    SourceLoader(input_dir_name="preavro", input_dir=base_output_dir),
+    SourceBatcher(BASE_NAME_KEY),
+]
 
 load_skyportal = [
-    SourceLoader(input_dir_name="preskyportal"),
+    SourceLoader(input_dir_name="preskyportal", input_dir=base_output_dir),
     SourceBatcher(BASE_NAME_KEY),
 ]
 

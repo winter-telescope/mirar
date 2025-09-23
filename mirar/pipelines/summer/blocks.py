@@ -152,7 +152,7 @@ process_raw = [
         # weight_image=summer_weight_path,
         checkimage_name=None,
         checkimage_type=None,
-        **sextractor_astrometry_config
+        **sextractor_astrometry_config,
     ),
     Scamp(
         ref_catalog_generator=summer_astrometric_catalog_generator,
@@ -169,7 +169,7 @@ process_raw = [
     Sextractor(
         output_sub_dir="photprocess",
         checkimage_type="BACKGROUND_RMS",
-        **sextractor_photometry_config
+        **sextractor_photometry_config,
     ),
     PhotCalibrator(
         ref_catalog_generator=summer_photometric_catalog_generator,
@@ -205,7 +205,7 @@ subtract = [
         output_sub_dir="subtract",
         cache=False,
         write_regions_bool=True,
-        **sextractor_photometry_config
+        **sextractor_photometry_config,
     ),
     PSFex(config_path=psfex_config_path, output_sub_dir="subtract", norm_fits=True),
     ImageSaver(output_dir_name="ref"),
