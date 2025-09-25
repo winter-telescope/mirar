@@ -19,12 +19,16 @@ from mirar.pipelines.wirc.generator import (
     wirc_photometric_catalog_generator,
     wirc_reference_generator,
     wirc_reference_image_resampler,
+    wirc_reference_from_file_generator,
     wirc_reference_psfex,
     wirc_reference_sextractor,
     wirc_source_table_filter_annotator,
     wirc_zogy_catalogs_purifier,
 )
-from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
+from mirar.pipelines.wirc.load_wirc_image import (load_raw_wirc_image,
+                                                  load_raw_mosfire_image,
+                                                  load_raw_hst_image,
+                                                  load_raw_hst_fits)
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     scamp_fp_path,
@@ -80,9 +84,14 @@ from mirar.processors.utils import (
 )
 from mirar.processors.utils.image_loader import LoadImageFromHeader
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
+from mirar.processors.zogy.reference_aligner import AlignReference
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
 
+load_mosfire_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_mosfire_image)]
+write_file = [ImageSaver(output_dir_name="raw_mirared", write_mask=True)]
+
+load_hst_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_hst_image)]
 load_stack = [
     ImageLoader(input_sub_dir="final", load_image=load_raw_wirc_image),
     ImageBatcher(split_key=[BASE_NAME_KEY]),
@@ -244,9 +253,27 @@ reference = [
     ),
 ]
 
+reference_from_file = [
+    ImageRebatcher(split_key=[BASE_NAME_KEY]),
+    ProcessReference(
+        ref_image_generator=wirc_reference_from_file_generator,
+        swarp_resampler=wirc_reference_image_resampler,
+        sextractor=wirc_reference_sextractor,
+        ref_psfex=wirc_reference_psfex,
+    ),
+]
+
 subtract = [
     Sextractor(**sextractor_reference_config, output_sub_dir="subtract", cache=False),
     PSFex(config_path=psfex_path, output_sub_dir="subtract", norm_fits=True),
+    # AlignReference(
+    #     order=1,
+    #     sextractor=wirc_reference_sextractor,
+    #     psfex=wirc_reference_psfex,
+    #     phot_sextractor=wirc_reference_sextractor,
+    #     catalog_purifier=wirc_zogy_catalogs_purifier,
+    # ),
+    ImageSaver(output_dir_name="presubtract"),
     ZOGYPrepare(output_sub_dir="subtract"),
     ZOGY(output_sub_dir="subtract", catalog_purifier=wirc_zogy_catalogs_purifier),
     ImageSaver(output_dir_name="diffs"),
@@ -285,7 +312,8 @@ image_photometry = [
     ImageSaver(output_dir_name="photometry"),
 ]
 
-imsub = reference + subtract + forced_photometry
+# imsub = reference + subtract + forced_photometry
+imsub = reference_from_file + subtract # + forced_photometry
 
 candidates = (
     [
@@ -306,3 +334,7 @@ candidates = (
 )
 
 test = reduction + imsub
+
+psfex = [
+    Sextractor(**sextractor_reference_config, output_sub_dir="psfex", cache=False),
+    PSFex(config_path=psfex_path, output_sub_dir="psfex", norm_fits=True),]

@@ -58,11 +58,18 @@ def wirc_zogy_catalogs_purifier(
         & (sci_catalog["SNR_WIN"] < 1000)
     )
 
+    # good_ref_sources = (
+    #     (ref_catalog["FLAGS"] == 0)
+    #     & (ref_catalog["SNR_WIN"] > 5)
+    #     & (ref_catalog["FWHM_WORLD"] < 5.0 / 3600)
+    #     & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
+    #     & (ref_catalog["SNR_WIN"] < 1000)
+    # )
     good_ref_sources = (
-        (ref_catalog["FLAGS"] == 0)
-        & (ref_catalog["SNR_WIN"] > 5)
-        & (ref_catalog["FWHM_WORLD"] < 5.0 / 3600)
-        & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
-        & (ref_catalog["SNR_WIN"] < 1000)
+            (ref_catalog["FLAGS"] == 0)
+            & (ref_catalog["SNR_WIN"] > 5)
+            & (ref_catalog["FWHM_WORLD"] < 2.0 / 3600)
+            & (ref_catalog["FWHM_WORLD"] > 0.1 / 3600)
+            & (ref_catalog["SNR_WIN"] < 100)
     )
     return good_sci_sources, good_ref_sources

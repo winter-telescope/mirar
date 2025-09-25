@@ -15,6 +15,10 @@ from mirar.pipelines.wirc.blocks import (
     load_stack,
     log,
     reduce,
+    write_file,
+    load_mosfire_raw,
+    load_hst_raw,
+    psfex,
 )
 from mirar.pipelines.wirc.load_wirc_image import load_raw_wirc_image
 
@@ -37,8 +41,12 @@ class WircPipeline(Pipeline):
         "default": load_raw + reduce + imsub,
         "reduce": load_raw + reduce,
         "imsub": load_stack + imsub,
+        "imsub_mosfire": load_mosfire_raw + imsub,
         "log": load_raw + log,
         "candidates": candidates,
+        "pass_through_pipe": load_mosfire_raw + write_file,
+        "pass_hst_through_pipe": load_hst_raw + write_file,
+        "psfex":load_mosfire_raw + psfex,
     }
 
     @staticmethod

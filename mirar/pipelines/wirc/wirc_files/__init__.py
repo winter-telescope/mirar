@@ -36,6 +36,15 @@ sextractor_reference_config = {
     "starnnw_path": wirc_file_dir.joinpath("default.nnw"),
 }
 
+
+
+sextractor_hst_reference_config = {
+    "config_path": wirc_file_dir.joinpath("photomcat_hst.sex"),
+    "parameter_path": wirc_file_dir.joinpath("photom.param"),
+    "filter_path": wirc_file_dir.joinpath("default.conv"),
+    "starnnw_path": wirc_file_dir.joinpath("default.nnw"),
+}
+
 sextractor_candidate_config = {
     "cand_det_sextractor_config": wirc_file_dir.joinpath("photomCat.sex"),
     "cand_det_sextractor_nnw": wirc_file_dir.joinpath("default.nnw"),

@@ -12,14 +12,36 @@ from mirar.pipelines.winter.generator.references import (
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     sextractor_reference_config,
+    sextractor_hst_reference_config,
     wirc_file_dir,
 )
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.references.wfcam.wfcam_query import WFAUQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
+from mirar.references.local import RefFromPath
 
 logger = logging.getLogger(__name__)
 
+
+def wirc_reference_from_file_generator(image: Image):
+    """
+    Gets a reference image generator for the wirc data
+
+    :param image: Image
+    :return: Reference image generator
+    """
+
+    return RefFromPath(path="/Users/viraj/winter_data/wirc/references_mosfire/raw_mirared/ZTF25abjmnps_J_stack_1_new.fits",
+                       filter_name="J", write_image=True)
+    # return RefFromPath(
+    #     path="/Users/viraj/winter_data/wirc/references_mosfire/raw_mirared/ZTF25abjmnps_Ks_stack_1.fits",
+    #     filter_name="J", write_image=True)
+    # return RefFromPath(
+    #     path="/Users/viraj/winter_data/wirc/references_wirc/image0047_stack.fits",
+    #     filter_name="J", write_image=True)
+    # return RefFromPath(
+    #     path="/Users/viraj/winter_data/wirc/references_hst/raw_mirared/ifdz02010_drz.fits",
+    #     filter_name="J", write_image=True)
 
 def wirc_reference_generator(image: Image):
     """
@@ -73,10 +95,12 @@ def wirc_reference_image_resampler(**kwargs) -> Swarp:
 
 def wirc_reference_sextractor(output_sub_dir: str) -> Sextractor:
     """Returns a Sextractor processor for WIRC reference images"""
+    # return Sextractor(
+    #     **sextractor_reference_config, output_sub_dir=output_sub_dir, cache=True
+    # )
     return Sextractor(
-        **sextractor_reference_config, output_sub_dir=output_sub_dir, cache=True
+        **sextractor_hst_reference_config, output_sub_dir=output_sub_dir, cache=True
     )
-
 
 def wirc_reference_psfex(output_sub_dir: str, norm_fits: bool) -> PSFex:
     """Returns a PSFEx processor for WIRC"""
