@@ -17,18 +17,20 @@ from mirar.pipelines.wirc.generator import (
     label_stack_id,
     wirc_astrometric_catalog_generator,
     wirc_photometric_catalog_generator,
+    wirc_reference_from_file_generator,
     wirc_reference_generator,
     wirc_reference_image_resampler,
-    wirc_reference_from_file_generator,
     wirc_reference_psfex,
     wirc_reference_sextractor,
     wirc_source_table_filter_annotator,
     wirc_zogy_catalogs_purifier,
 )
-from mirar.pipelines.wirc.load_wirc_image import (load_raw_wirc_image,
-                                                  load_raw_mosfire_image,
-                                                  load_raw_hst_image,
-                                                  load_raw_hst_fits)
+from mirar.pipelines.wirc.load_wirc_image import (
+    load_raw_hst_fits,
+    load_raw_hst_image,
+    load_raw_mosfire_image,
+    load_raw_wirc_image,
+)
 from mirar.pipelines.wirc.wirc_files import (
     psfex_path,
     scamp_fp_path,
@@ -83,8 +85,8 @@ from mirar.processors.utils import (
     ImageSelector,
 )
 from mirar.processors.utils.image_loader import LoadImageFromHeader
-from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 from mirar.processors.zogy.reference_aligner import AlignReference
+from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_wirc_image)]
 
@@ -313,7 +315,7 @@ image_photometry = [
 ]
 
 # imsub = reference + subtract + forced_photometry
-imsub = reference_from_file + subtract # + forced_photometry
+imsub = reference_from_file + subtract  # + forced_photometry
 
 candidates = (
     [
@@ -337,4 +339,5 @@ test = reduction + imsub
 
 psfex = [
     Sextractor(**sextractor_reference_config, output_sub_dir="psfex", cache=False),
-    PSFex(config_path=psfex_path, output_sub_dir="psfex", norm_fits=True),]
+    PSFex(config_path=psfex_path, output_sub_dir="psfex", norm_fits=True),
+]
