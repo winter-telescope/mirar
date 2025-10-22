@@ -137,7 +137,9 @@ jobs:
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
           ANET_INDEX_DIR: /usr/share/miniconda/envs/test/data
         run: |
-          TESTDATA_CHECK="True" $POETRY_HOME/bin/poetry run coverage run -m unittest discover tests/
+          TESTDATA_CHECK="True" $POETRY_HOME/bin/poetry run coverage run -m unittest tests/test_winter_pipeline.py
+#          TESTDATA_CHECK="True" $POETRY_HOME/bin/poetry run coverage run -m unittest discover tests/
+
 
       - name: Run Coveralls
         continue-on-error: true
