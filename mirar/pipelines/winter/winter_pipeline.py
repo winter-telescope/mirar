@@ -16,7 +16,6 @@ from mirar.pipelines.winter.blocks import (
     avro_export,
     build_test,
     c2mnlc,
-    cmnlc,
     csvlog,
     detect_candidates,
     detrend_unpacked,
@@ -43,12 +42,10 @@ from mirar.pipelines.winter.blocks import (
     process_candidates,
     realtime,
     reduce,
-    reduce_lab_flats,
     reduce_no_dome_flats,
     reduce_single,
     reduce_two_pass,
     reduce_unpacked,
-    reduce_unpacked_lab_flats,
     reduce_unpacked_subset,
     reduce_unpacked_two_pass,
     refbuild,
@@ -93,8 +90,6 @@ class WINTERPipeline(Pipeline):
         "imsub": load_final_stack + imsub,
         "reduce": reduce,
         "reduce_unpacked": reduce_unpacked,
-        "reduce_lab_flats": reduce_lab_flats,
-        "reduce_unpacked_lab_flats": reduce_unpacked_lab_flats,
         "photcal_stacks": photcal_stacks,
         "plot_stacks": load_final_stack + plot_stack,
         "buildtest": build_test,
@@ -121,11 +116,7 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
-        "default": reduce
-        + imsub
-        + detect_candidates
-        + process_candidates
-        + avro_broadcast,
+        "default": reduce + imsub + detect_candidates + process_candidates,
         "skyflat": reduce_no_dome_flats
         + imsub
         + detect_candidates
@@ -152,14 +143,7 @@ class WINTERPipeline(Pipeline):
         "send_with_history": select_history + send_to_skyportal,
         "unpack_subset_no_dome_flats": unpack_subset_no_dome_flats,
         "c2mnlc_subset_reduce": unpack_subset_no_dome_flats + c2mnlc,
-        "cmnlc_subset_reduce": unpack_subset_no_dome_flats + cmnlc,
         "c2mnlc_full_reduce": unpack_all_no_dome_flats + c2mnlc,
-        "cmnlc_full_reduce": unpack_all_no_dome_flats + cmnlc,
-        "cmnlc_full": unpack_all
-        + cmnlc
-        + imsub
-        + detect_candidates
-        + process_candidates,
         "c2mnlc_full": unpack_all
         + c2mnlc
         + imsub

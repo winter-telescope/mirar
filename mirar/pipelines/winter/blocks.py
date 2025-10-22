@@ -46,8 +46,6 @@ from mirar.pipelines.winter.generator import (
     apply_rb_to_table,
     apply_xrb_to_table,
     mask_stamps_around_bright_stars,
-    select_winter_dome_flats_images,
-    select_winter_flat_images,
     select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
     winter_astrometric_ref_catalog_generator,
@@ -62,7 +60,6 @@ from mirar.pipelines.winter.generator import (
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_imsub_catalog_purifier,
-    winter_lab_master_flat_path_generator,
     winter_new_source_updater,
     winter_photcal_color_columns_generator,
     winter_photometric_catalog_generator,
@@ -130,11 +127,7 @@ from mirar.processors.database.database_inserter import (
 )
 from mirar.processors.database.database_selector import SelectSourcesWithMetadata
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
-from mirar.processors.flat import (
-    FlatCalibrator,
-    MasterFlatCalibrator,
-    SkyFlatCalibrator,
-)
+from mirar.processors.flat import FlatCalibrator, SkyFlatCalibrator
 from mirar.processors.mask import (  # MaskAboveThreshold,
     MaskDatasecPixels,
     MaskPixelsFromFunction,
@@ -1061,134 +1054,8 @@ load_detrended = [
     ImageBatcher(BASE_NAME_KEY),
 ]
 
-# Combinations of different blocks, to be used in configurations
-process_and_stack = astrometry + validate_astrometry + stack_dithers
-
-astrometry_detrended = load_detrended + astrometry + stack_dithers
-
-unpack_subset = (
-    load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
-)
-
-unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
-
-unpack_all_no_dome_flats = (
-    load_raw_no_dome_flats + extract_all + csvlog + mask_and_split + save_raw
-)
-
-unpack_subset_no_dome_flats = (
-    load_raw_no_dome_flats
-    + extract_all
-    + csvlog
-    + select_subset
-    + mask_and_split
-    + save_raw
-)
-
-full_reduction = (
-    non_linear_correction
-    + dark_calibrate
-    + flat_calibrate
-    + fourier_filter
-    + process_and_stack
-    + photcal_and_export
-)
-
-full_reduction_no_dome_flats = (
-    non_linear_correction
-    + dark_calibrate
-    + sky_flat_calibrate  # Only sky flats
-    + fourier_filter
-    + process_and_stack
-    + photcal_and_export
-)
-
-load_photcaled_stacks = [
-    ImageLoader(
-        input_sub_dir="final",
-        input_img_dir=base_output_dir,
-        load_image=load_winter_stack,
-    ),
-    ImageRebatcher(BASE_NAME_KEY),
-]
-
-photcal_stacks = load_photcaled_stacks + photcal_and_export
-
-reduce_unpacked = load_and_export_unpacked + full_reduction
-
-reduce_unpacked_subset = (
-    load_unpacked + select_subset + export_unpacked + full_reduction
-)
-
-reduce = unpack_all + full_reduction
-
-reduce_no_dome_flats = unpack_all_no_dome_flats + full_reduction_no_dome_flats
-
-reftest = (
-    unpack_subset
-    + dark_calibrate
-    + flat_calibrate
-    + process_and_stack
-    + select_ref
-    + refbuild
-)
-
-
-detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
-# detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
-
-only_ref = load_ref + select_ref + refbuild
-
-realtime = extract_all + mask_and_split + save_raw + full_reduction
-
-candidates = detect_candidates + process_candidates
-
-full = realtime + imsub
-
-focus_cals = (
-    load_raw
-    + extract_all
-    + mask
-    + focus_subcoord
-    + csvlog
-    + dark_calibrate
-    + flat_calibrate
-)
-
-stack_forced_photometry = [
-    ImageRebatcher([BASE_NAME_KEY]),
-    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
-    AperturePhotometry(
-        aper_diameters=[5, 8, 10, 15],
-        phot_cutout_half_size=50,
-        bkg_in_diameters=[20, 20, 20, 20],
-        bkg_out_diameters=[40, 40, 40, 40],
-    ),
-]
-
-diff_forced_photometry = [
-    ImageDebatcher(),
-    ImageBatcher([BASE_NAME_KEY]),
-    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
-    AperturePhotometry(
-        aper_diameters=[5, 8, 10, 15],
-        phot_cutout_half_size=50,
-        bkg_in_diameters=[20, 20, 20, 20],
-        bkg_out_diameters=[40, 40, 40, 40],
-    ),
-    PSFPhotometry(),
-]
-
 perform_astrometry = load_calibrated + fourier_filter + astrometry
 # + validate_astrometry
-
-lab_flat_calibrate = [
-    ImageSelector((OBSCLASS_KEY, ["science"])),
-    ImageBatcher(["BOARD_ID", "UTCTIME", "SUBCOORD"]),
-    MasterFlatCalibrator(
-        master_image_path_generator=winter_lab_master_flat_path_generator,
-    ),
-]
 
 first_pass_flat_calibrate = [
     ImageSelector((OBSCLASS_KEY, ["science"])),
@@ -1338,6 +1205,9 @@ second_pass_calibration = [
     ImageSaver(output_dir_name="sp_skysub"),
 ]
 
+# Combinations of different blocks, to be used in configurations
+process_and_stack = astrometry + validate_astrometry + stack_dithers
+
 second_pass_astrometry_and_stack = (
     second_pass_astrometry
     + second_pass_validate_astrometry_export_and_filter
@@ -1370,12 +1240,8 @@ reduce_single = (
     load_and_export_unpacked
     + non_linear_correction
     + dark_calibrate
-    # Not two pass
-    # + flat_calibrate
-    # Do 2 pass
     + two_pass_flatfield_and_astrometry
     + mask_flats
-    # + astrometry
     + validate_astrometry
     + photcal
     + process_and_stack
@@ -1385,99 +1251,17 @@ reduce_single = (
 c2mnlc = (
     non_linear_correction
     + dark_calibrate
-    # Not two pass
-    # + flat_calibrate
     # Do 2 pass
     + mask_flats
     + two_pass_flatfield_and_astrometry
-    # + astrometry
-    # + validate_astrometry
     + photcal
     + second_pass_stack_dithers
     + photcal_and_export
 )
 
-cmnlc = (
-    non_linear_correction
-    + dark_calibrate
-    + mask_flats
-    # Not two pass
-    + flat_calibrate
-    # Do 2 pass
-    # + two_pass_flatfield_and_astrometry
-    + astrometry
-    + validate_astrometry
-    + photcal
-    + stack_dithers
-    + photcal
-)
-
-# cm_lab_nlc = (
-#     unpack_subset_no_dome_flats
-#     + non_linear_correction
-#     + dark_calibrate
-#     + mask_flats
-#     + lab_flat_calibrate
-#     # Not two pass
-#     + flat_calibrate
-#     # Do 2 pass
-#     # + two_pass_flatfield_and_astrometry
-#     + astrometry
-#     + validate_astrometry
-#     + photcal
-#     + process_and_stack
-#     + photcal
-# )
-#
-# c2m_lab_nlc = (
-#     unpack_subset_no_dome_flats
-#     + non_linear_correction
-#     + dark_calibrate
-#     # Lab flat calibrate
-#     + lab_flat_calibrate
-#     # Not two pass
-#     # + flat_calibrate
-#     # Do 2 pass
-#     + mask_flats
-#     + two_pass_flatfield_and_astrometry
-#     # + astrometry
-#     # + validate_astrometry
-#     + photcal
-#     + stack_dithers
-#     + photcal
-# )
-# # full_reduction_two_pass = (
-#     dark_calibrate
-#     + first_pass_flat_calibrate
-#     # + fourier_filter
-#     + first_pass_stacking
-#     + second_pass_calibration
-#     + astrometry
-#     + validate_astrometry
-#     + photcal
-#
-#     # + fourier_filter
-#     + second_pass_stack
-#     + photcal_and_export
-# )
-
-full_reduction_lab_flats = (
-    non_linear_correction
-    + dark_calibrate
-    + lab_flat_calibrate
-    + flat_calibrate
-    + fourier_filter
-    + process_and_stack
-    + photcal_and_export
-)
-
-reduce_two_pass = unpack_all + full_reduction_two_pass
+full_reduction = c2mnlc
 
 reduce_unpacked_two_pass = load_and_export_unpacked + full_reduction_two_pass
-
-reduce_lab_flats = unpack_all + full_reduction_lab_flats
-
-reduce_unpacked_lab_flats = load_and_export_unpacked + full_reduction_lab_flats
 
 second_pass_processing = (
     load_astrometried
@@ -1486,12 +1270,120 @@ second_pass_processing = (
     + second_pass_astrometry_and_stack
 )
 
+astrometry_detrended = load_detrended + astrometry + stack_dithers
 
-# process_and_stack = (
-#     second_pass_astrometry
-#     + second_pass_validate_astrometry_export_and_filter
-#     + stack_dithers
-#     + [
-#         ImageSaver(output_dir_name="stack"),
-#     ]
+unpack_subset = (
+    load_raw + extract_all + csvlog + select_subset + mask_and_split + save_raw
+)
+
+unpack_all = load_raw + extract_all + csvlog + mask_and_split + save_raw
+
+unpack_all_no_dome_flats = (
+    load_raw_no_dome_flats + extract_all + csvlog + mask_and_split + save_raw
+)
+
+unpack_subset_no_dome_flats = (
+    load_raw_no_dome_flats
+    + extract_all
+    + csvlog
+    + select_subset
+    + mask_and_split
+    + save_raw
+)
+
+# CMNLC but with Fourier filtering
+# full_reduction = (
+#     non_linear_correction
+#     + dark_calibrate
+#     + flat_calibrate
+#     + fourier_filter
+#     + process_and_stack
+#     + photcal_and_export
 # )
+
+full_reduction_no_dome_flats = (
+    non_linear_correction
+    + dark_calibrate
+    + sky_flat_calibrate  # Only sky flats
+    + fourier_filter
+    + process_and_stack
+    + photcal_and_export
+)
+
+load_photcaled_stacks = [
+    ImageLoader(
+        input_sub_dir="final",
+        input_img_dir=base_output_dir,
+        load_image=load_winter_stack,
+    ),
+    ImageRebatcher(BASE_NAME_KEY),
+]
+
+photcal_stacks = load_photcaled_stacks + photcal_and_export
+
+reduce_unpacked = load_and_export_unpacked + full_reduction
+
+reduce_unpacked_subset = (
+    load_unpacked + select_subset + export_unpacked + full_reduction
+)
+
+reduce = unpack_all + full_reduction
+
+reduce_two_pass = unpack_all + full_reduction_two_pass
+
+reduce_no_dome_flats = unpack_all_no_dome_flats + full_reduction_no_dome_flats
+
+reftest = (
+    unpack_subset
+    + dark_calibrate
+    + flat_calibrate
+    + process_and_stack
+    + select_ref
+    + refbuild
+)
+
+
+detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
+# detrend_unpacked = load_and_export_unpacked + dark_calibrate + flat_calibrate
+
+only_ref = load_ref + select_ref + refbuild
+
+realtime = extract_all + mask_and_split + save_raw + full_reduction
+
+candidates = detect_candidates + process_candidates
+
+full = realtime + imsub
+
+focus_cals = (
+    load_raw
+    + extract_all
+    + mask
+    + focus_subcoord
+    + csvlog
+    + dark_calibrate
+    + flat_calibrate
+)
+
+stack_forced_photometry = [
+    ImageRebatcher([BASE_NAME_KEY]),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
+    AperturePhotometry(
+        aper_diameters=[5, 8, 10, 15],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[20, 20, 20, 20],
+        bkg_out_diameters=[40, 40, 40, 40],
+    ),
+]
+
+diff_forced_photometry = [
+    ImageDebatcher(),
+    ImageBatcher([BASE_NAME_KEY]),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
+    AperturePhotometry(
+        aper_diameters=[5, 8, 10, 15],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[20, 20, 20, 20],
+        bkg_out_diameters=[40, 40, 40, 40],
+    ),
+    PSFPhotometry(),
+]
