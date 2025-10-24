@@ -107,26 +107,7 @@ base_winter_cal_requirements = [
     ),
 ]
 
-winter_cal_requirements = base_winter_cal_requirements + [
-    CalRequirement(
-        target_name="dark",
-        required_field="EXPTIME",
-        required_values=[
-            "0.35",  # J flats
-            "0.57",  # Y flats
-            "0.46",  # Hs flats
-        ],
-    ),
-    CalRequirement(
-        target_name="flat",
-        required_field="FILTER",
-        required_values=[
-            "Y",
-            "J",
-            # "H"  # FIXME: Add back in
-        ],
-    ),
-]
+winter_cal_requirements = base_winter_cal_requirements
 
 winter_lab_flat_dir = os.getenv("WINTER_LAB_FLAT_DIR", None)
 if winter_lab_flat_dir is None:
