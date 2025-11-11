@@ -1,6 +1,6 @@
 [project]
 name = "mirar"
-version = "0.21.0"
+version = "1.0.0"
 description = "Modular Image Reduction and Analysis Resource (MIRAR)"
 authors =[
     {name = "Robert Stein", email = "rdstein@umd.edu"},
