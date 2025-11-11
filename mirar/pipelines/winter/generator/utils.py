@@ -10,7 +10,7 @@ from astropy.wcs import NoConvergence
 
 from mirar.data import Image
 from mirar.data.utils.coords import check_coords_within_image
-from mirar.paths import TIME_KEY
+from mirar.paths import TARGET_KEY
 from mirar.pipelines.winter.models import DEFAULT_FIELD
 from mirar.utils import get_table_from_ldac
 
@@ -69,7 +69,7 @@ def winter_ref_catalog_namer(image: Image, output_dir: Path) -> Path:
     else:
         ref_cat_path = (
             output_dir / f"field{image['FIELDID']}_{image['SUBDETID']}_"
-            f"_{image['TARGNAME']}_{image[TIME_KEY]}"
+            f"_{image['TARGNAME']}_{image[TARGET_KEY]}"
             f"_{image['FILTER']}.ldac.cat"
         )
     return ref_cat_path

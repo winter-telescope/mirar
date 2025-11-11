@@ -14,10 +14,18 @@ from astropy.table import Table
 
 from mirar.catalog.base.base_catalog import BaseCatalog
 from mirar.data import Image, ImageBatch
-from mirar.paths import MAGLIM_KEY, ZP_KEY, ZP_NSTARS_KEY, ZP_STD_KEY, get_output_dir
+from mirar.paths import (
+    MAGLIM_KEY,
+    REF_CAT_PATH_KEY,
+    ZP_KEY,
+    ZP_NSTARS_KEY,
+    ZP_STD_KEY,
+    get_output_dir,
+)
 from mirar.processors.astromatic.sextractor.sextractor import sextractor_checkimg_map
 from mirar.processors.astrometry.validate import get_fwhm
 from mirar.processors.base_catalog_xmatch_processor import (
+    BaseImageProcessor,
     BaseProcessorWithCrossMatch,
     default_image_sextractor_catalog_purifier,
     xmatch_catalogs,
@@ -282,4 +290,64 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
                 image[ZP_NSTARS_KEY] = image[f"ZP_{zp_key}_NSTARS"]
                 image["MAGSYS"] = "AB"
 
+        return batch
+
+
+class ImageBatchReferenceCatalogDownloader(BaseImageProcessor):
+    """
+    Base processor for downloading a reference catalog for an imagebatch and save it
+    to a specified location.
+    """
+
+    base_key = "imagebatchrefcatdownloader"
+
+    def __init__(
+        self,
+        ref_catalog_generator: Callable[[Image], BaseCatalog],
+        temp_output_sub_dir: str = "phot",
+        ref_cat_header_key: str = REF_CAT_PATH_KEY,
+    ):
+        super().__init__()
+        self.ref_catalog_generator = ref_catalog_generator
+        self.temp_output_sub_dir = temp_output_sub_dir
+        self.ref_cat_header_key = ref_cat_header_key
+
+    def description(self) -> str:
+        return "Processor to download reference catalog for an ImageBatch."
+
+    def get_output_dir(self):
+        """
+        Return the
+        :return:
+        """
+        return get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
+
+    def _apply_to_images(
+        self,
+        batch: ImageBatch,
+    ) -> ImageBatch:
+        for image in batch:
+            if self.ref_cat_header_key not in image.header:
+                err = (
+                    f"Reference catalog path not found in image header. "
+                    f"Expected key: {self.ref_cat_header_key}"
+                )
+                raise KeyError(err)
+
+        ref_cat_paths = [image[self.ref_cat_header_key] for image in batch]
+        assert len(np.unique(ref_cat_paths)) == 1, (
+            "All images in the batch must have the same reference catalog path, "
+            f"specified by the {self.ref_cat_header_key} key in the image header."
+        )
+        ref_cat_path = Path(ref_cat_paths[0])
+        if not ref_cat_path.exists():
+            logger.debug(
+                f"Reference catalog not found at {ref_cat_path}. "
+                "Generating reference catalog."
+            )
+            ref_catalog = self.ref_catalog_generator(batch[0])
+            output_dir = self.get_output_dir()
+            _ = ref_catalog.write_catalog(batch[0], output_dir=output_dir)
+        else:
+            logger.debug(f"Reference catalog found at {ref_cat_path}. Using it.")
         return batch

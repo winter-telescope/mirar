@@ -29,12 +29,15 @@ from mirar.pipelines.winter.generator.realbogus import (
 from mirar.pipelines.winter.generator.reduce import (
     mask_stamps_around_bright_stars,
     select_winter_dome_flats_images,
+    select_winter_flat_images,
     select_winter_sky_flat_images,
     winter_anet_sextractor_config_path_generator,
+    winter_boardid_6_channel_masker,
     winter_boardid_6_demasker,
     winter_fourier_filtered_image_generator,
     winter_history_deprecated_constraint,
     winter_imsub_catalog_purifier,
+    winter_lab_master_flat_path_generator,
     winter_stackid_annotator,
 )
 from mirar.pipelines.winter.generator.references import (

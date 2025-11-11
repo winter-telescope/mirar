@@ -75,6 +75,7 @@ def run_astrometry_net_single(
         f"--new-fits {newname} "
         f"--overwrite "
         f"--out {basename} "  # use this base name for outputs (instead of 'temp_...')
+        f"--no-plots "
     )
 
     if ANET_INDEX_DIR is not None:
