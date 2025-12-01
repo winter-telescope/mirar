@@ -116,7 +116,11 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
-        "default": reduce + imsub + detect_candidates + process_candidates,
+        "default": reduce
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
         "skyflat": reduce_no_dome_flats
         + imsub
         + detect_candidates
