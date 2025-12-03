@@ -73,7 +73,6 @@ class Pipeline:
             selected_configurations = [selected_configurations]
         self.selected_configurations = selected_configurations
         self.latest_configuration = None
-        self.set_up_pipeline()
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -268,6 +267,7 @@ class Pipeline:
         :param selected_configurations: Configuration to use
         :return: Post-processing dataset and summary of errors caught
         """
+        self.set_up_pipeline()
 
         if dataset is None:
             dataset = Dataset([ImageBatch()])
