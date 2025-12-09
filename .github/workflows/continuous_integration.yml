@@ -20,6 +20,12 @@ on:
 jobs:
   # This workflow contains a single job called "build"
   ci:
+    # Avoid duplicate runs on PRs
+    if: |
+      github.event_name == 'pull_request' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/')
+
     # The type of runner that the job will run on
     runs-on: ubuntu-22.04
 
@@ -56,6 +62,12 @@ jobs:
 
       - name: Print disk space
         run: df -h
+
+      # Speed up downloads by caching latest dataset
+      - name: Fetch latest winternlc dataset from GitHub Releases
+        run: |
+          mkdir -p /home/runner/Data/winternlc/v2.1/
+          wget -c https://github.com/winter-telescope/winternlc/releases/download/v2.1-data/16739670.zip -O /home/runner/Data/winternlc/v2.1/16739670.zip
 
       - uses: actions/checkout@v3
 

@@ -381,7 +381,7 @@ load_and_export_unpacked = load_unpacked + export_unpacked
 
 non_linear_correction = [
     ImageRebatcher(BASE_NAME_KEY),
-    CustomImageBatchModifier(apply_winter_nlc),  # FIXME: Add back in
+    CustomImageBatchModifier(apply_winter_nlc),
     ImageSaver(output_dir_name="nlc_corrected"),
 ]
 
