@@ -1,5 +1,4 @@
-"""Module to specify the input data classes for :module:`wintedrp.processors`
-"""
+"""Module to specify the input data classes for :module:`wintedrp.processors`"""
 
 from mirar.data.base_data import DataBatch, DataBlock, Dataset
 from mirar.data.cache import cache
