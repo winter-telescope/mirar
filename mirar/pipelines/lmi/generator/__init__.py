@@ -16,7 +16,8 @@ from mirar.pipelines.git.config import (
     sextractor_photometry_config,
     swarp_config_path,
 )
-from mirar.pipelines.lmi.config.constants import LMI_WIDTH
+from mirar.pipelines.lmi.config.constants import LMI_WIDTH_DEG
+from mirar.pipelines.lmi.generator.sources import lmi_skyportal_formatter
 from mirar.pipelines.lmi.generator.stacks import label_stack_id
 from mirar.pipelines.lmi.generator.target import annotate_target_coordinates
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
@@ -25,7 +26,7 @@ from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
 
 logger = logging.getLogger(__name__)
 
-LMI_SEARCH_RADIUS_ARCMIN = LMI_WIDTH
+LMI_SEARCH_RADIUS_ARCMIN = LMI_WIDTH_DEG * 60.0 / (2.0**0.5)  # Triangle diagonal
 LMI_PHOTOMETRIC_MAX_MAG = 22
 
 
@@ -40,12 +41,12 @@ def lmi_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
     temp_cat_path = image[SEXTRACTOR_HEADER_KEY]
     cat = Gaia2Mass(
         min_mag=10,
-        max_mag=24,
+        max_mag=20,
         search_radius_arcmin=LMI_SEARCH_RADIUS_ARCMIN,
         trim=True,
         image_catalog_path=temp_cat_path,
         filter_name="j",
-        acceptable_j_ph_quals=["A", "B", "C"],
+        acceptable_j_ph_quals=["A"],
     )
     return cat
 

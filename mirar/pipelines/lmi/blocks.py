@@ -16,7 +16,12 @@ from mirar.pipelines.lmi.config import (
     sextractor_photometry_config,
     swarp_config_path,
 )
-from mirar.pipelines.lmi.config.constants import LMI_PIXEL_SCALE
+from mirar.pipelines.lmi.config.constants import (
+    LMI_GAIN,
+    LMI_NONLINEAR_LEVEL,
+    LMI_PIXEL_SCALE,
+    LMI_READ_NOISE,
+)
 from mirar.pipelines.lmi.generator import (
     annotate_target_coordinates,
     label_stack_id,
@@ -26,23 +31,28 @@ from mirar.pipelines.lmi.generator import (
     lmi_reference_image_resampler,
     lmi_reference_psfex,
     lmi_reference_sextractor,
+    lmi_skyportal_formatter,
     lmi_zogy_catalogs_purifier,
 )
 from mirar.pipelines.lmi.load_lmi_image import load_raw_lmi_image
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
-from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.bias import BiasCalibrator
+from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.flat import FlatCalibrator
+from mirar.processors.mask import MaskAboveThreshold
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
+from mirar.processors.skyportal import SkyportalSourceUploader
 from mirar.processors.sources import (
     CSVExporter,
+    CustomSourceTableModifier,
     ForcedPhotometryDetector,
     ImageUpdater,
+    ParquetLoader,
     ParquetWriter,
 )
 from mirar.processors.sources.utils import RegionsWriter
@@ -87,19 +97,19 @@ calibrate = [
     ImageDebatcher(),
     CalHunter(load_image=load_raw_lmi_image, requirements=lmi_cal_requirements),
     ImageSelector((OBSCLASS_KEY, ["bias", "flat", "science"])),
+    MaskAboveThreshold(threshold=LMI_NONLINEAR_LEVEL),
     BiasCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["flat", "science"])),
-    ImageSaver(
-        output_dir_name="debias",
-    ),
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    ImageSaver(
-        output_dir_name="postflat",
-    ),
     ImageBatcher(split_key=BASE_NAME_KEY),
-    # AutoAstrometry(),
+    LACosmicCleaner(effective_gain=LMI_GAIN, readnoise=LMI_READ_NOISE),
+    AstrometryNet(
+        output_sub_dir="anet",
+        timeout=120,
+        use_sextractor=True,
+    ),
     Sextractor(
         output_sub_dir="sextractor",
         **sextractor_astrometry_config,
@@ -108,6 +118,10 @@ calibrate = [
         ref_catalog_generator=lmi_astrometric_catalog_generator,
         scamp_config_path=scamp_path,
         cache=False,
+        timeout=60.0,
+    ),
+    ImageSaver(
+        output_dir_name="calibrated",
     ),
     ImageRebatcher(split_key=["stackid"]),
     Swarp(
@@ -128,7 +142,7 @@ calibrate = [
         ref_catalog_generator=lmi_photometric_catalog_generator,
     ),
     ImageSaver(
-        output_dir_name="processed",
+        output_dir_name="stacked",
     ),
 ]
 
@@ -161,7 +175,7 @@ subtract = [
     ImageSaver(output_dir_name="diff"),
     ForcedPhotometryDetector(ra_header_key="OBJRA", dec_header_key="OBJDEC"),
     RegionsWriter(output_dir_name="diff"),
-    RegionsWriter(output_dir_name="processed"),
+    RegionsWriter(output_dir_name="stacked"),
     AperturePhotometry(
         aper_diameters=[
             2 / LMI_PIXEL_SCALE,
@@ -192,4 +206,10 @@ subtract = [
     ParquetWriter(output_dir_name="sources"),
     CSVExporter(output_dir_name="sources"),
     ImageUpdater(modify_dir_name="diff"),
+]
+
+skyportal = [
+    ParquetLoader(input_dir_name="sources"),
+    CustomSourceTableModifier(lmi_skyportal_formatter),
+    SkyportalSourceUploader(origin="mirar", group_ids=[1], instrument_id=45),
 ]

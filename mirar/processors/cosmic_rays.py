@@ -2,14 +2,16 @@
 Module containing processors that mask cosmic rays
 """
 
+import io
 import logging
+from contextlib import redirect_stdout
 
 import lacosmic
 import numpy as np
 
 from mirar.data import ImageBatch
 from mirar.errors import NoncriticalProcessingError
-from mirar.paths import EXPTIME_KEY
+from mirar.paths import EXPTIME_KEY, GAIN_KEY
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,7 @@ class LACosmicCleaner(BaseImageProcessor):
     """
 
     base_key = "lacosmic"
+    max_n_cpu = 1
 
     def __init__(
         self,
@@ -115,19 +118,21 @@ class LACosmicCleaner(BaseImageProcessor):
                 if readnoise is None:
                     readnoise = image.header[self.readnoise_key]
                 logger.debug("Cleaning cosmic rays")
-                cleaned_data, _ = lacosmic.lacosmic(
-                    image.get_data(),
-                    contrast=self.contrast,
-                    cr_threshold=self.cr_threshold,
-                    neighbor_threshold=self.neighbor_threshold,
-                    error=self.error,
-                    mask=mask_data,
-                    background=self.background,
-                    effective_gain=effective_gain,
-                    readnoise=readnoise,
-                    maxiter=self.maxiter,
-                    border_mode=self.border_mode,
-                )
+                with io.StringIO() as f:
+                    with redirect_stdout(f):
+                        cleaned_data, _ = lacosmic.lacosmic(
+                            image.get_data(),
+                            contrast=self.contrast,
+                            cr_threshold=self.cr_threshold,
+                            neighbor_threshold=self.neighbor_threshold,
+                            error=self.error,
+                            mask=mask_data,
+                            background=self.background,
+                            effective_gain=effective_gain,
+                            readnoise=readnoise,
+                            maxiter=self.maxiter,
+                            border_mode=self.border_mode,
+                        )
                 logger.debug("LACosmic finished cleaning")
                 image.set_data(cleaned_data)
 

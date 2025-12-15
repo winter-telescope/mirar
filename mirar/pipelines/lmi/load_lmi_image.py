@@ -21,6 +21,7 @@ from mirar.paths import (
     PROC_FAIL_KEY,
     PROC_HISTORY_KEY,
     SATURATE_KEY,
+    SOURCE_NAME_KEY,
     TARGET_KEY,
     TIME_KEY,
 )
@@ -76,7 +77,7 @@ def load_raw_lmi_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
         if key in Path(path).name.lower():
             header[OBSCLASS_KEY] = key
 
-    header[TARGET_KEY] = header["OBJECT"].lower()
+    header[TARGET_KEY] = header["OBJECT"]
 
     t = Time(header["DATE-OBS"])
 
@@ -90,7 +91,24 @@ def load_raw_lmi_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
     header[PROC_HISTORY_KEY] = ""
     header[PROC_FAIL_KEY] = ""
 
-    data = data.astype(float)
+    data = data.astype(np.float64)
+    del header["BZERO"], header["BSCALE"]
+
+    trimsec_x, trimsec_y = header["TRIMSEC"].strip("[]").split(",")
+
+    data = data[
+        50:-20,
+        50:-20,
+    ]
+    del header["TRIMSEC"]
+
+    # Delete all WCS crap
+    for key in header.keys():
+        if ("WCS" in header.comments[key]) & ("CRVAL" not in key):
+            del header[key]
+        elif (key[:2] in ["CR", "CT", "CD"]) & ("CRVAL" not in key):
+            del header[key]
+
     data[data == 0.0] = np.nan
 
     return data, header
