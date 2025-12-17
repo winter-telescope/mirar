@@ -30,7 +30,7 @@ class LMIPipeline(Pipeline):
         "skyportal": skyportal,
     }
 
-    defalut_cal_requirements = lmi_cal_requirements
+    default_cal_requirements = lmi_cal_requirements
 
     @staticmethod
     def download_raw_images_for_night(night: str | int):

@@ -11,21 +11,14 @@ from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
 from mirar.pipelines.lmi.config import (
     lmi_cal_requirements,
     psfex_sci_config_path,
-    scamp_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
     swarp_config_path,
 )
-from mirar.pipelines.lmi.config.constants import (
-    LMI_GAIN,
-    LMI_NONLINEAR_LEVEL,
-    LMI_PIXEL_SCALE,
-    LMI_READ_NOISE,
-)
+from mirar.pipelines.lmi.config.constants import LMI_NONLINEAR_LEVEL, LMI_PIXEL_SCALE
 from mirar.pipelines.lmi.generator import (
     annotate_target_coordinates,
     label_stack_id,
-    lmi_astrometric_catalog_generator,
     lmi_photometric_catalog_generator,
     lmi_reference_image_generator,
     lmi_reference_image_resampler,
@@ -35,11 +28,10 @@ from mirar.pipelines.lmi.generator import (
     lmi_zogy_catalogs_purifier,
 )
 from mirar.pipelines.lmi.load_lmi_image import load_raw_lmi_image
-from mirar.processors.astromatic import PSFex, Scamp, Sextractor
+from mirar.processors.astromatic import PSFex, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.astrometry.anet import AstrometryNet
 from mirar.processors.bias import BiasCalibrator
-from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.flat import FlatCalibrator
 from mirar.processors.mask import MaskAboveThreshold
@@ -104,7 +96,6 @@ calibrate = [
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
     ImageBatcher(split_key=BASE_NAME_KEY),
-    LACosmicCleaner(effective_gain=LMI_GAIN, readnoise=LMI_READ_NOISE),
     AstrometryNet(
         output_sub_dir="anet",
         timeout=120,
@@ -114,22 +105,14 @@ calibrate = [
         output_sub_dir="sextractor",
         **sextractor_astrometry_config,
     ),
-    Scamp(
-        ref_catalog_generator=lmi_astrometric_catalog_generator,
-        scamp_config_path=scamp_path,
-        cache=False,
-        timeout=60.0,
-    ),
-    ImageSaver(
-        output_dir_name="calibrated",
-    ),
     ImageRebatcher(split_key=["stackid"]),
     Swarp(
         swarp_config_path=swarp_config_path,
-        include_scamp=True,
+        include_scamp=False,
     ),
+    ImageSaver(output_dir_name="swarp"),
     AstrometryNet(
-        output_sub_dir="anet",
+        output_sub_dir="anet2",
         timeout=120,
         use_sextractor=True,
     ),
@@ -140,6 +123,7 @@ calibrate = [
     ),
     PhotCalibrator(
         ref_catalog_generator=lmi_photometric_catalog_generator,
+        num_matches_threshold=3,
     ),
     ImageSaver(
         output_dir_name="stacked",
