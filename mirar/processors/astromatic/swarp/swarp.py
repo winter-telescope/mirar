@@ -282,7 +282,7 @@ class Swarp(BaseImageProcessor):
                 # Temporarily remove any non-core fields from the header for swarp
                 hdr = image.get_header().copy()
                 for key in list(hdr.keys()):
-                    if key not in core_fields + all_astrometric_keywords:
+                    if key not in core_fields + all_astrometric_keywords + [SCAMP_HEADER_KEY]:
                         hdr.pop(key, None)
                 image.set_header(hdr)
 
