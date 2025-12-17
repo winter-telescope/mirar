@@ -150,10 +150,6 @@ class VizierCatalog(BaseCatalog, ABC):
 
         table = self.join_query(query)
 
-        # print(table)
-        # print(table.colnames)
-        # raise
-
         logger.debug(f"Table columns are: {table.colnames}")
         if self.get_mag_key() not in table.colnames:
             err = (
