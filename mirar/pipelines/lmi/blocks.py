@@ -105,6 +105,10 @@ calibrate = [
         output_sub_dir="sextractor",
         **sextractor_astrometry_config,
     ),
+    ImageSaver(output_dir_name="prestack"),
+]
+
+stack = [
     ImageRebatcher(split_key=["stackid"]),
     Swarp(
         swarp_config_path=swarp_config_path,
@@ -130,7 +134,11 @@ calibrate = [
     ),
 ]
 
-reduce = build_log + calibrate
+reduce = build_log + calibrate + stack
+
+load_and_stack = [
+    ImageLoader(input_sub_dir="prestack"),
+] + stack
 
 subtract = [
     ProcessReference(

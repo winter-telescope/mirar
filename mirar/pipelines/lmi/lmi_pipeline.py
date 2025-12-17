@@ -7,7 +7,14 @@ from pathlib import Path
 
 from mirar.data import Image
 from mirar.pipelines.base_pipeline import Pipeline
-from mirar.pipelines.lmi.blocks import build_log, load_raw, reduce, skyportal, subtract
+from mirar.pipelines.lmi.blocks import (
+    build_log,
+    load_and_stack,
+    load_raw,
+    reduce,
+    skyportal,
+    subtract,
+)
 from mirar.pipelines.lmi.config import PIPELINE_NAME, lmi_cal_requirements
 from mirar.pipelines.lmi.config.constants import LMI_NONLINEAR_LEVEL
 from mirar.pipelines.lmi.load_lmi_image import load_raw_lmi_image
@@ -28,6 +35,7 @@ class LMIPipeline(Pipeline):
         "log": load_raw + build_log,
         "reduce": load_raw + reduce,
         "skyportal": skyportal,
+        "stack": load_and_stack,
     }
 
     default_cal_requirements = lmi_cal_requirements

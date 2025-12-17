@@ -282,31 +282,8 @@ class Swarp(BaseImageProcessor):
                 # Temporarily remove any non-core fields from the header for swarp
                 hdr = image.get_header().copy()
                 for key in list(hdr.keys()):
-                    if (
-                        key
-                        not in [
-                            "SIMPLE",
-                            "BITPIX",
-                            "NAXIS",
-                            "NAXIS1",
-                            "NAXIS2",
-                            "EXTEND",
-                            "CTYPE1",
-                            "CTYPE2",
-                            "CRVAL1",
-                            "CRVAL2",
-                            "CRPIX1",
-                            "CRPIX2",
-                            "CD1_1",
-                            "CD1_2",
-                            "CD2_1",
-                            "CD2_2",
-                            "FLXSCALE",
-                        ]
-                        + core_fields
-                    ):
+                    if key not in core_fields + all_astrometric_keywords:
                         hdr.pop(key, None)
-                hdr["FLXSCALE"] = 1.0
                 image.set_header(hdr)
 
                 image_x_cen = nxpix / 2
