@@ -21,7 +21,6 @@ from mirar.pipelines.lmi.generator.sources import lmi_skyportal_formatter
 from mirar.pipelines.lmi.generator.stacks import label_stack_id
 from mirar.pipelines.lmi.generator.target import annotate_target_coordinates
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
-from mirar.processors.astromatic.sextractor.sextractor import SEXTRACTOR_HEADER_KEY
 from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
 
 logger = logging.getLogger(__name__)
@@ -30,11 +29,11 @@ LMI_SEARCH_RADIUS_ARCMIN = LMI_WIDTH_DEG * 60.0 / (2.0**0.5)  # Triangle diagona
 LMI_PHOTOMETRIC_MAX_MAG = 22
 
 
-def lmi_astrometric_catalog_generator(image: Image) -> GaiaVizier:
+def lmi_astrometric_catalog_generator(_) -> GaiaVizier:
     """
     Returns an astrometric catalog for LMI
 
-    :param image: image to generate a catalog for
+    :param _: Image
     :return: Gaia catalog around image
     """
     cat = GaiaVizier(
@@ -63,7 +62,7 @@ def lmi_photometric_catalog_generator(image: Image) -> BaseCatalog:
     if filter_name in ["u", "U"]:
         if in_sdss(ra, dec):
             return SDSS(
-                min_mag=10,
+                min_mag=8,
                 max_mag=LMI_PHOTOMETRIC_MAX_MAG,
                 search_radius_arcmin=LMI_SEARCH_RADIUS_ARCMIN,
                 filter_name=filter_name,
@@ -71,7 +70,7 @@ def lmi_photometric_catalog_generator(image: Image) -> BaseCatalog:
 
         if dec < 0.0:
             return SkyMapper(
-                min_mag=10,
+                min_mag=8,
                 max_mag=LMI_PHOTOMETRIC_MAX_MAG,
                 search_radius_arcmin=LMI_SEARCH_RADIUS_ARCMIN,
                 filter_name=filter_name,
