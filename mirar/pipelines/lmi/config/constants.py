@@ -1,9 +1,5 @@
 """
-<<<<<<< HEAD
 Module for LMI-specific constants
-=======
-Module for WASP-specific constants
->>>>>>> b8447513 (First draft LMI pipeline)
 """
 
 # pylint: disable=duplicate-code

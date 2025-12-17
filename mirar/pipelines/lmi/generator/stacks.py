@@ -35,6 +35,12 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
 
         target_dec = Angle(image["CRVAL2"], unit="degree").degree
 
+        if (target_ra == 0.0) & (target_dec == 0.0):
+            target_ra = image["OBJRA"]
+            target_dec = image["OBJDEC"]
+            image["CRVAL1"] = target_ra
+            image["CRVAL2"] = target_dec
+
         position = coords.SkyCoord(target_ra, target_dec, unit="deg")
 
         match = None
@@ -63,10 +69,7 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
         label = f"stack{i}"
         for image in split_batch:
             image["stackid"] = label
-
-            ra = Angle(ras[image["targnum"]], unit="degree").hourangle
-
-            image["OBJRA"] = ra
+            image["OBJRA"] = ras[image["targnum"]]
             image["OBJDEC"] = decs[image["targnum"]]
             combined_batch.append(image)
 

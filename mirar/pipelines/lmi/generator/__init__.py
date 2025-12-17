@@ -7,7 +7,7 @@ for LMI images
 
 import logging
 
-from mirar.catalog import BaseCatalog, Gaia2Mass
+from mirar.catalog import BaseCatalog, GaiaVizier
 from mirar.catalog.vizier import PS1, SkyMapper
 from mirar.catalog.vizier.sdss import SDSS, NotInSDSSError, in_sdss
 from mirar.data.image_data import Image
@@ -30,30 +30,25 @@ LMI_SEARCH_RADIUS_ARCMIN = LMI_WIDTH_DEG * 60.0 / (2.0**0.5)  # Triangle diagona
 LMI_PHOTOMETRIC_MAX_MAG = 22
 
 
-def lmi_astrometric_catalog_generator(image: Image) -> Gaia2Mass:
+def lmi_astrometric_catalog_generator(image: Image) -> GaiaVizier:
     """
-    Returns an astrometric catalog for summer,
-    which is just a Gaia/2MASS one
+    Returns an astrometric catalog for LMI
 
     :param image: image to generate a catalog for
-    :return: Gaia/2MASS catalog around image
+    :return: Gaia catalog around image
     """
-    temp_cat_path = image[SEXTRACTOR_HEADER_KEY]
-    cat = Gaia2Mass(
+    cat = GaiaVizier(
         min_mag=10,
         max_mag=20,
         search_radius_arcmin=LMI_SEARCH_RADIUS_ARCMIN,
-        trim=True,
-        image_catalog_path=temp_cat_path,
-        filter_name="j",
-        acceptable_j_ph_quals=["A"],
+        filter_name="G",
     )
     return cat
 
 
 def lmi_photometric_catalog_generator(image: Image) -> BaseCatalog:
     """
-    Generate a photometric calibration catalog for SUMMER images
+    Generate a photometric calibration catalog for LMI images
 
     For u band: SDSS if possible, otherwise Skymapper, otherwise fail
     For g/r/i/z: use PS1

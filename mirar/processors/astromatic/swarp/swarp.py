@@ -27,6 +27,7 @@ from mirar.paths import (
     TIME_KEY,
     all_astrometric_keywords,
     copy_temp_file,
+    core_fields,
     get_output_dir,
     get_temp_path,
 )
@@ -255,8 +256,11 @@ class Swarp(BaseImageProcessor):
         all_ras = []
         all_decs = []
         combined_header_dict = {
-            x: batch[0][x] for x in batch[0].keys() if x not in all_astrometric_keywords
+            x: batch[0][x]
+            for x in batch[0].get_header().copy().keys()
+            if x not in all_astrometric_keywords
         }
+
         with (
             open(swarp_image_list_path, "w", encoding="utf8") as img_list,
             open(swarp_weight_list_path, "w", encoding="utf8") as weight_list,
@@ -273,6 +277,38 @@ class Swarp(BaseImageProcessor):
                     wcs = WCS(image.get_header())
                 nxpix = image["NAXIS1"]
                 nypix = image["NAXIS2"]
+
+                full_header = image.get_header()
+                # Temporarily remove any non-core fields from the header for swarp
+                hdr = image.get_header().copy()
+                for key in list(hdr.keys()):
+                    if (
+                        key
+                        not in [
+                            "SIMPLE",
+                            "BITPIX",
+                            "NAXIS",
+                            "NAXIS1",
+                            "NAXIS2",
+                            "EXTEND",
+                            "CTYPE1",
+                            "CTYPE2",
+                            "CRVAL1",
+                            "CRVAL2",
+                            "CRPIX1",
+                            "CRPIX2",
+                            "CD1_1",
+                            "CD1_2",
+                            "CD2_1",
+                            "CD2_2",
+                            "FLXSCALE",
+                        ]
+                        + core_fields
+                    ):
+                        hdr.pop(key, None)
+                hdr["FLXSCALE"] = 1.0
+                image.set_header(hdr)
+
                 image_x_cen = nxpix / 2
                 image_y_cen = nypix / 2
                 [ra, dec] = wcs.all_pix2world(image_x_cen, image_y_cen, 1)
@@ -340,15 +376,16 @@ class Swarp(BaseImageProcessor):
                 for key in combined_header_dict.keys():
                     if key not in tmp_dict.keys():
                         continue
-                    if key not in image.keys():
+                    if key not in full_header.keys():
                         logger.debug(
                             f"Key {key} not found in image {image[BASE_NAME_KEY]}, "
                             f"not adding to combined header."
                         )
                         tmp_dict.pop(key)
                         continue
-                    if image[key] != tmp_dict[key]:
+                    if full_header[key] != tmp_dict[key]:
                         tmp_dict.pop(key)
+
                 combined_header_dict = tmp_dict
 
         if pixscale_to_use is None:
