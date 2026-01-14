@@ -40,7 +40,7 @@ def get_sdss_coverage() -> mangle.PolygonList:
     """
 
     if not SDSS_COVERAGE_PATH.parent.exists():
-        SDSS_COVERAGE_PATH.parent.mkdir(parents=True)
+        SDSS_COVERAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     if not SDSS_COVERAGE_PATH.is_file():
         logger.info(

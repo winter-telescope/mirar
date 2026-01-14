@@ -32,7 +32,7 @@ MASK_TYPE        CORRECT        # type of detection MASKing: can be one of
 
 #-------------------------------- WEIGHTing ----------------------------------
 
-WEIGHT_TYPE      MAP_WEIGHT     # type of WEIGHTing: NONE, BACKGROUND,
+WEIGHT_TYPE      NONE     # type of WEIGHTing: NONE, BACKGROUND,
                                 # MAP_RMS, MAP_VAR or MAP_WEIGHT
 WEIGHT_IMAGE     weight.fits    # weight-map filename
 WEIGHT_GAIN      Y              # modulate gain (E/ADU) with weights? (Y/N)
@@ -42,7 +42,7 @@ WEIGHT_THRESH                   # weight threshold[s] for bad pixels
 #------------------------------ Photometry -----------------------------------
 
 #PHOT_APERTURES   6.0,10.0,14.0,18.0,22.0           # MAG_APER aperture diameter(s) in pixels
-PHOT_APERTURES   4.0, 6.0, 8.0, 10.0           # MAG_APER aperture diameter(s) in pixels
+PHOT_APERTURES   4.0,6.0,8.0,10.0           # MAG_APER aperture diameter(s) in pixels
 PHOT_FLUXFRAC    0.5        # flux fraction[s] used for FLUX_RADIUS
 #PHOT_AUTOPARAMS  2.5,3.5                        # MAG_AUTO parameters: <Kron_fact>,<min_radius>
 #PHOT_PETROPARAMS 2.0,3.5                        # MAG_PETRO parameters: <Petrosian_fact>,
@@ -62,10 +62,10 @@ SATUR_LEVEL      60000        # level (in ADUs) at which arises saturation
  
 MAG_ZEROPOINT    0            # magnitude zero-point
 MAG_GAMMA        4.0            # gamma of emulsion (for photographic scans)
-GAIN             1.6         # detector gain in e-/ADU
+GAIN             2.89         # detector gain in e-/ADU
 
-PIXEL_SCALE      0.32           # size of pixel in arcsec (0=use FITS WCS info)
- 
+PIXEL_SCALE      0.24          # size of pixel in arcsec (0=use FITS WCS info)
+
 #------------------------- Star/Galaxy Separation ----------------------------
  
 SEEING_FWHM      2            # stellar FWHM in arcsec

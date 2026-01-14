@@ -35,6 +35,10 @@ class SkyMapper(VizierCatalog):
     ra_key = "RAICRS"
     dec_key = "DEICRS"
 
+    @property
+    def extra_columns(self) -> list[str]:
+        return ["e_uPSF"]
+
     def get_mag_key(self):
         return f"{self.filter_name}PSF"
 
