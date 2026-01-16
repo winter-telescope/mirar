@@ -1,6 +1,6 @@
 [project]
 name = "mirar"
-version = "1.0.1"
+version = "1.1.0"
 description = "Modular Image Reduction and Analysis Resource (MIRAR)"
 authors =[
     {name = "Robert Stein", email = "rdstein@umd.edu"},
@@ -10,10 +10,12 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/winter-telescope/mirar"
 
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<4"
 classifiers = [
     "Programming Language :: Python :: 3",
     'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
     'Intended Audience :: Science/Research',
     'Intended Audience :: End Users/Desktop',
     'Intended Audience :: Developers',
