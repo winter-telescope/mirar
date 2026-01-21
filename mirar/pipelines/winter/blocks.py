@@ -297,7 +297,7 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 2
+BOARD_ID = 4
 select_subset = [
     ImageSelector(("BOARD_ID", str(BOARD_ID))),
 ]
