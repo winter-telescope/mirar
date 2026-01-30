@@ -5,12 +5,8 @@ Module to run the SPRING data reduction pipeline
 import logging
 
 from mirar.pipelines.base_pipeline import Pipeline
-from mirar.pipelines.spring.blocks import (
-load_raw
-# TODO :  import the pipeline blocks HERE!!
-)
-
-from mirar.pipelines.spring.config import PIPELINE_NAME
+from mirar.pipelines.spring.blocks import csvlog, load_raw
+from mirar.pipelines.spring.config.constants import PIPELINE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +25,7 @@ class SPRINGPipeline(Pipeline):
         "log": load_raw + csvlog,
     }
 
+    @staticmethod
     def download_raw_images_for_night(night: str | int):
         """
         Download raw images for a night
