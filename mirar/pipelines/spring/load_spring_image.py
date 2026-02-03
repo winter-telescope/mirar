@@ -2,25 +2,8 @@ from pathlib import Path
 
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
-from mirar.paths import OBSCLASS_KEY, TARGET_KEY, core_fields
+from mirar.paths import OBSCLASS_KEY, TARGET_KEY, core_fields, BASE_NAME_KEY
 from mirar.pipelines.spring.config.constants import SPRING_GAIN
-
-# def load_raw_spring_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
-#     """
-#     Function to load a raw GIT image
-
-#     :param path: path of file
-#     :return: data and header of image
-
-
-#     """
-#     data, header = open_fits(path)
-
-#     ## INSERT CODE HERE ##
-
-#     for field in core_fields:
-#         if field not in header:
-#             raise KeyError(f"Core field {field} not found in header")
 
 
 def load_raw_spring_fits(path: str | Path):
@@ -63,14 +46,27 @@ def load_raw_spring_fits(path: str | Path):
             header[OBSCLASS_KEY] = "SCIENCE"
 
     # -----------------------------
-    # Target identification
+    # Target identification, same logic as WINTER.
     # -----------------------------
-    if TARGET_KEY not in header:
-        if "TARGNAME" in header and header["TARGNAME"] is not None:
-            header[TARGET_KEY] = header["TARGNAME"].strip().upper()
-        else:
-            header[TARGET_KEY] = "UNKNOWN"
+    target = f"field_{header['FIELDID']}"
+    if ("SCHDNAME" in header.keys()) & ("OBHISTID" in header.keys()):
+        if header["SCHDNAME"] != "":
+            target = f"{header['SCHDNAME']}_{header['OBHISTID']}"
+    elif TARGET_KEY in header.keys():
+        if header[TARGET_KEY] != "":
+            target = header[TARGET_KEY]
 
+    if header[OBSCLASS_KEY].lower() in [
+        "dark",
+        "bias",
+        "focus",
+        "pointing",
+        "flat",
+        "test",
+        "corrupted",
+    ]:
+        target = header[OBSCLASS_KEY].lower()
+    header[TARGET_KEY] = target
     # -----------------------------
     # Camera GAIN
     # -----------------------------
@@ -83,7 +79,8 @@ def load_raw_spring_fits(path: str | Path):
     header["COADDS"] = 1
     header["CALSTEPS"] = ""
     header["PROCFAIL"] = 1
-    header["RAWPATH"] = ""
+    header["RAWPATH"] = path.as_posix()
+    header[BASE_NAME_KEY] = Path(path).name
 
     # -----------------------------
     # Final validation
@@ -93,16 +90,6 @@ def load_raw_spring_fits(path: str | Path):
             raise KeyError(f"Core field {field} not found in header for {path}")
 
     return data, header
-
-
-# def load_raw_spring_image(path: str | Path) -> Image:
-#     """
-#     Function to load a raw GIT image
-
-#     :param path: Path to the raw image
-#     :return: Image object
-#     """
-#     return open_raw_image(path, load_raw_spring_fits)
 
 
 def load_raw_spring_image(path: str | Path) -> Image:

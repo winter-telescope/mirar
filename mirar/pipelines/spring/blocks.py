@@ -2,7 +2,7 @@ from mirar.paths import BASE_NAME_KEY, EXPTIME_KEY, OBSCLASS_KEY, TARGET_KEY
 from mirar.pipelines.spring.load_spring_image import load_raw_spring_image
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.utils import ImageRebatcher
-from mirar.processors.utils.image_loader import ImageLoader
+from mirar.processors.utils import ImageSaver, ImageLoader
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image)]
 csvlog = [
@@ -40,4 +40,22 @@ csvlog = [
         ]
     ),
     ImageRebatcher(BASE_NAME_KEY),
+]
+
+dark_calibrate = [
+    ImageRebatcher(
+        [EXPTIME_KEY]
+    ),
+    # YOUR CODE HERE
+    ImageSaver(output_dir_name="darkcal"),
+]
+
+flat_calibrate = [
+    # YOUR CODE HERE
+    ImageSaver(output_dir_name="skyflatcal"),
+]
+
+astrometry = [
+    # YOUR CODE HERE
+    ImageSaver(output_dir_name="post_astrometry"),
 ]
