@@ -11,6 +11,7 @@ from mirar.pipelines.spring.config.constants import SPRING_GAIN
 def load_raw_spring_fits(path: str | Path):
     data, header = open_fits(path)
 
+    header.remove("BITPIX", ignore_missing=True)
     # -----------------------------
     # Time
     # -----------------------------
