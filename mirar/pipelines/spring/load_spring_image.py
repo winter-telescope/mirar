@@ -83,7 +83,7 @@ def load_raw_spring_fits(path: str | Path):
     header["PROCFAIL"] = 1
     header["RAWPATH"] = path.as_posix()
     header[BASE_NAME_KEY] = Path(path).name
-
+    header["MEDCOUNT"] = np.nanmedian(data)
     # -----------------------------
     # Final validation
     # -----------------------------

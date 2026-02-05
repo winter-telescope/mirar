@@ -47,6 +47,7 @@ csvlog = [
             "TMP_CUR",
             "TMP_SET",
             "READOUTM",
+            "MEDCOUNT",
         ]
     ),
     ImageRebatcher(BASE_NAME_KEY),
