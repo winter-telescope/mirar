@@ -12,6 +12,8 @@ def load_raw_spring_fits(path: str | Path):
     data, header = open_fits(path)
 
     header.remove("BITPIX", ignore_missing=True)
+    header.remove("BZERO", ignore_missing=True)
+    header.remove("BSCALE", ignore_missing=True)
     # -----------------------------
     # Time
     # -----------------------------

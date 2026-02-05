@@ -12,7 +12,6 @@ from mirar.processors.utils import (
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image),
-    ImageSaver(output_dir_name="loaded"),
 ]
 
 csvlog = [
