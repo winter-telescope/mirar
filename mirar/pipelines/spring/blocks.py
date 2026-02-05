@@ -10,7 +10,11 @@ from mirar.processors.utils import (
     ImageSelector,
 )
 
-load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image)]
+load_raw = [
+    ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image),
+    ImageSaver(output_dir_name="raw_floated"),
+]
+
 csvlog = [
     ImageRebatcher(BASE_NAME_KEY),
     CSVLog(
