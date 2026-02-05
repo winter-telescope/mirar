@@ -5,7 +5,13 @@ Module to run the SPRING data reduction pipeline
 import logging
 
 from mirar.pipelines.base_pipeline import Pipeline
-from mirar.pipelines.spring.blocks import csvlog, load_raw
+from mirar.pipelines.spring.blocks import (
+    astrometry,
+    csvlog,
+    dark_calibrate,
+    flat_calibrate,
+    load_raw,
+)
 from mirar.pipelines.spring.config.constants import PIPELINE_NAME
 
 logger = logging.getLogger(__name__)
@@ -23,6 +29,9 @@ class SPRINGPipeline(Pipeline):
         "default": [],
         "load_only": load_raw,
         "log": load_raw + csvlog,
+        "darkcal": load_raw + csvlog + dark_calibrate,
+        "darks_flats": load_raw + csvlog + dark_calibrate + flat_calibrate,
+        "astrometry": load_raw + astrometry,
     }
 
     @staticmethod

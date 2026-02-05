@@ -1,8 +1,14 @@
 from mirar.paths import BASE_NAME_KEY, EXPTIME_KEY, OBSCLASS_KEY, TARGET_KEY
 from mirar.pipelines.spring.load_spring_image import load_raw_spring_image
 from mirar.processors.csvlog import CSVLog
-from mirar.processors.utils import ImageRebatcher
-from mirar.processors.utils import ImageSaver, ImageLoader
+from mirar.processors.dark import DarkCalibrator
+from mirar.processors.flat import SkyFlatCalibrator
+from mirar.processors.utils import (
+    ImageLoader,
+    ImageRebatcher,
+    ImageSaver,
+    ImageSelector,
+)
 
 load_raw = [ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image)]
 csvlog = [
@@ -43,15 +49,24 @@ csvlog = [
 ]
 
 dark_calibrate = [
-    ImageRebatcher(
-        [EXPTIME_KEY]
+    ImageRebatcher([EXPTIME_KEY]),
+    DarkCalibrator(
+        cache_sub_dir="calibration_darks",
+        cache_image_name_header_keys=[EXPTIME_KEY],
     ),
-    # YOUR CODE HERE
+    ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="darkcal"),
+    ImageSelector((OBSCLASS_KEY, ["science"])),
 ]
 
 flat_calibrate = [
-    # YOUR CODE HERE
+    ImageRebatcher([TARGET_KEY]),
+    SkyFlatCalibrator(
+        cache_sub_dir="sky_dither_flats",
+        cache_image_name_header_keys=["FILTER", TARGET_KEY],
+        flat_mode="median",
+        try_load_cache=False,
+    ),
     ImageSaver(output_dir_name="skyflatcal"),
 ]
 

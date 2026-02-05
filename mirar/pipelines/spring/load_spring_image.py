@@ -2,7 +2,7 @@ from pathlib import Path
 
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
-from mirar.paths import OBSCLASS_KEY, TARGET_KEY, core_fields, BASE_NAME_KEY
+from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
 from mirar.pipelines.spring.config.constants import SPRING_GAIN
 
 
@@ -41,9 +41,9 @@ def load_raw_spring_fits(path: str | Path):
     # -----------------------------
     if OBSCLASS_KEY not in header:
         if "OBSTYPE" in header and header["OBSTYPE"] is not None:
-            header[OBSCLASS_KEY] = header["OBSTYPE"].strip().upper()
+            header[OBSCLASS_KEY] = header["OBSTYPE"].strip().lower()
         else:
-            header[OBSCLASS_KEY] = "SCIENCE"
+            header[OBSCLASS_KEY] = "science"
 
     # -----------------------------
     # Target identification, same logic as WINTER.
