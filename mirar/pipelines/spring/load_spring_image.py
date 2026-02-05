@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import numpy as np
+
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
 from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
@@ -89,6 +91,7 @@ def load_raw_spring_fits(path: str | Path):
         if field not in header:
             raise KeyError(f"Core field {field} not found in header for {path}")
 
+    data = data.astype("float32")
     return data, header
 
 
