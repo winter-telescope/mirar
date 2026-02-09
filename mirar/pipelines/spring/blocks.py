@@ -1,5 +1,9 @@
 from mirar.paths import BASE_NAME_KEY, EXPTIME_KEY, OBSCLASS_KEY, TARGET_KEY
+from mirar.pipelines.spring.generator import (
+    spring_anet_sextractor_config_path_generator,
+)
 from mirar.pipelines.spring.load_spring_image import load_raw_spring_image
+from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.flat import SkyFlatCalibrator
@@ -75,6 +79,18 @@ flat_calibrate = [
 ]
 
 astrometry = [
-    # YOUR CODE HERE
-    ImageSaver(output_dir_name="post_astrometry"),
-]
+    ImageRebatcher(BASE_NAME_KEY),
+    AstrometryNet(
+        output_sub_dir="anet",
+        scale_bounds=[0.3, 0.5],
+        scale_units="app",
+        use_sextractor=True,
+        # parity="neg",
+        search_radius_deg=0.15,
+        sextractor_config_path=spring_anet_sextractor_config_path_generator,
+        use_weight=True,
+        timeout=120,
+        cache=False,
+        no_tweak=True,
+    ),
+] + [ImageSaver("post_astrometry")]

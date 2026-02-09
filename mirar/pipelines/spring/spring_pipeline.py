@@ -31,7 +31,7 @@ class SPRINGPipeline(Pipeline):
         "log": load_raw + csvlog,
         "darkcal": load_raw + csvlog + dark_calibrate,
         "darks_flats": load_raw + csvlog + dark_calibrate + flat_calibrate,
-        "astrometry": load_raw + astrometry,
+        "astrometry": load_raw + dark_calibrate + flat_calibrate + astrometry,
     }
 
     @staticmethod

@@ -24,11 +24,11 @@ def load_raw_spring_fits(path: str | Path):
     # -----------------------------
     # Pointing (prefer degrees)
     # -----------------------------
-    if "RA" not in header and "RADEG" in header:
-        header["RA"] = header["RADEG"]
+    # if "RA" not in header and "RADEG" in header:
+    header["RA"] = header["RADEG"]
 
-    if "DEC" not in header and "DECDEG" in header:
-        header["DEC"] = header["DECDEG"]
+    # if "DEC" not in header and "DECDEG" in header:
+    header["DEC"] = header["DECDEG"]
 
     # -----------------------------
     # Instrument Identity
