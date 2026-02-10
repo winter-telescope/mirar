@@ -93,4 +93,5 @@ astrometry = [
         cache=False,
         no_tweak=True,
     ),
-] + [ImageSaver("post_astrometry")]
+    ImageSaver("post_astrometry"),
+]
