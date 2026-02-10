@@ -211,6 +211,7 @@ photcal_without_color = [
         catalogs_purifier=spring_ref_photometric_catalogs_purifier,
         zp_calculator=OutlierRejectionZPCalculator(),
         write_regions=True,
+        zp_column_name="MAG_POINTSOURCE",
     ),
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_POINTSOURCE", write_regions=True
