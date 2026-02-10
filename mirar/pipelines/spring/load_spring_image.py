@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+from astropy.stats import sigma_clipped_stats
 
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
@@ -39,7 +40,20 @@ def load_raw_spring_fits(path: str | Path):
     # Filter handling
     # -----------------------------
     if "FILTER" not in header or not str(header["FILTER"]).strip():
-        header["FILTER"] = "UNKNOWN"
+        # header["FILTER"] = "UNKNOWN"
+        header["EPSPP"] = (
+            sigma_clipped_stats(data, sigma=5)[1] * SPRING_GAIN / header["EXPTIME"]
+        )
+        if header["EPSPP"] <= 100:
+            header["FILTER"] = "Y"
+        elif header["EPSPP"] >= 200 and header["EPSPP"] <= 800:
+            header["FILTER"] = "J"
+        elif header["EPSPP"] >= 1500 and header["EPSPP"] <= 4000:
+            header["FILTER"] = "H"
+        elif header["EPSPP"] >= 8000:
+            header["FILTER"] = "K"
+        else:
+            header["FILTER"] = "UNKNOWN"
 
     # -----------------------------
     # Observation classification
@@ -75,8 +89,8 @@ def load_raw_spring_fits(path: str | Path):
     # -----------------------------
     # Camera GAIN
     # -----------------------------
-    if "GAIN" not in header:
-        header["GAIN"] = SPRING_GAIN
+    # if "GAIN" not in header:
+    header["GAIN"] = SPRING_GAIN
 
     # -----------------------------
     # Miscellaneous statement of header properties

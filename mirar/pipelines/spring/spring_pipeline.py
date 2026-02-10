@@ -11,6 +11,9 @@ from mirar.pipelines.spring.blocks import (
     dark_calibrate,
     flat_calibrate,
     load_raw,
+    photcal_with_color,
+    photcal_without_color,
+    stack_dithers,
 )
 from mirar.pipelines.spring.config.constants import PIPELINE_NAME
 
@@ -32,6 +35,23 @@ class SPRINGPipeline(Pipeline):
         "darkcal": load_raw + csvlog + dark_calibrate,
         "darks_flats": load_raw + csvlog + dark_calibrate + flat_calibrate,
         "astrometry": load_raw + dark_calibrate + flat_calibrate + astrometry,
+        "stacking": load_raw
+        + dark_calibrate
+        + flat_calibrate
+        + astrometry
+        + stack_dithers,
+        "photometry": load_raw
+        + dark_calibrate
+        + flat_calibrate
+        + astrometry
+        + stack_dithers
+        + photcal_without_color,
+        "photometry_color": load_raw
+        + dark_calibrate
+        + flat_calibrate
+        + astrometry
+        + stack_dithers
+        + photcal_with_color,
     }
 
     @staticmethod
