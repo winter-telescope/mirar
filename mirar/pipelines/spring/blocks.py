@@ -182,7 +182,7 @@ photcal_with_color = [
         zp_column_name="MAG_POINTSOURCE",
     ),
     CatalogLimitingMagnitudeCalculator(
-        sextractor_mag_key_name="MAG_AUTO", write_regions=True
+        sextractor_mag_key_name="MAG_POINTSOURCE", write_regions=True
     ),
     ImageSaver(output_dir_name="processed_after_psf_with_color"),
 ]
@@ -213,7 +213,7 @@ photcal_without_color = [
         write_regions=True,
     ),
     CatalogLimitingMagnitudeCalculator(
-        sextractor_mag_key_name="MAG_AUTO", write_regions=True
+        sextractor_mag_key_name="MAG_POINTSOURCE", write_regions=True
     ),
     ImageSaver(output_dir_name="processed_after_psf"),
 ]
