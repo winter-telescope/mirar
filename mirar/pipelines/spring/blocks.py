@@ -27,6 +27,7 @@ from mirar.processors.astromatic.sextractor.background_subtractor import (
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
+from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.flat import SkyFlatCalibrator
@@ -166,7 +167,7 @@ photcal_with_color = [
     Sextractor(
         **sextractor_PSF_photometry_config,
         output_sub_dir="phot",
-        checkimage_name="BACKGROUND_RMS",
+        checkimage_type="BACKGROUND_RMS",
         use_psfex=True,
     ),
     PhotCalibrator(
@@ -178,6 +179,10 @@ photcal_with_color = [
             solver="curve_fit",
         ),
         write_regions=True,
+        zp_column_name="MAG_POINTSOURCE",
+    ),
+    CatalogLimitingMagnitudeCalculator(
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
     ImageSaver(output_dir_name="processed_after_psf_with_color"),
 ]
@@ -198,7 +203,7 @@ photcal_without_color = [
     Sextractor(
         **sextractor_PSF_photometry_config,
         output_sub_dir="phot",
-        checkimage_name="BACKGROUND_RMS",
+        checkimage_type="BACKGROUND_RMS",
         use_psfex=True,
     ),
     PhotCalibrator(
@@ -206,6 +211,9 @@ photcal_without_color = [
         catalogs_purifier=spring_ref_photometric_catalogs_purifier,
         zp_calculator=OutlierRejectionZPCalculator(),
         write_regions=True,
+    ),
+    CatalogLimitingMagnitudeCalculator(
+        sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
     ImageSaver(output_dir_name="processed_after_psf"),
 ]
