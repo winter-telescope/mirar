@@ -8,6 +8,7 @@ from mirar.paths import (
 )
 from mirar.pipelines.spring.config import (
     psfex_config_path,
+    sextractor_astrometry_config,
     sextractor_photometry_config,
     sextractor_PSF_photometry_config,
     swarp_config_path,
@@ -20,6 +21,9 @@ from mirar.pipelines.spring.generator import (
 )
 from mirar.pipelines.spring.load_spring_image import load_raw_spring_image
 from mirar.processors.astromatic import PSFex
+from mirar.processors.astromatic.sextractor.background_subtractor import (
+    SextractorBkgSubtractor,
+)
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
@@ -79,7 +83,6 @@ csvlog = [
             "MEDCOUNT",
         ]
     ),
-    ImageRebatcher(BASE_NAME_KEY),
 ]
 
 dark_calibrate = [
@@ -102,6 +105,14 @@ flat_calibrate = [
         try_load_cache=False,
     ),
     ImageSaver(output_dir_name="skyflatcal"),
+    Sextractor(
+        **sextractor_astrometry_config,
+        write_regions_bool=True,
+        output_sub_dir="skysub",
+        checkimage_type=["-BACKGROUND"],
+    ),
+    SextractorBkgSubtractor(),
+    ImageSaver(output_dir_name="skysub"),
 ]
 
 astrometry = [
