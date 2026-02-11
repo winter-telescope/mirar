@@ -68,7 +68,7 @@ class RawsTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     nightdate = Column(DateTime(timezone=True))
 
     progname = Column(VARCHAR(255))
-    program_name = relationship("Program", back_populates="raws")
+    program_name: Mapped["ProgramsTable"] = relationship(back_populates="raws")
 
     targname = Column(VARCHAR(MAX_TARGNAME_LEN), nullable=True)
     readoutm = Column(VARCHAR(255), nullable=True)
