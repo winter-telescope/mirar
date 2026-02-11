@@ -93,6 +93,11 @@ class RawsTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     moonalt = Column(Float, nullable=True, default=None)
     sunalt = Column(Float, nullable=True, default=None)
 
+    galactic_b = Column(Float, nullable=True)
+    galactic_l = Column(Float, nullable=True)
+    pipeversion = Column(VARCHAR(10), nullable=True, default=None)
+    lastmodified = Column(DateTime(timezone=True))
+
     ra = Column(Float, nullable=True)
     dec = Column(Float, nullable=True)
     altitude = Column(Float, nullable=True)
