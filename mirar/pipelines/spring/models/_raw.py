@@ -65,8 +65,6 @@ class RawsTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     fid: Mapped[int] = mapped_column(ForeignKey("filters.fid"))
     filt: Mapped["FiltersTable"] = relationship(back_populates="raws")
 
-    nightdate = Column(DateTime(timezone=True))
-
     progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
     program_name: Mapped["ProgramsTable"] = relationship(back_populates="raws")
 
@@ -119,7 +117,6 @@ class Raw(BaseDB):
     savepath: str = Field(min_length=1)
     ustackid: int | None = Field(ge=0, default=None)
     fid: int = fid_field
-    nightdate: date = Field()  # FIXME : why different to obsdate?
     itid: int = Field(ge=0)
     progname: str = Field(min_length=1)
     targname: str | None = Field(
