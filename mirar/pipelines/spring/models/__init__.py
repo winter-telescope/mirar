@@ -49,7 +49,7 @@ def set_up_q3c(db_name: str, db_table: BaseTable):
     )
 
 
-def set_up_winter_databases():
+def set_up_spring_databases():
     """
     Setup the winter databases
 

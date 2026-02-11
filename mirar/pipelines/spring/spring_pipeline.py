@@ -16,6 +16,7 @@ from mirar.pipelines.spring.blocks import (
     stack_dithers,
 )
 from mirar.pipelines.spring.config.constants import PIPELINE_NAME
+from mirar.pipelines.spring.models import set_up_spring_databases
 
 logger = logging.getLogger(__name__)
 
@@ -60,3 +61,6 @@ class SPRINGPipeline(Pipeline):
         Download raw images for a night
         """
         raise NotImplementedError
+
+    def set_up_pipeline(self):
+        set_up_spring_databases()

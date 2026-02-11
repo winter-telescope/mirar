@@ -129,6 +129,7 @@ def load_raw_spring_fits(path: str | Path):
         )
         header["PROGNAME"] = default_program.progname
 
+    header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
     date_t = Time(header["UTCTIME"])
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
