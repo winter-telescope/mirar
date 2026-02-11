@@ -21,7 +21,7 @@ from mirar.pipelines.spring.generator import (
     spring_stackid_annotator,
 )
 from mirar.pipelines.spring.load_spring_image import load_raw_spring_image
-from mirar.pipelines.spring.models import Raw
+from mirar.pipelines.spring.models import Raw, Stack
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
@@ -33,6 +33,7 @@ from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalcul
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database import DatabaseImageInserter
+from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photcal.zp_calculator import (
@@ -60,6 +61,7 @@ load_raw = [
     ),
     CustomImageBatchModifier(spring_stackid_annotator),
     ImageSaver(output_dir_name="loaded_raw"),
+    ImageRebatcher(BASE_NAME_KEY),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
@@ -232,4 +234,10 @@ photcal_without_color = [
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
     ImageSaver(output_dir_name="processed_after_psf"),
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
+    ImageDatabaseMultiEntryUpdater(
+        sequence_key="rawid",
+        db_table=Raw,
+        db_alter_columns="ustackid",
+    ),
 ]
