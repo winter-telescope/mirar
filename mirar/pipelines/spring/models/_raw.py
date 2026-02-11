@@ -66,8 +66,10 @@ class RawsTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     filt: Mapped["FiltersTable"] = relationship(back_populates="raws")
 
     nightdate = Column(DateTime(timezone=True))
+
     progname = Column(VARCHAR(255))
-    prog_name = relationship("Program", back_populates="raws")
+    program_name = relationship("Program", back_populates="raws")
+
     targname = Column(VARCHAR(MAX_TARGNAME_LEN), nullable=True)
     readoutm = Column(VARCHAR(255), nullable=True)
     readoutv = Column(VARCHAR(255), nullable=True)
