@@ -89,8 +89,8 @@ class Stack(BaseDB):
     coadds: int = Field(ge=1)
     detmag50: float = Field()
     detmag95: float = Field()
-    astunc: float = Field(ge=0)
-    astunc95: float = Field(ge=0)
+    # astunc: float = Field(ge=0)
+    # astunc95: float = Field(ge=0)
 
     @field_validator("savepath")
     @classmethod
