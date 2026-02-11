@@ -96,6 +96,9 @@ class RawsTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     altitude = Column(Float, nullable=True)
     azimuth = Column(Float, nullable=True)
 
+    ra_column_name = "ra"
+    dec_column_name = "dec"
+
 
 class Raw(BaseDB):
     """
