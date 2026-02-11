@@ -1,12 +1,20 @@
+import logging
+import warnings
 from pathlib import Path
 
 import numpy as np
 from astropy.stats import sigma_clipped_stats
+from astropy.time import Time
+from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
-from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
+from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY
 from mirar.pipelines.spring.config.constants import SPRING_GAIN
+from mirar.pipelines.spring.constants import imgtype_dict, spring_filters_map
+from mirar.pipelines.spring.models import default_program, itid_dict
+
+logger = logging.getLogger(__name__)
 
 
 def load_raw_spring_fits(path: str | Path):
@@ -50,6 +58,11 @@ def load_raw_spring_fits(path: str | Path):
             header["FILTER"] = "K"
         else:
             header["FILTER"] = "UNKNOWN"
+
+    if header["FILTER"] in spring_filters_map:
+        header["FID"] = int(spring_filters_map[header["FILTER"]])
+    else:
+        header["FID"] = -99
 
     # -----------------------------
     # Observation classification
@@ -97,12 +110,41 @@ def load_raw_spring_fits(path: str | Path):
     header["RAWPATH"] = path.as_posix()
     header[BASE_NAME_KEY] = Path(path).name
     header["MEDCOUNT"] = np.nanmedian(data)
-    # -----------------------------
-    # Final validation
-    # -----------------------------
-    for field in core_fields:
-        if field not in header:
-            raise KeyError(f"Core field {field} not found in header for {path}")
+
+    if "PROGPI" not in header.keys():
+        header["PROGPI"] = default_program.pi_name
+    if "PROGID" not in header.keys():
+        header["PROGID"] = default_program.progid
+    # If PROGNAME is not present or is empty, set it to default here.
+    # Otherwise, it gets set to default in the insert_entry for exposures.
+    if "PROGNAME" not in header:
+        header["PROGNAME"] = default_program.progname
+    if header["PROGNAME"] == "":
+        header["PROGNAME"] = default_program.progname
+
+    if len(header["PROGNAME"]) != 8:
+        logger.warning(
+            f"PROGNAME {header['PROGNAME']} is not 8 characters long. "
+            f"Replacing with default."
+        )
+        header["PROGNAME"] = default_program.progname
+
+    date_t = Time(header["UTCTIME"])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", AstropyWarning)
+        header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
+
+    header["IMGTYPE"] = header[OBSCLASS_KEY]
+    if header["IMGTYPE"] == "test":
+        header["IMGTYPE"] = "other"
+
+    if not header["IMGTYPE"] in imgtype_dict:
+        logger.error(f"Unknown image type: {header['IMGTYPE']}")
+        header["ITID"] = itid_dict[imgtype_dict["corrupted"]]
+    else:
+        header["ITID"] = itid_dict[imgtype_dict[header["IMGTYPE"]]]
+
+    header["EXPMJD"] = header["MJD-OBS"]
 
     data = data.astype("float32")
     return data, header
