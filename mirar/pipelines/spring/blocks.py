@@ -160,7 +160,7 @@ stack_dithers = [
         subtract_bkg=False,
         center_type="MOST",
         temp_output_sub_dir="stacks_weights",
-        # header_keys_to_combine=["RAWID"],
+        header_keys_to_combine=["RAWID"],
         min_required_coadds=3,
     ),
     ImageRebatcher(BASE_NAME_KEY),
