@@ -5,7 +5,7 @@ import numpy as np
 from astropy.table import Table
 
 from mirar.catalog import PS1, Gaia2Mass
-from mirar.data import Image
+from mirar.data import Image, ImageBatch
 from mirar.paths import FILTER_KEY
 from mirar.pipelines.spring.config import sextractor_astrometry_config
 from mirar.processors.base_catalog_xmatch_processor import (
@@ -98,3 +98,17 @@ def spring_photcal_color_columns_generator(image: Image) -> tuple[list, list, tu
     err = f"Filter name {filter_name} not recognized"
     logger.error(err)
     raise ValueError(err)
+
+
+def spring_stackid_annotator(batch: ImageBatch) -> ImageBatch:
+    """
+    Generates a stack id for WINTER images as the minimum of the RAWID of the
+    images for which the stack was requested.
+
+    :param batch: ImageBatch
+    :return: ImageBatch with stackid added to the header
+    """
+    first_rawid = np.min([int(image["RAWID"]) for image in batch])
+    for image in batch:
+        image["STACKID"] = int(first_rawid)
+    return batch

@@ -147,6 +147,7 @@ def load_raw_spring_fits(path: str | Path):
 
     header["EXPMJD"] = header["MJD-OBS"]
 
+    header["RAWID"] = int((date_t.mjd - 59000.0) * 86400.0)  # seconds since 59000 MJD
     data = data.astype("float32")
     return data, header
 

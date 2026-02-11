@@ -18,8 +18,10 @@ from mirar.pipelines.spring.generator import (
     spring_photcal_color_columns_generator,
     spring_photometric_catalog_generator,
     spring_ref_photometric_catalogs_purifier,
+    spring_stackid_annotator,
 )
 from mirar.pipelines.spring.load_spring_image import load_raw_spring_image
+from mirar.pipelines.spring.models import Raw
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
@@ -30,6 +32,7 @@ from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
+from mirar.processors.database import DatabaseImageInserter
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photcal.zp_calculator import (
@@ -37,6 +40,7 @@ from mirar.processors.photcal.zp_calculator import (
     ZPWithColorTermCalculator,
 )
 from mirar.processors.utils import (
+    CustomImageBatchModifier,
     HeaderAnnotator,
     ImageLoader,
     ImageRebatcher,
@@ -47,6 +51,17 @@ from mirar.processors.utils import (
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image),
+    ImageRebatcher(
+        [
+            "FILTER",
+            "EXPTIME",
+            TARGET_KEY,
+        ]
+    ),
+    CustomImageBatchModifier(spring_stackid_annotator),
+    ImageSaver(output_dir_name="loaded_raw"),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
 csvlog = [
