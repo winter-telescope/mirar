@@ -5,23 +5,37 @@ from mirar.paths import (
     OBSCLASS_KEY,
     RAW_IMG_KEY,
     TARGET_KEY,
+    ZP_KEY,
+    base_output_dir,
 )
 from mirar.pipelines.spring.config import (
     psfex_config_path,
+    ref_psfex_path,
     sextractor_astrometry_config,
     sextractor_photometry_config,
     sextractor_PSF_photometry_config,
+    sextractor_reference_psf_phot_config,
     swarp_config_path,
 )
 from mirar.pipelines.spring.generator import (
+    mask_stamps_around_bright_stars,
     spring_anet_sextractor_config_path_generator,
+    spring_imsub_catalog_purifier,
     spring_photcal_color_columns_generator,
     spring_photometric_catalog_generator,
     spring_ref_photometric_catalogs_purifier,
+    spring_reference_generator,
+    spring_reference_image_resampler_for_zogy,
+    spring_reference_psf_phot_sextractor,
+    spring_reference_psfex,
+    spring_reference_sextractor,
     spring_stackid_annotator,
 )
-from mirar.pipelines.spring.load_spring_image import load_raw_spring_image
-from mirar.pipelines.spring.models import Raw, Stack
+from mirar.pipelines.spring.load_spring_image import (
+    load_raw_spring_image,
+    load_spring_stack,
+)
+from mirar.pipelines.spring.models import Diff, Raw, Stack
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
@@ -35,11 +49,13 @@ from mirar.processors.dark import DarkCalibrator
 from mirar.processors.database import DatabaseImageInserter
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.flat import SkyFlatCalibrator
+from mirar.processors.mask import MaskPixelsFromFunction
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photcal.zp_calculator import (
     OutlierRejectionZPCalculator,
     ZPWithColorTermCalculator,
 )
+from mirar.processors.reference import ProcessReference
 from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
@@ -49,6 +65,8 @@ from mirar.processors.utils import (
     ImageSelector,
     ModeMasker,
 )
+from mirar.processors.zogy.reference_aligner import AlignReference
+from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image),
@@ -240,4 +258,58 @@ photcal_without_color = [
         db_table=Raw,
         db_alter_columns="ustackid",
     ),
+]
+
+load_final_stack = [
+    ImageLoader(
+        input_sub_dir="processed_after_psf",
+        input_img_dir=base_output_dir,
+        load_image=load_spring_stack,
+    ),
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
+    ImageRebatcher(BASE_NAME_KEY),
+]
+
+imsub = [
+    ImageRebatcher(["FILTER", TARGET_KEY, "STACKID"]),
+    ProcessReference(
+        ref_image_generator=spring_reference_generator,
+        swarp_resampler=spring_reference_image_resampler_for_zogy,
+        sextractor=spring_reference_sextractor,
+        ref_psfex=spring_reference_psfex,
+        phot_sextractor=spring_reference_psf_phot_sextractor,
+    ),
+    Sextractor(
+        **sextractor_reference_psf_phot_config,
+        output_sub_dir="subtract",
+        cache=False,
+        use_psfex=True,
+    ),
+    PSFex(config_path=ref_psfex_path, output_sub_dir="subtract", norm_fits=True),
+    AlignReference(
+        order=1,
+        sextractor=spring_reference_sextractor,
+        psfex=spring_reference_psfex,
+        phot_sextractor=spring_reference_psf_phot_sextractor,
+        catalog_purifier=spring_imsub_catalog_purifier,
+    ),
+    MaskPixelsFromFunction(mask_function=mask_stamps_around_bright_stars),
+    ImageSaver(output_dir_name="presubtract"),
+    ZOGYPrepare(
+        output_sub_dir="subtract",
+        sci_zp_header_key="ZP_AUTO",
+        ref_zp_header_key=ZP_KEY,
+        catalog_purifier=spring_imsub_catalog_purifier,
+        x_key="XMODEL_IMAGE",
+        y_key="YMODEL_IMAGE",
+        flux_key="FLUX_POINTSOURCE",
+    ),
+    ZOGY(
+        output_sub_dir="subtract",
+        sci_zp_header_key="ZP_AUTO",
+        ref_zp_header_key=ZP_KEY,
+    ),
+    ImageSaver(output_dir_name="diffs"),
+    DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
+    ImageSaver(output_dir_name="subtract"),
 ]

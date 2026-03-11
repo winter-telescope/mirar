@@ -45,8 +45,15 @@ sextractor_candidates_config = {
 }
 
 sextractor_reference_config = {
-    "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
+    "config_path": os.path.join(astromatic_config_dir, "reference.sex"),
     "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
+    "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
+    "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
+}
+
+sextractor_reference_psf_phot_config = {
+    "config_path": os.path.join(astromatic_config_dir, "reference.sex"),
+    "parameter_path": os.path.join(astromatic_config_dir, "photomPSF_ref.param"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
@@ -58,3 +65,5 @@ swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
 psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
 
 psfex_sci_config_path = os.path.join(astromatic_config_dir, "photom_sci.psfex")
+
+ref_psfex_path = os.path.join(astromatic_config_dir, "reference.psfex")

@@ -10,6 +10,8 @@ from mirar.pipelines.spring.blocks import (
     csvlog,
     dark_calibrate,
     flat_calibrate,
+    imsub,
+    load_final_stack,
     load_raw,
     photcal_with_color,
     photcal_without_color,
@@ -53,6 +55,7 @@ class SPRINGPipeline(Pipeline):
         + astrometry
         + stack_dithers
         + photcal_with_color,
+        "subtraction": load_final_stack + imsub,
     }
 
     @staticmethod

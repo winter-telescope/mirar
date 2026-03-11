@@ -27,6 +27,12 @@ from mirar.pipelines.spring.models._programs import (
     populate_programs,
 )
 from mirar.pipelines.spring.models._raw import Raw, RawsTable
+from mirar.pipelines.spring.models._ref_components import (
+    RefComponent,
+    RefComponentsTable,
+)
+from mirar.pipelines.spring.models._ref_queries import RefQueriesTable, RefQuery
+from mirar.pipelines.spring.models._ref_stacks import RefStack, RefStacksTable
 from mirar.pipelines.spring.models._stack import Stack, StacksTable
 from mirar.pipelines.spring.models.base_model import SPRINGBase
 
