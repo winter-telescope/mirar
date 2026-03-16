@@ -21,7 +21,7 @@ import numpy as np
 from mirar.data import Dataset, Image, ImageBatch
 from mirar.errors import ErrorStack
 from mirar.paths import get_output_path
-from mirar.processors.base_processor import BaseProcessor
+from mirar.processors.base_processor import BaseProcessor, PrerequisiteError
 from mirar.processors.utils.error_annotator import ErrorStackAnnotator
 
 logger = logging.getLogger(__name__)
@@ -187,7 +187,10 @@ class Pipeline:
         for i, processor in enumerate(processors):
             logger.debug(f"Initialising processor {processor.__class__}")
             processor.set_preceding_steps(previous_steps=processors[:i])
-            processor.check_prerequisites()
+            try:
+                processor.check_prerequisites()
+            except PrerequisiteError as exc:
+                logger.warning(f"Prerequisite error: {exc}")
         logger.debug("Pipeline initialisation complete.")
         return processors
 

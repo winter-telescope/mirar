@@ -10,7 +10,7 @@ from astropy.coordinates import Angle
 
 from mirar.data import ImageBatch
 from mirar.paths import OBSCLASS_KEY
-from mirar.pipelines.lmi.config.constants import LMI_WIDTH
+from mirar.pipelines.lmi.config.constants import LMI_WIDTH_DEG
 from mirar.processors.utils.image_selector import split_images_into_batches
 
 
@@ -32,7 +32,14 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
             continue
 
         target_ra = Angle(image["CRVAL1"], unit="hourangle").degree
+
         target_dec = Angle(image["CRVAL2"], unit="degree").degree
+
+        if (target_ra == 0.0) & (target_dec == 0.0):
+            target_ra = image["OBJRA"]
+            target_dec = image["OBJDEC"]
+            image["CRVAL1"] = target_ra
+            image["CRVAL2"] = target_dec
 
         position = coords.SkyCoord(target_ra, target_dec, unit="deg")
 
@@ -43,7 +50,7 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
                 coords.SkyCoord(ra=ras, dec=decs, unit="deg")
             )
 
-            mask = d2d < (LMI_WIDTH * u.deg * 2.0)
+            mask = d2d < (LMI_WIDTH_DEG * u.deg * 2.0)
             if mask:
                 match = idx
 
@@ -62,6 +69,8 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
         label = f"stack{i}"
         for image in split_batch:
             image["stackid"] = label
+            image["OBJRA"] = ras[image["targnum"]]
+            image["OBJDEC"] = decs[image["targnum"]]
             combined_batch.append(image)
 
     return combined_batch

@@ -15,6 +15,7 @@ from astropy.time import Time
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
 from mirar.paths import (
+    BASE_NAME_KEY,
     COADD_KEY,
     GAIN_KEY,
     OBSCLASS_KEY,
@@ -44,12 +45,15 @@ def load_raw_lmi_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
     if GAIN_KEY not in header.keys():
         header[GAIN_KEY] = LMI_GAIN
 
+    header[BASE_NAME_KEY] = ".".join(header[BASE_NAME_KEY].split(".")[-2:])
+
     header["FILTER"] = header["FILTER1"].lower().strip().split("-")[-1]
 
     assert header["FILTER"] in LMI_FILTERS, f"Filter {header['FILTER']} not recognised"
 
     # Set up for forced photometry
     ra = Angle(f"{header['OBSRA']} hours").degree
+
     header["OBJRA"] = ra
 
     dec = Angle(f"{header['OBSDEC']} degrees").degree
@@ -76,7 +80,14 @@ def load_raw_lmi_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
         if key in Path(path).name.lower():
             header[OBSCLASS_KEY] = key
 
-    header[TARGET_KEY] = header["OBJECT"].lower()
+    header[TARGET_KEY] = header["OBJECT"]
+
+    if header[TARGET_KEY] in ["", "UNKNOWN"]:
+        try:
+            header[TARGET_KEY] = header["SCITARG"]
+            header["OBJECT"] = header["SCITARG"]
+        except KeyError:
+            pass
 
     t = Time(header["DATE-OBS"])
 
@@ -90,7 +101,24 @@ def load_raw_lmi_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
     header[PROC_HISTORY_KEY] = ""
     header[PROC_FAIL_KEY] = ""
 
-    data = data.astype(float)
+    data = data.astype(np.float64)
+    del header["BZERO"], header["BSCALE"]
+
+    trimsec_x, trimsec_y = header["TRIMSEC"].strip("[]").split(",")
+
+    data = data[
+        int(trimsec_x.split(":")[0]) : int(trimsec_x.split(":")[1]),
+        int(trimsec_y.split(":")[0]) : int(trimsec_y.split(":")[1]),
+    ]
+    del header["TRIMSEC"]
+
+    # Delete all WCS crap
+    for key in header.keys():
+        if ("WCS" in header.comments[key]) & ("CRVAL" not in key):
+            del header[key]
+        elif (key[:2] in ["CR", "CT", "CD"]) & ("CRVAL" not in key):
+            del header[key]
+
     data[data == 0.0] = np.nan
 
     return data, header
