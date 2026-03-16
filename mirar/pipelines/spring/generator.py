@@ -10,6 +10,7 @@ from mirar.catalog import PS1, Gaia2Mass
 from mirar.data import Image, ImageBatch
 from mirar.paths import FILTER_KEY, SEXTRACTOR_HEADER_KEY, get_output_dir
 from mirar.pipelines.spring.config import (
+    SPRING_GAIN,
     ref_psfex_path,
     sextractor_astrometry_config,
     sextractor_reference_config,
@@ -136,6 +137,22 @@ def spring_stackid_annotator(batch: ImageBatch) -> ImageBatch:
     first_rawid = np.min([int(image["RAWID"]) for image in batch])
     for image in batch:
         image["STACKID"] = int(first_rawid)
+    return batch
+
+
+def spring_stack_gain_modifier(batch: ImageBatch) -> ImageBatch:
+    """
+    Ad-Hoc function for SPRING Images to ensure that the GAIN keyword is
+    written in properly instead of being left blank
+
+    :param batch: ImageBatch
+    :return: ImageBatch with GAIN added to the header
+    """
+    coadds = batch[0]["COADDS"]
+    effective_gain = coadds * SPRING_GAIN
+    for image in batch:
+        if image["GAIN"] <= SPRING_GAIN:
+            image["GAIN"] = effective_gain
     return batch
 
 
@@ -301,7 +318,7 @@ def spring_imsub_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
         & (ref_catalog["SNR_WIN"] > 10)
         & (ref_catalog["FWHM_WORLD"] < 4.0 / 3600)
         & (ref_catalog["FWHM_WORLD"] > 0.5 / 3600)
-        & (ref_catalog["SNR_WIN"] < 200)
+        & (ref_catalog["SNR_WIN"] < 1000)
         & (ref_catalog["FLUX_MAX"] < 30000)
     )
 

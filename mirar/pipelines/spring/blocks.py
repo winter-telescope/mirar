@@ -9,6 +9,7 @@ from mirar.paths import (
     base_output_dir,
 )
 from mirar.pipelines.spring.config import (
+    SPRING_GAIN,
     psfex_config_path,
     ref_psfex_path,
     sextractor_astrometry_config,
@@ -29,6 +30,7 @@ from mirar.pipelines.spring.generator import (
     spring_reference_psf_phot_sextractor,
     spring_reference_psfex,
     spring_reference_sextractor,
+    spring_stack_gain_modifier,
     spring_stackid_annotator,
 )
 from mirar.pipelines.spring.load_spring_image import (
@@ -180,7 +182,9 @@ stack_dithers = [
         temp_output_sub_dir="stacks_weights",
         header_keys_to_combine=["RAWID"],
         min_required_coadds=3,
+        gain=SPRING_GAIN,
     ),
+    CustomImageBatchModifier(spring_stack_gain_modifier),
     ImageRebatcher(BASE_NAME_KEY),
     ModeMasker(),
     ImageSaver(output_dir_name="stack"),

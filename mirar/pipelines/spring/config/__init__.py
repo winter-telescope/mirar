@@ -4,11 +4,11 @@ Module containing SEDMv2-specific paths
 
 import os
 
-from mirar.pipelines.git.config.constants import (
+from mirar.pipelines.spring.config.constants import (
     DB_NAME,
-    GIT_GAIN,
-    GIT_PIXEL_SCALE,
     PIPELINE_NAME,
+    SPRING_GAIN,
+    SPRING_PIXEL_SCALE,
 )
 
 git_dir = os.path.dirname(__file__)

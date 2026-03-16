@@ -8,7 +8,7 @@ from pydantic import Field
 from sqlalchemy import VARCHAR, BigInteger, Column, Float, Integer
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
-from mirar.pipelines.spring.models import SPRINGBase
+from mirar.pipelines.spring.models.base_model import SPRINGBase
 
 
 class RefStacksTable(SPRINGBase):
