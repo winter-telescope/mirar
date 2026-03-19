@@ -297,7 +297,18 @@ csvlog = [
 select_split_subset = [ImageSelector(("SUBCOORD", "0_0"))]
 
 # Optional subset selection
-BOARD_ID = 4
+
+DEFAULT_BOARD_ID = 4
+
+env_board = os.getenv("BOARD_ID")
+
+if env_board is not None:
+    try:
+        BOARD_ID = int(env_board)
+    except ValueError as exc:
+        raise ValueError(f"Invalid BOARD_ID environment variable: {env_board}") from exc
+else:
+    BOARD_ID = DEFAULT_BOARD_ID
 select_subset = [
     ImageSelector(("BOARD_ID", str(BOARD_ID))),
 ]
