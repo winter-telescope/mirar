@@ -13,6 +13,7 @@ from mirar.pipelines.spring.config import (
     psfex_config_path,
     ref_psfex_path,
     sextractor_astrometry_config,
+    sextractor_candidates_config,
     sextractor_photometry_config,
     sextractor_PSF_photometry_config,
     sextractor_reference_psf_phot_config,
@@ -21,6 +22,7 @@ from mirar.pipelines.spring.config import (
 from mirar.pipelines.spring.generator import (
     mask_stamps_around_bright_stars,
     spring_anet_sextractor_config_path_generator,
+    spring_candidate_annotator_filterer,
     spring_imsub_catalog_purifier,
     spring_photcal_color_columns_generator,
     spring_photometric_catalog_generator,
@@ -57,16 +59,27 @@ from mirar.processors.photcal.zp_calculator import (
     OutlierRejectionZPCalculator,
     ZPWithColorTermCalculator,
 )
+from mirar.processors.photometry.aperture_photometry import AperturePhotometry
+from mirar.processors.photometry.psf_photometry import PSFPhotometry
 from mirar.processors.reference import ProcessReference
+from mirar.processors.sources.forced_photometry import ForcedPhotometryDetector
+from mirar.processors.sources.source_detector import ZOGYSourceDetector
+from mirar.processors.sources.source_exporter import SourceWriter
+from mirar.processors.sources.source_loader import SourceLoader
+from mirar.processors.sources.source_selector import SourceBatcher
+from mirar.processors.sources.source_table_modifier import CustomSourceTableModifier
 from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
+    ImageBatcher,
+    ImageDebatcher,
     ImageLoader,
     ImageRebatcher,
     ImageSaver,
     ImageSelector,
     ModeMasker,
 )
+from mirar.processors.utils.image_plotter import ImagePlotter
 from mirar.processors.zogy.reference_aligner import AlignReference
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
@@ -264,6 +277,32 @@ photcal_without_color = [
     ),
 ]
 
+export_stacks = [
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="replace"),
+    ImageDatabaseMultiEntryUpdater(
+        sequence_key="rawid",
+        db_table=Raw,
+        db_alter_columns="ustackid",
+    ),
+    ImagePlotter(
+        output_sub_dir="final_stacks_plots",
+        annotate_fields=[
+            BASE_NAME_KEY,
+            "COADDS",
+            TARGET_KEY,
+            "CRVAL1",
+            "CRVAL2",
+            "FILTER",
+            "ZP",
+            "ZPSTD",
+        ],
+    ),
+]
+
+photcal_and_export = photcal_without_color + export_stacks
+
+photcal_color_and_export = photcal_with_color + export_stacks
+
 load_final_stack = [
     ImageLoader(
         input_sub_dir="processed_after_psf",
@@ -317,3 +356,63 @@ imsub = [
     DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
     ImageSaver(output_dir_name="subtract"),
 ]
+
+load_sub = [
+    ImageLoader(input_sub_dir="diffs", input_img_dir=base_output_dir),
+    ImageBatcher(BASE_NAME_KEY),
+    DatabaseImageInserter(db_table=Diff, duplicate_protocol="replace"),
+    ImageSaver(output_dir_name="subtract"),
+]
+
+detect_candidates = [
+    ZOGYSourceDetector(
+        output_sub_dir="subtract",
+        **sextractor_candidates_config,
+        write_regions=True,
+        detect_negative_sources=False,
+    ),
+    PSFPhotometry(phot_cutout_half_size=10),
+    AperturePhotometry(
+        temp_output_sub_dir="aper_photometry",
+        aper_diameters=[8, 16],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[25, 25],
+        bkg_out_diameters=[40, 40],
+        col_suffix_list=["", "big"],
+    ),
+    CustomSourceTableModifier(spring_candidate_annotator_filterer),
+    SourceWriter(output_dir_name="candidates"),
+]
+
+load_sources = [
+    SourceLoader(input_dir_name="candidates", input_dir=base_output_dir),
+    SourceBatcher(BASE_NAME_KEY),
+]
+
+stack_forced_photometry = [
+    ImageRebatcher([BASE_NAME_KEY]),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
+    AperturePhotometry(
+        aper_diameters=[5, 8, 10, 15],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[20, 20, 20, 20],
+        bkg_out_diameters=[40, 40, 40, 40],
+    ),
+    SourceWriter(output_dir_name="photometry"),
+]
+
+diff_forced_photometry = [
+    ImageDebatcher(),
+    ImageBatcher([BASE_NAME_KEY]),
+    ForcedPhotometryDetector(ra_header_key="TARGRA", dec_header_key="TARGDEC"),
+    AperturePhotometry(
+        aper_diameters=[5, 8, 10, 15],
+        phot_cutout_half_size=50,
+        bkg_in_diameters=[20, 20, 20, 20],
+        bkg_out_diameters=[40, 40, 40, 40],
+    ),
+    PSFPhotometry(),
+    SourceWriter(output_dir_name="photometry"),
+]
+
+reduce = load_raw + csvlog + dark_calibrate + flat_calibrate

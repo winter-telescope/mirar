@@ -2,13 +2,25 @@
 import logging
 
 import numpy as np
+import pandas as pd
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from astropy.time import Time
 from astropy.wcs import WCS
 
 from mirar.catalog import PS1, Gaia2Mass
 from mirar.data import Image, ImageBatch
-from mirar.paths import FILTER_KEY, SEXTRACTOR_HEADER_KEY, get_output_dir
+from mirar.data.source_data import SourceBatch
+from mirar.errors.exceptions import ProcessorError
+from mirar.paths import (
+    FILTER_KEY,
+    MAGLIM_KEY,
+    SEXTRACTOR_HEADER_KEY,
+    TIME_KEY,
+    ZP_KEY,
+    ZP_STD_KEY,
+    get_output_dir,
+)
 from mirar.pipelines.spring.config import (
     SPRING_GAIN,
     ref_psfex_path,
@@ -34,6 +46,10 @@ from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
+
+
+class NoGoodCandidatesError(ProcessorError):
+    """Error raised when no candidates pass quality cuts"""
 
 
 def spring_anet_sextractor_config_path_generator(_image: Image) -> str:
@@ -356,3 +372,69 @@ def mask_stamps_around_bright_stars(image: Image):
         ] = True
 
     return mask
+
+
+def spring_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatch:
+    """
+    Function to perform basic filtering to weed out bad candidates with None
+    magnitudes, to be added.
+    :param source_batch: Source batch
+    :return: updated batch
+    """
+
+    new_batch = []
+
+    for source in source_batch:
+        src_df = source.get_data()
+
+        bad_sources_mask = (
+            src_df["sigmapsf"].isnull()
+            | src_df["magpsf"].isnull()
+            | src_df["magap"].isnull()
+            | src_df["sigmagap"].isnull()
+            | (src_df["fwhm"] <= 0)
+            | (src_df["scorr"] < 0)
+        )
+
+        mask = bad_sources_mask.values
+
+        # Needing to do this because the dataframe is big-endian
+        mask_inds = np.where(~mask)[0]
+        filtered_df = pd.DataFrame([src_df.loc[x] for x in mask_inds]).reset_index(
+            drop=True
+        )
+
+        if len(filtered_df) == 0:
+            filtered_df = pd.DataFrame(columns=src_df.columns)
+
+        # Pipeline (db) specific keywords
+        source["magzpsci"] = source[ZP_KEY]
+        source["magzpsciunc"] = source[ZP_STD_KEY]
+        source["diffmaglim"] = source[MAGLIM_KEY]
+        source["programpi"] = source["PROGPI"]
+        source["programid"] = source["PROGID"]
+        source["field"] = source["FIELDID"]
+        tstr = source[TIME_KEY]
+        new_tstr = (
+            tstr[:4]
+            + "-"
+            + tstr[4:6]
+            + "-"
+            + tstr[6:8]
+            + "T"
+            + tstr[9:11]
+            + ":"
+            + tstr[11:13]
+            + ":"
+            + tstr[13:]
+        )
+        source["jd"] = Time(new_tstr).jd
+
+        source.set_data(filtered_df)
+        if len(filtered_df) > 0:
+            new_batch.append(source)
+
+    if len(new_batch) == 0:
+        raise NoGoodCandidatesError
+
+    return SourceBatch(new_batch)
