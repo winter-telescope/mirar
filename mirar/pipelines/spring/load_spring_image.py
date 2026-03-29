@@ -59,10 +59,17 @@ def load_raw_spring_fits(path: str | Path):
         else:
             header["FILTER"] = "UNKNOWN"
 
+    if header["FILTER"].find("J") != -1:
+        header["FILTER"] = "J"
+    elif header["FILTER"].find("H") != -1:
+        header["FILTER"] = "H"
+    elif header["FILTER"].find("Y") != -1:
+        header["FILTER"] = "Y"
+
     if header["FILTER"] in spring_filters_map:
         header["FID"] = int(spring_filters_map[header["FILTER"]])
     else:
-        header["FID"] = -99
+        header["FID"] = 99  # not -99 so as to not break anything
 
     # -----------------------------
     # Observation classification
