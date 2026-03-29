@@ -14,6 +14,7 @@ from mirar.pipelines.summer.summer_pipeline import SummerPipeline
 from mirar.pipelines.wasp.wasp_pipeline import WASPPipeline
 from mirar.pipelines.winter.winter_pipeline import WINTERPipeline
 from mirar.pipelines.wirc.wirc_pipeline import WircPipeline
+from mirar.pipelines.spring.spring_pipeline import SPRINGPipeline
 
 logger = logging.getLogger(__name__)
 
