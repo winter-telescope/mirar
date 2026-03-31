@@ -132,6 +132,12 @@ class WINTERPipeline(Pipeline):
         + detect_candidates
         + process_candidates
         + avro_broadcast,
+        "_default_subset_": unpack_subset
+        + reduce_unpacked
+        + imsub
+        + detect_candidates
+        + process_candidates
+        + avro_broadcast,
         "stack_stacks": load_final_stack + stack_stacks,
         "stack_stacks_db": stack_stacks,
         "focus_cals": focus_cals,
