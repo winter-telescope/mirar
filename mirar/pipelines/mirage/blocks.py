@@ -90,8 +90,6 @@ load_raw = [
             TARGET_KEY,
         ]
     ),
-    CustomImageBatchModifier(mirage_stackid_annotator),
-    ImageSaver(output_dir_name="loaded_raw"),
     ImageRebatcher(BASE_NAME_KEY),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
 ]
@@ -101,33 +99,19 @@ csvlog = [
     CSVLog(
         export_keys=[
             # Time / Identity
-            "UTCISO",
             "DATE-OBS",
             "MJD-OBS",
             BASE_NAME_KEY,
-            "FILENAME",
             # Targeting
             TARGET_KEY,
-            "TARGNAME",
-            "FIELDID",
-            # Pointing
             "RADEG",
             "DECDEG",
-            "AZIMUTH",
-            "ALTITUDE",
-            "AIRMASS",
             # Instrument / exposure
             "INSTRUME",
-            "TELESCOP",
-            "OBSERVAT",
             "FILTER",
             EXPTIME_KEY,
             OBSCLASS_KEY,
             # Other keys
-            "FOCPOS",
-            "TMP_CUR",
-            "TMP_SET",
-            "READOUTM",
             "MEDCOUNT",
         ]
     ),
