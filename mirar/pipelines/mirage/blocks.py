@@ -115,6 +115,7 @@ csvlog = [
             "MEDCOUNT",
         ]
     ),
+    ImageSelector(("OBJECT", "PUPPIS")),
 ]
 
 dark_calibrate = [
@@ -381,4 +382,5 @@ diff_forced_photometry = [
     SourceWriter(output_dir_name="photometry"),
 ]
 
-reduce = load_raw + csvlog + dark_calibrate + flat_calibrate
+# reduce = load_raw + csvlog + dark_calibrate + flat_calibrate
+reduce = load_raw + csvlog + flat_calibrate
