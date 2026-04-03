@@ -95,6 +95,7 @@ def load_raw_mirage_fits(path: str | Path):
         f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}T{date_str[9:11]}:{date_str[11:13]}:{date_str[13:15]}"
     )
 
+    header['DATE-OBS'] = date_t.isot
     header["EXPMJD"] = date_t.mjd
     data = data.astype("float32")
     return data, header
