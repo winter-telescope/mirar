@@ -17,7 +17,7 @@ from mirar.pipelines.mirage.models import default_program, itid_dict
 logger = logging.getLogger(__name__)
 
 
-def load_raw_spring_fits(path: str | Path):
+def load_raw_mirage_fits(path: str | Path):
     data, header = open_fits(path)
 
     header.remove("BITPIX", ignore_missing=True)
@@ -159,11 +159,11 @@ def load_raw_spring_fits(path: str | Path):
     return data, header
 
 
-def load_raw_spring_image(path: str | Path) -> Image:
-    return open_raw_image(path, load_raw_spring_fits)
+def load_raw_mirage_image(path: str | Path) -> Image:
+    return open_raw_image(path, load_raw_mirage_fits)
 
 
-def load_spring_stack(
+def load_mirage_stack(
     path: str | Path,
 ) -> Image:
     """
