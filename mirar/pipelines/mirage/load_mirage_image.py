@@ -34,6 +34,8 @@ def load_raw_mirage_fits(path: str | Path):
     header["DEC"] = header["CRVAL2"]
     header["RADEG"] = header["CRVAL1"]
     header["DECDEG"] = header["CRVAL2"]
+    header["RA"] = 177.164615877
+    header["DEC"] = 48.6919635931
 
     # -----------------------------
     # Instrument Identity
