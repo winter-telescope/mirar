@@ -49,7 +49,7 @@ def load_raw_mirage_fits(path: str | Path):
             header["FILTER"] = "J"
         else:
             filter_name = object.split("_")[-1]
-            header["FILTER"] = mirage_filters_map.get(filter_name)
+            header["FILTER"] = filter_name
 
     # -----------------------------
     # Observation classification
