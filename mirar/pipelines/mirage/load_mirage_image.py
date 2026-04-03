@@ -88,7 +88,7 @@ def load_raw_mirage_fits(path: str | Path):
     header[BASE_NAME_KEY] = Path(path).name
     header["MEDCOUNT"] = np.nanmedian(data)
 
-    date_str = path.basename.split(".fits")[0].split("scicam_")[
+    date_str = path.split('/')[-1].split(".fits")[0].split("scicam_")[
         -1
     ]  # eg 20260401T123456
     date_t = Time(
