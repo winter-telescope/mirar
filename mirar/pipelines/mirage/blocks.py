@@ -36,8 +36,8 @@ from mirar.pipelines.mirage.generator import (
     mirage_stackid_annotator,
 )
 from mirar.pipelines.mirage.load_mirage_image import (
-    load_raw_spring_image,
-    load_spring_stack,
+    load_mirage_stack,
+    load_raw_mirage_image,
 )
 from mirar.pipelines.mirage.models import Diff, Raw, Stack
 from mirar.processors.astromatic import PSFex
@@ -82,7 +82,7 @@ from mirar.processors.zogy.reference_aligner import AlignReference
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
-    ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image),
+    ImageLoader(input_sub_dir="raw", load_image=load_raw_mirage_image),
     ImageRebatcher(
         [
             "FILTER",
@@ -292,7 +292,7 @@ load_final_stack = [
     ImageLoader(
         input_sub_dir="processed_after_psf",
         input_img_dir=base_output_dir,
-        load_image=load_spring_stack,
+        load_image=load_mirage_stack,
     ),
     ImageRebatcher(BASE_NAME_KEY),
 ]
