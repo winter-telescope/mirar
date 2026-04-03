@@ -55,6 +55,8 @@ def load_raw_mirage_fits(path: str | Path):
     if OBSCLASS_KEY not in header:
         if header["OBJECT"].strip().lower() in ["scicam"]:
             header[OBSCLASS_KEY] = "flat"
+        else:
+            header[OBSCLASS_KEY] = "science"
 
     # -----------------------------
     # Target identification, same logic as WINTER.
