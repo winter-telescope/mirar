@@ -99,6 +99,7 @@ def load_raw_mirage_fits(path: str | Path):
 
     header['DATE-OBS'] = date_t.isot
     header["EXPMJD"] = date_t.mjd
+    header["SAVEPATH"] = path.as_posix()
     data = data.astype("float32")
     return data, header
 
