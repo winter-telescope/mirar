@@ -127,13 +127,13 @@ class WINTERPipeline(Pipeline):
         + process_candidates
         + avro_broadcast,
         "remask": remask,
-        "default_subset": reduce_unpacked_subset
+        "full_reduce_subset": reduce_unpacked_subset
         + imsub
         + detect_candidates
         + process_candidates
         + avro_broadcast,
-        "_default_subset_": unpack_subset
-        + reduce_unpacked
+        "default_subset": unpack_subset
+        + full_reduction
         + imsub
         + detect_candidates
         + process_candidates
