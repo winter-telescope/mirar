@@ -27,69 +27,39 @@ def load_raw_mirage_fits(path: str | Path):
     # Time
     # -----------------------------
     # DATE-OBS already exists and is usable
-    if "EXPTIME" not in header and "AEXPTIME" in header:
-        header["EXPTIME"] = header["AEXPTIME"]
-
     # -----------------------------
     # Pointing (prefer degrees)
     # -----------------------------
-    header["RA"] = header["RADEG"]
-    header["DEC"] = header["DECDEG"]
+    header["RA"] = header["CRVAL1"]
+    header["DEC"] = header["CRVAL2"]
 
     # -----------------------------
     # Instrument Identity
     # -----------------------------
-    header.setdefault("INSTRUME", "SPRING")
+    header.setdefault("INSTRUME", "MIRAGE")
 
     # -----------------------------
     # Filter handling
     # -----------------------------
-    if "FILTER" not in header or not str(header["FILTER"]).strip():
-        header["EPSPP"] = (
-            sigma_clipped_stats(data, sigma=5)[1] * MIRAGE_GAIN / header["EXPTIME"]
-        )
-        if header["EPSPP"] <= 100:
-            header["FILTER"] = "Y"
-        elif header["EPSPP"] >= 200 and header["EPSPP"] <= 800:
+    if "FILTER" not in header:
+        object = header.get("OBJECT", "").strip()
+        if "_" not in object:
             header["FILTER"] = "J"
-        elif header["EPSPP"] >= 1500 and header["EPSPP"] <= 4000:
-            header["FILTER"] = "H"
-        elif header["EPSPP"] >= 8000:
-            header["FILTER"] = "K"
         else:
-            header["FILTER"] = "UNKNOWN"
-
-    if header["FILTER"].find("J") != -1:
-        header["FILTER"] = "J"
-    elif header["FILTER"].find("H") != -1:
-        header["FILTER"] = "H"
-    elif header["FILTER"].find("Y") != -1:
-        header["FILTER"] = "Y"
-
-    if header["FILTER"] in mirage_filters_map:
-        header["FID"] = int(mirage_filters_map[header["FILTER"]])
-    else:
-        header["FID"] = 99  # not -99 so as to not break anything
+            filter_name = object.split("_")[-1]
+            header["FILTER"] = mirage_filters_map.get(filter_name)
 
     # -----------------------------
     # Observation classification
     # -----------------------------
     if OBSCLASS_KEY not in header:
-        if "OBSTYPE" in header and header["OBSTYPE"] is not None:
-            header[OBSCLASS_KEY] = header["OBSTYPE"].strip().lower()
-        else:
-            header[OBSCLASS_KEY] = "science"
+        if header["OBJECT"].strip().lower() in ["scicam"]:
+            header[OBSCLASS_KEY] = "flat"
 
     # -----------------------------
     # Target identification, same logic as WINTER.
     # -----------------------------
-    target = f"field_{header['FIELDID']}"
-    if ("SCHDNAME" in header.keys()) & ("OBHISTID" in header.keys()):
-        if header["SCHDNAME"] != "":
-            target = f"{header['SCHDNAME']}_{header['OBHISTID']}"
-    elif TARGET_KEY in header.keys():
-        if header[TARGET_KEY] != "":
-            target = header[TARGET_KEY]
+    header[TARGET_KEY] = header["OBJECT"].strip()
 
     if header[OBSCLASS_KEY].lower() in [
         "dark",
@@ -101,7 +71,7 @@ def load_raw_mirage_fits(path: str | Path):
         "corrupted",
     ]:
         target = header[OBSCLASS_KEY].lower()
-    header[TARGET_KEY] = target
+        header[TARGET_KEY] = target
     # -----------------------------
     # Camera GAIN
     # -----------------------------
@@ -118,43 +88,14 @@ def load_raw_mirage_fits(path: str | Path):
     header[BASE_NAME_KEY] = Path(path).name
     header["MEDCOUNT"] = np.nanmedian(data)
 
-    if "PROGPI" not in header.keys():
-        header["PROGPI"] = default_program.pi_name
-    if "PROGID" not in header.keys():
-        header["PROGID"] = default_program.progid
-    # If PROGNAME is not present or is empty, set it to default here.
-    # Otherwise, it gets set to default in the insert_entry for exposures.
-    if "PROGNAME" not in header:
-        header["PROGNAME"] = default_program.progname
-    if header["PROGNAME"] == "":
-        header["PROGNAME"] = default_program.progname
+    date_str = path.basename.split(".fits")[0].split("scicam_")[
+        -1
+    ]  # eg 20260401T123456
+    date_t = Time(
+        f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}T{date_str[9:11]}:{date_str[11:13]}:{date_str[13:15]}"
+    )
 
-    if len(header["PROGNAME"]) != 8:
-        logger.warning(
-            f"PROGNAME {header['PROGNAME']} is not 8 characters long. "
-            f"Replacing with default."
-        )
-        header["PROGNAME"] = default_program.progname
-
-    header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
-    date_t = Time(header["UTCTIME"])
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", AstropyWarning)
-        header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
-
-    header["IMGTYPE"] = header[OBSCLASS_KEY]
-    if header["IMGTYPE"] == "test":
-        header["IMGTYPE"] = "other"
-
-    if not header["IMGTYPE"] in imgtype_dict:
-        logger.error(f"Unknown image type: {header['IMGTYPE']}")
-        header["ITID"] = itid_dict[imgtype_dict["corrupted"]]
-    else:
-        header["ITID"] = itid_dict[imgtype_dict[header["IMGTYPE"]]]
-
-    header["EXPMJD"] = header["MJD-OBS"]
-
-    header["RAWID"] = int((date_t.mjd - 59000.0) * 86400.0)  # seconds since 59000 MJD
+    header["EXPMJD"] = date_t.mjd
     data = data.astype("float32")
     return data, header
 
