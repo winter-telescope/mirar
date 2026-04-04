@@ -119,7 +119,7 @@ def mirage_ref_photometric_catalogs_purifier(
         sci_catalog=sci_catalog,
         ref_catalog=ref_catalog,
         image=image,
-        edge_width_pixels=100,
+        edge_width_pixels=0,
         fwhm_threshold_arcsec=6,
     )
 

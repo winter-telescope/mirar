@@ -47,6 +47,7 @@ from mirar.processors.astromatic.sextractor.background_subtractor import (
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
 from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
+from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
@@ -115,7 +116,7 @@ csvlog = [
             "MEDCOUNT",
         ]
     ),
-    ImageSelector(("OBJECT", "at2023uhx_J")),
+    ImageSelector(("OBJECT", "PUPPIS_H")),
 ]
 
 dark_calibrate = [
@@ -163,6 +164,7 @@ astrometry = [
         cache=False,
         no_tweak=True,
     ),
+    # AutoAstrometry(catalog="tmc"),
     ImageSaver("post_astrometry"),
 ]
 
@@ -214,6 +216,7 @@ photcal_with_color = [
         ),
         write_regions=True,
         zp_column_name="MAG_POINTSOURCE",
+        num_matches_threshold=3,
     ),
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_POINTSOURCE", write_regions=True
@@ -245,7 +248,8 @@ photcal_without_color = [
         catalogs_purifier=mirage_ref_photometric_catalogs_purifier,
         zp_calculator=OutlierRejectionZPCalculator(),
         write_regions=True,
-        zp_column_name="MAG_POINTSOURCE",
+        zp_column_name="MAG_AUTO",
+        num_matches_threshold=3,
     ),
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
@@ -272,6 +276,15 @@ export_stacks = [
 photcal_and_export = photcal_without_color + export_stacks
 
 photcal_color_and_export = photcal_with_color + export_stacks
+
+load_stack = [
+    ImageLoader(
+        input_sub_dir="stack",
+        input_img_dir=base_output_dir,
+        load_image=load_mirage_stack,
+    ),
+    ImageRebatcher(BASE_NAME_KEY),
+]
 
 load_final_stack = [
     ImageLoader(

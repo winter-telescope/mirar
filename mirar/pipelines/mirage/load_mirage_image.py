@@ -34,8 +34,10 @@ def load_raw_mirage_fits(path: str | Path):
     header["DEC"] = header["CRVAL2"]
     header["RADEG"] = header["CRVAL1"]
     header["DECDEG"] = header["CRVAL2"]
-    header["RA"] = 177.164615877
-    header["DEC"] = 48.6919635931
+    header.remove("CRPIX1", ignore_missing=True)
+    header.remove("CRPIX2", ignore_missing=True)
+    header.remove("CRVAL1", ignore_missing=True)
+    header.remove("CRVAL2", ignore_missing=True)
 
     # -----------------------------
     # Instrument Identity
@@ -94,14 +96,14 @@ def load_raw_mirage_fits(path: str | Path):
     header[BASE_NAME_KEY] = Path(path).name
     header["MEDCOUNT"] = np.nanmedian(data)
 
-    date_str = path.as_posix().split('/')[-1].split(".fits")[0].split("scicam_")[
-        -1
-    ]  # eg 20260401T123456
+    date_str = (
+        path.as_posix().split("/")[-1].split(".fits")[0].split("scicam_")[-1]
+    )  # eg 20260401T123456
     date_t = Time(
         f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}T{date_str[9:11]}:{date_str[11:13]}:{date_str[13:15]}"
     )
 
-    header['DATE-OBS'] = date_t.isot
+    header["DATE-OBS"] = date_t.isot
     header["EXPMJD"] = date_t.mjd
     header["SAVEPATH"] = path.as_posix()
     data = data.astype("float32")
