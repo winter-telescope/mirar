@@ -17,6 +17,7 @@ from mirar.pipelines.spring.config import (
     sextractor_photometry_config,
     sextractor_PSF_photometry_config,
     sextractor_reference_psf_phot_config,
+    spring_cal_requirements,
     swarp_config_path,
 )
 from mirar.pipelines.spring.generator import (
@@ -79,12 +80,14 @@ from mirar.processors.utils import (
     ImageSelector,
     ModeMasker,
 )
+from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.image_plotter import ImagePlotter
 from mirar.processors.zogy.reference_aligner import AlignReference
 from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_spring_image),
+    CalHunter(load_image=load_raw_spring_image, requirements=spring_cal_requirements),
     ImageRebatcher(
         [
             "FILTER",

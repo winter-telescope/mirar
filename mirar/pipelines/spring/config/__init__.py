@@ -10,6 +10,7 @@ from mirar.pipelines.spring.config.constants import (
     SPRING_GAIN,
     SPRING_PIXEL_SCALE,
 )
+from mirar.processors.utils.cal_hunter import CalRequirement
 
 git_dir = os.path.dirname(__file__)
 
@@ -67,3 +68,13 @@ psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
 psfex_sci_config_path = os.path.join(astromatic_config_dir, "photom_sci.psfex")
 
 ref_psfex_path = os.path.join(astromatic_config_dir, "reference.psfex")
+
+spring_cal_requirements = [
+    CalRequirement(
+        target_name="dark",
+        required_field="EXPTIME",
+        required_values=[
+            "30.0",  # J
+        ],
+    )
+]
