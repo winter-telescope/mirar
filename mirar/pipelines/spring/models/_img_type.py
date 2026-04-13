@@ -9,6 +9,8 @@ from sqlalchemy import VARCHAR, Column, Integer
 from sqlalchemy.orm import Mapped, relationship
 
 from mirar.database.base_model import BaseDB
+
+# from mirar.pipelines.spring.models._raw import RawsTable
 from mirar.pipelines.spring.models.base_model import SPRINGBase
 
 ALL_ITID = ["SCIENCE", "CAL", "FOCUS", "POINTING", "NULL", "CORRUPTED"]
@@ -29,7 +31,7 @@ class ImgTypesTable(SPRINGBase):  # pylint: disable=too-few-public-methods
 
     itid = Column(Integer, primary_key=True)
     imgtype = Column(VARCHAR(20), unique=True)
-    raws: Mapped["RawsTable"] = relationship(back_populates="img_type")
+    exposures: Mapped["ExposuresTable"] = relationship(back_populates="img_type")
 
 
 class ImgType(BaseDB):

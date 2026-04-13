@@ -9,6 +9,7 @@ from sqlalchemy import VARCHAR, Column, Float, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
+from mirar.pipelines.spring.models._ref_components import RefComponentsTable
 from mirar.pipelines.spring.models.base_model import SPRINGBase
 
 

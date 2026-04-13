@@ -18,9 +18,11 @@ from mirar.pipelines.spring.config import (
     sextractor_PSF_photometry_config,
     sextractor_reference_psf_phot_config,
     spring_cal_requirements,
+    spring_fritz_config,
     swarp_config_path,
 )
 from mirar.pipelines.spring.generator import (
+    ensure_progname_exists_for_batch,
     mask_stamps_around_bright_stars,
     spring_anet_sextractor_config_path_generator,
     spring_candidate_annotator_filterer,
@@ -33,6 +35,7 @@ from mirar.pipelines.spring.generator import (
     spring_reference_psf_phot_sextractor,
     spring_reference_psfex,
     spring_reference_sextractor,
+    spring_skyportal_formatter,
     spring_stack_gain_modifier,
     spring_stackid_annotator,
 )
@@ -40,7 +43,7 @@ from mirar.pipelines.spring.load_spring_image import (
     load_raw_spring_image,
     load_spring_stack,
 )
-from mirar.pipelines.spring.models import Diff, Raw, Stack
+from mirar.pipelines.spring.models import Diff, Raw, Source, Stack
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
@@ -51,7 +54,7 @@ from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.database import DatabaseImageInserter
+from mirar.processors.database import DatabaseImageInserter, DatabaseSourceInserter
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import MaskPixelsFromFunction
@@ -63,6 +66,7 @@ from mirar.processors.photcal.zp_calculator import (
 from mirar.processors.photometry.aperture_photometry import AperturePhotometry
 from mirar.processors.photometry.psf_photometry import PSFPhotometry
 from mirar.processors.reference import ProcessReference
+from mirar.processors.skyportal import SkyportalSourceUploader
 from mirar.processors.sources.forced_photometry import ForcedPhotometryDetector
 from mirar.processors.sources.source_detector import ZOGYSourceDetector
 from mirar.processors.sources.source_exporter import SourceWriter
@@ -72,6 +76,7 @@ from mirar.processors.sources.source_table_modifier import CustomSourceTableModi
 from mirar.processors.utils import (
     CustomImageBatchModifier,
     HeaderAnnotator,
+    HeaderEditor,
     ImageBatcher,
     ImageDebatcher,
     ImageLoader,
@@ -99,6 +104,7 @@ load_raw = [
     ImageSaver(output_dir_name="loaded_raw"),
     ImageRebatcher(BASE_NAME_KEY),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    CustomImageBatchModifier(ensure_progname_exists_for_batch),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
@@ -401,7 +407,8 @@ stack_forced_photometry = [
         bkg_in_diameters=[20, 20, 20, 20],
         bkg_out_diameters=[40, 40, 40, 40],
     ),
-    SourceWriter(output_dir_name="photometry"),
+    PSFPhotometry(),
+    SourceWriter(output_dir_name="stack_photometry"),
 ]
 
 diff_forced_photometry = [
@@ -415,7 +422,29 @@ diff_forced_photometry = [
         bkg_out_diameters=[40, 40, 40, 40],
     ),
     PSFPhotometry(),
-    SourceWriter(output_dir_name="photometry"),
+    SourceWriter(output_dir_name="diff_photometry"),
 ]
 
 reduce = load_raw + csvlog + dark_calibrate + flat_calibrate
+
+stack_to_skyportal = [
+    SourceLoader(input_dir_name="stack_photometry", input_dir=base_output_dir),
+    CustomSourceTableModifier(spring_skyportal_formatter),
+    SkyportalSourceUploader(**spring_fritz_config),
+    HeaderEditor(edit_keys="sent", values=True),
+    DatabaseSourceInserter(
+        db_table=Source,
+        duplicate_protocol="replace",
+    ),
+]
+
+diff_to_skyportal = [
+    SourceLoader(input_dir_name="diff_photometry", input_dir=base_output_dir),
+    CustomSourceTableModifier(spring_skyportal_formatter),
+    SkyportalSourceUploader(**spring_fritz_config),
+    HeaderEditor(edit_keys="sent", values=True),
+    DatabaseSourceInserter(
+        db_table=Source,
+        duplicate_protocol="replace",
+    ),
+]

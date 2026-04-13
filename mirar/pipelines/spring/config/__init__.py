@@ -10,6 +10,7 @@ from mirar.pipelines.spring.config.constants import (
     SPRING_GAIN,
     SPRING_PIXEL_SCALE,
 )
+from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
 
 git_dir = os.path.dirname(__file__)
@@ -78,3 +79,18 @@ spring_cal_requirements = [
         ],
     )
 ]
+
+spring_fritz_config = {
+    "origin": "mirar",
+    "group_ids": [9999],  # TODO: Find Group IDs
+    # "fritz_filter_id": 1185,  # TODO: Check if this is the same as WINTER
+    "instrument_id": 9999,  # TODO: SPRING Instrument ID
+    # "stream_id": 1005,  # TODO: Check if this is the same as WINTER
+    "update_thumbnails": False,
+    "skyportal_client": SkyportalClient(base_url="https://fritz.science/api/"),
+    # "annotation_keys": [
+    #     "fwhm",
+    #     "maglim",
+    #     "magpsf",
+    # ] # TODO: Annotation keys
+}

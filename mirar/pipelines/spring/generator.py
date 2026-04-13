@@ -16,6 +16,8 @@ from mirar.paths import (
     FILTER_KEY,
     MAGLIM_KEY,
     SEXTRACTOR_HEADER_KEY,
+    SOURCE_NAME_KEY,
+    TARGET_KEY,
     TIME_KEY,
     ZP_KEY,
     ZP_STD_KEY,
@@ -35,11 +37,13 @@ from mirar.pipelines.spring.models import (
     RefQuery,
     RefStack,
     RefStacksTable,
+    ensure_program_exists,
 )
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
 )
+from mirar.processors.skyportal import SNCOSMO_KEY
 from mirar.references import PS1Ref
 from mirar.references.wfcam.wfcam_query import WFAUQuery
 from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
@@ -438,3 +442,32 @@ def spring_candidate_annotator_filterer(source_batch: SourceBatch) -> SourceBatc
         raise NoGoodCandidatesError
 
     return SourceBatch(new_batch)
+
+
+def spring_skyportal_formatter(source_table: SourceBatch) -> SourceBatch:
+    """
+    Function to add relevant fields for new sources
+
+    :param source_table: Original source table
+    :return: Updated source table
+    """
+    for source in source_table:
+        src_df = source.get_data()
+
+        src_df[SOURCE_NAME_KEY] = source[TARGET_KEY]
+        source[SNCOSMO_KEY] = source["FILTER"]
+
+        source.set_data(src_df)
+
+    return source_table
+
+
+def ensure_progname_exists_for_batch(batch: ImageBatch) -> ImageBatch:
+    """
+    Ensure every image in the batch has a valid PROGNAME that exists
+    in the programs table before exporting raws to the database.
+    """
+    for image in batch:
+        progname = image.get_header()["PROGNAME"]
+        image["PROGNAME"] = ensure_program_exists(progname)
+    return batch

@@ -9,7 +9,11 @@ from mirar.database.credentials import DB_USER
 from mirar.database.q3c import create_q3c_extension
 from mirar.database.setup import setup_database
 from mirar.pipelines.spring.models._diff import Diff, DiffsTable
-from mirar.pipelines.spring.models._filter import Filter, FiltersTable, populate_filters
+from mirar.pipelines.spring.models._filters import (
+    Filter,
+    FiltersTable,
+    populate_filters,
+)
 from mirar.pipelines.spring.models._img_type import (
     ALL_ITID,
     ImgType,
@@ -24,6 +28,7 @@ from mirar.pipelines.spring.models._programs import (
     ProgramCredentials,
     ProgramsTable,
     default_program,
+    ensure_program_exists,
     populate_programs,
 )
 from mirar.pipelines.spring.models._raw import Raw, RawsTable
@@ -33,6 +38,7 @@ from mirar.pipelines.spring.models._ref_components import (
 )
 from mirar.pipelines.spring.models._ref_queries import RefQueriesTable, RefQuery
 from mirar.pipelines.spring.models._ref_stacks import RefStack, RefStacksTable
+from mirar.pipelines.spring.models._sources import Source, SourcesTable
 from mirar.pipelines.spring.models._stack import Stack, StacksTable
 from mirar.pipelines.spring.models.base_model import SPRINGBase
 

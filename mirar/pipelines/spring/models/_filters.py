@@ -25,7 +25,7 @@ class FiltersTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     fuid = Column(Integer, primary_key=True)
     fid = Column(Integer, unique=True)
     filtername = Column(VARCHAR(20), unique=True)
-    raws: Mapped["RawsTable"] = relationship(back_populates="filt")
+    exposures: Mapped["ExposuresTable"] = relationship(back_populates="filt")
 
 
 class Filter(BaseDB):

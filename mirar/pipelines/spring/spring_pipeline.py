@@ -11,6 +11,7 @@ from mirar.pipelines.spring.blocks import (
     dark_calibrate,
     detect_candidates,
     diff_forced_photometry,
+    diff_to_skyportal,
     flat_calibrate,
     imsub,
     load_final_stack,
@@ -23,6 +24,7 @@ from mirar.pipelines.spring.blocks import (
     reduce,
     stack_dithers,
     stack_forced_photometry,
+    stack_to_skyportal,
 )
 from mirar.pipelines.spring.config.constants import PIPELINE_NAME
 from mirar.pipelines.spring.models import set_up_spring_databases
@@ -39,7 +41,14 @@ class SPRINGPipeline(Pipeline):
 
     non_linear_level = 30000  # no idea, for pylint
     all_pipeline_configurations = {
-        "default": [],
+        "default": reduce
+        + astrometry
+        + stack_dithers
+        + photcal_and_export
+        + stack_forced_photometry
+        + load_final_stack
+        + imsub
+        + diff_forced_photometry,
         "load_only": load_raw,
         "log": load_raw + csvlog,
         "darkcal": load_raw + csvlog + dark_calibrate,
@@ -61,6 +70,8 @@ class SPRINGPipeline(Pipeline):
         "fp_from_stack": load_final_stack + stack_forced_photometry,
         "fp_from_diff": load_sub + diff_forced_photometry,
         "candidates_from_diff": load_sub + detect_candidates,
+        "send_stack_to_fritz": stack_to_skyportal,
+        "send_sub_to_fritz": diff_to_skyportal,
     }
 
     @staticmethod
