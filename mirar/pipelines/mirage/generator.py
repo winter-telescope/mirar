@@ -1,5 +1,6 @@
 # from mirar.data import Image
 import logging
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -83,7 +84,7 @@ def mirage_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
         np.max([image["NAXIS1"], image["NAXIS2"]])
         * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
         * 60.0
-    ) / 2.0
+    ) / 1.0
 
     if filter_name in ["J", "H"]:
         return Gaia2Mass(
@@ -91,8 +92,11 @@ def mirage_photometric_catalog_generator(image: Image) -> Gaia2Mass | PS1:
             max_mag=20,
             search_radius_arcmin=search_radius_arcmin,
             filter_name=filter_name,
-            snr_threshold=20,
+            snr_threshold=3,
             cache_catalog_locally=False,
+            acceptable_j_ph_quals=["A", "B", "C", "U"],
+            acceptable_h_ph_quals=["A", "B", "C", "U"],
+            acceptable_k_ph_quals=["A", "B", "C", "U"],
         )
 
     if filter_name in ["Y"]:
@@ -120,7 +124,7 @@ def mirage_ref_photometric_catalogs_purifier(
         ref_catalog=ref_catalog,
         image=image,
         edge_width_pixels=0,
-        fwhm_threshold_arcsec=6,
+        fwhm_threshold_arcsec=8,
     )
 
 
@@ -339,6 +343,61 @@ def mirage_imsub_catalog_purifier(sci_catalog: Table, ref_catalog: Table):
     )
 
     return good_sci_sources, good_ref_sources
+
+
+def mirage_astrometry_sextractor_catalog_purifier(catalog: Table, _) -> Table:
+    """
+    Function to purify the Sextractor catalog for WINTER astrometry
+    """
+    clean_catalog = catalog[
+        (catalog["FLAGS"] == 0) & (catalog["FWHM_IMAGE"] > 0) & (catalog["SNR_WIN"] > 0)
+    ]
+    return clean_catalog
+
+
+def mirage_astrometric_ref_catalog_generator(
+    image: Image,
+) -> Gaia2Mass:
+    """
+    Function to generate a reference catalog for WINTER astrometry
+
+    :param image: Image
+    :return: catalogue
+    """
+    search_radius_arcmin = (
+        np.sqrt(image["NAXIS1"] ** 2 + image["NAXIS2"] ** 2)
+        * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
+        * 60
+    ) / 2.0
+    return Gaia2Mass(
+        min_mag=7,
+        max_mag=20,
+        search_radius_arcmin=search_radius_arcmin,
+        cache_catalog_locally=False,
+    )
+
+
+def mirage_masterdark_path_generator(_) -> Path:
+    """
+    Function to generate the path to the masterdark for a given image
+
+    :param image: Image
+    :return: masterdark path
+    """
+    dir_path = get_output_dir(dir_root="mirared_cals", sub_dir="mirage/cals")
+    return dir_path.joinpath("master_darkrate.fits")
+
+
+def mirage_masterbias_path_generator(_) -> Path:
+    """
+    Function to generate the path to the masterdark for a given image
+
+    :param image: Image
+    :return: masterdark path
+    """
+    dir_path = get_output_dir(dir_root="mirared_cals", sub_dir="mirage/cals")
+    logger.debug(f"Master bias path: {dir_path.joinpath('master_bias.fits')}")
+    return dir_path.joinpath("master_bias.fits")
 
 
 def mask_stamps_around_bright_stars(image: Image):

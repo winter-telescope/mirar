@@ -34,11 +34,11 @@ def load_raw_mirage_fits(path: str | Path):
     header["DEC"] = header["CRVAL2"]
     header["RADEG"] = header["CRVAL1"]
     header["DECDEG"] = header["CRVAL2"]
+
     header.remove("CRPIX1", ignore_missing=True)
     header.remove("CRPIX2", ignore_missing=True)
     header.remove("CRVAL1", ignore_missing=True)
     header.remove("CRVAL2", ignore_missing=True)
-
     # -----------------------------
     # Instrument Identity
     # -----------------------------
@@ -110,8 +110,66 @@ def load_raw_mirage_fits(path: str | Path):
     return data, header
 
 
+def load_cal_mirage_fits(path: str | Path):
+    data, header = open_fits(path)
+
+    header.remove("BITPIX", ignore_missing=True)
+    header.remove("BZERO", ignore_missing=True)
+    header.remove("BSCALE", ignore_missing=True)
+    header.remove("CRPIX1", ignore_missing=True)
+    header.remove("CRPIX2", ignore_missing=True)
+    header.remove("CRVAL1", ignore_missing=True)
+    header.remove("CRVAL2", ignore_missing=True)
+
+    header.setdefault("INSTRUME", "MIRAGE")
+
+    if "master_darkrate.fits" in path.as_posix():
+        header["FILTER"] = "dark"
+        header[OBSCLASS_KEY] = "dark"
+        header["EXPTIME"] = 1.0
+
+    if "master_bias.fits" in path.as_posix():
+        header["FILTER"] = "bias"
+        header[OBSCLASS_KEY] = "bias"
+
+    if "masterflat_H.fits" in path.as_posix():
+        header["FILTER"] = "H"
+        header[OBSCLASS_KEY] = "flat"
+
+    if "masterflat_J.fits" in path.as_posix():
+        header["FILTER"] = "J"
+        header[OBSCLASS_KEY] = "flat"
+
+    if "masterflat_Y.fits" in path.as_posix():
+        header["FILTER"] = "Y"
+        header[OBSCLASS_KEY] = "flat"
+
+    header[TARGET_KEY] = header[OBSCLASS_KEY]
+
+    header["GAIN"] = MIRAGE_GAIN
+
+    header["COADDS"] = 1
+    header["CALSTEPS"] = ""
+    header["PROCFAIL"] = 1
+    header["RAWPATH"] = path.as_posix()
+    header[BASE_NAME_KEY] = Path(path).name
+    header["MEDCOUNT"] = np.nanmedian(data)
+
+    date_t = Time(header["MJD-OBS"], format="mjd")
+
+    header["DATE-OBS"] = date_t.isot
+    header["EXPMJD"] = date_t.mjd
+    header["SAVEPATH"] = path.as_posix()
+    data = data.astype("float32")
+    return data, header
+
+
 def load_raw_mirage_image(path: str | Path) -> Image:
     return open_raw_image(path, load_raw_mirage_fits)
+
+
+def load_mirage_cal_image(path: str | Path) -> Image:
+    return open_raw_image(path, load_cal_mirage_fits)
 
 
 def load_mirage_stack(

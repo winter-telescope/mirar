@@ -12,6 +12,7 @@ from mirar.pipelines.mirage.config import (
     MIRAGE_GAIN,
     psfex_config_path,
     ref_psfex_path,
+    scamp_path,
     sextractor_astrometry_config,
     sextractor_candidates_config,
     sextractor_photometry_config,
@@ -22,8 +23,12 @@ from mirar.pipelines.mirage.config import (
 from mirar.pipelines.mirage.generator import (
     mask_stamps_around_bright_stars,
     mirage_anet_sextractor_config_path_generator,
+    mirage_astrometric_ref_catalog_generator,
+    mirage_astrometry_sextractor_catalog_purifier,
     mirage_candidate_annotator_filterer,
     mirage_imsub_catalog_purifier,
+    mirage_masterbias_path_generator,
+    mirage_masterdark_path_generator,
     mirage_photcal_color_columns_generator,
     mirage_photometric_catalog_generator,
     mirage_ref_photometric_catalogs_purifier,
@@ -36,21 +41,21 @@ from mirar.pipelines.mirage.generator import (
     mirage_stackid_annotator,
 )
 from mirar.pipelines.mirage.load_mirage_image import (
+    load_mirage_cal_image,
     load_mirage_stack,
     load_raw_mirage_image,
 )
-from mirar.pipelines.mirage.models import Diff, Raw, Stack
-from mirar.processors.astromatic import PSFex
+from mirar.processors.astromatic import PSFex, Scamp
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
 )
 from mirar.processors.astromatic.sextractor.sextractor import Sextractor
 from mirar.processors.astromatic.swarp.swarp import Swarp
-from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
-from mirar.processors.astrometry.autoastrometry import AutoAstrometry
+from mirar.processors.astrometry.anet import AstrometryNet
+from mirar.processors.bias import MasterBiasCalibrator
 from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
-from mirar.processors.dark import DarkCalibrator
+from mirar.processors.dark import MasterDarkCalibrator
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import MaskPixelsFromFunction
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
@@ -84,15 +89,16 @@ from mirar.processors.zogy.zogy import ZOGY, ZOGYPrepare
 
 load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_mirage_image),
-    ImageRebatcher(
-        [
-            "FILTER",
-            "EXPTIME",
-            TARGET_KEY,
-        ]
-    ),
     ImageRebatcher(BASE_NAME_KEY),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+]
+
+
+process_cals = [
+    ImageLoader(input_sub_dir="cals", load_image=load_mirage_cal_image),
+    ImageRebatcher(BASE_NAME_KEY),
+    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageSaver("mirared_cals"),
 ]
 
 csvlog = [
@@ -116,14 +122,14 @@ csvlog = [
             "MEDCOUNT",
         ]
     ),
-    ImageSelector(("OBJECT", "EP260409a_H")),
+    # ImageSelector(("OBJECT", "EP260409a_H")),
 ]
 
 dark_calibrate = [
     ImageRebatcher([EXPTIME_KEY]),
-    DarkCalibrator(
-        cache_sub_dir="calibration_darks",
-        cache_image_name_header_keys=[EXPTIME_KEY],
+    MasterBiasCalibrator(master_image_path_generator=mirage_masterbias_path_generator),
+    MasterDarkCalibrator(
+        master_image_path_generator=mirage_masterdark_path_generator,
     ),
     ImageRebatcher(BASE_NAME_KEY),
     ImageSaver(output_dir_name="darkcal"),
@@ -164,12 +170,33 @@ astrometry = [
         cache=False,
         no_tweak=True,
     ),
-    # AutoAstrometry(catalog="tmc"),
     ImageSaver("post_astrometry"),
 ]
 
+# astrometry = [
+#     ImageRebatcher(BASE_NAME_KEY),
+#     Sextractor(
+#         **sextractor_astrometry_config,
+#         write_regions_bool=True,
+#         output_sub_dir="scamp",
+#         cache=False,
+#         catalog_purifier=mirage_astrometry_sextractor_catalog_purifier,
+#         verbose_type="FULL",
+#     ),
+#     ImageRebatcher([TARGET_KEY, "FILTER", EXPTIME_KEY]),
+#     Scamp(
+#         scamp_config_path=scamp_path,
+#         ref_catalog_generator=mirage_astrometric_ref_catalog_generator,
+#         copy_scamp_header_to_image=True,
+#         cache=False,
+#         make_checkplots=True,
+#     ),
+#     # AutoAstrometry(catalog="tmc"),
+#     # ImageSaver("post_astrometry"),
+# ]
+
 stack_dithers = [
-    ImageRebatcher([TARGET_KEY]),
+    ImageRebatcher([TARGET_KEY, "FILTER"]),
     Swarp(
         swarp_config_path=swarp_config_path,
         calculate_dims_in_swarp=True,
@@ -250,6 +277,7 @@ photcal_without_color = [
         write_regions=True,
         zp_column_name="MAG_AUTO",
         num_matches_threshold=3,
+        crossmatch_radius_arcsec=2.0,
     ),
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True

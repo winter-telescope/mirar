@@ -21,6 +21,7 @@ from mirar.pipelines.mirage.blocks import (
     photcal_color_and_export,
     photcal_with_color,
     photcal_without_color,
+    process_cals,
     reduce,
     stack_dithers,
     stack_forced_photometry,
@@ -45,13 +46,10 @@ class MIRAGEPipeline(Pipeline):
         "log": load_raw + csvlog,
         "darkcal": load_raw + csvlog + dark_calibrate,
         "flats": load_raw + csvlog + flat_calibrate,
-        "darks_flats": reduce,
         "astrometry": reduce + astrometry,
         "stacking": reduce + astrometry + stack_dithers,
         "photometry": reduce + astrometry + stack_dithers + photcal_without_color,
-        "photometry_color": reduce + astrometry + stack_dithers + photcal_with_color,
-        "photcal_and_export": load_stack + photcal_and_export,
-        "photcal_color_and_export": photcal_color_and_export,
+        "photcal_stack": load_stack + photcal_and_export,
         "subtraction": load_final_stack + imsub,
         "full_stack_fp": reduce + astrometry + stack_dithers + stack_forced_photometry,
         "full_diff_fp": reduce
@@ -62,6 +60,7 @@ class MIRAGEPipeline(Pipeline):
         "fp_from_stack": load_final_stack + stack_forced_photometry,
         "fp_from_diff": load_sub + diff_forced_photometry,
         "candidates_from_diff": load_sub + detect_candidates,
+        "mirarify_cals": process_cals,
     }
 
     @staticmethod
