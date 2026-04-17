@@ -18,8 +18,6 @@ from mirar.pipelines.mirage.blocks import (
     load_stack,
     load_sub,
     photcal_and_export,
-    photcal_color_and_export,
-    photcal_with_color,
     photcal_without_color,
     process_cals,
     reduce,
@@ -27,7 +25,6 @@ from mirar.pipelines.mirage.blocks import (
     stack_forced_photometry,
 )
 from mirar.pipelines.mirage.config.constants import PIPELINE_NAME
-from mirar.pipelines.mirage.models import set_up_spring_databases
 
 logger = logging.getLogger(__name__)
 
