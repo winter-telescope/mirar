@@ -59,6 +59,7 @@ def run_astrometry_net_single(
     y_image_key: str = "Y_IMAGE",
     sort_key_name: str = "MAG_AUTO",
     no_tweak: bool = False,
+    rerun_without_guess: bool = False,
 ):
     """
     function to run astrometry.net locally on one image, with options to adjust settings
@@ -139,7 +140,7 @@ def run_astrometry_net_single(
         except (ExecutionError, TimeoutExecutionError, KeyError, AssertionError):
             logger.debug("Could not run a-net with ra,dec guess.")
 
-    if not solved:
+    if not solved and rerun_without_guess:
         try:
             logger.debug(
                 f"Running a-net without ra,dec guess.\n" f"A-net command:\n {cmd}"
