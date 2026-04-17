@@ -122,7 +122,7 @@ csvlog = [
             "MEDCOUNT",
         ]
     ),
-    # ImageSelector(("OBJECT", "EP260409a_H")),
+    ImageSelector(("OBJECT", "EP260409a_H")),
 ]
 
 dark_calibrate = [
