@@ -122,7 +122,6 @@ csvlog = [
             "MEDCOUNT",
         ]
     ),
-    ImageSelector(("OBJECT", "EP260409a_H")),
 ]
 
 dark_calibrate = [
@@ -132,7 +131,6 @@ dark_calibrate = [
         master_image_path_generator=mirage_masterdark_path_generator,
     ),
     ImageRebatcher(BASE_NAME_KEY),
-    ImageSaver(output_dir_name="darkcal"),
     ImageSelector((OBSCLASS_KEY, ["science"])),
 ]
 
@@ -144,7 +142,6 @@ flat_calibrate = [
         flat_mode="median",
         try_load_cache=False,
     ),
-    ImageSaver(output_dir_name="skyflatcal"),
     Sextractor(
         **sextractor_astrometry_config,
         write_regions_bool=True,
@@ -170,7 +167,6 @@ astrometry = [
         cache=False,
         no_tweak=True,
     ),
-    ImageSaver("post_astrometry"),
 ]
 
 # astrometry = [
@@ -212,43 +208,6 @@ stack_dithers = [
     ImageRebatcher(BASE_NAME_KEY),
     ModeMasker(),
     ImageSaver(output_dir_name="stack"),
-]
-
-photcal_with_color = [
-    ImageRebatcher(BASE_NAME_KEY),
-    HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    Sextractor(
-        **sextractor_photometry_config,
-        output_sub_dir="stack_psf",
-        checkimage_name="BACKGROUND_RMS",
-    ),
-    PSFex(
-        config_path=psfex_config_path,
-        output_sub_dir="phot",
-        norm_fits=True,
-    ),
-    Sextractor(
-        **sextractor_PSF_photometry_config,
-        output_sub_dir="phot",
-        checkimage_type="BACKGROUND_RMS",
-        use_psfex=True,
-    ),
-    PhotCalibrator(
-        ref_catalog_generator=mirage_photometric_catalog_generator,
-        catalogs_purifier=mirage_ref_photometric_catalogs_purifier,
-        zp_calculator=ZPWithColorTermCalculator(
-            color_colnames_guess_generator=mirage_photcal_color_columns_generator,
-            reject_outliers=True,
-            solver="curve_fit",
-        ),
-        write_regions=True,
-        zp_column_name="MAG_POINTSOURCE",
-        num_matches_threshold=3,
-    ),
-    CatalogLimitingMagnitudeCalculator(
-        sextractor_mag_key_name="MAG_POINTSOURCE", write_regions=True
-    ),
-    ImageSaver(output_dir_name="processed_after_psf_with_color"),
 ]
 
 photcal_without_color = [
@@ -302,8 +261,6 @@ export_stacks = [
 ]
 
 photcal_and_export = photcal_without_color + export_stacks
-
-photcal_color_and_export = photcal_with_color + export_stacks
 
 load_stack = [
     ImageLoader(
