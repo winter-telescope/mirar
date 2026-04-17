@@ -45,7 +45,7 @@ class MIRAGEPipeline(Pipeline):
         "load_only": load_raw,
         "log": load_raw + csvlog,
         "darkcal": load_raw + csvlog + dark_calibrate,
-        "flats": load_raw + csvlog + flat_calibrate,
+        "flats": load_raw + csvlog + dark_calibrate + flat_calibrate,
         "astrometry": reduce + astrometry,
         "stacking": reduce + astrometry + stack_dithers,
         "photometry": reduce + astrometry + stack_dithers + photcal_without_color,
