@@ -241,7 +241,7 @@ photcal_without_color = [
     CatalogLimitingMagnitudeCalculator(
         sextractor_mag_key_name="MAG_AUTO", write_regions=True
     ),
-    ImageSaver(output_dir_name="processed_after_psf"),
+    ImageSaver(output_dir_name="photcaled_stacks"),
 ]
 
 export_stacks = [
