@@ -27,8 +27,8 @@ def load_raw_mirage_fits(path: str | Path):
     except KeyError:
         logger.debug(f"{path.as_posix()} is missing CRVAL1 keyword")
         header[OBSCLASS_KEY] = "miss_hdr"
-        header["CRVAL1"] = np.nan
-        header["CRVAL2"] = np.nan
+        header["CRVAL1"] = -99.0
+        header["CRVAL2"] = -99.0
 
     header.remove("CRPIX1", ignore_missing=True)
     header.remove("CRPIX2", ignore_missing=True)
