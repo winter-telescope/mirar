@@ -10,6 +10,7 @@ from mirar.database.credentials import (
     DB_HOSTNAME,
     DB_NAME,
     DB_PORT,
+    DB_SCHEMA,
     PG_ADMIN_PWD_KEY,
     PG_ADMIN_USER_KEY,
 )
@@ -32,6 +33,7 @@ class PostgresAdmin(PostgresUser):
         db_hostname: str = DB_HOSTNAME,
         db_name: str = DB_NAME,
         db_port: int = DB_PORT,
+        db_schema: str = DB_SCHEMA,
     ):
         super().__init__(
             db_user=db_user,
@@ -40,6 +42,7 @@ class PostgresAdmin(PostgresUser):
             db_name=db_name,
             db_port=db_port,
         )
+        self.db_schema = db_schema
 
     def create_new_user(self, new_db_user: str, new_password: str):
         """
@@ -79,13 +82,15 @@ class PostgresAdmin(PostgresUser):
             db_port=self.db_port,
         )
         with engine.connect() as conn:
-            command = DDL(f"CREATE EXTENSION IF NOT EXISTS {extension_name};")
+            command = DDL(
+                f"CREATE EXTENSION IF NOT EXISTS {extension_name} SCHEMA {self.db_schema};"
+            )
             conn.execute(command)
             conn.commit()
 
         assert self.has_extension(extension_name=extension_name, db_name=db_name)
 
-    def create_schema(self, schema_name: str, db_name: str, db_user: str):
+    def create_schema(self, db_name: str, db_user: str, schema_name: str = None):
         """
         Function to create new schema for database
 
@@ -94,6 +99,9 @@ class PostgresAdmin(PostgresUser):
         :param db_user: name of schema owner
         :return: None
         """
+        if schema_name is None:
+            schema_name = self.db_schema
+
         engine = get_engine(
             db_name=db_name,
             db_user=self.db_user,
