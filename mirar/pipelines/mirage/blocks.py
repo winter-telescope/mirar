@@ -93,6 +93,7 @@ load_raw = [
     ImageRebatcher(BASE_NAME_KEY),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
     ImageRejector((OBSCLASS_KEY, "miss_hdr")),
+    ImageSelector((OBSCLASS_KEY, "science")),
 ]
 
 

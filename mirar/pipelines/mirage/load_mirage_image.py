@@ -53,6 +53,19 @@ def load_raw_mirage_fits(path: str | Path):
 
     header[TARGET_KEY] = header["OBJECT"].strip()
 
+    if "dark" in header["OBJECT"].strip().lower():
+        header[OBSCLASS_KEY] = "dark"
+
+    if "skyflat" in header["OBJECT"].strip().lower():
+        header[OBSCLASS_KEY] = "flat"
+
+    if (
+        ("test" in header["OBJECT"].strip().lower())
+        or ("pointing" in header["OBJECT"].strip().lower())
+        or ("focus" in header["OBJECT"].strip().lower())
+    ):
+        header[OBSCLASS_KEY] = "test"
+
     if header[OBSCLASS_KEY].lower() in [
         "dark",
         "bias",
