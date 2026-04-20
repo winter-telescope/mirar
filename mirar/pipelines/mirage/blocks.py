@@ -79,6 +79,7 @@ from mirar.processors.utils import (
     ImageDebatcher,
     ImageLoader,
     ImageRebatcher,
+    ImageRejector,
     ImageSaver,
     ImageSelector,
     ModeMasker,
@@ -91,6 +92,7 @@ load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_mirage_image),
     ImageRebatcher(BASE_NAME_KEY),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
+    ImageRejector((OBSCLASS_KEY, "miss_hdr")),
 ]
 
 
