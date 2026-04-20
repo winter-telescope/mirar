@@ -1,18 +1,13 @@
 import logging
-import warnings
 from pathlib import Path
 
 import numpy as np
-from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
-from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
 from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY
 from mirar.pipelines.mirage.config.constants import MIRAGE_GAIN
-from mirar.pipelines.mirage.constants import imgtype_dict, mirage_filters_map
-from mirar.pipelines.mirage.models import default_program, itid_dict
 
 logger = logging.getLogger(__name__)
 
@@ -23,30 +18,23 @@ def load_raw_mirage_fits(path: str | Path):
     header.remove("BITPIX", ignore_missing=True)
     header.remove("BZERO", ignore_missing=True)
     header.remove("BSCALE", ignore_missing=True)
-    # -----------------------------
-    # Time
-    # -----------------------------
-    # DATE-OBS already exists and is usable
-    # -----------------------------
-    # Pointing (prefer degrees)
-    # -----------------------------
-    header["RA"] = header["CRVAL1"]
-    header["DEC"] = header["CRVAL2"]
-    header["RADEG"] = header["CRVAL1"]
-    header["DECDEG"] = header["CRVAL2"]
+
+    try:
+        header["RA"] = header["CRVAL1"]
+        header["DEC"] = header["CRVAL2"]
+        header["RADEG"] = header["CRVAL1"]
+        header["DECDEG"] = header["CRVAL2"]
+    except KeyError:
+        logger.debug(f"{path.as_posix()} is missing CRVAL1 keyword")
+        raise KeyError(f"{path.as_posix()} is missing CRVAL1 keyword")
 
     header.remove("CRPIX1", ignore_missing=True)
     header.remove("CRPIX2", ignore_missing=True)
     header.remove("CRVAL1", ignore_missing=True)
     header.remove("CRVAL2", ignore_missing=True)
-    # -----------------------------
-    # Instrument Identity
-    # -----------------------------
+
     header.setdefault("INSTRUME", "MIRAGE")
 
-    # -----------------------------
-    # Filter handling
-    # -----------------------------
     if "FILTER" not in header:
         object = header.get("OBJECT", "").strip()
         if "_" not in object:
@@ -55,18 +43,12 @@ def load_raw_mirage_fits(path: str | Path):
             filter_name = object.split("_")[-1]
             header["FILTER"] = filter_name
 
-    # -----------------------------
-    # Observation classification
-    # -----------------------------
     if OBSCLASS_KEY not in header:
         if header["OBJECT"].strip().lower() in ["scicam"]:
             header[OBSCLASS_KEY] = "flat"
         else:
             header[OBSCLASS_KEY] = "science"
 
-    # -----------------------------
-    # Target identification, same logic as WINTER.
-    # -----------------------------
     header[TARGET_KEY] = header["OBJECT"].strip()
 
     if header[OBSCLASS_KEY].lower() in [
@@ -80,15 +62,9 @@ def load_raw_mirage_fits(path: str | Path):
     ]:
         target = header[OBSCLASS_KEY].lower()
         header[TARGET_KEY] = target
-    # -----------------------------
-    # Camera GAIN
-    # -----------------------------
-    # if "GAIN" not in header:
+
     header["GAIN"] = MIRAGE_GAIN
 
-    # -----------------------------
-    # Miscellaneous statement of header properties
-    # -----------------------------
     header["COADDS"] = 1
     header["CALSTEPS"] = ""
     header["PROCFAIL"] = 1
