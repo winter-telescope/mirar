@@ -82,15 +82,8 @@ spring_cal_requirements = [
 
 spring_fritz_config = {
     "origin": "mirar",
-    "group_ids": [9999],  # TODO: Find Group IDs
-    # "fritz_filter_id": 1185,  # TODO: Check if this is the same as WINTER
-    "instrument_id": 9999,  # TODO: SPRING Instrument ID
-    # "stream_id": 1005,  # TODO: Check if this is the same as WINTER
+    "group_ids": [1657],
+    "instrument_id": 1138,
     "update_thumbnails": False,
     "skyportal_client": SkyportalClient(base_url="https://fritz.science/api/"),
-    # "annotation_keys": [
-    #     "fwhm",
-    #     "maglim",
-    #     "magpsf",
-    # ] # TODO: Annotation keys
 }

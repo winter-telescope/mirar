@@ -65,6 +65,8 @@ def load_raw_spring_fits(path: str | Path):
         header["FILTER"] = "H"
     elif header["FILTER"].find("Y") != -1:
         header["FILTER"] = "Y"
+    elif header["FILTER"].find("u") != -1:
+        header["FILTER"] = "u"
 
     if header["FILTER"] in spring_filters_map:
         header["FID"] = int(spring_filters_map[header["FILTER"]])

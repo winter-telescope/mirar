@@ -5,15 +5,11 @@ Constants for the winter pipeline.
 import astroplan
 import astropy.coordinates as coords
 
-spring_filters_map = {"Y": 1, "J": 2, "Hs": 3, "dark": 4}
+spring_filters_map = {"Y": 1, "J": 2, "Hs": 3, "dark": 4, "u": 5}
 
 spring_inv_filters_map = {v: k for k, v in spring_filters_map.items()}
 
-sncosmo_filters = {
-    "y": "desy",
-    "j": "2massj",
-    "h": "2massh",
-}
+sncosmo_filters = {"y": "desy", "j": "2massj", "h": "2massh", "u": "sdssu"}
 
 imgtype_dict = {
     "science": "SCIENCE",
@@ -21,6 +17,7 @@ imgtype_dict = {
     "flat": "CAL",
     "dark": "CAL",
     "focus": "FOCUS",
+    "test": "TEST",
     "pointing": "POINTING",
     "other": "NULL",
     "corrupted": "CORRUPTED",
