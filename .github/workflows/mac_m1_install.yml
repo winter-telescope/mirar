@@ -45,6 +45,7 @@ jobs:
       - name: Update setuptools
         shell: bash -el {0}
         run: |
+          conda install -c conda-forge pip
           python -m pip install --upgrade pip setuptools wheel packaging platformdirs setuptools-scm
           python -m pip install --user pipx
           python -m pipx install poetry
