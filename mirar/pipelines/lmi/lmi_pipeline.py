@@ -10,7 +10,9 @@ from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.lmi.blocks import (
     build_log,
     load_and_stack,
+    load_diff,
     load_raw,
+    photometry,
     reduce,
     skyportal,
     subtract,
@@ -31,11 +33,12 @@ class LMIPipeline(Pipeline):
 
     non_linear_level = LMI_NONLINEAR_LEVEL  # no idea, for pylint
     all_pipeline_configurations = {
-        "default": load_raw + reduce + subtract,
+        "default": load_raw + reduce + subtract + photometry,
         "log": load_raw + build_log,
         "reduce": load_raw + reduce,
         "skyportal": skyportal,
         "stack": load_and_stack,
+        "photometry": load_diff + photometry,
     }
 
     default_cal_requirements = lmi_cal_requirements

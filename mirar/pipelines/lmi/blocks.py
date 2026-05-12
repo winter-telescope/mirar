@@ -165,6 +165,13 @@ subtract = [
     ),
     ZOGY(output_sub_dir="zogy"),
     ImageSaver(output_dir_name="diff"),
+]
+
+load_diff = [
+    ImageLoader(input_sub_dir="diff"),
+]
+
+photometry = [
     ForcedPhotometryDetector(ra_header_key="OBJRA", dec_header_key="OBJDEC"),
     RegionsWriter(output_dir_name="diff"),
     RegionsWriter(output_dir_name="stacked"),

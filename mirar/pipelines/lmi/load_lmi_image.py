@@ -52,12 +52,20 @@ def load_raw_lmi_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
     assert header["FILTER"] in LMI_FILTERS, f"Filter {header['FILTER']} not recognised"
 
     # Set up for forced photometry
+
     ra = Angle(f"{header['OBSRA']} hours").degree
 
     header["OBJRA"] = ra
 
+    if ":" not in str(header["CRVAL1"]):
+        header["CRVAL1"] = Angle(header["CRVAL1"], unit="deg").hourangle
+
     dec = Angle(f"{header['OBSDEC']} degrees").degree
     header["OBJDEC"] = dec
+
+    # FIXME
+    # header["OBJRA"], header["OBJDEC"] = 126.058614,  0.693279
+    # header["CRVAL1"], header["CRVAL2"] = "00:00:00.00", "00:00:00.00"
 
     del header["RA"]
     del header["DEC"]
