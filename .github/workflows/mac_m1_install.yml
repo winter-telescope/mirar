@@ -68,11 +68,13 @@ jobs:
             --prefix=$CONDA_PREFIX \
             --with-cfitsio-incdir=$CONDA_PREFIX/include \
             --with-cfitsio-libdir=$CONDA_PREFIX/lib
-          make -j$(sysctl -n hw.logicalcpu)
+          # Embed the conda lib dir as an rpath so dyld can find libcfitsio at runtime
+          make -j$(sysctl -n hw.logicalcpu) \
+            LDFLAGS="-Wl,-rpath,$CONDA_PREFIX/lib"
           make install
           swarp -v
 
-      - name: Build PSFex from source (links against conda deps)
+      - name: Build PSFex from source
         shell: bash -el {0}
         run: |
           git clone --depth 1 https://github.com/astromatic/psfex.git
@@ -85,7 +87,8 @@ jobs:
             --with-openblas-incdir=$CONDA_PREFIX/include \
             --with-fftw-incdir=$CONDA_PREFIX/include \
             --with-fftw-libdir=$CONDA_PREFIX/lib
-          make -j$(sysctl -n hw.logicalcpu)
+          make -j$(sysctl -n hw.logicalcpu) \
+            LDFLAGS="-Wl,-rpath,$CONDA_PREFIX/lib"
           make install
           psfex -v
 
