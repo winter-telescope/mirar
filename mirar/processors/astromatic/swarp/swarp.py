@@ -266,6 +266,7 @@ class Swarp(BaseImageProcessor):
             open(swarp_weight_list_path, "w", encoding="utf8") as weight_list,
         ):
             for image in batch:
+
                 pixscale_to_use = self.pixscale
                 x_imgpixsize_to_use = self.x_imgpixsize
                 y_imgpixsize_to_use = self.y_imgpixsize
@@ -279,12 +280,19 @@ class Swarp(BaseImageProcessor):
                 nypix = image["NAXIS2"]
 
                 full_header = image.get_header()
+
+                copy_fields = (
+                    core_fields
+                    + all_astrometric_keywords
+                    + [SWARP_FLUX_SCALING_KEY]  # Needed here
+                )
+                if self.include_scamp:
+                    copy_fields += [SCAMP_HEADER_KEY]
+
                 # Temporarily remove any non-core fields from the header for swarp
                 hdr = image.get_header().copy()
                 for key in list(hdr.keys()):
-                    if key not in core_fields + all_astrometric_keywords + [
-                        SCAMP_HEADER_KEY + SWARP_FLUX_SCALING_KEY  # Needed here
-                    ]:
+                    if key not in copy_fields:
                         hdr.pop(key, None)
                 image.set_header(hdr)
 
