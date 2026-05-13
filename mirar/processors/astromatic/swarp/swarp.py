@@ -279,7 +279,7 @@ class Swarp(BaseImageProcessor):
                 nxpix = image["NAXIS1"]
                 nypix = image["NAXIS2"]
 
-                full_header = image.get_header()
+                full_header = image.get_header().copy()
 
                 copy_fields = (
                     core_fields
