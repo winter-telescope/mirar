@@ -1,46 +1,30 @@
-# This is a basic workflow to help you get started with Actions
-
 name: Mac
 
-# Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
   push:
   pull_request:
   merge_group:
-
-  # run the pipeline on the 0th minute of the 0th hour of day 1 and 15 every month
   schedule:
     - cron: '0 0 1,15 * *'
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   mac_m1_install:
-    # The type of runner that the job will run on
-    runs-on: macos-14
+    runs-on: macos-15  # arm64, updated from macos-14
 
-    # Specify the python versions to test
     strategy:
       matrix:
         python-version: ["3.11"]
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4  # updated from v3
 
       - uses: conda-incubator/setup-miniconda@v3
-        env:
-          CONDA_CHANNELS: conda-forge
-          CONDA_SUBDIR: osx-64
         with:
           miniconda-version: "latest"
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
+          # No CONDA_SUBDIR: osx-64 — run native arm64
 
       - name: Update setuptools
         shell: bash -el {0}
@@ -50,7 +34,6 @@ jobs:
           python -m pip install --user pipx
           python -m pipx install poetry
 
-
       - name: Install python packages with poetry
         shell: bash -el {0}
         env:
@@ -58,16 +41,54 @@ jobs:
         run: |
           poetry install -E dev
 
-      - name: install packages with conda
+      - name: Install conda packages (native arm64)
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
-          swarp -v
-          scamp -v
+          conda install -c conda-forge \
+            astromatic-source-extractor \
+            astromatic-scamp \
+            gsl \
+            cfitsio fftw openblas \
+            autoconf automake libtool pkg-config
           sex -v
+          scamp -v
+
+      - name: Install astrometry.net (Homebrew, native arm64)
+        run: |
+          brew install astrometry-net
           solve-field --version
 
-      # Make sure the doc tests are up to date
+      - name: Build SWarp from source (links against conda deps)
+        shell: bash -el {0}
+        run: |
+          git clone --depth 1 https://github.com/astromatic/swarp.git
+          cd swarp
+          sh autogen.sh
+          ./configure \
+            --prefix=$CONDA_PREFIX \
+            --with-cfitsio-incdir=$CONDA_PREFIX/include \
+            --with-cfitsio-libdir=$CONDA_PREFIX/lib
+          make -j$(sysctl -n hw.logicalcpu)
+          make install
+          swarp -v
+
+      - name: Build PSFex from source (links against conda deps)
+        shell: bash -el {0}
+        run: |
+          git clone --depth 1 https://github.com/astromatic/psfex.git
+          cd psfex
+          sh autogen.sh
+          ./configure \
+            --prefix=$CONDA_PREFIX \
+            --enable-openblas \
+            --with-openblas-libdir=$CONDA_PREFIX/lib \
+            --with-openblas-incdir=$CONDA_PREFIX/include \
+            --with-fftw-incdir=$CONDA_PREFIX/include \
+            --with-fftw-libdir=$CONDA_PREFIX/lib
+          make -j$(sysctl -n hw.logicalcpu)
+          make install
+          psfex -v
+
       - name: Run doc tests
         shell: bash -el {0}
         run: |
