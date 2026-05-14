@@ -23,11 +23,13 @@ jobs:
         with:
           miniconda-version: "latest"
           auto-update-conda: true
-          activate-environment: mirar  # activates mirar env in subsequent bash -el steps
 
       - name: Run install script
         run: |
           bash install_mirar.sh mirar
+
+      - name: Activate mirar environment
+        run: echo "CONDA_DEFAULT_ENV=mirar" >> $GITHUB_ENV
 
       - name: Verify tools
         shell: bash -el {0}

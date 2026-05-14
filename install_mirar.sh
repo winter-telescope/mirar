@@ -26,32 +26,12 @@ echo "    source-extractor:  $SOURCE_EXTRACTOR_VERSION"
 echo "    swarp:             $SWARP_VERSION"
 echo "    psfex:             $PSFEX_VERSION"
 
-# ── Check architecture ────────────────────────────────────────────────────────
-
-ARCH=$(uname -m)
-if [[ "$ARCH" != "arm64" ]]; then
-    echo "WARNING: This script is intended for Apple Silicon (arm64). Detected: $ARCH"
-    read -p "Continue anyway? [y/N] " -n 1 -r; echo
-    [[ $REPLY =~ ^[Yy]$ ]] || exit 1
-fi
-
 # ── Check prerequisites ───────────────────────────────────────────────────────
 
 if ! command -v conda &>/dev/null; then
     echo "ERROR: conda not found. Install Miniforge from:"
     echo "       https://github.com/conda-forge/miniforge/releases/latest"
     exit 1
-fi
-
-if ! command -v brew &>/dev/null; then
-    echo "ERROR: Homebrew not found. Install it from https://brew.sh and re-run."
-    exit 1
-fi
-
-if ! command -v poetry &>/dev/null; then
-    echo "==> poetry not found, installing via pipx..."
-    pip install --user pipx
-    pipx install poetry
 fi
 
 if [[ ! -f pyproject.toml ]]; then
