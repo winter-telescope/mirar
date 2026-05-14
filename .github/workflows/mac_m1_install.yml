@@ -29,70 +29,21 @@ jobs:
       - name: Update setuptools
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge pip
-          python -m pip install --upgrade pip setuptools wheel packaging platformdirs setuptools-scm
-          python -m pip install --user pipx
-          python -m pipx install poetry
+          bash install_mirar.sh mirar
 
-      - name: Install python packages with poetry
-        shell: bash -el {0}
-        env:
-          SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT: 120
-        run: |
-          poetry install -E dev
-
-      - name: Install conda packages (native arm64)
+      - name: Verify tools
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge \
-            astromatic-source-extractor \
-            astromatic-scamp \
-            gsl \
-            cfitsio fftw openblas \
-            autoconf automake libtool pkg-config
+          conda activate mirar
+          solve-field --version
+          swarp -v
+          psfex -v
           sex -v
           scamp -v
-
-      - name: Install astrometry.net (Homebrew, native arm64)
-        run: |
-          brew install astrometry-net
-          solve-field --version
-
-      - name: Build SWarp from source (links against conda deps)
-        shell: bash -el {0}
-        run: |
-          git clone --depth 1 https://github.com/astromatic/swarp.git
-          cd swarp
-          sh autogen.sh
-          ./configure \
-            --prefix=$CONDA_PREFIX \
-            --with-cfitsio-incdir=$CONDA_PREFIX/include \
-            --with-cfitsio-libdir=$CONDA_PREFIX/lib
-          # Embed the conda lib dir as an rpath so dyld can find libcfitsio at runtime
-          make -j$(sysctl -n hw.logicalcpu) \
-            LDFLAGS="-Wl,-rpath,$CONDA_PREFIX/lib"
-          make install
-          swarp -v
-
-      - name: Build PSFex from source
-        shell: bash -el {0}
-        run: |
-          git clone --depth 1 https://github.com/astromatic/psfex.git
-          cd psfex
-          sh autogen.sh
-          ./configure \
-            --prefix=$CONDA_PREFIX \
-            --enable-openblas \
-            --with-openblas-libdir=$CONDA_PREFIX/lib \
-            --with-openblas-incdir=$CONDA_PREFIX/include \
-            --with-fftw-incdir=$CONDA_PREFIX/include \
-            --with-fftw-libdir=$CONDA_PREFIX/lib
-          make -j$(sysctl -n hw.logicalcpu) \
-            LDFLAGS="-Wl,-rpath,$CONDA_PREFIX/lib"
-          make install
-          psfex -v
-
+          python --version
+ 
       - name: Run doc tests
         shell: bash -el {0}
         run: |
+          conda activate mirar-ci
           poetry run make -C docs/ doctest
