@@ -94,6 +94,50 @@ conda activate "$ENV_NAME"
 PREFIX="$CONDA_PREFIX"
 echo "==> Environment prefix: $PREFIX"
 
+# -- Work out what versions of packages to install based on pyproject.toml dependencies --
+
+get_deps() {
+python - <<'EOF'
+import tomllib, re
+
+with open("pyproject.toml", "rb") as f:
+    deps = tomllib.load(f)["project"]["dependencies"]
+
+# packages you want from conda-forge
+conda_set = {
+    "numpy", "scipy", "astropy", "pandas",
+    "pyarrow", "matplotlib"
+}
+
+conda = []
+pip = []
+
+for d in deps:
+    if not isinstance(d, str):
+        continue
+
+    name = re.match(r"^[a-zA-Z0-9_.\-]+", d).group(0)
+
+    if name in conda_set:
+        conda.append(d)
+    else:
+        pip.append(d)
+
+# output as two shell-eval friendly lines
+print("CONDA_DEPS=\"" + " ".join(conda) + "\"")
+print("PIP_DEPS=\"" + " ".join(pip) + "\"")
+EOF
+}
+
+# Get deps split between pip and conda
+eval "$(get_deps)"
+
+echo "==> Conda deps:"
+echo "$CONDA_DEPS"
+
+echo "==> Pip deps:"
+echo "$PIP_DEPS"
+
 # ── Install conda packages ────────────────────────────────────────────────────
 
 echo ""
@@ -102,16 +146,12 @@ conda install -y -c conda-forge \
     "astromatic-source-extractor=$SOURCE_EXTRACTOR_VERSION" \
     gsl \
     cfitsio fftw openblas \
-    autoconf automake libtool pkg-config wcstools
+    autoconf automake libtool pkg-config wcstools \
+    libjpeg-turbo cairo swig netpbm zlib freetype expat "libblas=*=*openblas" \
+    "liblapack=*=*openblas" \
+    $CONDA_DEPS
 
 echo "    source-extractor: $(sex -v 2>&1 | head -1)"
-
-# ── astrometry.net via Homebrew ───────────────────────────────────────────────
-
-echo ""
-echo "==> Installing astrometry.net via Homebrew..."
-brew install astrometry-net
-echo "    $(solve-field --version 2>&1 | head -1)"
 
 # ── Helper: build an astromatic tool from source ──────────────────────────────
 
@@ -162,17 +202,17 @@ build_astromatic "scamp" "scamp" "v$SCAMP_VERSION" \
     --with-fftw-libdir="$PREFIX/lib"
 
 echo "    scamp:            $(scamp -v 2>&1 | head -1)"
-
-# ── SWarp ─────────────────────────────────────────────────────────────────────
-# Swarp tag is just X.Y.Z without "v", for... reasons
+#
+## ── SWarp ─────────────────────────────────────────────────────────────────────
+## Swarp tag is just X.Y.Z without "v", for... reasons
 build_astromatic "swarp" "swarp" "$SWARP_VERSION" \
     --with-cfitsio-incdir="$PREFIX/include" \
     --with-cfitsio-libdir="$PREFIX/lib"
 
 echo "    $(swarp -v 2>&1 | head -1)"
-
-# ── PSFex ─────────────────────────────────────────────────────────────────────
-# PSFex tag is just X.Y.Z without "v", for... reasons
+#
+## ── PSFex ─────────────────────────────────────────────────────────────────────
+## PSFex tag is just X.Y.Z without "v", for... reasons
 build_astromatic "psfex" "psfex" "$PSFEX_VERSION" \
     --enable-openblas \
     --with-openblas-libdir="$PREFIX/lib" \
@@ -182,12 +222,68 @@ build_astromatic "psfex" "psfex" "$PSFEX_VERSION" \
 
 echo "    $(psfex -v 2>&1 | head -1)"
 
-# ── Install mirar Python dependencies via poetry ──────────────────────────────
+# ── Install astrometry.net via clone and make  ─────────────────────────
 
-echo ""
-echo "==> Installing mirar Python dependencies via poetry..."
-poetry config virtualenvs.create false --local
-poetry install -E dev
+_install_astrometry_activation() {
+    local PREFIX="$1"
+
+    mkdir -p "$PREFIX/etc/conda/activate.d"
+    mkdir -p "$PREFIX/etc/conda/deactivate.d"
+
+    cat > "$PREFIX/etc/conda/activate.d/astrometry.sh" <<EOF
+export PATH="\$CONDA_PREFIX/astrometry/bin:\$PATH"
+export ASTROMETRY_DATA="\$CONDA_PREFIX/astrometry/data"
+export DYLD_LIBRARY_PATH="\$CONDA_PREFIX/lib:\$DYLD_LIBRARY_PATH"
+EOF
+
+    cat > "$PREFIX/etc/conda/deactivate.d/astrometry.sh" <<EOF
+unset ASTROMETRY_DATA
+EOF
+}
+
+build_astrometry_net() {
+    local NAME="astrometry.net"
+    local REPO="astrometry.net"
+    local VERSION="$1"
+    local PREFIX="$CONDA_PREFIX"
+    local SRCDIR="$BUILDDIR/$NAME"
+
+    echo "==> Building $NAME $VERSION"
+
+    rm -rf "$SRCDIR"
+    git clone --depth 1 --branch "$VERSION" \
+        "https://github.com/dstndstn/$REPO.git" \
+        "$SRCDIR"
+
+    pushd "$SRCDIR" > /dev/null
+
+    # ---- environment for compilation ----
+    export LDFLAGS="-L$PREFIX/lib -Wl,-rpath,$PREFIX/lib"
+    export CPPFLAGS="-I$PREFIX/include"
+    export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig"
+
+    # cores (portable mac + linux)
+    local NCORES
+    NCORES=$(python -c "import os; print(os.cpu_count() or 1)")
+
+    # ---- build ----
+    make -j"$NCORES"
+
+    # IMPORTANT: astrometry uses INSTALL_DIR, not just prefix
+    make install INSTALL_DIR="$PREFIX/astrometry"
+
+    popd > /dev/null
+
+    _install_astrometry_activation "$PREFIX"
+}
+
+build_astrometry_net "$ASTROMETRY_NET_VERSION"
+
+# ── Install mirar Python dependencies via pip ──────────────────────────────
+
+echo "==> Installing mirar Python dependencies via pip..."
+conda run -n "$ENV_NAME" pip install $PIP_DEPS --upgrade-strategy only-if-needed
+conda run -n "$ENV_NAME" pip install -e ".[dev]" --no-deps
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
