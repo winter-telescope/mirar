@@ -183,6 +183,8 @@ build_astromatic "scamp" "scamp" "v$SCAMP_VERSION" \
     --with-openblas-incdir="$PREFIX/include" \
     --with-fftw-incdir="$PREFIX/include" \
     --with-fftw-libdir="$PREFIX/lib"
+    --with-curl-incdir="$PREFIX/include" \
+    --with-curl-libdir="$PREFIX/lib"
 
 echo "    scamp:            $(scamp -v 2>&1 | head -1)"
 #
