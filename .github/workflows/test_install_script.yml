@@ -26,7 +26,6 @@ jobs:
           activate-environment: mirar  # activates mirar env in subsequent bash -el steps
 
       - name: Run install script
-        shell: bash -el {0}
         run: |
           bash install_mirar.sh mirar
 
