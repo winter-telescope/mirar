@@ -85,6 +85,7 @@ import tomllib, re
 
 with open("pyproject.toml", "rb") as f:
     deps = tomllib.load(f)["project"]["dependencies"]
+    dev_deps = data["project"].get("optional-dependencies", {}).get("dev", [])
 
 # packages you want from conda-forge
 conda_set = {
@@ -95,7 +96,7 @@ conda_set = {
 conda = []
 pip = []
 
-for d in deps:
+for d in deps + dev_deps:
     if not isinstance(d, str):
         continue
 
@@ -220,7 +221,7 @@ _install_astrometry_activation() {
     cat > "$PREFIX/etc/conda/activate.d/astrometry.sh" <<EOF
 export PATH="\$CONDA_PREFIX/astrometry/bin:\$PATH"
 export ASTROMETRY_DATA="\$CONDA_PREFIX/astrometry/data"
-export DYLD_LIBRARY_PATH="\$CONDA_PREFIX/lib:\$DYLD_LIBRARY_PATH"
+export DYLD_LIBRARY_PATH="\$CONDA_PREFIX/lib:\${DYLD_LIBRARY_PATH:-}"
 EOF
 
     cat > "$PREFIX/etc/conda/deactivate.d/astrometry.sh" <<EOF
@@ -270,7 +271,7 @@ build_astrometry_net "$ASTROMETRY_NET_VERSION"
 
 echo "==> Installing mirar Python dependencies via pip..."
 conda run -n "$ENV_NAME" pip install $PIP_DEPS --upgrade-strategy only-if-needed
-conda run -n "$ENV_NAME" pip install -e ".[dev]" --no-deps
+conda run -n "$ENV_NAME" pip install -e "." --no-deps
 
 echo "==> Installing pre-commit hooks..."
 git config --global --add safe.directory "$(pwd)"
