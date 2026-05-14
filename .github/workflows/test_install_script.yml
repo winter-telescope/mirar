@@ -43,4 +43,4 @@ jobs:
         shell: bash -el {0}
         run: |
           conda activate mirar
-          poetry run make -C docs/ doctest
+          make -C docs/ doctest

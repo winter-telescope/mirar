@@ -274,7 +274,8 @@ conda run -n "$ENV_NAME" pip install -e ".[dev]" --no-deps
 
 echo "==> Installing pre-commit hooks..."
 git config --global --add safe.directory "$(pwd)"
-conda run -n "$ENV_NAME" --cwd "$(pwd)" pre-commit install
+conda activate "$ENV_NAME"
+pre-commit install
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
