@@ -45,5 +45,5 @@ jobs:
       - name: Run doc tests
         shell: bash -el {0}
         run: |
-          conda activate mirar-ci
+          conda activate mirar
           poetry run make -C docs/ doctest
