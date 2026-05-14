@@ -28,12 +28,10 @@ jobs:
         run: |
           bash install_mirar.sh mirar
 
-      - name: Activate mirar environment
-        run: echo "CONDA_DEFAULT_ENV=mirar" >> $GITHUB_ENV
-
       - name: Verify tools
         shell: bash -el {0}
         run: |
+          conda activate mirar
           solve-field --version
           swarp -v
           psfex -v
@@ -44,4 +42,5 @@ jobs:
       - name: Run doc tests
         shell: bash -el {0}
         run: |
+          conda activate mirar
           poetry run make -C docs/ doctest
