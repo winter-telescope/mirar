@@ -74,6 +74,9 @@ conda activate "$ENV_NAME"
 PREFIX="$CONDA_PREFIX"
 echo "==> Environment prefix: $PREFIX"
 
+# After PREFIX is set, near the top of the build section:
+NCORES=$(python -c "import os; print(os.cpu_count() or 1)")
+
 # -- Work out what versions of packages to install based on pyproject.toml dependencies --
 
 get_deps() {
@@ -125,7 +128,7 @@ echo "==> Installing conda packages (native arm64)..."
 conda install -y -c conda-forge \
     "astromatic-source-extractor=$SOURCE_EXTRACTOR_VERSION" \
     gsl \
-    cfitsio fftw openblas \
+    cfitsio fftw openblas curl \
     autoconf automake libtool pkg-config wcstools \
     libjpeg-turbo cairo swig netpbm zlib freetype expat "libblas=*=*openblas" \
     "liblapack=*=*openblas" \
@@ -156,14 +159,14 @@ build_astromatic() {
         "${EXTRA_CONFIGURE[@]}" \
         LDFLAGS="-Wl,-rpath,$PREFIX/lib"
 
-    make -j"$(sysctl -n hw.logicalcpu)"
+    make -j"$NCORES"
     make install
     popd > /dev/null
 
     # Patch rpath if configure didn't embed it
     local BIN
     BIN=$(which "$NAME" 2>/dev/null || true)
-    if [[ -n "$BIN" ]] && ! otool -l "$BIN" | grep -q LC_RPATH; then
+    if [[ -n "$BIN" ]] && command -v otool &>/dev/null && ! otool -l "$BIN" | grep -q LC_RPATH; then
         echo "    Patching rpath in $NAME binary..."
         install_name_tool -add_rpath "$PREFIX/lib" "$BIN"
     fi
@@ -198,7 +201,9 @@ build_astromatic "psfex" "psfex" "$PSFEX_VERSION" \
     --with-openblas-libdir="$PREFIX/lib" \
     --with-openblas-incdir="$PREFIX/include" \
     --with-fftw-incdir="$PREFIX/include" \
-    --with-fftw-libdir="$PREFIX/lib"
+    --with-fftw-libdir="$PREFIX/lib" \
+    --with-curl-incdir="$PREFIX/include" \
+    --with-curl-libdir="$PREFIX/lib"
 
 echo "    $(psfex -v 2>&1 | head -1)"
 
@@ -266,7 +271,8 @@ conda run -n "$ENV_NAME" pip install $PIP_DEPS --upgrade-strategy only-if-needed
 conda run -n "$ENV_NAME" pip install -e ".[dev]" --no-deps
 
 echo "==> Installing pre-commit hooks..."
-conda run -n "$ENV_NAME" pre-commit install
+conda run -n "$ENV_NAME" --cwd "$(pwd)" git config --global --add safe.directory "$(pwd)"
+conda run -n "$ENV_NAME" --cwd "$(pwd)" pre-commit install
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
