@@ -273,7 +273,7 @@ conda run -n "$ENV_NAME" pip install $PIP_DEPS --upgrade-strategy only-if-needed
 conda run -n "$ENV_NAME" pip install -e ".[dev]" --no-deps
 
 echo "==> Installing pre-commit hooks..."
-conda run -n "$ENV_NAME" --cwd "$(pwd)" git config --global --add safe.directory "$(pwd)"
+git config --global --add safe.directory "$(pwd)"
 conda run -n "$ENV_NAME" --cwd "$(pwd)" pre-commit install
 
 # ── Summary ───────────────────────────────────────────────────────────────────
