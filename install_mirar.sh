@@ -285,6 +285,9 @@ echo "==> Installing mirar Python dependencies via pip..."
 conda run -n "$ENV_NAME" pip install $PIP_DEPS --upgrade-strategy only-if-needed
 conda run -n "$ENV_NAME" pip install -e ".[dev]" --no-deps
 
+echo "==> Installing pre-commit hooks..."
+conda run -n "$ENV_NAME" pre-commit install
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 
 echo ""
