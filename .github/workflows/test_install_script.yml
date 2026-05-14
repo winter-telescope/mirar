@@ -1,4 +1,4 @@
-name: Mac
+name: Install script
 
 on:
   push:
@@ -9,24 +9,23 @@ on:
   workflow_dispatch:
 
 jobs:
-  mac_m1_install:
-    runs-on: macos-15  # arm64, updated from macos-14
-
+  test_install:
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        os: [macos-15, ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v4  # updated from v3
+      - uses: actions/checkout@v4
 
       - uses: conda-incubator/setup-miniconda@v3
         with:
           miniconda-version: "latest"
           auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
-          # No CONDA_SUBDIR: osx-64 — run native arm64
+          activate-environment: mirar  # activates mirar env in subsequent bash -el steps
 
-      - name: Update setuptools
+      - name: Run install script
         shell: bash -el {0}
         run: |
           bash install_mirar.sh mirar
@@ -34,16 +33,14 @@ jobs:
       - name: Verify tools
         shell: bash -el {0}
         run: |
-          conda activate mirar
           solve-field --version
           swarp -v
           psfex -v
           sex -v
           scamp -v
           python --version
- 
+
       - name: Run doc tests
         shell: bash -el {0}
         run: |
-          conda activate mirar
           poetry run make -C docs/ doctest
