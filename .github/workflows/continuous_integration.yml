@@ -83,10 +83,19 @@ jobs:
           ssh-private-key: |
             ${{ secrets.WIRC_STARTERPACK_TOKEN }}
 
+      - name: Load dependency versions
+        run: cat astro-deps.cfg >> $GITHUB_ENV
+
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge astromatic-source-extractor astromatic-scamp==2.10.0 astromatic-swarp astromatic-psfex astrometry=0.95 gsl wcstools
+          conda install -c conda-forge \
+            astromatic-source-extractor==$SOURCE_EXTRACTOR_VERSION \
+            astromatic-scamp==$SCAMP_VERSION \
+            astromatic-swarp==$SWARP_VERSION \
+            astromatic-psfex==$PSFEX_VERSION \
+            astrometry==$ASTROMETRY_NET_VERSION \
+            gsl wcstools
           swarp -v
           scamp -v
           sex -v
