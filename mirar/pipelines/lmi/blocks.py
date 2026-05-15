@@ -111,8 +111,7 @@ calibrate = [
 stack = [
     ImageRebatcher(split_key=["stackid"]),
     Swarp(
-        swarp_config_path=swarp_config_path,
-        include_scamp=False,
+        swarp_config_path=swarp_config_path, include_scamp=False, pass_clean_header=True
     ),
     ImageSaver(output_dir_name="swarp"),
     AstrometryNet(

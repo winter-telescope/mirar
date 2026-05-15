@@ -72,6 +72,7 @@ class Swarp(BaseImageProcessor):
         center_dec: Optional[float] = None,
         gain: Optional[float] = None,
         include_scamp: bool = True,
+        pass_clean_header: bool = False,
         combine: bool = True,
         cache: bool = False,
         subtract_bkg: bool = False,
@@ -82,6 +83,7 @@ class Swarp(BaseImageProcessor):
         min_required_coadds: int = 1,
     ):
         """
+        Processor to apply swarp to images, stacking them together.
 
         Args:
             swarp_config_path: str
@@ -110,6 +112,9 @@ class Swarp(BaseImageProcessor):
                 Gain
             include_scamp: bool
                 Whether to include scamp results or not?
+            pass_clean_header: bool
+                Whether to pass a header with only core fields and astrometric keywords
+                to swarp, or the full header. By default, the full header is passed
             combine: bool
                 Combine and coadd all images? For reasons internal to Swarp, it is
                 strongly advised to always set this to True (even if you are running
@@ -154,6 +159,7 @@ class Swarp(BaseImageProcessor):
         self.x_imgpixsize = x_imgpixsize
         self.y_imgpixsize = y_imgpixsize
         self.include_scamp = include_scamp
+        self.pass_clean_header = pass_clean_header
         self.combine = combine
         self.cache = cache
         self.gain = gain
@@ -281,20 +287,21 @@ class Swarp(BaseImageProcessor):
 
                 full_header = image.get_header().copy()
 
-                copy_fields = (
-                    core_fields
-                    + all_astrometric_keywords
-                    + [SWARP_FLUX_SCALING_KEY]  # Needed here
-                )
-                if self.include_scamp:
-                    copy_fields += [SCAMP_HEADER_KEY]
-
                 # Temporarily remove any non-core fields from the header for swarp
-                hdr = image.get_header().copy()
-                for key in list(hdr.keys()):
-                    if key not in copy_fields:
-                        hdr.pop(key, None)
-                image.set_header(hdr)
+                if self.pass_clean_header:
+                    copy_fields = (
+                        core_fields
+                        + all_astrometric_keywords
+                        + [SWARP_FLUX_SCALING_KEY]
+                    )
+                    if self.include_scamp:
+                        copy_fields += [SCAMP_HEADER_KEY]
+
+                    hdr = image.get_header().copy()
+                    for key in list(hdr.keys()):
+                        if key not in copy_fields:
+                            hdr.pop(key, None)
+                    image.set_header(hdr)
 
                 image_x_cen = nxpix / 2
                 image_y_cen = nypix / 2
@@ -374,7 +381,7 @@ class Swarp(BaseImageProcessor):
                         tmp_dict.pop(key)
 
                 combined_header_dict = tmp_dict
-                # Restore full header
+                # Restore full header in any case
                 image.set_header(full_header)
 
         if pixscale_to_use is None:
