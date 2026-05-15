@@ -52,7 +52,7 @@ You can activate the conda environment with:
 
     conda activate mirar
 
-Scroll down to the end of this page for instructions on installing non-python dependencies, which you will likely also need to use mirar.
+Scroll down to the end of this page for Final Steps.
 
 Option 2: Creating the environment and installing manually
 ---------------------------------------------------------
@@ -193,4 +193,9 @@ PostgreSQL
 Some (but not all) pipelines use database integration. In general surveys (e.g. WINTER) need postgresQL, while follow-up instruments (such as LMI) do not.
 
 If you want to use a pipeline that requires database integration, you will need to install PostgreSQL. You can do this via the `official website <https://www.postgresql.org/download/>`_.
-These same pipelines also typically require q3c, which is a PostgreSQL extension. You can install it via the `official website <https://github.com/segasai/q3c>`_.
+These same database-integrated pipelines also typically require q3c, which is a PostgreSQL extension. You can install it via the `official website <https://github.com/segasai/q3c>`_.
+
+Using mirar
+^^^^^^^^^^^
+
+Check out the `usage guide <usage>`_ to get started with using mirar, and the `contributing guide <contributing-guide>`_ if you want to contribute to the codebase.

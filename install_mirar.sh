@@ -131,7 +131,7 @@ echo "==> Installing conda packages (native arm64)..."
 conda install -y -c conda-forge \
     "astromatic-source-extractor=$SOURCE_EXTRACTOR_VERSION" \
     gsl \
-    cfitsio fftw openblas curl \
+    cfitsio fftw openblas curl git \
     autoconf automake libtool pkg-config wcstools \
     libjpeg-turbo cairo swig netpbm zlib freetype expat "libblas=*=*openblas" \
     "liblapack=*=*openblas" \
