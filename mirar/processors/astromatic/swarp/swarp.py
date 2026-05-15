@@ -374,6 +374,8 @@ class Swarp(BaseImageProcessor):
                         tmp_dict.pop(key)
 
                 combined_header_dict = tmp_dict
+                # Restore full header
+                image.set_header(full_header)
 
         if pixscale_to_use is None:
             pixscale_to_use = np.max(all_pixscales)
