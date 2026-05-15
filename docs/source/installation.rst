@@ -135,11 +135,21 @@ In general, you can install these packages in any way you like. We provide you w
 Software with conda (Linux, some Mac support)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can try installing everything via conda:
+You can try installing everything via conda (assuming you are in the mirar directory):
 
 .. code-block:: bash
 
-    conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl
+    # Load versions into environment variables
+    source astro-deps.cfg
+
+    # Install conda packages
+    conda install -c conda-forge \
+        astromatic-source-extractor=$SOURCE_EXTRACTOR_VERSION \
+        astromatic-scamp=$SCAMP_VERSION \
+        astromatic-swarp=$SWARP_CONDA_VERSION \
+        astromatic-psfex=$PSFEX_VERSION \
+        astrometry=$ASTROMETRY_NET_VERSION \
+        gsl wcstools
 
 This is likely to only work for linux at present, because some of the packages are not available for mac via conda.
 If you are on mac, we recommend installing as many packages as possible with conda, any then any missing packages via the respective software websites.

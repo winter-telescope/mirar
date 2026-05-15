@@ -92,7 +92,7 @@ jobs:
           conda install -c conda-forge \
             astromatic-source-extractor==$SOURCE_EXTRACTOR_VERSION \
             astromatic-scamp==$SCAMP_VERSION \
-            astromatic-swarp==$SWARP_VERSION \
+            astromatic-swarp==$SWARP_CONDA_VERSION \
             astromatic-psfex==$PSFEX_VERSION \
             astrometry==$ASTROMETRY_NET_VERSION \
             gsl wcstools
