@@ -84,8 +84,10 @@ python - <<'EOF'
 import tomllib, re
 
 with open("pyproject.toml", "rb") as f:
-    deps = tomllib.load(f)["project"]["dependencies"]
-    dev_deps = data["project"].get("optional-dependencies", {}).get("dev", [])
+    data = tomllib.load(f)
+
+deps = data["project"]["dependencies"]
+dev_deps = data["project"].get("optional-dependencies", {}).get("dev", [])
 
 # packages you want from conda-forge
 conda_set = {

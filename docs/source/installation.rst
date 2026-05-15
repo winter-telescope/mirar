@@ -37,7 +37,8 @@ Then, once you have cloned the repository, you can run the install script:
     cd mirar
     bash install_mirar.sh
 
-This will create a conda environment called `mirar` and install all the necessary dependencies for you. It will also install mirar itself.
+This script will run for several minutes, with a lot of output in the terminal.
+It will create a conda environment called `mirar` and install all the necessary dependencies for you. It will also install mirar itself.
 You can specify an alternative name for the conda environment by instead running:
 
 .. code-block:: bash
