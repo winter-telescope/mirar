@@ -61,7 +61,7 @@ class Swarp(BaseImageProcessor):
 
     def __init__(
         self,
-        swarp_config_path: str,
+        swarp_config_path: str | Path,
         temp_output_sub_dir: str = "swarp",
         pixscale: Optional[float] = None,
         x_imgpixsize: Optional[float] = None,
@@ -150,7 +150,7 @@ class Swarp(BaseImageProcessor):
             min_required_coadds: int Minimum number of coadds required to run Swarp.
         """
         super().__init__()
-        self.swarp_config = swarp_config_path
+        self.swarp_config = str(swarp_config_path)
         self.temp_output_sub_dir = temp_output_sub_dir
         self.pixscale = pixscale
         self.propogate_headerlist = propogate_headerlist

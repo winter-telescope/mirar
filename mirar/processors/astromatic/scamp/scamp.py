@@ -123,7 +123,7 @@ class Scamp(BaseImageProcessor):
     def __init__(
         self,
         ref_catalog_generator: Callable[[fits.Header], BaseCatalog],
-        scamp_config_path: str,
+        scamp_config_path: str | Path,
         temp_output_sub_dir: str = "scamp",
         cache: bool = False,
         copy_scamp_header_to_image: bool = False,

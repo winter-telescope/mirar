@@ -10,6 +10,7 @@ from mirar.pipelines.sedmv2.config.constants import (
     SEDMV2_GAIN,
     SEDMV2_PIXEL_SCALE,
 )
+from mirar.processors.astromatic.sextractor import SextractorConfig
 from mirar.processors.utils.cal_hunter import CalRequirement
 
 sedmv2_dir = os.path.dirname(__file__)
@@ -18,21 +19,21 @@ astromatic_config_dir = os.path.join(sedmv2_dir, "files")
 sedmv2_mask_path = os.path.join(sedmv2_dir, "mask.fits")
 sedmv2_weight_path = os.path.join(sedmv2_dir, "weight.fits")
 
-sextractor_photometry_config = {
+sextractor_photometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 
-sextractor_PSF_photometry_config = {
+sextractor_PSF_photometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "photomPSF.param"),
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 
-sextractor_astrometry_config = {
+sextractor_astrometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "astrom.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "astrom.param"),
@@ -40,14 +41,14 @@ sextractor_astrometry_config = {
 }
 
 
-sextractor_candidate_config = {
+sextractor_candidate_config: SextractorConfig = {
     "cand_det_sextractor_config": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "cand_det_sextractor_nnw": os.path.join(astromatic_config_dir, "default.nnw"),
     "cand_det_sextractor_filter": os.path.join(astromatic_config_dir, "default.conv"),
     "cand_det_sextractor_params": os.path.join(astromatic_config_dir, "Scorr.param"),
 }
 
-sextractor_reference_config = {
+sextractor_reference_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),

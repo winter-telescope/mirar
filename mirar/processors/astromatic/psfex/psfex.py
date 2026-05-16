@@ -66,12 +66,12 @@ class PSFex(BaseImageProcessor):
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
+        config_path: str | Path,
         output_sub_dir: str = "psf",
         norm_fits: bool = True,
     ):
         super().__init__()
-        self.config_path = config_path
+        self.config_path = Path(config_path)
         self.output_sub_dir = output_sub_dir
         self.norm_fits = norm_fits
 

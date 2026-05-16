@@ -73,11 +73,11 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
     def __init__(  # pylint: disable=too-many-locals
         self,  # pylint: disable=too-many-instance-attributes
         output_sub_dir: str,
-        config_path: str,
-        parameter_path: str,
-        filter_path: str,
-        starnnw_path: str,
-        saturation: float = None,
+        config_path: str | Path,
+        parameter_path: str | Path,
+        filter_path: str | Path,
+        starnnw_path: str | Path,
+        saturation: float | None = None,
         verbose_type: str = "QUIET",
         checkimage_name: Optional[str | list] = None,
         checkimage_type: Optional[str | list] = None,
@@ -86,8 +86,8 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
         mag_zp: Optional[float] = None,
         write_regions_bool: bool = False,
         use_psfex: bool = False,
-        psf_path: Optional[str] = None,
-        catalog_purifier: Callable[[Table, Image], Table] = None,
+        psf_path: str | Path | None = None,
+        catalog_purifier: Callable[[Table, Image], Table] | None = None,
     ):
         """
         :param output_sub_dir: subdirectory to output sextractor files
@@ -114,11 +114,11 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
         # pylint: disable=too-many-arguments
         super().__init__()
         self.output_sub_dir = output_sub_dir
-        self.config = config_path
+        self.config = str(config_path)
 
-        self.parameters_name = parameter_path
-        self.filter_name = filter_path
-        self.starnnw_name = starnnw_path
+        self.parameters_name = str(parameter_path)
+        self.filter_name = str(filter_path)
+        self.starnnw_name = str(starnnw_path)
         self.saturation = saturation
         self.verbose_type = verbose_type
         self.checkimage_name = checkimage_name
@@ -128,7 +128,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
         self.mag_zp = mag_zp
         self.write_regions = write_regions_bool
         self.use_psfex = use_psfex
-        self.psf_path = psf_path
+        self.psf_path = str(psf_path)
         self.catalog_purifier = catalog_purifier
 
         if isinstance(self.checkimage_name, str):

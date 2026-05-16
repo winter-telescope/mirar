@@ -6,19 +6,21 @@ from pathlib import Path
 
 from fastavro.schema import load_schema
 
+from mirar.processors.astromatic.sextractor import SextractorConfig
+
 wirc_file_dir = Path(__file__).parent.joinpath("files")
 wirc_schema_dir = Path(__file__).parent.joinpath("schema")
 
 wirc_mask_path = wirc_file_dir.joinpath("wirc_bad_feb_2018.fits")
 
-sextractor_astrometry_config = {
+sextractor_astrometry_config: SextractorConfig = {
     "config_path": wirc_file_dir.joinpath("stack.sex"),
     "filter_path": wirc_file_dir.joinpath("default.conv"),
     "parameter_path": wirc_file_dir.joinpath("astrom.param"),
     "starnnw_path": wirc_file_dir.joinpath("default.nnw"),
 }
 
-sextractor_photometry_config = {
+sextractor_photometry_config: SextractorConfig = {
     "config_path": wirc_file_dir.joinpath("matchcat.sex"),
     "filter_path": wirc_file_dir.joinpath("default.conv"),
     "parameter_path": wirc_file_dir.joinpath("astrom.param"),
@@ -29,7 +31,7 @@ scamp_fp_path = wirc_file_dir.joinpath("scamp_fp.conf")
 
 swarp_sp_path = wirc_file_dir.joinpath("second_pass.swarp")
 
-sextractor_reference_config = {
+sextractor_reference_config: SextractorConfig = {
     "config_path": wirc_file_dir.joinpath("photomCat.sex"),
     "parameter_path": wirc_file_dir.joinpath("photom.param"),
     "filter_path": wirc_file_dir.joinpath("default.conv"),

@@ -137,6 +137,9 @@ mirar-run = 'mirar.__main__:main'
 mirar-docs-autogen = "mirar.utils.docs:iterate_rst_generation"
 winter-stack = 'mirar.pipelines.winter.run:run_stack_of_stacks'
 
+[tool.mypy]
+disable_error_code = ["import-untyped"]
+
 [build-system]
 requires = ["setuptools", "wheel", "poetry-core>=2.2.0",]
 build-backend = "poetry.core.masonry.api"

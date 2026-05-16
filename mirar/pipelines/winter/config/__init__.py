@@ -9,6 +9,7 @@ from pathlib import Path
 from fastavro.schema import load_schema
 
 from mirar.paths import base_output_dir, base_raw_dir
+from mirar.processors.astromatic.sextractor import SextractorConfig
 from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
 
@@ -18,7 +19,7 @@ PIPELINE_NAME = "winter"
 
 winter_file_dir = Path(__file__).parent.joinpath("files")
 
-sextractor_astrometry_config = {
+sextractor_astrometry_config: SextractorConfig = {
     "config_path": winter_file_dir.joinpath("astrom.sex"),
     "filter_path": winter_file_dir.joinpath("default.conv"),
     "parameter_path": winter_file_dir.joinpath("astrom.param"),
@@ -30,14 +31,14 @@ sextractor_astromstats_config["parameter_path"] = winter_file_dir.joinpath(
     "astromstats.param"
 )
 
-sextractor_photometry_config = {
+sextractor_photometry_config: SextractorConfig = {
     "config_path": winter_file_dir.joinpath("photomCat.sex"),
     "filter_path": winter_file_dir.joinpath("default.conv"),
     "parameter_path": winter_file_dir.joinpath("photom.param"),
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
-sextractor_photometry_psf_config = {
+sextractor_photometry_psf_config: SextractorConfig = {
     "config_path": winter_file_dir.joinpath("photomCat.sex"),
     "filter_path": winter_file_dir.joinpath("default.conv"),
     "parameter_path": winter_file_dir.joinpath("photom_psf.param"),
@@ -53,14 +54,14 @@ sextractor_anet_config = {
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
-sextractor_reference_config = {
+sextractor_reference_config: SextractorConfig = {
     "config_path": winter_file_dir.joinpath("reference.sex"),
     "parameter_path": winter_file_dir.joinpath("photom.param"),
     "filter_path": winter_file_dir.joinpath("default.conv"),
     "starnnw_path": winter_file_dir.joinpath("default.nnw"),
 }
 
-sextractor_reference_psf_phot_config = {
+sextractor_reference_psf_phot_config: SextractorConfig = {
     "config_path": winter_file_dir.joinpath("reference.sex"),
     "parameter_path": winter_file_dir.joinpath("photom_psf.param"),
     "filter_path": winter_file_dir.joinpath("default.conv"),

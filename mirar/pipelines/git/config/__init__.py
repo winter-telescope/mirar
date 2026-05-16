@@ -2,6 +2,8 @@
 Module containing SEDMv2-specific paths
 """
 
+# pylint: disable=duplicate-code
+
 import os
 
 from mirar.pipelines.git.config.constants import (
@@ -10,26 +12,27 @@ from mirar.pipelines.git.config.constants import (
     GIT_PIXEL_SCALE,
     PIPELINE_NAME,
 )
+from mirar.processors.astromatic.sextractor import SextractorConfig
 
 git_dir = os.path.dirname(__file__)
 
 astromatic_config_dir = os.path.join(git_dir, "files")
 
-sextractor_photometry_config = {
+sextractor_photometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 
-sextractor_PSF_photometry_config = {
+sextractor_PSF_photometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "photomPSF.param"),
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 
-sextractor_astrometry_config = {
+sextractor_astrometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "astrom.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "astrom.param"),
@@ -44,7 +47,7 @@ sextractor_candidates_config = {
     "cand_det_sextractor_params": os.path.join(astromatic_config_dir, "Scorr.param"),
 }
 
-sextractor_reference_config = {
+sextractor_reference_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
