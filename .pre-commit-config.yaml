@@ -20,6 +20,14 @@ repos:
         types: [ python ]
 -   repo: local
     hooks:
+      - id: autotype
+        name: autotype
+        entry: autotype
+        language: system
+        args: ["--aggressive"]
+        types: [python]
+-   repo: local
+    hooks:
       - id: pylint
         name: pylint [mandatory]
         entry: pylint
