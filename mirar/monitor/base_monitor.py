@@ -285,7 +285,7 @@ class Monitor:
         else:
             print(summary)
 
-    def configure_logs(self, log_level="INFO"):
+    def configure_logs(self, log_level: str = "INFO"):
         """Function to configure the log level for the python logger.
         Posts the log to the terminal and also writes it to a file.
 

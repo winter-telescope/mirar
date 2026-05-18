@@ -17,7 +17,7 @@ A :class:`~wintedrp.processors.BaseProcessor` will iterate over each
 
 import logging
 from pathlib import Path
-from typing import Optional, Type
+from typing import Iterator, Optional, Type
 
 from mirar.paths import BASE_NAME_KEY, RAW_IMG_KEY
 
@@ -162,7 +162,7 @@ class PseudoList:
     def __len__(self) -> int:
         return self._datalist.__len__()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         return self._datalist.__iter__()
 
 

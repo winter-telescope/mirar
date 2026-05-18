@@ -135,7 +135,7 @@ class IPACAvroExporter(BaseAvroExporter):
         return topic_name
 
     @staticmethod
-    def _send_alert(topicname, records, schema) -> None:
+    def _send_alert(topicname: str, records, schema) -> None:
         """Send an avro "packet" to a particular topic at IPAC.
         Modified from: https://github.com/dekishalay/pgirdps
 

@@ -3,6 +3,7 @@ Module for PS1 reference image generator
 """
 
 import logging
+from typing import Optional
 
 import numpy as np
 from astropy.io import fits
@@ -22,7 +23,7 @@ class PS1Ref(BaseReferenceGenerator):
 
     abbreviation = "ps1_ref_lookup"
 
-    def getimages(self, ra_deg: float, dec_deg: float, filters="grizy") -> Table:
+    def getimages(self, ra_deg: float, dec_deg: float, filters: str = "grizy") -> Table:
         """
         Query ps1filenames.py service to get a list of images
 
@@ -42,10 +43,10 @@ class PS1Ref(BaseReferenceGenerator):
         ra_deg: float,
         dec_deg: float,
         size: int = 240,
-        output_size=None,
-        filters="grizy",
-        file_format="fits",
-        color=False,
+        output_size: Optional[int] = None,
+        filters: str = "grizy",
+        file_format: str = "fits",
+        color: bool = False,
     ):
         """Get URL for images in the table
 

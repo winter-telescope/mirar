@@ -95,7 +95,7 @@ class BaseAvroExporter(BaseSourceProcessor):
             fastavro.writer(out, schema, packets)
 
     @staticmethod
-    def _send_alert(topicname, records, schema):
+    def _send_alert(topicname: str, records, schema):
         """
         Function to send alert to Kafka broker
 
@@ -106,7 +106,7 @@ class BaseAvroExporter(BaseSourceProcessor):
         """
         raise NotImplementedError
 
-    def broadcast_single_alert_packet(self, packet, schema, topic_name):
+    def broadcast_single_alert_packet(self, packet, schema, topic_name: str):
         """
         Sends avro-formatted packets to specified topicname using Kafka.
         Modified from https://github.com/dekishalay/pgirdps

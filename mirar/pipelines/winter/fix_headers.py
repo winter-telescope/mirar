@@ -11,7 +11,7 @@ from astropy.io import fits
 from mirar.paths import get_output_path
 
 
-def fix_headers(logfile, night, keyword_list, sub_dir="raw") -> None:
+def fix_headers(logfile, night, keyword_list, sub_dir: str = "raw") -> None:
     """
     Function to fix headers of images based on a log file
     """

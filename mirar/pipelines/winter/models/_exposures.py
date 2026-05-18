@@ -4,7 +4,7 @@ Models for the 'exposures' table
 
 import logging
 from datetime import date, datetime
-from typing import ClassVar
+from typing import ClassVar, Optional, Sequence
 
 import pandas as pd
 from astropy.coordinates import SkyCoord
@@ -200,7 +200,9 @@ class Exposure(BaseDB):
         return datetime.now()
 
     def insert_entry(
-        self, duplicate_protocol: str, returning_key_names=None
+        self,
+        duplicate_protocol: str,
+        returning_key_names: Optional[Sequence[str]] = None,
     ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database

@@ -36,7 +36,7 @@ class CalRequirement:
     required_values: str | list[str]
 
     def __init__(
-        self, target_name, required_field: str, required_values: str | list[str]
+        self, target_name: str, required_field: str, required_values: str | list[str]
     ) -> None:
         self.target_name = target_name
         self.required_field = required_field

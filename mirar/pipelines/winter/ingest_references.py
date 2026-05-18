@@ -17,7 +17,7 @@ from mirar.pipelines.winter.models import RefComponent
 logger = logging.getLogger(__name__)
 
 
-def get_logger(level="INFO"):
+def get_logger(level: str = "INFO"):
     """
     Get a logger for the module
     """

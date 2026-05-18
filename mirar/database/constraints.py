@@ -2,6 +2,8 @@
 Module for DBQueryConstraints to carefully specify postgres query constraints
 """
 
+from typing import Iterator
+
 import numpy as np
 
 POSTGRES_ACCEPTED_COMPARISONS = ["=", "<", ">", "<=", ">=", "between", "<>", "!="]
@@ -120,7 +122,7 @@ class DBQueryConstraints:
     def __len__(self) -> int:
         return self.columns.__len__()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         return iter(zip(self.columns, self.accepted_values, self.comparison_types))
 
     def parse_constraints(
