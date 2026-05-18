@@ -22,7 +22,7 @@ class ErrorReport:
 
     def __init__(
         self, error: Exception, processor_name: str, contents: list[str] | list[Path]
-    ):
+    ) -> None:
         self.error = error
         self.processor_name = processor_name
         self.contents = contents

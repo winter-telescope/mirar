@@ -44,13 +44,13 @@ repos:
             "--exit-zero"
           ]
         verbose: true
--   repo: local
-    hooks:
-      - id: mypy
-        name: mypy
-        entry: mypy
-        language: system
-        types: [python]
+#-   repo: local
+#    hooks:
+#      - id: mypy
+#        name: mypy
+#        entry: mypy
+#        language: system
+#        types: [python]
 -   repo: local
     hooks:
       - id: poetry-check

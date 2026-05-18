@@ -35,7 +35,7 @@ class ABCatalog:
     def __init__(
         self,
         search_radius_arcmin: float,
-    ):
+    ) -> None:
         self.search_radius_arcmin = search_radius_arcmin
 
 
@@ -63,7 +63,7 @@ class BaseCatalog(ABCatalog, ABC):
         cache_catalog_locally: bool = False,
         catalog_cachepath_key: str = REF_CAT_PATH_KEY,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.min_mag = min_mag
         self.max_mag = max_mag

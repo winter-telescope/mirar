@@ -295,7 +295,7 @@ def parse_header(
     return nxpix, nypix, cd11, cd12, cd21, cd22, crpix1, crpix2, cra, cdec
 
 
-def write_text_file(file_path: str, src_list: list[BaseSource]):
+def write_text_file(file_path: str, src_list: list[BaseSource]) -> None:
     """
     Write a text file with a list of sources
 
@@ -362,7 +362,7 @@ def export_src_lists(
     img_src_list: list[SextractorSource],
     ref_src_list: list[BaseSource],
     base_output_path: str,
-):
+) -> None:
     """
     Export both image and reference source lists to txt/region files
 

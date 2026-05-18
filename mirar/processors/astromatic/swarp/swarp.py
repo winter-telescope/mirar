@@ -81,7 +81,7 @@ class Swarp(BaseImageProcessor):
         header_keys_to_combine: Optional[str | list[str]] = None,
         coordinate_tolerance_deg: float = 10,
         min_required_coadds: int = 1,
-    ):
+    ) -> None:
         """
         Processor to apply swarp to images, stacking them together.
 

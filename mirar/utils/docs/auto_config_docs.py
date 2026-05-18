@@ -40,7 +40,7 @@ def get_rst_config_path(pipeline: str, config: str) -> Path:
     return base_autogen_dir.joinpath(f"{pipeline}.{config}.rst")
 
 
-def auto_top_level_rst(pipelines: list[str]):
+def auto_top_level_rst(pipelines: list[str]) -> None:
     """
     Function to generate a top-level rst file for all pipelines
 
@@ -78,7 +78,7 @@ def auto_top_level_rst(pipelines: list[str]):
         doc.newline()
 
 
-def auto_rst_pipeline(pipeline: str, configs: list[str]):
+def auto_rst_pipeline(pipeline: str, configs: list[str]) -> None:
     """
     Function to generate a diagram summarising all
     :class:`~wintedrp.processors.BaseProcessor` objects
@@ -118,7 +118,7 @@ def auto_rst_pipeline(pipeline: str, configs: list[str]):
         doc.newline()
 
 
-def auto_rst_config(pipeline: str, config: str):
+def auto_rst_config(pipeline: str, config: str) -> None:
     """
     Function to generate a diagram summarising all
     :class:`~wintedrp.processors.BaseProcessor` objects
@@ -155,7 +155,7 @@ def auto_rst_config(pipeline: str, config: str):
         doc.newline()
 
 
-def iterate_rst_generation():
+def iterate_rst_generation() -> None:
     """
     Function to iterate the creation of a separate rst file for each pipeline
 

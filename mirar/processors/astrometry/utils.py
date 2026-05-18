@@ -21,7 +21,7 @@ class AstrometryFromFile(BaseImageProcessor):
 
     base_key = "astrometry_from_file"
 
-    def __init__(self, astrometry_file_key: str = ASTROMETRY_FILE_KEY):
+    def __init__(self, astrometry_file_key: str = ASTROMETRY_FILE_KEY) -> None:
         super().__init__()
         self.astrometry_file_key = astrometry_file_key
 

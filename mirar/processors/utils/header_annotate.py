@@ -21,7 +21,7 @@ class HeaderAnnotator(BaseImageProcessor):
         self,
         input_keys: str | list[str],
         output_key: str,
-    ):
+    ) -> None:
         super().__init__()
         if not isinstance(input_keys, list):
             input_keys = [input_keys]
@@ -64,7 +64,7 @@ class HeaderEditor(BaseImageProcessor):
         self,
         edit_keys: str | list[str],
         values: str | float | int | list,
-    ):
+    ) -> None:
         super().__init__()
         if not isinstance(edit_keys, list):
             edit_keys = [edit_keys]

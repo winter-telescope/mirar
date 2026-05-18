@@ -94,7 +94,7 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
         sextractor_generator: Callable[..., Sextractor] = None,
         phot_calibrator_generator: Callable[..., PhotCalibrator] = None,
         filter_images: Callable[[ImageBatch], ImageBatch] = default_filter_wfau_images,
-    ):
+    ) -> None:
         """
         Args:
             :param wfcam_query: Query to be used to query WFCAM images

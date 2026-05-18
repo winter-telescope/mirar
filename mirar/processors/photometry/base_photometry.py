@@ -44,7 +44,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         x_colname: str = XPOS_KEY,
         y_colname: str = YPOS_KEY,
         save_cutouts: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         self.phot_cutout_half_size = phot_cutout_half_size
         self.temp_output_sub_dir = temp_output_sub_dir

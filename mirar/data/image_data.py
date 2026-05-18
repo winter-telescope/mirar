@@ -84,7 +84,7 @@ class Image(DataBlock):
 
     cache_files = []
 
-    def __init__(self, data: np.ndarray, header: Header):
+    def __init__(self, data: np.ndarray, header: Header) -> None:
         self._data = None
         self.header = header
         super().__init__()
@@ -107,7 +107,7 @@ class Image(DataBlock):
         name = f"{hashlib.sha1(base.encode()).hexdigest()}.npy"
         return cache.get_cache_dir().joinpath(name)
 
-    def set_data(self, data: np.ndarray):
+    def set_data(self, data: np.ndarray) -> None:
         """
         Set the data with cache
 
@@ -119,7 +119,7 @@ class Image(DataBlock):
         else:
             self.set_ram_data(data)
 
-    def set_cache_data(self, data: np.ndarray):
+    def set_cache_data(self, data: np.ndarray) -> None:
         """
         Set the data with cache
 
@@ -128,7 +128,7 @@ class Image(DataBlock):
         """
         np.save(self.cache_path.as_posix(), data, allow_pickle=False)
 
-    def set_ram_data(self, data: np.ndarray):
+    def set_ram_data(self, data: np.ndarray) -> None:
         """
         Set the data in RAM
 
@@ -181,7 +181,7 @@ class Image(DataBlock):
         """
         return self.header
 
-    def set_header(self, header: Header):
+    def set_header(self, header: Header) -> None:
         """
         Update the header
 
@@ -193,7 +193,7 @@ class Image(DataBlock):
     def __getitem__(self, item):
         return self.header.__getitem__(item)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         self.header.__setitem__(key, value)
 
     def keys(self):
@@ -204,7 +204,7 @@ class Image(DataBlock):
         """
         return self.header.keys()
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.cache_path is not None:
             self.cache_path.unlink(missing_ok=True)
             self.cache_files.remove(self.cache_path)
@@ -235,10 +235,10 @@ class ImageBatch(DataBatch):
 
     data_type = Image
 
-    def __init__(self, batch: Optional[list[Image] | Image] = None):
+    def __init__(self, batch: Optional[list[Image] | Image] = None) -> None:
         super().__init__(batch=batch)
 
-    def append(self, item: Image):
+    def append(self, item: Image) -> None:
         self._append(item)
 
     def get_batch(self) -> list[Image]:

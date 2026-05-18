@@ -29,7 +29,7 @@ class BaseDatabaseSelector(BaseDatabaseProcessor, ABC):
         *args,
         boolean_match_key: Optional[str] = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.boolean_match_key = boolean_match_key
 
@@ -72,7 +72,7 @@ class BaseImageDatabaseSelector(BaseDatabaseSelector, BaseImageProcessor, ABC):
             [Image, list[dict]], Image
         ] = update_header_with_single_match,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.update_header = update_header
         self.db_output_columns = db_output_columns
@@ -104,7 +104,7 @@ class BaseImageDatabaseSelector(BaseDatabaseSelector, BaseImageProcessor, ABC):
 class BaseValuesCrossmatch(BaseDatabaseSelector, ABC):
     """Processor to crossmatch to a database"""
 
-    def __init__(self, db_query_columns: str | list[str], *args, **kwargs):
+    def __init__(self, db_query_columns: str | list[str], *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.db_query_columns = db_query_columns
 
@@ -156,7 +156,7 @@ class BaseDatabaseSourceSelector(BaseDatabaseSelector, BaseSourceProcessor, ABC)
         max_num_results: Optional[int] = None,
         additional_query_constraints: DBQueryConstraints | None = None,
         **kwargs,
-    ):
+    ) -> None:
         self.db_output_columns = db_output_columns
         self.max_num_results = max_num_results
         self.additional_query_constraints = additional_query_constraints
@@ -220,7 +220,7 @@ class DatabaseSingleMatchSelector(BaseDatabaseSourceSelector, ABC):
     Processor to import a single match from a database
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, max_num_results=1, **kwargs)
 
     def update_dataframe(
@@ -256,7 +256,9 @@ class DatabaseMultimatchSelector(BaseDatabaseSourceSelector, ABC):
     Processor to import multiple matches from a database
     """
 
-    def __init__(self, *args, base_output_column: str = SOURCE_HISTORY_KEY, **kwargs):
+    def __init__(
+        self, *args, base_output_column: str = SOURCE_HISTORY_KEY, **kwargs
+    ) -> None:
         self.base_output_column = base_output_column
         super().__init__(*args, **kwargs)
 
@@ -291,7 +293,7 @@ class BaseSpatialCrossmatchSource(BaseDatabaseSourceSelector, ABC):
         order_ascending: bool = False,
         query_dist: bool = False,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.xmatch_radius_arcsec = crossmatch_radius_arcsec
         self.ra_field_name = ra_field_name
@@ -363,7 +365,7 @@ class DatabaseHistorySelector(SpatialCrossmatchSourceWithDatabase):
         history_duration_days: float,
         time_field_name: str = "jd",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.history_duration_days = history_duration_days
         self.time_field_name = time_field_name

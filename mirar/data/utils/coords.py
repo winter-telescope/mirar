@@ -89,7 +89,7 @@ def write_regions_file(
     system: str = "image",
     region_radius: float = 5,
     text: list | None = None,
-):
+) -> None:
     """
     Function to write a regions file
     Args:

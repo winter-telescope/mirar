@@ -33,7 +33,7 @@ class CSVLog(BaseImageProcessor):
         output_sub_dir: str = "",
         output_base_dir: Optional[str] = None,
         output_name: str = "log",
-    ):
+    ) -> None:
         super().__init__()
         if export_keys is None:
             export_keys = default_log_keys

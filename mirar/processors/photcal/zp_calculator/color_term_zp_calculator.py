@@ -125,7 +125,7 @@ class ZPWithColorTermCalculator(
         reject_outliers: bool = True,
         num_stars_threshold: int = 5,
         solver: str = "odr",
-    ):
+    ) -> None:
         self.color_colnames_guess_generator = color_colnames_guess_generator
         self.reject_outliers = reject_outliers
         self.num_stars_threshold = num_stars_threshold

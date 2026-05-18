@@ -18,11 +18,11 @@ class CustomImageBatchModifier(BaseImageProcessor):
     def __init__(
         self,
         image_batch_modifier: Callable[[ImageBatch], ImageBatch],
-    ):
+    ) -> None:
         super().__init__()
         self.image_batch_modifier = image_batch_modifier
 
-    def description(self):
+    def description(self) -> str:
         return (
             f"Processor to modify image batches using "
             f"'{self.image_batch_modifier.__name__}' function."

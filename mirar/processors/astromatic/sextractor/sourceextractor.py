@@ -104,7 +104,7 @@ def parse_checkimage(
     return cmd, checkimage_name
 
 
-def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
+def run_sextractor(images: str | list, output_dir: str, *args, **kwargs) -> None:
     """
     Wrapper function to run sextractor
     Args:

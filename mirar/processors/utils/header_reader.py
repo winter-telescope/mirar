@@ -21,7 +21,7 @@ class HeaderReader(BaseImageProcessor):
     def __init__(
         self,
         *keys,
-    ):
+    ) -> None:
         super().__init__()
         self.keys = keys
 

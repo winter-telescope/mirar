@@ -59,7 +59,7 @@ def create_compressed_fits(
 
 def save_hdu_as_fits(
     hdu: fits.PrimaryHDU | fits.CompImageHDU, path: str | Path, overwrite: bool = True
-):
+) -> None:
     """
     Wrapper function to save an astropy hdu to file
 
@@ -78,7 +78,7 @@ def save_to_path(
     path: str | Path,
     overwrite: bool = True,
     compress: bool = False,
-):
+) -> None:
     """
     Function to save an image with <data> and <header> to <path>.
 
@@ -97,7 +97,7 @@ def save_to_path(
     save_hdu_as_fits(hdu=img, path=path, overwrite=overwrite)
 
 
-def save_mef_to_path(data_list, header_list, primary_header, path):
+def save_mef_to_path(data_list, header_list, primary_header, path) -> None:
     """
     Function to save a MEF image with <data> and <header> to <path>.
     """
@@ -174,7 +174,7 @@ def save_fits(
     image: Image,
     path: str | Path,
     compress: bool = False,
-):
+) -> None:
     """
     Save an Image to path
 

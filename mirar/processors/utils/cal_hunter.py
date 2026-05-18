@@ -37,14 +37,14 @@ class CalRequirement:
 
     def __init__(
         self, target_name, required_field: str, required_values: str | list[str]
-    ):
+    ) -> None:
         self.target_name = target_name
         self.required_field = required_field
         self.required_values = required_values
         self.success = False
         self.data = {}
 
-    def check_images(self, images: ImageBatch):
+    def check_images(self, images: ImageBatch) -> None:
         """
         Check a batch of images, to see whether the calibration requirement is met.
         Adds any required images to the cache, then updates
@@ -69,7 +69,7 @@ class CalRequirement:
 
         self.success = len(self.data) == len(self.required_values)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<Calibration requirement, checking for '{self.target_name}' images "
             f"with '{self.required_field}'values {self.required_values} >"
@@ -201,7 +201,7 @@ class CalHunter(ImageLoader):
 
     def __init__(
         self, requirements: CalRequirement | list[CalRequirement], *args, **kwargs
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
 
         if not isinstance(requirements, list):
@@ -209,7 +209,7 @@ class CalHunter(ImageLoader):
 
         self.requirements = requirements
 
-    def description(self):
+    def description(self) -> str:
         reqs = [f"{req.target_name.upper()} images" for req in self.requirements]
         return (
             f"Processor to search through archival data to find any missing "

@@ -33,7 +33,7 @@ class RefFromPath(BaseReferenceGenerator):
         duplicate_protocol: str = "replace",
         q3c_bool: bool = True,
         weight_path: str = None,
-    ):
+    ) -> None:
         super().__init__(
             filter_name,
             write_to_db=write_to_db,

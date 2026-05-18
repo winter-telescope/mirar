@@ -25,7 +25,7 @@ class GaiaVizier(VizierCatalog):
     dec_key = "DE_ICRS"
 
     @property
-    def abbreviation(self):
+    def abbreviation(self) -> str:
         return "gaiadr3"
 
     @property

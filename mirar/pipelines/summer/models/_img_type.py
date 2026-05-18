@@ -48,7 +48,7 @@ class ImgType(BaseDB):
         return self._exists(values=self.itid, keys="itid")
 
 
-def populate_itid():
+def populate_itid() -> None:
     """
     Iteratively fill up the ITID table
 

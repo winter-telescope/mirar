@@ -42,7 +42,7 @@ class ProcessReference(BaseImageProcessor):
         ref_psfex: Callable[..., PSFex],
         phot_sextractor: Callable[..., Sextractor] = None,
         temp_output_subtract_dir: str = "subtract",
-    ):
+    ) -> None:
         super().__init__()
         self.ref_image_generator = ref_image_generator
         self.swarp_resampler = swarp_resampler
@@ -245,12 +245,12 @@ class GetReferenceImage(BaseImageProcessor):
         self,
         ref_image_generator: Callable[..., BaseReferenceGenerator],
         output_sub_dir: str = "ref",
-    ):
+    ) -> None:
         super().__init__()
         self.ref_image_generator = ref_image_generator
         self.output_sub_dir = output_sub_dir
 
-    def description(self):
+    def description(self) -> str:
         output_sub_dir = get_output_dir(
             dir_root=self.output_sub_dir, sub_dir=self.night_sub_dir
         )

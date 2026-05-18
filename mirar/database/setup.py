@@ -16,7 +16,7 @@ from mirar.database.user import PostgresAdmin, PostgresUser
 logger = logging.getLogger(__name__)
 
 
-def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
+def setup_database(db_base: Union[DeclarativeBase, BaseTable]) -> None:
     """
     Function to setup database
 

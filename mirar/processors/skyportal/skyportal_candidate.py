@@ -25,7 +25,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
         fritz_filter_id: int,
         annotation_keys: list[str] | None = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.stream_id = stream_id
         self.fritz_filter_id = fritz_filter_id
@@ -37,7 +37,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             f"(filter={self.fritz_filter_id})"
         )
 
-    def skyportal_post_candidate(self, alert):
+    def skyportal_post_candidate(self, alert) -> None:
         """
         Post a candidate on SkyPortal. Creates new candidate(s) (one per filter)
 
@@ -88,7 +88,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
                     data[key] = alert[key]
         return data
 
-    def skyportal_post_annotation(self, alert):
+    def skyportal_post_annotation(self, alert) -> None:
         """
         Post an annotation. Works for both candidates and sources.
 
@@ -110,7 +110,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
             )
             logger.error(response.json())
 
-    def skyportal_put_annotation(self, source):
+    def skyportal_put_annotation(self, source) -> None:
         """
         Retrieve an annotation to check if it exists already.
 
@@ -175,7 +175,7 @@ class SkyportalCandidateUploader(SkyportalSourceUploader):
                 )
                 logger.error(response.json())
 
-    def export_to_skyportal(self, alert):
+    def export_to_skyportal(self, alert) -> None:
         """
         Posts a candidate to SkyPortal.
 

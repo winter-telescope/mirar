@@ -56,7 +56,7 @@ class VizierCatalog(BaseCatalog, ABC):
         *args,
         snr_threshold: float = DEFAULT_SNR_THRESHOLD,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.snr_threshold = snr_threshold
 
@@ -179,7 +179,7 @@ class VizierCatalog(BaseCatalog, ABC):
         return query[0]
 
     @staticmethod
-    def check_coverage(ra_deg: float, dec_deg: float):
+    def check_coverage(ra_deg: float, dec_deg: float) -> None:
         """
         Perform any available coverage check, to see if catalog covers ra/dec position
 

@@ -28,11 +28,11 @@ class XMatch(BaseSourceProcessor):
     def __init__(
         self,
         catalog: BaseXMatchCatalog,
-    ):
+    ) -> None:
         self.catalog = catalog
         super().__init__()
 
-    def description(self):
+    def description(self) -> str:
         return (
             f"Processor to cross-match sources with "
             f"'{self.catalog.catalog_name}' catalog."

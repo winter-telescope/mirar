@@ -182,7 +182,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
         output_sub_dir: str = "candidates",
         write_regions: bool = False,
         detect_negative_sources: bool = False,
-    ):
+    ) -> None:
         """
         Parameters
         :param cand_det_sextractor_config: SExtractor configuration file
@@ -346,7 +346,7 @@ class ZOGYSourceDetector(BaseSourceGenerator):
 
         return all_cands
 
-    def check_prerequisites(self):
+    def check_prerequisites(self) -> None:
         check = np.sum([isinstance(x, ZOGY) for x in self.preceding_steps])
         if check != 1:
             logger.warning("ZOGY must be run before ZOGYSourceDetector")

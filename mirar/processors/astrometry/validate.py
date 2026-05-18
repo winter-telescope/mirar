@@ -84,7 +84,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
         crossmatch_radius_arcsec: float = 3.0,
         write_regions: bool = False,
         cache: bool = False,
-    ):
+    ) -> None:
         super().__init__(
             ref_catalog_generator=ref_catalog_generator,
             temp_output_sub_dir=temp_output_sub_dir,
@@ -95,7 +95,7 @@ class AstrometryStatsWriter(BaseProcessorWithCrossMatch):
             required_parameters=REQUIRED_PARAMETERS,
         )
 
-    def description(self):
+    def description(self) -> str:
         return (
             "Processor to calculate astrometry statistics and "
             "update the image headers"

@@ -32,7 +32,7 @@ class JSONExporter(BaseSourceProcessor):
         output_dir_name: Optional[str] = None,
         output_dir: str | Path = base_output_dir,
         export_keys: Optional[list[str]] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.output_dir_name = output_dir_name
         self.output_dir = Path(output_dir)

@@ -125,7 +125,7 @@ class ImageLoader(BaseImageProcessor):
         input_sub_dir: str = RAW_IMG_SUB_DIR,
         input_img_dir: str | Path = base_raw_dir,
         load_image: Callable[[str], Image | list[Image]] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.input_sub_dir = input_sub_dir
         self.input_img_dir = Path(input_img_dir)
@@ -133,7 +133,7 @@ class ImageLoader(BaseImageProcessor):
             load_image = self.default_load_image
         self.load_image = load_image
 
-    def description(self):
+    def description(self) -> str:
         return (
             f"Processor to load images from the '{self.input_sub_dir}' subdirectory "
             f"using the '{self.load_image.__name__}' function"
@@ -162,7 +162,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         header_key: str = RAW_IMG_KEY,
         copy_header_keys: str | list[str] = None,
         load_image: Callable[[str | Path], Image] = open_raw_image,
-    ):
+    ) -> None:
         super().__init__()
         self.header_key = header_key
         self.copy_header_keys = copy_header_keys
@@ -170,7 +170,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         if isinstance(self.copy_header_keys, str):
             self.copy_header_keys = [self.copy_header_keys]
 
-    def description(self):
+    def description(self) -> str:
         return f"Processor to load images from header key {self.header_key}"
 
     def _apply_to_images(
@@ -208,7 +208,7 @@ class ImageListLoader(BaseImageProcessor):
         self,
         img_list: list[Path],
         load_image: Callable[[str], Image | list[Image]] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.img_list = img_list
         if len(self.img_list) < 1:
@@ -219,7 +219,7 @@ class ImageListLoader(BaseImageProcessor):
             load_image = self.default_load_image
         self.load_image = load_image
 
-    def description(self):
+    def description(self) -> str:
         return (
             f"Load {len(self.img_list)} images from "
             f"list of {len(self.img_list)} files"

@@ -104,7 +104,7 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor, ABC):
         write_regions: bool = False,
         cache: bool = False,
         temp_output_sub_dir: str = "astrom_stats",
-    ):
+    ) -> None:
         super().__init__()
         self.ref_catalog_generator = ref_catalog_generator
         self.crossmatch_radius_arcsec = crossmatch_radius_arcsec
@@ -149,7 +149,7 @@ class BaseProcessorWithCrossMatch(BaseImageProcessor, ABC):
 
         return ref_cat, img_cat, cleaned_img_cat
 
-    def write_regions_files(self, image: Image, ref_cat: Table, img_cat: Table):
+    def write_regions_files(self, image: Image, ref_cat: Table, img_cat: Table) -> None:
         """
         Write regions files for the reference catalog and the image catalog
         """

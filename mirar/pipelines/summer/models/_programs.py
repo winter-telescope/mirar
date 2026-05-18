@@ -124,7 +124,7 @@ default_program = Program(
 )
 
 
-def populate_programs():
+def populate_programs() -> None:
     """
     Populate the programs table with the default program
 

@@ -43,7 +43,7 @@ class ForcedPhotometryDetector(BaseSourceGenerator):
         ra_header_key: str = CAND_RA_KEY,
         dec_header_key: str = CAND_DEC_KEY,
         name_header_key: str | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.calculate_image_coordinates = calculate_image_coordinates
         self.ra_header_key = ra_header_key

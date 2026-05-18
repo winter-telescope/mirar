@@ -14,14 +14,14 @@ class BaseSource:
     A standard source object
     """
 
-    def __init__(self, ra_deg: float, dec_deg: float, in_mag: float):
+    def __init__(self, ra_deg: float, dec_deg: float, in_mag: float) -> None:
         self.ra_deg = float(ra_deg)
         self.dec_deg = dec_deg
         self.ra_rad = ra_deg * np.pi / 180
         self.dec_rad = dec_deg * np.pi / 180
         self.mag = in_mag
 
-    def rotate(self, dpa_deg: float, ra0: float, dec0: float):
+    def rotate(self, dpa_deg: float, ra0: float, dec0: float) -> None:
         """
         Function to rotate a source by dpa around ra0/dec0?
 
@@ -51,7 +51,7 @@ class BaseSource:
 class SextractorSource(BaseSource):
     """Source from sextractor"""
 
-    def __init__(self, line: str):
+    def __init__(self, line: str) -> None:
         inline_arg = [x.strip() for x in line.split(" ") if x not in [""]]
 
         if len(inline_arg) < 8:

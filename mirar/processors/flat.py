@@ -141,7 +141,7 @@ class FlatCalibrator(ProcessorWithCache):
         flat_mask_key: str = None,
         flat_mode: str = "median",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.x_min = x_min
         self.x_max = x_max
@@ -309,7 +309,7 @@ class SkyFlatCalibrator(FlatCalibrator):
     Processor to do flat calibration using sky flats
     """
 
-    def __init__(self, *args, flat_mask_key=None, **kwargs):
+    def __init__(self, *args, flat_mask_key=None, **kwargs) -> None:
         super().__init__(
             *args,
             select_flat_images=self.select_sky_flat,

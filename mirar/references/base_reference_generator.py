@@ -71,7 +71,7 @@ class BaseReferenceGenerator:
         db_table: Type[BaseDB] = None,
         duplicate_protocol: str = "replace",
         q3c_bool: bool = True,
-    ):
+    ) -> None:
         """
         filter_name: filter name
         write_image: write reference image to file?
@@ -217,7 +217,7 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
         photcal_stack: bool = False,
         sextractor_generator: Callable[..., Sextractor] = None,
         phot_calibrator_generator: Callable[..., PhotCalibrator] = None,
-    ):
+    ) -> None:
         """
         Initialise
         filter_name: Filter name

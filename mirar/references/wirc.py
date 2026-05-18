@@ -22,7 +22,9 @@ class WIRCRef(BaseReferenceGenerator):
 
     abbreviation = "wirc_file_lookup"
 
-    def __init__(self, filter_name: str, object_name: str, images_directory_path: str):
+    def __init__(
+        self, filter_name: str, object_name: str, images_directory_path: str
+    ) -> None:
         super().__init__(filter_name)
         self.filter_name = filter_name
         self.object_name = object_name

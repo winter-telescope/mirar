@@ -29,7 +29,7 @@ def run_swarp(
     flux_scaling_keyword: str = None,
     cache: bool = False,
     center_type: str = None,
-):
+) -> None:
     """
     Wrapper to resample and stack images with swarp
 

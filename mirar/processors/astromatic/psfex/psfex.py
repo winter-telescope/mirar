@@ -29,7 +29,7 @@ def run_psfex(
     config_path: str,
     psf_output_dir: str,
     norm_psf_output_name: Optional[str | Path] = None,
-):
+) -> None:
     """
     Function to run PSFex
     Args:
@@ -69,7 +69,7 @@ class PSFex(BaseImageProcessor):
         config_path: str | Path,
         output_sub_dir: str = "psf",
         norm_fits: bool = True,
-    ):
+    ) -> None:
         super().__init__()
         self.config_path = Path(config_path)
         self.output_sub_dir = output_sub_dir

@@ -21,7 +21,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
     HTTP adapter that sets a default timeout for all requests.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self.timeout = DEFAULT_TIMEOUT
         if "timeout" in kwargs:
             self.timeout = kwargs["timeout"]
@@ -54,12 +54,12 @@ class SkyportalClient:
     def __init__(
         self,
         base_url: str = "https://fritz.science/api/",
-    ):
+    ) -> None:
         self.base_url = base_url
         self._session = None
         self.session_headers = None
 
-    def set_up_session(self):
+    def set_up_session(self) -> None:
         """
         Set up a session for sending requests to Skyportal.
 

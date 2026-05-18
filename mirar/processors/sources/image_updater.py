@@ -31,7 +31,7 @@ class ImageUpdater(BaseSourceProcessor):
         update_keys: list[str] | str | None = None,
         overwrite: bool = False,
         include_table: bool = True,
-    ):
+    ) -> None:
         super().__init__()
         self.modify_dir_name = modify_dir_name
         self.input_dir = Path(input_dir)

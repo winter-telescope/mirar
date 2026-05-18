@@ -19,7 +19,7 @@ class NanFiller(BaseImageProcessor):
 
     base_key = "nanfill"
 
-    def description(self):
+    def description(self) -> str:
         return "Processor to pad masked image regions with the median."
 
     def _apply_to_images(

@@ -178,7 +178,7 @@ def flowify(
 def iterate_flowify(
     config: Optional[str | list[str]] = None,
     pipelines: Optional[str | list[str]] = None,
-):
+) -> None:
     """
     Function to iterate the visualisation of all configurations and pipelines
 

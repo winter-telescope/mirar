@@ -88,7 +88,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
         use_psfex: bool = False,
         psf_path: str | Path | None = None,
         catalog_purifier: Callable[[Table, Image], Table] | None = None,
-    ):
+    ) -> None:
         """
         :param output_sub_dir: subdirectory to output sextractor files
         :param config_path: path to sextractor config file

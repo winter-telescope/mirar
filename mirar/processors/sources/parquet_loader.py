@@ -46,7 +46,7 @@ class ParquetLoader(BaseSourceProcessor):
         self,
         input_dir_name: Optional[str] = None,
         input_dir: str | Path = base_output_dir,
-    ):
+    ) -> None:
         super().__init__()
         self.input_dir_name = input_dir_name
         self.input_dir = Path(input_dir)

@@ -255,7 +255,7 @@ def execute(
     output_dir: Path | str = ".",
     local: bool = True,
     timeout: float = DEFAULT_TIMEOUT,
-):
+) -> None:
     """
     Generically execute a command either via bash or a docker container
 

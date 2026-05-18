@@ -46,7 +46,7 @@ class Subdet(BaseDB):
     nytot: int = Field(Integer, ge=1)
 
 
-def populate_subdets():
+def populate_subdets() -> None:
     """
     Creates entries in the database based on number of detectors and splits
 

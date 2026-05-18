@@ -80,7 +80,7 @@ class BaseProcessor:
 
     subclasses = {}
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.night = None
         self.night_sub_dir = None
         self.preceding_steps = None
@@ -98,7 +98,7 @@ class BaseProcessor:
         self.latest_error_stack = ErrorStack()
 
     @classmethod
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         cls.subclasses[cls.base_key] = cls
 
@@ -113,7 +113,7 @@ class BaseProcessor:
     def __str__(self) -> str:
         return f"[{self.description()}]"
 
-    def set_preceding_steps(self, previous_steps: list):
+    def set_preceding_steps(self, previous_steps: list) -> None:
         """
         Provides processor with the list of preceding processors, and saves this
 
@@ -122,7 +122,7 @@ class BaseProcessor:
         """
         self.preceding_steps = previous_steps
 
-    def set_night(self, night_sub_dir: str | int = ""):
+    def set_night(self, night_sub_dir: str | int = "") -> None:
         """
         Sets the night subdirectory for the processor to read/write data
 
@@ -155,14 +155,14 @@ class BaseProcessor:
 
     def check_prerequisites(
         self,
-    ):
+    ) -> None:
         """
         Check to see if any prerequisite processors are missing
 
         :return: None
         """
 
-    def clean_cache(self, cache_id: int):
+    def clean_cache(self, cache_id: int) -> None:
         """
         Function to clean the internal cache filled by base_apply
 
@@ -237,7 +237,7 @@ class BaseProcessor:
 
         return dataset, err_stack
 
-    def apply_to_batch(self, queue, cache_id: int):
+    def apply_to_batch(self, queue, cache_id: int) -> None:
         """
         Function to run self.apply on a batch in the queue, catch any errors, and then
         update the internal cache with the results.
@@ -361,7 +361,7 @@ class ImageHandler:
         image: Image,
         path: str | Path,
         compress: bool = False,
-    ):
+    ) -> None:
         """
         Save an Image to path
 
@@ -445,7 +445,7 @@ class ProcessorWithCache(BaseImageProcessor, ABC):
         overwrite: bool = True,
         cache_sub_dir: str = CAL_OUTPUT_SUB_DIR,
         cache_image_name_header_keys: str | list[str] | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.try_load_cache = try_load_cache
         self.write_to_cache = write_to_cache
@@ -543,7 +543,7 @@ class ProcessorPremadeCache(ProcessorWithCache, ABC):
 
     def __init__(
         self, master_image_path_generator: Callable[[ImageBatch], Path], *args, **kwargs
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.master_image_path_generator = master_image_path_generator
 
@@ -563,7 +563,7 @@ class BaseSourceGenerator(CleanupProcessor, ImageHandler, ABC):
     """
 
     @classmethod
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         cls.subclasses[cls.base_key] = cls
 
@@ -610,7 +610,7 @@ class BaseSourceProcessor(BaseProcessor, ABC):
     """
 
     @classmethod
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         cls.subclasses[cls.base_key] = cls
 

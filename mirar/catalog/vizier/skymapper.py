@@ -39,7 +39,7 @@ class SkyMapper(VizierCatalog):
     def extra_columns(self) -> list[str]:
         return ["e_uPSF"]
 
-    def get_mag_key(self):
+    def get_mag_key(self) -> str:
         return f"{self.filter_name}PSF"
 
     @staticmethod

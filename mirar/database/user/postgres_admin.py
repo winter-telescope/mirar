@@ -32,7 +32,7 @@ class PostgresAdmin(PostgresUser):
         db_hostname: str = DB_HOSTNAME,
         db_name: str = DB_NAME,
         db_port: int = DB_PORT,
-    ):
+    ) -> None:
         super().__init__(
             db_user=db_user,
             db_password=db_password,
@@ -41,7 +41,7 @@ class PostgresAdmin(PostgresUser):
             db_port=db_port,
         )
 
-    def create_new_user(self, new_db_user: str, new_password: str):
+    def create_new_user(self, new_db_user: str, new_password: str) -> None:
         """
         Create a new postgres user
 
@@ -63,7 +63,7 @@ class PostgresAdmin(PostgresUser):
             conn.execute(command)
             conn.commit()
 
-    def create_extension(self, extension_name: str, db_name: str):
+    def create_extension(self, extension_name: str, db_name: str) -> None:
         """
         Function to create new extension for database
 
@@ -85,7 +85,7 @@ class PostgresAdmin(PostgresUser):
 
         assert self.has_extension(extension_name=extension_name, db_name=db_name)
 
-    def create_schema(self, schema_name: str, db_name: str, db_user: str):
+    def create_schema(self, schema_name: str, db_name: str, db_user: str) -> None:
         """
         Function to create new schema for database
 

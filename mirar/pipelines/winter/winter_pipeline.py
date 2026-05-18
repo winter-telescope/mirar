@@ -168,7 +168,7 @@ class WINTERPipeline(Pipeline):
         return open_mef_image(path, load_raw_winter_mef, extension_key="BOARD_ID")
 
     @staticmethod
-    def download_raw_images_for_night(night: str):
+    def download_raw_images_for_night(night: str) -> None:
         download_via_ssh(
             server="winter.caltech.edu",
             base_dir="/data/loki/raw_data/winter",
@@ -177,7 +177,7 @@ class WINTERPipeline(Pipeline):
             server_sub_dir="raw",
         )
 
-    def set_up_pipeline(self):
+    def set_up_pipeline(self) -> None:
         set_up_winter_databases()
         logger.info("Checking that NLC files are present")
         check_for_files()

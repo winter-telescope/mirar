@@ -32,7 +32,7 @@ class AlignReference(ZOGYPrepare):
             list[astropy.table.Table, astropy.table.Table],
         ] = default_catalog_purifier,
         order: int = 1,
-    ):
+    ) -> None:
         super().__init__(catalog_purifier=catalog_purifier)
         self.sextractor = sextractor
         self.psfex = psfex

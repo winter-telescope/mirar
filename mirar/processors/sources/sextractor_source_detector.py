@@ -120,7 +120,7 @@ class SextractorSourceDetector(BaseSourceGenerator):
         self,
         output_sub_dir: str = "sources",
         target_only: bool = True,
-    ):
+    ) -> None:
         """
         :param output_sub_dir: subdirectory to output files
         :param target_only: whether the returned sourcetable should contain the

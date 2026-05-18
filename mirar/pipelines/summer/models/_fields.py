@@ -54,7 +54,7 @@ class FieldEntry(BaseDB):
     # Need to fix formatting of fields file in wintertoo before including these.
 
 
-def populate_fields():
+def populate_fields() -> None:
     """
     Populates the fields table in the database
 

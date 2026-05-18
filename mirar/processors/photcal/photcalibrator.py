@@ -119,7 +119,7 @@ class PhotCalibrator(BaseProcessorWithCrossMatch):
         cache: bool = False,
         zp_calculator: BaseZeroPointCalculator = OutlierRejectionZPCalculator(),
         zp_column_name: str = "MAG_AUTO",
-    ):
+    ) -> None:
         super().__init__(
             ref_catalog_generator=ref_catalog_generator,
             temp_output_sub_dir=temp_output_sub_dir,
@@ -306,7 +306,7 @@ class ImageBatchReferenceCatalogDownloader(BaseImageProcessor):
         ref_catalog_generator: Callable[[Image], BaseCatalog],
         temp_output_sub_dir: str = "phot",
         ref_cat_header_key: str = REF_CAT_PATH_KEY,
-    ):
+    ) -> None:
         super().__init__()
         self.ref_catalog_generator = ref_catalog_generator
         self.temp_output_sub_dir = temp_output_sub_dir

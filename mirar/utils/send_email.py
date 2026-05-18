@@ -29,7 +29,7 @@ def send_gmail(
     email_password: str = os.getenv("WATCHDOG_EMAIL_PASSWORD"),
     attachments: Optional[str | list[str]] = None,
     auto_compress: bool = True,
-):
+) -> None:
     """
     Function to send an email to a list of recipients from a gmail account.
 

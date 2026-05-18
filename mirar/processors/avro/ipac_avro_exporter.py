@@ -28,7 +28,7 @@ class IPACAvroExporter(BaseAvroExporter):
         broadcast (bool): send to brokers at IPAC.
     """
 
-    def __init__(self, *args, topic_prefix: str | None = None, **kwargs):
+    def __init__(self, *args, topic_prefix: str | None = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.alert_schema, self.candidate_schema, self.prv_schema = self._load_schemas()
         self.topic_prefix = topic_prefix
@@ -135,7 +135,7 @@ class IPACAvroExporter(BaseAvroExporter):
         return topic_name
 
     @staticmethod
-    def _send_alert(topicname, records, schema):
+    def _send_alert(topicname, records, schema) -> None:
         """Send an avro "packet" to a particular topic at IPAC.
         Modified from: https://github.com/dekishalay/pgirdps
 

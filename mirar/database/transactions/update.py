@@ -13,7 +13,7 @@ def _update_database_entry(
     update_dict: dict,
     db_constraints: DBQueryConstraints,
     sql_table: BaseTable,
-):
+) -> None:
     """
     Update a database entry
 

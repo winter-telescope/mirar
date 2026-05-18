@@ -40,7 +40,7 @@ class BiasCalibrator(ProcessorWithCache):
         *args,
         select_bias_images: Callable[[ImageBatch], ImageBatch] = default_select_bias,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.select_cache_images = select_bias_images
 

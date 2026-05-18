@@ -92,7 +92,7 @@ class BaseWFCAMQuery:
             [fits.Header, int], tuple[list[float], list[float]]
         ] = get_query_coordinates_from_header,
         component_image_subdir: str | Path = None,
-    ):
+    ) -> None:
         """
         :param filter_name: Filter name to query for.
         :param num_query_points: Number of points to use to define the query region. The
@@ -175,7 +175,7 @@ class WFAUQuery(BaseWFCAMQuery):
         query_db_table: Type[BaseDB] | None = None,
         skip_online_query: bool = False,
         include_vista: bool = False,
-    ):
+    ) -> None:
         """
         Parameters:
             :param query_coords_function: Function to use to get the query coordinates

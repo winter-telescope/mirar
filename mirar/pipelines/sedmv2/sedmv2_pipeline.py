@@ -63,7 +63,7 @@ class SEDMv2Pipeline(Pipeline):
     }
 
     @staticmethod
-    def download_raw_images_for_night(night: str | int):
+    def download_raw_images_for_night(night: str | int) -> None:
         download_via_ssh(
             server="jagati.caltech.edu",
             base_dir="/data/viraj/winter_data/commissioning/raw/",

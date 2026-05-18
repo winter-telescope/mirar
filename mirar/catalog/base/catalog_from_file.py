@@ -17,7 +17,7 @@ class CatalogFromFile(BaseCatalog):
 
     abbreviation = "local"
 
-    def __init__(self, catalog_path: str | Path, *args, **kwargs):
+    def __init__(self, catalog_path: str | Path, *args, **kwargs) -> None:
         super().__init__(
             min_mag=0,
             max_mag=99,

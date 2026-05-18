@@ -38,7 +38,9 @@ class NpEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-def export_parquet(source_table: pd.DataFrame, metadata: dict, parquet_path: Path):
+def export_parquet(
+    source_table: pd.DataFrame, metadata: dict, parquet_path: Path
+) -> None:
     """
     Function to export a source table to parquet
 
@@ -78,7 +80,7 @@ class ParquetWriter(BaseSourceProcessor):
         self,
         output_dir_name: Optional[str] = None,
         output_dir: str | Path = base_output_dir,
-    ):
+    ) -> None:
         super().__init__()
         self.output_dir_name = output_dir_name
         self.output_dir = Path(output_dir)

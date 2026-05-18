@@ -20,7 +20,7 @@ class ModeMasker(BaseImageProcessor):
 
     base_key = "modemask"
 
-    def description(self):
+    def description(self) -> str:
         return "Processor to mask image pixels with very common values"
 
     def _apply_to_images(

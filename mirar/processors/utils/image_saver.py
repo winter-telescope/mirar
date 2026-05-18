@@ -27,14 +27,14 @@ class ImageSaver(BaseImageProcessor):
         write_mask: bool = False,
         output_dir: str | Path = base_output_dir,
         compress: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         self.output_dir_name = output_dir_name
         self.write_mask = write_mask
         self.output_dir = Path(output_dir)
         self.compress = compress
 
-    def description(self):
+    def description(self) -> str:
         return (
             f"Save {['uncompressed', 'compressed'][int(self.compress)]} "
             f"images to the '{self.output_dir_name}' subdirectory"

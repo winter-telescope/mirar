@@ -72,7 +72,7 @@ from mirar.pipelines.winter.models.base_model import WinterBase
 logger = logging.getLogger(__name__)
 
 
-def set_up_q3c(db_name: str, db_table: BaseTable):
+def set_up_q3c(db_name: str, db_table: BaseTable) -> None:
     """
     Function to setup q3c extension for a given table in db
 
@@ -88,7 +88,7 @@ def set_up_q3c(db_name: str, db_table: BaseTable):
     )
 
 
-def set_up_winter_databases():
+def set_up_winter_databases() -> None:
     """
     Setup the winter databases
 

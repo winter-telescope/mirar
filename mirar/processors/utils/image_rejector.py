@@ -48,11 +48,11 @@ class ImageRejector(BaseImageProcessor, CleanupProcessor):
 
     base_key = "reject"
 
-    def __init__(self, *args: tuple[str, str | list[str]]):
+    def __init__(self, *args: tuple[str, str | list[str]]) -> None:
         super().__init__()
         self.rejects = args
 
-    def description(self):
+    def description(self) -> str:
         reqs = []
         for target in self.rejects:
             if isinstance(target[1], list):

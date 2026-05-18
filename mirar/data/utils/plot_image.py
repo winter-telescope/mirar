@@ -25,7 +25,7 @@ def plot_fits_image(
     plot_format: str = "png",
     title_fields: List[str] | None = None,
     fig: plt.Figure | None = None,
-):
+) -> None:
     """
     Plot the fits image with the specified regions
     Args:

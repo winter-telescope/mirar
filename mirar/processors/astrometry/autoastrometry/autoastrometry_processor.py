@@ -28,7 +28,7 @@ class AutoAstrometry(BaseImageProcessor):
         pixel_scale: Optional[float] = None,
         inv: bool = False,
         pa: Optional[float] = None,
-    ):
+    ) -> None:
         super().__init__()
 
         self.temp_output_sub_dir = temp_output_sub_dir

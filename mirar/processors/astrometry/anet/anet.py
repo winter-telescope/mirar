@@ -25,7 +25,7 @@ class AstrometryNetExecutionError(ProcessorError):
     """
 
 
-def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
+def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs) -> None:
     """
     function to execute `run_astrometry_net_single` on several images in batch
     """

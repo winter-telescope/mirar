@@ -40,7 +40,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
         instrument_id: int,
         update_thumbnails: bool = False,
         skyportal_client: Optional[SkyportalClient] = SkyportalClient(),
-    ):
+    ) -> None:
         super().__init__()
         self.group_ids = group_ids
         self.instrument_id = instrument_id
@@ -73,7 +73,9 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
         return batch
 
-    def skyportal_post_source(self, alert: dict, group_ids: Optional[list[int]] = None):
+    def skyportal_post_source(
+        self, alert: dict, group_ids: Optional[list[int]] = None
+    ) -> None:
         """Add a new source to SkyPortal
 
         :param alert: dict of source info
@@ -146,7 +148,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
         return thumbnail_dict
 
-    def skyportal_post_thumbnails(self, alert):
+    def skyportal_post_thumbnails(self, alert) -> None:
         """Post alert Science, Reference, and Subtraction thumbnails to SkyPortal
 
         :param alert: dict of source/candidate information
@@ -248,7 +250,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
 
         return df_photometry
 
-    def skyportal_put_photometry(self, alert):
+    def skyportal_put_photometry(self, alert) -> None:
         """Send photometry to Fritz."""
         logger.debug(f"Making alert photometry of {alert[SOURCE_NAME_KEY]}")
         df_photometry = self.make_photometry(alert)
@@ -269,7 +271,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
                 )
                 logger.error(response.json())
 
-    def export_to_skyportal(self, alert):
+    def export_to_skyportal(self, alert) -> None:
         """
         Posts a source to SkyPortal.
 

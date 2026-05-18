@@ -57,7 +57,7 @@ class SummerPipeline(Pipeline):
     }
 
     @staticmethod
-    def download_raw_images_for_night(night: str | int):
+    def download_raw_images_for_night(night: str | int) -> None:
         download_via_ssh(
             server="winter.caltech.edu",
             base_dir="/data/loki/raw_data/summer",
@@ -70,5 +70,5 @@ class SummerPipeline(Pipeline):
     def _load_raw_image(path: str | Path) -> Image | list[Image]:
         return load_raw_summer_image(path)
 
-    def set_up_pipeline(self):
+    def set_up_pipeline(self) -> None:
         set_up_summer_databases()

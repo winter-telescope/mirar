@@ -18,7 +18,7 @@ class CustomSourceTableModifier(BaseSourceProcessor):
 
     base_key = "custom_source_modifier"
 
-    def __init__(self, modifier_function: Callable[[SourceBatch], SourceBatch]):
+    def __init__(self, modifier_function: Callable[[SourceBatch], SourceBatch]) -> None:
         super().__init__()
         self.modifier_function = modifier_function
 

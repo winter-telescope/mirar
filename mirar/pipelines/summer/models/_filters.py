@@ -59,7 +59,7 @@ class Filter(BaseDB):
         return filter_id
 
 
-def populate_filters(filter_map: dict = None):
+def populate_filters(filter_map: dict = None) -> None:
     """
     Iteratively fill up the filters table
 

@@ -45,7 +45,7 @@ class MultiExtParser(BaseImageProcessor):
         skip_first: bool = False,
         extension_num_header_key: str = None,
         only_extract_num: int = None,
-    ):
+    ) -> None:
         """
         :param input_sub_dir: subdirectory to look for images
         :param output_sub_dir: subdirectory to save split single extension images
@@ -73,7 +73,7 @@ class MultiExtParser(BaseImageProcessor):
         if isinstance(self.output_img_dir, str):
             self.output_img_dir = Path(self.output_img_dir)
 
-    def description(self):
+    def description(self) -> str:
         return (
             f"Processor to parse MEF images from the {self.input_sub_dir} subdirectory "
         )

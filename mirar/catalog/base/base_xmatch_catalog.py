@@ -54,7 +54,7 @@ class BaseXMatchCatalog(ABCatalog, ABC):
         """
         raise NotImplementedError
 
-    def __init__(self, *args, num_sources: int = 1, **kwargs):
+    def __init__(self, *args, num_sources: int = 1, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.search_radius_arcsec = self.search_radius_arcmin * 60.0
         self.num_sources = num_sources

@@ -103,7 +103,7 @@ def write_subfields_file(
     full_dec_size_deg: float = 1.2,
     nx: int = 3,
     ny: int = 4,
-):
+) -> None:
     """
     Write a subfields file for the specified fields file
     Args:

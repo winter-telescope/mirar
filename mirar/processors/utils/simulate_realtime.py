@@ -28,7 +28,7 @@ class RealtimeImageSimulator(BaseImageProcessor):
         input_img_names: str | list[str],
         output_dir_name: str,
         output_dir: str | Path = base_output_dir,
-    ):
+    ) -> None:
         super().__init__()
 
         if not isinstance(input_img_names, list):

@@ -16,7 +16,7 @@ def create_q3c_extension(
     table_name: str,
     ra_column_name: str,
     dec_column_name: str,
-):
+) -> None:
     """
     Function to create q3c extension and index on table
 

@@ -19,7 +19,7 @@ class ErrorStackAnnotator(BaseImageProcessor):
 
     base_key = "errorannotate"
 
-    def __init__(self, errorstack: ErrorStack, processed_images: list[str]):
+    def __init__(self, errorstack: ErrorStack, processed_images: list[str]) -> None:
         super().__init__()
         self.errorstack = errorstack
         self.image_dict = self.unpack_errorstack()

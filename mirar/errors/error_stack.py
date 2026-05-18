@@ -24,7 +24,7 @@ class ErrorStack:
     :class:`~mirar.errors.error_report.ErrorReport` objects
     """
 
-    def __init__(self, reports: Optional[list[ErrorReport]] = None):
+    def __init__(self, reports: Optional[list[ErrorReport]] = None) -> None:
         self.reports = []
         self.noncritical_reports = []
         self.failed_images = []
@@ -33,7 +33,7 @@ class ErrorStack:
             for report in reports:
                 self.add_report(report)
 
-    def add_report(self, report: ErrorReport):
+    def add_report(self, report: ErrorReport) -> None:
         """
         Adds a new ErrorReport
 
@@ -136,7 +136,7 @@ class ErrorStack:
 
         return summary
 
-    def summarise_error_stack_tsv(self, output_path=None):
+    def summarise_error_stack_tsv(self, output_path=None) -> None:
         """
         Returns a tsv summary of all ErrorReports in format
         error_name, image_paths

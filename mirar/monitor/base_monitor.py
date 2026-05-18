@@ -58,11 +58,11 @@ class ImageTimeoutError(ProcessorError):
 class NewImageHandler(FileSystemEventHandler):
     """Class to watch a directory, and add newly-created files to a queue."""
 
-    def __init__(self, queue):
+    def __init__(self, queue) -> None:
         FileSystemEventHandler.__init__(self)
         self.queue = queue
 
-    def on_created(self, event):
+    def on_created(self, event) -> None:
         if event.event_type == "created":
             self.queue.put(event)
 
@@ -91,7 +91,7 @@ class Monitor:
         log_level: str = "INFO",
         raw_dir: str = RAW_IMG_SUB_DIR,
         base_raw_img_dir: Path = base_raw_dir,
-    ):
+    ) -> None:
         logger.info(f"Software version: {PACKAGE_NAME}=={__version__}")
 
         self.errorstack = ErrorStack()
@@ -214,7 +214,7 @@ class Monitor:
         """
         return copy.deepcopy(self.new_cals + self.archival_cals)
 
-    def update_cals(self, new_calibration_image: Image):
+    def update_cals(self, new_calibration_image: Image) -> None:
         """
         Updates the calibration images by adding a new calibration image.
         The archival cal images are then rechecked, and only those which are still
@@ -246,7 +246,7 @@ class Monitor:
     def summarise_errors(
         self,
         errorstack: ErrorStack,
-    ):
+    ) -> None:
         """Create a text summary using an errorstack and the list
         of processed images. Sends an email of this if configured
         to do so, or prints otherwise.
@@ -328,7 +328,7 @@ class Monitor:
         logger.info(f"Logging level: {self.log_level}, saving log to {log_output_path}")
         return log_output_path
 
-    def process_realtime(self):
+    def process_realtime(self) -> None:
         """Function to initiate the actual monitoring.
 
         :return: None
@@ -366,13 +366,13 @@ class Monitor:
             self.postprocess()
             logger.info(f"Saving log to {self.log_path}")
 
-    def update_error_log(self):
+    def update_error_log(self) -> None:
         """Function to overwrite the error file with the latest version.
         The error summary is cumulative, so this just updates the file.
         """
         self.errorstack.summarise_error_stack(verbose=True, output_path=self.error_path)
 
-    def postprocess(self):
+    def postprocess(self) -> None:
         """Function to be run after some realtime postprocessing has been run.
         This function is called once after a configurable number of hours
         (typically when the data is expected to be done), and then again

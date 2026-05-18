@@ -45,7 +45,7 @@ class LACosmicCleaner(BaseImageProcessor):
         min_exptime=None,
         effective_gain_key=None,
         readnoise_key=None,
-    ):
+    ) -> None:
         super().__init__()
         self.contrast = contrast
         self.cr_threshold = cr_threshold

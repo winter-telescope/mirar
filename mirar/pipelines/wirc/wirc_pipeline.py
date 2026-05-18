@@ -42,7 +42,7 @@ class WircPipeline(Pipeline):
     }
 
     @staticmethod
-    def download_raw_images_for_night(night: str | int):
+    def download_raw_images_for_night(night: str | int) -> None:
         download_via_ssh(
             server="gayatri.caltech.edu",
             base_dir="/scr2/ptf/observation_data",

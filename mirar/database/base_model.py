@@ -260,7 +260,7 @@ class BaseDB(PydanticBase):
             db_constraints=valid_constraint,
         )
 
-    def update_entry(self, update_keys=None):
+    def update_entry(self, update_keys=None) -> None:
         """
         Wrapper to update database entry. Users should override this function.
 

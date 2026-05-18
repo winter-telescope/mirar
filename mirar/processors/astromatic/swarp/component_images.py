@@ -31,7 +31,7 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
         load_image: Callable[[str], [Image]] = open_raw_image,
         header_key=STACKED_COMPONENT_IMAGES_KEY,
         copy_header_keys: str | list[str] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.load_image = load_image
         self.header_key = header_key

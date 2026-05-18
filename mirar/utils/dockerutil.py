@@ -58,7 +58,7 @@ def docker_path(file_path: str | Path) -> Path:
     return docker_dir.joinpath(Path(file_path).name)
 
 
-def docker_get(container: Container, local_path: str | Path):
+def docker_get(container: Container, local_path: str | Path) -> None:
     """Function to cope one file from the Docker container 'container' to 'local_path'.
     The file in the container should have
     the same name as the base file in 'local_path'.

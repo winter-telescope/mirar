@@ -58,7 +58,9 @@ def parse_sextractor_config(config_file: str | Path):
     return config_dict
 
 
-def write_sextractor_config_to_file(config_dict: dict, config_filename: str | Path):
+def write_sextractor_config_to_file(
+    config_dict: dict, config_filename: str | Path
+) -> None:
     """
     Write a sextractor config file from a dictionary
     param config_dict: dictionary of sextractor config parameters
@@ -69,7 +71,9 @@ def write_sextractor_config_to_file(config_dict: dict, config_filename: str | Pa
             f.write(f"{key.ljust(20, ' ')}   {config_dict[key]} \n")
 
 
-def write_param_file(param_path: str | Path = default_param_path, params: list = None):
+def write_param_file(
+    param_path: str | Path = default_param_path, params: list = None
+) -> None:
     """
     Write a default parameter file for sextractor
     param param_path: path to write parameter file
@@ -92,7 +96,7 @@ def write_param_file(param_path: str | Path = default_param_path, params: list =
             param_f.write(f"{param}\n")
 
 
-def write_conv_file(conv_path: str | Path = default_conv_path):
+def write_conv_file(conv_path: str | Path = default_conv_path) -> None:
     """
     Write a default convolution file for sextractor
     """
@@ -111,7 +115,7 @@ def write_config_file(
     conv_path: str | Path = default_conv_path,
     config_path: str | Path = default_config_path,
     saturation_key: str = "SATURATE",
-):
+) -> None:
     """
     Write a default configuration file for sextractor
     """

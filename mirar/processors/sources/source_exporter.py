@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 SOURCE_SUFFIX = "_sources.pkl"
 
 
-def save_source_table(source_table: SourceTable, out_path: Path):
+def save_source_table(source_table: SourceTable, out_path: Path) -> None:
     """
     Function to save a source table to a json file.
 
@@ -39,7 +39,7 @@ class SourceWriter(BaseSourceProcessor):
         self,
         output_dir_name: Optional[str] = None,
         output_dir: str | Path = base_output_dir,
-    ):
+    ) -> None:
         super().__init__()
         self.output_dir_name = output_dir_name
         self.output_dir = Path(output_dir)

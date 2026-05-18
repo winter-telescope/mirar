@@ -15,7 +15,7 @@ class SourceTable(DataBlock):
     sources detected in an image
     """
 
-    def __init__(self, source_list: pd.DataFrame, metadata: dict):
+    def __init__(self, source_list: pd.DataFrame, metadata: dict) -> None:
         self.source_list = source_list
         self.metadata = metadata
         super().__init__()
@@ -28,7 +28,7 @@ class SourceTable(DataBlock):
         """
         return self.source_list
 
-    def set_data(self, source_list: pd.DataFrame):
+    def set_data(self, source_list: pd.DataFrame) -> None:
         """
         Set the table of sources
 
@@ -48,7 +48,7 @@ class SourceTable(DataBlock):
     def __getitem__(self, item):
         return self.metadata.__getitem__(item)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         self.metadata.__setitem__(key, value)
 
     def keys(self):
@@ -59,7 +59,7 @@ class SourceTable(DataBlock):
         """
         return self.metadata.keys()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.source_list)
 
 
@@ -70,10 +70,10 @@ class SourceBatch(DataBatch):
 
     data_type = SourceTable
 
-    def __init__(self, batch: Optional[list[SourceTable] | SourceTable] = None):
+    def __init__(self, batch: Optional[list[SourceTable] | SourceTable] = None) -> None:
         super().__init__(batch=batch)
 
-    def append(self, item: SourceTable):
+    def append(self, item: SourceTable) -> None:
         self._append(item)
 
     def get_batch(self) -> list[SourceTable]:

@@ -28,7 +28,7 @@ class XGBoost(BaseSourceProcessor):
         self,
         model_json_url: str,
         apply_to_table: Callable[[XGBClassifier, pd.DataFrame], pd.DataFrame],
-    ):
+    ) -> None:
         super().__init__()
         self.model_json_url = model_json_url
         self.model_name = Path(self.model_json_url).name

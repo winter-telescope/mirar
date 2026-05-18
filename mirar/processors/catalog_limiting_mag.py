@@ -68,7 +68,7 @@ class CatalogLimitingMagnitudeCalculator(BaseImageProcessor):
         ] = default_lim_mag_sextractor_catalog_purifier,
         sextractor_mag_key_name: str = "MAG_AUTO",
         write_regions: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         self.image_photometric_catalog_purifier = image_photometric_catalog_purifier
         self.sextractor_mag_key_name = sextractor_mag_key_name
@@ -118,5 +118,5 @@ class CatalogLimitingMagnitudeCalculator(BaseImageProcessor):
 
     def check_prerequisites(
         self,
-    ):
+    ) -> None:
         check_sextractor_prerequisite(self)

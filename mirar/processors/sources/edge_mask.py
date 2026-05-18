@@ -26,7 +26,7 @@ class EdgeSourcesMask(BaseSourceProcessor):
         image_ysize_column_key: str = "Y_SHAPE",
         x_column_key: str = "X_IMAGE",
         y_column_key: str = "Y_IMAGE",
-    ):
+    ) -> None:
         super().__init__()
 
         self.edge_boundary_size = edge_boundary_size

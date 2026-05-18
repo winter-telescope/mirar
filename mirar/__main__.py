@@ -23,7 +23,7 @@ from mirar.utils.docs.pipeline_visualisation import flowify
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     """
     Main executable for mirar. You can execute the code from the terminal like:
 

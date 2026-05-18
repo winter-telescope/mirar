@@ -30,7 +30,7 @@ class ImagePlotter(BaseImageProcessor):
         output_sub_dir: str = "plots",
         plot_format: str = "png",
         annotate_fields: str | list[str] | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.output_sub_dir = output_sub_dir
         assert plot_format in ["pdf", "png"], (
@@ -41,7 +41,7 @@ class ImagePlotter(BaseImageProcessor):
             annotate_fields = [annotate_fields]
         self.annotate_fields = annotate_fields
 
-    def description(self):
+    def description(self) -> str:
         return (
             f"Processor to plot images as {self.plot_format} and save them "
             f"in the '{self.output_sub_dir}' sub-directory"

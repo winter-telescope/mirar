@@ -112,7 +112,7 @@ class ZOGYPrepare(BaseImageProcessor):
         x_key: str = "X_IMAGE",
         y_key: str = "Y_IMAGE",
         flux_key: str = "FLUX_AUTO",
-    ):
+    ) -> None:
         super().__init__()
         self.output_sub_dir = output_sub_dir
         if ref_zp_header_key is None:
@@ -457,7 +457,7 @@ class ZOGY(ZOGYPrepare):
         output_sub_dir: str = "sub",
         sci_zp_header_key: str = "ZP",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.output_sub_dir = output_sub_dir
         self.sci_zp_header_key = sci_zp_header_key
@@ -600,7 +600,7 @@ class ZOGY(ZOGYPrepare):
 
     def check_prerequisites(
         self,
-    ):
+    ) -> None:
         check = np.sum([isinstance(x, ZOGYPrepare) for x in self.preceding_steps])
         if check < 1:
             logger.warning("ZOGYPrepare must be run before ZOGY")

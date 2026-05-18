@@ -52,7 +52,7 @@ from mirar.pipelines.summer.models.base_model import SummerBase
 logger = logging.getLogger(__name__)
 
 
-def set_up_summer_databases():
+def set_up_summer_databases() -> None:
     """
     Function to set up the summer databases
     """

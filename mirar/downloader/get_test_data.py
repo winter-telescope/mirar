@@ -41,7 +41,7 @@ def completed_testdata_check() -> bool:
     return bool(os.getenv(COMPLETED_CHECK_BOOL, default=False))
 
 
-def require_test_data():
+def require_test_data() -> None:
     """
     Function to set the test data to be required
 
@@ -50,7 +50,7 @@ def require_test_data():
     os.environ[NEED_TEST_DATA] = "True"
 
 
-def update_test_data():
+def update_test_data() -> None:
     """
     Updates the test data by fetching the latest version with git, and then
     checking out the specific tagged version

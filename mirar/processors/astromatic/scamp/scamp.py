@@ -41,7 +41,7 @@ def run_scamp(
     make_checkplots: bool = False,
     checkplot_basename: str = "scamp_checkplot",
     checkplot_dev: str = None,
-):
+) -> None:
     """
     Function to run scamp.
     NOTE: By default, the scamp instance here is only designed to run for astrometry.
@@ -129,7 +129,7 @@ class Scamp(BaseImageProcessor):
         copy_scamp_header_to_image: bool = False,
         timeout: float = 60.0,
         make_checkplots: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         self.scamp_config = Path(scamp_config_path)
         self.ref_catalog_generator = ref_catalog_generator
@@ -238,5 +238,5 @@ class Scamp(BaseImageProcessor):
 
     def check_prerequisites(
         self,
-    ):
+    ) -> None:
         check_sextractor_prerequisite(self)

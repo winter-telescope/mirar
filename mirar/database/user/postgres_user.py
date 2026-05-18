@@ -37,7 +37,7 @@ class PostgresUser:
         db_hostname: str = DB_HOSTNAME,
         db_name: str = DB_NAME,
         db_port: int = DB_PORT,
-    ):
+    ) -> None:
         self.db_user = db_user
         self.db_password = db_password
         self.db_hostname = db_hostname
@@ -78,7 +78,7 @@ class PostgresUser:
             conn.execute(text("SELECT 1"))
 
     @staticmethod
-    def create_db(db_name: str):
+    def create_db(db_name: str) -> None:
         """
         Creates a database using credentials, if it does not exist
 

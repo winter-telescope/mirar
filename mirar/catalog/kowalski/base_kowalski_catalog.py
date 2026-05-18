@@ -124,7 +124,7 @@ class BaseKowalskiXMatch(BaseXMatchCatalog, ABC):
         kowalski: Optional[Kowalski] = None,
         max_time_ms: float = 10000,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.max_time_ms = max_time_ms
         self.kowalski = kowalski

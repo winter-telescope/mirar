@@ -36,7 +36,7 @@ class BaseAvroExporter(BaseSourceProcessor):
         output_sub_dir: str = "avro",
         save_local: bool = True,
         broadcast: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         self.output_sub_dir = output_sub_dir
         self.base_name = base_name
@@ -81,7 +81,9 @@ class BaseAvroExporter(BaseSourceProcessor):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     @staticmethod
-    def save_alert_packets(packets: list[dict], schema: Schema, save_path: Path | str):
+    def save_alert_packets(
+        packets: list[dict], schema: Schema, save_path: Path | str
+    ) -> None:
         """
         Saves packets to output path.
 

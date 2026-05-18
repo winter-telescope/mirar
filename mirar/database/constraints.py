@@ -19,7 +19,7 @@ class DBQueryConstraints:
             str | int | float | list[str | float | int | list] | None
         ) = None,
         comparison_types: str | list[str] | None = None,
-    ):
+    ) -> None:
         self.columns = []
         self.accepted_values = []
         self.comparison_types = []
@@ -53,7 +53,7 @@ class DBQueryConstraints:
         column: str,
         accepted_values: str | int | float | tuple[float, float] | tuple[int, int],
         comparison_type: str = "=",
-    ):
+    ) -> None:
         """
         Add a new constraint
 
@@ -80,7 +80,7 @@ class DBQueryConstraints:
         crossmatch_radius_arcsec: float,
         ra_field_name: str = "ra",
         dec_field_name: str = "dec",
-    ):
+    ) -> None:
         """
         Add a q3c constraint
 
@@ -117,7 +117,7 @@ class DBQueryConstraints:
                 self.add_q3c_constraint(*other.q3c_query)
         return self
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.columns.__len__()
 
     def __iter__(self):

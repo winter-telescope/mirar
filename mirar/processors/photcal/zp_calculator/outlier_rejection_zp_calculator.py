@@ -31,7 +31,7 @@ class OutlierRejectionZPCalculator(BaseZeroPointCalculator):
         self,
         num_stars_threshold: int = 5,
         outlier_rejection_threshold: float | list[float] = 3.0,
-    ):
+    ) -> None:
         self.num_stars_threshold = num_stars_threshold
         self.outlier_rejection_threshold = outlier_rejection_threshold
         if isinstance(outlier_rejection_threshold, float):

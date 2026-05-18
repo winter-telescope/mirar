@@ -64,7 +64,7 @@ class AstrometryNet(BaseImageProcessor):
         write_regions: bool = True,
         cache: bool = False,
         no_tweak: bool = False,
-    ):
+    ) -> None:
         """
         :param output_sub_dir: subdirectory to output astrometry.net results
         :param scale_bounds: limits on scale (lower, upper)

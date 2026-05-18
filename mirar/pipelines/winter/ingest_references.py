@@ -32,7 +32,9 @@ def get_logger(level="INFO"):
     return log
 
 
-def export_image_to_db(path: str, db_table=RefComponent, pg_user=PostgresUser()):
+def export_image_to_db(
+    path: str, db_table=RefComponent, pg_user=PostgresUser()
+) -> None:
     """
     Export a fits image to the database
     """

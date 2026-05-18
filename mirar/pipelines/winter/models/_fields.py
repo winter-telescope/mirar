@@ -53,7 +53,7 @@ class FieldEntry(BaseDB):
     # Need to fix formatting of fields file in wintertoo before including these.
 
 
-def populate_fields():
+def populate_fields() -> None:
     """
     Downloads a field grid (text file) and imports it in chunks into the database
 

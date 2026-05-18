@@ -36,7 +36,7 @@ class BaseDatabaseInserter(BaseDatabaseProcessor, ABC):
     base_key = "dbinserter"
     max_n_cpu = 1
 
-    def __init__(self, *args, duplicate_protocol: str = "fail", **kwargs):
+    def __init__(self, *args, duplicate_protocol: str = "fail", **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.duplicate_protocol = duplicate_protocol
 
@@ -44,7 +44,7 @@ class BaseDatabaseInserter(BaseDatabaseProcessor, ABC):
             self.duplicate_protocol in POSTGRES_DUPLICATE_PROTOCOLS
         ), f"Invalid duplicate protocol, must be one of {POSTGRES_DUPLICATE_PROTOCOLS}"
 
-    def description(self):
+    def description(self) -> str:
         return (
             f"Processor to save "
             f"{['sources', 'images'][isinstance(self, BaseImageProcessor)]} "

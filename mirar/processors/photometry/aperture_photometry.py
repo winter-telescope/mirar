@@ -31,7 +31,7 @@ class AperturePhotometry(BasePhotometryProcessor):
         bkg_out_diameters: float | list[float] = 40.0,
         col_suffix_list: str | list[str] = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
 
         if not isinstance(aper_diameters, list):

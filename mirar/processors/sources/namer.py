@@ -31,7 +31,7 @@ class CandidateNamer(SingleSpatialCrossmatchSource):
         db_name_field: str = SOURCE_NAME_KEY,
         name_key: str = SOURCE_NAME_KEY,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.db_name_field = db_name_field
 

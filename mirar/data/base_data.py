@@ -27,17 +27,17 @@ logger = logging.getLogger(__name__)
 class DataBlock:
     """Base unit for processing, corresponding to a single image."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.raw_img_list = [Path(x) for x in self[RAW_IMG_KEY].split(",")]
         self.base_name = self[BASE_NAME_KEY]
 
     def __getitem__(self, item):
         raise NotImplementedError
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         raise NotImplementedError
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<An {self.__class__.__name__} object, built from {self.get_name()}>"
 
     def get_name(self) -> str:
@@ -78,7 +78,7 @@ class PseudoList:
         """
         raise NotImplementedError()
 
-    def __init__(self, data_list=None):
+    def __init__(self, data_list=None) -> None:
         self._datalist = []
 
         if data_list is None:
@@ -102,7 +102,7 @@ class PseudoList:
         """
         return self._datalist
 
-    def append(self, item):
+    def append(self, item) -> None:
         """
         Function to append, list-style, new objects.
 
@@ -143,7 +143,7 @@ class PseudoList:
     def __getitem__(self, item):
         return self._datalist.__getitem__(item)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         self._datalist.__setitem__(key, value)
 
     def __add__(self, other):
@@ -159,7 +159,7 @@ class PseudoList:
             self._datalist.append(item)
         return self
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._datalist.__len__()
 
     def __iter__(self):
@@ -178,7 +178,7 @@ class DataBatch(PseudoList):
     def data_type(self) -> Type[DataBlock]:
         raise NotImplementedError()
 
-    def __init__(self, batch: Optional[list[DataBlock] | DataBlock] = None):
+    def __init__(self, batch: Optional[list[DataBlock] | DataBlock] = None) -> None:
         super().__init__(data_list=batch)
 
     def get_batch(self) -> list[DataBlock]:
@@ -199,7 +199,7 @@ class DataBatch(PseudoList):
             img_list += [Path(x).name for x in data_block.get_raw_img_list()]
         return img_list
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<An {self.__class__.__name__} object, "
             f"containing {[x.get_name() for x in self.get_batch()]}>"
@@ -223,10 +223,10 @@ class Dataset(PseudoList):
         """
         return self.get_data_list()
 
-    def __init__(self, batches: Optional[list[DataBatch] | DataBatch] = None):
+    def __init__(self, batches: Optional[list[DataBatch] | DataBatch] = None) -> None:
         super().__init__(data_list=batches)
 
-    def append(self, item: DataBatch):
+    def append(self, item: DataBatch) -> None:
         """
         Function to append, list-style, new objects.
 

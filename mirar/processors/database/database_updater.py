@@ -28,7 +28,7 @@ class BaseDatabaseUpdater(BaseDatabaseSelector, ABC):
 
     base_key = "dbupdater"
 
-    def __init__(self, db_alter_columns: str | list[str], **kwargs):
+    def __init__(self, db_alter_columns: str | list[str], **kwargs) -> None:
         super().__init__(db_output_columns=db_alter_columns, **kwargs)
         if not isinstance(db_alter_columns, list):
             db_alter_columns = [db_alter_columns]
@@ -64,7 +64,9 @@ class ImageSequenceDatabaseUpdater(ImageDatabaseUpdater):
     Processor to modify images in a database with a sequence
     """
 
-    def __init__(self, sequence_key: Optional[str | list[str]] = None, **kwargs):
+    def __init__(
+        self, sequence_key: Optional[str | list[str]] = None, **kwargs
+    ) -> None:
         super().__init__(**kwargs)
         self.sequence_key = sequence_key
 
@@ -104,7 +106,7 @@ class ImageDatabaseMultiEntryUpdater(ImageSequenceDatabaseUpdater):
     image database
     """
 
-    def __init__(self, sequence_key: str, **kwargs):
+    def __init__(self, sequence_key: str, **kwargs) -> None:
         super().__init__(**kwargs)
         self.sequence_key = sequence_key.lower()
 

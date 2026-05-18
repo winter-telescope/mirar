@@ -33,7 +33,7 @@ class SplitImage(BaseImageProcessor):
 
     base_key = "split"
 
-    def __init__(self, buffer_pixels: int = 0, n_x: int = 1, n_y: int = 1):
+    def __init__(self, buffer_pixels: int = 0, n_x: int = 1, n_y: int = 1) -> None:
         super().__init__()
         self.buffer_pixels = buffer_pixels
         self.n_x = n_x
@@ -153,7 +153,7 @@ class SwarpImageSplitter(SplitImage):
         buffer_pixels: int = 0,
         n_x: int = 1,
         n_y: int = 1,
-    ):
+    ) -> None:
         super().__init__(buffer_pixels=buffer_pixels, n_x=n_x, n_y=n_y)
         self.swarp_config_path = swarp_config_path
         self.output_sub_dir = output_sub_dir

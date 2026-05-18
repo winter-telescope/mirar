@@ -23,7 +23,7 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
         db_table: Type[BaseDB],
         pg_user: PostgresUser = PostgresUser(),
         pg_admin: PostgresAdmin = PostgresAdmin(),
-    ):
+    ) -> None:
         super().__init__()
         self.db_table = db_table
         self.db_name = self.db_table.sql_model.db_name

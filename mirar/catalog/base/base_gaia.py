@@ -40,7 +40,7 @@ class BaseGaia2Mass(BaseCatalog, ABC):
         acceptable_h_ph_quals: str | list[str] = None,
         acceptable_k_ph_quals: str | list[str] = None,
         **kwargs,
-    ):
+    ) -> None:
         filter_name = filter_name.lower()
 
         super().__init__(*args, filter_name=filter_name, **kwargs)

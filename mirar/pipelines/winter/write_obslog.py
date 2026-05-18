@@ -11,7 +11,7 @@ from astropy.table import Table
 from mirar.paths import OBSCLASS_KEY, TARGET_KEY, get_output_dir
 
 
-def write_observation_log(image_dir):
+def write_observation_log(image_dir) -> None:
     """
     Write an observation log for a directory of images
     """

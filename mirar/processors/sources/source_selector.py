@@ -58,11 +58,11 @@ class SourceSelector(BaseSourceProcessor, CleanupProcessor):
 
     base_key = "select"
 
-    def __init__(self, *args: tuple[str, str | list[str]]):
+    def __init__(self, *args: tuple[str, str | list[str]]) -> None:
         super().__init__()
         self.targets = args
 
-    def description(self):
+    def description(self) -> str:
         reqs = []
         for target in self.targets:
             if isinstance(target[1], list):
@@ -140,7 +140,7 @@ class SourceBatcher(BaseSourceProcessor):
 
     base_key = "batch"
 
-    def __init__(self, split_key: str | list[str]):
+    def __init__(self, split_key: str | list[str]) -> None:
         super().__init__()
         self.split_key = split_key
 

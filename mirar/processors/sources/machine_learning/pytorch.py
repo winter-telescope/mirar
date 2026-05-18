@@ -30,7 +30,7 @@ class Pytorch(BaseSourceProcessor):
         model: nn.Module,
         model_weights_url: str,
         apply_to_table: Callable[[nn.Module, pd.DataFrame], pd.DataFrame],
-    ):
+    ) -> None:
         super().__init__()
         self._model = model
         self.model_weights_url = model_weights_url

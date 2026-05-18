@@ -27,7 +27,9 @@ class Gaia2MassTAP(BaseGaia2Mass):
     Crossmatched Gaia/2Mass catalog
     """
 
-    def __init__(self, *args, snr_threshold: float = DEFAULT_SNR_THRESHOLD, **kwargs):
+    def __init__(
+        self, *args, snr_threshold: float = DEFAULT_SNR_THRESHOLD, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.snr_threshold = snr_threshold
 
@@ -83,7 +85,9 @@ class Gaia2MassARI(BaseGaia2Mass):
     Crossmatched Gaia/2Mass catalog
     """
 
-    def __init__(self, *args, snr_threshold: float = DEFAULT_SNR_THRESHOLD, **kwargs):
+    def __init__(
+        self, *args, snr_threshold: float = DEFAULT_SNR_THRESHOLD, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.snr_threshold = snr_threshold
 

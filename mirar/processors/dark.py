@@ -57,7 +57,7 @@ class DarkCalibrator(ProcessorWithCache):
         *args,
         select_cache_images: Callable[[ImageBatch], ImageBatch] = default_select_dark,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.select_cache_images = select_cache_images
 

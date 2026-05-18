@@ -31,7 +31,7 @@ class BaseMask(BaseImageProcessor, ABC):
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
         only_write_mask: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         self.write_masked_pixels_to_file = write_masked_pixels_to_file
         self.output_dir = output_dir
@@ -106,7 +106,7 @@ class MaskPixelsFromPath(BaseMask):
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
         only_write_mask: bool = False,
-    ):
+    ) -> None:
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
             output_dir=output_dir,
@@ -187,7 +187,7 @@ class MaskPixelsFromFunction(BaseMask):
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
         only_write_mask: bool = False,
-    ):
+    ) -> None:
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
             output_dir=output_dir,
@@ -222,7 +222,7 @@ class MaskAboveThreshold(BaseMask):
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
         only_write_mask: bool = False,
-    ):
+    ) -> None:
         """
         :param threshold: threshold to mask above
         :param threshold_key: key to use to get threshold from image header
@@ -271,7 +271,7 @@ class MaskPixelsFromWCS(BaseMask):
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
         only_write_mask: bool = False,
-    ):
+    ) -> None:
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
             output_dir=output_dir,
@@ -337,7 +337,9 @@ class WriteMaskedCoordsToFile(BaseMask):
 
     base_key = "writemaskedcoords"
 
-    def __init__(self, output_dir: str | Path = "mask", only_write_mask: bool = False):
+    def __init__(
+        self, output_dir: str | Path = "mask", only_write_mask: bool = False
+    ) -> None:
         super().__init__(
             write_masked_pixels_to_file=True,
             output_dir=output_dir,

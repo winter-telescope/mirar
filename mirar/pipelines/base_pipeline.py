@@ -66,7 +66,7 @@ class Pipeline:
         self,
         selected_configurations: str | list[str] = "default",
         night: int | str = "",
-    ):
+    ) -> None:
         self.night_sub_dir = os.path.join(self.name, night)
         self.night = night
         if not isinstance(selected_configurations, list):
@@ -87,7 +87,7 @@ class Pipeline:
             raise ValueError(err)
         cls.pipelines[cls.name] = cls
 
-    def set_up_pipeline(self):
+    def set_up_pipeline(self) -> None:
         """
         Function to do any additional pipeline setup.
 
@@ -161,7 +161,7 @@ class Pipeline:
 
     def add_configuration(
         self, configuration_name: str, configuration: list[BaseProcessor]
-    ):
+    ) -> None:
         """
         Add a new configuration to the pipeline.
 
