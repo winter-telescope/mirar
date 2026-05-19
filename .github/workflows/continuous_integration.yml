@@ -32,7 +32,7 @@ jobs:
     # Specify the python versions to test
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12"]
 
     # Environment variables
     env:
@@ -83,10 +83,21 @@ jobs:
           ssh-private-key: |
             ${{ secrets.WIRC_STARTERPACK_TOKEN }}
 
+      # Copy contents, ignore comments and empty lines
+      - name: Load dependency versions
+        run: |
+          grep -v '^\s*#' astro-deps.cfg | grep -v '^\s*$' >> $GITHUB_ENV
+
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge astromatic-source-extractor astromatic-scamp==2.10.0 astromatic-swarp astromatic-psfex astrometry=0.95 gsl wcstools
+          conda install -c conda-forge \
+            astromatic-source-extractor==$SOURCE_EXTRACTOR_VERSION \
+            astromatic-scamp==$SCAMP_VERSION \
+            astromatic-swarp==$SWARP_CONDA_VERSION \
+            astromatic-psfex==$PSFEX_VERSION \
+            astrometry==$ASTROMETRY_NET_VERSION \
+            gsl wcstools
           swarp -v
           scamp -v
           sex -v
