@@ -91,7 +91,6 @@ jobs:
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-<<<<<<< HEAD
           conda install -c conda-forge \
             astromatic-source-extractor==$SOURCE_EXTRACTOR_VERSION \
             astromatic-scamp==$SCAMP_VERSION \
@@ -99,9 +98,6 @@ jobs:
             astromatic-psfex==$PSFEX_VERSION \
             astrometry==$ASTROMETRY_NET_VERSION \
             gsl wcstools
-=======
-          conda install -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry=0.96 gsl wcstools
->>>>>>> 42eb43aa (Numpy V2)
           swarp -v
           scamp -v
           sex -v
