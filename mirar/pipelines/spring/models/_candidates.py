@@ -25,7 +25,6 @@ from mirar.database.base_model import BaseDB, dec_field, ra_field
 from mirar.database.constraints import DBQueryConstraints
 from mirar.database.transactions import select_from_table
 from mirar.pipelines.spring.models._diff import DiffsTable
-from mirar.pipelines.spring.models._fields import fieldid_field
 from mirar.pipelines.spring.models._filters import fid_field
 from mirar.pipelines.spring.models._programs import Program, default_program
 
@@ -82,8 +81,6 @@ class CandidatesTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     progname: Mapped[str] = mapped_column(ForeignKey("programs.progname"))
 
     isdiffpos = Column(Boolean, nullable=False)
-
-    fieldid: Mapped[int] = mapped_column(ForeignKey("fields.fieldid"))
 
     # Positional properties
 
@@ -247,8 +244,6 @@ class Candidate(BaseDB):
     progname: str = Field(min_length=8, max_length=8, example="2020A000")
 
     isdiffpos: bool = Field(default=True)
-
-    fieldid: int = fieldid_field
 
     ra: float = ra_field
     dec: float = dec_field

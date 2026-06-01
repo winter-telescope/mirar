@@ -31,7 +31,7 @@ class ImgTypesTable(SPRINGBase):  # pylint: disable=too-few-public-methods
 
     itid = Column(Integer, primary_key=True)
     imgtype = Column(VARCHAR(20), unique=True)
-    exposures: Mapped["ExposuresTable"] = relationship(back_populates="img_type")
+    exposures: Mapped["RawsTable"] = relationship(back_populates="img_type")
 
 
 class ImgType(BaseDB):

@@ -38,7 +38,7 @@ class ProgramsTable(SPRINGBase):  # pylint: disable=too-few-public-methods
 
     progtitle = Column(VARCHAR(20), nullable=True)  # Optional 20 char descr. of title
 
-    exposures: Mapped["ExposuresTable"] = relationship(back_populates="program_name")
+    exposures: Mapped["RawsTable"] = relationship(back_populates="program_name")
 
 
 prog_field: str = Field(min_length=8, max_length=8, example="2020A000")

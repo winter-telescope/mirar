@@ -454,7 +454,7 @@ def spring_skyportal_formatter(source_table: SourceBatch) -> SourceBatch:
     for source in source_table:
         src_df = source.get_data()
 
-        src_df[SOURCE_NAME_KEY] = source[TARGET_KEY]
+        src_df[SOURCE_NAME_KEY] = source["TARGNAME"]
         source[SNCOSMO_KEY] = source["FILTER"]
 
         source.set_data(src_df)

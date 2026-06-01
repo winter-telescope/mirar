@@ -432,10 +432,6 @@ stack_to_skyportal = [
     CustomSourceTableModifier(spring_skyportal_formatter),
     SkyportalSourceUploader(**spring_fritz_config),
     HeaderEditor(edit_keys="sent", values=True),
-    DatabaseSourceInserter(
-        db_table=Source,
-        duplicate_protocol="replace",
-    ),
 ]
 
 diff_to_skyportal = [
@@ -443,8 +439,4 @@ diff_to_skyportal = [
     CustomSourceTableModifier(spring_skyportal_formatter),
     SkyportalSourceUploader(**spring_fritz_config),
     HeaderEditor(edit_keys="sent", values=True),
-    DatabaseSourceInserter(
-        db_table=Source,
-        duplicate_protocol="replace",
-    ),
 ]

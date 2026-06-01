@@ -9,7 +9,7 @@ from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
-from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY
+from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, TIME_KEY
 from mirar.pipelines.spring.config.constants import SPRING_GAIN
 from mirar.pipelines.spring.constants import imgtype_dict, spring_filters_map
 from mirar.pipelines.spring.models import default_program, itid_dict
@@ -155,7 +155,7 @@ def load_raw_spring_fits(path: str | Path):
         header["ITID"] = itid_dict[imgtype_dict[header["IMGTYPE"]]]
 
     header["EXPMJD"] = header["MJD-OBS"]
-
+    header[TIME_KEY] = header["UTCTIME"]
     header["RAWID"] = int((date_t.mjd - 59000.0) * 86400.0)  # seconds since 59000 MJD
     data = data.astype("float32")
     return data, header
