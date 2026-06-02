@@ -27,6 +27,7 @@ from mirar.paths import (
     TIME_KEY,
     all_astrometric_keywords,
     copy_temp_file,
+    core_fields,
     get_output_dir,
     get_temp_path,
 )
@@ -71,6 +72,7 @@ class Swarp(BaseImageProcessor):
         center_dec: Optional[float] = None,
         gain: Optional[float] = None,
         include_scamp: bool = True,
+        pass_clean_header: bool = False,
         combine: bool = True,
         cache: bool = False,
         subtract_bkg: bool = False,
@@ -81,6 +83,7 @@ class Swarp(BaseImageProcessor):
         min_required_coadds: int = 1,
     ):
         """
+        Processor to apply swarp to images, stacking them together.
 
         Args:
             swarp_config_path: str
@@ -109,6 +112,9 @@ class Swarp(BaseImageProcessor):
                 Gain
             include_scamp: bool
                 Whether to include scamp results or not?
+            pass_clean_header: bool
+                Whether to pass a header with only core fields and astrometric keywords
+                to swarp, or the full header. By default, the full header is passed
             combine: bool
                 Combine and coadd all images? For reasons internal to Swarp, it is
                 strongly advised to always set this to True (even if you are running
@@ -153,6 +159,7 @@ class Swarp(BaseImageProcessor):
         self.x_imgpixsize = x_imgpixsize
         self.y_imgpixsize = y_imgpixsize
         self.include_scamp = include_scamp
+        self.pass_clean_header = pass_clean_header
         self.combine = combine
         self.cache = cache
         self.gain = gain
@@ -255,13 +262,17 @@ class Swarp(BaseImageProcessor):
         all_ras = []
         all_decs = []
         combined_header_dict = {
-            x: batch[0][x] for x in batch[0].keys() if x not in all_astrometric_keywords
+            x: batch[0][x]
+            for x in batch[0].get_header().copy().keys()
+            if x not in all_astrometric_keywords
         }
+
         with (
             open(swarp_image_list_path, "w", encoding="utf8") as img_list,
             open(swarp_weight_list_path, "w", encoding="utf8") as weight_list,
         ):
             for image in batch:
+
                 pixscale_to_use = self.pixscale
                 x_imgpixsize_to_use = self.x_imgpixsize
                 y_imgpixsize_to_use = self.y_imgpixsize
@@ -273,6 +284,25 @@ class Swarp(BaseImageProcessor):
                     wcs = WCS(image.get_header())
                 nxpix = image["NAXIS1"]
                 nypix = image["NAXIS2"]
+
+                full_header = image.get_header().copy()
+
+                # Temporarily remove any non-core fields from the header for swarp
+                if self.pass_clean_header:
+                    copy_fields = (
+                        core_fields
+                        + all_astrometric_keywords
+                        + [SWARP_FLUX_SCALING_KEY]
+                    )
+                    if self.include_scamp:
+                        copy_fields += [SCAMP_HEADER_KEY]
+
+                    hdr = image.get_header().copy()
+                    for key in list(hdr.keys()):
+                        if key not in copy_fields:
+                            hdr.pop(key, None)
+                    image.set_header(hdr)
+
                 image_x_cen = nxpix / 2
                 image_y_cen = nypix / 2
                 [ra, dec] = wcs.all_pix2world(image_x_cen, image_y_cen, 1)
@@ -340,16 +370,19 @@ class Swarp(BaseImageProcessor):
                 for key in combined_header_dict.keys():
                     if key not in tmp_dict.keys():
                         continue
-                    if key not in image.keys():
+                    if key not in full_header.keys():
                         logger.debug(
                             f"Key {key} not found in image {image[BASE_NAME_KEY]}, "
                             f"not adding to combined header."
                         )
                         tmp_dict.pop(key)
                         continue
-                    if image[key] != tmp_dict[key]:
+                    if full_header[key] != tmp_dict[key]:
                         tmp_dict.pop(key)
+
                 combined_header_dict = tmp_dict
+                # Restore full header in any case
+                image.set_header(full_header)
 
         if pixscale_to_use is None:
             pixscale_to_use = np.max(all_pixscales)
