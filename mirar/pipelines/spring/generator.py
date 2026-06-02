@@ -17,7 +17,6 @@ from mirar.paths import (
     MAGLIM_KEY,
     SEXTRACTOR_HEADER_KEY,
     SOURCE_NAME_KEY,
-    TARGET_KEY,
     TIME_KEY,
     ZP_KEY,
     ZP_STD_KEY,
@@ -31,7 +30,7 @@ from mirar.pipelines.spring.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
 )
-from mirar.pipelines.spring.constants import spring_filters_map
+from mirar.pipelines.spring.constants import sncosmo_filters, spring_filters_map
 from mirar.pipelines.spring.models import (
     RefComponent,
     RefQuery,
@@ -455,7 +454,7 @@ def spring_skyportal_formatter(source_table: SourceBatch) -> SourceBatch:
         src_df = source.get_data()
 
         src_df[SOURCE_NAME_KEY] = source["TARGNAME"]
-        source[SNCOSMO_KEY] = source["FILTER"]
+        source[SNCOSMO_KEY] = sncosmo_filters[source["FILTER"].lower()]
 
         source.set_data(src_df)
 

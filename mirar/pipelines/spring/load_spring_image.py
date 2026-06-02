@@ -11,8 +11,13 @@ from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
 from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, TIME_KEY
 from mirar.pipelines.spring.config.constants import SPRING_GAIN
-from mirar.pipelines.spring.constants import imgtype_dict, spring_filters_map
+from mirar.pipelines.spring.constants import (
+    imgtype_dict,
+    sncosmo_filters,
+    spring_filters_map,
+)
 from mirar.pipelines.spring.models import default_program, itid_dict
+from mirar.processors.skyportal import SNCOSMO_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +78,7 @@ def load_raw_spring_fits(path: str | Path):
     else:
         header["FID"] = 99  # not -99 so as to not break anything
 
+    header[SNCOSMO_KEY] = sncosmo_filters.get(header["FILTER"].lower())
     # -----------------------------
     # Observation classification
     # -----------------------------
