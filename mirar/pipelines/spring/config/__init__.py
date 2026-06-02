@@ -82,7 +82,7 @@ spring_cal_requirements = [
 
 spring_fritz_config = {
     "origin": "mirar",
-    "group_ids": [1657],
+    "group_ids": [1],
     "instrument_id": 1138,
     "update_thumbnails": False,
     "skyportal_client": SkyportalClient(base_url="https://fritz.science/api/"),
