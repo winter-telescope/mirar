@@ -34,12 +34,12 @@ logger = logging.getLogger(__name__)
 
 class SPRINGPipeline(Pipeline):
     """
-    Class to run GIT/LT data reduction pipeline
+    Class to run SPRING data reduction pipeline
     """
 
     name = PIPELINE_NAME
 
-    non_linear_level = 30000  # no idea, for pylint
+    non_linear_level = 30000
     all_pipeline_configurations = {
         "default": reduce
         + astrometry
