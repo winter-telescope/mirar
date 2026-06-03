@@ -1,3 +1,8 @@
+"""
+Blocks for the Spring pipeline. Each block is a list of Processors that can be used in
+a Pipeline.
+"""
+
 from mirar.paths import (
     BASE_NAME_KEY,
     EXPTIME_KEY,
@@ -22,7 +27,6 @@ from mirar.pipelines.spring.config import (
     swarp_config_path,
 )
 from mirar.pipelines.spring.generator import (
-    ensure_progname_exists_for_batch,
     mask_stamps_around_bright_stars,
     spring_anet_sextractor_config_path_generator,
     spring_candidate_annotator_filterer,
@@ -43,7 +47,7 @@ from mirar.pipelines.spring.load_spring_image import (
     load_raw_spring_image,
     load_spring_stack,
 )
-from mirar.pipelines.spring.models import Diff, Raw, Source, Stack
+from mirar.pipelines.spring.models import Diff, Raw, Stack
 from mirar.processors.astromatic import PSFex
 from mirar.processors.astromatic.sextractor.background_subtractor import (
     SextractorBkgSubtractor,
@@ -54,7 +58,7 @@ from mirar.processors.astrometry.anet.anet_processor import AstrometryNet
 from mirar.processors.catalog_limiting_mag import CatalogLimitingMagnitudeCalculator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.dark import DarkCalibrator
-from mirar.processors.database import DatabaseImageInserter, DatabaseSourceInserter
+from mirar.processors.database import DatabaseImageInserter
 from mirar.processors.database.database_updater import ImageDatabaseMultiEntryUpdater
 from mirar.processors.flat import SkyFlatCalibrator
 from mirar.processors.mask import MaskPixelsFromFunction
@@ -104,7 +108,6 @@ load_raw = [
     ImageSaver(output_dir_name="loaded_raw"),
     ImageRebatcher(BASE_NAME_KEY),
     HeaderAnnotator(input_keys=LATEST_SAVE_KEY, output_key=RAW_IMG_KEY),
-    CustomImageBatchModifier(ensure_progname_exists_for_batch),
     DatabaseImageInserter(db_table=Raw, duplicate_protocol="replace"),
 ]
 
@@ -117,11 +120,8 @@ csvlog = [
             "DATE-OBS",
             "MJD-OBS",
             BASE_NAME_KEY,
-            "FILENAME",
             # Targeting
             TARGET_KEY,
-            "TARGNAME",
-            "FIELDID",
             # Pointing
             "RADEG",
             "DECDEG",

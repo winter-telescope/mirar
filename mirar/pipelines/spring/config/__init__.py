@@ -1,5 +1,5 @@
 """
-Module containing SEDMv2-specific paths
+Module containing SPRING-specific paths
 """
 
 import os
@@ -13,9 +13,9 @@ from mirar.pipelines.spring.config.constants import (
 from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
 
-git_dir = os.path.dirname(__file__)
+spring_dir = os.path.dirname(__file__)
 
-astromatic_config_dir = os.path.join(git_dir, "files")
+astromatic_config_dir = os.path.join(spring_dir, "files")
 
 sextractor_photometry_config = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),

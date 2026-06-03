@@ -1,5 +1,5 @@
 """
-Constants for the winter pipeline.
+Constants for the spring pipeline.
 """
 
 import astroplan

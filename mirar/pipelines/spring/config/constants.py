@@ -1,5 +1,5 @@
 """
-Module for GIT-specific constants
+Module for SPRING-specific constants
 """
 
 PIPELINE_NAME = "spring"

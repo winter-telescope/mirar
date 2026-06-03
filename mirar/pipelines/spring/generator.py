@@ -1,4 +1,6 @@
-# from mirar.data import Image
+"""
+Functions to generate processors and other components for the SPRING pipeline
+"""
 import logging
 
 import numpy as np
@@ -31,13 +33,7 @@ from mirar.pipelines.spring.config import (
     swarp_config_path,
 )
 from mirar.pipelines.spring.constants import sncosmo_filters, spring_filters_map
-from mirar.pipelines.spring.models import (
-    RefComponent,
-    RefQuery,
-    RefStack,
-    RefStacksTable,
-    ensure_program_exists,
-)
+from mirar.pipelines.spring.models import RefComponent, RefQuery, RefStack
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
@@ -132,7 +128,7 @@ def spring_photcal_color_columns_generator(image: Image) -> tuple[list, list, tu
     Generates the columns for the Photometric calibration process.
 
     :param image: Image
-    :return: (magnitude, error_magnitude)"""
+    :return: (magnitude, error_magnitude, magnitude_limits) for the image filter"""
     filter_name = image[FILTER_KEY]
     if filter_name in ["Y"]:
         return ["ymag", "zmag"], ["e_ymag", "e_zmag"], (0, 25)
@@ -147,7 +143,7 @@ def spring_photcal_color_columns_generator(image: Image) -> tuple[list, list, tu
 
 def spring_stackid_annotator(batch: ImageBatch) -> ImageBatch:
     """
-    Generates a stack id for WINTER images as the minimum of the RAWID of the
+    Generates a stack id for spring images as the minimum of the RAWID of the
     images for which the stack was requested.
 
     :param batch: ImageBatch
@@ -459,14 +455,3 @@ def spring_skyportal_formatter(source_table: SourceBatch) -> SourceBatch:
         source.set_data(src_df)
 
     return source_table
-
-
-def ensure_progname_exists_for_batch(batch: ImageBatch) -> ImageBatch:
-    """
-    Ensure every image in the batch has a valid PROGNAME that exists
-    in the programs table before exporting raws to the database.
-    """
-    for image in batch:
-        progname = image.get_header()["PROGNAME"]
-        image["PROGNAME"] = ensure_program_exists(progname)
-    return batch

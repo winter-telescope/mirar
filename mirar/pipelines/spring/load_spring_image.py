@@ -1,9 +1,12 @@
+"""
+Functions to load raw and proc images from SPRING.
+"""
+
 import logging
 import warnings
 from pathlib import Path
 
 import numpy as np
-from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyWarning
 
@@ -28,41 +31,13 @@ def load_raw_spring_fits(path: str | Path):
     header.remove("BITPIX", ignore_missing=True)
     header.remove("BZERO", ignore_missing=True)
     header.remove("BSCALE", ignore_missing=True)
-    # -----------------------------
-    # Time
-    # -----------------------------
-    # DATE-OBS already exists and is usable
+
     if "EXPTIME" not in header and "AEXPTIME" in header:
         header["EXPTIME"] = header["AEXPTIME"]
 
-    # -----------------------------
-    # Pointing (prefer degrees)
-    # -----------------------------
     header["RA"] = header["RADEG"]
     header["DEC"] = header["DECDEG"]
-
-    # -----------------------------
-    # Instrument Identity
-    # -----------------------------
     header.setdefault("INSTRUME", "SPRING")
-
-    # -----------------------------
-    # Filter handling
-    # -----------------------------
-    if "FILTER" not in header or not str(header["FILTER"]).strip():
-        header["EPSPP"] = (
-            sigma_clipped_stats(data, sigma=5)[1] * SPRING_GAIN / header["EXPTIME"]
-        )
-        if header["EPSPP"] <= 100:
-            header["FILTER"] = "Y"
-        elif header["EPSPP"] >= 200 and header["EPSPP"] <= 800:
-            header["FILTER"] = "J"
-        elif header["EPSPP"] >= 1500 and header["EPSPP"] <= 4000:
-            header["FILTER"] = "H"
-        elif header["EPSPP"] >= 8000:
-            header["FILTER"] = "K"
-        else:
-            header["FILTER"] = "UNKNOWN"
 
     if header["FILTER"].find("J") != -1:
         header["FILTER"] = "J"
@@ -79,19 +54,14 @@ def load_raw_spring_fits(path: str | Path):
         header["FID"] = 99  # not -99 so as to not break anything
 
     header[SNCOSMO_KEY] = sncosmo_filters.get(header["FILTER"].lower())
-    # -----------------------------
-    # Observation classification
-    # -----------------------------
+
     if OBSCLASS_KEY not in header:
         if "OBSTYPE" in header and header["OBSTYPE"] is not None:
             header[OBSCLASS_KEY] = header["OBSTYPE"].strip().lower()
         else:
             header[OBSCLASS_KEY] = "science"
 
-    # -----------------------------
-    # Target identification, same logic as WINTER.
-    # -----------------------------
-    target = f"field_{header['FIELDID']}"
+    target = "unknown"
     if ("SCHDNAME" in header.keys()) & ("OBHISTID" in header.keys()):
         if header["SCHDNAME"] != "":
             target = f"{header['SCHDNAME']}_{header['OBHISTID']}"
@@ -110,15 +80,8 @@ def load_raw_spring_fits(path: str | Path):
     ]:
         target = header[OBSCLASS_KEY].lower()
     header[TARGET_KEY] = target
-    # -----------------------------
-    # Camera GAIN
-    # -----------------------------
-    # if "GAIN" not in header:
     header["GAIN"] = SPRING_GAIN
 
-    # -----------------------------
-    # Miscellaneous statement of header properties
-    # -----------------------------
     header["COADDS"] = 1
     header["CALSTEPS"] = ""
     header["PROCFAIL"] = 1
@@ -130,8 +93,7 @@ def load_raw_spring_fits(path: str | Path):
         header["PROGPI"] = default_program.pi_name
     if "PROGID" not in header.keys():
         header["PROGID"] = default_program.progid
-    # If PROGNAME is not present or is empty, set it to default here.
-    # Otherwise, it gets set to default in the insert_entry for exposures.
+
     if "PROGNAME" not in header:
         header["PROGNAME"] = default_program.progname
     if header["PROGNAME"] == "":
