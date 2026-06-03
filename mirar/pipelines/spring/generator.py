@@ -1,6 +1,7 @@
 """
 Functions to generate processors and other components for the SPRING pipeline
 """
+
 import logging
 
 import numpy as np
