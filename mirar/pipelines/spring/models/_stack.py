@@ -1,12 +1,12 @@
 """
-Models for the 'proc' table
+Models for the 'stack' table
 """
 
 import os
 from typing import ClassVar
 
 from pydantic import Field, field_validator
-from sqlalchemy import REAL, VARCHAR, BigInteger, Column, Integer, Sequence  # event,
+from sqlalchemy import REAL, VARCHAR, BigInteger, Column, Integer, Sequence
 from sqlalchemy.orm import relationship
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
@@ -15,7 +15,7 @@ from mirar.pipelines.spring.models.base_model import SPRINGBase
 
 class StacksTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     """
-    Raw table in database
+    Stack table in database
     """
 
     __tablename__ = "stacks"

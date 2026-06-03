@@ -20,13 +20,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, relationship
 
 from mirar.database.base_model import BaseDB, dec_field, ra_field
-from mirar.pipelines.spring.models._candidates import CandidatesTable
+from mirar.pipelines.spring.models._candidates import (
+    CANDIDATE_PREFIX,
+    NAME_START,
+    CandidatesTable,
+)
 from mirar.pipelines.spring.models.base_model import SPRINGBase
 
 logger = logging.getLogger(__name__)
 
-SOURCE_PREFIX = "SPRING"
-NAME_START = "aaaa"
+SOURCE_PREFIX = CANDIDATE_PREFIX
 
 MIN_NAME_LENGTH = len(SOURCE_PREFIX) + len(NAME_START) + 2
 
@@ -49,8 +52,6 @@ class SourcesTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     )
     objectid = Column(VARCHAR(40), nullable=False, unique=True)
     deprecated = Column(Boolean, nullable=False, default=False)
-
-    # Positional properties
 
     average_ra = Column(Float)
     average_dec = Column(Float)

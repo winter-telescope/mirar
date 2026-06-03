@@ -28,7 +28,6 @@ from mirar.pipelines.spring.models._programs import (
     ProgramCredentials,
     ProgramsTable,
     default_program,
-    ensure_program_exists,
     populate_programs,
 )
 from mirar.pipelines.spring.models._raw import Raw, RawsTable
@@ -41,29 +40,14 @@ from mirar.pipelines.spring.models._ref_stacks import RefStack, RefStacksTable
 from mirar.pipelines.spring.models._sources import Source, SourcesTable
 from mirar.pipelines.spring.models._stack import Stack, StacksTable
 from mirar.pipelines.spring.models.base_model import SPRINGBase
+from mirar.pipelines.winter.models import set_up_q3c
 
 logger = logging.getLogger(__name__)
 
 
-def set_up_q3c(db_name: str, db_table: BaseTable):
-    """
-    Function to setup q3c extension for a given table in db
-
-    :param db_name: Name of database
-    :param db_table: Table to setup q3c extension for
-    :return:
-    """
-    create_q3c_extension(
-        db_name=db_name,
-        table_name=db_table.__tablename__,
-        ra_column_name=db_table.ra_column_name,
-        dec_column_name=db_table.dec_column_name,
-    )
-
-
 def set_up_spring_databases():
     """
-    Setup the winter databases
+    Setup the spring databases
 
     :return: None
     """

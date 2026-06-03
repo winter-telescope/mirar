@@ -2,10 +2,12 @@
 Models for the 'raw' table
 """
 
+import logging
 import os
 from datetime import datetime
 from typing import ClassVar
 
+import pandas as pd
 from astropy.coordinates import SkyCoord
 from pydantic import Field, computed_field, field_validator
 from sqlalchemy import (
@@ -22,10 +24,19 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from wintertoo.data import MAX_TARGNAME_LEN
 
 from mirar.database.base_model import BaseDB, alt_field, az_field, dec_field, ra_field
+from mirar.database.constraints import DBQueryConstraints
+from mirar.database.transactions import select_from_table
 from mirar.paths import __version__
 from mirar.pipelines.spring.models._filters import FiltersTable, fid_field
+from mirar.pipelines.spring.models._programs import (
+    Program,
+    ProgramsTable,
+    default_program,
+)
 from mirar.pipelines.spring.models.base_model import SPRINGBase
 from mirar.pipelines.spring.models.default_unknown_field import default_unknown_field
+
+logger = logging.getLogger(__name__)
 
 
 class RawsTable(SPRINGBase):  # pylint: disable=too-few-public-methods
@@ -182,13 +193,28 @@ class Raw(BaseDB):
         assert os.path.exists(savepath)
         return savepath
 
-    # @field_validator("uexpid")
-    # @classmethod
-    # def validate_expid(cls, uexpid: int) -> int:
-    #     """
-    #     Ensure that expid exists in exposures table
+    def insert_entry(
+        self, duplicate_protocol: str, returning_key_names=None
+    ) -> pd.DataFrame:
+        """
+        Insert the pydantic-ified data into the corresponding sql database
 
-    #     :param uexpid: unique exposure id
-    #     """
-    #     assert Exposure._exists(keys="uexpid", values=uexpid)
-    #     return uexpid
+        :param duplicate_protocol: protocol to follow if duplicate entry is found
+        :param returning_key_names: names of the keys to return
+        :return: None
+        """
+        prog_match = select_from_table(
+            DBQueryConstraints(columns="progname", accepted_values=self.progname),
+            sql_table=Program.sql_model,
+        )
+        if prog_match.empty:
+            logger.debug(
+                f"Program {self.progname} not found in database. "
+                f"Using default program {default_program.progname}"
+            )
+            self.progname = default_program.progname
+
+        return self._insert_entry(
+            duplicate_protocol=duplicate_protocol,
+            returning_key_names=returning_key_names,
+        )

@@ -68,6 +68,6 @@ def populate_filters(filter_map: dict = None):
         filter_map = dict(spring_filters_map)
 
     for filter_name, fid in filter_map.items():
-        winter_filter = Filter(fid=fid, filtername=filter_name)
-        if not winter_filter.exists():
-            winter_filter.insert_entry(duplicate_protocol="ignore")
+        spring_filter = Filter(fid=fid, filtername=filter_name)
+        if not spring_filter.exists():
+            spring_filter.insert_entry(duplicate_protocol="ignore")

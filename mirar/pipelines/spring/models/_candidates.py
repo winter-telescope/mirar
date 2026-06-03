@@ -42,7 +42,7 @@ MIN_NAME_LENGTH = len(CANDIDATE_PREFIX) + len(NAME_START) + 2
 
 class CandidatesTable(SPRINGBase):  # pylint: disable=too-few-public-methods
     """
-    Raw table in database
+    Candidate table in database
     """
 
     __tablename__ = "candidates"

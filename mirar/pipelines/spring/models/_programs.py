@@ -110,25 +110,6 @@ class Program(BaseDB, ProgramCredentials):
         """
         return self._exists(values=self.progname, keys="progname")
 
-    @classmethod
-    def make_placeholder(cls, progname: str) -> "Program":
-        """
-        Create a placeholder program row for a real FITS PROGNAME.
-        """
-        return cls(
-            progid=1,
-            progname=progname,
-            prog_key=generate_key(LEN_PROG_KEY),
-            pi_name="UNKNOWN",
-            pi_email="unknown@localhost",
-            progtitle="Imported",
-            startdate=date(2001, 1, 1),
-            enddate=date(3001, 1, 1),
-            hours_allocated=0,
-            hours_used=0,
-            maxpriority=DEFAULT_MAX_PRIORITY,
-        )
-
 
 default_program = Program(
     progid=1,
@@ -143,30 +124,6 @@ default_program = Program(
     hours_used=0,
     maxpriority=DEFAULT_MAX_PRIORITY,
 )
-
-
-def ensure_program_exists(progname: str | None) -> str:
-    """
-    Ensure a program exists in the programs table.
-
-    If progname is None or blank, fall back to the default program.
-    If progname is non-empty and missing from the table, create a placeholder row.
-
-    :return: the program name that should be used downstream.
-    """
-    if progname is None:
-        progname = ""
-
-    progname = progname.strip()
-
-    if progname == "":
-        progname = default_program.progname
-
-    candidate = Program.make_placeholder(progname)
-
-    if not candidate.exists():
-        candidate.insert_entry(duplicate_protocol="ignore")
-    return progname
 
 
 def populate_programs():
