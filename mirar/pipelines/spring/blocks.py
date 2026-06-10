@@ -27,6 +27,11 @@ from mirar.pipelines.spring.config import (
     swarp_config_path,
 )
 from mirar.pipelines.spring.generator import (
+<<<<<<< HEAD
+=======
+    ResetToSingleEmptyBatch,
+    ensure_progname_exists_for_batch,
+>>>>>>> 8a13b18e (changing a few quirks with the default command and fixing the skyportal upload issues)
     mask_stamps_around_bright_stars,
     spring_anet_sextractor_config_path_generator,
     spring_candidate_annotator_filterer,
@@ -409,6 +414,7 @@ stack_forced_photometry = [
     ),
     PSFPhotometry(),
     SourceWriter(output_dir_name="stack_photometry"),
+    ResetToSingleEmptyBatch(),
 ]
 
 diff_forced_photometry = [

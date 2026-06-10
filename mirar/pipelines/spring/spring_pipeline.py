@@ -48,7 +48,8 @@ class SPRINGPipeline(Pipeline):
         + stack_forced_photometry
         + load_final_stack
         + imsub
-        + diff_forced_photometry,
+        + diff_forced_photometry
+        + diff_to_skyportal,
         "load_only": load_raw,
         "log": load_raw + csvlog,
         "darkcal": load_raw + csvlog + dark_calibrate,
@@ -60,7 +61,10 @@ class SPRINGPipeline(Pipeline):
         "photometry_color": reduce + astrometry + stack_dithers + photcal_with_color,
         "photcal_and_export": photcal_and_export,
         "photcal_color_and_export": photcal_color_and_export,
-        "subtraction": load_final_stack + imsub,
+        "subtraction": load_final_stack
+        + imsub
+        + diff_forced_photometry
+        + diff_to_skyportal,
         "full_stack_fp": reduce + astrometry + stack_dithers + stack_forced_photometry,
         "full_diff_fp": reduce
         + astrometry

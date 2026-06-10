@@ -12,7 +12,7 @@ from astropy.time import Time
 from astropy.wcs import WCS
 
 from mirar.catalog import PS1, Gaia2Mass
-from mirar.data import Image, ImageBatch
+from mirar.data import Dataset, Image, ImageBatch
 from mirar.data.source_data import SourceBatch
 from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
@@ -33,12 +33,23 @@ from mirar.pipelines.spring.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
 )
+<<<<<<< HEAD
 from mirar.pipelines.spring.constants import sncosmo_filters, spring_filters_map
 from mirar.pipelines.spring.models import RefComponent, RefQuery, RefStack
+=======
+from mirar.pipelines.spring.constants import spring_filters_map
+from mirar.pipelines.spring.models import (
+    RefComponent,
+    RefQuery,
+    RefStack,
+    ensure_program_exists,
+)
+>>>>>>> 8a13b18e (changing a few quirks with the default command and fixing the skyportal upload issues)
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
 )
+from mirar.processors.base_processor import BaseImageProcessor
 from mirar.processors.skyportal import SNCOSMO_KEY
 from mirar.references import PS1Ref
 from mirar.references.wfcam.wfcam_query import WFAUQuery
@@ -46,6 +57,19 @@ from mirar.references.wfcam.wfcam_stack import WFCAMStackedRef
 from mirar.utils.ldac_tools import get_table_from_ldac
 
 logger = logging.getLogger(__name__)
+
+
+SKYPORTAL_FILTER_MAP = {
+    "J": "2massj",
+    "H": "2massh",
+    "Ks": "2massks",
+    "K": "2massks",
+    "g": "sdssg",
+    "r": "sdssr",
+    "i": "sdssi",
+    "z": "sdssz",
+    "u": "sdssu",
+}
 
 
 class NoGoodCandidatesError(ProcessorError):
@@ -448,11 +472,50 @@ def spring_skyportal_formatter(source_table: SourceBatch) -> SourceBatch:
     :return: Updated source table
     """
     for source in source_table:
-        src_df = source.get_data()
+        src_df = source.get_data().copy()
+
+        src_df["magpsf"] = pd.to_numeric(src_df["magpsf"], errors="coerce")
+        src_df = src_df[src_df["magpsf"].notna()].copy()
 
         src_df[SOURCE_NAME_KEY] = source["TARGNAME"]
+<<<<<<< HEAD
         source[SNCOSMO_KEY] = sncosmo_filters[source["FILTER"].lower()]
+=======
+
+        raw_filter = str(source["FILTER"])
+        skyportal_filter = SKYPORTAL_FILTER_MAP.get(raw_filter, raw_filter)
+
+        src_df[SNCOSMO_KEY] = skyportal_filter
+        source[SNCOSMO_KEY] = skyportal_filter
+>>>>>>> 8a13b18e (changing a few quirks with the default command and fixing the skyportal upload issues)
 
         source.set_data(src_df)
 
     return source_table
+<<<<<<< HEAD
+=======
+
+
+def ensure_progname_exists_for_batch(batch: ImageBatch) -> ImageBatch:
+    """
+    Ensure every image in the batch has a valid PROGNAME that exists
+    in the programs table before exporting raws to the database.
+    """
+    for image in batch:
+        progname = image.get_header()["PROGNAME"]
+        image["PROGNAME"] = ensure_program_exists(progname)
+    return batch
+
+
+class ResetToSingleEmptyBatch(BaseImageProcessor):
+    base_key = "reset_to_single_empty_batch"
+
+    def description(self):
+        return "Replace the whole dataset with one empty ImageBatch"
+
+    def _apply_to_images(self, batch):
+        return ImageBatch()
+
+    def update_dataset(self, dataset):
+        return Dataset([ImageBatch()])
+>>>>>>> 8a13b18e (changing a few quirks with the default command and fixing the skyportal upload issues)
