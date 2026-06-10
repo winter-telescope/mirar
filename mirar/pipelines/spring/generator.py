@@ -33,18 +33,8 @@ from mirar.pipelines.spring.config import (
     sextractor_reference_psf_phot_config,
     swarp_config_path,
 )
-<<<<<<< HEAD
-from mirar.pipelines.spring.constants import sncosmo_filters, spring_filters_map
-from mirar.pipelines.spring.models import RefComponent, RefQuery, RefStack
-=======
 from mirar.pipelines.spring.constants import spring_filters_map
-from mirar.pipelines.spring.models import (
-    RefComponent,
-    RefQuery,
-    RefStack,
-    ensure_program_exists,
-)
->>>>>>> 8a13b18e (changing a few quirks with the default command and fixing the skyportal upload issues)
+from mirar.pipelines.spring.models import RefComponent, RefQuery, RefStack
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
@@ -478,33 +468,27 @@ def spring_skyportal_formatter(source_table: SourceBatch) -> SourceBatch:
         src_df = src_df[src_df["magpsf"].notna()].copy()
 
         src_df[SOURCE_NAME_KEY] = source["TARGNAME"]
-<<<<<<< HEAD
-        source[SNCOSMO_KEY] = sncosmo_filters[source["FILTER"].lower()]
-=======
 
         raw_filter = str(source["FILTER"])
         skyportal_filter = SKYPORTAL_FILTER_MAP.get(raw_filter, raw_filter)
 
         src_df[SNCOSMO_KEY] = skyportal_filter
         source[SNCOSMO_KEY] = skyportal_filter
->>>>>>> 8a13b18e (changing a few quirks with the default command and fixing the skyportal upload issues)
 
         source.set_data(src_df)
 
     return source_table
-<<<<<<< HEAD
-=======
 
 
-def ensure_progname_exists_for_batch(batch: ImageBatch) -> ImageBatch:
-    """
-    Ensure every image in the batch has a valid PROGNAME that exists
-    in the programs table before exporting raws to the database.
-    """
-    for image in batch:
-        progname = image.get_header()["PROGNAME"]
-        image["PROGNAME"] = ensure_program_exists(progname)
-    return batch
+# def ensure_progname_exists_for_batch(batch: ImageBatch) -> ImageBatch:
+#     """
+#     Ensure every image in the batch has a valid PROGNAME that exists
+#     in the programs table before exporting raws to the database.
+#     """
+#     for image in batch:
+#         progname = image.get_header()["PROGNAME"]
+#         image["PROGNAME"] = ensure_program_exists(progname)
+#     return batch
 
 
 class ResetToSingleEmptyBatch(BaseImageProcessor):
@@ -518,4 +502,3 @@ class ResetToSingleEmptyBatch(BaseImageProcessor):
 
     def update_dataset(self, dataset):
         return Dataset([ImageBatch()])
->>>>>>> 8a13b18e (changing a few quirks with the default command and fixing the skyportal upload issues)
