@@ -1,0 +1,168 @@
+"""
+Functions to load raw and proc images from SPRING.
+"""
+
+import logging
+import warnings
+from pathlib import Path
+
+import numpy as np
+from astropy.time import Time
+from astropy.utils.exceptions import AstropyWarning
+
+from mirar.data import Image
+from mirar.io import open_fits, open_raw_image
+from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, TIME_KEY
+from mirar.pipelines.spring.config.constants import SPRING_GAIN
+from mirar.pipelines.spring.constants import (
+    imgtype_dict,
+    sncosmo_filters,
+    spring_filters_map,
+)
+from mirar.pipelines.spring.models import default_program, itid_dict
+from mirar.processors.skyportal import SNCOSMO_KEY
+
+logger = logging.getLogger(__name__)
+
+
+def load_raw_spring_fits(path: str | Path):
+    data, header = open_fits(path)
+
+    header.remove("BITPIX", ignore_missing=True)
+    header.remove("BZERO", ignore_missing=True)
+    header.remove("BSCALE", ignore_missing=True)
+
+    if "EXPTIME" not in header and "AEXPTIME" in header:
+        header["EXPTIME"] = header["AEXPTIME"]
+
+    header["RA"] = header["RADEG"]
+    header["DEC"] = header["DECDEG"]
+    header.setdefault("INSTRUME", "SPRING")
+
+    if header["FILTER"].find("J") != -1:
+        header["FILTER"] = "J"
+    elif header["FILTER"].find("H") != -1:
+        header["FILTER"] = "H"
+    elif header["FILTER"].find("Y") != -1:
+        header["FILTER"] = "Y"
+    elif header["FILTER"].find("u") != -1:
+        header["FILTER"] = "u"
+
+    if header["FILTER"] in spring_filters_map:
+        header["FID"] = int(spring_filters_map[header["FILTER"]])
+    else:
+        header["FID"] = 99  # not -99 so as to not break anything
+
+    header[SNCOSMO_KEY] = sncosmo_filters.get(header["FILTER"].lower())
+
+    if OBSCLASS_KEY not in header:
+        if "OBSTYPE" in header and header["OBSTYPE"] is not None:
+            header[OBSCLASS_KEY] = header["OBSTYPE"].strip().lower()
+        else:
+            header[OBSCLASS_KEY] = "science"
+
+    target = "unknown"
+    if ("SCHDNAME" in header.keys()) & ("OBHISTID" in header.keys()):
+        if header["SCHDNAME"] != "":
+            target = f"{header['SCHDNAME']}_{header['OBHISTID']}"
+    elif TARGET_KEY in header.keys():
+        if header[TARGET_KEY] != "":
+            target = header[TARGET_KEY]
+
+    if header[OBSCLASS_KEY].lower() in [
+        "dark",
+        "bias",
+        "focus",
+        "pointing",
+        "flat",
+        "test",
+        "corrupted",
+    ]:
+        target = header[OBSCLASS_KEY].lower()
+    header[TARGET_KEY] = target
+    header["GAIN"] = SPRING_GAIN
+
+    header["COADDS"] = 1
+    header["CALSTEPS"] = ""
+    header["PROCFAIL"] = 1
+    header["RAWPATH"] = path.as_posix()
+    header[BASE_NAME_KEY] = Path(path).name
+    header["MEDCOUNT"] = np.nanmedian(data)
+
+    if "PROGPI" not in header.keys():
+        header["PROGPI"] = default_program.pi_name
+    if "PROGID" not in header.keys():
+        header["PROGID"] = default_program.progid
+
+    if "PROGNAME" not in header:
+        header["PROGNAME"] = default_program.progname
+    if header["PROGNAME"] == "":
+        header["PROGNAME"] = default_program.progname
+
+    if len(header["PROGNAME"]) != 8:
+        logger.warning(
+            f"PROGNAME {header['PROGNAME']} is not 8 characters long. "
+            f"Replacing with default."
+        )
+        header["PROGNAME"] = default_program.progname
+
+    header["UTCTIME"] = Time(header["UTCISO"], format="iso").isot
+    date_t = Time(header["UTCTIME"])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", AstropyWarning)
+        header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
+
+    header["IMGTYPE"] = header[OBSCLASS_KEY]
+    if header["IMGTYPE"] == "test":
+        header["IMGTYPE"] = "other"
+
+    if not header["IMGTYPE"] in imgtype_dict:
+        logger.error(f"Unknown image type: {header['IMGTYPE']}")
+        header["ITID"] = itid_dict[imgtype_dict["corrupted"]]
+    else:
+        header["ITID"] = itid_dict[imgtype_dict[header["IMGTYPE"]]]
+
+    header["EXPMJD"] = header["MJD-OBS"]
+    header[TIME_KEY] = header["UTCTIME"]
+    header["RAWID"] = int((date_t.mjd - 59000.0) * 86400.0)  # seconds since 59000 MJD
+    data = data.astype("float32")
+    return data, header
+
+
+def load_raw_spring_image(path: str | Path) -> Image:
+    return open_raw_image(path, load_raw_spring_fits)
+
+
+def load_spring_stack(
+    path: str | Path,
+) -> Image:
+    """
+    Load proc image
+
+
+    :param path: Path to image
+    :return: data and header
+    """
+
+    logger.debug(f"Loading {path}")
+    data, header = open_fits(path)
+
+    dirname = path.split("/spring/")[0] + "/spring/"
+    wghtpath = header["WGHTPATH"]
+    weight_pathname = wghtpath.split("/spring/")[-1]
+    new_weightpath = Path(dirname) / weight_pathname
+    header["WGHTPATH"] = new_weightpath.as_posix()
+    header["SAVEPATH"] = path
+
+    if "PSFCAT" in header.keys():
+        new_psfpath = Path(dirname) / header["PSFCAT"].split("/spring/")[-1]
+        header["PSFCAT"] = new_psfpath.as_posix()
+
+    if "RFCTPATH" in header.keys():
+        new_catpath = Path(dirname) / header["RFCTPATH"].split("/winter/")[-1]
+        header["RFCTPATH"] = new_catpath.as_posix()
+
+    if TARGET_KEY not in header.keys():
+        if "TARGNAME" in header.keys():
+            header[TARGET_KEY] = header["TARGNAME"]
+    return Image(data=data, header=header)

@@ -10,6 +10,7 @@ from mirar.pipelines.git.git_pipeline import GITPipeline
 from mirar.pipelines.gmos.gmos_pipeline import GMOSPipeline
 from mirar.pipelines.lmi.lmi_pipeline import LMIPipeline
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
+from mirar.pipelines.spring.spring_pipeline import SPRINGPipeline
 from mirar.pipelines.summer.summer_pipeline import SummerPipeline
 from mirar.pipelines.wasp.wasp_pipeline import WASPPipeline
 from mirar.pipelines.winter.winter_pipeline import WINTERPipeline
