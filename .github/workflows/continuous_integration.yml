@@ -110,17 +110,23 @@ jobs:
           $POETRY_HOME/bin/poetry install -E dev
 
       # Set up astrometry.net
-      - name: astrometry.net index files
+      - name: Cache astrometry.net index files
+        id: cache-astrometry
+        uses: actions/cache@v4
+        with:
+          path: /usr/share/miniconda/envs/test/data
+          key: astrometry-index-5200-v1
+
+      - name: Download astrometry.net index files
+        if: steps.cache-astrometry.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -o /usr/share/miniconda/envs/test/data/index-5200-43.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5200-43.fits
-          curl -o /usr/share/miniconda/envs/test/data/index-5201-04.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5201-04.fits
-          curl -o /usr/share/miniconda/envs/test/data/index-5204-13.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5204-13.fits
-          curl -o /usr/share/miniconda/envs/test/data/index-5205-13.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5205-13.fits
-          # WINTER
-          curl -o /usr/share/miniconda/envs/test/data/index-5205-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5205-11.fits
-          curl -o /usr/share/miniconda/envs/test/data/index-5203-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5203-11.fits
-          curl -o /usr/share/miniconda/envs/test/data/index-5206-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5206-11.fits
-          curl -o /usr/share/miniconda/envs/test/data/index-5204-11.fits https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/index-5204-11.fits
+          DIR=/usr/share/miniconda/envs/test/data
+          gh release download astrometry-index-v1 \
+            --repo winter-telescope/mirar \
+            --dir "$DIR" \
+            --pattern "*.fits"
 
       # Set up database
       - name: postgres
