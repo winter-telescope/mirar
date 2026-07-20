@@ -61,10 +61,7 @@ class SPRINGPipeline(Pipeline):
         "photometry_color": reduce + astrometry + stack_dithers + photcal_with_color,
         "photcal_and_export": photcal_and_export,
         "photcal_color_and_export": photcal_color_and_export,
-        "subtraction": load_final_stack
-        + imsub
-        + diff_forced_photometry
-        + diff_to_skyportal,
+        "subtraction": load_final_stack + imsub + diff_forced_photometry,
         "full_stack_fp": reduce + astrometry + stack_dithers + stack_forced_photometry,
         "full_diff_fp": reduce
         + astrometry
