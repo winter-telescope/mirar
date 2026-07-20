@@ -258,6 +258,7 @@ class SkyportalSourceUploader(BaseSourceProcessor):
             photometry["obj_id"] = alert[SOURCE_NAME_KEY]
             photometry["instrument_id"] = self.instrument_id
             photometry["group_ids"] = self.group_ids
+            photometry["origin"] = self.origin
             if hasattr(self, "stream_id"):
                 photometry["stream_ids"] = [int(self.stream_id)]
             logger.debug(f"Posting photometry of {alert[SOURCE_NAME_KEY]} to SkyPortal")

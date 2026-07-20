@@ -430,13 +430,13 @@ reduce = load_raw + csvlog + dark_calibrate + flat_calibrate
 stack_to_skyportal = [
     SourceLoader(input_dir_name="stack_photometry", input_dir=base_output_dir),
     CustomSourceTableModifier(spring_skyportal_formatter),
-    SkyportalSourceUploader(**spring_fritz_config),
+    SkyportalSourceUploader(origin="spring_stack", **spring_fritz_config),
     HeaderEditor(edit_keys="sent", values=True),
 ]
 
 diff_to_skyportal = [
     SourceLoader(input_dir_name="diff_photometry", input_dir=base_output_dir),
     CustomSourceTableModifier(spring_skyportal_formatter),
-    SkyportalSourceUploader(**spring_fritz_config),
+    SkyportalSourceUploader(origin="spring_diff", **spring_fritz_config),
     HeaderEditor(edit_keys="sent", values=True),
 ]
