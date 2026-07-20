@@ -333,12 +333,12 @@ imsub = [
         phot_sextractor=spring_reference_psf_phot_sextractor,
     ),
     Sextractor(
-        **sextractor_reference_psf_phot_config,
+        **sextractor_PSF_photometry_config,
         output_sub_dir="subtract",
         cache=False,
         use_psfex=True,
     ),
-    PSFex(config_path=ref_psfex_path, output_sub_dir="subtract", norm_fits=True),
+    PSFex(config_path=psfex_config_path, output_sub_dir="subtract", norm_fits=True),
     AlignReference(
         order=1,
         sextractor=spring_reference_sextractor,
