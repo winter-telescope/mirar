@@ -16,12 +16,10 @@ from mirar.paths import (
 from mirar.pipelines.spring.config import (
     SPRING_GAIN,
     psfex_config_path,
-    ref_psfex_path,
     sextractor_astrometry_config,
     sextractor_candidates_config,
     sextractor_photometry_config,
     sextractor_PSF_photometry_config,
-    sextractor_reference_psf_phot_config,
     spring_cal_requirements,
     spring_fritz_config,
     swarp_config_path,
