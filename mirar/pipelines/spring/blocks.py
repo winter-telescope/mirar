@@ -298,6 +298,7 @@ export_stacks = [
             BASE_NAME_KEY,
             "COADDS",
             TARGET_KEY,
+            "TARGNAME",
             "CRVAL1",
             "CRVAL2",
             "FILTER",
