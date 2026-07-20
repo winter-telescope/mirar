@@ -244,13 +244,14 @@ def spring_reference_generator(image: Image):
 
     cache_ref_stack = False
     if filtername in ["J", "H"]:
+        skip_online_query = filtername == "H"
         wfcam_query = WFAUQuery(
             num_query_points=4,
             filter_name=filtername,
-            use_db_for_component_queries=False,
+            use_db_for_component_queries=True,
             components_db_table=RefComponent,
             query_db_table=RefQuery,
-            skip_online_query=False,
+            skip_online_query=skip_online_query,
             component_image_subdir="spring/references/components",
         )
 
