@@ -43,6 +43,7 @@ class SPRINGPipeline(Pipeline):
         + stack_dithers
         + photcal_and_export
         + stack_forced_photometry
+        + stack_to_skyportal
         + load_final_stack
         + imsub
         + diff_forced_photometry
