@@ -309,6 +309,7 @@ if env_board is not None:
         raise ValueError(f"Invalid BOARD_ID environment variable: {env_board}") from exc
 else:
     BOARD_ID = DEFAULT_BOARD_ID
+
 select_subset = [
     ImageSelector(("BOARD_ID", str(BOARD_ID))),
 ]
