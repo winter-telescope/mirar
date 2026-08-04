@@ -28,6 +28,7 @@ from mirar.pipelines.winter.blocks import (
     imsub,
     load_avro,
     load_calibrated,
+    load_fake_stack,
     load_final_stack,
     load_photcaled_stacks,
     load_raw,
@@ -159,6 +160,7 @@ class WINTERPipeline(Pipeline):
         + imsub
         + detect_candidates
         + process_candidates,
+        "detect_candidates_fake": load_fake_stack + imsub + detect_candidates,
     }
 
     non_linear_level = 40000.0

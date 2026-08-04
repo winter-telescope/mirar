@@ -792,6 +792,18 @@ load_final_stack = [
     ImageRebatcher(BASE_NAME_KEY),
 ]
 
+
+load_fake_stack = [
+    ImageLoader(
+        input_sub_dir="final_fakesources",
+        input_img_dir=base_output_dir,
+        load_image=load_winter_stack,
+    ),
+    DatabaseImageInserter(db_table=Stack, duplicate_protocol="ignore"),
+    ImageRebatcher(BASE_NAME_KEY),
+]
+
+
 plot_stack = [
     ImageRebatcher([TARGET_KEY, "BOARD_ID"]),
     ImagePlotter(
