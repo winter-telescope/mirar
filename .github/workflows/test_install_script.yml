@@ -1,0 +1,46 @@
+name: Install script
+
+on:
+  push:
+  pull_request:
+  merge_group:
+  schedule:
+    - cron: '0 0 1,15 * *'
+  workflow_dispatch:
+
+jobs:
+  test_install:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+
+      - name: Run install script
+        run: |
+          bash install_mirar.sh mirar
+
+      - name: Verify tools
+        shell: bash -el {0}
+        run: |
+          conda activate mirar
+          solve-field --version
+          swarp -v
+          psfex -v
+          sex -v
+          scamp -v
+          python --version
+
+      - name: Run doc tests
+        shell: bash -el {0}
+        run: |
+          conda activate mirar
+          make -C docs/ doctest

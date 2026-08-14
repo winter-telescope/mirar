@@ -46,6 +46,11 @@ class VizierCatalog(BaseCatalog, ABC):
         """Key for dec values"""
         raise NotImplementedError()
 
+    @property
+    def extra_columns(self) -> list[str]:
+        """Code of catalog in Vizier"""
+        return []
+
     def __init__(
         self,
         *args,
@@ -90,7 +95,7 @@ class VizierCatalog(BaseCatalog, ABC):
         )
 
         viz_cat = Vizier(
-            columns=["*"],
+            columns=["*"] + self.extra_columns,  # * is only 'all default', not 'all'
             column_filters={
                 f"{self.get_mag_key()}": f"{self.min_mag} .. {self.max_mag}",
                 f"{self.get_mag_error_key()}": f"<{1.086 / self.snr_threshold:.3f}",
