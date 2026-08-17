@@ -102,13 +102,7 @@ def lmi_reference_image_generator(image: Image) -> BaseReferenceGenerator:
     logger.debug(f"Filter is {filter_name}")
 
     if filter_name in ["u", "U"]:
-        if in_sdss(image["CRVAL1"], image["CRVAL2"]):
-            return SDSSRef(filter_name=filter_name)
-
-        err = "U band image is in a field with no reference image."
-        logger.error(err)
-        raise NotInSDSSError(err)
-
+        return SDSSRef(filter_name=filter_name)
     logger.debug("Will query reference image from PS1")
     return PS1Ref(filter_name=filter_name)
 

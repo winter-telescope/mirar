@@ -10,11 +10,14 @@ from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.lmi.blocks import (
     build_log,
     load_and_stack,
+    load_and_subtract,
     load_diff,
     load_raw,
     photometry,
+    photometry_nosub,
     reduce,
     skyportal,
+    skyportal_nosub,
     subtract,
 )
 from mirar.pipelines.lmi.config import PIPELINE_NAME, lmi_cal_requirements
@@ -36,9 +39,12 @@ class LMIPipeline(Pipeline):
         "default": load_raw + reduce + subtract + photometry,
         "log": load_raw + build_log,
         "reduce": load_raw + reduce,
+        "subtract": load_and_subtract + photometry,
         "skyportal": skyportal,
         "stack": load_and_stack,
         "photometry": load_diff + photometry,
+        "photometry_nosub": photometry_nosub,
+        "skyportal_nosub": skyportal_nosub,
     }
 
     default_cal_requirements = lmi_cal_requirements
