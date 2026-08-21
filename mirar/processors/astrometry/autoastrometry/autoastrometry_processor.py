@@ -19,10 +19,7 @@ from mirar.processors.astrometry.autoastrometry.errors import (
     AstrometrySourceError,
     AstrometryURLError,
 )
-from mirar.processors.astrometry.autoastrometry.utils import (
-    dec_str_2_deg,
-    ra_str_2_deg,
-)
+from mirar.processors.astrometry.autoastrometry.utils import dec_str_2_deg, ra_str_2_deg
 from mirar.processors.base_processor import BaseImageProcessor
 
 logger = logging.getLogger(__name__)

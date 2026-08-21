@@ -246,7 +246,10 @@ def get_catalog_astroquery(
     cat_list.sort(key=compare_mag)
     return cat_list
 
+
 CATALOG_ALIASES = {"ub2": "usno"}
+
+
 def get_ref_sources_from_catalog_astroquery(
     catalog: str, center_ra: float, center_dec: float, box_size_arcsec: float
 ) -> tuple[list[BaseSource], int, float]:
@@ -268,8 +271,11 @@ def get_ref_sources_from_catalog_astroquery(
     try:
         for trycat in trycats:
             ref_src_list = get_catalog_astroquery(
-                catalog=trycat, ra=center_ra, dec=center_dec,
-                box_size_arcsec=box_size_arcsec,)
+                catalog=trycat,
+                ra=center_ra,
+                dec=center_dec,
+                box_size_arcsec=box_size_arcsec,
+            )
             if len(ref_src_list) > 15:
                 break
     except urllib.error.URLError as exc:
