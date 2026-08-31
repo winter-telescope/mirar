@@ -11,26 +11,12 @@ from astropy.table import Table
 from astropy.time import Time
 from astropy.wcs import WCS
 
-from mirar.data import ImageBatch
-from mirar.paths import BASE_NAME_KEY
-from mirar.processors.astrometry.anet.anet import AstrometryNetExecutionError
-from mirar.processors.astrometry.anet.anet_processor import (
-    AstrometryNet,
-    AstrometryNetNoSolvedError,
-)
-from mirar.processors.astrometry.autoastrometry.autoastrometry_processor import (
-    AutoAstrometry,
-)
-from mirar.pipelines.spring.config import (
-    SPRING_PIXEL_SCALE,
-    autoastro_sextractor_config,
-)
-
 from mirar.catalog import PS1, Gaia2Mass
 from mirar.data import Dataset, Image, ImageBatch
 from mirar.data.source_data import SourceBatch
 from mirar.errors.exceptions import ProcessorError
 from mirar.paths import (
+    BASE_NAME_KEY,
     FILTER_KEY,
     MAGLIM_KEY,
     SEXTRACTOR_HEADER_KEY,
@@ -42,6 +28,8 @@ from mirar.paths import (
 )
 from mirar.pipelines.spring.config import (
     SPRING_GAIN,
+    SPRING_PIXEL_SCALE,
+    autoastro_sextractor_config,
     ref_psfex_path,
     sextractor_astrometry_config,
     sextractor_reference_config,
@@ -51,6 +39,14 @@ from mirar.pipelines.spring.config import (
 from mirar.pipelines.spring.constants import spring_filters_map
 from mirar.pipelines.spring.models import RefComponent, RefQuery, RefStack
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
+from mirar.processors.astrometry.anet.anet import AstrometryNetExecutionError
+from mirar.processors.astrometry.anet.anet_processor import (
+    AstrometryNet,
+    AstrometryNetNoSolvedError,
+)
+from mirar.processors.astrometry.autoastrometry.autoastrometry_processor import (
+    AutoAstrometry,
+)
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
 )
@@ -495,6 +491,7 @@ def spring_skyportal_formatter(source_table: SourceBatch) -> SourceBatch:
 
     return source_table
 
+
 ANET_ERRORS = (AstrometryNetNoSolvedError, AstrometryNetExecutionError)
 
 
@@ -546,8 +543,9 @@ def process_astrometry(batch: ImageBatch, night_sub_dir: str) -> ImageBatch:
             new_batch.append(solved[0])
             continue
         except ANET_ERRORS as exc:
-            logger.info(f"{base_name}: astrometry.net failed ({exc}), "
-                        f"trying autoastrometry")
+            logger.info(
+                f"{base_name}: astrometry.net failed ({exc}), " f"trying autoastrometry"
+            )
 
         solved = auto.apply(ImageBatch([image]))
         new_batch.append(solved[0])
