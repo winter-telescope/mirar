@@ -11,6 +11,21 @@ from astropy.table import Table
 from astropy.time import Time
 from astropy.wcs import WCS
 
+from mirar.data import ImageBatch
+from mirar.paths import BASE_NAME_KEY
+from mirar.processors.astrometry.anet.anet import AstrometryNetExecutionError
+from mirar.processors.astrometry.anet.anet_processor import (
+    AstrometryNet,
+    AstrometryNetNoSolvedError,
+)
+from mirar.processors.astrometry.autoastrometry.autoastrometry_processor import (
+    AutoAstrometry,
+)
+from mirar.pipelines.spring.config import (
+    SPRING_PIXEL_SCALE,
+    autoastro_sextractor_config,
+)
+
 from mirar.catalog import PS1, Gaia2Mass
 from mirar.data import Dataset, Image, ImageBatch
 from mirar.data.source_data import SourceBatch
@@ -479,6 +494,65 @@ def spring_skyportal_formatter(source_table: SourceBatch) -> SourceBatch:
         source.set_data(src_df)
 
     return source_table
+
+ANET_ERRORS = (AstrometryNetNoSolvedError, AstrometryNetExecutionError)
+
+
+def process_astrometry(batch: ImageBatch, night_sub_dir: str) -> ImageBatch:
+    """
+    Solve astrometry with astrometry.net, falling back to autoastrometry
+    for any image astrometry.net cannot solve.
+
+    :param batch: images to solve
+    :param night_sub_dir: night directory, passed to the sub-processors
+    :return: batch of solved images
+    """
+    anet = AstrometryNet(
+        output_sub_dir="anet",
+        scale_bounds=[0.3, 0.5],
+        scale_units="app",
+        use_sextractor=True,
+        search_radius_deg=0.15,
+        sextractor_config_path=spring_anet_sextractor_config_path_generator,
+        use_weight=True,
+        timeout=120,
+        cache=False,
+        no_tweak=True,
+    )
+    anet.set_night(night_sub_dir)
+
+    auto = AutoAstrometry(
+        catalog="tmc",
+        pixel_scale=SPRING_PIXEL_SCALE,
+        inv=True,
+        box_size=400,
+        sextractor_config_path=autoastro_sextractor_config,
+        use_existing_catalog=False,
+        use_header_radec=True,
+        saturation=None,
+        min_matches=5,
+        max_scatter_arcsec=1.0,
+        on_failure="flag",
+    )
+    auto.set_night(night_sub_dir)
+
+    new_batch = ImageBatch()
+
+    for image in batch:
+        base_name = image[BASE_NAME_KEY]
+
+        try:
+            solved = anet.apply(ImageBatch([image]))
+            new_batch.append(solved[0])
+            continue
+        except ANET_ERRORS as exc:
+            logger.info(f"{base_name}: astrometry.net failed ({exc}), "
+                        f"trying autoastrometry")
+
+        solved = auto.apply(ImageBatch([image]))
+        new_batch.append(solved[0])
+
+    return new_batch
 
 
 # def ensure_progname_exists_for_batch(batch: ImageBatch) -> ImageBatch:
