@@ -34,6 +34,7 @@ ASTROMETRY_ERRORS = (
 # Header keywords searched, in order, for the telescope pointing
 RA_KEYS = ["RA", "OBJRA", "TELRA", "CRVAL1"]
 DEC_KEYS = ["DEC", "OBJDEC", "TELDEC", "CRVAL2"]
+DIAGNOSTIC_KEYS = ["ASTR_NUM", "ASTR_UNC", "ASTR_DPA", "ASTR_SPA", "ASTR_CAT"]
 
 
 class AutoAstrometry(BaseImageProcessor):
@@ -62,7 +63,7 @@ class AutoAstrometry(BaseImageProcessor):
         use_header_radec: bool = True,
         max_scatter_arcsec: Optional[float] = None,
         min_matches: Optional[int] = None,
-        on_failure: str = "raise",
+        on_failure: str = "flag",
     ):
         """
         :param temp_output_sub_dir: subdirectory for temp files
@@ -228,19 +229,29 @@ class AutoAstrometry(BaseImageProcessor):
                     temp_path.unlink(missing_ok=True)
                     raise
 
-            # Load the updated header back, then clean up
-            image = self.open_fits(temp_path)
-            temp_path.unlink(missing_ok=True)
+            passed = failed_reason == ""
 
-            if failed_reason == "":
-                passed, failed_reason = self._validate(image, base_name)
-                if not passed:
+            if passed:
+                solved = self.open_fits(temp_path)
+                passed, failed_reason = self._validate(solved, base_name)
+
+                if passed:
+                    image = solved
+                else:
+                    # Keep the original WCS, take only the diagnostics
                     logger.error(failed_reason)
+                    for key in DIAGNOSTIC_KEYS:
+                        if key in solved.keys():
+                            image[key] = solved[key]
+
                     if self.on_failure == "raise":
+                        temp_path.unlink(missing_ok=True)
                         raise AstrometryCrossmatchError(failed_reason)
 
-            image["ASTRGOOD"] = failed_reason == ""
-            if failed_reason != "":
+            temp_path.unlink(missing_ok=True)
+
+            image["ASTRGOOD"] = passed
+            if not passed:
                 image["ASTRFAIL"] = failed_reason[:68]
 
             batch[i] = image
