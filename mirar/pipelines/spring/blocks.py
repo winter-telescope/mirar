@@ -198,6 +198,7 @@ astrometry_with_anet = [
 astrometry = [
     ImageRebatcher(BASE_NAME_KEY),
     NightAwareImageBatchModifier(process_astrometry),
+    ImageSelector(("ASTRGOOD", "True")),
     ImageSaver("post_astrometry"),
 ]
 
