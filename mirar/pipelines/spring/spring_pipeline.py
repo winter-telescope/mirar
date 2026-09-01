@@ -6,6 +6,7 @@ import logging
 
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.spring.blocks import (
+    astrometry_with_anet,
     astrometry,
     csvlog,
     detect_candidates,
@@ -51,6 +52,7 @@ class SPRINGPipeline(Pipeline):
         "load_only": load_raw,
         "log": load_raw + csvlog,
         "astrometry": reduce + astrometry,
+        "astrometry_with_anet": reduce + astrometry_with_anet,
         "stacking": reduce + astrometry + stack_dithers,
         "photometry": reduce + astrometry + stack_dithers + photcal_without_color,
         "photometry_color": reduce + astrometry + stack_dithers + photcal_with_color,
