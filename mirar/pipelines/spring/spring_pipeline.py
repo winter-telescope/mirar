@@ -6,8 +6,8 @@ import logging
 
 from mirar.pipelines.base_pipeline import Pipeline
 from mirar.pipelines.spring.blocks import (
-    astrometry_with_anet,
     astrometry,
+    astrometry_with_anet,
     csvlog,
     detect_candidates,
     diff_forced_photometry,
