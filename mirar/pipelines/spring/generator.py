@@ -540,7 +540,9 @@ def process_astrometry(batch: ImageBatch, night_sub_dir: str) -> ImageBatch:
 
         try:
             solved = anet.apply(ImageBatch([image]))
-            new_batch.append(solved[0])
+            out = solved[0]
+            out["ASTRGOOD"] = "True"
+            new_batch.append(out)
             continue
         except ANET_ERRORS as exc:
             logger.info(
