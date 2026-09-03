@@ -163,8 +163,8 @@ class AutoAstrometry(BaseImageProcessor):
         :param base_name: name, for the log message
         :return: (passed, reason)
         """
-        n_match = image.get("ASTR_NUM", 0)
-        scatter = image.get("ASTR_UNC", 999.0)
+        n_match = image["ASTR_NUM"] if "ASTR_NUM" in image.keys() else 0
+        scatter = image["ASTR_UNC"] if "ASTR_UNC" in image.keys() else 999.0
 
         if self.min_matches is not None and n_match < self.min_matches:
             return False, (
@@ -250,7 +250,7 @@ class AutoAstrometry(BaseImageProcessor):
 
             temp_path.unlink(missing_ok=True)
 
-            image["ASTRGOOD"] = passed
+            image["ASTRGOOD"] = "True" if passed else "False"
             if not passed:
                 image["ASTRFAIL"] = failed_reason[:68]
 
