@@ -41,7 +41,7 @@ class SDSSRef(BaseReferenceGenerator):
 
         while rad < 100:
             imgs = SDSS.get_images(
-                crd, radius=rad * u.arcsec, band=self.filter_name.lower()
+                coordinates=crd, radius=rad * u.arcsec, band=self.filter_name.lower()
             )
             if imgs is not None:
                 break
@@ -51,7 +51,7 @@ class SDSSRef(BaseReferenceGenerator):
             rad += 10
 
         if len(imgs) == 0:
-            err = "Reference image not found from SDSS"
+            err = f"Reference image not found from SDSS for {self.filter_name.lower()}"
             logger.error(err)
             raise ReferenceImageError(err)
 

@@ -166,11 +166,16 @@ subtract = [
     ImageSaver(output_dir_name="diff"),
 ]
 
+load_and_subtract = [
+    ImageLoader(input_sub_dir="stacked"),
+    ImageRebatcher([BASE_NAME_KEY]),
+] + subtract
+
 load_diff = [
     ImageLoader(input_sub_dir="diff"),
 ]
 
-photometry = [
+apply_photometry = [
     ForcedPhotometryDetector(ra_header_key="OBJRA", dec_header_key="OBJDEC"),
     RegionsWriter(output_dir_name="diff"),
     RegionsWriter(output_dir_name="stacked"),
@@ -201,6 +206,9 @@ photometry = [
         zp_key="ZP_AUTO",
     ),
     PSFPhotometry(),
+]
+
+photometry = apply_photometry + [
     ParquetWriter(output_dir_name="sources"),
     CSVExporter(output_dir_name="sources"),
     ImageUpdater(modify_dir_name="diff"),
@@ -210,4 +218,34 @@ skyportal = [
     ParquetLoader(input_dir_name="sources"),
     CustomSourceTableModifier(lmi_skyportal_formatter),
     SkyportalSourceUploader(origin="mirar", group_ids=[1], instrument_id=45),
+]
+
+photometry_nosub = (
+    [
+        ImageLoader(input_sub_dir="stacked"),
+        ImageRebatcher(split_key=BASE_NAME_KEY),
+        Sextractor(
+            output_sub_dir="stacked_photometry",
+            cache=True,
+            write_regions_bool=False,
+            **sextractor_photometry_config,
+        ),
+        PSFex(
+            config_path=psfex_sci_config_path,
+            output_sub_dir="stacked_photometry",
+        ),
+    ]
+    + apply_photometry
+    + [
+        ParquetWriter(output_dir_name="sources_nosub"),
+        CSVExporter(output_dir_name="sources_nosub"),
+    ]
+)
+
+skyportal_nosub = [
+    ParquetLoader(input_dir_name="sources_nosub"),
+    CustomSourceTableModifier(lmi_skyportal_formatter),
+    SkyportalSourceUploader(
+        origin="mirar-nosubtraction", group_ids=[1], instrument_id=45
+    ),
 ]
