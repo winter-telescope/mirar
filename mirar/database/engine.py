@@ -2,20 +2,18 @@
 Util functions for database interactions
 """
 
-from typing import Optional
-
 from sqlalchemy import URL, Engine, NullPool, create_engine
 
 from mirar.database.credentials import DBConfig
 
 
-def get_engine(
+def get_engine(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     db_name: str,
-    db_user: Optional[str] = None,
-    db_password: Optional[str] = None,
-    db_hostname: Optional[str] = None,
-    db_port: Optional[int] = None,
-    db_schema: Optional[str] = None,
+    db_user: str | None = None,
+    db_password: str | None = None,
+    db_hostname: str | None = None,
+    db_port: int | None = None,
+    db_schema: str | None = None,
 ) -> Engine:
     """
     Function to create a postgres engine. Any argument left as None is
@@ -29,22 +27,27 @@ def get_engine(
     :param db_schema: schema of db
     :return: sqlalchemy engine
     """
-    config = DBConfig.from_env()
+    config = DBConfig.from_env(
+        db_user=db_user,
+        db_password=db_password,
+        db_hostname=db_hostname,
+        db_name=db_name,
+        db_port=db_port,
+        db_schema=db_schema,
+    )
 
     url_object = URL.create(
         "postgresql+psycopg",
-        username=db_user if db_user is not None else config.db_user,
-        password=db_password if db_password is not None else config.db_password,
-        host=db_hostname if db_hostname is not None else config.db_hostname,
-        port=db_port if db_port is not None else config.db_port,
-        database=db_name,
+        username=config.db_user,
+        password=config.db_password,
+        host=config.db_hostname,
+        port=config.db_port,
+        database=config.db_name,
     )
-
-    schema = db_schema if db_schema is not None else config.db_schema
 
     return create_engine(
         url_object,
         future=True,
         poolclass=NullPool,
-        connect_args={"options": f"-csearch_path={schema}"},
+        connect_args={"options": f"-csearch_path={config.db_schema}"},
     )

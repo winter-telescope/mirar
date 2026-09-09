@@ -3,7 +3,6 @@ Module containing postgres util functions
 """
 
 import logging
-from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy_utils import create_database, database_exists
@@ -23,24 +22,26 @@ class PostgresUser:
     user_env_variable = DB_USER_KEY
     pass_env_variable = DB_PASSWORD_KEY
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
-        db_user: Optional[str] = None,
-        db_password: Optional[str] = None,
-        db_hostname: Optional[str] = None,
-        db_name: Optional[str] = None,
-        db_port: Optional[int] = None,
+        db_user: str | None = None,
+        db_password: str | None = None,
+        db_hostname: str | None = None,
+        db_name: str | None = None,
+        db_port: int | None = None,
     ):
-        config = DBConfig.from_env()
-        self.db_user = db_user if db_user is not None else config.db_user
-        self.db_password = (
-            db_password if db_password is not None else config.db_password
+        config = DBConfig.from_env(
+            db_user=db_user,
+            db_password=db_password,
+            db_hostname=db_hostname,
+            db_name=db_name,
+            db_port=db_port,
         )
-        self.db_hostname = (
-            db_hostname if db_hostname is not None else config.db_hostname
-        )
-        self.db_name = db_name if db_name is not None else config.db_name
-        self.db_port = db_port if db_port is not None else config.db_port
+        self.db_user = config.db_user
+        self.db_password = config.db_password
+        self.db_hostname = config.db_hostname
+        self.db_name = config.db_name
+        self.db_port = config.db_port
 
     def validate_credentials(self):
         """

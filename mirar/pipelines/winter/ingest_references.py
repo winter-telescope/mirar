@@ -7,7 +7,6 @@ import logging
 import sys
 from glob import glob
 from pathlib import Path
-from typing import Optional
 
 from astropy.io import fits
 
@@ -34,7 +33,7 @@ def get_logger(level="INFO"):
 
 
 def export_image_to_db(
-    path: str, db_table=RefComponent, pg_user: Optional[PostgresUser] = None
+    path: str, db_table=RefComponent, pg_user: PostgresUser | None = None
 ):
     """
     Export a fits image to the database

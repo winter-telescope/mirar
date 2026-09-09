@@ -4,7 +4,7 @@ Module containing base database processor class
 
 import logging
 from abc import ABC
-from typing import Optional, Type
+from typing import Type
 
 from mirar.database.base_model import BaseDB
 from mirar.database.user import PostgresAdmin, PostgresUser
@@ -21,8 +21,8 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
     def __init__(
         self,
         db_table: Type[BaseDB],
-        pg_user: Optional[PostgresUser] = None,
-        pg_admin: Optional[PostgresAdmin] = None,
+        pg_user: PostgresUser | None = None,
+        pg_admin: PostgresAdmin | None = None,
     ):
         super().__init__()
         self.db_table = db_table
