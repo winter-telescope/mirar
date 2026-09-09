@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase
 
 from mirar.database.base_table import BaseTable
-from mirar.database.credentials import DB_PASSWORD, DB_USER
+from mirar.database.credentials import DBConfig
 from mirar.database.engine import get_engine
 from mirar.database.user import PostgresAdmin, PostgresUser
 
@@ -23,6 +23,7 @@ def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
     :param db_base: BaseTable
     :return: None
     """
+    config = DBConfig.from_env()
     db_name = db_base.db_name
     engine = get_engine(db_name=db_name)
 
@@ -39,12 +40,14 @@ def setup_database(db_base: Union[DeclarativeBase, BaseTable]):
         except OperationalError:
             # Create new user
             logger.warning(
-                f"Failed to validate credentials for user {DB_USER}. "
+                f"Failed to validate credentials for user {config.db_user}. "
                 f"Will try creating new user with this name using admin credentials."
             )
             pg_admin = PostgresAdmin(db_name="postgres")
             pg_admin.validate_credentials()
-            pg_admin.create_new_user(new_db_user=DB_USER, new_password=DB_PASSWORD)
+            pg_admin.create_new_user(
+                new_db_user=config.db_user, new_password=config.db_password
+            )
             pg_user.validate_credentials()
 
     pg_user.create_db(db_name=db_name)

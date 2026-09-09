@@ -5,7 +5,7 @@ Models for database and pydantic dataclass models
 import logging
 
 from mirar.database.base_table import BaseTable
-from mirar.database.credentials import DB_USER
+from mirar.database.credentials import DBConfig
 from mirar.database.q3c import create_q3c_extension
 from mirar.database.setup import setup_database
 from mirar.pipelines.winter.models._astrometry_stats import (
@@ -95,7 +95,7 @@ def set_up_winter_databases():
     :return: None
     """
 
-    if DB_USER is not None:
+    if DBConfig.from_env().db_user is not None:
         setup_database(db_base=WinterBase)
 
         for table in [

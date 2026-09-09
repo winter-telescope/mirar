@@ -2,17 +2,11 @@
 Postgres Admin class
 """
 
+from typing import Optional
+
 from sqlalchemy.sql.ddl import DDL
 
-from mirar.database.credentials import (
-    ADMIN_PASSWORD,
-    ADMIN_USER,
-    DB_HOSTNAME,
-    DB_NAME,
-    DB_PORT,
-    PG_ADMIN_PWD_KEY,
-    PG_ADMIN_USER_KEY,
-)
+from mirar.database.credentials import PG_ADMIN_PWD_KEY, PG_ADMIN_USER_KEY, DBConfig
 from mirar.database.engine import get_engine
 from mirar.database.user.postgres_user import PostgresUser
 
@@ -27,15 +21,18 @@ class PostgresAdmin(PostgresUser):
 
     def __init__(
         self,
-        db_user: str = ADMIN_USER,
-        db_password: str = ADMIN_PASSWORD,
-        db_hostname: str = DB_HOSTNAME,
-        db_name: str = DB_NAME,
-        db_port: int = DB_PORT,
+        db_user: Optional[str] = None,
+        db_password: Optional[str] = None,
+        db_hostname: Optional[str] = None,
+        db_name: Optional[str] = None,
+        db_port: Optional[int] = None,
     ):
+        config = DBConfig.from_env()
         super().__init__(
-            db_user=db_user,
-            db_password=db_password,
+            db_user=db_user if db_user is not None else config.admin_user,
+            db_password=(
+                db_password if db_password is not None else config.admin_password
+            ),
             db_hostname=db_hostname,
             db_name=db_name,
             db_port=db_port,

@@ -5,7 +5,7 @@ Models for database and pydantic dataclass models
 # pylint: disable=duplicate-code
 import logging
 
-from mirar.database.credentials import DB_USER
+from mirar.database.credentials import DBConfig
 from mirar.database.setup import setup_database
 from mirar.pipelines.summer.models._diff import Diff, DiffTable
 from mirar.pipelines.summer.models._exposures import Exposure, ExposuresTable
@@ -56,7 +56,7 @@ def set_up_summer_databases():
     """
     Function to set up the summer databases
     """
-    if DB_USER is not None:
+    if DBConfig.from_env().db_user is not None:
         setup_database(SummerBase)
         populate_fields()
         populate_itid()

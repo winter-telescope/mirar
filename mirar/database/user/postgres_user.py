@@ -3,19 +3,12 @@ Module containing postgres util functions
 """
 
 import logging
+from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy_utils import create_database, database_exists
 
-from mirar.database.credentials import (
-    DB_HOSTNAME,
-    DB_NAME,
-    DB_PASSWORD,
-    DB_PASSWORD_KEY,
-    DB_PORT,
-    DB_USER,
-    DB_USER_KEY,
-)
+from mirar.database.credentials import DB_PASSWORD_KEY, DB_USER_KEY, DBConfig
 from mirar.database.engine import get_engine
 from mirar.database.errors import DataBaseError
 
@@ -32,17 +25,22 @@ class PostgresUser:
 
     def __init__(
         self,
-        db_user: str = DB_USER,
-        db_password: str = DB_PASSWORD,
-        db_hostname: str = DB_HOSTNAME,
-        db_name: str = DB_NAME,
-        db_port: int = DB_PORT,
+        db_user: Optional[str] = None,
+        db_password: Optional[str] = None,
+        db_hostname: Optional[str] = None,
+        db_name: Optional[str] = None,
+        db_port: Optional[int] = None,
     ):
-        self.db_user = db_user
-        self.db_password = db_password
-        self.db_hostname = db_hostname
-        self.db_name = db_name
-        self.db_port = db_port
+        config = DBConfig.from_env()
+        self.db_user = db_user if db_user is not None else config.db_user
+        self.db_password = (
+            db_password if db_password is not None else config.db_password
+        )
+        self.db_hostname = (
+            db_hostname if db_hostname is not None else config.db_hostname
+        )
+        self.db_name = db_name if db_name is not None else config.db_name
+        self.db_port = db_port if db_port is not None else config.db_port
 
     def validate_credentials(self):
         """
