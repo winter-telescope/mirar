@@ -4,15 +4,7 @@ Postgres Admin class
 
 from sqlalchemy.sql.ddl import DDL
 
-from mirar.database.credentials import (
-    ADMIN_PASSWORD,
-    ADMIN_USER,
-    DB_HOSTNAME,
-    DB_NAME,
-    DB_PORT,
-    PG_ADMIN_PWD_KEY,
-    PG_ADMIN_USER_KEY,
-)
+from mirar.database.credentials import PG_ADMIN_PWD_KEY, PG_ADMIN_USER_KEY, DBConfig
 from mirar.database.engine import get_engine
 from mirar.database.user.postgres_user import PostgresUser
 
@@ -25,20 +17,27 @@ class PostgresAdmin(PostgresUser):
     user_env_variable = PG_ADMIN_USER_KEY
     pass_env_variable = PG_ADMIN_PWD_KEY
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
-        db_user: str = ADMIN_USER,
-        db_password: str = ADMIN_PASSWORD,
-        db_hostname: str = DB_HOSTNAME,
-        db_name: str = DB_NAME,
-        db_port: int = DB_PORT,
+        db_user: str | None = None,
+        db_password: str | None = None,
+        db_hostname: str | None = None,
+        db_name: str | None = None,
+        db_port: int | None = None,
     ):
-        super().__init__(
-            db_user=db_user,
-            db_password=db_password,
+        config = DBConfig.from_env(
+            admin_user=db_user,
+            admin_password=db_password,
             db_hostname=db_hostname,
             db_name=db_name,
             db_port=db_port,
+        )
+        super().__init__(
+            db_user=config.admin_user,
+            db_password=config.admin_password,
+            db_hostname=config.db_hostname,
+            db_name=config.db_name,
+            db_port=config.db_port,
         )
 
     def create_new_user(self, new_db_user: str, new_password: str):

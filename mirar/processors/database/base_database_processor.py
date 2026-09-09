@@ -21,12 +21,14 @@ class BaseDatabaseProcessor(BaseProcessor, ABC):
     def __init__(
         self,
         db_table: Type[BaseDB],
-        pg_user: PostgresUser = PostgresUser(),
-        pg_admin: PostgresAdmin = PostgresAdmin(),
+        pg_user: PostgresUser | None = None,
+        pg_admin: PostgresAdmin | None = None,
     ):
         super().__init__()
         self.db_table = db_table
         self.db_name = self.db_table.sql_model.db_name
 
-        self.pg_user = pg_user
-        self._pg_admin = pg_admin
+        # Instantiated here rather than as a default argument, so that
+        # credentials are read from the environment at run time.
+        self.pg_user = pg_user if pg_user is not None else PostgresUser()
+        self._pg_admin = pg_admin if pg_admin is not None else PostgresAdmin()

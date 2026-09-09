@@ -7,15 +7,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy_utils import create_database, database_exists
 
-from mirar.database.credentials import (
-    DB_HOSTNAME,
-    DB_NAME,
-    DB_PASSWORD,
-    DB_PASSWORD_KEY,
-    DB_PORT,
-    DB_USER,
-    DB_USER_KEY,
-)
+from mirar.database.credentials import DB_PASSWORD_KEY, DB_USER_KEY, DBConfig
 from mirar.database.engine import get_engine
 from mirar.database.errors import DataBaseError
 
@@ -30,19 +22,26 @@ class PostgresUser:
     user_env_variable = DB_USER_KEY
     pass_env_variable = DB_PASSWORD_KEY
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
-        db_user: str = DB_USER,
-        db_password: str = DB_PASSWORD,
-        db_hostname: str = DB_HOSTNAME,
-        db_name: str = DB_NAME,
-        db_port: int = DB_PORT,
+        db_user: str | None = None,
+        db_password: str | None = None,
+        db_hostname: str | None = None,
+        db_name: str | None = None,
+        db_port: int | None = None,
     ):
-        self.db_user = db_user
-        self.db_password = db_password
-        self.db_hostname = db_hostname
-        self.db_name = db_name
-        self.db_port = db_port
+        config = DBConfig.from_env(
+            db_user=db_user,
+            db_password=db_password,
+            db_hostname=db_hostname,
+            db_name=db_name,
+            db_port=db_port,
+        )
+        self.db_user = config.db_user
+        self.db_password = config.db_password
+        self.db_hostname = config.db_hostname
+        self.db_name = config.db_name
+        self.db_port = config.db_port
 
     def validate_credentials(self):
         """

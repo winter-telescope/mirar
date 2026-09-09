@@ -32,10 +32,15 @@ def get_logger(level="INFO"):
     return log
 
 
-def export_image_to_db(path: str, db_table=RefComponent, pg_user=PostgresUser()):
+def export_image_to_db(
+    path: str, db_table=RefComponent, pg_user: PostgresUser | None = None
+):
     """
     Export a fits image to the database
     """
+    if pg_user is None:
+        pg_user = PostgresUser()
+
     with fits.open(path, "update") as hdul:
         header = hdul[0].header  # pylint: disable=no-member
         header[LATEST_SAVE_KEY] = path
