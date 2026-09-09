@@ -2,6 +2,7 @@
 Models for the 'program' table
 """
 
+import logging
 from datetime import date
 from typing import ClassVar
 
@@ -12,6 +13,8 @@ from sqlalchemy.orm import Mapped, relationship
 from mirar.database.base_model import BaseDB, date_field
 from mirar.pipelines.winter.models.base_model import WinterBase
 from mirar.utils.security import generate_key
+
+logger = logging.getLogger(__name__)
 
 LEN_PROG_KEY = 60
 DEFAULT_MAX_PRIORITY = 100.0
@@ -96,10 +99,14 @@ class Program(BaseDB, ProgramCredentials):
 
         :return: self
         """
-        total_time = self.hours_allocated
         hours_used = self.hours_used
-        assert not hours_used > total_time
         assert not hours_used < 0
+        hours_allocated = self.hours_allocated
+        if hours_used > hours_allocated:
+            logger.warning(
+                f"Program {self.progname} has more hours used than allocated: "
+                f"{hours_used:.1f} > {hours_allocated:.1f}"
+            )
         return self
 
     def exists(self) -> bool:
