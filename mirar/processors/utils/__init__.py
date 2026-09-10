@@ -19,3 +19,4 @@ from mirar.processors.utils.image_selector import (
 from mirar.processors.utils.mode_masker import ModeMasker
 from mirar.processors.utils.multi_ext_parser import MultiExtParser
 from mirar.processors.utils.nan_filler import NanFiller
+from mirar.processors.utils.night_aware_modifier import NightAwareImageBatchModifier

@@ -45,9 +45,10 @@ def get_img_src_list(
     max_fwhm: float = DEFAULT_MAX_FWHM,
     max_ellip: float = 0.5,
     saturation: float = DEFAULT_SATURATION,
-    config_path: str = default_config_path,
+    config_path: Optional[str | Path] = None,
     output_catalog: Optional[str | Path] = None,
     write_crosscheck_files: bool = False,
+    use_existing_catalog: bool = True,
 ) -> list[SextractorSource]:
     """
     Run sextractor on an image, and then extract all the sources
@@ -67,6 +68,8 @@ def get_img_src_list(
     :param write_crosscheck_files: boolean to write additional crosscheck files
     :return: list of sextractor sources
     """
+    if config_path is None:
+        config_path = default_config_path
 
     if output_catalog is None:
         output_catalog = Path(base_output_path).with_suffix(".cat")
@@ -78,7 +81,7 @@ def get_img_src_list(
 
     header = fits.getheader(img_path)
     sextractor_catalog_path = None
-    if SEXTRACTOR_HEADER_KEY in header.keys():
+    if use_existing_catalog and SEXTRACTOR_HEADER_KEY in header.keys():
         sextractor_catalog_path = fits.getval(img_path, SEXTRACTOR_HEADER_KEY)
 
     if sextractor_catalog_path is not None:

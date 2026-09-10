@@ -15,6 +15,7 @@ from mirar.paths import (
 )
 from mirar.pipelines.spring.config import (
     SPRING_GAIN,
+    autoastro_sextractor_config,
     psfex_config_path,
     sextractor_astrometry_config,
     sextractor_candidates_config,
@@ -27,6 +28,7 @@ from mirar.pipelines.spring.config import (
 from mirar.pipelines.spring.generator import (
     ResetToSingleEmptyBatch,
     mask_stamps_around_bright_stars,
+    process_astrometry,
     spring_anet_sextractor_config_path_generator,
     spring_candidate_annotator_filterer,
     spring_imsub_catalog_purifier,
@@ -87,6 +89,7 @@ from mirar.processors.utils import (
     ImageSaver,
     ImageSelector,
     ModeMasker,
+    NightAwareImageBatchModifier,
 )
 from mirar.processors.utils.cal_hunter import CalHunter
 from mirar.processors.utils.image_plotter import ImagePlotter
@@ -174,7 +177,7 @@ flat_calibrate = [
     ImageSaver(output_dir_name="skysub"),
 ]
 
-astrometry = [
+astrometry_with_anet = [
     ImageRebatcher(BASE_NAME_KEY),
     AstrometryNet(
         output_sub_dir="anet",
@@ -189,6 +192,13 @@ astrometry = [
         cache=False,
         no_tweak=True,
     ),
+    ImageSaver("post_astrometry"),
+]
+
+astrometry = [
+    ImageRebatcher(BASE_NAME_KEY),
+    NightAwareImageBatchModifier(process_astrometry),
+    ImageSelector(("ASTRGOOD", "True")),
     ImageSaver("post_astrometry"),
 ]
 

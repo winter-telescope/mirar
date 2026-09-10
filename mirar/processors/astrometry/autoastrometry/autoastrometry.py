@@ -90,6 +90,8 @@ def autoastrometry(
     min_fwhm: float = DEFAULT_MIN_FWHM,
     max_fwhm: float = DEFAULT_MAX_FWHM,
     write_crosscheck_files: bool = False,
+    sextractor_config_path: Optional[str | Path] = None,
+    use_existing_catalog: bool = True,
 ):
     """
 
@@ -163,6 +165,8 @@ def autoastrometry(
         saturation=saturation,
         base_output_path=base_output_path,
         write_crosscheck_files=write_crosscheck_files,
+        config_path=sextractor_config_path,
+        use_existing_catalog=use_existing_catalog,
     )
 
     # Block C
@@ -452,7 +456,7 @@ def autoastrometry(
 
     ra_offset_arcsec = ra_offset * 3600 * math.cos(cdec * math.pi / 180)
     dec_offset_arcsec = dec_offset * 3600
-    tot_offset_arcsec = (ra_offset_arcsec**2 + dec_offset**2) ** 0.5
+    tot_offset_arcsec = (ra_offset_arcsec**2 + dec_offset_arcsec**2) ** 0.5
     std_offset_arcsec = std_offset * 3600
 
     logger.debug("Spatial offset:")
@@ -560,6 +564,8 @@ def run_autoastrometry_single(
     saturation: float = DEFAULT_SATURATION,
     no_rot: bool = False,
     write_crosscheck_files: bool = False,
+    sextractor_config_path: Optional[str | Path] = None,
+    use_existing_catalog: bool = True,
 ):
     """Function based on 'autoastrometry.py' by Daniel Perley and Kishalay De.
 
@@ -619,9 +625,11 @@ def run_autoastrometry_single(
         min_fwhm = 0.7 * seeing
         max_fwhm = 2.0 * seeing
 
-        write_param_file()
+    write_param_file()
 
-    write_config_file()
+    if sextractor_config_path is None:
+        write_config_file()
+
     logger.debug(f"Outfile is {outfile}")
     fit_info = autoastrometry(
         filename=img_path,
@@ -644,6 +652,8 @@ def run_autoastrometry_single(
         saturation=saturation,
         no_rot=no_rot,
         write_crosscheck_files=write_crosscheck_files,
+        sextractor_config_path=sextractor_config_path,
+        use_existing_catalog=use_existing_catalog,
     )
     return fit_info
 
@@ -823,7 +833,7 @@ def run_autoastrometry_batch(
 ######################################################################
 # Running as executable
 if __name__ == "__main__":
-    run_autoastrometry_batch(*sys.argv)
+    run_autoastrometry_batch(files=sys.argv[1:])
 
 ######################################################################
 

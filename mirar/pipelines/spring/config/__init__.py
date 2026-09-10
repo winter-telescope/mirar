@@ -38,6 +38,9 @@ sextractor_astrometry_config = {
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 
+autoastro_sextractor_config = os.path.join(
+    astromatic_config_dir, "autoastro_astrom.sex"
+)
 
 sextractor_candidates_config = {
     "cand_det_sextractor_config": os.path.join(astromatic_config_dir, "photomCat.sex"),
