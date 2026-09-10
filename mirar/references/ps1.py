@@ -11,6 +11,8 @@ from astropy.wcs import WCS
 
 from mirar.data import Image
 from mirar.references.base_reference_generator import BaseReferenceGenerator
+from mirar.references.errors import ReferenceImageError
+from mirar.utils.retry import retry_on_exception
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ class PS1Ref(BaseReferenceGenerator):
 
     abbreviation = "ps1_ref_lookup"
 
+    @retry_on_exception(exceptions=(ReferenceImageError,))
     def getimages(self, ra_deg: float, dec_deg: float, filters="grizy") -> Table:
         """
         Query ps1filenames.py service to get a list of images
@@ -34,7 +37,21 @@ class PS1Ref(BaseReferenceGenerator):
 
         service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"
         url = f"{service}?ra={ra_deg}&dec={dec_deg}&filters={filters}"
-        table = Table.read(url, format="ascii")
+        try:
+            table = Table.read(url, format="ascii")
+        except Exception as e:
+            err = f"Error querying PS1 image list service: {e}."
+            logger.error(err)
+            raise ReferenceImageError(err) from e
+
+        if len(table) == 0:
+            err = (
+                f"PS1 image list service returned zero images for "
+                f"RA {ra_deg:.4f}, Dec {dec_deg:.4f}, filters '{filters}'"
+            )
+            logger.error(err)
+            raise ReferenceImageError(err)
+
         return table
 
     def geturl(
@@ -81,6 +98,22 @@ class PS1Ref(BaseReferenceGenerator):
             url.append(full_url)
         return url
 
+    @retry_on_exception(exceptions=(ReferenceImageError,))
+    def _download_fits(self, url: str) -> fits.PrimaryHDU:
+        """
+        Download a single PS1 FITS cutout.
+
+        :param url: URL of the FITS file to download
+        :return: FITS HDU
+        """
+        try:
+            with fits.open(url, timeout=600) as hdul:
+                return hdul[0].copy()
+        except Exception as e:
+            err = f"Error downloading PS1 reference image from {url}: {e}."
+            logger.error(err)
+            raise ReferenceImageError(err) from e
+
     def _get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
         header = image.get_header()
 
@@ -102,8 +135,7 @@ class PS1Ref(BaseReferenceGenerator):
         )
         logger.debug(fitsurl)
 
-        with fits.open(fitsurl[0], timeout=600) as hdul:
-            ref_hdu = hdul[0].copy()
+        ref_hdu = self._download_fits(fitsurl[0])
 
         ref_hdu.header.rename_keyword("PC001001", "PC1_1")  # pylint: disable=no-member
         ref_hdu.header.rename_keyword("PC001002", "PC1_2")  # pylint: disable=no-member

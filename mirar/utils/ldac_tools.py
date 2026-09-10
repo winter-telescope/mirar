@@ -4,6 +4,7 @@
 Functions to convert FITS files or astropy Tables to FITS_LDAC files and
 vice versa.
 """
+import os
 import tempfile
 import warnings
 from pathlib import Path
@@ -75,7 +76,12 @@ def convert_table_to_ldac(tbl: astropy.table.Table) -> astropy.io.fits.HDUList:
 
 def save_table_as_ldac(tbl: astropy.table.Table, file_path: str | Path, **kwargs):
     """
-    Save a table as a fits LDAC file
+    Save a table as a fits LDAC file.
+
+    The file is written to a temporary path in the same directory and then
+    renamed into place, so a reader of `file_path` (e.g. a concurrent
+    pipeline worker sharing a cached catalog) never observes a missing or
+    partially-written file.
 
     Parameters
     ----------
@@ -86,8 +92,20 @@ def save_table_as_ldac(tbl: astropy.table.Table, file_path: str | Path, **kwargs
     kwargs:
         Keyword arguments to pass to hdulist.writeto
     """
+    file_path = Path(file_path)
     hdulist = convert_table_to_ldac(tbl)
-    hdulist.writeto(file_path, overwrite=True, **kwargs)
+
+    fd, tmp_name = tempfile.mkstemp(
+        dir=file_path.parent, prefix=f".{file_path.name}.", suffix=".tmp"
+    )
+    os.close(fd)
+    tmp_path = Path(tmp_name)
+    try:
+        hdulist.writeto(tmp_path, overwrite=True, **kwargs)
+        tmp_path.replace(file_path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def get_table_from_ldac(file_path: str | Path, frame: int = 1) -> astropy.table.Table:

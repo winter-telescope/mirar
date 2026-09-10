@@ -10,6 +10,8 @@ from astroquery.utils.tap.core import TapPlus
 
 from mirar.catalog.base.base_catalog import DEFAULT_SNR_THRESHOLD
 from mirar.catalog.base.base_gaia import BaseGaia2Mass
+from mirar.catalog.base.errors import CatalogQueryError
+from mirar.utils.retry import retry_on_exception
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,7 @@ class Gaia2MassTAP(BaseGaia2Mass):
         super().__init__(*args, **kwargs)
         self.snr_threshold = snr_threshold
 
+    @retry_on_exception(exceptions=(CatalogQueryError,))
     def get_source_table(
         self,
         ra_deg: float,
@@ -60,8 +63,18 @@ class Gaia2MassTAP(BaseGaia2Mass):
             f";"
         )
 
-        job = Gaia.launch_job_async(cmd, dump_to_file=False)
-        src_list = job.get_results()
+        try:
+            job = Gaia.launch_job_async(cmd, dump_to_file=False)
+            src_list = job.get_results()
+        except Exception as e:
+            err = f"Error querying Gaia TAP catalog: {e}."
+            logger.error(err)
+            raise CatalogQueryError(err) from e
+
+        if len(src_list) == 0:
+            err = "Query for Gaia/2MASS cross-match returned a table with zero rows"
+            logger.error(err)
+            raise CatalogQueryError(err)
 
         src_list["k_m"] = src_list["ks_m"]
         src_list["k_msigcom"] = src_list["ks_msigcom"]
@@ -87,6 +100,7 @@ class Gaia2MassARI(BaseGaia2Mass):
         super().__init__(*args, **kwargs)
         self.snr_threshold = snr_threshold
 
+    @retry_on_exception(exceptions=(CatalogQueryError,))
     def get_source_table(
         self,
         ra_deg: float,
@@ -114,8 +128,19 @@ class Gaia2MassARI(BaseGaia2Mass):
             f"AND tbest.number_of_mates=0 "
             f"AND tbest.number_of_neighbours=1;"
         )
-        job = gaia_ari.launch_job_async(cmd)
-        src_list = job.get_results()
+
+        try:
+            job = gaia_ari.launch_job_async(cmd)
+            src_list = job.get_results()
+        except Exception as e:
+            err = f"Error querying Gaia ARI catalog: {e}."
+            logger.error(err)
+            raise CatalogQueryError(err) from e
+
+        if len(src_list) == 0:
+            err = "Query for Gaia/2MASS cross-match returned a table with zero rows"
+            logger.error(err)
+            raise CatalogQueryError(err)
 
         src_list.rename_column("jmag", "j_m")
         src_list.rename_column("hmag", "h_m")

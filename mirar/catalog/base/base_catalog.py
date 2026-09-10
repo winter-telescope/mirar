@@ -98,10 +98,13 @@ class BaseCatalog(ABCatalog, ABC):
         cat = self.get_catalog(ra_deg=ra_deg, dec_deg=dec_deg)
 
         output_path = self.get_output_path(output_dir, base_name)
-        output_path.unlink(missing_ok=True)
 
         logger.debug(f"Saving catalog to {output_path}")
 
+        # save_table_as_ldac writes atomically (temp file + rename), so no
+        # unlink is needed first - a pre-emptive unlink would only open a
+        # window where a concurrent reader (e.g. another pipeline worker
+        # sharing this same cached catalog path) could see the file missing.
         save_table_as_ldac(cat, output_path)
 
         if self.cache_catalog_locally:
@@ -112,7 +115,6 @@ class BaseCatalog(ABCatalog, ABC):
                 )
                 raise CatalogCacheError(err)
             catalog_save_path = Path(image[self.catalog_cachepath_key])
-            catalog_save_path.unlink(missing_ok=True)
             logger.debug(f"Saving catalog to {catalog_save_path}")
             save_table_as_ldac(cat, catalog_save_path)
 

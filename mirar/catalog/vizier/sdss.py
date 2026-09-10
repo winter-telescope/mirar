@@ -12,6 +12,7 @@ from pydl.pydlutils import mangle
 from mirar.catalog.vizier.base_vizier_catalog import VizierCatalog
 from mirar.errors import ProcessorError
 from mirar.paths import base_output_dir
+from mirar.utils.retry import retry_on_exception
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,10 @@ SDSS_COVERAGE_URL = (
 )
 
 
+@retry_on_exception(exceptions=(requests.exceptions.RequestException,))
 def get_sdss_coverage() -> mangle.PolygonList:
     """
-    Get the SDSS coverahe map
+    Get the SDSS coverage map
 
     :return: coverage map
     """
@@ -46,10 +48,17 @@ def get_sdss_coverage() -> mangle.PolygonList:
         logger.info(
             f"No coverage found. Downloading SDSS coverage map from {SDSS_COVERAGE_URL}"
         )
-        print(SDSS_COVERAGE_PATH)
-        with open(str(SDSS_COVERAGE_PATH), "wb+") as sdss_file:
-            res = requests.get(SDSS_COVERAGE_URL, allow_redirects=True, timeout=TIMEOUT)
+        res = requests.get(SDSS_COVERAGE_URL, allow_redirects=True, timeout=TIMEOUT)
+        res.raise_for_status()
+
+        # Write to a temp path first and rename on success, so a failed or
+        # partial download never leaves a corrupt file at
+        # SDSS_COVERAGE_PATH for a later call to mistake for a valid,
+        # already-downloaded cache.
+        tmp_path = SDSS_COVERAGE_PATH.with_suffix(".ply.tmp")
+        with open(tmp_path, "wb+") as sdss_file:
             sdss_file.write(res.content)
+        tmp_path.rename(SDSS_COVERAGE_PATH)
 
     sdss_coverage = mangle.read_mangle_polygons(str(SDSS_COVERAGE_PATH))
     return sdss_coverage
