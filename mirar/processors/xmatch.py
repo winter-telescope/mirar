@@ -79,8 +79,17 @@ class XMatch(BaseSourceProcessor):
                 results = query_results[query_name]
                 for result_ind, result in enumerate(results):
                     for key in result.keys():
-                        colname = catalog.column_names[key] + f"{result_ind + 1}"
-                        candidate_table.at[query_ind, colname] = result[key]
+                        base_colname = catalog.column_names[key]
+                        colname = base_colname + f"{result_ind + 1}"
+                        value = result[key]
+                        # Catalogs can return e.g. large int64 ids as strings
+                        # (to avoid precision loss over JSON), which pandas
+                        # no longer silently coerces when assigning into a
+                        # differently-typed column. Cast explicitly instead
+                        # of relying on implicit coercion.
+                        if value is not None:
+                            value = catalog.column_dtypes[base_colname](value)
+                        candidate_table.at[query_ind, colname] = value
 
                 candidate_table.at[query_ind, nmatch_colname] = len(results)
 
