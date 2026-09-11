@@ -13,6 +13,7 @@ from astroquery.sdss import SDSS
 from mirar.data import Image
 from mirar.references.base_reference_generator import BaseReferenceGenerator
 from mirar.references.errors import ReferenceImageError
+from mirar.utils.retry import retry_on_exception
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class SDSSRef(BaseReferenceGenerator):
 
     abbreviation = "sdss_ref_lookup"
 
+    @retry_on_exception(exceptions=(ReferenceImageError,))
     def _get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
         header = image.get_header()
 
@@ -37,12 +39,19 @@ class SDSSRef(BaseReferenceGenerator):
 
         crd = SkyCoord(ra=ra_cent, dec=dec_cent, unit=(u.deg, u.deg))
         rad = 10
-        imgs = []
+        imgs = None
 
         while rad < 100:
-            imgs = SDSS.get_images(
-                coordinates=crd, radius=rad * u.arcsec, band=self.filter_name.lower()
-            )
+            try:
+                imgs = SDSS.get_images(
+                    coordinates=crd,
+                    radius=rad * u.arcsec,
+                    band=self.filter_name.lower(),
+                )
+            except Exception as e:
+                err = f"Error querying SDSS for reference image: {e}."
+                logger.error(err)
+                raise ReferenceImageError(err) from e
             if imgs is not None:
                 break
             logger.debug(
@@ -50,7 +59,9 @@ class SDSSRef(BaseReferenceGenerator):
             )
             rad += 10
 
-        if len(imgs) == 0:
+        # imgs may be None (radius exhausted without a hit) or an empty
+        # sequence; both mean no reference image was found.
+        if not imgs:
             err = f"Reference image not found from SDSS for {self.filter_name.lower()}"
             logger.error(err)
             raise ReferenceImageError(err)

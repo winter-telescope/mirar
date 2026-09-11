@@ -3,27 +3,24 @@ Module containing base class for a Vizier catalog
 """
 
 import logging
-import time
 from abc import ABC
 
 import astropy.table
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from astropy.table import Table
 from astroquery.vizier import Vizier
-from requests.exceptions import ChunkedEncodingError
 
 from mirar.catalog.base.base_catalog import DEFAULT_SNR_THRESHOLD, BaseCatalog
-from mirar.errors import ProcessorError
+from mirar.catalog.base.errors import CatalogQueryError
+from mirar.utils.retry import retry_on_exception
+
+logger = logging.getLogger(__name__)
 
 
-class VizierError(ProcessorError):
+class VizierError(CatalogQueryError):
     """
     Class for errors in Vizier catalog
     """
-
-
-logger = logging.getLogger(__name__)
 
 
 class VizierCatalog(BaseCatalog, ABC):
@@ -88,6 +85,7 @@ class VizierCatalog(BaseCatalog, ABC):
         """
         return {}
 
+    @retry_on_exception(exceptions=(VizierError,))
     def get_catalog(self, ra_deg: float, dec_deg: float) -> astropy.table.Table:
         logger.debug(
             f"Querying {self.abbreviation} catalog around RA {ra_deg:.4f}, "
@@ -105,50 +103,44 @@ class VizierCatalog(BaseCatalog, ABC):
             timeout=300,
         )
 
-        # Catching ChunkedEncodingError to handle network issues gracefully.
-        # Try 5 times with increasing time delays,
-        # if chunkencodingerror still persists then
-        # raise an error
-        for attempt in range(5):
-            try:
-                # pylint: disable=no-member
-                query = viz_cat.query_region(
-                    SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
-                    radius=str(self.search_radius_arcmin) + "m",
-                    catalog=self.catalog_vizier_code,
-                    cache=False,
-                )
-                break
-            except ChunkedEncodingError as e:
-                if attempt < 4:
-                    logger.warning(
-                        f"ChunkedEncodingError encountered, retrying {attempt + 1}/5"
-                    )
+        try:
+            # pylint: disable=no-member
+            query = viz_cat.query_region(
+                SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.deg, u.deg)),
+                radius=str(self.search_radius_arcmin) + "m",
+                catalog=self.catalog_vizier_code,
+                cache=False,
+            )
+        except Exception as e:
+            err = (
+                f"Error querying {self.abbreviation} catalog: {e}. "
+                "Please check the catalog code and network connection."
+            )
+            logger.error(err)
+            raise VizierError(err) from e
 
-                    time.sleep(2**attempt)
-                else:
-                    err = (
-                        f"ChunkedEncodingError encountered after 5 attempts. "
-                        f"Unable to query {self.abbreviation} catalog."
-                    )
-                    logger.error(err)
-                    raise VizierError(err) from e
-
-            except Exception as e:
-                err = (
-                    f"Error querying {self.abbreviation} catalog: {e}. "
-                    "Please check the catalog code and network connection."
-                )
-                logger.error(err)
-                raise VizierError(err) from e
-
+        # An empty result here is ambiguous: it might mean the position is
+        # genuinely outside the catalog's footprint (checked below), or it
+        # might be a transient/incomplete response from the Vizier service.
+        # Either way, retry_on_exception will retry a few times before
+        # giving up, since a real "not covered" case will fail identically
+        # on every attempt.
         if len(query) == 0:
+            self.check_coverage(ra_deg, dec_deg)
             err = f"No matches found in the given radius in {self.abbreviation}"
             logger.error(err)
-            self.check_coverage(ra_deg, dec_deg)
-            return Table()
+            raise VizierError(err)
 
         table = self.join_query(query)
+
+        if len(table) == 0:
+            self.check_coverage(ra_deg, dec_deg)
+            err = (
+                f"Query for {self.abbreviation} returned a table with zero rows "
+                f"in the given radius"
+            )
+            logger.error(err)
+            raise VizierError(err)
 
         logger.debug(f"Table columns are: {table.colnames}")
         if self.get_mag_key() not in table.colnames:
