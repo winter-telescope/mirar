@@ -1,16 +1,16 @@
 """
-Module for querying Gaia using Kowalski
+Module for querying Gaia using BOOM
 """
 
-from mirar.catalog.kowalski.base_kowalski_catalog import BaseKowalskiXMatch
+from mirar.catalog.boom.base_boom_catalog import BaseBoomXMatch
 
 
-class Gaia(BaseKowalskiXMatch):
+class Gaia(BaseBoomXMatch):
     """
-    Gaia Kowalski catalog
+    Gaia BOOM catalog
     """
 
-    catalog_name = "Gaia_EDR3"
+    catalog_name = "Gaia_DR3"
     abbreviation = "gaia"
     projection = {
         "_id": 1,
@@ -18,7 +18,6 @@ class Gaia(BaseKowalskiXMatch):
         "dec": 1,
         "parallax": 1,
         "parallax_error": 1,
-        "parallax_over_error": 1,
         "ruwe": 1,
     }
 
@@ -54,18 +53,47 @@ class Gaia(BaseKowalskiXMatch):
     def dec_column_name(self) -> str:
         return f"{self.abbreviation}_dec"
 
+    @staticmethod
+    def update_data(data: dict) -> dict:
+        """
+        BOOM's Gaia_DR3 catalog does not provide a precomputed
+        parallax_over_error field, so compute it here from parallax and
+        parallax_error.
+
+        :param data: BOOM data
+        :return: updated data
+        """
+        new = {}
+        for key, matches in data.items():
+            new_matches = []
+            for match in matches:
+                new_match = dict(match)
+                parallax = new_match.get("parallax")
+                parallax_error = new_match.get("parallax_error")
+                if (
+                    parallax is not None
+                    and parallax_error is not None
+                    and parallax_error != 0
+                ):
+                    new_match["parallax_over_error"] = parallax / parallax_error
+                else:
+                    new_match["parallax_over_error"] = None
+                new_matches.append(new_match)
+            new[key] = new_matches
+        return new
+
 
 class GaiaBright(Gaia):
     """
-    Gaia Bright Kowalski catalog (Mg < 14)
+    Gaia Bright BOOM catalog (Mg < 14)
     """
 
     abbreviation = "gaiabright"
 
     @property
-    def kowalski_filter(self) -> dict:
+    def boom_filter(self) -> dict:
         """
-        Filter for Kowalski query
+        Filter for BOOM query
 
         :return: filter
         """
