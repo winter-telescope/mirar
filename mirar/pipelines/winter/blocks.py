@@ -7,7 +7,7 @@ import os
 
 from winterrb.model import WINTERNet
 
-from mirar.catalog.boom import PS1, PS1STRM, TMASS, ZTF, Gaia, GaiaBright, PS1SGSc
+from mirar.catalog.boom import PS1, TMASS, ZTF, Gaia, GaiaBright
 from mirar.downloader.get_test_data import get_test_data_dir
 from mirar.paths import (
     BASE_NAME_KEY,
@@ -906,8 +906,6 @@ rb_classify = [
 crossmatch_candidates = [
     XMatch(catalog=TMASS(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=PS1(num_sources=3, search_radius_arcmin=0.5)),
-    XMatch(catalog=PS1SGSc(num_sources=3, search_radius_arcmin=0.5)),
-    XMatch(catalog=PS1STRM(num_sources=3, search_radius_arcmin=0.5)),
     XMatch(catalog=Gaia(num_sources=1, search_radius_arcmin=1.5)),
     XMatch(catalog=GaiaBright(num_sources=1, search_radius_arcmin=1.5)),
     XMatch(catalog=ZTF(num_sources=1, search_radius_arcmin=2.0 / 60.0)),
