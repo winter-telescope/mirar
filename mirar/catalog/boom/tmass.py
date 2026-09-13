@@ -1,42 +1,41 @@
 """
-Module for querying 2MASS using Kowalski
+Module for querying 2MASS using BOOM
 """
 
 from mirar.catalog.base.base_gaia import offsets_2mass
-from mirar.catalog.kowalski.base_kowalski_catalog import BaseKowalskiXMatch
+from mirar.catalog.boom.base_boom_catalog import BaseBoomXMatch
 
 
-class TMASS(BaseKowalskiXMatch):
+class TMASS(BaseBoomXMatch):
     """
-    2MASS Kowalski catalog
+    2MASS BOOM catalog
     """
 
     catalog_name = "2MASS_PSC"
     abbreviation = "tm"
     projection = {
-        "_id": 0,
-        "designation": 1,
+        "_id": 1,
         "ra": 1,
-        "decl": 1,
+        "dec": 1,
         "j_m": 1,
         "j_msigcom": 1,
         "h_m": 1,
-        "h_cmsigcom": 1,
+        "h_msigcom": 1,
         "k_m": 1,
-        "k_cmsigcom": 1,
+        "k_msigcom": 1,
         "ph_qual": 1,
     }
 
     column_names = {
         "ra": f"{abbreviation}ra",
-        "decl": f"{abbreviation}dec",
+        "dec": f"{abbreviation}dec",
         "j_m": "tmjmag",
         "h_m": "tmhmag",
         "k_m": "tmkmag",
         "j_msigcom": "tmjmagerr",
-        "h_cmsigcom": "tmhmagerr",
-        "k_cmsigcom": "tmkmagerr",
-        "designation": "tmobjectid",
+        "h_msigcom": "tmhmagerr",
+        "k_msigcom": "tmkmagerr",
+        "_id": "tmobjectid",
         "ph_qual": "tmph_qual",
     }
 
@@ -61,7 +60,7 @@ class TMASS(BaseKowalskiXMatch):
         """
         For a given catalog, update the data with any extra information
 
-        :param data: kowalski data
+        :param data: BOOM data
         :return: updated data
         """
 
