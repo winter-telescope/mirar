@@ -11,6 +11,7 @@ from astropy.table import Table
 from mirar.catalog import PS1, CatalogFromFile, Gaia2Mass
 from mirar.data import Image
 from mirar.paths import FILTER_KEY, REF_CAT_PATH_KEY
+from mirar.pipelines.winter.constants import WINTER_DITHER_RADIUS_ARCMIN
 from mirar.pipelines.winter.generator.utils import check_winter_local_catalog_overlap
 from mirar.processors.base_catalog_xmatch_processor import (
     default_image_sextractor_catalog_purifier,
@@ -60,11 +61,13 @@ def winter_photometric_catalog_generator(
             )
 
     filter_name = image["FILTER"]
+    # Chip size plus a margin for a typical dither offset - see
+    # winter_astrometric_ref_catalog_generator for why the margin is needed.
     search_radius_arcmin = (
         np.max([image["NAXIS1"], image["NAXIS2"]])
         * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
         * 60
-    ) / 2.0
+    ) / 2.0 + WINTER_DITHER_RADIUS_ARCMIN
 
     if filter_name in ["J", "H"]:
         return Gaia2Mass(

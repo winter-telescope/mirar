@@ -11,6 +11,7 @@ from astropy.table import Table
 from mirar.catalog import CatalogFromFile, Gaia2Mass
 from mirar.data import Image
 from mirar.paths import REF_CAT_PATH_KEY
+from mirar.pipelines.winter.constants import WINTER_DITHER_RADIUS_ARCMIN
 from mirar.pipelines.winter.generator.utils import check_winter_local_catalog_overlap
 
 logger = logging.getLogger(__name__)
@@ -50,11 +51,17 @@ def winter_astrometric_ref_catalog_generator(
                 "outside the image. Requerying."
             )
 
+    # Chip size (half-diagonal, i.e. center-to-corner) plus a margin for a
+    # typical dither offset. This same cached catalog (keyed by field/
+    # subdet/filter) gets reused for every dither of a visit, not just the
+    # one image it was queried for - sizing it to only the chip's own
+    # footprint left it too small to adequately cover the other dithers,
+    # which SCAMP fits together as one field group.
     search_radius_arcmin = (
         np.sqrt(image["NAXIS1"] ** 2 + image["NAXIS2"] ** 2)
         * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])
         * 60
-    ) / 2.0
+    ) / 2.0 + WINTER_DITHER_RADIUS_ARCMIN
     return Gaia2Mass(
         min_mag=7,
         max_mag=20,

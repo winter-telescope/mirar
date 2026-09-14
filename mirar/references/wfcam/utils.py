@@ -3,6 +3,8 @@ Utility functions for WFCAM
 """
 
 import logging
+import os
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -273,7 +275,14 @@ def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
 
 def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
     """
-    Save an Image as a compressed fits image path
+    Save an Image as a compressed fits image path.
+
+    The file is written to a temporary path in the same directory and then
+    renamed into place, so a reader of `path` (e.g. a concurrent pipeline
+    worker that has just seen the matching refcomponents DB row for a
+    different, overlapping WFCAM query) never observes a missing or
+    partially-written file.
+
     : image: Image to save
     : path: path
     """
@@ -287,4 +296,14 @@ def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
     header[LATEST_SAVE_KEY] = path.as_posix()
     compressed_hdu = fits.CompImageHDU(data, header=header)
 
-    compressed_hdu.writeto(path, overwrite=True)
+    fd, tmp_name = tempfile.mkstemp(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+    )
+    os.close(fd)
+    tmp_path = Path(tmp_name)
+    try:
+        compressed_hdu.writeto(tmp_path, overwrite=True)
+        tmp_path.replace(path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
