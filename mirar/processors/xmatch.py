@@ -66,9 +66,18 @@ class XMatch(BaseSourceProcessor):
             for key in available_projection_keys:
                 for num in range(self.catalog.num_sources):
                     colname = catalog.column_names[key]
+                    # Integer dtypes have no NaN representation in numpy, so
+                    # placeholder columns for them are built as `object`
+                    # instead - the final NaN -> None replace below still
+                    # applies, and no-match rows end up as None like any
+                    # other dtype.
                     candidate_table[colname + f"{num + 1}"] = np.array(
                         np.nan,
-                        dtype=catalog.column_dtypes[colname],
+                        dtype=(
+                            object
+                            if catalog.column_dtypes[colname] is int
+                            else catalog.column_dtypes[colname]
+                        ),
                     )
 
             # Add column for number of matches

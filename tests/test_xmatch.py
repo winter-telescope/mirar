@@ -38,6 +38,17 @@ class MockXMatchCatalog(BaseXMatchCatalog):
         return {name: [self.match] for name in coords}
 
 
+class MockIntIdXMatchCatalog(MockXMatchCatalog):
+    """
+    Mock catalog variant with an integer-typed id column, like the real
+    PS1 BOOM catalog's `psobjectid` - used to test that large ids (e.g.
+    PS1 object ids, ~10**17) survive exactly, and that a missing match
+    doesn't crash the int-dtype placeholder column.
+    """
+
+    column_dtypes = {"mockobjectid": int, "mockra": float, "mockdec": float}
+
+
 class TestXMatch(unittest.TestCase):
     """
     Class for testing the XMatch processor
@@ -77,6 +88,42 @@ class TestXMatch(unittest.TestCase):
         zero match count, not an error.
         """
         catalog = MockXMatchCatalog(match=None)
+        xmatch = XMatch(catalog=catalog)
+        batch = xmatch._apply_to_sources(self.make_batch())
+
+        result_table = batch[0].get_data()
+        self.assertIsNone(result_table.at[0, "mockobjectid1"])
+        self.assertEqual(result_table.at[0, "nmtchmock"], 0)
+
+    def test_int_id_preserved_exactly(self):
+        """
+        Object ids like PS1's (~10**17) exceed float64's exact-integer
+        range (2**53), so a catalog with an int-typed id column must not
+        route the value through a float cast - it must come out as the
+        exact same int that was matched, not a rounded approximation.
+        """
+        real_id = 172802108132037500
+        self.assertNotEqual(
+            float(real_id), real_id, "test id must exceed float64 precision"
+        )
+
+        catalog = MockIntIdXMatchCatalog(
+            match={"_id": real_id, "ra": 160.0001, "dec": 34.0001}
+        )
+        xmatch = XMatch(catalog=catalog)
+        batch = xmatch._apply_to_sources(self.make_batch())
+
+        result_table = batch[0].get_data()
+        self.assertEqual(result_table.at[0, "mockobjectid1"], real_id)
+        self.assertIsInstance(result_table.at[0, "mockobjectid1"], int)
+
+    def test_int_id_no_match(self):
+        """
+        An int-typed id column has no numpy NaN representation, so a
+        source with no cross-match must still get a placeholder (None),
+        not raise while building the column.
+        """
+        catalog = MockIntIdXMatchCatalog(match=None)
         xmatch = XMatch(catalog=catalog)
         batch = xmatch._apply_to_sources(self.make_batch())
 

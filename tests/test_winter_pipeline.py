@@ -69,7 +69,62 @@ expected_dataframe_values = {
         17.597206293933148,
         17.124283337139047,
     ],
+    # -999.0 is PS1's own sentinel for "no r-band measurement", not a
+    # missing/failed crossmatch - the object still matched (see distpsnr1).
+    "srmag1": [
+        -999.0,
+        19.688801,
+        -999.0,
+        -999.0,
+        -999.0,
+        -999.0,
+        18.537001,
+        -999.0,
+        -999.0,
+        -999.0,
+    ],
+    "distpsnr1": [
+        22.19041381446173,
+        26.24565910201197,
+        21.964158224825884,
+        29.564980196166594,
+        21.47896446323274,
+        19.421192625649816,
+        22.218080193720134,
+        27.129174932893136,
+        25.54369342040864,
+        29.16672356471828,
+    ],
 }
+# PS1 crossmatch object id (via BOOM's PS1_DR2 catalog) for the nearest match
+# to each of the first 10 candidates. Unlike the photometry above, this must
+# match exactly, not just approximately - it is a copied identifier, not a
+# computed value, and any drift would mean the crossmatch itself changed.
+expected_dataframe_ids = {
+    "psobjectid1": [
+        172822108829078398,
+        172802108132037513,
+        172822110490299463,
+        172832110542083965,
+        172822108150880646,
+        172822109253789586,
+        172832109194385869,
+        172852109512460485,
+        172842108794430757,
+        172832108955154651,
+    ],
+}
+
+
+def _print_new_expected(var_name: str, items) -> None:
+    """
+    Print a freshly-measured dict in the same literal form used to pin
+    expected_zp/expected_dataframe_values/expected_dataframe_ids above,
+    so a new baseline can be copy-pasted in after a genuine, intentional
+    change to the pipeline's output.
+    """
+    body = "".join(f'    "{key}": {value}, \n' for key, value in items)
+    print(f"{var_name} = {{ \n{body}}}")
 
 
 pipeline = get_pipeline(
@@ -117,23 +172,31 @@ class TestWinterPipeline(BaseTestCase):
 
         # # Uncomment to print new expected ZP dict
         print("New Results WINTER:")
-        new_exp = "expected_zp = { \n"
-        for header_key in source_table.get_metadata():
-            if header_key in expected_zp:
-                new_exp += f'    "{header_key}": {source_table[header_key]}, \n'
-        new_exp += "}"
-        print(new_exp)
+        _print_new_expected(
+            "expected_zp",
+            (
+                (key, source_table[key])
+                for key in source_table.get_metadata()
+                if key in expected_zp
+            ),
+        )
 
         new_candidates_table = source_table.get_data()
 
-        new_exp_dataframe = "expected_dataframe_values = { \n"
-        for key in expected_dataframe_values:
-            new_exp_dataframe += (
-                f'    "{key}": {list(new_candidates_table[key][:10])}, \n'
-            )
-        new_exp_dataframe += "}"
-
-        print(new_exp_dataframe)
+        _print_new_expected(
+            "expected_dataframe_values",
+            (
+                (key, list(new_candidates_table[key][:10]))
+                for key in expected_dataframe_values
+            ),
+        )
+        _print_new_expected(
+            "expected_dataframe_ids",
+            (
+                (key, list(new_candidates_table[key][:10]))
+                for key in expected_dataframe_ids
+            ),
+        )
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
@@ -154,3 +217,11 @@ class TestWinterPipeline(BaseTestCase):
                     self.assertAlmostEqual(
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
+
+        # The PS1 crossmatch id is a value copied verbatim from the BOOM
+        # response, not a re-computed quantity, so it must match exactly.
+        # This guards against the PS1/PS1SGSc/PS1STRM query merge (or any
+        # future BOOM schema change) silently matching a different object.
+        for key, value in expected_dataframe_ids.items():
+            for ind, val in enumerate(value):
+                self.assertEqual(candidates_table.iloc[ind][key], val)

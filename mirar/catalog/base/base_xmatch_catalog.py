@@ -22,7 +22,7 @@ class BaseXMatchCatalog(ABCatalog, ABC):
     @property
     def projection(self):
         """
-        projection for kowalski xmatch
+        projection for BOOM xmatch
         """
         raise NotImplementedError
 
