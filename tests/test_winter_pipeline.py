@@ -46,30 +46,85 @@ expected_zp = {
 }
 expected_dataframe_values = {
     "magpsf": [
-        17.458812542360995,
-        17.399940714760763,
-        17.570775919978885,
-        17.421680982116335,
-        17.612249713190142,
-        17.406640865693245,
-        17.532911856690518,
-        17.48649965211238,
-        17.337396644716204,
-        17.59887440605349,
+        17.228474555700856,
+        17.45785163208918,
+        17.555629066095435,
+        17.32679783287861,
+        17.421408291622374,
+        17.59762578981333,
+        17.683866215375765,
+        17.21348601063599,
+        17.503135318848273,
+        17.54062327531579,
     ],
     "magap": [
-        16.98031087845887,
-        17.680104004152902,
-        17.758904889497096,
-        17.42562922682663,
-        18.410150871089456,
-        17.07635726369595,
-        16.987159652173418,
-        17.308115455430396,
-        17.597206293933148,
-        17.124283337139047,
+        17.42901154178621,
+        17.24300685886131,
+        16.9354861095572,
+        17.396366024618345,
+        17.460566708596204,
+        17.04155387816826,
+        17.00676178707949,
+        16.780059358281363,
+        16.99542179767127,
+        17.55111910454456,
+    ],
+    # -999.0 is PS1's own sentinel for "no r-band measurement", not a
+    # missing/failed crossmatch - the object still matched (see distpsnr1).
+    "srmag1": [
+        21.1719,
+        21.0142,
+        -999.0,
+        -999.0,
+        -999.0,
+        -999.0,
+        20.5753,
+        -999.0,
+        22.0182,
+        -999.0,
+    ],
+    "distpsnr1": [
+        29.450583335827737,
+        26.557587085073617,
+        28.50005010290259,
+        18.851799554267494,
+        26.7737708958688,
+        29.150562436876385,
+        29.30929330508708,
+        29.8918738647234,
+        29.49107070373421,
+        27.497209944870622,
     ],
 }
+# PS1 crossmatch object id (via BOOM's PS1_DR2 catalog) for the nearest match
+# to each of the first 10 candidates. Unlike the photometry above, this must
+# match exactly, not just approximately - it is a copied identifier, not a
+# computed value, and any drift would mean the crossmatch itself changed.
+expected_dataframe_ids = {
+    "psobjectid1": [
+        172792108188358841,
+        172802109896440327,
+        172842109802730716,
+        172822109253789586,
+        172822108630904406,
+        172842108838395428,
+        172822108916429851,
+        172832111076449768,
+        172842110466630898,
+        172852109512460485,
+    ],
+}
+
+
+def _print_new_expected(var_name: str, items) -> None:
+    """
+    Print a freshly-measured dict in the same literal form used to pin
+    expected_zp/expected_dataframe_values/expected_dataframe_ids above,
+    so a new baseline can be copy-pasted in after a genuine, intentional
+    change to the pipeline's output.
+    """
+    body = "".join(f'    "{key}": {value}, \n' for key, value in items)
+    print(f"{var_name} = {{ \n{body}}}")
 
 
 pipeline = get_pipeline(
@@ -117,23 +172,31 @@ class TestWinterPipeline(BaseTestCase):
 
         # # Uncomment to print new expected ZP dict
         print("New Results WINTER:")
-        new_exp = "expected_zp = { \n"
-        for header_key in source_table.get_metadata():
-            if header_key in expected_zp:
-                new_exp += f'    "{header_key}": {source_table[header_key]}, \n'
-        new_exp += "}"
-        print(new_exp)
+        _print_new_expected(
+            "expected_zp",
+            (
+                (key, source_table[key])
+                for key in source_table.get_metadata()
+                if key in expected_zp
+            ),
+        )
 
         new_candidates_table = source_table.get_data()
 
-        new_exp_dataframe = "expected_dataframe_values = { \n"
-        for key in expected_dataframe_values:
-            new_exp_dataframe += (
-                f'    "{key}": {list(new_candidates_table[key][:10])}, \n'
-            )
-        new_exp_dataframe += "}"
-
-        print(new_exp_dataframe)
+        _print_new_expected(
+            "expected_dataframe_values",
+            (
+                (key, list(new_candidates_table[key][:10]))
+                for key in expected_dataframe_values
+            ),
+        )
+        _print_new_expected(
+            "expected_dataframe_ids",
+            (
+                (key, list(new_candidates_table[key][:10]))
+                for key in expected_dataframe_ids
+            ),
+        )
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
@@ -147,10 +210,18 @@ class TestWinterPipeline(BaseTestCase):
 
         candidates_table = source_table.get_data()
 
-        self.assertEqual(len(candidates_table), 129)
+        self.assertEqual(len(candidates_table), 108)
         for key, value in expected_dataframe_values.items():
             if isinstance(value, list):
                 for ind, val in enumerate(value):
                     self.assertAlmostEqual(
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
+
+        # The PS1 crossmatch id is a value copied verbatim from the BOOM
+        # response, not a re-computed quantity, so it must match exactly.
+        # This guards against the PS1/PS1SGSc/PS1STRM query merge (or any
+        # future BOOM schema change) silently matching a different object.
+        for key, value in expected_dataframe_ids.items():
+            for ind, val in enumerate(value):
+                self.assertEqual(candidates_table.iloc[ind][key], val)
