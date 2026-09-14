@@ -55,7 +55,7 @@ class PS1(BaseBoomXMatch):
     }
 
     column_dtypes = {
-        "psobjectid": float,
+        "psobjectid": int,
         "psra": float,
         "psdec": float,
         "sgmag": float,
