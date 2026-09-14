@@ -27,6 +27,15 @@ imgtype_dict = {
     "corrupted": "CORRUPTED",
 }
 
+# Typical radial offset of a single WINTER dither from the nominal field
+# center. Used as a safety margin when sizing reference-catalog queries, so
+# a single query/cache (keyed by field/subdet/filter, shared across all
+# dithers of one visit) has enough coverage for every dither, not just the
+# one it happened to be centered on. Empirically, offsets in real WINTER
+# dither patterns run up to ~3 arcmin from center (see e.g. the 20230726
+# test dataset); this adds a healthy margin above that.
+WINTER_DITHER_RADIUS_ARCMIN = 5.0
+
 NXSPLIT = 1
 NYSPLIT = 1
 

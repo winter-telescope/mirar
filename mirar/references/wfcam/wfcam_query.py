@@ -572,16 +572,22 @@ def download_wfcam_archive_images(
             wfcam_image[QUERY_FILT_KEY] = waveband
             wfcam_image[LATEST_SAVE_KEY] = imagepath.as_posix()
 
+            # Write the file (atomically) before inserting the DB row, not
+            # after. compid is app-assigned (not a DB serial), so the DB
+            # insert adds no information the file needs - but another
+            # pipeline worker processing an overlapping query concurrently
+            # can see this compid in the components table the moment it's
+            # inserted. Inserting first left a window where that worker
+            # would find the DB row but not yet find the file on disk.
+            save_wfcam_as_compressed_fits(wfcam_image, imagepath)
+            logger.debug(f"Saved UKIRT image to {imagepath}")
+
             if use_local_database:
                 dbexporter = DatabaseImageInserter(
                     db_table=components_table,
                     duplicate_protocol=duplicate_protocol,
                 )
-                wfcam_db_batch = dbexporter.apply(ImageBatch([wfcam_image]))
-                wfcam_image = wfcam_db_batch[0]
-
-            save_wfcam_as_compressed_fits(wfcam_image, imagepath)
-            logger.debug(f"Saved UKIRT image to {imagepath}")
+                dbexporter.apply(ImageBatch([wfcam_image]))
 
         imagepaths.append(imagepath)
 
