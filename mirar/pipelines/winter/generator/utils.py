@@ -67,8 +67,13 @@ def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool
         )
         return False
 
+    # local_ref_cat["ra"]/["dec"] are sometimes plain floats and sometimes
+    # already degree-valued Quantity columns (depending on the catalog
+    # source) - np.asarray() strips any existing unit first, so `* u.deg`
+    # always attaches degrees exactly once instead of squaring them.
     cat_coords = SkyCoord(
-        ra=local_ref_cat["ra"] * u.deg, dec=local_ref_cat["dec"] * u.deg
+        ra=np.asarray(local_ref_cat["ra"]) * u.deg,
+        dec=np.asarray(local_ref_cat["dec"]) * u.deg,
     )
     for corner_ra, corner_dec in get_corners_ra_dec_from_header(header):
         corner_coord = SkyCoord(ra=corner_ra * u.deg, dec=corner_dec * u.deg)
