@@ -6,6 +6,9 @@ import logging
 from abc import ABC
 from typing import Optional
 
+import numpy as np
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 from blastwave.errors import BOOMCredentialsError
 from blastwave.query.boom import BoomClient
 
@@ -97,6 +100,15 @@ class BaseBoomXMatch(BaseXMatchCatalog, ABC):
         """
         Performs a batched BOOM cone search around each coordinate
 
+        BOOM's cone_search does not sort matches by distance before
+        applying `limit` - confirmed empirically that a `limit=3` query
+        can return matches over 4x further away than others it excluded
+        within the same radius. `limit` is omitted here (BOOM then
+        returns every match within `radius`, which is itself small - a
+        crossmatch search radius, not a survey area), and matches are
+        sorted by true angular separation and truncated to num_sources
+        ourselves instead.
+
         :param coords: dict of {name: [ra, dec]}
         :return: dict of {name: matches}
         """
@@ -106,7 +118,6 @@ class BaseBoomXMatch(BaseXMatchCatalog, ABC):
             "radius": self.search_radius_arcsec,
             "unit": "Arcseconds",
             "projection": self.projection,
-            "limit": self.num_sources,
             "max_time_ms": int(self.max_time_ms),
         }
         if self.boom_filter is not None:
@@ -121,7 +132,42 @@ class BaseBoomXMatch(BaseXMatchCatalog, ABC):
             res.raise_for_status()
 
         data = res.json()["data"]
-        return {key: flatten_boom_data(matches) for key, matches in data.items()}
+        flattened = {key: flatten_boom_data(matches) for key, matches in data.items()}
+        return self._sort_by_separation(flattened, coords)
+
+    def _sort_by_separation(self, flattened: dict, coords: dict) -> dict:
+        """
+        Sort each coordinate's matches by true angular separation and
+        truncate to num_sources.
+
+        :param flattened: dict of {name: matches}, as returned by BOOM
+        :param coords: dict of {name: [ra, dec]}, the queried coordinates
+        :return: dict of {name: matches}, nearest-first, truncated
+        """
+        raw_ra_key = next(
+            key for key, val in self.column_names.items() if val == self.ra_column_name
+        )
+        raw_dec_key = next(
+            key for key, val in self.column_names.items() if val == self.dec_column_name
+        )
+
+        sorted_data = {}
+        for name, matches in flattened.items():
+            if len(matches) == 0:
+                sorted_data[name] = matches
+                continue
+
+            query_coord = SkyCoord(
+                ra=coords[name][0] * u.deg, dec=coords[name][1] * u.deg
+            )
+            match_coords = SkyCoord(
+                ra=[match[raw_ra_key] for match in matches] * u.deg,
+                dec=[match[raw_dec_key] for match in matches] * u.deg,
+            )
+            order = np.argsort(query_coord.separation(match_coords))
+            sorted_data[name] = [matches[i] for i in order[: self.num_sources]]
+
+        return sorted_data
 
     def query(self, coords) -> dict:
         """
