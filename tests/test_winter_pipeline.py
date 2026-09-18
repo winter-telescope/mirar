@@ -69,8 +69,6 @@ expected_dataframe_values = {
         17.597206293933148,
         17.124283337139047,
     ],
-    # -999.0 is PS1's own sentinel for "no r-band measurement", not a
-    # missing/failed crossmatch - the object still matched (see distpsnr1).
     "srmag1": [
         -999.0,
         19.688801,

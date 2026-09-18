@@ -16,8 +16,7 @@ from mirar.processors.xmatch import XMatch
 
 class MockXMatchCatalog(BaseXMatchCatalog):
     """
-    Minimal catalog stub for testing XMatch, without needing a real
-    external query service.
+    Minimal catalog stub for testing XMatch without a real query service.
     """
 
     catalog_name = "mock_catalog"
@@ -40,10 +39,7 @@ class MockXMatchCatalog(BaseXMatchCatalog):
 
 class MockIntIdXMatchCatalog(MockXMatchCatalog):
     """
-    Mock catalog variant with an integer-typed id column, like the real
-    PS1 BOOM catalog's `psobjectid` - used to test that large ids (e.g.
-    PS1 object ids, ~10**17) survive exactly, and that a missing match
-    doesn't crash the int-dtype placeholder column.
+    MockXMatchCatalog variant with an integer-typed id column, like PS1's.
     """
 
     column_dtypes = {"mockobjectid": int, "mockra": float, "mockdec": float}
@@ -64,12 +60,7 @@ class TestXMatch(unittest.TestCase):
 
     def test_large_int_id_returned_as_string(self):
         """
-        Some catalog services return large int64-scale ids as JSON strings
-        (to avoid precision loss), even though the id column is declared
-        as a float. Assigning that string into the float column used to
-        be silently accepted (with pandas quietly upcasting the column to
-        object dtype); it must still succeed, and the column must remain
-        the declared float dtype, not silently degrade.
+        A stringified large int id must cast into a float column, not degrade it.
         """
         catalog = MockXMatchCatalog(
             match={"_id": "924549000121927", "ra": 160.0001, "dec": 34.0001}
@@ -84,8 +75,7 @@ class TestXMatch(unittest.TestCase):
 
     def test_no_match(self):
         """
-        A source with no cross-match should get placeholder NaNs and a
-        zero match count, not an error.
+        A source with no cross-match should get a placeholder, not an error.
         """
         catalog = MockXMatchCatalog(match=None)
         xmatch = XMatch(catalog=catalog)
@@ -97,10 +87,7 @@ class TestXMatch(unittest.TestCase):
 
     def test_int_id_preserved_exactly(self):
         """
-        Object ids like PS1's (~10**17) exceed float64's exact-integer
-        range (2**53), so a catalog with an int-typed id column must not
-        route the value through a float cast - it must come out as the
-        exact same int that was matched, not a rounded approximation.
+        An int-typed id column must preserve ids beyond float64 precision.
         """
         real_id = 172802108132037500
         self.assertNotEqual(
@@ -119,9 +106,7 @@ class TestXMatch(unittest.TestCase):
 
     def test_int_id_no_match(self):
         """
-        An int-typed id column has no numpy NaN representation, so a
-        source with no cross-match must still get a placeholder (None),
-        not raise while building the column.
+        An int-typed id column must also handle a no-match source without error.
         """
         catalog = MockIntIdXMatchCatalog(match=None)
         xmatch = XMatch(catalog=catalog)

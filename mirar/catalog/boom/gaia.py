@@ -56,9 +56,7 @@ class Gaia(BaseBoomXMatch):
     @staticmethod
     def update_data(data: dict) -> dict:
         """
-        BOOM's Gaia_DR3 catalog does not provide a precomputed
-        parallax_over_error field, so compute it here from parallax and
-        parallax_error.
+        Compute parallax_over_error, which Gaia_DR3 doesn't provide.
 
         :param data: BOOM data
         :return: updated data

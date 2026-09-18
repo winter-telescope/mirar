@@ -1,11 +1,5 @@
 """
 Module for querying PS1 using BOOM
-
-BOOM merges the separate Kowalski PS1_DR1 (object)/PS1_PSC (star/galaxy
-score)/PS1_STRM (photo-z) catalogs into a single "PS1_DR2" catalog, so a
-single query (using PS1's own "_id"/ra/dec as the canonical match) can
-fetch all three at once, instead of three separate near-sphere queries
-that would always match the exact same nearest objects anyway.
 """
 
 from mirar.catalog.boom.base_boom_catalog import BaseBoomXMatch
@@ -78,13 +72,7 @@ class PS1(BaseBoomXMatch):
     @staticmethod
     def update_data(data: dict) -> dict:
         """
-        PS1's own magnitude fields use -999 as a sentinel for "no
-        measurement in this band" - not a missing/failed crossmatch,
-        the object still matched. Replaced with None here, since
-        passing -999 through as a literal magnitude would satisfy any
-        downstream "< some faint-mag threshold" check (e.g. the WINTER
-        quality filter's bright-star veto) as if it were an
-        impossibly bright star.
+        Replace PS1's -999 "no measurement" sentinel with None.
 
         :param data: BOOM data
         :return: updated data
