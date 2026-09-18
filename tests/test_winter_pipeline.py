@@ -69,6 +69,44 @@ expected_dataframe_values = {
         17.597206293933148,
         17.124283337139047,
     ],
+    "srmag1": [
+        None,
+        None,
+        21.9872,
+        None,
+        21.0019,
+        21.820299,
+        None,
+        21.697001,
+        None,
+        20.887898999999997,
+    ],
+    "distpsnr1": [
+        None,
+        5.926316031879033,
+        14.273739577173421,
+        7.365720721493199,
+        15.563648925556727,
+        15.980351600904857,
+        9.966652427453882,
+        5.761397381177185,
+        10.996305734150413,
+        14.308060315020628,
+    ],
+}
+expected_dataframe_ids = {
+    "psobjectid1": [
+        None,
+        1.728121079937006e17,
+        1.7281211047136765e17,
+        1.728221104649579e17,
+        1.7282210814785398e17,
+        1.7282210918875494e17,
+        1.7284210913936003e17,
+        1.728421095578917e17,
+        1.7283210868259917e17,
+        1.7283210888185677e17,
+    ],
 }
 
 
@@ -96,7 +134,7 @@ class TestWinterPipeline(BaseTestCase):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-    def test_pipeline(self):
+    def test_pipeline(self):  # pylint: disable=too-many-branches
         """
         Test winter pipeline
         Returns:
@@ -115,25 +153,23 @@ class TestWinterPipeline(BaseTestCase):
 
         source_table = res[0][0]
 
-        # # Uncomment to print new expected ZP dict
         print("New Results WINTER:")
-        new_exp = "expected_zp = { \n"
-        for header_key in source_table.get_metadata():
-            if header_key in expected_zp:
-                new_exp += f'    "{header_key}": {source_table[header_key]}, \n'
-        new_exp += "}"
-        print(new_exp)
+        print("expected_zp = {")
+        for key in expected_zp:
+            print(f'    "{key}": {source_table[key]},')
+        print("}")
 
         new_candidates_table = source_table.get_data()
 
-        new_exp_dataframe = "expected_dataframe_values = { \n"
+        print("expected_dataframe_values = {")
         for key in expected_dataframe_values:
-            new_exp_dataframe += (
-                f'    "{key}": {list(new_candidates_table[key][:10])}, \n'
-            )
-        new_exp_dataframe += "}"
+            print(f'    "{key}": {list(new_candidates_table[key][:10])},')
+        print("}")
 
-        print(new_exp_dataframe)
+        print("expected_dataframe_ids = {")
+        for key in expected_dataframe_ids:
+            print(f'    "{key}": {list(new_candidates_table[key][:10])},')
+        print("}")
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
@@ -149,8 +185,14 @@ class TestWinterPipeline(BaseTestCase):
 
         self.assertEqual(len(candidates_table), 129)
         for key, value in expected_dataframe_values.items():
-            if isinstance(value, list):
-                for ind, val in enumerate(value):
+            for ind, val in enumerate(value):
+                if val is None:
+                    self.assertIsNone(candidates_table.iloc[ind][key])
+                else:
                     self.assertAlmostEqual(
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
+
+        for key, value in expected_dataframe_ids.items():
+            for ind, val in enumerate(value):
+                self.assertEqual(candidates_table.iloc[ind][key], val)
