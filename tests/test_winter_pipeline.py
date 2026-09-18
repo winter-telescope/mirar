@@ -69,8 +69,32 @@ expected_dataframe_values = {
         17.597206293933148,
         17.124283337139047,
     ],
-    "srmag1": [],
-    "distpsnr1": [],
+    # None means no PS1 crossmatch at all for that candidate (nmtch=0) -
+    # a legitimate outcome, not a missing value.
+    "srmag1": [
+        None,
+        None,
+        21.9872,
+        None,
+        21.0019,
+        21.820299,
+        None,
+        21.697001,
+        None,
+        20.887898999999997,
+    ],
+    "distpsnr1": [
+        None,
+        5.926316031879033,
+        14.273739577173421,
+        7.365720721493199,
+        15.563648925556727,
+        15.980351600904857,
+        9.966652427453882,
+        5.761397381177185,
+        10.996305734150413,
+        14.308060315020628,
+    ],
 }
 # PS1 crossmatch object id (via Kowalski) for the nearest match to each of
 # the first 10 candidates. Unlike the photometry above, this must match
@@ -80,7 +104,18 @@ expected_dataframe_values = {
 # (see PR #1145) - once BOOM's own values are confirmed to match this
 # Kowalski baseline, this test can be dropped in favour of that one.
 expected_dataframe_ids = {
-    "psobjectid1": [],
+    "psobjectid1": [
+        None,
+        1.728121079937006e17,
+        1.7281211047136765e17,
+        1.728221104649579e17,
+        1.7282210814785398e17,
+        1.7282210918875494e17,
+        1.7284210913936003e17,
+        1.728421095578917e17,
+        1.7283210868259917e17,
+        1.7283210888185677e17,
+    ],
 }
 
 
@@ -108,7 +143,8 @@ class TestWinterPipeline(BaseTestCase):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-    def test_pipeline(self):
+    # Just flat print/assert blocks per pinned dict, not real complexity.
+    def test_pipeline(self):  # pylint: disable=too-many-branches
         """
         Test winter pipeline
         Returns:
@@ -161,8 +197,10 @@ class TestWinterPipeline(BaseTestCase):
 
         self.assertEqual(len(candidates_table), 129)
         for key, value in expected_dataframe_values.items():
-            if isinstance(value, list):
-                for ind, val in enumerate(value):
+            for ind, val in enumerate(value):
+                if val is None:
+                    self.assertIsNone(candidates_table.iloc[ind][key])
+                else:
                     self.assertAlmostEqual(
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
