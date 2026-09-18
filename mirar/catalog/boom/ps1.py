@@ -74,3 +74,30 @@ class PS1(BaseBoomXMatch):
 
     ra_column_name = f"{abbreviation}ra"
     dec_column_name = f"{abbreviation}dec"
+
+    @staticmethod
+    def update_data(data: dict) -> dict:
+        """
+        PS1's own magnitude fields use -999 as a sentinel for "no
+        measurement in this band" - not a missing/failed crossmatch,
+        the object still matched. Replaced with None here, since
+        passing -999 through as a literal magnitude would satisfy any
+        downstream "< some faint-mag threshold" check (e.g. the WINTER
+        quality filter's bright-star veto) as if it were an
+        impossibly bright star.
+
+        :param data: BOOM data
+        :return: updated data
+        """
+        mag_keys = ("gMeanPSFMag", "rMeanPSFMag", "iMeanPSFMag", "zMeanPSFMag")
+        new = {}
+        for name, matches in data.items():
+            new_matches = []
+            for match in matches:
+                new_match = dict(match)
+                for key in mag_keys:
+                    if new_match.get(key) == -999:
+                        new_match[key] = None
+                new_matches.append(new_match)
+            new[name] = new_matches
+        return new
