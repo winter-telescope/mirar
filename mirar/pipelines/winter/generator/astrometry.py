@@ -51,12 +51,7 @@ def winter_astrometric_ref_catalog_generator(
                 "outside the image. Requerying."
             )
 
-    # Chip size (half-diagonal, i.e. center-to-corner) plus a margin for a
-    # typical dither offset. This same cached catalog (keyed by field/
-    # subdet/filter) gets reused for every dither of a visit, not just the
-    # one image it was queried for - sizing it to only the chip's own
-    # footprint left it too small to adequately cover the other dithers,
-    # which SCAMP fits together as one field group.
+    # Chip half-diagonal plus a margin for a typical dither offset.
     search_radius_arcmin = (
         np.sqrt(image["NAXIS1"] ** 2 + image["NAXIS2"] ** 2)
         * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])

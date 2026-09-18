@@ -25,18 +25,7 @@ logger = logging.getLogger(__name__)
 
 def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool:
     """
-    Checks whether a locally-cached reference catalog has adequate coverage
-    of `image` to be safely reused, instead of re-querying.
-
-    A cached catalog is keyed by field/subdetector/filter and gets reused
-    for every dither of a visit, not just the one image it was originally
-    queried for. Checking only that most of the cached stars fall somewhere
-    within this image (the bulk-density check below) isn't enough on its
-    own: a catalog queried with just enough radius for one dither's own
-    footprint can still pass that check while leaving an edge of a
-    different, offset dither with no coverage at all - exactly the failure
-    mode this also checks for directly, by requiring a nearby reference
-    star near each corner of the image.
+    Checks whether a locally-cached reference catalog adequately covers `image`.
     """
     local_ref_cat = get_table_from_ldac(ref_cat_path)
 
@@ -67,10 +56,7 @@ def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool
         )
         return False
 
-    # local_ref_cat["ra"]/["dec"] are sometimes plain floats and sometimes
-    # already degree-valued Quantity columns (depending on the catalog
-    # source) - np.asarray() strips any existing unit first, so `* u.deg`
-    # always attaches degrees exactly once instead of squaring them.
+    # np.asarray() strips any pre-existing unit before `* u.deg` re-attaches it.
     cat_coords = SkyCoord(
         ra=np.asarray(local_ref_cat["ra"]) * u.deg,
         dec=np.asarray(local_ref_cat["dec"]) * u.deg,

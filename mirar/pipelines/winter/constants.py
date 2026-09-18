@@ -27,14 +27,7 @@ imgtype_dict = {
     "corrupted": "CORRUPTED",
 }
 
-# Typical radial offset of a single WINTER dither from the nominal field
-# center, used operationally for new images. Used as a safety margin when
-# sizing reference-catalog queries, so a single query/cache (keyed by
-# field/subdet/filter, shared across all dithers of one visit) has enough
-# coverage for every dither, not just the one it happened to be centered
-# on. Older data (e.g. the 20230726 test dataset) can have larger dither
-# offsets than this - check_winter_local_catalog_overlap is expected to
-# detect the insufficient coverage in that case and requery/redownload.
+# Typical radial offset of a WINTER dither from the nominal field center.
 WINTER_DITHER_RADIUS_ARCMIN = 1.5
 
 NXSPLIT = 1

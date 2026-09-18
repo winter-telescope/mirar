@@ -61,8 +61,7 @@ def winter_photometric_catalog_generator(
             )
 
     filter_name = image["FILTER"]
-    # Chip size plus a margin for a typical dither offset - see
-    # winter_astrometric_ref_catalog_generator for why the margin is needed.
+    # Chip size plus a margin for a typical dither offset.
     search_radius_arcmin = (
         np.max([image["NAXIS1"], image["NAXIS2"]])
         * np.max([np.abs(image["CD1_1"]), np.abs(image["CD1_2"])])

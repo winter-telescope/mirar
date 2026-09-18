@@ -275,13 +275,7 @@ def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
 
 def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
     """
-    Save an Image as a compressed fits image path.
-
-    The file is written to a temporary path in the same directory and then
-    renamed into place, so a reader of `path` (e.g. a concurrent pipeline
-    worker that has just seen the matching refcomponents DB row for a
-    different, overlapping WFCAM query) never observes a missing or
-    partially-written file.
+    Save an Image as a compressed fits image path, atomically (temp file + rename).
 
     : image: Image to save
     : path: path
