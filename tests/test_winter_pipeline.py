@@ -69,8 +69,6 @@ expected_dataframe_values = {
         17.597206293933148,
         17.124283337139047,
     ],
-    # None means no PS1 crossmatch at all for that candidate (nmtch=0) -
-    # a legitimate outcome, not a missing value.
     "srmag1": [
         None,
         None,
@@ -96,13 +94,6 @@ expected_dataframe_values = {
         14.308060315020628,
     ],
 }
-# PS1 crossmatch object id (via Kowalski) for the nearest match to each of
-# the first 10 candidates. Unlike the photometry above, this must match
-# exactly, not just approximately - it is a copied identifier, not a
-# computed value, and any drift would mean the crossmatch itself changed.
-# This is a baseline for comparison against the BOOM-based PS1 crossmatch
-# (see PR #1145) - once BOOM's own values are confirmed to match this
-# Kowalski baseline, this test can be dropped in favour of that one.
 expected_dataframe_ids = {
     "psobjectid1": [
         None,
@@ -143,7 +134,6 @@ class TestWinterPipeline(BaseTestCase):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-    # Just flat print/assert blocks per pinned dict, not real complexity.
     def test_pipeline(self):  # pylint: disable=too-many-branches
         """
         Test winter pipeline
@@ -163,8 +153,6 @@ class TestWinterPipeline(BaseTestCase):
 
         source_table = res[0][0]
 
-        # Uncomment to print a fresh baseline to copy-paste in after a
-        # genuine, intentional change to the pipeline's output.
         print("New Results WINTER:")
         print("expected_zp = {")
         for key in expected_zp:
@@ -205,8 +193,6 @@ class TestWinterPipeline(BaseTestCase):
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
 
-        # The PS1 crossmatch id is a value copied verbatim from Kowalski,
-        # not a re-computed quantity, so it must match exactly.
         for key, value in expected_dataframe_ids.items():
             for ind, val in enumerate(value):
                 self.assertEqual(candidates_table.iloc[ind][key], val)
