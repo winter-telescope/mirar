@@ -293,9 +293,9 @@ def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
         dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
     ) as tmp_file:
         tmp_path = Path(tmp_file.name)
-    try:
-        compressed_hdu.writeto(tmp_path, overwrite=True)
-        tmp_path.replace(path)
-    except Exception:
-        tmp_path.unlink(missing_ok=True)
-        raise
+        try:
+            compressed_hdu.writeto(tmp_path, overwrite=True)
+            tmp_path.replace(path)
+        except Exception:
+            tmp_path.unlink(missing_ok=True)
+            raise
