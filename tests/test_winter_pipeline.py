@@ -69,6 +69,18 @@ expected_dataframe_values = {
         17.597206293933148,
         17.124283337139047,
     ],
+    "srmag1": [],
+    "distpsnr1": [],
+}
+# PS1 crossmatch object id (via Kowalski) for the nearest match to each of
+# the first 10 candidates. Unlike the photometry above, this must match
+# exactly, not just approximately - it is a copied identifier, not a
+# computed value, and any drift would mean the crossmatch itself changed.
+# This is a baseline for comparison against the BOOM-based PS1 crossmatch
+# (see PR #1145) - once BOOM's own values are confirmed to match this
+# Kowalski baseline, this test can be dropped in favour of that one.
+expected_dataframe_ids = {
+    "psobjectid1": [],
 }
 
 
@@ -115,25 +127,25 @@ class TestWinterPipeline(BaseTestCase):
 
         source_table = res[0][0]
 
-        # # Uncomment to print new expected ZP dict
+        # Uncomment to print a fresh baseline to copy-paste in after a
+        # genuine, intentional change to the pipeline's output.
         print("New Results WINTER:")
-        new_exp = "expected_zp = { \n"
-        for header_key in source_table.get_metadata():
-            if header_key in expected_zp:
-                new_exp += f'    "{header_key}": {source_table[header_key]}, \n'
-        new_exp += "}"
-        print(new_exp)
+        print("expected_zp = {")
+        for key in expected_zp:
+            print(f'    "{key}": {source_table[key]},')
+        print("}")
 
         new_candidates_table = source_table.get_data()
 
-        new_exp_dataframe = "expected_dataframe_values = { \n"
+        print("expected_dataframe_values = {")
         for key in expected_dataframe_values:
-            new_exp_dataframe += (
-                f'    "{key}": {list(new_candidates_table[key][:10])}, \n'
-            )
-        new_exp_dataframe += "}"
+            print(f'    "{key}": {list(new_candidates_table[key][:10])},')
+        print("}")
 
-        print(new_exp_dataframe)
+        print("expected_dataframe_ids = {")
+        for key in expected_dataframe_ids:
+            print(f'    "{key}": {list(new_candidates_table[key][:10])},')
+        print("}")
 
         for key, value in expected_zp.items():
             if isinstance(value, float):
@@ -154,3 +166,9 @@ class TestWinterPipeline(BaseTestCase):
                     self.assertAlmostEqual(
                         candidates_table.iloc[ind][key], val, delta=0.05
                     )
+
+        # The PS1 crossmatch id is a value copied verbatim from Kowalski,
+        # not a re-computed quantity, so it must match exactly.
+        for key, value in expected_dataframe_ids.items():
+            for ind, val in enumerate(value):
+                self.assertEqual(candidates_table.iloc[ind][key], val)
