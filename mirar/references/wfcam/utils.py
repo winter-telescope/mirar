@@ -3,7 +3,6 @@ Utility functions for WFCAM
 """
 
 import logging
-import os
 import tempfile
 from pathlib import Path
 
@@ -290,11 +289,10 @@ def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
     header[LATEST_SAVE_KEY] = path.as_posix()
     compressed_hdu = fits.CompImageHDU(data, header=header)
 
-    fd, tmp_name = tempfile.mkstemp(
-        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
-    )
-    os.close(fd)
-    tmp_path = Path(tmp_name)
+    with tempfile.NamedTemporaryFile(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+    ) as tmp_file:
+        tmp_path = Path(tmp_file.name)
     try:
         compressed_hdu.writeto(tmp_path, overwrite=True)
         tmp_path.replace(path)
