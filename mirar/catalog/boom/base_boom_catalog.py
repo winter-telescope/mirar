@@ -6,11 +6,8 @@ import logging
 from abc import ABC
 from typing import Optional
 
-import numpy as np
-from astropy import units as u
-from astropy.coordinates import SkyCoord
 from blastwave.errors import BOOMCredentialsError
-from blastwave.query.boom import BoomClient
+from blastwave.query.boom import BOOMClient
 
 from mirar.catalog.base.base_xmatch_catalog import BaseXMatchCatalog
 from mirar.errors import ProcessorError
@@ -22,14 +19,14 @@ class BOOMError(ProcessorError):
     """Error relating to BOOM"""
 
 
-def get_boom_client() -> BoomClient:
+def get_boom_client() -> BOOMClient:
     """
-    Get a BoomClient object, using credentials stored in the environment
+    Get a BOOMClient object, using credentials stored in the environment
     (BOOM_API_USER / BOOM_API_PASSWORD, or a .env file)
 
-    :return: BoomClient object
+    :return: BOOMClient object
     """
-    boom_instance = BoomClient()
+    boom_instance = BOOMClient()
 
     try:
         boom_instance.get_session_headers()
@@ -88,86 +85,34 @@ class BaseBoomXMatch(BaseXMatchCatalog, ABC):
     def __init__(
         self,
         *args,
-        boom: Optional[BoomClient] = None,
-        max_time_ms: float = 10000,
+        boom: Optional[BOOMClient] = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.max_time_ms = max_time_ms
         self.boom = boom
 
     def near_query_boom(self, coords: dict) -> dict:
         """
-        Performs a batched BOOM cone search around each coordinate
-
-        BOOM's cone_search does not sort matches by distance before
-        applying `limit` - confirmed empirically that a `limit=3` query
-        can return matches over 4x further away than others it excluded
-        within the same radius. `limit` is omitted here (BOOM then
-        returns every match within `radius`, which is itself small - a
-        crossmatch search radius, not a survey area), and matches are
-        sorted by true angular separation and truncated to num_sources
-        ourselves instead.
+        Performs a BOOM cone search around each coordinate using
+        BOOMClient.cone_search().
 
         :param coords: dict of {name: [ra, dec]}
         :return: dict of {name: matches}
         """
-        payload = {
-            "catalog_name": self.catalog_name,
-            "object_coordinates": coords,
-            "radius": self.search_radius_arcsec,
-            "unit": "Arcseconds",
-            "projection": self.projection,
-            "max_time_ms": int(self.max_time_ms),
-        }
-        if self.boom_filter is not None:
-            payload["filter"] = self.boom_filter
-
-        logger.debug(f"BOOM client is {self.boom}")
-        res = self.boom.api("post", "queries/cone_search", data=payload)
-
-        if not res.ok:
-            err = f"BOOM cone search on '{self.catalog_name}' failed: {res.text}"
-            logger.error(err)
-            res.raise_for_status()
-
-        data = res.json()["data"]
-        flattened = {key: flatten_boom_data(matches) for key, matches in data.items()}
-        return self._sort_by_separation(flattened, coords)
-
-    def _sort_by_separation(self, flattened: dict, coords: dict) -> dict:
-        """
-        Sort each coordinate's matches by true angular separation and
-        truncate to num_sources.
-
-        :param flattened: dict of {name: matches}, as returned by BOOM
-        :param coords: dict of {name: [ra, dec]}, the queried coordinates
-        :return: dict of {name: matches}, nearest-first, truncated
-        """
-        raw_ra_key = next(
-            key for key, val in self.column_names.items() if val == self.ra_column_name
-        )
-        raw_dec_key = next(
-            key for key, val in self.column_names.items() if val == self.dec_column_name
-        )
-
-        sorted_data = {}
-        for name, matches in flattened.items():
-            if len(matches) == 0:
-                sorted_data[name] = matches
-                continue
-
-            query_coord = SkyCoord(
-                ra=coords[name][0] * u.deg, dec=coords[name][1] * u.deg
+        results = {}
+        for name, (ra, dec) in coords.items():
+            raw_matches = self.boom.cone_search(
+                ra=ra,
+                dec=dec,
+                radius_arcsec=self.search_radius_arcsec,
+                catalog=self.catalog_name,
+                limit=self.num_sources,
+                filter_query=self.boom_filter,
+                projection=self.projection,
             )
-            match_coords = SkyCoord(
-                ra=[match[raw_ra_key] for match in matches] * u.deg,
-                dec=[match[raw_dec_key] for match in matches] * u.deg,
-            )
-            order = np.argsort(query_coord.separation(match_coords))
-            sorted_data[name] = [matches[i] for i in order[: self.num_sources]]
+            results[name] = flatten_boom_data(raw_matches)
 
-        return sorted_data
+        return results
 
     def query(self, coords) -> dict:
         """
