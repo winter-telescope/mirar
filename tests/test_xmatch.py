@@ -16,8 +16,7 @@ from mirar.processors.xmatch import XMatch
 
 class MockXMatchCatalog(BaseXMatchCatalog):
     """
-    Minimal catalog stub for testing XMatch, without needing a real
-    external query service.
+    Minimal catalog stub for testing XMatch without a real query service.
     """
 
     catalog_name = "mock_catalog"
@@ -38,6 +37,14 @@ class MockXMatchCatalog(BaseXMatchCatalog):
         return {name: [self.match] for name in coords}
 
 
+class MockIntIdXMatchCatalog(MockXMatchCatalog):
+    """
+    MockXMatchCatalog variant with an integer-typed id column, like PS1's.
+    """
+
+    column_dtypes = {"mockobjectid": int, "mockra": float, "mockdec": float}
+
+
 class TestXMatch(unittest.TestCase):
     """
     Class for testing the XMatch processor
@@ -53,12 +60,7 @@ class TestXMatch(unittest.TestCase):
 
     def test_large_int_id_returned_as_string(self):
         """
-        Some catalog services return large int64-scale ids as JSON strings
-        (to avoid precision loss), even though the id column is declared
-        as a float. Assigning that string into the float column used to
-        be silently accepted (with pandas quietly upcasting the column to
-        object dtype); it must still succeed, and the column must remain
-        the declared float dtype, not silently degrade.
+        A stringified large int id must cast into a float column, not degrade it.
         """
         catalog = MockXMatchCatalog(
             match={"_id": "924549000121927", "ra": 160.0001, "dec": 34.0001}
@@ -73,10 +75,40 @@ class TestXMatch(unittest.TestCase):
 
     def test_no_match(self):
         """
-        A source with no cross-match should get placeholder NaNs and a
-        zero match count, not an error.
+        A source with no cross-match should get a placeholder, not an error.
         """
         catalog = MockXMatchCatalog(match=None)
+        xmatch = XMatch(catalog=catalog)
+        batch = xmatch._apply_to_sources(self.make_batch())
+
+        result_table = batch[0].get_data()
+        self.assertIsNone(result_table.at[0, "mockobjectid1"])
+        self.assertEqual(result_table.at[0, "nmtchmock"], 0)
+
+    def test_int_id_preserved_exactly(self):
+        """
+        An int-typed id column must preserve ids beyond float64 precision.
+        """
+        real_id = 172802108132037500
+        self.assertNotEqual(
+            float(real_id), real_id, "test id must exceed float64 precision"
+        )
+
+        catalog = MockIntIdXMatchCatalog(
+            match={"_id": real_id, "ra": 160.0001, "dec": 34.0001}
+        )
+        xmatch = XMatch(catalog=catalog)
+        batch = xmatch._apply_to_sources(self.make_batch())
+
+        result_table = batch[0].get_data()
+        self.assertEqual(result_table.at[0, "mockobjectid1"], real_id)
+        self.assertIsInstance(result_table.at[0, "mockobjectid1"], int)
+
+    def test_int_id_no_match(self):
+        """
+        An int-typed id column must also handle a no-match source without error.
+        """
+        catalog = MockIntIdXMatchCatalog(match=None)
         xmatch = XMatch(catalog=catalog)
         batch = xmatch._apply_to_sources(self.make_batch())
 

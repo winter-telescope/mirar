@@ -162,7 +162,8 @@ jobs:
           WATCHDOG_EMAIL: ${{ secrets.WATCHDOG_EMAIL }}
           WATCHDOG_EMAIL_PASSWORD: ${{ secrets.WATCHDOG_EMAIL_PASSWORD }}
           WATCHDOG_EMAIL_RECIPIENTS: ${{ secrets.WATCHDOG_EMAIL_RECIPIENTS }}
-          KOWALSKI_TOKEN: ${{ secrets.KOWALSKI_TOKEN }}
+          BOOM_API_USER: ${{ secrets.BOOM_API_USER }}
+          BOOM_API_PASSWORD: ${{ secrets.BOOM_API_PASSWORD }}
           FRITZ_TOKEN: ${{ secrets.FRITZ_TOKEN }}
           ANET_INDEX_DIR: /usr/share/miniconda/envs/test/data
         run: |

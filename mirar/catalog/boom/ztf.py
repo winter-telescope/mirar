@@ -1,13 +1,13 @@
 """
-Module for querying ZTF using Kowalski
+Module for querying ZTF using BOOM
 """
 
-from mirar.catalog.kowalski.base_kowalski_catalog import BaseKowalskiXMatch
+from mirar.catalog.boom.base_boom_catalog import BaseBoomXMatch
 
 
-class ZTF(BaseKowalskiXMatch):
+class ZTF(BaseBoomXMatch):
     """
-    ZTF Kowalski catalog
+    ZTF BOOM catalog
     """
 
     catalog_name = "ZTF_alerts"

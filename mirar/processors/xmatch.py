@@ -66,9 +66,14 @@ class XMatch(BaseSourceProcessor):
             for key in available_projection_keys:
                 for num in range(self.catalog.num_sources):
                     colname = catalog.column_names[key]
+                    # int has no NaN, so use object dtype as a placeholder.
                     candidate_table[colname + f"{num + 1}"] = np.array(
                         np.nan,
-                        dtype=catalog.column_dtypes[colname],
+                        dtype=(
+                            object
+                            if catalog.column_dtypes[colname] is int
+                            else catalog.column_dtypes[colname]
+                        ),
                     )
 
             # Add column for number of matches
@@ -82,11 +87,7 @@ class XMatch(BaseSourceProcessor):
                         base_colname = catalog.column_names[key]
                         colname = base_colname + f"{result_ind + 1}"
                         value = result[key]
-                        # Catalogs can return e.g. large int64 ids as strings
-                        # (to avoid precision loss over JSON), which pandas
-                        # no longer silently coerces when assigning into a
-                        # differently-typed column. Cast explicitly instead
-                        # of relying on implicit coercion.
+                        # Cast explicitly - pandas no longer silently coerces.
                         if value is not None:
                             value = catalog.column_dtypes[base_colname](value)
                         candidate_table.at[query_ind, colname] = value
