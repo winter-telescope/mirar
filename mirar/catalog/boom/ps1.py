@@ -69,6 +69,15 @@ class PS1(BaseBoomXMatch):
     ra_column_name = f"{abbreviation}ra"
     dec_column_name = f"{abbreviation}dec"
 
+    @property
+    def boom_filter(self) -> dict:
+        """
+        Excludes PS1_DR2 docs missing ps_score - absent from Kowalski's real PS1_DR1.
+
+        :return: filter
+        """
+        return {"ps_score": {"$exists": True}}
+
     @staticmethod
     def update_data(data: dict) -> dict:
         """
