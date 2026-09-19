@@ -27,6 +27,9 @@ imgtype_dict = {
     "corrupted": "CORRUPTED",
 }
 
+# Typical radial offset of a WINTER dither from the nominal field center.
+WINTER_DITHER_RADIUS_ARCMIN = 1.5
+
 NXSPLIT = 1
 NYSPLIT = 1
 

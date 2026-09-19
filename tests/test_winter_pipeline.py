@@ -13,36 +13,36 @@ from mirar.testing import BaseTestCase
 logger = logging.getLogger(__name__)
 
 expected_zp = {
-    "ZP_2.0": 23.97814850254867,
-    "ZP_2.0_std": 0.05832326700001151,
+    "ZP_2.0": 23.97849170284599,
+    "ZP_2.0_std": 0.05826721581504818,
     "ZP_2.0_nstars": 60,
-    "ZP_3.0": 24.450910328241655,
-    "ZP_3.0_std": 0.05082148072614819,
+    "ZP_3.0": 24.450847552345795,
+    "ZP_3.0_std": 0.050819998428748195,
     "ZP_3.0_nstars": 60,
-    "ZP_4.0": 24.643925177458325,
-    "ZP_4.0_std": 0.04755575861598483,
+    "ZP_4.0": 24.643778328182464,
+    "ZP_4.0_std": 0.04755603507046444,
     "ZP_4.0_nstars": 60,
-    "ZP_5.0": 24.729109504300617,
-    "ZP_5.0_std": 0.04712040460883906,
+    "ZP_5.0": 24.729127733225777,
+    "ZP_5.0_std": 0.04711641560751583,
     "ZP_5.0_nstars": 60,
-    "ZP_6.0": 24.7717020594737,
-    "ZP_6.0_std": 0.04674623326432091,
+    "ZP_6.0": 24.771803826980506,
+    "ZP_6.0_std": 0.0467397353333381,
     "ZP_6.0_nstars": 60,
-    "ZP_7.0": 24.79500526145292,
-    "ZP_7.0_std": 0.04557240232521663,
+    "ZP_7.0": 24.7951094448713,
+    "ZP_7.0_std": 0.04556357052011898,
     "ZP_7.0_nstars": 59,
-    "ZP_8.0": 24.830294193506674,
-    "ZP_8.0_std": 0.048968580371657335,
+    "ZP_8.0": 24.83036267022543,
+    "ZP_8.0_std": 0.04895778665964604,
     "ZP_8.0_nstars": 59,
-    "ZP_AUTO": 24.837775634457284,
-    "ZP_AUTO_std": 0.05224100648606315,
+    "ZP_AUTO": 24.837867474098875,
+    "ZP_AUTO_std": 0.05223561116074162,
     "ZP_AUTO_nstars": 60,
-    "ZP_PSF": 24.662553190105122,
-    "ZP_PSF_std": 0.05127408852532155,
-    "ZP_PSF_nstars": 57,
-    "SCORMEAN": -0.13828411674238658,
-    "SCORMED": -0.11942388364288006,
-    "SCORSTD": 1.3665580887340274,
+    "ZP_PSF": 24.68237371708096,
+    "ZP_PSF_std": 0.05574147047803554,
+    "ZP_PSF_nstars": 58,
+    "SCORMEAN": -0.13852209047822428,
+    "SCORMED": -0.11971798962209092,
+    "SCORSTD": 1.366477864242046,
 }
 expected_dataframe_values = {
     "magpsf": [
@@ -183,7 +183,7 @@ class TestWinterPipeline(BaseTestCase):
 
         candidates_table = source_table.get_data()
 
-        self.assertEqual(len(candidates_table), 129)
+        self.assertEqual(len(candidates_table), 128)
         for key, value in expected_dataframe_values.items():
             for ind, val in enumerate(value):
                 if val is None:

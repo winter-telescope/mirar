@@ -3,6 +3,7 @@ Utility functions for WFCAM
 """
 
 import logging
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -273,7 +274,8 @@ def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
 
 def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
     """
-    Save an Image as a compressed fits image path
+    Save an Image as a compressed fits image path, atomically (temp file + rename).
+
     : image: Image to save
     : path: path
     """
@@ -287,4 +289,13 @@ def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
     header[LATEST_SAVE_KEY] = path.as_posix()
     compressed_hdu = fits.CompImageHDU(data, header=header)
 
-    compressed_hdu.writeto(path, overwrite=True)
+    with tempfile.NamedTemporaryFile(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+    ) as tmp_file:
+        tmp_path = Path(tmp_file.name)
+        try:
+            compressed_hdu.writeto(tmp_path, overwrite=True)
+            tmp_path.replace(path)
+        except OSError:
+            tmp_path.unlink(missing_ok=True)
+            raise

@@ -572,16 +572,16 @@ def download_wfcam_archive_images(
             wfcam_image[QUERY_FILT_KEY] = waveband
             wfcam_image[LATEST_SAVE_KEY] = imagepath.as_posix()
 
+            # Write the file before the DB row, so no worker sees a row with no file.
+            save_wfcam_as_compressed_fits(wfcam_image, imagepath)
+            logger.debug(f"Saved UKIRT image to {imagepath}")
+
             if use_local_database:
                 dbexporter = DatabaseImageInserter(
                     db_table=components_table,
                     duplicate_protocol=duplicate_protocol,
                 )
-                wfcam_db_batch = dbexporter.apply(ImageBatch([wfcam_image]))
-                wfcam_image = wfcam_db_batch[0]
-
-            save_wfcam_as_compressed_fits(wfcam_image, imagepath)
-            logger.debug(f"Saved UKIRT image to {imagepath}")
+                dbexporter.apply(ImageBatch([wfcam_image]))
 
         imagepaths.append(imagepath)
 

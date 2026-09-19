@@ -6,11 +6,17 @@ import logging
 from pathlib import Path
 
 import numpy as np
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 from astropy.wcs import NoConvergence
 
 from mirar.data import Image
-from mirar.data.utils.coords import check_coords_within_image
+from mirar.data.utils.coords import (
+    check_coords_within_image,
+    get_corners_ra_dec_from_header,
+)
 from mirar.paths import TARGET_KEY
+from mirar.pipelines.winter.constants import WINTER_DITHER_RADIUS_ARCMIN
 from mirar.pipelines.winter.models import DEFAULT_FIELD
 from mirar.utils import get_table_from_ldac
 
@@ -19,19 +25,19 @@ logger = logging.getLogger(__name__)
 
 def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool:
     """
-    Returns a function that returns the local reference catalog
+    Checks whether a locally-cached reference catalog adequately covers `image`.
     """
-    # Check if there is enough overlap between the image and the
-    # local reference catalog
     local_ref_cat = get_table_from_ldac(ref_cat_path)
 
     if len(local_ref_cat) == 0:
         logger.debug(f"Reference catalog {ref_cat_path} is empty.")
         return False
 
+    header = image.get_header()
+
     try:
         srcs_in_image = check_coords_within_image(
-            ra=local_ref_cat["ra"], dec=local_ref_cat["dec"], header=image.get_header()
+            ra=local_ref_cat["ra"], dec=local_ref_cat["dec"], header=header
         )
     except NoConvergence:
         logger.debug(
@@ -48,7 +54,28 @@ def check_winter_local_catalog_overlap(ref_cat_path: Path, image: Image) -> bool
         logger.debug(
             "More than 50% of the local reference catalog is outside the image."
         )
-    return cat_overlaps
+        return False
+
+    # np.asarray() strips any pre-existing unit before `* u.deg` re-attaches it.
+    cat_coords = SkyCoord(
+        ra=np.asarray(local_ref_cat["ra"]) * u.deg,
+        dec=np.asarray(local_ref_cat["dec"]) * u.deg,
+    )
+    for corner_ra, corner_dec in get_corners_ra_dec_from_header(header):
+        corner_coord = SkyCoord(ra=corner_ra * u.deg, dec=corner_dec * u.deg)
+        if (
+            corner_coord.separation(cat_coords).min()
+            > WINTER_DITHER_RADIUS_ARCMIN * u.arcmin
+        ):
+            logger.debug(
+                f"Local reference catalog {ref_cat_path} has no reference "
+                f"star within {WINTER_DITHER_RADIUS_ARCMIN} arcmin of "
+                f"corner (ra={corner_ra:.4f}, dec={corner_dec:.4f}) of the "
+                "image - insufficient coverage, requerying."
+            )
+            return False
+
+    return True
 
 
 def winter_ref_catalog_namer(image: Image, output_dir: Path) -> Path:
