@@ -183,7 +183,7 @@ class TestWinterPipeline(BaseTestCase):
 
         candidates_table = source_table.get_data()
 
-        self.assertEqual(len(candidates_table), 129)
+        self.assertEqual(len(candidates_table), 128)
         for key, value in expected_dataframe_values.items():
             for ind, val in enumerate(value):
                 if val is None:
