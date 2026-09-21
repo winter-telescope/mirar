@@ -187,7 +187,8 @@ build_astromatic "scamp" "scamp" "v$SCAMP_VERSION" \
     --with-fftw-incdir="$PREFIX/include" \
     --with-fftw-libdir="$PREFIX/lib" \
     --with-curl-incdir="$PREFIX/include" \
-    --with-curl-libdir="$PREFIX/lib"
+    --with-curl-libdir="$PREFIX/lib" \
+    LIBS="-lpthread"
 
 echo "    scamp:            $(scamp -v 2>&1 | head -1)"
 #
@@ -195,7 +196,8 @@ echo "    scamp:            $(scamp -v 2>&1 | head -1)"
 ## Swarp tag is just X.Y.Z without "v", for... reasons
 build_astromatic "swarp" "swarp" "$SWARP_VERSION" \
     --with-cfitsio-incdir="$PREFIX/include" \
-    --with-cfitsio-libdir="$PREFIX/lib"
+    --with-cfitsio-libdir="$PREFIX/lib" \
+    LIBS="-lpthread"
 
 echo "    $(swarp -v 2>&1 | head -1)"
 #
