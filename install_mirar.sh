@@ -208,7 +208,8 @@ build_astromatic "psfex" "psfex" "$PSFEX_VERSION" \
     --with-fftw-incdir="$PREFIX/include" \
     --with-fftw-libdir="$PREFIX/lib" \
     --with-curl-incdir="$PREFIX/include" \
-    --with-curl-libdir="$PREFIX/lib"
+    --with-curl-libdir="$PREFIX/lib" \
+    LIBS="-lpthread"
 
 echo "    $(psfex -v 2>&1 | head -1)"
 
