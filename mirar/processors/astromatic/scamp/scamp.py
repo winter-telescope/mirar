@@ -142,8 +142,7 @@ class Scamp(BaseImageProcessor):
         if self.make_checkplots:
             if self.checkplot_dev is None:
                 self.make_checkplots = False
-                # Raise a warning
-                logger.warning(
+                logger.debug(
                     "PLPLOT_DEV environment variable must be set to make scamp "
                     "checkplots. Will not make any checkplots."
                 )
