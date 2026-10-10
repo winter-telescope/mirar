@@ -150,7 +150,7 @@ def winter_master_flat_path_generator(images: ImageBatch) -> Path:
     return master_flat_path
 
 
-def winter_anet_sextractor_config_path_generator(image: Image) -> str:
+def winter_anet_sextractor_config_path_generator(image: Image) -> Path:
     """
     Generates the sextractor config file path for the winter image
     """

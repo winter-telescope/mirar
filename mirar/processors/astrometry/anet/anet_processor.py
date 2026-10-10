@@ -53,12 +53,10 @@ class AstrometryNet(BaseImageProcessor):
         sextractor_path: str = "sex",
         search_radius_deg: float = 5.0,
         parity: str | None = None,
-        sextractor_config_path: (
-            str | Path | Callable[[Image], str | Path] | None
-        ) = None,
-        sextractor_params_path: str | Path | None = None,
-        sextractor_conv_path: str | Path | None = default_conv_path,
-        sextractor_starnnw_path: str | Path | None = default_starnnw_path,
+        sextractor_config_path: Path | Callable[[Image], Path] | None = None,
+        sextractor_params_path: Path | None = None,
+        sextractor_conv_path: Path | None = default_conv_path,
+        sextractor_starnnw_path: Path | None = default_starnnw_path,
         x_image_key: str = "X_IMAGE",
         y_image_key: str = "Y_IMAGE",
         sort_key_name: str = "MAG_AUTO",
@@ -108,22 +106,10 @@ class AstrometryNet(BaseImageProcessor):
         self.y_image_key = y_image_key
         self.sort_key_name = sort_key_name
         self.use_weight = use_weight
-        self.sextractor_config_path: Path | Callable[[Image], str | Path] | None
-        if isinstance(sextractor_config_path, str):
-            self.sextractor_config_path = Path(sextractor_config_path)
-        else:
-            self.sextractor_config_path = sextractor_config_path
-        self.sextractor_params_path = (
-            Path(sextractor_params_path) if sextractor_params_path is not None else None
-        )
-        self.sextractor_conv_path = (
-            Path(sextractor_conv_path) if sextractor_conv_path is not None else None
-        )
-        self.sextractor_starnnw_path = (
-            Path(sextractor_starnnw_path)
-            if sextractor_starnnw_path is not None
-            else None
-        )
+        self.sextractor_config_path = sextractor_config_path
+        self.sextractor_params_path = sextractor_params_path
+        self.sextractor_conv_path = sextractor_conv_path
+        self.sextractor_starnnw_path = sextractor_starnnw_path
 
         self.write_regions = write_regions
 

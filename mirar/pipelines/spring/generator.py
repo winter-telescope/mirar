@@ -67,7 +67,7 @@ class NoGoodCandidatesError(ProcessorError):
     """Error raised when no candidates pass quality cuts"""
 
 
-def spring_anet_sextractor_config_path_generator(_image: Image) -> str | Path:
+def spring_anet_sextractor_config_path_generator(_image: Image) -> Path:
     """
     Generate the path to the ANET SExtractor configuration file for SPRING images
     Parameters
