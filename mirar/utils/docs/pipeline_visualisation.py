@@ -41,6 +41,21 @@ def get_save_path(pipeline: str, configs: str) -> Path:
     return flowchart_dir.joinpath(f"{pipeline}/{configs}.png")
 
 
+def format_duration(seconds: float) -> str:
+    """Format a duration in seconds as a compact human-readable string"""
+    if round(seconds, 1) < 60.0:
+        return f"{seconds:.1f}s"
+
+    # Round to whole seconds first, so carries cannot render as e.g. 9m60s
+    minutes, seconds = divmod(int(round(seconds)), 60)
+
+    if minutes < 60:
+        return f"{minutes}m{seconds}s"
+
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h{minutes}m"
+
+
 def flowify(
     processor_list: list[BaseProcessor],
     output_path: Path,
@@ -134,7 +149,8 @@ def flowify(
             msg = (
                 f"{processor.latest_n_input_blocks} {blocks}, "
                 f"{processor.latest_n_input_batches} batches, "
-                f"{len(err_stack.reports)} errors"
+                f"{len(err_stack.reports)} errors, "
+                f"{format_duration(processor.latest_runtime)}"
             )
 
             plt.annotate(
@@ -162,6 +178,12 @@ def flowify(
                     **annotate_args,
                     **class_kwargs,
                 )
+
+    if include_stats:
+        plt.title(
+            "Total time elapsed: "
+            f"{format_duration(sum(x.latest_runtime for x in processor_list))}"
+        )
 
     logger.info(f"Saving to {output_path}")
 
