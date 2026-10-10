@@ -218,9 +218,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
             weight_path = None
 
             if LATEST_WEIGHT_SAVE_KEY in image.keys():
-                image_weight_path = sextractor_out_dir.joinpath(
-                    image[LATEST_WEIGHT_SAVE_KEY]
-                )
+                image_weight_path = sextractor_out_dir / image[LATEST_WEIGHT_SAVE_KEY]
                 temp_weight_path = get_temp_path(
                     sextractor_out_dir, image[LATEST_WEIGHT_SAVE_KEY]
                 )
@@ -246,8 +244,8 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
                     )
             self.check_psf_prerequisite()
 
-            output_cat = sextractor_out_dir.joinpath(
-                image[BASE_NAME_KEY].replace(".fits", ".cat")
+            output_cat = sextractor_out_dir / image[BASE_NAME_KEY].replace(
+                ".fits", ".cat"
             )
 
             _, checkimage_name = parse_checkimage(
@@ -305,9 +303,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
                     region_radius=5,
                 )
 
-            image[SEXTRACTOR_HEADER_KEY] = sextractor_out_dir.joinpath(
-                output_cat
-            ).as_posix()
+            image[SEXTRACTOR_HEADER_KEY] = (sextractor_out_dir / output_cat).as_posix()
 
             if len(checkimage_name) > 0:
                 for i, checkimg_type in enumerate(self.checkimage_type):

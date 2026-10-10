@@ -47,7 +47,7 @@ class RealtimeImageSimulator(BaseImageProcessor):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         for image_name in self.input_img_names:
-            img_path = self.input_img_dir.joinpath(image_name)
+            img_path = self.input_img_dir / image_name
 
             output_path = Path(
                 get_output_dir(
@@ -61,7 +61,7 @@ class RealtimeImageSimulator(BaseImageProcessor):
             if not output_path.exists():
                 output_path.mkdir(parents=True)
 
-            output_path = output_path.joinpath(img_path.name)
+            output_path = output_path / img_path.name
 
             if output_path.is_file():
                 output_path.unlink()

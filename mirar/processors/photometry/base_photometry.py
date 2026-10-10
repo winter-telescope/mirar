@@ -68,7 +68,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
             self.temp_output_sub_dir, self.night_sub_dir
         )
         image_basename = image.header[BASE_NAME_KEY]
-        temp_imagepath = photometry_out_temp_dir.joinpath(image_basename)
+        temp_imagepath = photometry_out_temp_dir / image_basename
         temp_imagepath.parent.mkdir(parents=True, exist_ok=True)
         self.save_fits(image, temp_imagepath)
         return temp_imagepath
@@ -86,7 +86,7 @@ class BasePhotometryProcessor(BaseSourceProcessor, ABC, ImageHandler):
         )
         unc_filename = Path(image[BASE_NAME_KEY].replace(".fits", ".unc.fits"))
         rms_image = get_rms_image(image)
-        unc_filename = photometry_out_temp_dir.joinpath(unc_filename)
+        unc_filename = photometry_out_temp_dir / unc_filename
         unc_filename.parent.mkdir(parents=True, exist_ok=True)
         self.save_fits(rms_image, path=unc_filename)
         logger.debug(f"Saved unc file to {unc_filename}")

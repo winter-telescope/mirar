@@ -55,7 +55,7 @@ def docker_path(file_path: str | Path) -> Path:
     :param file_path: file path
     :return:
     """
-    return docker_dir.joinpath(Path(file_path).name)
+    return docker_dir / Path(file_path).name
 
 
 def docker_get(container: Container, local_path: str | Path):
@@ -180,7 +180,7 @@ def docker_get_new_files(
     # Collect output files
 
     for output_file in new_files:
-        output_path = output_dir.joinpath(output_file)
+        output_path = output_dir / output_file
 
         docker_get(container, output_path)
 

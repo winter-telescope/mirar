@@ -76,8 +76,8 @@ class JSONExporter(BaseSourceProcessor):
             )
 
             output_dir.mkdir(parents=True, exist_ok=True)
-            json_path = output_dir.joinpath(
-                Path(metadata[BASE_NAME_KEY]).with_suffix(JSON_SUFFIX).name
+            json_path = (
+                output_dir / Path(metadata[BASE_NAME_KEY]).with_suffix(JSON_SUFFIX).name
             )
 
             logger.debug(f"Writing source table to {json_path}")

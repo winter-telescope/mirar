@@ -40,7 +40,7 @@ class MultiExtParser(BaseImageProcessor):
         input_sub_dir: str = RAW_IMG_SUB_DIR,
         output_sub_dir: str = "raw_split",
         input_img_dir: str = base_raw_dir,
-        output_img_dir: str | Path = base_output_dir,
+        output_img_dir: Path = base_output_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
         skip_first: bool = False,
         extension_num_header_key: str | None = None,
@@ -149,9 +149,7 @@ class MultiExtParser(BaseImageProcessor):
         return new_paths
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-        input_dir = os.path.join(
-            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
-        )
+        input_dir = self.input_img_dir / self.night_sub_dir / self.input_sub_dir
         return load_from_dir(input_dir, parse_f=self.parse)
 
 

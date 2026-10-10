@@ -39,7 +39,7 @@ def run_scamp(
     output_dir: str | Path,
     timeout_seconds: float = 60.0,
     make_checkplots: bool = False,
-    checkplot_basename: str = "scamp_checkplot",
+    checkplot_basename: str | Path = "scamp_checkplot",
     checkplot_dev: str | None = None,
 ):
     """
@@ -178,12 +178,12 @@ class Scamp(BaseImageProcessor):
 
         ref_cat_path = ref_catalog.write_catalog(batch[0], output_dir=scamp_output_dir)
 
-        scamp_image_list_path = scamp_output_dir.joinpath(
-            Path(batch[0][BASE_NAME_KEY]).name + "_scamp_list.txt",
+        scamp_image_list_path = scamp_output_dir / (
+            Path(batch[0][BASE_NAME_KEY]).name + "_scamp_list.txt"
         )
 
-        scamp_checkplot_basename = scamp_output_dir.joinpath(
-            Path(batch[0][BASE_NAME_KEY]).name.split(".fits")[0] + "_cplot",
+        scamp_checkplot_basename = scamp_output_dir / (
+            Path(batch[0][BASE_NAME_KEY]).name.split(".fits")[0] + "_cplot"
         )
 
         logger.debug(f"Writing file list to {scamp_image_list_path}")

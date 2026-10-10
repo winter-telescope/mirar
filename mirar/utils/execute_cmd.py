@@ -96,7 +96,7 @@ def temp_config(config_path: str | Path, output_dir: str | Path) -> Path:
     :return:
     """
     basename = f"temp_{Path(config_path).name}"
-    return Path(output_dir).joinpath(basename)
+    return Path(output_dir) / basename
 
 
 def run_docker(cmd: str, output_dir: Path | str = "."):

@@ -144,7 +144,7 @@ class ZOGYPrepare(BaseImageProcessor):
         :param name: Name of file
         :return: Full output path
         """
-        return self.get_sub_output_dir().joinpath(name)
+        return self.get_sub_output_dir() / name
 
     def get_ast_fluxscale(
         self, ref_catalog_name: str | Path, sci_catalog_name: str | Path

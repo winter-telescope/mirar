@@ -114,9 +114,9 @@ class IPACAvroExporter(BaseAvroExporter):
 
             new_alerts.append(alert)
 
-        save_path = self.get_sub_output_dir().joinpath(
-            Path(metadata[BASE_NAME_KEY]).with_suffix(".avro")
-        )
+        save_path = self.get_sub_output_dir() / Path(
+            metadata[BASE_NAME_KEY]
+        ).with_suffix(".avro")
 
         topic_name = self.get_topic_name()
 

@@ -4,7 +4,6 @@ Module for finding archival calibration images if these are missing
 
 import copy
 import logging
-import os
 from collections.abc import Callable
 from pathlib import Path
 
@@ -158,7 +157,7 @@ def find_required_cals(
             logger.error(err)
             raise MissingCalibrationsError(err)
 
-        dir_to_load = ordered_nights[0].joinpath(subdir)
+        dir_to_load = ordered_nights[0] / subdir
 
         logger.info(f"Checking night {dir_to_load}")
 
@@ -223,9 +222,7 @@ class CalHunter(ImageLoader):
         requirements = copy.deepcopy(self.requirements)
         requirements = update_requirements(requirements, batch)
 
-        latest_dir = os.path.join(
-            self.input_img_dir, os.path.join(self.night_sub_dir, self.input_sub_dir)
-        )
+        latest_dir = self.input_img_dir / self.night_sub_dir / self.input_sub_dir
 
         updated_batch = find_required_cals(
             latest_dir=latest_dir,

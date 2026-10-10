@@ -207,12 +207,12 @@ class Swarp(BaseImageProcessor):
         swarp_output_dir = self.get_swarp_output_dir()
         swarp_output_dir.mkdir(parents=True, exist_ok=True)
 
-        swarp_image_list_path = swarp_output_dir.joinpath(
-            Path(batch[0][BASE_NAME_KEY]).name + "_swarp_img_list.txt",
+        swarp_image_list_path = swarp_output_dir / (
+            Path(batch[0][BASE_NAME_KEY]).name + "_swarp_img_list.txt"
         )
 
-        swarp_weight_list_path = swarp_output_dir.joinpath(
-            Path(batch[0][BASE_NAME_KEY]).name + "_swarp_weight_list.txt",
+        swarp_weight_list_path = swarp_output_dir / (
+            Path(batch[0][BASE_NAME_KEY]).name + "_swarp_weight_list.txt"
         )
         logger.debug(f"Writing file list to {swarp_image_list_path}")
 
@@ -223,9 +223,9 @@ class Swarp(BaseImageProcessor):
         # changeable.
 
         if self.combine:
-            output_image_path = swarp_output_dir.joinpath(
-                Path(batch[0][BASE_NAME_KEY]).name.replace(".fits", "_stack.fits"),
-            )
+            output_image_path = swarp_output_dir / Path(
+                batch[0][BASE_NAME_KEY]
+            ).name.replace(".fits", "_stack.fits")
         else:
             if len(batch) > 1:
                 err = (
@@ -247,8 +247,9 @@ class Swarp(BaseImageProcessor):
                 "sense.",
                 SwarpWarning,
             )
-            output_image_path = swarp_output_dir.joinpath(
-                Path(batch[0][BASE_NAME_KEY]).with_suffix(".resamp.fits").name,
+            output_image_path = (
+                swarp_output_dir
+                / Path(batch[0][BASE_NAME_KEY]).with_suffix(".resamp.fits").name
             )
         logger.debug(f"Saving to {output_image_path}")
 

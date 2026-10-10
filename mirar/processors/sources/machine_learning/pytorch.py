@@ -48,7 +48,7 @@ class Pytorch(BaseSourceProcessor):
 
         :return: Path to the ML model
         """
-        return ml_models_dir.joinpath(self.model_name)
+        return ml_models_dir / self.model_name
 
     def download_model(self):
         """

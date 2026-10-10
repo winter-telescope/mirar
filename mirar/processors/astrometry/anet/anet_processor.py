@@ -202,7 +202,7 @@ class AstrometryNet(BaseImageProcessor):
 
         for i, image in enumerate(batch):
             base_name = Path(image[BASE_NAME_KEY])
-            new_img_path = anet_out_dir.joinpath(base_name)
+            new_img_path = anet_out_dir / base_name
 
             temp_path = get_temp_path(anet_out_dir, base_name)
             self.save_fits(image, temp_path, compress=False)
@@ -254,13 +254,13 @@ class AstrometryNet(BaseImageProcessor):
                 temp_files.append(Path(f"{anet_output_filees_basepath}{suffix}"))
 
             if self.write_regions:
-                coords_file = anet_out_dir.joinpath(
-                    image[BASE_NAME_KEY].replace(".fits", ".axy")
+                coords_file = anet_out_dir / image[BASE_NAME_KEY].replace(
+                    ".fits", ".axy"
                 )
                 if not coords_file.exists():
                     logger.warning(f"Failed to find coords file {coords_file}")
                 else:
-                    regions_path = anet_out_dir.joinpath(image[BASE_NAME_KEY] + ".reg")
+                    regions_path = anet_out_dir / (image[BASE_NAME_KEY] + ".reg")
                     logger.debug(f"Loading coords from {coords_file}")
                     with fits.open(coords_file) as hdul:
                         coords_table = Table(hdul[1].data)  # pylint: disable=no-member

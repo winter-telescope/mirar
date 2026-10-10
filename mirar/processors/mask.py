@@ -70,9 +70,9 @@ class BaseMask(BaseImageProcessor, ABC):
                 mask_directory = get_output_dir(self.output_dir, self.night_sub_dir)
                 mask_directory.mkdir(parents=True, exist_ok=True)
 
-                mask_file_path = mask_directory.joinpath(
-                    image[BASE_NAME_KEY]
-                ).with_suffix(".mask.fits")
+                mask_file_path = (mask_directory / image[BASE_NAME_KEY]).with_suffix(
+                    ".mask.fits"
+                )
 
                 mask_data = np.ones_like(data)
                 mask_data[pixels_to_mask] = 0.0

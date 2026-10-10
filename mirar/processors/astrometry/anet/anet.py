@@ -65,7 +65,7 @@ def run_astrometry_net_single(
     default: solve-field <img> -D <output_dir> -N <newname> -O
     """
     # name for new file if a-net solves (otherwise a-net writes to '<img>.new')
-    newname = output_dir.joinpath(Path(str(img_path).split("temp_")[1]))
+    newname = output_dir / Path(str(img_path).split("temp_")[1])
     basename = (str(img_path).split("temp_")[1]).split(".fits")[0]
 
     # run a-net (solve-field)
