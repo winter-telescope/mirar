@@ -175,10 +175,10 @@ class ZOGYSourceDetector(BaseSourceGenerator):
 
     def __init__(
         self,
-        cand_det_sextractor_config: str | Path,
-        cand_det_sextractor_filter: str | Path,
-        cand_det_sextractor_nnw: str | Path,
-        cand_det_sextractor_params: str | Path,
+        cand_det_sextractor_config: Path,
+        cand_det_sextractor_filter: Path,
+        cand_det_sextractor_nnw: Path,
+        cand_det_sextractor_params: Path,
         output_sub_dir: str = "candidates",
         write_regions: bool = False,
         detect_negative_sources: bool = False,

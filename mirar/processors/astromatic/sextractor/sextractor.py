@@ -73,10 +73,10 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
     def __init__(  # pylint: disable=too-many-locals
         self,  # pylint: disable=too-many-instance-attributes
         output_sub_dir: str,
-        config_path: str | Path,
-        parameter_path: str | Path,
-        filter_path: str | Path,
-        starnnw_path: str | Path,
+        config_path: Path,
+        parameter_path: Path,
+        filter_path: Path,
+        starnnw_path: Path,
         saturation: float | None = None,
         verbose_type: str = "QUIET",
         checkimage_name: Optional[str | list] = None,

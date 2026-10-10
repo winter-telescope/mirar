@@ -5,6 +5,7 @@ Module for summer-specific files
 # pylint: disable=duplicate-code
 
 import os
+from pathlib import Path
 
 from mirar.pipelines.summer.config.constants import (
     DB_NAME,
@@ -25,25 +26,25 @@ summer_mask_path = os.path.join(summer_dir, "mask.fits")
 summer_weight_path = os.path.join(summer_dir, "weight.fits")
 
 sextractor_astrometry_config: SextractorConfig = {
-    "config_path": os.path.join(astromatic_config_dir, "astrom.sex"),
-    "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
-    "parameter_path": os.path.join(astromatic_config_dir, "astrom.param"),
-    "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
+    "config_path": Path(astromatic_config_dir, "astrom.sex"),
+    "filter_path": Path(astromatic_config_dir, "default.conv"),
+    "parameter_path": Path(astromatic_config_dir, "astrom.param"),
+    "starnnw_path": Path(astromatic_config_dir, "default.nnw"),
 }
 
 
 sextractor_photometry_config: SextractorConfig = {
-    "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
-    "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
-    "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
-    "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
+    "config_path": Path(astromatic_config_dir, "photomCat.sex"),
+    "filter_path": Path(astromatic_config_dir, "default.conv"),
+    "parameter_path": Path(astromatic_config_dir, "photom.param"),
+    "starnnw_path": Path(astromatic_config_dir, "default.nnw"),
 }
 
 sextractor_candidates_config: SextractorCandidateConfig = {
-    "cand_det_sextractor_config": os.path.join(astromatic_config_dir, "photomCat.sex"),
-    "cand_det_sextractor_nnw": os.path.join(astromatic_config_dir, "default.nnw"),
-    "cand_det_sextractor_filter": os.path.join(astromatic_config_dir, "default.conv"),
-    "cand_det_sextractor_params": os.path.join(astromatic_config_dir, "Scorr.param"),
+    "cand_det_sextractor_config": Path(astromatic_config_dir, "photomCat.sex"),
+    "cand_det_sextractor_nnw": Path(astromatic_config_dir, "default.nnw"),
+    "cand_det_sextractor_filter": Path(astromatic_config_dir, "default.conv"),
+    "cand_det_sextractor_params": Path(astromatic_config_dir, "Scorr.param"),
 }
 
 scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")

@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 # sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
 DEFAULT_SATURATION = 10000000000.0
-default_config_path = os.path.join(astromatic_config_dir, "astrom.sex")
-default_param_path = os.path.join(astromatic_config_dir, "astrom.param")
-default_filter_name = os.path.join(astromatic_config_dir, "default.conv")
-default_starnnw_path = os.path.join(astromatic_config_dir, "default.nnw")
+default_config_path = Path(astromatic_config_dir, "astrom.sex")
+default_param_path = Path(astromatic_config_dir, "astrom.param")
+default_filter_name = Path(astromatic_config_dir, "default.conv")
+default_starnnw_path = Path(astromatic_config_dir, "default.nnw")
 
 
 class SextractorError(ExecutionError):
@@ -134,10 +134,10 @@ def run_sextractor_single(  # pylint: disable=too-many-arguments
     img: str | Path,
     output_dir: str | Path,
     catalog_name: Optional[Path] = None,
-    config: str | Path = default_config_path,
-    parameters_name: str | Path = default_param_path,
-    filter_name: str | Path = default_filter_name,
-    starnnw_name: str | Path = default_starnnw_path,
+    config: Path = default_config_path,
+    parameters_name: Path = default_param_path,
+    filter_name: Path = default_filter_name,
+    starnnw_name: Path = default_starnnw_path,
     saturation: float | None = None,
     weight_image: Optional[str | Path] = None,
     verbose_type: str = "QUIET",
@@ -244,10 +244,10 @@ def run_sextractor_dual(  # pylint: disable=too-many-arguments
     measure_image: str,
     output_dir: str | Path,
     catalog_name: Optional[str] = None,
-    config: str | Path = default_config_path,
-    parameters_name: str | Path = default_param_path,
-    filter_name: str | Path = default_filter_name,
-    starnnw_name: str | Path = default_starnnw_path,
+    config: Path = default_config_path,
+    parameters_name: Path = default_param_path,
+    filter_name: Path = default_filter_name,
+    starnnw_name: Path = default_starnnw_path,
     saturation: float | None = None,
     weight_image: Optional[str] = None,
     verbose_type: str = "QUIET",

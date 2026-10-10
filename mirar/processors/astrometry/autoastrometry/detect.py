@@ -45,7 +45,7 @@ def get_img_src_list(
     max_fwhm: float = DEFAULT_MAX_FWHM,
     max_ellip: float = 0.5,
     saturation: float = DEFAULT_SATURATION,
-    config_path: str = default_config_path,
+    config_path: Path = default_config_path,
     output_catalog: Optional[str | Path] = None,
     write_crosscheck_files: bool = False,
 ) -> list[SextractorSource]:
