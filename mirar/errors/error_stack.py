@@ -25,8 +25,8 @@ class ErrorStack:
     """
 
     def __init__(self, reports: Optional[list[ErrorReport]] = None):
-        self.reports = []
-        self.noncritical_reports = []
+        self.reports: list[ErrorReport] = []
+        self.noncritical_reports: list[ErrorReport] = []
         self.failed_images = []
 
         if reports is not None:

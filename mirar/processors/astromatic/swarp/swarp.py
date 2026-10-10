@@ -76,7 +76,7 @@ class Swarp(BaseImageProcessor):
         combine: bool = True,
         cache: bool = False,
         subtract_bkg: bool = False,
-        flux_scaling_factor: float = None,
+        flux_scaling_factor: float | None = None,
         calculate_dims_in_swarp: bool = False,
         header_keys_to_combine: Optional[str | list[str]] = None,
         coordinate_tolerance_deg: float = 10,

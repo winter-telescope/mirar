@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 def get_query_coordinates_from_header(
     header: fits.Header, numpoints: int = 1
-) -> (list[float], list[float]):
+) -> tuple[list[float], list[float]]:
     """
     Function to get break an image into numpoints sections and get the
     relevant coordinates

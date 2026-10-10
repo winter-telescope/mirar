@@ -18,7 +18,7 @@ from mirar.processors.photcal.zp_calculator.base_zp_calculator import (
 logger = logging.getLogger(__name__)
 
 
-def line_func_odr(theta: (float, float), x: np.ndarray) -> np.ndarray:
+def line_func_odr(theta: tuple[float, float], x: np.ndarray) -> np.ndarray:
     """
     linear model to hand to scipy.odr
     Args:

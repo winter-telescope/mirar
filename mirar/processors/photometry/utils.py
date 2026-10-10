@@ -202,7 +202,7 @@ def aper_photometry(
     bkg_in_diameter: float,
     bkg_out_diameter: float,
     plot: bool = False,
-    plotfilename: str = None,
+    plotfilename: str | None = None,
 ):
     """
     Perform aperture photometry

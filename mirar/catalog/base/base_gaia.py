@@ -36,9 +36,9 @@ class BaseGaia2Mass(BaseCatalog, ABC):
         snr_threshold: float = 5,
         trim: bool = False,
         image_catalog_path: Optional[str] = None,
-        acceptable_j_ph_quals: str | list[str] = None,
-        acceptable_h_ph_quals: str | list[str] = None,
-        acceptable_k_ph_quals: str | list[str] = None,
+        acceptable_j_ph_quals: str | list[str] | None = None,
+        acceptable_h_ph_quals: str | list[str] | None = None,
+        acceptable_k_ph_quals: str | list[str] | None = None,
         **kwargs,
     ):
         filter_name = filter_name.lower()

@@ -30,7 +30,7 @@ def default_image_sextractor_catalog_purifier(
     image: Image,
     edge_width_pixels: float = 100.0,
     fwhm_threshold_arcsec: float = 4.0,
-) -> (Table, Table):
+) -> tuple[Table, Table]:
     """
     Default function to purify the photometric image catalog
     """
@@ -53,7 +53,7 @@ def default_image_sextractor_catalog_purifier(
 
 def xmatch_catalogs(
     ref_cat: Table, image_cat: Table, crossmatch_radius_arcsec: float
-) -> (Table, Table, Angle):
+) -> tuple[Table, Table, Angle]:
     """
     Cross-match the reference catalog to the image catalog
     """

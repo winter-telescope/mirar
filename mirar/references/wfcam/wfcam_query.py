@@ -91,7 +91,7 @@ class BaseWFCAMQuery:
         query_coords_function: Callable[
             [fits.Header, int], tuple[list[float], list[float]]
         ] = get_query_coordinates_from_header,
-        component_image_subdir: str | Path = None,
+        component_image_subdir: str | Path | None = None,
     ):
         """
         :param filter_name: Filter name to query for.
@@ -255,7 +255,7 @@ class WFAUQuery(BaseWFCAMQuery):
 
     def get_surveys_query_class(
         self, ra: float, dec: float
-    ) -> (list[MOCSurvey], BaseWFAUClass):
+    ) -> tuple[list[MOCSurvey], BaseWFAUClass]:
         """
         Get the surveys that are available at the given coordinates
         :param ra: RA of the coordinates
@@ -461,7 +461,7 @@ def download_wfcam_archive_images(
     image_width: Quantity = wfau_image_width,
     image_height: Quantity = wfau_image_height,
     use_local_database: bool = False,
-    components_table: Type[BaseDB] = None,
+    components_table: Type[BaseDB] | None = None,
     duplicate_protocol: str = "ignore",
     undeprecated_compids_file: Path = wfcam_undeprecated_compid_file,
 ) -> list[Path]:

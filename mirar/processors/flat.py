@@ -138,7 +138,7 @@ class FlatCalibrator(ProcessorWithCache):
         y_max: int = sys.maxsize,
         flat_nan_threshold: float = 0.0,
         select_flat_images: Callable[[ImageBatch], ImageBatch] = default_select_flat,
-        flat_mask_key: str = None,
+        flat_mask_key: str | None = None,
         flat_mode: str = "median",
         **kwargs,
     ):

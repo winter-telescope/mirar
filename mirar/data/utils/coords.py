@@ -64,7 +64,7 @@ def get_xy_from_wcs(
     dec_deg: float,
     header: fits.Header,
     origin: int = 0,
-) -> (float, float):
+) -> tuple[float, float]:
     """
     Get image x-y coordinates of a given ra/dec
     Args:
@@ -120,7 +120,7 @@ def write_regions_file(
             regions_f.write(f"{line}\n")
 
 
-def get_image_dims_from_header(header: fits.Header) -> (Quantity, Quantity):
+def get_image_dims_from_header(header: fits.Header) -> tuple[Quantity, Quantity]:
     """
     Get image dimensions from the header
     Args:

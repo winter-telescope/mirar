@@ -79,7 +79,7 @@ class BaseProcessor:
 
     max_n_cpu: int = max_n_cpu
 
-    subclasses = {}
+    subclasses: dict[str, type] = {}
 
     def __init__(self):
         self.night = None

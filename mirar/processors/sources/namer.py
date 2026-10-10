@@ -98,7 +98,7 @@ class CandidateNamer(SingleSpatialCrossmatchSource):
         last_year = int(last_name[len(self.base_name) : len(self.base_name) + 2])
         return last_year
 
-    def get_next_name(self, detection_time: Time, last_name: str = None) -> str:
+    def get_next_name(self, detection_time: Time, last_name: str | None = None) -> str:
         """
         Function to get a new candidate name
 

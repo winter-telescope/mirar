@@ -29,10 +29,10 @@ class RefFromPath(BaseReferenceGenerator):
         filter_name: str,
         write_image: bool = False,
         write_to_db: bool = False,
-        db_table: Type[BaseDB] = None,
+        db_table: Type[BaseDB] | None = None,
         duplicate_protocol: str = "replace",
         q3c_bool: bool = True,
-        weight_path: str = None,
+        weight_path: str | None = None,
     ):
         super().__init__(
             filter_name,
@@ -45,7 +45,7 @@ class RefFromPath(BaseReferenceGenerator):
         self.path = path
         self.weight_path = weight_path
 
-    def _get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
+    def _get_reference(self, image: Image) -> tuple[fits.PrimaryHDU, fits.PrimaryHDU]:
         ref_weight_hdu = None
         with fits.open(self.path) as hdul:
             ref_hdu = hdul[0].copy()
