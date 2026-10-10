@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 # sextractor_cmd = os.getenv("SEXTRACTOR_CMD")
 
 DEFAULT_SATURATION = 10000000000.0
-default_config_path = Path(astromatic_config_dir, "astrom.sex")
-default_param_path = Path(astromatic_config_dir, "astrom.param")
-default_filter_name = Path(astromatic_config_dir, "default.conv")
-default_starnnw_path = Path(astromatic_config_dir, "default.nnw")
+default_config_path = astromatic_config_dir / "astrom.sex"
+default_param_path = astromatic_config_dir / "astrom.param"
+default_filter_name = astromatic_config_dir / "default.conv"
+default_starnnw_path = astromatic_config_dir / "default.nnw"
 
 
 class SextractorError(ExecutionError):

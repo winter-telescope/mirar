@@ -4,16 +4,15 @@ Module containing WASP-specific paths
 
 # pylint: disable=duplicate-code
 
-import os
 from pathlib import Path
 
 from mirar.pipelines.wasp.config.constants import PIPELINE_NAME
 from mirar.processors.astromatic.sextractor.config_type import SextractorConfig
 from mirar.processors.utils.cal_hunter import CalRequirement
 
-wasp_dir = os.path.dirname(__file__)
+wasp_dir = Path(__file__).parent
 
-astromatic_config_dir = os.path.join(wasp_dir, "files")
+astromatic_config_dir = wasp_dir / "files"
 
 sextractor_photometry_config: SextractorConfig = {
     "config_path": Path(astromatic_config_dir, "photomCat.sex"),
@@ -29,11 +28,11 @@ sextractor_astrometry_config: SextractorConfig = {
     "starnnw_path": Path(astromatic_config_dir, "default.nnw"),
 }
 
-scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
+scamp_path = astromatic_config_dir / "scamp.conf"
 
-swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+swarp_config_path = astromatic_config_dir / "config.swarp"
 
-psfex_sci_config_path = os.path.join(astromatic_config_dir, "photom_sci.psfex")
+psfex_sci_config_path = astromatic_config_dir / "photom_sci.psfex"
 
 wasp_cal_requirements = [
     CalRequirement(

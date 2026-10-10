@@ -2,7 +2,6 @@
 Module containing SEDMv2-specific paths
 """
 
-import os
 from pathlib import Path
 
 from mirar.pipelines.git.config.constants import (
@@ -16,9 +15,9 @@ from mirar.processors.astromatic.sextractor.config_type import (
     SextractorConfig,
 )
 
-git_dir = os.path.dirname(__file__)
+git_dir = Path(__file__).parent
 
-astromatic_config_dir = os.path.join(git_dir, "files")
+astromatic_config_dir = git_dir / "files"
 
 sextractor_photometry_config: SextractorConfig = {
     "config_path": Path(astromatic_config_dir, "photomCat.sex"),
@@ -56,10 +55,10 @@ sextractor_reference_config: SextractorConfig = {
     "starnnw_path": Path(astromatic_config_dir, "default.nnw"),
 }
 
-scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
+scamp_path = astromatic_config_dir / "scamp.conf"
 
-swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+swarp_config_path = astromatic_config_dir / "config.swarp"
 
-psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
+psfex_config_path = astromatic_config_dir / "photom.psfex"
 
-psfex_sci_config_path = os.path.join(astromatic_config_dir, "photom_sci.psfex")
+psfex_sci_config_path = astromatic_config_dir / "photom_sci.psfex"

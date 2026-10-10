@@ -4,16 +4,15 @@ Module containing LMI-specific paths
 
 # pylint: disable=duplicate-code
 
-import os
 from pathlib import Path
 
 from mirar.pipelines.lmi.config.constants import PIPELINE_NAME
 from mirar.processors.astromatic.sextractor.config_type import SextractorConfig
 from mirar.processors.utils.cal_hunter import CalRequirement
 
-lmi_dir = os.path.dirname(__file__)
+lmi_dir = Path(__file__).parent
 
-astromatic_config_dir = os.path.join(lmi_dir, "files")
+astromatic_config_dir = lmi_dir / "files"
 
 sextractor_photometry_config: SextractorConfig = {
     "config_path": Path(astromatic_config_dir, "photomCat.sex"),
@@ -29,11 +28,11 @@ sextractor_astrometry_config: SextractorConfig = {
     "starnnw_path": Path(astromatic_config_dir, "default.nnw"),
 }
 
-scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
+scamp_path = astromatic_config_dir / "scamp.conf"
 
-swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+swarp_config_path = astromatic_config_dir / "config.swarp"
 
-psfex_sci_config_path = os.path.join(astromatic_config_dir, "photom_sci.psfex")
+psfex_sci_config_path = astromatic_config_dir / "photom_sci.psfex"
 
 lmi_cal_requirements = [
     CalRequirement(

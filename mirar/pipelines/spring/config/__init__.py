@@ -2,7 +2,6 @@
 Module containing SPRING-specific paths
 """
 
-import os
 from pathlib import Path
 
 from mirar.pipelines.spring.config.constants import (
@@ -18,9 +17,9 @@ from mirar.processors.astromatic.sextractor.config_type import (
 from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
 
-spring_dir = os.path.dirname(__file__)
+spring_dir = Path(__file__).parent
 
-astromatic_config_dir = os.path.join(spring_dir, "files")
+astromatic_config_dir = spring_dir / "files"
 
 sextractor_photometry_config: SextractorConfig = {
     "config_path": Path(astromatic_config_dir, "photomCat.sex"),
@@ -65,15 +64,15 @@ sextractor_reference_psf_phot_config: SextractorConfig = {
     "starnnw_path": Path(astromatic_config_dir, "default.nnw"),
 }
 
-scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
+scamp_path = astromatic_config_dir / "scamp.conf"
 
-swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+swarp_config_path = astromatic_config_dir / "config.swarp"
 
-psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
+psfex_config_path = astromatic_config_dir / "photom.psfex"
 
-psfex_sci_config_path = os.path.join(astromatic_config_dir, "photom_sci.psfex")
+psfex_sci_config_path = astromatic_config_dir / "photom_sci.psfex"
 
-ref_psfex_path = os.path.join(astromatic_config_dir, "reference.psfex")
+ref_psfex_path = astromatic_config_dir / "reference.psfex"
 
 spring_cal_requirements = [
     CalRequirement(

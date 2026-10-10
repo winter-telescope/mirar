@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def run_psfex(
     sextractor_cat_path: Path,
-    config_path: str,
+    config_path: Path,
     psf_output_dir: str,
     norm_psf_output_name: Optional[str | Path] = None,
 ):
@@ -66,7 +66,7 @@ class PSFex(BaseImageProcessor):
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
+        config_path: Optional[Path] = None,
         output_sub_dir: str = "psf",
         norm_fits: bool = True,
     ):

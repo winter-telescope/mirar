@@ -2,7 +2,6 @@
 Module containing SEDMv2-specific paths
 """
 
-import os
 from pathlib import Path
 
 from mirar.pipelines.sedmv2.config.constants import (
@@ -17,11 +16,11 @@ from mirar.processors.astromatic.sextractor.config_type import (
 )
 from mirar.processors.utils.cal_hunter import CalRequirement
 
-sedmv2_dir = os.path.dirname(__file__)
+sedmv2_dir = Path(__file__).parent
 
-astromatic_config_dir = os.path.join(sedmv2_dir, "files")
-sedmv2_mask_path = os.path.join(sedmv2_dir, "mask.fits")
-sedmv2_weight_path = os.path.join(sedmv2_dir, "weight.fits")
+astromatic_config_dir = sedmv2_dir / "files"
+sedmv2_mask_path = sedmv2_dir / "mask.fits"
+sedmv2_weight_path = sedmv2_dir / "weight.fits"
 
 sextractor_photometry_config: SextractorConfig = {
     "config_path": Path(astromatic_config_dir, "photomCat.sex"),
@@ -59,11 +58,11 @@ sextractor_reference_config: SextractorConfig = {
     "starnnw_path": Path(astromatic_config_dir, "default.nnw"),
 }
 
-scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
+scamp_path = astromatic_config_dir / "scamp.conf"
 
-swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+swarp_config_path = astromatic_config_dir / "config.swarp"
 
-psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
+psfex_config_path = astromatic_config_dir / "photom.psfex"
 
 sedmv2_cal_requirements = [
     CalRequirement(

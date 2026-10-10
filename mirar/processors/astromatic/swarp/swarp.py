@@ -61,7 +61,7 @@ class Swarp(BaseImageProcessor):
 
     def __init__(
         self,
-        swarp_config_path: str,
+        swarp_config_path: Path,
         temp_output_sub_dir: str = "swarp",
         pixscale: Optional[float] = None,
         x_imgpixsize: Optional[float] = None,

@@ -34,7 +34,7 @@ SCAMP_HEADER_KEY = "SCMPHEAD"
 
 def run_scamp(
     scamp_list_path: str | Path,
-    scamp_config_path: str | Path,
+    scamp_config_path: Path,
     ast_ref_cat_path: str | Path,
     output_dir: str | Path,
     timeout_seconds: float = 60.0,
@@ -123,7 +123,7 @@ class Scamp(BaseImageProcessor):
     def __init__(
         self,
         ref_catalog_generator: Callable[[fits.Header], BaseCatalog],
-        scamp_config_path: str,
+        scamp_config_path: Path,
         temp_output_sub_dir: str = "scamp",
         cache: bool = False,
         copy_scamp_header_to_image: bool = False,

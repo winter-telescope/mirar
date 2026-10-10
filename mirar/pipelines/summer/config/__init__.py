@@ -4,7 +4,6 @@ Module for summer-specific files
 
 # pylint: disable=duplicate-code
 
-import os
 from pathlib import Path
 
 from mirar.pipelines.summer.config.constants import (
@@ -19,11 +18,11 @@ from mirar.processors.astromatic.sextractor.config_type import (
 )
 from mirar.processors.utils.cal_hunter import CalRequirement
 
-summer_dir = os.path.dirname(__file__)
+summer_dir = Path(__file__).parent
 
-astromatic_config_dir = os.path.join(summer_dir, "files")
-summer_mask_path = os.path.join(summer_dir, "mask.fits")
-summer_weight_path = os.path.join(summer_dir, "weight.fits")
+astromatic_config_dir = summer_dir / "files"
+summer_mask_path = summer_dir / "mask.fits"
+summer_weight_path = summer_dir / "weight.fits"
 
 sextractor_astrometry_config: SextractorConfig = {
     "config_path": Path(astromatic_config_dir, "astrom.sex"),
@@ -47,11 +46,11 @@ sextractor_candidates_config: SextractorCandidateConfig = {
     "cand_det_sextractor_params": Path(astromatic_config_dir, "Scorr.param"),
 }
 
-scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
+scamp_path = astromatic_config_dir / "scamp.conf"
 
-swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+swarp_config_path = astromatic_config_dir / "config.swarp"
 
-psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
+psfex_config_path = astromatic_config_dir / "photom.psfex"
 
 summer_cal_requirements = [
     CalRequirement(
