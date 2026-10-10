@@ -74,6 +74,34 @@ conda activate "$ENV_NAME"
 PREFIX="$CONDA_PREFIX"
 echo "==> Environment prefix: $PREFIX"
 
+# ── Pin per-process BLAS/OpenMP threads ───────────────────────────────────────
+# mirar parallelises across images, so each psfex/scamp/numpy process must stay single-threaded.
+
+_install_thread_activation() {
+    local PREFIX="$1"
+
+    mkdir -p "$PREFIX/etc/conda/activate.d"
+    mkdir -p "$PREFIX/etc/conda/deactivate.d"
+
+    cat > "$PREFIX/etc/conda/activate.d/threads.sh" <<'EOF'
+export OPENBLAS_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export VECLIB_MAXIMUM_THREADS=1
+EOF
+
+    cat > "$PREFIX/etc/conda/deactivate.d/threads.sh" <<'EOF'
+unset OPENBLAS_NUM_THREADS
+unset OMP_NUM_THREADS
+unset MKL_NUM_THREADS
+unset VECLIB_MAXIMUM_THREADS
+EOF
+}
+
+echo ""
+echo "==> Pinning per-process BLAS/OpenMP threads to 1"
+_install_thread_activation "$PREFIX"
+
 # After PREFIX is set, near the top of the build section:
 NCORES=$(python -c "import os; print(os.cpu_count() or 1)")
 
