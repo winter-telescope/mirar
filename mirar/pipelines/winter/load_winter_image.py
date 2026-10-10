@@ -322,7 +322,7 @@ def load_astrometried_winter_image(path: str | Path) -> Image:
 
 def load_stacked_winter_image(
     path: str | Path,
-) -> tuple[np.array, fits.Header]:
+) -> tuple[np.ndarray, fits.Header]:
     """
     Load proc image
 
@@ -365,8 +365,8 @@ def load_test_winter_image(
 
 
 def load_raw_winter_mef(
-    path: str,
-) -> tuple[astropy.io.fits.Header, list[np.array], list[astropy.io.fits.Header]]:
+    path: str | Path,
+) -> tuple[astropy.io.fits.Header, list[np.ndarray], list[astropy.io.fits.Header]]:
     """
     Load mef image.
 

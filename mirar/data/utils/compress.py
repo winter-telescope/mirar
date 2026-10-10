@@ -22,7 +22,7 @@ def decode_img(compressed_bytes: bytes) -> np.ndarray:
     return data
 
 
-def encode_img(image: np.array):
+def encode_img(image: np.ndarray):
     """
     make bit images of the cutouts for the marshal
     Args:

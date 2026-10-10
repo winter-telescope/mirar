@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def load_detrended_gmos_fits(
     path: str | Path,
-) -> tuple[np.array, astropy.io.fits.Header]:
+) -> tuple[np.ndarray, astropy.io.fits.Header]:
     """
     Function to load a GMOS image post-DRAGONS processing
     (10.3847/2515-5172/ad0044)

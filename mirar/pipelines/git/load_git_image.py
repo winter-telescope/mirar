@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 GIT_NONLINEAR_LEVEL = 30000
 
 
-def load_raw_git_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_git_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
     """
     Function to load a raw GIT image
 
@@ -88,7 +88,7 @@ def load_raw_git_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Heade
     return data, header
 
 
-def load_raw_lt_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_lt_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
     """
     Function to load a raw LT image
 

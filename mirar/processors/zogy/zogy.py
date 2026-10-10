@@ -105,7 +105,7 @@ class ZOGYPrepare(BaseImageProcessor):
         ref_zp_header_key: str | None = None,
         catalog_purifier: Callable[
             [astropy.table.Table, astropy.table.Table],
-            [astropy.table.Table, astropy.table.Table],
+            tuple[astropy.table.Table, astropy.table.Table],
         ] = default_catalog_purifier,
         write_region_bool: bool = True,
         crossmatch_radius_arcsec: float = 1.0,

@@ -11,7 +11,7 @@ from mirar.data import Image
 logger = logging.getLogger(__name__)
 
 
-def generate_gmos_mask(image: Image) -> np.array:
+def generate_gmos_mask(image: Image) -> np.ndarray:
     """
     Function to create a mask for GMOS data
 

@@ -29,7 +29,7 @@ class AlignReference(ZOGYPrepare):
         temp_output_subtract_dir: str = "subtract",
         catalog_purifier: Callable[
             [astropy.table.Table, astropy.table.Table],
-            list[astropy.table.Table, astropy.table.Table],
+            tuple[astropy.table.Table, astropy.table.Table],
         ] = default_catalog_purifier,
         order: int = 1,
     ):

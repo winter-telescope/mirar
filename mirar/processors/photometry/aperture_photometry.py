@@ -53,7 +53,7 @@ class AperturePhotometry(BasePhotometryProcessor):
         return f"Perform aperture photometry with apertures={self.aper_diameters}"
 
     def perform_photometry(
-        self, image_cutout: np.array, unc_image_cutout: np.array
+        self, image_cutout: np.ndarray, unc_image_cutout: np.ndarray
     ) -> tuple[list[float], list[float]]:
         """
         Perform aperture photometry on a cutout

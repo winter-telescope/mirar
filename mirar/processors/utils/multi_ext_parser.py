@@ -41,7 +41,9 @@ class MultiExtParser(BaseImageProcessor):
         output_sub_dir: str = "raw_split",
         input_img_dir: str = base_raw_dir,
         output_img_dir: Path = base_output_dir,
-        load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
+        load_image: Callable[
+            [str | Path], tuple[np.ndarray, astropy.io.fits.Header]
+        ] = open_fits,
         skip_first: bool = False,
         extension_num_header_key: str | None = None,
         only_extract_num: int | None = None,
