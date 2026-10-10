@@ -8,6 +8,7 @@ import hashlib
 import logging
 import socket
 import threading
+import time
 from abc import ABC
 from pathlib import Path
 from queue import Queue
@@ -96,6 +97,7 @@ class BaseProcessor:
         self.latest_n_output_blocks = 0
         self.latest_n_output_batches = 0
         self.latest_error_stack = ErrorStack()
+        self.latest_runtime = 0.0
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -181,6 +183,7 @@ class BaseProcessor:
         :return: Updated dataset, and any caught errors
         """
         cache_id = threading.get_ident()
+        start_time = time.time()
 
         self.passed_batches[cache_id] = {}
         self.err_stack[cache_id] = ErrorStack()
@@ -234,6 +237,7 @@ class BaseProcessor:
         self.latest_n_output_batches = len(dataset)
         self.latest_n_output_blocks = sum(len(x) for x in dataset)
         self.latest_error_stack = err_stack
+        self.latest_runtime = time.time() - start_time
 
         return dataset, err_stack
 
