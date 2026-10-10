@@ -7,19 +7,20 @@ Module containing GMOS-specific paths
 import os
 
 from mirar.pipelines.gmos.config.constants import PIPELINE_NAME
+from mirar.processors.astromatic.sextractor.config_type import SextractorConfig
 
 gmos_dir = os.path.dirname(__file__)
 
 astromatic_config_dir = os.path.join(gmos_dir, "files")
 
-sextractor_photometry_config = {
+sextractor_photometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 
-sextractor_astrometry_config = {
+sextractor_astrometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "astrom.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "astrom.param"),

@@ -3,6 +3,7 @@ Functions to generate processors and other components for the SPRING pipeline
 """
 
 import logging
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -66,7 +67,7 @@ class NoGoodCandidatesError(ProcessorError):
     """Error raised when no candidates pass quality cuts"""
 
 
-def spring_anet_sextractor_config_path_generator(_image: Image) -> str:
+def spring_anet_sextractor_config_path_generator(_image: Image) -> str | Path:
     """
     Generate the path to the ANET SExtractor configuration file for SPRING images
     Parameters

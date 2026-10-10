@@ -12,6 +12,10 @@ from mirar.pipelines.summer.config.constants import (
     SUMMER_GAIN,
     SUMMER_PIXEL_SCALE,
 )
+from mirar.processors.astromatic.sextractor.config_type import (
+    SextractorCandidateConfig,
+    SextractorConfig,
+)
 from mirar.processors.utils.cal_hunter import CalRequirement
 
 summer_dir = os.path.dirname(__file__)
@@ -20,7 +24,7 @@ astromatic_config_dir = os.path.join(summer_dir, "files")
 summer_mask_path = os.path.join(summer_dir, "mask.fits")
 summer_weight_path = os.path.join(summer_dir, "weight.fits")
 
-sextractor_astrometry_config = {
+sextractor_astrometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "astrom.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "astrom.param"),
@@ -28,14 +32,14 @@ sextractor_astrometry_config = {
 }
 
 
-sextractor_photometry_config = {
+sextractor_photometry_config: SextractorConfig = {
     "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
     "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
     "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
 }
 
-sextractor_candidates_config = {
+sextractor_candidates_config: SextractorCandidateConfig = {
     "cand_det_sextractor_config": os.path.join(astromatic_config_dir, "photomCat.sex"),
     "cand_det_sextractor_nnw": os.path.join(astromatic_config_dir, "default.nnw"),
     "cand_det_sextractor_filter": os.path.join(astromatic_config_dir, "default.conv"),
