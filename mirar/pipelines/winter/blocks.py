@@ -39,6 +39,7 @@ from mirar.pipelines.winter.config import (
     swarp_config_path,
     winter_avro_schema_path,
     winter_cal_requirements,
+    winter_calhunter_directory,
     winter_fritz_config,
 )
 from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
@@ -243,7 +244,11 @@ load_raw = [
         input_sub_dir="raw",
         load_image=load_winter_mef_image,
     ),
-    CalHunter(load_image=load_winter_mef_image, requirements=winter_cal_requirements),
+    CalHunter(
+        load_image=load_winter_mef_image,
+        requirements=winter_cal_requirements,
+        input_img_dir=winter_calhunter_directory,
+    ),
 ]
 
 load_raw_no_dome_flats = [
@@ -252,7 +257,9 @@ load_raw_no_dome_flats = [
         load_image=load_winter_mef_image,
     ),
     CalHunter(
-        load_image=load_winter_mef_image, requirements=base_winter_cal_requirements
+        load_image=load_winter_mef_image,
+        requirements=base_winter_cal_requirements,
+        input_img_dir=winter_calhunter_directory,
     ),
 ]
 
