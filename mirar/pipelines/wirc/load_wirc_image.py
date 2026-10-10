@@ -39,7 +39,7 @@ sncosmo_filters = {
 }
 
 
-def load_raw_wirc_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_wirc_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
     """
     Function to load a raw WIRC image
 

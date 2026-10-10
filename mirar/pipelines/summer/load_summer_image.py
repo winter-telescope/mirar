@@ -31,7 +31,7 @@ from mirar.pipelines.summer.models import DEFAULT_FIELD, SUMMER_NIGHT_FORMAT
 logger = logging.getLogger(__name__)
 
 
-def load_raw_summer_fits(path: str | Path) -> tuple[np.array, astropy.io.fits.Header]:
+def load_raw_summer_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
     """
     Function to load a raw summer image and add/modify the required headers
     Args:

@@ -112,14 +112,16 @@ class PSFPhotometry(BasePhotometryProcessor):
                 )
 
                 if self.save_cutouts:
-                    image_cutout_path = get_output_dir(
-                        self.temp_output_sub_dir, self.night_sub_dir
-                    ).joinpath(f"image_cutout_{ind}.dat")
+                    image_cutout_path = (
+                        get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
+                        / f"image_cutout_{ind}.dat"
+                    )
                     logger.debug(f"Writing cutout to {image_cutout_path}")
                     np.savetxt(X=image_cutout, fname=image_cutout_path)
-                    unc_image_cutout_path = get_output_dir(
-                        self.temp_output_sub_dir, self.night_sub_dir
-                    ).joinpath(f"unc_image_cutout_{ind}.dat")
+                    unc_image_cutout_path = (
+                        get_output_dir(self.temp_output_sub_dir, self.night_sub_dir)
+                        / f"unc_image_cutout_{ind}.dat"
+                    )
                     logger.debug(f"Writing cutout to {unc_image_cutout_path}")
                     np.savetxt(X=unc_image_cutout, fname=unc_image_cutout_path)
 

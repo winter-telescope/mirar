@@ -56,8 +56,8 @@ class CSVExporter(BaseSourceProcessor):
             )
 
             output_dir.mkdir(parents=True, exist_ok=True)
-            csv_path = output_dir.joinpath(
-                Path(metadata[BASE_NAME_KEY]).with_suffix(".csv").name
+            csv_path = (
+                output_dir / Path(metadata[BASE_NAME_KEY]).with_suffix(".csv").name
             )
 
             logger.debug(f"Writing source table to {csv_path}")

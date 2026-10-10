@@ -83,7 +83,7 @@ def autoastrometry(
     catalog: Optional[str] = None,
     overwrite: bool = True,
     outfile: str = "",
-    output_dir: str = base_output_dir,
+    output_dir: Path = base_output_dir,
     temp_file: Optional[str] = None,
     saturation: float = DEFAULT_SATURATION,
     no_rot: bool = False,
@@ -126,14 +126,12 @@ def autoastrometry(
         temp_file = f"temp_{os.path.basename(filename)}"
 
     # temp_path = os.path.join(os.path.dirname(filename), temp_file)
-    temp_path = os.path.join(output_dir, temp_file)
+    temp_path = output_dir / temp_file
 
     if overwrite:
-        temp_path = filename
+        temp_path = Path(filename)
 
-    base_output_path = os.path.join(
-        output_dir, ".".join(os.path.basename(filename).split(".")[:-1])
-    )
+    base_output_path = output_dir / ".".join(Path(filename).name.split(".")[:-1])
 
     # Block A
     # Parse header
@@ -556,7 +554,7 @@ def run_autoastrometry_single(
     catalog: Optional[str] = None,
     overwrite: bool = False,
     outfile: Optional[str] = None,
-    output_dir: str = base_output_dir,
+    output_dir: Path = base_output_dir,
     saturation: float = DEFAULT_SATURATION,
     no_rot: bool = False,
     write_crosscheck_files: bool = False,
@@ -667,7 +665,7 @@ def run_autoastrometry_batch(
     catalog: Optional[str] = None,
     overwrite: bool = False,
     outfile: Optional[str] = None,
-    output_dir: str = base_output_dir,
+    output_dir: Path = base_output_dir,
     saturation: float = DEFAULT_SATURATION,
     no_rot: bool = False,
     write_crosscheck_files: bool = False,

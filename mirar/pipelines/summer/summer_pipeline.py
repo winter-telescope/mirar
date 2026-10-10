@@ -27,7 +27,7 @@ from mirar.pipelines.summer.config import PIPELINE_NAME, summer_cal_requirements
 from mirar.pipelines.summer.load_summer_image import load_raw_summer_image
 from mirar.pipelines.summer.models import set_up_summer_databases
 
-summer_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+summer_flats_dir = Path(__file__).absolute().parent
 
 logger = logging.getLogger(__name__)
 

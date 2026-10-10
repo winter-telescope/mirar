@@ -105,7 +105,7 @@ class Image(DataBlock):
         """
         base = "".join([str(Time.now()), self.get_name(), str(threading.get_ident())])
         name = f"{hashlib.sha1(base.encode()).hexdigest()}.npy"
-        return cache.get_cache_dir().joinpath(name)
+        return cache.get_cache_dir() / name
 
     def set_data(self, data: np.ndarray):
         """

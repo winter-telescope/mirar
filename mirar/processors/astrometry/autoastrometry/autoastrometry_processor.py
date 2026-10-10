@@ -49,7 +49,7 @@ class AutoAstrometry(BaseImageProcessor):
         sextractor_out_dir.mkdir(parents=True, exist_ok=True)
 
         for i, image in enumerate(batch):
-            temp_path = sextractor_out_dir.joinpath(image[BASE_NAME_KEY])
+            temp_path = sextractor_out_dir / image[BASE_NAME_KEY]
             self.save_fits(image, temp_path, compress=False)
 
             run_autoastrometry_single(

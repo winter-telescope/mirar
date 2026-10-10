@@ -19,10 +19,13 @@ from mirar.processors.split import SUB_ID_KEY
 
 logger = logging.getLogger(__name__)
 
-winter_subfields_file = get_output_dir(
-    dir_root="cache",
-    sub_dir="winter",
-).joinpath("WINTER_subfields.txt")
+winter_subfields_file = (
+    get_output_dir(
+        dir_root="cache",
+        sub_dir="winter",
+    )
+    / "WINTER_subfields.txt"
+)
 winter_subfields_file.parent.mkdir(parents=True, exist_ok=True)
 
 

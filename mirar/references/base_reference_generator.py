@@ -118,7 +118,7 @@ class BaseReferenceGenerator:
 
         output_dir = get_output_dir(self.write_image_dir)
         output_dir.mkdir(exist_ok=True, parents=True)
-        output_path = Path(output_dir).joinpath(base_name.replace(".fits", "_ref.fits"))
+        output_path = Path(output_dir) / base_name.replace(".fits", "_ref.fits")
 
         # This is because Swarp requires the COADDS keyword. I am setting it to
         # zero manually
@@ -194,7 +194,7 @@ class BaseReferenceGenerator:
         :param base_name: Name
         :return: output path
         """
-        return Path(output_dir).joinpath(base_name)
+        return Path(output_dir) / base_name
 
 
 class BaseStackReferenceGenerator(BaseReferenceGenerator):

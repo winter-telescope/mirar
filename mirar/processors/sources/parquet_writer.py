@@ -104,8 +104,9 @@ class ParquetWriter(BaseSourceProcessor):
         for source_list in batch:
             source_table = source_list.get_data().copy()
             metadata = source_list.get_metadata()
-            parquet_path = output_dir.joinpath(
-                Path(metadata[BASE_NAME_KEY]).with_suffix(PARQUET_SUFFIX).name
+            parquet_path = (
+                output_dir
+                / Path(metadata[BASE_NAME_KEY]).with_suffix(PARQUET_SUFFIX).name
             )
 
             logger.debug(f"Writing source table to {parquet_path}")

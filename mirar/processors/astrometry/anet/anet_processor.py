@@ -53,10 +53,10 @@ class AstrometryNet(BaseImageProcessor):
         sextractor_path: str = "sex",
         search_radius_deg: float = 5.0,
         parity: str | None = None,
-        sextractor_config_path: str | Path | Callable[[Image], str] | None = None,
-        sextractor_params_path: str | Path | None = None,
-        sextractor_conv_path: str | Path | None = default_conv_path,
-        sextractor_starnnw_path: str | Path | None = default_starnnw_path,
+        sextractor_config_path: Path | Callable[[Image], Path] | None = None,
+        sextractor_params_path: Path | None = None,
+        sextractor_conv_path: Path | None = default_conv_path,
+        sextractor_starnnw_path: Path | None = default_starnnw_path,
         x_image_key: str = "X_IMAGE",
         y_image_key: str = "Y_IMAGE",
         sort_key_name: str = "MAG_AUTO",
@@ -106,21 +106,10 @@ class AstrometryNet(BaseImageProcessor):
         self.y_image_key = y_image_key
         self.sort_key_name = sort_key_name
         self.use_weight = use_weight
-        if isinstance(sextractor_config_path, str):
-            self.sextractor_config_path = Path(sextractor_config_path)
-        else:
-            self.sextractor_config_path = sextractor_config_path
-        self.sextractor_params_path = (
-            Path(sextractor_params_path) if sextractor_params_path is not None else None
-        )
-        self.sextractor_conv_path = (
-            Path(sextractor_conv_path) if sextractor_conv_path is not None else None
-        )
-        self.sextractor_starnnw_path = (
-            Path(sextractor_starnnw_path)
-            if sextractor_starnnw_path is not None
-            else None
-        )
+        self.sextractor_config_path = sextractor_config_path
+        self.sextractor_params_path = sextractor_params_path
+        self.sextractor_conv_path = sextractor_conv_path
+        self.sextractor_starnnw_path = sextractor_starnnw_path
 
         self.write_regions = write_regions
 
@@ -146,10 +135,12 @@ class AstrometryNet(BaseImageProcessor):
         Setup sextractor config file
         """
         sextractor_temp_files = []
-        if isinstance(self.sextractor_config_path, Callable):
-            sextractor_config_path = Path(self.sextractor_config_path(image))
+        config_path = self.sextractor_config_path
+        sextractor_config_path: Path | None
+        if callable(config_path):
+            sextractor_config_path = Path(config_path(image))
         else:
-            sextractor_config_path = self.sextractor_config_path
+            sextractor_config_path = config_path
         sextractor_params_path = self.sextractor_params_path
         anet_out_dir = self.get_anet_output_dir()
         if sextractor_config_path is not None:
@@ -197,7 +188,7 @@ class AstrometryNet(BaseImageProcessor):
 
         for i, image in enumerate(batch):
             base_name = Path(image[BASE_NAME_KEY])
-            new_img_path = anet_out_dir.joinpath(base_name)
+            new_img_path = anet_out_dir / base_name
 
             temp_path = get_temp_path(anet_out_dir, base_name)
             self.save_fits(image, temp_path, compress=False)
@@ -249,13 +240,13 @@ class AstrometryNet(BaseImageProcessor):
                 temp_files.append(Path(f"{anet_output_filees_basepath}{suffix}"))
 
             if self.write_regions:
-                coords_file = anet_out_dir.joinpath(
-                    image[BASE_NAME_KEY].replace(".fits", ".axy")
+                coords_file = anet_out_dir / image[BASE_NAME_KEY].replace(
+                    ".fits", ".axy"
                 )
                 if not coords_file.exists():
                     logger.warning(f"Failed to find coords file {coords_file}")
                 else:
-                    regions_path = anet_out_dir.joinpath(image[BASE_NAME_KEY] + ".reg")
+                    regions_path = anet_out_dir / (image[BASE_NAME_KEY] + ".reg")
                     logger.debug(f"Loading coords from {coords_file}")
                     with fits.open(coords_file) as hdul:
                         coords_table = Table(hdul[1].data)  # pylint: disable=no-member

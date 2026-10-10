@@ -105,7 +105,7 @@ class ZOGYPrepare(BaseImageProcessor):
         ref_zp_header_key: str | None = None,
         catalog_purifier: Callable[
             [astropy.table.Table, astropy.table.Table],
-            [astropy.table.Table, astropy.table.Table],
+            tuple[astropy.table.Table, astropy.table.Table],
         ] = default_catalog_purifier,
         write_region_bool: bool = True,
         crossmatch_radius_arcsec: float = 1.0,
@@ -144,7 +144,7 @@ class ZOGYPrepare(BaseImageProcessor):
         :param name: Name of file
         :return: Full output path
         """
-        return self.get_sub_output_dir().joinpath(name)
+        return self.get_sub_output_dir() / name
 
     def get_ast_fluxscale(
         self, ref_catalog_name: str | Path, sci_catalog_name: str | Path
@@ -274,8 +274,8 @@ class ZOGYPrepare(BaseImageProcessor):
 
         for image_ind, image in enumerate(batch):
 
-            ref_img_path = image[REF_IMG_KEY]
-            sci_img_path = image[BASE_NAME_KEY]
+            ref_img_path = Path(image[REF_IMG_KEY])
+            sci_img_path = Path(image[BASE_NAME_KEY])
 
             ref_img = self.open_fits(ref_img_path)
 
@@ -316,7 +316,7 @@ class ZOGYPrepare(BaseImageProcessor):
                 self.save_fits(ref_img, ref_img_path)
 
                 logger.debug("Trimming science weight image")
-                weight_path = image[LATEST_WEIGHT_SAVE_KEY]
+                weight_path = Path(image[LATEST_WEIGHT_SAVE_KEY])
                 with fits.open(
                     self.get_path(weight_path), "update", memmap=False
                 ) as weight_img:
@@ -330,7 +330,7 @@ class ZOGYPrepare(BaseImageProcessor):
                     ] = sci_y_imgsize  # pylint: disable=no-member
 
                 logger.debug("Trimming reference weight image")
-                ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
+                ref_weight_path = Path(ref_img[LATEST_WEIGHT_SAVE_KEY])
                 with fits.open(
                     self.get_path(ref_weight_path), "update", memmap=False
                 ) as weight_img:
@@ -344,10 +344,10 @@ class ZOGYPrepare(BaseImageProcessor):
                     ] = sci_y_imgsize
 
             ref_catalog_path = ref_img[SEXTRACTOR_HEADER_KEY]
-            ref_weight_path = ref_img[LATEST_WEIGHT_SAVE_KEY]
+            ref_weight_path = Path(ref_img[LATEST_WEIGHT_SAVE_KEY])
 
             sci_catalog_path = image[SEXTRACTOR_HEADER_KEY]
-            sci_weight_path = image[LATEST_WEIGHT_SAVE_KEY]
+            sci_weight_path = Path(image[LATEST_WEIGHT_SAVE_KEY])
 
             ref_weight_data = self.open_fits(self.get_path(ref_weight_path))
             sci_weight_data = self.open_fits(self.get_path(sci_weight_path))
@@ -369,7 +369,9 @@ class ZOGYPrepare(BaseImageProcessor):
             scorr_weight_data = sci_weight_data.get_data() * ref_weight_data.get_data()
             scorr_header = sci_weight_data.get_header()
             scorr_weight_img = Image(data=scorr_weight_data, header=scorr_header)
-            scorr_weight_path = sci_img_path.replace(".fits", ".scorr.weight.fits")
+            scorr_weight_path = Path(
+                str(sci_img_path).replace(".fits", ".scorr.weight.fits")
+            )
             scorr_weight_img[OBSCLASS_KEY] = "SCORR"
 
             for key in core_fields:
@@ -416,8 +418,8 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_rms_image = self.get_rms_image(image, sci_rms)
             ref_rms_image = self.get_rms_image(ref_img, ref_rms)
 
-            sci_rms_path = self.get_path(sci_img_path + ".unc.fits")
-            ref_rms_path = self.get_path(ref_img_path + ".unc.fits")
+            sci_rms_path = self.get_path(f"{sci_img_path}.unc.fits")
+            ref_rms_path = self.get_path(f"{ref_img_path}.unc.fits")
 
             self.save_fits(sci_rms_image, path=sci_rms_path)
             image[UNC_IMG_KEY] = sci_rms_path.as_posix()
@@ -426,7 +428,7 @@ class ZOGYPrepare(BaseImageProcessor):
             ref_img[UNC_IMG_KEY] = ref_rms_path.as_posix()
             ref_img[RMS_COUNTS_KEY] = ref_rms
             # Save scaled reference image
-            ref_scaled_path = ref_img_path.replace(".fits", ".scaled.fits")
+            ref_scaled_path = Path(str(ref_img_path).replace(".fits", ".scaled.fits"))
             self.save_fits(ref_img, path=self.get_path(ref_scaled_path))
 
             # Header keywords only required by ZOGY
@@ -474,14 +476,14 @@ class ZOGY(ZOGYPrepare):
 
         diff_batch = ImageBatch()
         for image in batch:
-            ref_image_path = image[REF_IMG_KEY]
+            ref_image_path = Path(image[REF_IMG_KEY])
             ref_image = self.open_fits(ref_image_path)
 
             sci_rms = image[RMS_COUNTS_KEY]
             ref_rms = ref_image[RMS_COUNTS_KEY]
             sci_psf_path = self.get_path(image[NORM_PSFEX_KEY])
             ref_psf_path = self.get_path(ref_image[NORM_PSFEX_KEY])
-            sci_rms_path = image[UNC_IMG_KEY]
+            sci_rms_path = Path(image[UNC_IMG_KEY])
             ref_rms_path = ref_image[UNC_IMG_KEY]
             ast_unc_x = image["ASTUNCX"]
             ast_unc_y = image["ASTUNCY"]

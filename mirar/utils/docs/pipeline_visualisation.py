@@ -38,7 +38,7 @@ def get_save_path(pipeline: str, configs: str) -> Path:
     :param configs: Configs used
     :return: path to save
     """
-    return flowchart_dir.joinpath(f"{pipeline}/{configs}.png")
+    return flowchart_dir / f"{pipeline}/{configs}.png"
 
 
 def format_duration(seconds: float) -> str:

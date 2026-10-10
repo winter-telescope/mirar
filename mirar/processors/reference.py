@@ -142,7 +142,7 @@ class ProcessReference(BaseImageProcessor):
                 warnings.simplefilter("ignore", SwarpWarning)
                 resampled_ref_img = ref_resampler.apply(ImageBatch(ref_image))[0]
 
-            resampled_ref_path = output_dir.joinpath(resampled_ref_img.get_name())
+            resampled_ref_path = output_dir / resampled_ref_img.get_name()
             self.save_fits(resampled_ref_img, resampled_ref_path)
 
             (
@@ -177,7 +177,7 @@ class ProcessReference(BaseImageProcessor):
                 resampled_sci_image = sci_resampler.apply(ImageBatch([image]))[0]
 
             self.save_fits(
-                resampled_sci_image, output_dir.joinpath(resampled_sci_image.get_name())
+                resampled_sci_image, output_dir / resampled_sci_image.get_name()
             )
 
             # Detect source in reference image, and save as catalog
@@ -191,8 +191,8 @@ class ProcessReference(BaseImageProcessor):
                 ImageBatch(resampled_ref_img)
             )[0]
 
-            rrsi_path = os.path.join(
-                self.get_sub_output_dir(), resampled_ref_sextractor_img.get_name()
+            rrsi_path = (
+                self.get_sub_output_dir() / resampled_ref_sextractor_img.get_name()
             )
 
             self.save_fits(image=resampled_ref_sextractor_img, path=rrsi_path)

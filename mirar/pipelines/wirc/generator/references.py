@@ -64,7 +64,7 @@ def wirc_reference_generator(image: Image):
 def wirc_reference_image_resampler(**kwargs) -> Swarp:
     """Returns a SWarp resampler for WIRC"""
     return Swarp(
-        swarp_config_path=wirc_file_dir.joinpath("config.swarp"),
+        swarp_config_path=wirc_file_dir / "config.swarp",
         cache=True,
         subtract_bkg=True,
         **kwargs,

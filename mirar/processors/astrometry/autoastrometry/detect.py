@@ -35,8 +35,8 @@ DEFAULT_MAX_FWHM = 40
 
 
 def get_img_src_list(
-    img_path: str,
-    base_output_path: str,
+    img_path: Path,
+    base_output_path: Path,
     nx_pix: int,
     ny_pix: int,
     border: int = 3,
@@ -45,8 +45,8 @@ def get_img_src_list(
     max_fwhm: float = DEFAULT_MAX_FWHM,
     max_ellip: float = 0.5,
     saturation: float = DEFAULT_SATURATION,
-    config_path: str = default_config_path,
-    output_catalog: Optional[str | Path] = None,
+    config_path: Path = default_config_path,
+    output_catalog: Optional[Path] = None,
     write_crosscheck_files: bool = False,
 ) -> list[SextractorSource]:
     """
@@ -83,14 +83,15 @@ def get_img_src_list(
 
     if sextractor_catalog_path is not None:
         logger.info("Using existing sextractor catalog")
-        output_catalog = sextractor_catalog_path
-        output_catalog_table = get_table_from_ldac(output_catalog)
+        # Path has no string replace, so swap the suffix via the text form
+        ascii_catalog = Path(str(sextractor_catalog_path).replace(".cat", ".ascii.cat"))
+        output_catalog_table = get_table_from_ldac(sextractor_catalog_path)
         output_catalog_table.write(
-            output_catalog.replace(".cat", ".ascii.cat"),
+            ascii_catalog,
             format="ascii.ecsv",
             overwrite=True,
         )
-        output_catalog = output_catalog.replace(".cat", ".ascii.cat")
+        output_catalog = ascii_catalog
     else:
         run_sextractor_single(
             img=img_path,

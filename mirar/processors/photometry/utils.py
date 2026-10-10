@@ -27,7 +27,7 @@ class CutoutError(ProcessorError):
 
 def make_cutouts(
     image_paths: Path | list[Path], position: tuple, half_size: int
-) -> list[np.array]:
+) -> list[np.ndarray]:
     """
     Function to make cutouts
     Args:

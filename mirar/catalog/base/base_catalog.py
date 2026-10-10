@@ -129,7 +129,7 @@ class BaseCatalog(ABCatalog, ABC):
         :return: Full output path
         """
         cat_base_name = Path(base_name).with_suffix(f".{self.abbreviation}.cat")
-        return output_dir.joinpath(cat_base_name)
+        return output_dir / cat_base_name
 
 
 class BaseMultiBackendCatalog(ABC):

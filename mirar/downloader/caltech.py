@@ -36,7 +36,7 @@ def download_via_ssh(
     if username is None:
         username = input(f"Please enter your username for {server}: \n")
 
-    source_dir = f"{username}@{server}:{Path(base_dir).joinpath(prefix+night)}/"
+    source_dir = f"{username}@{server}:{Path(base_dir) / (prefix+night)}/"
 
     if server_sub_dir is not None:
         source_dir += f"{server_sub_dir}/"

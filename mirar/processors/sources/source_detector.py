@@ -175,10 +175,10 @@ class ZOGYSourceDetector(BaseSourceGenerator):
 
     def __init__(
         self,
-        cand_det_sextractor_config: str,
-        cand_det_sextractor_filter: str,
-        cand_det_sextractor_nnw: str,
-        cand_det_sextractor_params: str,
+        cand_det_sextractor_config: Path,
+        cand_det_sextractor_filter: Path,
+        cand_det_sextractor_nnw: Path,
+        cand_det_sextractor_params: Path,
         output_sub_dir: str = "candidates",
         write_regions: bool = False,
         detect_negative_sources: bool = False,
@@ -224,19 +224,16 @@ class ZOGYSourceDetector(BaseSourceGenerator):
     ) -> SourceBatch:
         all_cands = SourceBatch()
         for image in batch:
-            scorr_image_path = os.path.join(
-                self.get_sub_output_dir(), image[SCOR_IMG_KEY]
-            )
-            diff_image_path = os.path.join(
-                self.get_sub_output_dir(), image[BASE_NAME_KEY]
-            )
+            scorr_image_path = self.get_sub_output_dir() / image[SCOR_IMG_KEY]
+            diff_image_path = self.get_sub_output_dir() / image[BASE_NAME_KEY]
 
             scorr_image = self.open_fits(scorr_image_path)
-            scorr_mask_path = os.path.join(
-                self.get_sub_output_dir(), scorr_image[LATEST_WEIGHT_SAVE_KEY]
+            scorr_mask_path = (
+                self.get_sub_output_dir() / scorr_image[LATEST_WEIGHT_SAVE_KEY]
             )
 
-            cands_catalog_name = diff_image_path.replace(".fits", ".dets")
+            # Path has no string replace, so swap the suffix via the text form
+            cands_catalog_name = Path(str(diff_image_path).replace(".fits", ".dets"))
             cands_catalog_name, _ = run_sextractor_dual(
                 det_image=scorr_image_path,
                 measure_image=diff_image_path,
@@ -250,9 +247,9 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                 gain=1.0,
             )
 
-            sci_image_path = os.path.join(self.get_sub_output_dir(), image[SCI_IMG_KEY])
+            sci_image_path = self.get_sub_output_dir() / image[SCI_IMG_KEY]
 
-            ref_image_path = os.path.join(self.get_sub_output_dir(), image[REF_IMG_KEY])
+            ref_image_path = self.get_sub_output_dir() / image[REF_IMG_KEY]
             srcs_table = generate_candidates_table(
                 diff=image,
                 scorr_catalog_path=cands_catalog_name,
@@ -265,14 +262,18 @@ class ZOGYSourceDetector(BaseSourceGenerator):
             if self.detect_negative_sources:
                 negative_img_paths = []
                 for img_path in [scorr_image_path, diff_image_path]:
-                    negative_img_path = img_path.replace(".fits", ".neg.fits")
+                    negative_img_path = Path(
+                        str(img_path).replace(".fits", ".neg.fits")
+                    )
                     img = self.open_fits(img_path)
                     img.set_data(img.get_data() * -1)
                     self.save_fits(img, negative_img_path)
                     negative_img_paths.append(negative_img_path)
 
                 negative_scorr_path, negative_diff_path = negative_img_paths
-                cands_catalog_name = diff_image_path.replace(".fits", ".neg.dets")
+                cands_catalog_name = Path(
+                    str(diff_image_path).replace(".fits", ".neg.dets")
+                )
                 negative_image = Image(
                     header=image.get_header(), data=-1.0 * image.get_data()
                 )
@@ -324,7 +325,9 @@ class ZOGYSourceDetector(BaseSourceGenerator):
             else:
                 msg = f"Found {len(srcs_table)} sources in image {image[BASE_NAME_KEY]}"
                 if self.write_regions:
-                    reg_name = diff_image_path.replace(".fits", ".cands.img.reg")
+                    reg_name = Path(
+                        str(diff_image_path).replace(".fits", ".cands.img.reg")
+                    )
                     write_regions_file(
                         regions_path=reg_name,
                         x_coords=srcs_table["X_IMAGE"],
@@ -333,7 +336,9 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                     )
 
                     write_regions_file(
-                        regions_path=diff_image_path.replace(".fits", ".cands.wcs.reg"),
+                        regions_path=Path(
+                            str(diff_image_path).replace(".fits", ".cands.wcs.reg")
+                        ),
                         x_coords=srcs_table[CAND_RA_KEY],
                         y_coords=srcs_table[CAND_DEC_KEY],
                         region_radius=5.0 / 3600.0,

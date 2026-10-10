@@ -140,9 +140,7 @@ class ImageLoader(BaseImageProcessor):
         )
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
-        input_dir = self.input_img_dir.joinpath(
-            os.path.join(self.night_sub_dir, self.input_sub_dir)
-        )
+        input_dir = self.input_img_dir / self.night_sub_dir / self.input_sub_dir
 
         return load_from_dir(
             input_dir,

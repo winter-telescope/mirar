@@ -4,7 +4,7 @@ Module for summer-specific files
 
 # pylint: disable=duplicate-code
 
-import os
+from pathlib import Path
 
 from mirar.pipelines.summer.config.constants import (
     DB_NAME,
@@ -12,41 +12,45 @@ from mirar.pipelines.summer.config.constants import (
     SUMMER_GAIN,
     SUMMER_PIXEL_SCALE,
 )
+from mirar.processors.astromatic.sextractor.config_type import (
+    SextractorCandidateConfig,
+    SextractorConfig,
+)
 from mirar.processors.utils.cal_hunter import CalRequirement
 
-summer_dir = os.path.dirname(__file__)
+summer_dir = Path(__file__).parent
 
-astromatic_config_dir = os.path.join(summer_dir, "files")
-summer_mask_path = os.path.join(summer_dir, "mask.fits")
-summer_weight_path = os.path.join(summer_dir, "weight.fits")
+astromatic_config_dir = summer_dir / "files"
+summer_mask_path = summer_dir / "mask.fits"
+summer_weight_path = summer_dir / "weight.fits"
 
-sextractor_astrometry_config = {
-    "config_path": os.path.join(astromatic_config_dir, "astrom.sex"),
-    "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
-    "parameter_path": os.path.join(astromatic_config_dir, "astrom.param"),
-    "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
+sextractor_astrometry_config: SextractorConfig = {
+    "config_path": astromatic_config_dir / "astrom.sex",
+    "filter_path": astromatic_config_dir / "default.conv",
+    "parameter_path": astromatic_config_dir / "astrom.param",
+    "starnnw_path": astromatic_config_dir / "default.nnw",
 }
 
 
-sextractor_photometry_config = {
-    "config_path": os.path.join(astromatic_config_dir, "photomCat.sex"),
-    "filter_path": os.path.join(astromatic_config_dir, "default.conv"),
-    "parameter_path": os.path.join(astromatic_config_dir, "photom.param"),
-    "starnnw_path": os.path.join(astromatic_config_dir, "default.nnw"),
+sextractor_photometry_config: SextractorConfig = {
+    "config_path": astromatic_config_dir / "photomCat.sex",
+    "filter_path": astromatic_config_dir / "default.conv",
+    "parameter_path": astromatic_config_dir / "photom.param",
+    "starnnw_path": astromatic_config_dir / "default.nnw",
 }
 
-sextractor_candidates_config = {
-    "cand_det_sextractor_config": os.path.join(astromatic_config_dir, "photomCat.sex"),
-    "cand_det_sextractor_nnw": os.path.join(astromatic_config_dir, "default.nnw"),
-    "cand_det_sextractor_filter": os.path.join(astromatic_config_dir, "default.conv"),
-    "cand_det_sextractor_params": os.path.join(astromatic_config_dir, "Scorr.param"),
+sextractor_candidates_config: SextractorCandidateConfig = {
+    "cand_det_sextractor_config": astromatic_config_dir / "photomCat.sex",
+    "cand_det_sextractor_nnw": astromatic_config_dir / "default.nnw",
+    "cand_det_sextractor_filter": astromatic_config_dir / "default.conv",
+    "cand_det_sextractor_params": astromatic_config_dir / "Scorr.param",
 }
 
-scamp_path = os.path.join(astromatic_config_dir, "scamp.conf")
+scamp_path = astromatic_config_dir / "scamp.conf"
 
-swarp_config_path = os.path.join(astromatic_config_dir, "config.swarp")
+swarp_config_path = astromatic_config_dir / "config.swarp"
 
-psfex_config_path = os.path.join(astromatic_config_dir, "photom.psfex")
+psfex_config_path = astromatic_config_dir / "photom.psfex"
 
 summer_cal_requirements = [
     CalRequirement(

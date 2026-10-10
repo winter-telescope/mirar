@@ -4,6 +4,7 @@ Module for splitting images into sub-images
 
 import copy
 import logging
+from pathlib import Path
 
 import numpy as np
 from astropy.wcs import WCS
@@ -148,7 +149,7 @@ class SwarpImageSplitter(SplitImage):
 
     def __init__(
         self,
-        swarp_config_path: str,
+        swarp_config_path: Path,
         output_sub_dir: str = "swarp_split",
         buffer_pixels: int = 0,
         n_x: int = 1,

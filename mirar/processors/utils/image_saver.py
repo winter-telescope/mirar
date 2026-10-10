@@ -53,7 +53,7 @@ class ImageSaver(BaseImageProcessor):
         output_dir.mkdir(parents=True, exist_ok=True)
 
         for image in batch:
-            path = output_dir.joinpath(image[BASE_NAME_KEY])
+            path = output_dir / image[BASE_NAME_KEY]
             image[LATEST_SAVE_KEY] = str(path)
             image["DATE"] = Time.now().isot
 

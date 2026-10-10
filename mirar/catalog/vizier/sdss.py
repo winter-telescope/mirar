@@ -25,7 +25,7 @@ TIMEOUT = 30
 
 SDSS_RELEASE = "dr16"
 
-SDSS_COVERAGE_PATH = Path(base_output_dir).joinpath(f"SDSS/{SDSS_RELEASE}_window.ply")
+SDSS_COVERAGE_PATH = Path(base_output_dir) / f"SDSS/{SDSS_RELEASE}_window.ply"
 
 SDSS_COVERAGE_URL = (
     f"https://data.sdss.org/sas/{SDSS_RELEASE}/"

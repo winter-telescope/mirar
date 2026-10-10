@@ -17,7 +17,7 @@ base_code_dir = Path(__file__).parent.parent.resolve()
 PACKAGE_NAME = "mirar"
 __version__ = metadata.version(__package__)
 
-doc_dir = base_code_dir.joinpath("docs/")
+doc_dir = base_code_dir / "docs/"
 
 # Load environment variables for .env file
 VARIABLES_LOADED = dotenv.load_dotenv()
@@ -64,16 +64,16 @@ else:
     base_output_dir = Path(_base_output_dir)
 
 # Set up special directories
-TEMP_DIR = base_output_dir.joinpath(f"{PACKAGE_NAME}_temp")
+TEMP_DIR = base_output_dir / f"{PACKAGE_NAME}_temp"
 TEMP_DIR.mkdir(exist_ok=True, parents=True)
 
 RAW_IMG_SUB_DIR = "raw"
 CAL_OUTPUT_SUB_DIR = "calibration"
 
-ml_models_dir = base_output_dir.joinpath("ml_models")
+ml_models_dir = base_output_dir / "ml_models"
 ml_models_dir.mkdir(exist_ok=True)
 
-config_dir = base_output_dir.joinpath("configs")
+config_dir = base_output_dir / "configs"
 config_dir.mkdir(exist_ok=True)
 
 
@@ -88,7 +88,7 @@ def raw_img_dir(
     :param img_sub_dir: Default 'raw'
     :return: Full path of raw images
     """
-    return raw_dir.joinpath(os.path.join(str(sub_dir), img_sub_dir))
+    return raw_dir / str(sub_dir) / img_sub_dir
 
 
 def get_output_dir(
@@ -103,7 +103,7 @@ def get_output_dir(
     :param output_dir: parent output directory
     :return: full output directory
     """
-    return output_dir.joinpath(os.path.join(str(sub_dir), dir_root))
+    return output_dir / str(sub_dir) / dir_root
 
 
 def get_output_path(
@@ -122,9 +122,10 @@ def get_output_path(
     :param output_dir: parent output directory
     :return: full output directory
     """
-    return get_output_dir(
-        dir_root, sub_dir=str(sub_dir), output_dir=output_dir
-    ).joinpath(base_name)
+    return (
+        get_output_dir(dir_root, sub_dir=str(sub_dir), output_dir=output_dir)
+        / base_name
+    )
 
 
 def get_weight_path(
@@ -159,7 +160,7 @@ def get_temp_path(output_dir: Path, file_path: Path | str) -> Path:
     :param file_path: current path of file
     :return: temporary path
     """
-    return output_dir.joinpath("temp_" + Path(file_path).name)
+    return output_dir / ("temp_" + Path(file_path).name)
 
 
 def get_untemp_path(temp_path: Path | str) -> Path:

@@ -26,7 +26,7 @@ def get_rst_pipeline_path(pipeline: str) -> Path:
     :param pipeline: Pipeline name
     :return: path to save
     """
-    return base_autogen_dir.joinpath(f"{pipeline}.rst")
+    return base_autogen_dir / f"{pipeline}.rst"
 
 
 def get_rst_config_path(pipeline: str, config: str) -> Path:
@@ -37,7 +37,7 @@ def get_rst_config_path(pipeline: str, config: str) -> Path:
     :param config: Configs used
     :return: path to save
     """
-    return base_autogen_dir.joinpath(f"{pipeline}.{config}.rst")
+    return base_autogen_dir / f"{pipeline}.{config}.rst"
 
 
 def auto_top_level_rst(pipelines: list[str]):
@@ -47,7 +47,7 @@ def auto_top_level_rst(pipelines: list[str]):
     :return: None
     """
 
-    output_path = base_autogen_dir.joinpath("pipelines.rst")
+    output_path = base_autogen_dir / "pipelines.rst"
 
     with open(output_path, "w", encoding="utf8") as output_file:
         doc = RstCloth(output_file)
