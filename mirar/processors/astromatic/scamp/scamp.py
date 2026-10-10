@@ -40,7 +40,7 @@ def run_scamp(
     timeout_seconds: float = 60.0,
     make_checkplots: bool = False,
     checkplot_basename: str = "scamp_checkplot",
-    checkplot_dev: str = None,
+    checkplot_dev: str | None = None,
 ):
     """
     Function to run scamp.

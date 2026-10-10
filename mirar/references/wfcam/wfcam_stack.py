@@ -86,13 +86,13 @@ class WFCAMStackedRef(BaseStackReferenceGenerator, ImageHandler):
         write_stacked_image: bool = True,
         write_stack_sub_dir: str = "references/ref_stacks",
         write_stack_to_db: bool = False,
-        stacks_db_table: Type[BaseDB] = None,
-        component_image_sub_dir: str = None,
+        stacks_db_table: Type[BaseDB] | None = None,
+        component_image_sub_dir: str | None = None,
         references_base_subdir_name: str = "references",
-        stack_image_annotator: Callable[[Image], Image] = None,
+        stack_image_annotator: Callable[[Image], Image] | None = None,
         photcal_stack: bool = False,
-        sextractor_generator: Callable[..., Sextractor] = None,
-        phot_calibrator_generator: Callable[..., PhotCalibrator] = None,
+        sextractor_generator: Callable[..., Sextractor] | None = None,
+        phot_calibrator_generator: Callable[..., PhotCalibrator] | None = None,
         filter_images: Callable[[ImageBatch], ImageBatch] = default_filter_wfau_images,
     ):
         """

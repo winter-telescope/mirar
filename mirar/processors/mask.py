@@ -101,8 +101,8 @@ class MaskPixelsFromPath(BaseMask):
 
     def __init__(
         self,
-        mask_path: str | Path = None,
-        mask_path_key: str = None,
+        mask_path: str | Path | None = None,
+        mask_path_key: str | None = None,
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
         only_write_mask: bool = False,
@@ -217,8 +217,8 @@ class MaskAboveThreshold(BaseMask):
 
     def __init__(
         self,
-        threshold: float = None,
-        threshold_key: str = None,
+        threshold: float | None = None,
+        threshold_key: str | None = None,
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",
         only_write_mask: bool = False,
@@ -265,8 +265,8 @@ class MaskPixelsFromWCS(BaseMask):
 
     def __init__(
         self,
-        mask_pixels_ra: float | list[float] = None,
-        mask_pixels_dec: float | list[float] = None,
+        mask_pixels_ra: float | list[float] | None = None,
+        mask_pixels_dec: float | list[float] | None = None,
         mask_file_key: str = FITS_MASK_KEY,
         write_masked_pixels_to_file: bool = False,
         output_dir: str | Path = "mask",

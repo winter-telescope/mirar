@@ -69,7 +69,9 @@ def write_sextractor_config_to_file(config_dict: dict, config_filename: str | Pa
             f.write(f"{key.ljust(20, ' ')}   {config_dict[key]} \n")
 
 
-def write_param_file(param_path: str | Path = default_param_path, params: list = None):
+def write_param_file(
+    param_path: str | Path = default_param_path, params: list | None = None
+):
     """
     Write a default parameter file for sextractor
     param param_path: path to write parameter file

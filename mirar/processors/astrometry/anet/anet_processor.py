@@ -141,7 +141,7 @@ class AstrometryNet(BaseImageProcessor):
         """
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
-    def setup_sextractor_config(self, image: Image) -> (Path | None, list[Path]):
+    def setup_sextractor_config(self, image: Image) -> tuple[Path | None, list[Path]]:
         """
         Setup sextractor config file
         """

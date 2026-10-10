@@ -26,9 +26,9 @@ def run_swarp(
     combine: bool = True,
     gain: Optional[float] = None,
     subtract_bkg: bool = False,
-    flux_scaling_keyword: str = None,
+    flux_scaling_keyword: str | None = None,
     cache: bool = False,
-    center_type: str = None,
+    center_type: str | None = None,
 ):
     """
     Wrapper to resample and stack images with swarp

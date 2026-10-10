@@ -40,7 +40,7 @@ class ProcessReference(BaseImageProcessor):
         swarp_resampler: Callable[..., Swarp],
         sextractor: Callable[..., Sextractor],
         ref_psfex: Callable[..., PSFex],
-        phot_sextractor: Callable[..., Sextractor] = None,
+        phot_sextractor: Callable[..., Sextractor] | None = None,
         temp_output_subtract_dir: str = "subtract",
     ):
         super().__init__()

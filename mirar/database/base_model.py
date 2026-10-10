@@ -82,7 +82,7 @@ class BaseDB(PydanticBase):
     def _insert_entry(
         self,
         duplicate_protocol: str,
-        returning_key_names: str | list[str] = None,
+        returning_key_names: str | list[str] | None = None,
     ) -> pd.DataFrame:
         """
         Insert the pydantic-ified data into the corresponding sql database
@@ -270,7 +270,7 @@ class BaseDB(PydanticBase):
         self._update_entry(update_keys)
 
     @classmethod
-    def _exists(cls, values, keys: str | list = None) -> bool:
+    def _exists(cls, values, keys: str | list | None = None) -> bool:
         """
         Function to query a table and see whether an entry with key==value exists.
         If key is None, key will default to the table's primary key.

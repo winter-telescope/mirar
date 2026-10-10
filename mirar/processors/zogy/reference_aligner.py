@@ -25,7 +25,7 @@ class AlignReference(ZOGYPrepare):
         self,
         sextractor: Callable[..., Sextractor],
         psfex: Callable[..., PSFex],
-        phot_sextractor: Callable[..., Sextractor] = None,
+        phot_sextractor: Callable[..., Sextractor] | None = None,
         temp_output_subtract_dir: str = "subtract",
         catalog_purifier: Callable[
             [astropy.table.Table, astropy.table.Table],

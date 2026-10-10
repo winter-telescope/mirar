@@ -77,7 +77,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
         parameter_path: str,
         filter_path: str,
         starnnw_path: str,
-        saturation: float = None,
+        saturation: float | None = None,
         verbose_type: str = "QUIET",
         checkimage_name: Optional[str | list] = None,
         checkimage_type: Optional[str | list] = None,
@@ -87,7 +87,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
         write_regions_bool: bool = False,
         use_psfex: bool = False,
         psf_path: Optional[str] = None,
-        catalog_purifier: Callable[[Table, Image], Table] = None,
+        catalog_purifier: Callable[[Table, Image], Table] | None = None,
     ):
         """
         :param output_sub_dir: subdirectory to output sextractor files

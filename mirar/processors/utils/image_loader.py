@@ -124,7 +124,7 @@ class ImageLoader(BaseImageProcessor):
         self,
         input_sub_dir: str = RAW_IMG_SUB_DIR,
         input_img_dir: str | Path = base_raw_dir,
-        load_image: Callable[[str], Image | list[Image]] = None,
+        load_image: Callable[[str], Image | list[Image]] | None = None,
     ):
         super().__init__()
         self.input_sub_dir = input_sub_dir
@@ -160,7 +160,7 @@ class LoadImageFromHeader(BaseImageProcessor):
     def __init__(
         self,
         header_key: str = RAW_IMG_KEY,
-        copy_header_keys: str | list[str] = None,
+        copy_header_keys: str | list[str] | None = None,
         load_image: Callable[[str | Path], Image] = open_raw_image,
     ):
         super().__init__()
@@ -207,7 +207,7 @@ class ImageListLoader(BaseImageProcessor):
     def __init__(
         self,
         img_list: list[Path],
-        load_image: Callable[[str], Image | list[Image]] = None,
+        load_image: Callable[[str], Image | list[Image]] | None = None,
     ):
         super().__init__()
         self.img_list = img_list

@@ -29,7 +29,7 @@ class AperturePhotometry(BasePhotometryProcessor):
         aper_diameters: float | list[float] = 10.0,
         bkg_in_diameters: float | list[float] = 25.0,
         bkg_out_diameters: float | list[float] = 40.0,
-        col_suffix_list: str | list[str] = None,
+        col_suffix_list: str | list[str] | None = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)

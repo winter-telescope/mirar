@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 def winter_astrostat_catalog_purifier(
     sci_catalog: Table, ref_catalog: Table, image: Image
-) -> (Table, Table):
+) -> tuple[Table, Table]:
     """
     Default function to purify the photometric image catalog
     """
@@ -94,7 +94,7 @@ def winter_photometric_catalog_generator(
 
 def winter_photometric_catalogs_purifier(
     sci_catalog: Table, ref_catalog: Table, image: Image
-) -> (Table, Table):
+) -> tuple[Table, Table]:
     """
     Default function to purify the photometric image catalog
     """
@@ -138,7 +138,7 @@ def winter_photcal_color_columns_generator(image):
 
 def winter_ref_photometric_catalogs_purifier(
     sci_catalog: Table, ref_catalog: Table, image: Image
-) -> (Table, Table):
+) -> tuple[Table, Table]:
     """
     Default function to purify the photometric image catalog
     """

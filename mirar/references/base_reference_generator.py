@@ -68,7 +68,7 @@ class BaseReferenceGenerator:
         write_image: bool = True,
         write_image_sub_dir: str = "references",
         write_to_db: bool = False,
-        db_table: Type[BaseDB] = None,
+        db_table: Type[BaseDB] | None = None,
         duplicate_protocol: str = "replace",
         q3c_bool: bool = True,
     ):
@@ -94,7 +94,7 @@ class BaseReferenceGenerator:
             err = "You have set write_to_db=True but not provided a write_db_table."
             raise ReferenceError(err)
 
-    def _get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
+    def _get_reference(self, image: Image) -> tuple[fits.PrimaryHDU, fits.PrimaryHDU]:
         """
         Get loaded ref image for image
 
@@ -209,14 +209,14 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
         write_stacked_image: bool = True,
         write_stack_sub_dir: str = "references/stack",
         write_stack_to_db: bool = False,
-        stacks_db_table: Type[BaseDB] = None,
+        stacks_db_table: Type[BaseDB] | None = None,
         duplicate_protocol: str = "replace",
         q3c_bool: bool = False,
-        stack_image_annotator: Callable[[Image, Image], Image] = None,
+        stack_image_annotator: Callable[[Image, Image], Image] | None = None,
         references_base_subdir_name: str = "references",
         photcal_stack: bool = False,
-        sextractor_generator: Callable[..., Sextractor] = None,
-        phot_calibrator_generator: Callable[..., PhotCalibrator] = None,
+        sextractor_generator: Callable[..., Sextractor] | None = None,
+        phot_calibrator_generator: Callable[..., PhotCalibrator] | None = None,
     ):
         """
         Initialise
@@ -272,7 +272,7 @@ class BaseStackReferenceGenerator(BaseReferenceGenerator):
         """
         raise NotImplementedError
 
-    def _get_reference(self, image: Image) -> (fits.PrimaryHDU, fits.PrimaryHDU):
+    def _get_reference(self, image: Image) -> tuple[fits.PrimaryHDU, fits.PrimaryHDU]:
         """
         Get loaded ref image for image
 

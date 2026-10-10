@@ -43,8 +43,8 @@ class MultiExtParser(BaseImageProcessor):
         output_img_dir: str | Path = base_output_dir,
         load_image: Callable[[str], [np.ndarray, astropy.io.fits.Header]] = open_fits,
         skip_first: bool = False,
-        extension_num_header_key: str = None,
-        only_extract_num: int = None,
+        extension_num_header_key: str | None = None,
+        only_extract_num: int | None = None,
     ):
         """
         :param input_sub_dir: subdirectory to look for images

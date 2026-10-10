@@ -43,7 +43,7 @@ def wirc_source_table_filter_annotator(source_table: SourceBatch) -> SourceBatch
 
 def wirc_zogy_catalogs_purifier(
     sci_catalog: Table, ref_catalog: Table
-) -> (Table, Table):
+) -> tuple[Table, Table]:
     """
     Function to purify the photometric catalog
     :param sci_catalog:

@@ -20,9 +20,11 @@ class DBQueryConstraints:
         ) = None,
         comparison_types: str | list[str] | None = None,
     ):
-        self.columns = []
-        self.accepted_values = []
-        self.comparison_types = []
+        self.columns: list[str] = []
+        self.accepted_values: list[
+            str | int | float | tuple[float, float] | tuple[int, int]
+        ] = []
+        self.comparison_types: list[str] = []
 
         self.q3c_query = None
 

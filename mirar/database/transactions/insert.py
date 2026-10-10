@@ -19,7 +19,7 @@ def _insert_in_table(
     new_entry: dict,
     sql_table: Type[BaseTable],
     duplicate_protocol: str = "fail",
-    returning_keys: list[str] | str = None,
+    returning_keys: list[str] | str | None = None,
 ) -> pd.DataFrame:
     """
     Export a list of fields in value dict to a database table

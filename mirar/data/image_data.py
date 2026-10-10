@@ -82,10 +82,10 @@ class Image(DataBlock):
     :class:`~mirar.processors.base_processor.BaseCandidateGenerator` processors.
     """
 
-    cache_files = []
+    cache_files: list[Path] = []
 
     def __init__(self, data: np.ndarray, header: Header):
-        self._data = None
+        self._data: np.ndarray | None = None
         self.header = header
         super().__init__()
         if USE_CACHE:

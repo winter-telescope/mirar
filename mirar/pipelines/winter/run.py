@@ -28,7 +28,7 @@ def run_winter(
     config: str,
     dataset: Dataset | None = None,
     log_level: str = "INFO",
-    subdir: str = None,
+    subdir: str | None = None,
 ):
     """
     Run a WINTER pipeline
