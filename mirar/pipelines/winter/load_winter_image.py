@@ -313,9 +313,9 @@ def load_astrometried_winter_image(path: str | Path) -> Image:
     """
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
-    dirname = path.split("/winter/")[0] + "/winter/"
-    scamp_path = header["SCMPHEAD"]
-    new_scamp_path = Path(dirname) / scamp_path.split("/winter/")[-1]
+    dirname = str(path).split("/winter/")[0] + "/winter/"
+    scamp_path = Path(header["SCMPHEAD"])
+    new_scamp_path = Path(dirname) / str(scamp_path).split("/winter/")[-1]
     header["SCMPHEAD"] = new_scamp_path.as_posix()
     return Image(data=data, header=header)
 
