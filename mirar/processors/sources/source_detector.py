@@ -262,14 +262,18 @@ class ZOGYSourceDetector(BaseSourceGenerator):
             if self.detect_negative_sources:
                 negative_img_paths = []
                 for img_path in [scorr_image_path, diff_image_path]:
-                    negative_img_path = img_path.replace(".fits", ".neg.fits")
+                    negative_img_path = Path(
+                        str(img_path).replace(".fits", ".neg.fits")
+                    )
                     img = self.open_fits(img_path)
                     img.set_data(img.get_data() * -1)
                     self.save_fits(img, negative_img_path)
                     negative_img_paths.append(negative_img_path)
 
                 negative_scorr_path, negative_diff_path = negative_img_paths
-                cands_catalog_name = diff_image_path.replace(".fits", ".neg.dets")
+                cands_catalog_name = Path(
+                    str(diff_image_path).replace(".fits", ".neg.dets")
+                )
                 negative_image = Image(
                     header=image.get_header(), data=-1.0 * image.get_data()
                 )
@@ -321,7 +325,9 @@ class ZOGYSourceDetector(BaseSourceGenerator):
             else:
                 msg = f"Found {len(srcs_table)} sources in image {image[BASE_NAME_KEY]}"
                 if self.write_regions:
-                    reg_name = diff_image_path.replace(".fits", ".cands.img.reg")
+                    reg_name = Path(
+                        str(diff_image_path).replace(".fits", ".cands.img.reg")
+                    )
                     write_regions_file(
                         regions_path=reg_name,
                         x_coords=srcs_table["X_IMAGE"],
@@ -330,7 +336,9 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                     )
 
                     write_regions_file(
-                        regions_path=diff_image_path.replace(".fits", ".cands.wcs.reg"),
+                        regions_path=Path(
+                            str(diff_image_path).replace(".fits", ".cands.wcs.reg")
+                        ),
                         x_coords=srcs_table[CAND_RA_KEY],
                         y_coords=srcs_table[CAND_DEC_KEY],
                         region_radius=5.0 / 3600.0,

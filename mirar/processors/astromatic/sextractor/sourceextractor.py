@@ -40,7 +40,7 @@ LOCAL_SEXTRACTOR = True
 def parse_checkimage(
     checkimage_type: Optional[str | list] = None,
     checkimage_name: Optional[str | list] = None,
-    image: Optional[str | Path] = None,
+    image: Optional[Path] = None,
 ):
     """Function to parse the "checkimage" component of Sextractor configuration.
 
@@ -104,7 +104,7 @@ def parse_checkimage(
     return cmd, checkimage_name
 
 
-def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
+def run_sextractor(images: Path | list, output_dir: Path, *args, **kwargs):
     """
     Wrapper function to run sextractor
     Args:
@@ -131,7 +131,7 @@ def run_sextractor(images: str | list, output_dir: str, *args, **kwargs):
 
 
 def run_sextractor_single(  # pylint: disable=too-many-arguments
-    img: str | Path,
+    img: Path,
     output_dir: str | Path,
     catalog_name: Optional[Path] = None,
     config: Path = default_config_path,
@@ -240,8 +240,8 @@ def run_sextractor_single(  # pylint: disable=too-many-arguments
 
 
 def run_sextractor_dual(  # pylint: disable=too-many-arguments
-    det_image: str,
-    measure_image: str,
+    det_image: Path,
+    measure_image: Path,
     output_dir: str | Path,
     catalog_name: Optional[Path] = None,
     config: Path = default_config_path,
