@@ -35,8 +35,8 @@ DEFAULT_MAX_FWHM = 40
 
 
 def get_img_src_list(
-    img_path: str,
-    base_output_path: str,
+    img_path: Path,
+    base_output_path: Path,
     nx_pix: int,
     ny_pix: int,
     border: int = 3,

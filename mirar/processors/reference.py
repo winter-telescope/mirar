@@ -191,8 +191,8 @@ class ProcessReference(BaseImageProcessor):
                 ImageBatch(resampled_ref_img)
             )[0]
 
-            rrsi_path = os.path.join(
-                self.get_sub_output_dir(), resampled_ref_sextractor_img.get_name()
+            rrsi_path = (
+                self.get_sub_output_dir() / resampled_ref_sextractor_img.get_name()
             )
 
             self.save_fits(image=resampled_ref_sextractor_img, path=rrsi_path)

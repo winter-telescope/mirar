@@ -126,14 +126,12 @@ def autoastrometry(
         temp_file = f"temp_{os.path.basename(filename)}"
 
     # temp_path = os.path.join(os.path.dirname(filename), temp_file)
-    temp_path = os.path.join(output_dir, temp_file)
+    temp_path = output_dir / temp_file
 
     if overwrite:
-        temp_path = filename
+        temp_path = Path(filename)
 
-    base_output_path = os.path.join(
-        output_dir, ".".join(os.path.basename(filename).split(".")[:-1])
-    )
+    base_output_path = output_dir / ".".join(Path(filename).name.split(".")[:-1])
 
     # Block A
     # Parse header

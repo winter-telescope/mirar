@@ -251,7 +251,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
             _, checkimage_name = parse_checkimage(
                 checkimage_name=None,
                 checkimage_type=self.checkimage_type,
-                image=os.path.join(sextractor_out_dir, image[BASE_NAME_KEY]),
+                image=sextractor_out_dir / image[BASE_NAME_KEY],
             )
 
             logger.debug(f"Sextractor checkimage name is {checkimage_name}")

@@ -224,19 +224,16 @@ class ZOGYSourceDetector(BaseSourceGenerator):
     ) -> SourceBatch:
         all_cands = SourceBatch()
         for image in batch:
-            scorr_image_path = os.path.join(
-                self.get_sub_output_dir(), image[SCOR_IMG_KEY]
-            )
-            diff_image_path = os.path.join(
-                self.get_sub_output_dir(), image[BASE_NAME_KEY]
-            )
+            scorr_image_path = self.get_sub_output_dir() / image[SCOR_IMG_KEY]
+            diff_image_path = self.get_sub_output_dir() / image[BASE_NAME_KEY]
 
             scorr_image = self.open_fits(scorr_image_path)
-            scorr_mask_path = os.path.join(
-                self.get_sub_output_dir(), scorr_image[LATEST_WEIGHT_SAVE_KEY]
+            scorr_mask_path = (
+                self.get_sub_output_dir() / scorr_image[LATEST_WEIGHT_SAVE_KEY]
             )
 
-            cands_catalog_name = diff_image_path.replace(".fits", ".dets")
+            # Path has no string replace, so swap the suffix via the text form
+            cands_catalog_name = Path(str(diff_image_path).replace(".fits", ".dets"))
             cands_catalog_name, _ = run_sextractor_dual(
                 det_image=scorr_image_path,
                 measure_image=diff_image_path,
@@ -250,9 +247,9 @@ class ZOGYSourceDetector(BaseSourceGenerator):
                 gain=1.0,
             )
 
-            sci_image_path = os.path.join(self.get_sub_output_dir(), image[SCI_IMG_KEY])
+            sci_image_path = self.get_sub_output_dir() / image[SCI_IMG_KEY]
 
-            ref_image_path = os.path.join(self.get_sub_output_dir(), image[REF_IMG_KEY])
+            ref_image_path = self.get_sub_output_dir() / image[REF_IMG_KEY]
             srcs_table = generate_candidates_table(
                 diff=image,
                 scorr_catalog_path=cands_catalog_name,

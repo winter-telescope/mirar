@@ -361,7 +361,7 @@ def write_region_file(
 def export_src_lists(
     img_src_list: list[SextractorSource],
     ref_src_list: list[BaseSource],
-    base_output_path: str,
+    base_output_path: Path,
 ):
     """
     Export both image and reference source lists to txt/region files

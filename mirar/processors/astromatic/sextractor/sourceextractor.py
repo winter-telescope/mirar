@@ -40,7 +40,7 @@ LOCAL_SEXTRACTOR = True
 def parse_checkimage(
     checkimage_type: Optional[str | list] = None,
     checkimage_name: Optional[str | list] = None,
-    image: Optional[str] = None,
+    image: Optional[str | Path] = None,
 ):
     """Function to parse the "checkimage" component of Sextractor configuration.
 
@@ -87,7 +87,7 @@ def parse_checkimage(
 
         else:
             if image is not None:
-                base_name = f'{image.split(".fits")[0]}_'
+                base_name = f'{str(image).split(".fits")[0]}_'
             else:
                 base_name = ""
 
@@ -243,7 +243,7 @@ def run_sextractor_dual(  # pylint: disable=too-many-arguments
     det_image: str,
     measure_image: str,
     output_dir: str | Path,
-    catalog_name: Optional[str] = None,
+    catalog_name: Optional[Path] = None,
     config: Path = default_config_path,
     parameters_name: Path = default_param_path,
     filter_name: Path = default_filter_name,
@@ -280,7 +280,10 @@ def run_sextractor_dual(  # pylint: disable=too-many-arguments
     """
     if catalog_name is None:
         image_name = Path(measure_image).stem
-        catalog_name = f"{image_name}.cat"
+        catalog_name = Path(f"{image_name}.cat")
+
+    if isinstance(catalog_name, str):
+        catalog_name = Path(catalog_name)
 
     cmd = (
         f"sex {det_image},{measure_image} "

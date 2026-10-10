@@ -26,7 +26,7 @@ from mirar.pipelines.sedmv2.blocks import (  # transient_phot_psfexsex,
 from mirar.pipelines.sedmv2.config import PIPELINE_NAME, sedmv2_cal_requirements
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_raw_sedmv2_mef
 
-sedmv2_flats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+sedmv2_flats_dir = Path(__file__).absolute().parent
 
 logger = logging.getLogger(__name__)
 

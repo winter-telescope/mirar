@@ -5,6 +5,7 @@ reference sources
 
 import logging
 import os
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -28,7 +29,7 @@ SHOW_MATCH = False
 def distance_match(
     img_src_list: list[SextractorSource],
     ref_src_list: list[BaseSource],
-    base_output_path: str,
+    base_output_path: Path,
     max_rad: float = 180.0,
     min_rad: float = 10.0,
     tolerance: float = 0.010,
