@@ -95,7 +95,7 @@ def get_img_src_list(
     else:
         run_sextractor_single(
             img=img_path,
-            output_dir=os.path.dirname(output_catalog),
+            output_dir=output_catalog.parent,
             config=config_path,
             saturation=saturation,
             catalog_name=output_catalog,

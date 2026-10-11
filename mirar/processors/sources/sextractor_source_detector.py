@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def generate_candidates_table(
     image: Image,
-    sextractor_catalog_path: str | Path,
+    sextractor_catalog_path: Path,
     target_only: bool = True,
 ) -> pd.DataFrame:
     """

@@ -347,7 +347,9 @@ class Swarp(BaseImageProcessor):
                     else:
                         image[SWARP_FLUX_SCALING_KEY] = self.flux_scaling_factor
 
-                temp_img_path = get_temp_path(swarp_output_dir, image[BASE_NAME_KEY])
+                temp_img_path = get_temp_path(
+                    swarp_output_dir, Path(image[BASE_NAME_KEY])
+                )
 
                 self.save_fits(image, temp_img_path, compress=False)
 
@@ -447,7 +449,7 @@ class Swarp(BaseImageProcessor):
         if not self.combine:
             temp_output_image_path = get_temp_path(
                 swarp_output_dir,
-                output_image_path.name,
+                Path(output_image_path.name),
             )
 
             temp_output_image_weight_path = temp_output_image_path.with_suffix(

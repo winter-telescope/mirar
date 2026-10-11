@@ -5,7 +5,6 @@ Module with classes to read a source table from a parquet file
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pyarrow.parquet as pq
 
@@ -44,8 +43,8 @@ class ParquetLoader(BaseSourceProcessor):
 
     def __init__(
         self,
-        input_dir_name: Optional[str] = None,
-        input_dir: str | Path = base_output_dir,
+        input_dir_name: str,
+        input_dir: Path = base_output_dir,
     ):
         super().__init__()
         self.input_dir_name = input_dir_name

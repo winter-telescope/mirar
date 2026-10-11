@@ -28,7 +28,7 @@ def run_psfex(
     sextractor_cat_path: Path,
     config_path: Path,
     psf_output_dir: str,
-    norm_psf_output_name: Optional[str | Path] = None,
+    norm_psf_output_name: Optional[Path] = None,
 ):
     """
     Function to run PSFex

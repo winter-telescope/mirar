@@ -48,7 +48,7 @@ def new_container():
     return client.containers.run(DOCKER_IMAGE_NAME, tty=True, detach=True)
 
 
-def docker_path(file_path: str | Path) -> Path:
+def docker_path(file_path: Path) -> Path:
     """
     Converts a local path to the corresponding path in the docker container
 
@@ -58,7 +58,7 @@ def docker_path(file_path: str | Path) -> Path:
     return docker_dir / Path(file_path).name
 
 
-def docker_get(container: Container, local_path: str | Path):
+def docker_get(container: Container, local_path: Path):
     """Function to cope one file from the Docker container 'container' to 'local_path'.
     The file in the container should have
     the same name as the base file in 'local_path'.
@@ -80,7 +80,7 @@ def docker_get(container: Container, local_path: str | Path):
             local_file.write(chunk)
 
 
-def docker_put(container: Container, local_path: str | Path):
+def docker_put(container: Container, local_path: Path):
     """Function to one file, at 'local_path' into the Docker container 'container'
 
     Parameters
@@ -129,7 +129,7 @@ def docker_batch_put(container: Container, local_paths: str | list):
 
 
 def docker_get_new_files(
-    container: Container, output_dir: str | Path, ignore_files: list[str | Path]
+    container: Container, output_dir: Path, ignore_files: list[Path]
 ):
     """
     Function to copy new files out of a container.

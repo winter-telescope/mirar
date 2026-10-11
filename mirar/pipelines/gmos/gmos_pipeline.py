@@ -36,5 +36,5 @@ class GMOSPipeline(Pipeline):
         raise NotImplementedError
 
     @staticmethod
-    def _load_raw_image(path: str | Path) -> Image | list[Image]:
+    def _load_raw_image(path: Path) -> Image | list[Image]:
         return load_detrended_gmos_image(path)

@@ -146,12 +146,12 @@ class AstrometryNet(BaseImageProcessor):
         if sextractor_config_path is not None:
             if self.sextractor_params_path is None:
                 temp_params_path = get_temp_path(
-                    anet_out_dir, f"{image[BASE_NAME_KEY]}_sex_anet" f".params"
+                    anet_out_dir, Path(f"{image[BASE_NAME_KEY]}_sex_anet.params")
                 )
                 sextractor_params_path = temp_params_path
                 logger.debug(f"Writing parameters file to " f"{sextractor_params_path}")
                 write_param_file(
-                    temp_params_path.as_posix(),
+                    temp_params_path,
                     params=[self.x_image_key, self.y_image_key, self.sort_key_name],
                 )
                 sextractor_temp_files.append(temp_params_path)
@@ -164,11 +164,11 @@ class AstrometryNet(BaseImageProcessor):
             sextractor_config_dict["FILTER_NAME"] = self.sextractor_conv_path
             sextractor_config_dict["STARNNW_NAME"] = self.sextractor_starnnw_path
             temp_config_path = get_temp_path(
-                anet_out_dir, f"{image[BASE_NAME_KEY]}_sex_astrom_anet.sex"
+                anet_out_dir, Path(f"{image[BASE_NAME_KEY]}_sex_astrom_anet.sex")
             )
             write_sextractor_config_to_file(
                 config_dict=sextractor_config_dict,
-                config_filename=temp_config_path.as_posix(),
+                config_filename=temp_config_path,
             )
             sextractor_temp_files.append(temp_config_path)
             sextractor_config_path = temp_config_path

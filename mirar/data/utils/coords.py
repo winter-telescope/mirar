@@ -83,7 +83,7 @@ def get_xy_from_wcs(
 
 
 def write_regions_file(
-    regions_path: str | Path,
+    regions_path: Path,
     x_coords: list[float],
     y_coords: list[float],
     system: str = "image",

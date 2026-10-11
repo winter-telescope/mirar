@@ -28,7 +28,7 @@ class ReloadSwarpComponentImages(BaseImageProcessor):
 
     def __init__(
         self,
-        load_image: Callable[[str | Path], Image] = open_raw_image,
+        load_image: Callable[[Path], Image] = open_raw_image,
         header_key=STACKED_COMPONENT_IMAGES_KEY,
         copy_header_keys: str | list[str] | None = None,
     ):

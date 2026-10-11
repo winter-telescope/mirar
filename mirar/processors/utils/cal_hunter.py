@@ -96,10 +96,10 @@ def update_requirements(
 
 
 def find_required_cals(
-    latest_dir: str | Path,
+    latest_dir: Path,
     night: str,
     requirements: list[CalRequirement],
-    open_f: Callable[[str], Image] = open_raw_image,
+    open_f: Callable[[Path], Image | list[Image]] = open_raw_image,
     images: ImageBatch = ImageBatch(),
     skip_latest_night: bool = False,
 ) -> ImageBatch:
@@ -119,7 +119,7 @@ def find_required_cals(
 
     logger.debug(f"Searching for archival images for {path}")
 
-    split = latest_dir.split(night)
+    split = str(latest_dir).split(night)
 
     root = split[0]
 
@@ -164,7 +164,7 @@ def find_required_cals(
         ordered_nights = ordered_nights[1:]
 
         try:
-            new_images = load_from_dir(str(dir_to_load), open_f=open_f)
+            new_images = load_from_dir(dir_to_load, open_f=open_f)
             requirements = update_requirements(requirements, new_images)
 
         except ImageNotFoundError:

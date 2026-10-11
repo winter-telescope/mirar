@@ -3,7 +3,6 @@ Module component of autoastrometry, handling I/O
 """
 
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -21,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def parse_header(
-    file_path: str | Path,
-    temp_path: str | Path,
+    file_path: Path,
+    temp_path: Path,
     pixel_scale: Optional[float] = None,
     pa: Optional[float] = None,
     inv: bool = False,
@@ -295,7 +294,7 @@ def parse_header(
     return nxpix, nypix, cd11, cd12, cd21, cd22, crpix1, crpix2, cra, cdec
 
 
-def write_text_file(file_path: str, src_list: list[BaseSource]):
+def write_text_file(file_path: Path, src_list: list[BaseSource]):
     """
     Write a text file with a list of sources
 
@@ -311,7 +310,7 @@ def write_text_file(file_path: str, src_list: list[BaseSource]):
 
 
 def write_region_file(
-    file_path: str,
+    file_path: Path,
     src_list: list[BaseSource],
     color: str = "green",
     system: Optional[str] = None,
@@ -372,21 +371,21 @@ def export_src_lists(
     :return: None
     """
     write_text_file(
-        file_path=os.path.splitext(base_output_path)[0] + ".det.init.txt",
+        file_path=base_output_path.with_suffix(".det.init.txt"),
         src_list=img_src_list,
     )
     write_region_file(
-        file_path=os.path.splitext(base_output_path)[0] + ".det.im.reg",
+        file_path=base_output_path.with_suffix(".det.im.reg"),
         src_list=img_src_list,
         color="red",
         system="img",
     )
     write_text_file(
-        file_path=os.path.splitext(base_output_path)[0] + ".cat.txt",
+        file_path=base_output_path.with_suffix(".cat.txt"),
         src_list=ref_src_list,
     )
     write_region_file(
-        file_path=os.path.splitext(base_output_path)[0] + ".cat.wcs.reg",
+        file_path=base_output_path.with_suffix(".cat.wcs.reg"),
         src_list=ref_src_list,
         color="green",
         system="wcs",

@@ -3,6 +3,7 @@ Module with pipeline for building reference images in the IR from WFAU
 """
 
 import logging
+from pathlib import Path
 
 from winternlc import check_for_files
 
@@ -164,14 +165,14 @@ class WINTERPipeline(Pipeline):
     non_linear_level = 40000.0
 
     @staticmethod
-    def _load_raw_image(path: str) -> Image | list[Image]:
+    def _load_raw_image(path: Path) -> Image | list[Image]:
         return open_mef_image(path, load_raw_winter_mef, extension_key="BOARD_ID")
 
     @staticmethod
     def download_raw_images_for_night(night: str):
         download_via_ssh(
             server="winter.caltech.edu",
-            base_dir="/data/loki/raw_data/winter",
+            base_dir=Path("/data/loki/raw_data/winter"),
             night=night,
             pipeline=PIPELINE_NAME,
             server_sub_dir="raw",

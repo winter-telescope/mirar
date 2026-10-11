@@ -107,7 +107,7 @@ class Pipeline:
         return copy.copy(self.all_pipeline_configurations[configuration])
 
     @staticmethod
-    def _load_raw_image(path: str | Path) -> Image | list[Image]:
+    def _load_raw_image(path: Path) -> Image | list[Image]:
         """
         Function to load in a raw image and ensure it
         has the correct format for the code.
@@ -117,7 +117,7 @@ class Pipeline:
         """
         raise NotImplementedError
 
-    def load_raw_image(self, path: str) -> ImageBatch:
+    def load_raw_image(self, path: Path) -> ImageBatch:
         """
         Function to load in a raw image and create an
         :class:`~mirar.data.image_data.Image` object which
@@ -131,7 +131,7 @@ class Pipeline:
             raw_images = [raw_images]
         return ImageBatch(raw_images)
 
-    def unpack_raw_image(self, path: str) -> Image | list[Image]:
+    def unpack_raw_image(self, path: Path) -> Image | list[Image]:
         """
         Function to load in a raw image and ensure it has
          the correct format for the code.

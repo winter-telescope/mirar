@@ -345,17 +345,16 @@ class ImageHandler:
     """
 
     @staticmethod
-    def open_fits(path: str | Path) -> Image:
+    def open_fits(path: Path) -> Image:
         """
         Opens a fits file, and returns an Image object
 
         :param path: Path of image
         :return: Image object
         """
-        path = str(path)
         data, header = open_fits(path)
         if RAW_IMG_KEY not in header:
-            header[RAW_IMG_KEY] = path
+            header[RAW_IMG_KEY] = str(path)
         if BASE_NAME_KEY not in header:
             header[BASE_NAME_KEY] = Path(path).name
         return Image(data=data, header=header)
@@ -363,7 +362,7 @@ class ImageHandler:
     @staticmethod
     def save_fits(
         image: Image,
-        path: str | Path,
+        path: Path,
         compress: bool = False,
     ):
         """

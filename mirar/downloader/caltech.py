@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def download_via_ssh(
     server: str,
-    base_dir: str | Path,
+    base_dir: Path,
     night: str | int,
     pipeline: str,
     prefix: str = "",

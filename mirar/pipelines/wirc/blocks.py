@@ -171,16 +171,16 @@ reduction = (
         MaskPixelsFromPathInverted(
             mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
             write_masked_pixels_to_file=True,
-            output_dir="mask1",
+            output_dir_name="mask1",
         ),
         ImageSaver(output_dir_name="mask1", write_mask=True),
         MaskAboveThreshold(
             threshold_key=SATURATE_KEY,
             write_masked_pixels_to_file=True,
-            output_dir="mask2",
+            output_dir_name="mask2",
         ),
         ImageSaver(output_dir_name="mask2", write_mask=True),
-        WriteMaskedCoordsToFile(output_dir="mask_stack"),
+        WriteMaskedCoordsToFile(output_dir_name="mask_stack"),
         ReloadSwarpComponentImages(
             load_image=load_raw_wirc_image,
             copy_header_keys=[FITS_MASK_KEY, "TARGRA", "TARGDEC", TARGET_KEY],
@@ -200,7 +200,7 @@ reduction = (
         ImageSaver(output_dir_name="firstpassastrom", write_mask=True),
         MaskPixelsFromWCS(
             write_masked_pixels_to_file=True,
-            output_dir="mask_secondpass",
+            output_dir_name="mask_secondpass",
             only_write_mask=True,
         ),
         ImageSaver(output_dir_name="firstpassmasked", write_mask=True),

@@ -25,7 +25,7 @@ class AstrometryNetExecutionError(ProcessorError):
     """
 
 
-def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
+def run_astrometry_net(images: Path | list, output_dir: Path, *args, **kwargs):
     """
     function to execute `run_astrometry_net_single` on several images in batch
     """
@@ -44,8 +44,8 @@ def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
 
 
 def run_astrometry_net_single(
-    img_path: str | Path,
-    output_dir: str | Path,
+    img_path: Path,
+    output_dir: Path,
     scale_bounds: Optional[tuple | list] = None,  # limits on scale (lower, upper)
     scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
     downsample: Optional[float | int] = None,  # downsample by factor of __

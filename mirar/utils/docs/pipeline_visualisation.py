@@ -42,7 +42,12 @@ def get_save_path(pipeline: str, configs: str) -> Path:
 
 
 def format_duration(seconds: float) -> str:
-    """Format a duration in seconds as a compact human-readable string"""
+    """
+    Format a duration as a compact human-readable string
+
+    :param seconds: Duration in seconds
+    :return: Formatted duration, e.g. 9.5s, 10m0s or 2h1m
+    """
     if round(seconds, 1) < 60.0:
         return f"{seconds:.1f}s"
 
