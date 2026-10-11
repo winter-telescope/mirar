@@ -6,8 +6,6 @@ import logging
 import os
 from pathlib import Path
 
-from fastavro.schema import load_schema
-
 from mirar.paths import base_raw_dir
 from mirar.processors.astromatic.sextractor.config_type import (
     SextractorCandidateConfig,
@@ -15,6 +13,7 @@ from mirar.processors.astromatic.sextractor.config_type import (
 )
 from mirar.processors.skyportal.client import SkyportalClient
 from mirar.processors.utils.cal_hunter import CalRequirement
+from mirar.utils.avro_tools import load_avro_schema
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +111,7 @@ base_winter_cal_requirements = [
 winter_cal_requirements = base_winter_cal_requirements
 
 winter_avro_schema_path = winter_file_dir / "avro_schema/winter.alert.avsc"
-winter_avro_schema = load_schema(winter_avro_schema_path)
+winter_avro_schema = load_avro_schema(winter_avro_schema_path)
 winter_prv_schema = winter_avro_schema["__named_schemas"]["winter.alert.prv_candidate"]
 prv_candidate_cols = [x["name"] for x in winter_prv_schema["fields"]]
 

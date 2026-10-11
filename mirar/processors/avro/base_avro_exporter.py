@@ -7,12 +7,11 @@ import time
 from pathlib import Path
 
 import fastavro
-from fastavro.schema import load_schema
-from fastavro.types import Schema
 
 from mirar.data import SourceBatch, SourceTable
 from mirar.paths import get_output_dir
 from mirar.processors.base_processor import BaseSourceProcessor
+from mirar.utils.avro_tools import load_avro_schema
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +47,7 @@ class BaseAvroExporter(BaseSourceProcessor):
             self.avro_schema_path.exists()
         ), f"Schema file {self.avro_schema_path} does not exist"
 
-        self.schema = load_schema(self.avro_schema_path)
+        self.schema = load_avro_schema(self.avro_schema_path)
 
     def description(self) -> str:
         return (
@@ -81,7 +80,7 @@ class BaseAvroExporter(BaseSourceProcessor):
         return get_output_dir(self.output_sub_dir, self.night_sub_dir)
 
     @staticmethod
-    def save_alert_packets(packets: list[dict], schema: Schema, save_path: Path):
+    def save_alert_packets(packets: list[dict], schema: dict, save_path: Path):
         """
         Saves packets to output path.
 
