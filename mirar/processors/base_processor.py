@@ -90,6 +90,7 @@ class BaseProcessor:
         self.passed_batches = {}
         self.err_stack = {}
         self.progress = {}
+        self.batch_runtimes = {}
 
         # For tracking processing history
         self.latest_n_input_blocks = 0
@@ -98,6 +99,7 @@ class BaseProcessor:
         self.latest_n_output_batches = 0
         self.latest_error_stack = ErrorStack()
         self.latest_runtime = 0.0
+        self.latest_batch_runtimes: list[float] = []
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -174,6 +176,7 @@ class BaseProcessor:
         """
         del self.passed_batches[cache_id]
         del self.err_stack[cache_id]
+        del self.batch_runtimes[cache_id]
 
     def base_apply(self, dataset: Dataset) -> tuple[Dataset, ErrorStack]:
         """
@@ -187,6 +190,7 @@ class BaseProcessor:
 
         self.passed_batches[cache_id] = {}
         self.err_stack[cache_id] = ErrorStack()
+        self.batch_runtimes[cache_id] = []
 
         self.latest_n_input_batches = len(dataset)
         self.latest_n_input_blocks = sum(len(x) for x in dataset)
@@ -232,6 +236,8 @@ class BaseProcessor:
         dataset = self.update_dataset(Dataset(new_dataset))
         err_stack = self.err_stack[cache_id]
 
+        self.latest_batch_runtimes = self.batch_runtimes[cache_id]
+
         self.clean_cache(cache_id=cache_id)
 
         self.latest_n_output_batches = len(dataset)
@@ -240,6 +246,42 @@ class BaseProcessor:
         self.latest_runtime = time.time() - start_time
 
         return dataset, err_stack
+
+    def latest_stats(self) -> dict:
+        """
+        Summarise the processor's most recent run
+
+        The runtime covers the whole threaded fan-out, while the batch runtimes are
+        measured one batch at a time. Comparing the two separates a step that is slow
+        because it does a lot of work from one that is slow because it runs on a
+        single thread.
+
+        :return: Dictionary of statistics describing the latest run
+        """
+        batch_runtimes = self.latest_batch_runtimes
+
+        # Blocks handled, taken from whichever end of the step saw more, since a
+        # loader starts with none and a step which rejects everything ends with none
+        n_blocks = max([self.latest_n_input_blocks, self.latest_n_output_blocks])
+
+        return {
+            "processor": self.__class__.__name__,
+            # The threads actually used, which is capped by the number of batches
+            "n_cpu": min([self.max_n_cpu, self.latest_n_input_batches]),
+            "runtime": self.latest_runtime,
+            "batch_runtime_total": sum(batch_runtimes),
+            "batch_runtime_max": max(batch_runtimes, default=0.0),
+            # Normalised, so that nights of different sizes stay comparable
+            "runtime_per_block": (
+                self.latest_runtime / n_blocks if n_blocks > 0 else 0.0
+            ),
+            "n_input_batches": self.latest_n_input_batches,
+            "n_input_blocks": self.latest_n_input_blocks,
+            "n_output_batches": self.latest_n_output_batches,
+            "n_output_blocks": self.latest_n_output_blocks,
+            "n_errors": len(self.latest_error_stack.reports),
+            "n_noncritical_errors": len(self.latest_error_stack.noncritical_reports),
+        }
 
     def apply_to_batch(self, queue, cache_id: int):
         """
@@ -252,6 +294,7 @@ class BaseProcessor:
         """
         while True:
             j, batch = queue.get()
+            batch_start_time = time.time()
             try:
                 batch = self.apply(batch)
                 self.passed_batches[cache_id][j] = batch
@@ -264,6 +307,9 @@ class BaseProcessor:
                 err = self.generate_error_report(exc, batch)
                 logger.error(err.generate_log_message())
                 self.err_stack[cache_id].add_report(err)
+
+            # Time a failed batch too, since it still spent the time
+            self.batch_runtimes[cache_id].append(time.time() - batch_start_time)
 
             self.progress[cache_id].update(1)
             self.progress[cache_id].refresh()
