@@ -3,6 +3,7 @@ Script containing functions to run astrometry.net locally
 """
 
 import logging
+import math
 import os
 from pathlib import Path
 from typing import Optional
@@ -22,6 +23,17 @@ ANET_INDEX_DIR_KEY = "ANET_INDEX_DIR"
 DEFAULT_INDEX_SERIES = "5200"
 
 ANET_DOWNLOAD_URL = "http://data.astrometry.net"
+
+# Index files record the range of quad scales they hold in radians
+RADIANS_TO_ARCMIN = 60.0 * 180.0 / math.pi
+
+# Scale bounds are set this far either side of the known pixel scale
+DEFAULT_SCALE_MARGIN = 0.25
+
+# Quads an appreciable fraction of the field still solve sometimes: a 6 arcmin
+# SEDMv2 field does solve against 4 arcmin quads, so only coarser than half the
+# field is called marginal
+MARGINAL_QUAD_FRACTION = 0.5
 
 # Each series is served from its own directory, apart from 5200 and its lite version
 INDEX_SERIES_URLS = {
@@ -44,6 +56,140 @@ class AstrometryNetIndexError(ProcessorError):
     """
     Class for missing astrometry.net index files
     """
+
+
+def get_scale_bounds(
+    pixel_scale: float, margin: float = DEFAULT_SCALE_MARGIN
+) -> list[float]:
+    """
+    Get astrometry.net scale bounds either side of a known pixel scale
+
+    Bounds let solve-field skip the index files whose quads could never match the
+    field, rather than searching every index in the directory, and make it less
+    likely to settle on a spurious match.
+
+    :param pixel_scale: Pixel scale of the instrument, in arcseconds per pixel
+    :param margin: Fraction of the pixel scale to allow either side of it
+    :return: Lower and upper bound, in arcseconds per pixel
+    """
+    return [pixel_scale * (1.0 - margin), pixel_scale * (1.0 + margin)]
+
+
+def get_index_scales(index_dir: Path, index_series: str) -> list[tuple[float, float]]:
+    """
+    Get the range of quad scales held by each index file in a directory
+
+    Only the primary header of each file is read, so this stays cheap even for a
+    directory of many large index files.
+
+    :param index_dir: Directory holding the index files
+    :param index_series: Series the index files belong to, e.g. '5200'
+    :return: Lowest and highest quad scale of each file, in arcminutes
+    """
+    scales = []
+
+    for path in sorted(index_dir.glob(get_index_file_pattern(index_series))):
+        header = fits.getheader(path, 0)
+
+        if "SCALE_L" in header and "SCALE_U" in header:
+            scales.append(
+                (
+                    header["SCALE_L"] * RADIANS_TO_ARCMIN,
+                    header["SCALE_U"] * RADIANS_TO_ARCMIN,
+                )
+            )
+
+    return scales
+
+
+def get_field_width(
+    scale_bounds: tuple | list, scale_units: Optional[str], image_shape: tuple
+) -> Optional[float]:
+    """
+    Get the largest field width which the declared scale bounds allow
+
+    :param scale_bounds: Scale bounds passed to solve-field
+    :param scale_units: Units of those bounds, one of 'app', 'amw' or 'degw'
+    :param image_shape: Shape of the image being solved, in pixels
+    :return: Field width in arcminutes, or None if the units are not recognised
+    """
+    bound = max(scale_bounds)
+
+    # Arcseconds per pixel, so the width of the field depends on the image
+    if scale_units == "app":
+        return bound * max(image_shape) / 60.0
+
+    if scale_units == "amw":
+        return bound
+
+    if scale_units == "degw":
+        return bound * 60.0
+
+    return None
+
+
+def check_index_coverage(
+    index_series: str,
+    scale_bounds: Optional[tuple | list],
+    scale_units: Optional[str],
+    image_shape: tuple,
+):
+    """
+    Warn if the index files cannot cover the scale of the image being solved
+
+    Without this, a set of index files too coarse for the field shows up only as
+    an AstrometryNetNoSolvedError once solve-field has given up, which says
+    nothing about the cause. Poor coverage warns rather than raises, because
+    marginal index files do sometimes solve, though index files which are missing
+    altogether still raise, exactly as they do when solve-field is run.
+
+    :param index_series: Series of index files being used, e.g. '5200'
+    :param scale_bounds: Scale bounds passed to solve-field
+    :param scale_units: Units of those bounds, one of 'app', 'amw' or 'degw'
+    :param image_shape: Shape of the image being solved, in pixels
+    :return: None
+    """
+    download_url = INDEX_SERIES_URLS.get(index_series, ANET_DOWNLOAD_URL)
+
+    if scale_bounds is None:
+        logger.warning(
+            f"No scale bounds are set, so solve-field must search every index file "
+            f"of the '{index_series}' series, and whether those files cover the "
+            f"image cannot be checked in advance"
+        )
+        return
+
+    field_width = get_field_width(scale_bounds, scale_units, image_shape)
+
+    if field_width is None:
+        logger.warning(
+            f"Cannot check the '{index_series}' index files against the image, "
+            f"because the scale units '{scale_units}' are not recognised"
+        )
+        return
+
+    scales = get_index_scales(get_index_dir(index_series), index_series)
+
+    if len(scales) == 0:
+        return
+
+    finest = min(x[0] for x in scales)
+    coarsest = max(x[1] for x in scales)
+
+    if finest > field_width:
+        logger.warning(
+            f"The '{index_series}' index files hold quads of {finest:.1f} to "
+            f"{coarsest:.1f} arcmin, but the image is {field_width:.1f} arcmin "
+            f"across, so none of them can match it. Download a finer index file "
+            f"from {download_url}"
+        )
+
+    elif finest > MARGINAL_QUAD_FRACTION * field_width:
+        logger.warning(
+            f"The finest '{index_series}' index files hold quads of {finest:.1f} "
+            f"arcmin, against an image {field_width:.1f} arcmin across, so a "
+            f"solution is marginal. Download a finer index file from {download_url}"
+        )
 
 
 def get_index_file_pattern(index_series: str) -> str:

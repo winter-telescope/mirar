@@ -24,6 +24,7 @@ from mirar.processors.astromatic.sextractor.settings import (
 from mirar.processors.astrometry.anet.anet import (
     ASTROMETRY_TIMEOUT,
     DEFAULT_INDEX_SERIES,
+    check_index_coverage,
     run_astrometry_net_single,
 )
 from mirar.processors.base_processor import BaseImageProcessor
@@ -123,11 +124,36 @@ class AstrometryNet(BaseImageProcessor):
         self.no_tweak = no_tweak
         self.index_series = index_series
 
+        # Checked against the first image solved, then not worth repeating
+        self.checked_index_coverage = False
+
     def description(self) -> str:
         return (
             "Processor to perform astrometric calibration "
             "locally with astrometry.net."
         )
+
+    def check_index_coverage(self, image: Image):
+        """
+        Check the index files cover the image scale, once per processor
+
+        The answer is the same for every image a processor solves, so it is only
+        worth working out and reporting for the first of them.
+
+        :param image: Image about to be solved
+        :return: None
+        """
+        if self.checked_index_coverage:
+            return
+
+        check_index_coverage(
+            index_series=self.index_series,
+            scale_bounds=self.scale_bounds,
+            scale_units=self.scale_units,
+            image_shape=image.get_data().shape,
+        )
+
+        self.checked_index_coverage = True
 
     def get_anet_output_dir(self) -> Path:
         """
@@ -186,6 +212,8 @@ class AstrometryNet(BaseImageProcessor):
         anet_out_dir.mkdir(parents=True, exist_ok=True)
 
         assert len(batch) > 0, "Batch must contain at least one image"
+
+        self.check_index_coverage(batch[0])
 
         # Ensure that if a source-extractor config file is provided, it has the
         # correct PARAMETERS_NAME, FILTER_NAME and STARNNW_NAME.

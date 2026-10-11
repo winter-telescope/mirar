@@ -34,7 +34,7 @@ from mirar.pipelines.lmi.generator import (
 from mirar.pipelines.lmi.load_lmi_image import load_raw_lmi_image
 from mirar.processors.astromatic import PSFex, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
-from mirar.processors.astrometry.anet import AstrometryNet
+from mirar.processors.astrometry.anet import AstrometryNet, get_scale_bounds
 from mirar.processors.bias import BiasCalibrator
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.flat import FlatCalibrator
@@ -105,6 +105,8 @@ calibrate = [
         timeout=120,
         use_sextractor=True,
         index_series=LMI_ANET_INDEX_SERIES,
+        scale_bounds=get_scale_bounds(LMI_PIXEL_SCALE),
+        scale_units="app",
     ),
     Sextractor(
         output_sub_dir="sextractor",
@@ -124,6 +126,8 @@ stack = [
         timeout=120,
         use_sextractor=True,
         index_series=LMI_ANET_INDEX_SERIES,
+        scale_bounds=get_scale_bounds(LMI_PIXEL_SCALE),
+        scale_units="app",
     ),
     Sextractor(
         output_sub_dir="photprocess",
