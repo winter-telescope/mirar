@@ -115,14 +115,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /usr/share/miniconda/envs/test/data
-          key: astrometry-index-5200-v1
+          key: astrometry-index-5200-v2
 
       - name: Download astrometry.net index files
         if: steps.cache-astrometry.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          DIR=/usr/share/miniconda/envs/test/data
+          DIR=/usr/share/miniconda/envs/test/data/5200
+          mkdir -p "$DIR"
           gh release download astrometry-index-v1 \
             --repo winter-telescope/mirar \
             --dir "$DIR" \
