@@ -11,7 +11,7 @@ from mirar.data import Dataset, ImageBatch
 from mirar.paths import get_output_dir
 from mirar.pipelines import get_pipeline
 from mirar.testing import BaseTestCase
-from mirar.utils.run_stats import RUNTIME_COLUMNS
+from mirar.utils.run_stats import RUNTIME_COLUMNS, read_run_stats
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +65,13 @@ def check_run_stats(test_case: BaseTestCase, stats_df: pd.DataFrame):
     )
     test_case.assertEqual(list(stats_df["step"]), list(range(1, len(processors) + 1)))
     test_case.assertEqual(set(stats_df["instrument"]), {"summer"})
-    test_case.assertEqual(set(stats_df["night"]), {20220402})
+    test_case.assertEqual(set(stats_df["night"]), {"20220402"})
     test_case.assertEqual(set(stats_df["configuration"]), {"test"})
+
+    # The run-level total is stored separately, so check it against the steps
+    test_case.assertAlmostEqual(
+        set(stats_df["total_runtime"]).pop(), stats_df["runtime"].sum(), delta=0.01
+    )
 
     # Nothing should have failed, since the run did not catch errors
     test_case.assertEqual(stats_df["n_errors"].sum(), 0)
@@ -107,7 +112,7 @@ class TestSummerPipeline(BaseTestCase):
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
         # Read the run statistics before the output directory holding them is deleted
-        stats_df = pd.read_csv(pipeline.get_stats_output_path(), sep="\t")
+        stats_df = read_run_stats(pipeline.get_stats_output_path())
 
         # Cleanup - delete non-empty ouptut dir
         output_dir = get_output_dir(dir_root="summer/20220402")

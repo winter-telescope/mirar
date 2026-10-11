@@ -5,11 +5,17 @@ A :class:`~mirar.utils.run_stats.RunStats` object records how long each step of 
 pipeline run took, together with the circumstances of the run, so that runs can be
 compared against each other.
 
+The results are written as a pair of files sharing a stem: a tsv holding one row per
+step, and a json holding the values which describe the run as a whole. Keeping the
+run-level values out of the tsv stops them being repeated on every row.
+:func:`~mirar.utils.run_stats.read_run_stats` reads the pair back as a single table.
+
 The statistics are snapshotted as each step finishes, rather than read back from the
 processors afterwards. Processor objects are shared between runs of the same pipeline,
 so their attributes only ever describe the most recent run of that processor.
 """
 
+import json
 import logging
 import socket
 import subprocess
@@ -31,6 +37,7 @@ GIT_TIMEOUT = 10
 # Timings are recorded to the millisecond, which is well beyond the run-to-run noise
 RUNTIME_PRECISION = 3
 
+# Rounded as they are recorded, so that a total always matches the rows it sums
 RUNTIME_COLUMNS = [
     "runtime",
     "batch_runtime_total",
@@ -100,19 +107,29 @@ class RunStats:
         :param processor: Processor which has just been applied
         :return: None
         """
-        self.rows.append(
-            {
-                "instrument": self.instrument,
-                "night": self.night,
-                "version": self.version,
-                "commit": self.commit,
-                "hostname": self.hostname,
-                "started": self.t_start.isoformat(timespec="seconds"),
-                "configuration": configuration,
-                "step": step,
-            }
-            | processor.latest_stats()
-        )
+        stats = processor.latest_stats()
+
+        for key in RUNTIME_COLUMNS:
+            stats[key] = round(stats[key], RUNTIME_PRECISION)
+
+        self.rows.append({"configuration": configuration, "step": step} | stats)
+
+    @property
+    def metadata(self) -> dict:
+        """
+        The values describing the run as a whole, which every step shares
+
+        :return: Dictionary of run-level values
+        """
+        return {
+            "instrument": self.instrument,
+            "night": self.night,
+            "version": self.version,
+            "commit": self.commit,
+            "hostname": self.hostname,
+            "started": self.t_start.isoformat(timespec="seconds"),
+            "total_runtime": round(self.total_runtime, RUNTIME_PRECISION),
+        }
 
     @property
     def total_runtime(self) -> float:
@@ -129,18 +146,14 @@ class RunStats:
 
         :return: Dataframe of run statistics
         """
-        stats_df = pd.DataFrame(self.rows)
-
-        if len(stats_df) > 0:
-            stats_df[RUNTIME_COLUMNS] = stats_df[RUNTIME_COLUMNS].round(
-                RUNTIME_PRECISION
-            )
-
-        return stats_df
+        return pd.DataFrame(self.rows)
 
     def summarise_run_stats(self, output_path: Optional[Path] = None) -> pd.DataFrame:
         """
-        Summarise the run, and optionally write the statistics as a tsv
+        Summarise the run, and optionally write the statistics out
+
+        Writes the per-step table to the given path, and the run-level values to a
+        json file beside it, sharing the same stem.
 
         :param output_path: Path to write the statistics to, in .tsv format (optional)
         :return: Dataframe of run statistics
@@ -159,4 +172,39 @@ class RunStats:
             logger.info(f"Saving run statistics to {output_path}")
             stats_df.to_csv(output_path, sep="\t", index=False)
 
+            run_path = output_path.with_suffix(".json")
+
+            with open(run_path, "w", encoding="utf-8") as run_file:
+                json.dump(self.metadata, run_file, indent=4)
+
         return stats_df
+
+
+def read_run_stats(stats_paths: Path | list[Path]) -> pd.DataFrame:
+    """
+    Read the statistics of one or more runs back as a single table
+
+    The run-level values are stored once per run, and are added back here as columns,
+    so that steps from different runs can be told apart after they are combined.
+
+    :param stats_paths: Path, or paths, of the tsv files to read
+    :return: Dataframe of run statistics
+    """
+    if isinstance(stats_paths, Path):
+        stats_paths = [stats_paths]
+
+    all_stats = []
+
+    for stats_path in stats_paths:
+        stats_df = pd.read_csv(stats_path, sep="\t")
+
+        with open(stats_path.with_suffix(".json"), "r", encoding="utf-8") as run_file:
+            metadata = json.load(run_file)
+
+        # Inserted in reverse, so that they lead the table in their original order
+        for key, value in reversed(list(metadata.items())):
+            stats_df.insert(0, key, value)
+
+        all_stats.append(stats_df)
+
+    return pd.concat(all_stats, ignore_index=True)
