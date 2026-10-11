@@ -19,7 +19,7 @@ ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
 
 ANET_INDEX_DIR_KEY = "ANET_INDEX_DIR"
 
-DEFAULT_INDEX_SERIES = "4200"
+DEFAULT_INDEX_SERIES = "5200"
 
 ANET_DOWNLOAD_URL = "http://data.astrometry.net"
 

@@ -14,6 +14,7 @@ from mirar.paths import (
     base_output_dir,
 )
 from mirar.pipelines.spring.config import (
+    SPRING_ANET_INDEX_SERIES,
     SPRING_GAIN,
     psfex_config_path,
     sextractor_astrometry_config,
@@ -183,6 +184,7 @@ astrometry = [
         use_sextractor=True,
         # parity="neg",
         search_radius_deg=0.15,
+        index_series=SPRING_ANET_INDEX_SERIES,
         sextractor_config_path=spring_anet_sextractor_config_path_generator,
         use_weight=True,
         timeout=120,

@@ -14,7 +14,10 @@ from mirar.pipelines.sedmv2.config import (
     sextractor_PSF_photometry_config,
     swarp_config_path,
 )
-from mirar.pipelines.sedmv2.config.constants import SEDMV2_PIXEL_SCALE
+from mirar.pipelines.sedmv2.config.constants import (
+    SEDMV2_ANET_INDEX_SERIES,
+    SEDMV2_PIXEL_SCALE,
+)
 from mirar.pipelines.sedmv2.generator import (
     sedmv2_color_function_ps1,
     sedmv2_photcal_catalog_purifier,
@@ -111,8 +114,7 @@ astrometry = [
         downsample=2,
         timeout=60,
         use_sextractor=True,
-        # The 6 arcmin field needs quads below 4 arcmin, which only 5200 covers here
-        index_series="5200",
+        index_series=SEDMV2_ANET_INDEX_SERIES,
     ),
     Sextractor(
         output_sub_dir="sextractor",
