@@ -28,8 +28,8 @@ jobs:
       - name: Analysing the code with mypy
         run: |
           # mypy is not clean yet, so just make sure it does not get worse.
-          # Count it against the locked dependencies, as a local run with newer
-          # typing stubs will report a different number.
+          # This count is what CI sees; a local run reports fewer, as fastavro
+          # ships a compiled module here that mypy reads as Any.
           MAX_ERRORS=481
           poetry run mypy mirar --ignore-missing-imports | tee mypy.log || true
           N_ERRORS=$(grep -c ": error:" mypy.log || true)
