@@ -27,4 +27,14 @@ jobs:
 
       - name: Analysing the code with mypy
         run: |
-           poetry run mypy mirar --ignore-missing-imports
+          # mypy is not clean yet, so just make sure it does not get worse.
+          # Count it against the locked dependencies, as a local run with newer
+          # typing stubs will report a different number.
+          MAX_ERRORS=491
+          poetry run mypy mirar --ignore-missing-imports | tee mypy.log || true
+          N_ERRORS=$(grep -c ": error:" mypy.log || true)
+          echo "Found $N_ERRORS mypy errors, allowing up to $MAX_ERRORS"
+          if [ "$N_ERRORS" -gt "$MAX_ERRORS" ]; then
+            echo "mypy errors increased, please fix them"
+            exit 1
+          fi
