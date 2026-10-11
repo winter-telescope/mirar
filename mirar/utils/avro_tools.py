@@ -11,7 +11,15 @@ logger = logging.getLogger(__name__)
 
 
 def load_avro_schema(schema_path: Path) -> dict:
-    """Load an avro record schema, which fastavro types loosely and takes as a str"""
+    """
+    Load an avro record schema from a file
+
+    fastavro takes the path as a str, and types the result loosely as
+    str | list | dict, so this narrows it to the record dict callers expect.
+
+    :param schema_path: Path of the avro schema file
+    :return: Schema, as a dictionary
+    """
     schema = load_schema(str(schema_path))
 
     if not isinstance(schema, dict):
