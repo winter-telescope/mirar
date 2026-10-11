@@ -5,7 +5,6 @@ Module with classes to write a regions file from a pandas dataframe
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 
 from astropy import units as u
 from astropy.coordinates import Angle
@@ -34,7 +33,7 @@ class RegionsWriter(BaseSourceProcessor):
 
     def __init__(
         self,
-        output_dir_name: Optional[str] = None,
+        output_dir_name: str,
         region_pix_radius: float = 8,
         output_dir: Path = base_output_dir,
         use_ra_dec: bool = True,

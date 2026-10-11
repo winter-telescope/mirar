@@ -88,7 +88,7 @@ class BaseReferenceGenerator:
         self.duplicate_protocol = duplicate_protocol
         self.q3c_bool = q3c_bool
         self.write_image = write_image
-        self.write_image_dir = write_image_sub_dir
+        self.write_image_sub_dir = write_image_sub_dir
 
         if np.logical_and(self.write_to_db, self.write_db_table is None):
             err = "You have set write_to_db=True but not provided a write_db_table."
@@ -116,7 +116,7 @@ class BaseReferenceGenerator:
 
         ref_hdu, ref_weight_hdu = self._get_reference(image)
 
-        output_dir = get_output_dir(self.write_image_dir)
+        output_dir = get_output_dir(self.write_image_sub_dir)
         output_dir.mkdir(exist_ok=True, parents=True)
         output_path = Path(output_dir) / base_name.replace(".fits", "_ref.fits")
 

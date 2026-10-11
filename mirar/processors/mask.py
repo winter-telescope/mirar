@@ -29,12 +29,12 @@ class BaseMask(BaseImageProcessor, ABC):
     def __init__(
         self,
         write_masked_pixels_to_file: bool = False,
-        output_dir: str = "mask",
+        output_dir_name: str = "mask",
         only_write_mask: bool = False,
     ):
         super().__init__()
         self.write_masked_pixels_to_file = write_masked_pixels_to_file
-        self.output_dir = output_dir
+        self.output_dir_name = output_dir_name
         self.only_write_mask = only_write_mask
 
     def get_mask(self, image) -> np.ndarray[bool]:
@@ -67,7 +67,9 @@ class BaseMask(BaseImageProcessor, ABC):
             )
 
             if self.write_masked_pixels_to_file:
-                mask_directory = get_output_dir(self.output_dir, self.night_sub_dir)
+                mask_directory = get_output_dir(
+                    self.output_dir_name, self.night_sub_dir
+                )
                 mask_directory.mkdir(parents=True, exist_ok=True)
 
                 mask_file_path = (mask_directory / image[BASE_NAME_KEY]).with_suffix(
@@ -104,12 +106,12 @@ class MaskPixelsFromPath(BaseMask):
         mask_path: Path | None = None,
         mask_path_key: str | None = None,
         write_masked_pixels_to_file: bool = False,
-        output_dir: str = "mask",
+        output_dir_name: str = "mask",
         only_write_mask: bool = False,
     ):
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
-            output_dir=output_dir,
+            output_dir_name=output_dir_name,
             only_write_mask=only_write_mask,
         )
         self.mask_path = Path(mask_path) if mask_path is not None else None
@@ -185,12 +187,12 @@ class MaskPixelsFromFunction(BaseMask):
         self,
         mask_function: Callable[[Image], np.ndarray],
         write_masked_pixels_to_file: bool = False,
-        output_dir: str = "mask",
+        output_dir_name: str = "mask",
         only_write_mask: bool = False,
     ):
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
-            output_dir=output_dir,
+            output_dir_name=output_dir_name,
             only_write_mask=only_write_mask,
         )
         self.mask_function = mask_function
@@ -220,7 +222,7 @@ class MaskAboveThreshold(BaseMask):
         threshold: float | None = None,
         threshold_key: str | None = None,
         write_masked_pixels_to_file: bool = False,
-        output_dir: str = "mask",
+        output_dir_name: str = "mask",
         only_write_mask: bool = False,
     ):
         """
@@ -229,7 +231,7 @@ class MaskAboveThreshold(BaseMask):
         """
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
-            output_dir=output_dir,
+            output_dir_name=output_dir_name,
             only_write_mask=only_write_mask,
         )
         self.threshold = threshold
@@ -269,12 +271,12 @@ class MaskPixelsFromWCS(BaseMask):
         mask_pixels_dec: float | list[float] | None = None,
         mask_file_key: str = FITS_MASK_KEY,
         write_masked_pixels_to_file: bool = False,
-        output_dir: str = "mask",
+        output_dir_name: str = "mask",
         only_write_mask: bool = False,
     ):
         super().__init__(
             write_masked_pixels_to_file=write_masked_pixels_to_file,
-            output_dir=output_dir,
+            output_dir_name=output_dir_name,
             only_write_mask=only_write_mask,
         )
         self.mask_pixels_ra = mask_pixels_ra
@@ -337,15 +339,15 @@ class WriteMaskedCoordsToFile(BaseMask):
 
     base_key = "writemaskedcoords"
 
-    def __init__(self, output_dir: str = "mask", only_write_mask: bool = False):
+    def __init__(self, output_dir_name: str = "mask", only_write_mask: bool = False):
         super().__init__(
             write_masked_pixels_to_file=True,
-            output_dir=output_dir,
+            output_dir_name=output_dir_name,
             only_write_mask=only_write_mask,
         )
 
     def description(self) -> str:
-        return f"Processor to save image masks to the {self.output_dir} directory"
+        return f"Processor to save image masks to the {self.output_dir_name} directory"
 
     def get_mask(self, image) -> np.ndarray:
         pixels_to_mask = np.zeros(image.get_data().shape, dtype=bool)

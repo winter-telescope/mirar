@@ -5,7 +5,6 @@ Module with classes to read a source table from a json file
 import logging
 import pickle
 from pathlib import Path
-from typing import Optional
 
 from mirar.data import SourceBatch, SourceTable
 from mirar.paths import base_output_dir, get_output_dir
@@ -38,7 +37,7 @@ class SourceLoader(BaseSourceProcessor):
 
     def __init__(
         self,
-        input_dir_name: Optional[str] = None,
+        input_dir_name: str,
         input_dir: Path = base_output_dir,
     ):
         super().__init__()

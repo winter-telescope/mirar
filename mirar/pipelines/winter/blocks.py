@@ -1192,9 +1192,9 @@ second_pass_calibration = [
     MaskPixelsFromPathInverted(
         mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
         write_masked_pixels_to_file=True,
-        output_dir="sp_stack_source_mask",
+        output_dir_name="sp_stack_source_mask",
     ),
-    WriteMaskedCoordsToFile(output_dir="sp_stack_mask"),
+    WriteMaskedCoordsToFile(output_dir_name="sp_stack_mask"),
     ReloadSwarpComponentImages(
         copy_header_keys=FITS_MASK_KEY,
     ),
@@ -1206,7 +1206,7 @@ second_pass_calibration = [
     ImageSaver(output_dir_name="sp_astrometry", write_mask=True),
     MaskPixelsFromWCS(
         write_masked_pixels_to_file=True,
-        output_dir="sp_source_mask",
+        output_dir_name="sp_source_mask",
         only_write_mask=True,
     ),
     ImageSaver(output_dir_name="sp_masked", write_mask=True),
