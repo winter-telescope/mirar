@@ -5,6 +5,7 @@ A real pipeline run is checked in ..module::tests.test_summer_pipeline. These te
 only cover the arithmetic, and the cases a successful run does not reach.
 """
 
+import json
 import logging
 from pathlib import Path
 
@@ -124,10 +125,14 @@ class TestRunStats(BaseTestCase):
         self.assertEqual(len(stats_df), 2)
         self.assertEqual(list(stats_df["instrument"]), ["dummy_a", "dummy_b"])
         self.assertEqual(list(stats_df["total_runtime"]), [10.0, 10.0])
+        self.assertEqual(list(stats_df["slowest_runtime"]), [10.0, 10.0])
+        self.assertEqual(list(stats_df["slowest_processor"]), ["DummyProcessor"] * 2)
 
         # The run-level values lead the table, ahead of the per-step ones
-        self.assertEqual(list(stats_df.columns)[0], "instrument")
-        self.assertEqual(list(stats_df.columns)[7], "configuration")
+        metadata_keys = list(make_run("dummy_a").metadata)
+
+        self.assertEqual(list(stats_df.columns)[: len(metadata_keys)], metadata_keys)
+        self.assertEqual(list(stats_df.columns)[len(metadata_keys)], "configuration")
 
         for key, value in expected_stats.items():
             self.assertEqual(stats_df.iloc[0][key], value)
@@ -148,7 +153,13 @@ class TestRunStats(BaseTestCase):
         self.assertEqual(len(stats_df), 0)
         self.assertEqual(run_stats.total_runtime, 0)
         self.assertTrue(output_path.exists())
-        self.assertTrue(output_path.with_suffix(".json").exists())
+
+        # There is no slowest step to name, so it is left empty
+        with open(output_path.with_suffix(".json"), encoding="utf-8") as run_file:
+            metadata = json.load(run_file)
+
+        self.assertIsNone(metadata["slowest_processor"])
+        self.assertIsNone(metadata["slowest_runtime"])
 
     def test_git_commit(self):
         """

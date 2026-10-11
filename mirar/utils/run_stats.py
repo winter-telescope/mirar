@@ -121,6 +121,8 @@ class RunStats:
 
         :return: Dictionary of run-level values
         """
+        slowest = max(self.rows, key=lambda row: row["runtime"], default=None)
+
         return {
             "instrument": self.instrument,
             "night": self.night,
@@ -129,6 +131,9 @@ class RunStats:
             "hostname": self.hostname,
             "started": self.t_start.isoformat(timespec="seconds"),
             "total_runtime": round(self.total_runtime, RUNTIME_PRECISION),
+            # The step which dominates the run is the one usually worth chasing
+            "slowest_processor": slowest["processor"] if slowest else None,
+            "slowest_runtime": slowest["runtime"] if slowest else None,
         }
 
     @property
@@ -159,13 +164,13 @@ class RunStats:
         :return: Dataframe of run statistics
         """
         stats_df = self.to_dataframe()
+        metadata = self.metadata
 
         if len(self.rows) > 0:
-            slowest = max(self.rows, key=lambda row: row["runtime"])
             logger.info(
-                f"Ran {len(stats_df)} steps in {self.total_runtime:.1f}s, "
-                f"of which the slowest was {slowest['processor']} "
-                f"at {slowest['runtime']:.1f}s"
+                f"Ran {len(stats_df)} steps in {metadata['total_runtime']:.1f}s, "
+                f"of which the slowest was {metadata['slowest_processor']} "
+                f"at {metadata['slowest_runtime']:.1f}s"
             )
 
         if output_path is not None:
@@ -175,7 +180,7 @@ class RunStats:
             run_path = output_path.with_suffix(".json")
 
             with open(run_path, "w", encoding="utf-8") as run_file:
-                json.dump(self.metadata, run_file, indent=4)
+                json.dump(metadata, run_file, indent=4)
 
         return stats_df
 

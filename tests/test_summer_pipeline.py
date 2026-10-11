@@ -68,9 +68,16 @@ def check_run_stats(test_case: BaseTestCase, stats_df: pd.DataFrame):
     test_case.assertEqual(set(stats_df["night"]), {"20220402"})
     test_case.assertEqual(set(stats_df["configuration"]), {"test"})
 
-    # The run-level total is stored separately, so check it against the steps
+    # The run-level values are stored separately, so check them against the steps
     test_case.assertAlmostEqual(
         set(stats_df["total_runtime"]).pop(), stats_df["runtime"].sum(), delta=0.01
+    )
+
+    slowest = stats_df.sort_values("runtime", ascending=False).iloc[0]
+
+    test_case.assertEqual(set(stats_df["slowest_runtime"]).pop(), slowest["runtime"])
+    test_case.assertEqual(
+        set(stats_df["slowest_processor"]).pop(), slowest["processor"]
     )
 
     # Nothing should have failed, since the run did not catch errors
