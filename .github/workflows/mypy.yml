@@ -27,10 +27,8 @@ jobs:
 
       - name: Analysing the code with mypy
         run: |
-          # mypy is not clean yet, so just make sure it does not get worse.
-          # This count is what CI sees; a local run reports fewer, as fastavro
-          # ships a compiled module here that mypy reads as Any.
-          MAX_ERRORS=481
+          # mypy is not clean yet, so just make sure it does not get worse
+          MAX_ERRORS=459
           poetry run mypy mirar --ignore-missing-imports | tee mypy.log || true
           N_ERRORS=$(grep -c ": error:" mypy.log || true)
           echo "Found $N_ERRORS mypy errors, allowing up to $MAX_ERRORS"
