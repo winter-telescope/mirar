@@ -23,6 +23,7 @@ from mirar.processors.astromatic.sextractor.settings import (
 )
 from mirar.processors.astrometry.anet.anet import (
     ASTROMETRY_TIMEOUT,
+    DEFAULT_INDEX_SERIES,
     run_astrometry_net_single,
 )
 from mirar.processors.base_processor import BaseImageProcessor
@@ -64,6 +65,7 @@ class AstrometryNet(BaseImageProcessor):
         write_regions: bool = True,
         cache: bool = False,
         no_tweak: bool = False,
+        index_series: str = DEFAULT_INDEX_SERIES,
     ):
         """
         :param output_sub_dir: subdirectory to output astrometry.net results
@@ -89,6 +91,10 @@ class AstrometryNet(BaseImageProcessor):
         :param sort_key_name: key for sorting sextractor catalog, defaults
         to MAG_AUTO, the default from astrometry.net
         :param no_tweak: do not calculate SIP distortion corrections
+        :param index_series: series of index files to solve against, which must be
+        in the matching subdirectory of the ANET_INDEX_DIR directory. The series sets
+        the reference catalogue, and therefore the frame of the solution, so pick it
+        deliberately for any pipeline whose final astrometry comes from astrometry.net
         """
         super().__init__()
 
@@ -115,6 +121,7 @@ class AstrometryNet(BaseImageProcessor):
 
         self.cache = cache
         self.no_tweak = no_tweak
+        self.index_series = index_series
 
     def description(self) -> str:
         return (
@@ -222,6 +229,7 @@ class AstrometryNet(BaseImageProcessor):
                 y_image_key=self.y_image_key,
                 sort_key_name=self.sort_key_name,
                 no_tweak=self.no_tweak,
+                index_series=self.index_series,
             )
 
             anet_output_filees_basepath = new_img_path.as_posix().replace(".fits", "")

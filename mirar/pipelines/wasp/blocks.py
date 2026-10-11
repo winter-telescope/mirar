@@ -16,7 +16,10 @@ from mirar.pipelines.wasp.config import (
     swarp_config_path,
     wasp_cal_requirements,
 )
-from mirar.pipelines.wasp.config.constants import WASP_PIXEL_SCALE
+from mirar.pipelines.wasp.config.constants import (
+    WASP_ANET_INDEX_SERIES,
+    WASP_PIXEL_SCALE,
+)
 from mirar.pipelines.wasp.generator import (
     annotate_target_coordinates,
     label_stack_id,
@@ -112,6 +115,7 @@ calibrate = [
         output_sub_dir="anet",
         timeout=120,
         use_sextractor=True,
+        index_series=WASP_ANET_INDEX_SERIES,
     ),
     Sextractor(
         output_sub_dir="photprocess",

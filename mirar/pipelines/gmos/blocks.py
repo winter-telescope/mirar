@@ -17,7 +17,10 @@ from mirar.pipelines.gmos.config import (
     sextractor_photometry_config,
     swarp_config_path,
 )
-from mirar.pipelines.gmos.config.constants import GMOS_PIXEL_SCALE
+from mirar.pipelines.gmos.config.constants import (
+    GMOS_ANET_INDEX_SERIES,
+    GMOS_PIXEL_SCALE,
+)
 from mirar.pipelines.gmos.generator import (
     gmos_astrometric_catalog_generator,
     gmos_photometric_catalog_generator,
@@ -91,6 +94,7 @@ calibrate = [
         output_sub_dir="anet",
         timeout=120,
         use_sextractor=True,
+        index_series=GMOS_ANET_INDEX_SERIES,
     ),
     Sextractor(
         output_sub_dir="photprocess",

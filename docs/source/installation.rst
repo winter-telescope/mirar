@@ -186,16 +186,48 @@ Astrometry.net
 
 For either option 1 or 2, you will have installed astrometry.net. This solves astrometry for images, but requires 'index files' to work. These are files that contain information about the positions of stars in the sky, and are used to match the stars in your images to known star positions. Index files need to be downloaded separately, and are not included in the astrometry.net installation.
 
-You can grab index files from
-`this directory <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_
+Index files come in series, each built from a different reference catalogue, and
+each series is served from its own directory. Every pipeline states the series it
+solves against, so you only need the series used by the pipelines you run. Most use
+the Gaia-based 5200 series, served from
+`the NERSC portal <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_,
+while winter uses the older 4200 series from
+`data.astrometry.net <http://data.astrometry.net/4200/>`_.
 
-Once you have downloaded the index files, you can specify the path to the astrometry.net folder and the index files via envirnoment variable:
+Set the base directory via environment variable, and give each series its own
+subdirectory underneath it, named after the series:
 
 .. code-block:: bash
 
     export ANET_INDEX_DIR=/path/to/astrometry-net
 
-or specify this via the .env file in the root of the mirar repository.
+.. code-block:: text
+
+    /path/to/astrometry-net/
+        4200/
+            index-4202-00.fits
+            index-4203-00.fits
+            ...
+        5200/
+            index-5200-43.fits
+            ...
+
+or specify the variable via the .env file in the root of the mirar repository.
+
+This layout mirrors the download server, so a series can be fetched straight into
+its own subdirectory. It also keeps the series apart, which matters because the
+solution inherits the reference frame of whichever index solved it. That is why each
+pipeline names its series with ``AstrometryNet(index_series=...)`` rather than taking
+whichever index files happen to be present, and it matters most for the pipelines
+whose final astrometry comes from astrometry.net, with no Scamp afterwards to re-tie
+it. Each pipeline's choice is a constant in its own constants module, for example
+``LMI_ANET_INDEX_SERIES``, so it can be changed in one place.
+
+Within a series, which files you need depends on your field of view: the index name
+encodes the angular scale of the star groups it holds, and you want files whose scale
+is a little smaller than your images. A pipeline that passes ``scale_bounds`` lets
+astrometry.net skip the index files that cannot match, so only the relevant ones are
+searched.
 
 PostgreSQL
 ^^^^^^^^^^

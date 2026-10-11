@@ -42,7 +42,7 @@ from mirar.pipelines.winter.config import (
     winter_calhunter_directory,
     winter_fritz_config,
 )
-from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT, WINTER_ANET_INDEX_SERIES
 from mirar.pipelines.winter.generator import (
     apply_rb_to_table,
     apply_xrb_to_table,
@@ -523,6 +523,7 @@ astrometry_net = [
         use_sextractor=True,
         parity="neg",
         search_radius_deg=5.0,
+        index_series=WINTER_ANET_INDEX_SERIES,
         sextractor_config_path=winter_anet_sextractor_config_path_generator,
         use_weight=True,
         timeout=120,
