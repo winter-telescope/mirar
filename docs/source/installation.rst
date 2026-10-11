@@ -187,10 +187,11 @@ Astrometry.net
 For either option 1 or 2, you will have installed astrometry.net. This solves astrometry for images, but requires 'index files' to work. These are files that contain information about the positions of stars in the sky, and are used to match the stars in your images to known star positions. Index files need to be downloaded separately, and are not included in the astrometry.net installation.
 
 Index files come in series, each built from a different reference catalogue, and
-each series is served from its own directory. mirar defaults to the 5200 series,
-which is built from Gaia DR2, and which you can grab from
-`this directory <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_.
-The older series are listed at `data.astrometry.net <http://data.astrometry.net>`_.
+each series is served from its own directory. mirar defaults to the 4200 series,
+which is the one the WINTER machine runs, and which you can grab from
+`data.astrometry.net <http://data.astrometry.net/4200/>`_. The newer Gaia-based 5200
+series is served from
+`the NERSC portal <https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/>`_.
 
 Set the base directory via environment variable, and give each series its own
 subdirectory underneath it, named after the series:
@@ -202,12 +203,12 @@ subdirectory underneath it, named after the series:
 .. code-block:: text
 
     /path/to/astrometry-net/
-        5200/
-            index-5200-43.fits
-            index-5201-04.fits
-            ...
         4200/
             index-4202-00.fits
+            index-4203-00.fits
+            ...
+        5200/
+            index-5200-43.fits
             ...
 
 or specify the variable via the .env file in the root of the mirar repository.
@@ -215,7 +216,7 @@ or specify the variable via the .env file in the root of the mirar repository.
 This layout mirrors the download server, so a series can be fetched straight into
 its own subdirectory. It also keeps the series apart, which matters because the
 solution inherits the reference frame of whichever index solved it. A pipeline can
-pick its series with ``AstrometryNet(index_series="4200")``.
+pick its series with ``AstrometryNet(index_series="5200")``.
 
 Within a series, which files you need depends on your field of view: the index name
 encodes the angular scale of the star groups it holds, and you want files whose scale

@@ -111,6 +111,8 @@ astrometry = [
         downsample=2,
         timeout=60,
         use_sextractor=True,
+        # The 6 arcmin field needs quads below 4 arcmin, which only 5200 covers here
+        index_series="5200",
     ),
     Sextractor(
         output_sub_dir="sextractor",
