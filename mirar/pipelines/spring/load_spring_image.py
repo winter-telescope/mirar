@@ -152,7 +152,7 @@ def load_spring_stack(
     weight_pathname = wghtpath.split("/spring/")[-1]
     new_weightpath = Path(dirname) / weight_pathname
     header["WGHTPATH"] = new_weightpath.as_posix()
-    header["SAVEPATH"] = path
+    header["SAVEPATH"] = str(path)
 
     if "PSFCAT" in header.keys():
         new_psfpath = Path(dirname) / header["PSFCAT"].split("/spring/")[-1]

@@ -43,7 +43,7 @@ def export_image_to_db(
 
     with fits.open(path, "update") as hdul:
         header = hdul[0].header  # pylint: disable=no-member
-        header[LATEST_SAVE_KEY] = path
+        header[LATEST_SAVE_KEY] = str(path)
         sequence_key_names, sequence_values = pg_user.export_to_db(
             db_table=db_table, value_dict=header, duplicate_protocol="ignore"
         )

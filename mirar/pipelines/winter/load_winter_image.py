@@ -285,7 +285,7 @@ def load_winter_stack(
     weight_pathname = wghtpath.split("/winter/")[-1]
     new_weightpath = Path(dirname) / weight_pathname
     header["WGHTPATH"] = new_weightpath.as_posix()
-    header["SAVEPATH"] = path
+    header["SAVEPATH"] = str(path)
 
     if "PSFCAT" in header.keys():
         new_psfpath = Path(dirname) / header["PSFCAT"].split("/winter/")[-1]
@@ -377,7 +377,7 @@ def load_raw_winter_mef(
 
     img_name = Path(path).name
     primary_header[BASE_NAME_KEY] = img_name
-    primary_header[RAW_IMG_KEY] = path
+    primary_header[RAW_IMG_KEY] = str(path)
 
     corrupted = False
 

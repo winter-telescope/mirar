@@ -354,7 +354,7 @@ class ImageHandler:
         """
         data, header = open_fits(path)
         if RAW_IMG_KEY not in header:
-            header[RAW_IMG_KEY] = path
+            header[RAW_IMG_KEY] = str(path)
         if BASE_NAME_KEY not in header:
             header[BASE_NAME_KEY] = Path(path).name
         return Image(data=data, header=header)
