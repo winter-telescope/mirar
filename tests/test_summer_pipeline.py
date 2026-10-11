@@ -5,10 +5,13 @@ Tests for summer reduction
 import logging
 import shutil
 
+import pandas as pd
+
 from mirar.data import Dataset, ImageBatch
 from mirar.paths import get_output_dir
 from mirar.pipelines import get_pipeline
 from mirar.testing import BaseTestCase
+from mirar.utils.run_stats import RUNTIME_COLUMNS
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,41 @@ pipeline = get_pipeline(
 )
 
 
+def check_run_stats(test_case: BaseTestCase, stats_df: pd.DataFrame):
+    """
+    Check the statistics written by a pipeline run
+
+    The runtimes themselves depend on the machine, so only the shape of the table
+    and the relations between its columns are checked.
+
+    :param test_case: Test case to assert with
+    :param stats_df: Statistics written by the run
+    :return: None
+    """
+    processors = pipeline.all_pipeline_configurations["test"]
+
+    test_case.assertEqual(
+        list(stats_df["processor"]), [x.__class__.__name__ for x in processors]
+    )
+    test_case.assertEqual(list(stats_df["step"]), list(range(1, len(processors) + 1)))
+    test_case.assertEqual(set(stats_df["instrument"]), {"summer"})
+    test_case.assertEqual(set(stats_df["night"]), {20220402})
+    test_case.assertEqual(set(stats_df["configuration"]), {"test"})
+
+    # Nothing should have failed, since the run did not catch errors
+    test_case.assertEqual(stats_df["n_errors"].sum(), 0)
+
+    test_case.assertTrue((stats_df[RUNTIME_COLUMNS] >= 0.0).all().all())
+    test_case.assertGreater(stats_df["runtime"].sum(), 0.0)
+
+    # A step is normalised by the blocks it handled, which for a loader are its output
+    n_blocks = stats_df[["n_input_blocks", "n_output_blocks"]].max(axis=1)
+    expected_per_block = (stats_df["runtime"] / n_blocks).where(n_blocks > 0, 0.0)
+
+    for value, expected in zip(stats_df["runtime_per_block"], expected_per_block):
+        test_case.assertAlmostEqual(value, expected, delta=0.01)
+
+
 class TestSummerPipeline(BaseTestCase):
     """
     Module for testing summer pipeline
@@ -68,9 +106,14 @@ class TestSummerPipeline(BaseTestCase):
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
 
+        # Read the run statistics before the output directory holding them is deleted
+        stats_df = pd.read_csv(pipeline.get_stats_output_path(), sep="\t")
+
         # Cleanup - delete non-empty ouptut dir
         output_dir = get_output_dir(dir_root="summer/20220402")
         shutil.rmtree(output_dir)
+
+        check_run_stats(self, stats_df)
 
         self.assertEqual(len(res[0]), 1)
 

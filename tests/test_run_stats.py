@@ -1,11 +1,12 @@
 """
 Tests for the run statistics in ..module::mirar.utils.run_stats
+
+A real pipeline run is checked in ..module::tests.test_summer_pipeline. These tests
+only cover the arithmetic, and the cases a successful run does not reach.
 """
 
 import logging
 from pathlib import Path
-
-import pandas as pd
 
 from mirar.processors.base_processor import BaseProcessor
 from mirar.testing import BaseTestCase
@@ -45,22 +46,6 @@ class DummyProcessor(BaseProcessor):
         return batch
 
 
-def make_processor() -> DummyProcessor:
-    """
-    Build a processor carrying the results of a notional run
-
-    :return: Processor with its latest run recorded
-    """
-    processor = DummyProcessor()
-    processor.latest_runtime = 10.0
-    processor.latest_batch_runtimes = [6.0, 9.0]
-    processor.latest_n_input_batches = 2
-    processor.latest_n_input_blocks = 8
-    processor.latest_n_output_batches = 2
-    processor.latest_n_output_blocks = 6
-    return processor
-
-
 class TestRunStats(BaseTestCase):
     """
     Class for testing the collection of pipeline run statistics
@@ -71,35 +56,25 @@ class TestRunStats(BaseTestCase):
 
     def test_latest_stats(self):
         """
-        Test that a processor reports its latest run correctly
+        Test that the statistics are derived correctly from a notional run
+
+        The runtimes of a real run are not known in advance, so this is the only
+        place the summed and maximum batch runtimes can be checked against a
+        known answer.
 
         :return: None
         """
         self.logger.info("\n\n Testing processor statistics \n\n")
 
-        self.assertEqual(make_processor().latest_stats(), expected_stats)
+        processor = DummyProcessor()
+        processor.latest_runtime = 10.0
+        processor.latest_batch_runtimes = [6.0, 9.0]
+        processor.latest_n_input_batches = 2
+        processor.latest_n_input_blocks = 8
+        processor.latest_n_output_batches = 2
+        processor.latest_n_output_blocks = 6
 
-    def test_n_cpu_capped_by_batches(self):
-        """
-        Test that the thread count reported is the one actually used
-
-        :return: None
-        """
-        processor = make_processor()
-        processor.latest_n_input_batches = 7
-
-        self.assertEqual(processor.latest_stats()["n_cpu"], processor.max_n_cpu)
-
-    def test_loader_blocks(self):
-        """
-        Test that a step which creates its own blocks is still normalised
-
-        :return: None
-        """
-        processor = make_processor()
-        processor.latest_n_input_blocks = 0
-
-        self.assertEqual(processor.latest_stats()["runtime_per_block"], 10.0 / 6.0)
+        self.assertEqual(processor.latest_stats(), expected_stats)
 
     def test_no_blocks(self):
         """
@@ -112,54 +87,14 @@ class TestRunStats(BaseTestCase):
         self.assertEqual(processor.latest_stats()["runtime_per_block"], 0.0)
         self.assertEqual(processor.latest_stats()["n_cpu"], 0)
 
-    def test_add_step(self):
-        """
-        Test that a recorded step carries both the run and the step details
-
-        :return: None
-        """
-        self.logger.info("\n\n Testing run statistics \n\n")
-
-        run_stats = RunStats(instrument="dummy", night="20230726")
-        run_stats.add_step(configuration="test", step=1, processor=make_processor())
-        run_stats.add_step(configuration="test", step=2, processor=make_processor())
-
-        stats_df = run_stats.to_dataframe()
-
-        self.assertEqual(len(stats_df), 2)
-        self.assertEqual(list(stats_df["step"]), [1, 2])
-        self.assertEqual(list(stats_df["configuration"]), ["test", "test"])
-        self.assertEqual(set(stats_df["instrument"]), {"dummy"})
-        self.assertEqual(set(stats_df["night"]), {"20230726"})
-        self.assertEqual(run_stats.total_runtime, 20.0)
-
-        for key, value in expected_stats.items():
-            self.assertEqual(stats_df.iloc[0][key], value)
-
-    def test_write_tsv(self):
-        """
-        Test that the statistics survive a round trip through a tsv
-
-        :return: None
-        """
-        run_stats = RunStats(instrument="dummy", night="20230726")
-        run_stats.add_step(configuration="test", step=1, processor=make_processor())
-
-        output_path = Path(self.temp_dir.name) / "20230726_stats.tsv"
-        run_stats.summarise_run_stats(output_path=output_path)
-
-        reloaded = pd.read_csv(output_path, sep="\t")
-
-        self.assertEqual(len(reloaded), 1)
-        for key, value in expected_stats.items():
-            self.assertEqual(reloaded.iloc[0][key], value)
-
     def test_empty_run(self):
         """
         Test that a run with no steps still writes a file
 
         :return: None
         """
+        self.logger.info("\n\n Testing run statistics \n\n")
+
         run_stats = RunStats(instrument="dummy", night="20230726")
 
         output_path = Path(self.temp_dir.name) / "20230726_stats.tsv"
