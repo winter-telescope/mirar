@@ -33,7 +33,7 @@ def get_logger(level="INFO"):
 
 
 def export_image_to_db(
-    path: str, db_table=RefComponent, pg_user: PostgresUser | None = None
+    path: Path, db_table=RefComponent, pg_user: PostgresUser | None = None
 ):
     """
     Export a fits image to the database
@@ -71,5 +71,5 @@ if __name__ == "__main__":
 
     logger.info(f"Found {len(ref_imglist)} reference images in {output_dir}")
     for ind, ref_img in enumerate(ref_imglist):
-        export_image_to_db(ref_img)
+        export_image_to_db(Path(ref_img))
         logger.info(f"Exported {ref_img} to database : {ind+1}/{len(ref_imglist)}")

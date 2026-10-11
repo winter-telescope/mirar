@@ -40,7 +40,7 @@ class PSFPhotometry(BasePhotometryProcessor):
         self,
         image_cutout: np.ndarray,
         unc_image_cutout: np.ndarray,
-        psf_filename: str | Path,
+        psf_filename: Path,
     ) -> tuple[float, float, float, float, float]:
         """
         Function to perform PSF photometry on a cutout

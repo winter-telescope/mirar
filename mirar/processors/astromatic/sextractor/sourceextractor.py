@@ -132,14 +132,14 @@ def run_sextractor(images: Path | list, output_dir: Path, *args, **kwargs):
 
 def run_sextractor_single(  # pylint: disable=too-many-arguments
     img: Path,
-    output_dir: str | Path,
+    output_dir: Path,
     catalog_name: Optional[Path] = None,
     config: Path = default_config_path,
     parameters_name: Path = default_param_path,
     filter_name: Path = default_filter_name,
     starnnw_name: Path = default_starnnw_path,
     saturation: float | None = None,
-    weight_image: Optional[str | Path] = None,
+    weight_image: Optional[Path] = None,
     verbose_type: str = "QUIET",
     checkimage_name: Optional[str | list] = None,
     checkimage_type: Optional[str | list] = None,
@@ -174,10 +174,7 @@ def run_sextractor_single(  # pylint: disable=too-many-arguments
     """
     if catalog_name is None:
         image_name = Path(img).stem
-        catalog_name = f"{image_name}.cat"
-
-    if isinstance(catalog_name, str):
-        catalog_name = Path(catalog_name)
+        catalog_name = Path(f"{image_name}.cat")
 
     cmd = (
         f"sex {img} "
@@ -227,7 +224,7 @@ def run_sextractor_single(  # pylint: disable=too-many-arguments
         x_coords = output_catalog["X_IMAGE"]
         y_coords = output_catalog["Y_IMAGE"]
 
-        regions_path = catalog_name.as_posix() + ".reg"
+        regions_path = Path(f"{catalog_name}.reg")
 
         write_regions_file(
             regions_path=regions_path,
@@ -242,7 +239,7 @@ def run_sextractor_single(  # pylint: disable=too-many-arguments
 def run_sextractor_dual(  # pylint: disable=too-many-arguments
     det_image: Path,
     measure_image: Path,
-    output_dir: str | Path,
+    output_dir: Path,
     catalog_name: Optional[Path] = None,
     config: Path = default_config_path,
     parameters_name: Path = default_param_path,
@@ -281,9 +278,6 @@ def run_sextractor_dual(  # pylint: disable=too-many-arguments
     if catalog_name is None:
         image_name = Path(measure_image).stem
         catalog_name = Path(f"{image_name}.cat")
-
-    if isinstance(catalog_name, str):
-        catalog_name = Path(catalog_name)
 
     cmd = (
         f"sex {det_image},{measure_image} "

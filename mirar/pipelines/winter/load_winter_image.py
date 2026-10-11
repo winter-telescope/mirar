@@ -269,7 +269,7 @@ def clean_header(header: fits.Header) -> fits.Header:
 
 
 def load_winter_stack(
-    path: str | Path,
+    path: Path,
 ) -> Image:
     """
     Load proc image
@@ -280,7 +280,7 @@ def load_winter_stack(
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
 
-    dirname = path.split("/winter/")[0] + "/winter/"
+    dirname = str(path).split("/winter/", maxsplit=1)[0] + "/winter/"
     wghtpath = header["WGHTPATH"]
     weight_pathname = wghtpath.split("/winter/")[-1]
     new_weightpath = Path(dirname) / weight_pathname
@@ -304,7 +304,7 @@ def load_winter_stack(
     return Image(data=data, header=header)
 
 
-def load_astrometried_winter_image(path: str | Path) -> Image:
+def load_astrometried_winter_image(path: Path) -> Image:
     """
     Load astrometried image
 
@@ -321,7 +321,7 @@ def load_astrometried_winter_image(path: str | Path) -> Image:
 
 
 def load_stacked_winter_image(
-    path: str | Path,
+    path: Path,
 ) -> tuple[np.ndarray, fits.Header]:
     """
     Load proc image
@@ -332,7 +332,7 @@ def load_stacked_winter_image(
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
 
-    if "weight" in path:
+    if "weight" in str(path):
         header[OBSCLASS_KEY] = "weight"
 
         header["COADDS"] = 1
@@ -349,7 +349,7 @@ def load_stacked_winter_image(
 
 
 def load_test_winter_image(
-    path: str | Path,
+    path: Path,
 ) -> Image:
     """
     Load test WINTER image
@@ -365,7 +365,7 @@ def load_test_winter_image(
 
 
 def load_raw_winter_mef(
-    path: str | Path,
+    path: Path,
 ) -> tuple[astropy.io.fits.Header, list[np.ndarray], list[astropy.io.fits.Header]]:
     """
     Load mef image.
@@ -459,7 +459,7 @@ def load_raw_winter_mef(
 
 
 def load_winter_mef_image(
-    path: str | Path,
+    path: Path,
 ) -> list[Image]:
     """
     Function to load winter mef images

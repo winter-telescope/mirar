@@ -192,7 +192,7 @@ class Monitor:
         if cal_requirements is not None:
             try:
                 self.archival_cals = find_required_cals(
-                    latest_dir=str(self.raw_image_directory),
+                    latest_dir=self.raw_image_directory,
                     night=night,
                     open_f=self.pipeline.unpack_raw_image,
                     requirements=cal_requirements,

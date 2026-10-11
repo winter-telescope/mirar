@@ -29,7 +29,7 @@ class BaseMask(BaseImageProcessor, ABC):
     def __init__(
         self,
         write_masked_pixels_to_file: bool = False,
-        output_dir: str | Path = "mask",
+        output_dir: str = "mask",
         only_write_mask: bool = False,
     ):
         super().__init__()
@@ -101,10 +101,10 @@ class MaskPixelsFromPath(BaseMask):
 
     def __init__(
         self,
-        mask_path: str | Path | None = None,
+        mask_path: Path | None = None,
         mask_path_key: str | None = None,
         write_masked_pixels_to_file: bool = False,
-        output_dir: str | Path = "mask",
+        output_dir: str = "mask",
         only_write_mask: bool = False,
     ):
         super().__init__(
@@ -185,7 +185,7 @@ class MaskPixelsFromFunction(BaseMask):
         self,
         mask_function: Callable[[Image], np.ndarray],
         write_masked_pixels_to_file: bool = False,
-        output_dir: str | Path = "mask",
+        output_dir: str = "mask",
         only_write_mask: bool = False,
     ):
         super().__init__(
@@ -220,7 +220,7 @@ class MaskAboveThreshold(BaseMask):
         threshold: float | None = None,
         threshold_key: str | None = None,
         write_masked_pixels_to_file: bool = False,
-        output_dir: str | Path = "mask",
+        output_dir: str = "mask",
         only_write_mask: bool = False,
     ):
         """
@@ -269,7 +269,7 @@ class MaskPixelsFromWCS(BaseMask):
         mask_pixels_dec: float | list[float] | None = None,
         mask_file_key: str = FITS_MASK_KEY,
         write_masked_pixels_to_file: bool = False,
-        output_dir: str | Path = "mask",
+        output_dir: str = "mask",
         only_write_mask: bool = False,
     ):
         super().__init__(
@@ -337,7 +337,7 @@ class WriteMaskedCoordsToFile(BaseMask):
 
     base_key = "writemaskedcoords"
 
-    def __init__(self, output_dir: str | Path = "mask", only_write_mask: bool = False):
+    def __init__(self, output_dir: str = "mask", only_write_mask: bool = False):
         super().__init__(
             write_masked_pixels_to_file=True,
             output_dir=output_dir,

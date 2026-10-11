@@ -4,6 +4,7 @@ Module for obtaining a Gaia/2Mass catalog
 
 import logging
 from abc import ABC
+from pathlib import Path
 from typing import Optional
 
 import astropy.table
@@ -35,7 +36,7 @@ class BaseGaia2Mass(BaseCatalog, ABC):
         filter_name: str = "j",
         snr_threshold: float = 5,
         trim: bool = False,
-        image_catalog_path: Optional[str] = None,
+        image_catalog_path: Optional[Path] = None,
         acceptable_j_ph_quals: str | list[str] | None = None,
         acceptable_h_ph_quals: str | list[str] | None = None,
         acceptable_k_ph_quals: str | list[str] | None = None,

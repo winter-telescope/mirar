@@ -33,7 +33,7 @@ from mirar.pipelines.wasp.config.constants import (
 logger = logging.getLogger(__name__)
 
 
-def load_raw_wasp_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
+def load_raw_wasp_fits(path: Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
     """
     Function to load a raw LT image
 
@@ -92,7 +92,7 @@ def load_raw_wasp_fits(path: str | Path) -> tuple[np.ndarray, astropy.io.fits.He
     return data, header
 
 
-def load_raw_wasp_image(path: str | Path) -> Image:
+def load_raw_wasp_image(path: Path) -> Image:
     """
     Function to load a raw WASP image
 

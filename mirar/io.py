@@ -58,7 +58,7 @@ def create_compressed_fits(
 
 
 def save_hdu_as_fits(
-    hdu: fits.PrimaryHDU | fits.CompImageHDU, path: str | Path, overwrite: bool = True
+    hdu: fits.PrimaryHDU | fits.CompImageHDU, path: Path, overwrite: bool = True
 ):
     """
     Wrapper function to save an astropy hdu to file
@@ -75,7 +75,7 @@ def save_hdu_as_fits(
 def save_to_path(
     data: np.ndarray,
     header: fits.Header | None,
-    path: str | Path,
+    path: Path,
     overwrite: bool = True,
     compress: bool = False,
 ):
@@ -112,7 +112,7 @@ def save_mef_to_path(data_list, header_list, primary_header, path):
     hdulist.writeto(path, overwrite=True)
 
 
-def open_compressed_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
+def open_compressed_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
     """
     Opens a compressed fits file and returns the data and header
 
@@ -131,7 +131,7 @@ def open_compressed_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
     return extension_data_list[0], extension_header_list[0]
 
 
-def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
+def open_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
     """
     Function to open a fits file saved to <path>
 
@@ -172,7 +172,7 @@ def open_fits(path: str | Path) -> tuple[np.ndarray, fits.Header]:
 
 def save_fits(
     image: Image,
-    path: str | Path,
+    path: Path,
     compress: bool = False,
 ):
     """
@@ -195,8 +195,8 @@ def save_fits(
 
 
 def open_raw_image(
-    path: str | Path,
-    open_f: Callable[[str | Path], tuple[np.ndarray, fits.Header]] = open_fits,
+    path: Path,
+    open_f: Callable[[Path], tuple[np.ndarray, fits.Header]] = open_fits,
 ) -> Image:
     """
     Function to open a raw image as an Image object
@@ -218,7 +218,7 @@ def open_raw_image(
 
 
 def open_mef_fits(
-    path: str | Path,
+    path: Path,
 ) -> tuple[fits.Header, list[np.ndarray], list[fits.Header]]:
     """
     Function to open a MEF fits file saved to <path>
@@ -316,9 +316,9 @@ def tag_mef_extension_file_headers(
 
 
 def open_mef_image(
-    path: str | Path,
+    path: Path,
     open_f: Callable[
-        [str | Path], tuple[fits.Header, list[np.ndarray], list[fits.Header]]
+        [Path], tuple[fits.Header, list[np.ndarray], list[fits.Header]]
     ] = open_mef_fits,
     extension_key: str | None = None,
 ) -> list[Image]:
@@ -356,7 +356,7 @@ def open_mef_image(
     return split_images_list
 
 
-def check_file_is_complete(path: str) -> bool:
+def check_file_is_complete(path: Path) -> bool:
     """
     Function to check whether a fits file is as large as expected.
     Useful to verify with e.g rsync, where files can be partially transferred

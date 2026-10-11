@@ -36,7 +36,7 @@ class RegionsWriter(BaseSourceProcessor):
         self,
         output_dir_name: Optional[str] = None,
         region_pix_radius: float = 8,
-        output_dir: str | Path = base_output_dir,
+        output_dir: Path = base_output_dir,
         use_ra_dec: bool = True,
     ):
         super().__init__()

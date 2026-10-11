@@ -186,7 +186,7 @@ class BaseReferenceGenerator:
         return ref_image
 
     @staticmethod
-    def get_output_path(output_dir: str | Path, base_name: str) -> Path:
+    def get_output_path(output_dir: Path, base_name: str) -> Path:
         """
         Get output path
 

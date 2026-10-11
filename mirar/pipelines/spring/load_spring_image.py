@@ -25,7 +25,7 @@ from mirar.processors.skyportal import SNCOSMO_KEY
 logger = logging.getLogger(__name__)
 
 
-def load_raw_spring_fits(path: str | Path):
+def load_raw_spring_fits(path: Path):
     data, header = open_fits(path)
 
     header.remove("BITPIX", ignore_missing=True)
@@ -129,12 +129,12 @@ def load_raw_spring_fits(path: str | Path):
     return data, header
 
 
-def load_raw_spring_image(path: str | Path) -> Image:
+def load_raw_spring_image(path: Path) -> Image:
     return open_raw_image(path, load_raw_spring_fits)
 
 
 def load_spring_stack(
-    path: str | Path,
+    path: Path,
 ) -> Image:
     """
     Load proc image
@@ -147,7 +147,7 @@ def load_spring_stack(
     logger.debug(f"Loading {path}")
     data, header = open_fits(path)
 
-    dirname = path.split("/spring/")[0] + "/spring/"
+    dirname = str(path).split("/spring/", maxsplit=1)[0] + "/spring/"
     wghtpath = header["WGHTPATH"]
     weight_pathname = wghtpath.split("/spring/")[-1]
     new_weightpath = Path(dirname) / weight_pathname

@@ -38,7 +38,7 @@ class SourceWriter(BaseSourceProcessor):
     def __init__(
         self,
         output_dir_name: Optional[str] = None,
-        output_dir: str | Path = base_output_dir,
+        output_dir: Path = base_output_dir,
     ):
         super().__init__()
         self.output_dir_name = output_dir_name

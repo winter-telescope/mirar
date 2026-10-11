@@ -208,7 +208,7 @@ def clean_cal_header(
 
 
 def load_raw_sedmv2_mef(
-    path: str | Path,
+    path: Path,
 ) -> tuple[fits.Header, list[np.ndarray], list[fits.Header]]:
     """
     Load mef image
@@ -256,7 +256,7 @@ def load_raw_sedmv2_mef(
 
 
 def load_sedmv2_mef_image(
-    path: str | Path,
+    path: Path,
 ) -> list[Image]:
     """
     Function to load sedmv2 mef images

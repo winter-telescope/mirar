@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def plot_fits_image(
     image: Image,
-    savedir: str | Path,
+    savedir: Path,
     regions_wcs_coords: List[Tuple[float, float]] | None = None,
     plot_format: str = "png",
     title_fields: List[str] | None = None,
