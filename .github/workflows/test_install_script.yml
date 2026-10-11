@@ -44,3 +44,21 @@ jobs:
         run: |
           conda activate mirar
           make -C docs/ doctest
+
+      # The cached test values are platform-specific, so macOS needs its own run
+      - name: Set up ssh for the test data
+        if: runner.os == 'macOS'
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: |
+            ${{ secrets.WIRC_STARTERPACK_TOKEN }}
+
+      - name: Run a pipeline test
+        if: runner.os == 'macOS'
+        shell: bash -el {0}
+        env:
+          OUTPUT_DATA_DIR: /Users/runner/
+          TESTDATA_CHECK: "True"
+        run: |
+          conda activate mirar
+          python -m unittest tests.test_summer_imsub_pipeline
