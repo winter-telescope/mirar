@@ -12,29 +12,19 @@ from mirar.pipelines.sedmv2.blocks import process_transient_using_magauto
 from mirar.pipelines.sedmv2.load_sedmv2_image import load_sedmv2_mef_image
 from mirar.pipelines.sedmv2.sedmv2_pipeline import SEDMv2Pipeline
 from mirar.processors.utils import MEFLoader
-from mirar.testing import BaseTestCase
+from mirar.testing import (
+    BaseTestCase,
+    load_expected_values,
+    save_expected_values,
+    update_expected_values,
+)
 
 logger = logging.getLogger(__name__)
 
 test_data_dir = get_test_data_dir()
 
-expected_zp = {
-    "ZP_4.0": 25.361940644563955,
-    "ZP_4.0_std": 0.14543835052966758,
-    "ZP_4.0_nstars": 42,
-    "ZP_6.0": 26.15083838597253,
-    "ZP_6.0_std": 0.13018183633088223,
-    "ZP_6.0_nstars": 42,
-    "ZP_8.0": 26.660435903167723,
-    "ZP_8.0_std": 0.10853873002223657,
-    "ZP_8.0_nstars": 42,
-    "ZP_10.0": 27.001171906316845,
-    "ZP_10.0_std": 0.08744721611679122,
-    "ZP_10.0_nstars": 42,
-    "ZP_AUTO": 27.41527115525941,
-    "ZP_AUTO_std": 0.19502336722121372,
-    "ZP_AUTO_nstars": 37,
-}
+EXPECTED = load_expected_values("sedmv2_transient")
+expected_zp = EXPECTED.get("expected_zp", {})
 
 test_configuration = [
     MEFLoader(
@@ -70,6 +60,7 @@ class TestSEDMv2TransientPipeline(BaseTestCase):
         Returns:
 
         """
+        self.check_expected_values("sedmv2_transient", EXPECTED)
         self.logger.info("\n\n Testing SEDMv2 transient pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
@@ -82,6 +73,12 @@ class TestSEDMv2TransientPipeline(BaseTestCase):
 
         header = res[0][0].get_header()
 
+        if update_expected_values():
+            save_expected_values(
+                "sedmv2_transient", {"expected_zp": {x: header[x] for x in expected_zp}}
+            )
+            return
+
         for key, value in expected_zp.items():
             if isinstance(value, float):
                 self.assertAlmostEqual(value, header[key], places=2)
@@ -91,22 +88,3 @@ class TestSEDMv2TransientPipeline(BaseTestCase):
                 raise TypeError(
                     f"Type for value ({type(value)} is neither float not int."
                 )
-
-
-if __name__ == "__main__":
-    print("Calculating latest ZP dictionary")
-
-    # Code to generate updated ZP dict of the results change
-
-    new_res, new_errorstack = pipeline.reduce_images(
-        Dataset(ImageBatch()), catch_all_errors=False
-    )
-
-    new_header = new_res[0][0].get_header()
-
-    new_exp = "expected_zp = { \n"  # pylint: disable=C0103
-    for header_key in new_header.keys():
-        if "ZP_" in header_key:
-            new_exp += f'    "{header_key}": {new_header[header_key]}, \n'
-    new_exp += "}"
-    print(new_exp)
