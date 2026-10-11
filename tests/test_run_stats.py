@@ -9,7 +9,8 @@ import json
 import logging
 from pathlib import Path
 
-from mirar.processors.base_processor import BaseProcessor
+from mirar.data import ImageBatch
+from mirar.processors.base_processor import BaseImageProcessor
 from mirar.testing import BaseTestCase
 from mirar.utils.run_stats import RunStats, get_git_commit, read_run_stats
 
@@ -31,9 +32,13 @@ expected_stats = {
 }
 
 
-class DummyProcessor(BaseProcessor):
+class DummyProcessor(BaseImageProcessor):
     """
     Minimal processor, used to check the statistics a processor reports
+
+    Every subclass of :class:`~mirar.processors.base_processor.BaseProcessor` is
+    checked by ..module::tests.test_classes, this one included, so it implements
+    the methods a real processor is required to have.
     """
 
     base_key = "dummystats"
@@ -43,7 +48,7 @@ class DummyProcessor(BaseProcessor):
     def description(self) -> str:
         return "Dummy processor for testing run statistics"
 
-    def _apply(self, batch):
+    def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         return batch
 
 
