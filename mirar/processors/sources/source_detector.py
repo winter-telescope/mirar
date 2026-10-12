@@ -3,7 +3,6 @@ Module to detect candidates in an image
 """
 
 import logging
-import os
 from pathlib import Path
 
 import numpy as np
@@ -40,10 +39,10 @@ logger = logging.getLogger(__name__)
 
 def generate_candidates_table(
     diff: Image,
-    scorr_catalog_path: str | Path,
-    sci_resamp_image_path: str | Path,
-    ref_resamp_image_path: str | Path,
-    diff_scorr_path: str | Path,
+    scorr_catalog_path: Path,
+    sci_resamp_image_path: Path,
+    ref_resamp_image_path: Path,
+    diff_scorr_path: Path,
     isdiffpos: bool = True,
 ) -> pd.DataFrame:
     """

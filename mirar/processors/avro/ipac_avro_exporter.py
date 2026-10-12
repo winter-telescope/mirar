@@ -9,7 +9,6 @@ from pathlib import Path
 import confluent_kafka
 import fastavro
 import pandas as pd
-from fastavro.types import Schema
 
 from mirar.data import SourceTable
 from mirar.paths import BASE_NAME_KEY, SOURCE_HISTORY_KEY
@@ -33,7 +32,7 @@ class IPACAvroExporter(BaseAvroExporter):
         self.alert_schema, self.candidate_schema, self.prv_schema = self._load_schemas()
         self.topic_prefix = topic_prefix
 
-    def _load_schemas(self) -> tuple[Schema, Schema, Schema]:
+    def _load_schemas(self) -> tuple[dict, dict, dict]:
         """
         Unpack an IPAC-style avro schema (alert, alert.candidate,
         & alert.prv_candidate) its three components
@@ -54,7 +53,7 @@ class IPACAvroExporter(BaseAvroExporter):
         return alert_schema, candidate_schema, prv_candidate_schema
 
     @staticmethod
-    def fill_schema(schema: Schema, row: pd.Series, metadata: dict) -> dict:
+    def fill_schema(schema: dict, row: pd.Series, metadata: dict) -> dict:
         """
         Fill an avro schema with data from a row of a pandas dataframe
 

@@ -3,7 +3,6 @@ Module to run the summer data reduction pipeline
 """
 
 import logging
-import os
 from pathlib import Path
 
 from mirar.data import Image
@@ -60,14 +59,14 @@ class SummerPipeline(Pipeline):
     def download_raw_images_for_night(night: str | int):
         download_via_ssh(
             server="winter.caltech.edu",
-            base_dir="/data/loki/raw_data/summer",
+            base_dir=Path("/data/loki/raw_data/summer"),
             night=night,
             pipeline=PIPELINE_NAME,
             server_sub_dir="raw",
         )
 
     @staticmethod
-    def _load_raw_image(path: str | Path) -> Image | list[Image]:
+    def _load_raw_image(path: Path) -> Image | list[Image]:
         return load_raw_summer_image(path)
 
     def set_up_pipeline(self):

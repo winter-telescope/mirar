@@ -96,10 +96,10 @@ def update_requirements(
 
 
 def find_required_cals(
-    latest_dir: str | Path,
+    latest_dir: Path,
     night: str,
     requirements: list[CalRequirement],
-    open_f: Callable[[str], Image] = open_raw_image,
+    open_f: Callable[[Path], Image | list[Image]] = open_raw_image,
     images: ImageBatch = ImageBatch(),
     skip_latest_night: bool = False,
 ) -> ImageBatch:
@@ -115,22 +115,22 @@ def find_required_cals(
     :return: Updated image batch
     """
 
-    path = Path(latest_dir)
+    logger.debug(f"Searching for archival images for {latest_dir}")
 
-    logger.debug(f"Searching for archival images for {path}")
+    parts = latest_dir.parts
 
-    split = latest_dir.split(night)
-
-    root = split[0]
-
-    if len(split) > 1:
-        subdir = split[1][1:]
+    # The night directory separates the archive root from any image subdirectory
+    if night in parts:
+        index = parts.index(night)
+        root = Path(*parts[:index])
+        subdir = Path(*parts[index + 1 :])
     else:
-        subdir = ""
+        root = latest_dir
+        subdir = Path()
 
     preceding_dirs = []
 
-    for dir_name in [x for x in Path(root).iterdir() if x.is_dir()]:
+    for dir_name in [x for x in root.iterdir() if x.is_dir()]:
         if dir_name.name[0] not in ["."]:
             if len(str(dir_name.name)) == len(str(night)):
                 try:
@@ -140,7 +140,7 @@ def find_required_cals(
                     pass
 
     if not skip_latest_night:
-        preceding_dirs.append(path.parent)
+        preceding_dirs.append(latest_dir.parent)
 
     ordered_nights = sorted(preceding_dirs)[::-1]
 
@@ -164,7 +164,7 @@ def find_required_cals(
         ordered_nights = ordered_nights[1:]
 
         try:
-            new_images = load_from_dir(str(dir_to_load), open_f=open_f)
+            new_images = load_from_dir(dir_to_load, open_f=open_f)
             requirements = update_requirements(requirements, new_images)
 
         except ImageNotFoundError:

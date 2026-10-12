@@ -59,7 +59,7 @@ REQUIRED_PARAMETERS = [
 
 
 def get_maglim(
-    bkg_rms_image_path: str | Path,
+    bkg_rms_image_path: Path,
     zeropoint: float | list[float],
     aperture_radius_pixels: float | list[float],
 ) -> float:

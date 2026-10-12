@@ -3,7 +3,6 @@ Module to run the SEDMv2 data reduction pipeline
 """
 
 import logging
-import os
 from pathlib import Path
 
 from mirar.data import Image
@@ -66,7 +65,7 @@ class SEDMv2Pipeline(Pipeline):
     def download_raw_images_for_night(night: str | int):
         download_via_ssh(
             server="jagati.caltech.edu",
-            base_dir="/data/viraj/winter_data/commissioning/raw/",
+            base_dir=Path("/data/viraj/winter_data/commissioning/raw/"),
             night=night,
             pipeline=PIPELINE_NAME,
         )
@@ -74,5 +73,5 @@ class SEDMv2Pipeline(Pipeline):
     @staticmethod
     # def _load_raw_image(path: str) -> tuple[np.ndarray, astropy.io.fits.header]:
     #   return load_raw_sedmv2_image(path)
-    def _load_raw_image(path: str | Path) -> Image | list[Image]:
+    def _load_raw_image(path: Path) -> Image | list[Image]:
         return open_mef_image(path, load_raw_sedmv2_mef)

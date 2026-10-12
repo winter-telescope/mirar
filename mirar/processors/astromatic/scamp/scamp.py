@@ -33,13 +33,13 @@ SCAMP_HEADER_KEY = "SCMPHEAD"
 
 
 def run_scamp(
-    scamp_list_path: str | Path,
+    scamp_list_path: Path,
     scamp_config_path: Path,
-    ast_ref_cat_path: str | Path,
-    output_dir: str | Path,
+    ast_ref_cat_path: Path,
+    output_dir: Path,
     timeout_seconds: float = 60.0,
     make_checkplots: bool = False,
-    checkplot_basename: str | Path = "scamp_checkplot",
+    checkplot_basename: Path = Path("scamp_checkplot"),
     checkplot_dev: str | None = None,
 ):
     """

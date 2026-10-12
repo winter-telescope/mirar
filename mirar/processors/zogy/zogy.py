@@ -137,7 +137,7 @@ class ZOGYPrepare(BaseImageProcessor):
         """
         return Path(get_output_dir(self.output_sub_dir, self.night_sub_dir))
 
-    def get_path(self, name: str | Path) -> Path:
+    def get_path(self, name: Path) -> Path:
         """
         Get output path for a file of name
 
@@ -147,7 +147,7 @@ class ZOGYPrepare(BaseImageProcessor):
         return self.get_sub_output_dir() / name
 
     def get_ast_fluxscale(
-        self, ref_catalog_name: str | Path, sci_catalog_name: str | Path
+        self, ref_catalog_name: Path, sci_catalog_name: Path
     ) -> tuple[float, float, float, float, float]:
         """
         Cross match science and reference data catalogs to get flux scaling factor and
@@ -418,8 +418,8 @@ class ZOGYPrepare(BaseImageProcessor):
             sci_rms_image = self.get_rms_image(image, sci_rms)
             ref_rms_image = self.get_rms_image(ref_img, ref_rms)
 
-            sci_rms_path = self.get_path(f"{sci_img_path}.unc.fits")
-            ref_rms_path = self.get_path(f"{ref_img_path}.unc.fits")
+            sci_rms_path = self.get_path(Path(f"{sci_img_path}.unc.fits"))
+            ref_rms_path = self.get_path(Path(f"{ref_img_path}.unc.fits"))
 
             self.save_fits(sci_rms_image, path=sci_rms_path)
             image[UNC_IMG_KEY] = sci_rms_path.as_posix()

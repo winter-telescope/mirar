@@ -4,8 +4,6 @@ Module containing WIRC-specific paths
 
 from pathlib import Path
 
-from fastavro.schema import load_schema
-
 from mirar.processors.astromatic.sextractor.config_type import (
     SextractorCandidateConfig,
     SextractorConfig,

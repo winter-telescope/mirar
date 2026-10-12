@@ -48,8 +48,8 @@ def unzip(zipped_list: list[str]) -> list[str]:
 
 
 def load_from_list(
-    img_list: list[str | Path],
-    open_f: Callable[[str | Path], Image | list[Image]],
+    img_list: list[Path],
+    open_f: Callable[[Path], Image | list[Image]],
 ) -> ImageBatch:
     """
     Load images from a list of files
@@ -85,8 +85,8 @@ def load_from_list(
 
 
 def load_from_dir(
-    input_dir: str | Path,
-    open_f: Callable[[str | Path], Image | list[Image]],
+    input_dir: Path,
+    open_f: Callable[[Path], Image | list[Image]],
 ) -> ImageBatch:
     """
     Function to load all images in a directory
@@ -109,7 +109,7 @@ def load_from_dir(
         logger.error(err)
         raise ImageNotFoundError(err)
 
-    return load_from_list(img_list, open_f)
+    return load_from_list([Path(x) for x in img_list], open_f)
 
 
 class ImageLoader(BaseImageProcessor):
@@ -123,8 +123,8 @@ class ImageLoader(BaseImageProcessor):
     def __init__(
         self,
         input_sub_dir: str = RAW_IMG_SUB_DIR,
-        input_img_dir: str | Path = base_raw_dir,
-        load_image: Callable[[str], Image | list[Image]] | None = None,
+        input_img_dir: Path = base_raw_dir,
+        load_image: Callable[[Path], Image | list[Image]] | None = None,
     ):
         super().__init__()
         self.input_sub_dir = input_sub_dir
@@ -159,7 +159,7 @@ class LoadImageFromHeader(BaseImageProcessor):
         self,
         header_key: str = RAW_IMG_KEY,
         copy_header_keys: str | list[str] | None = None,
-        load_image: Callable[[str | Path], Image] = open_raw_image,
+        load_image: Callable[[Path], Image] = open_raw_image,
     ):
         super().__init__()
         self.header_key = header_key
@@ -205,7 +205,7 @@ class ImageListLoader(BaseImageProcessor):
     def __init__(
         self,
         img_list: list[Path],
-        load_image: Callable[[str], Image | list[Image]] | None = None,
+        load_image: Callable[[Path], Image | list[Image]] | None = None,
     ):
         super().__init__()
         self.img_list = img_list

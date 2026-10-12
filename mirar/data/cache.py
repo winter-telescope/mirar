@@ -57,7 +57,7 @@ class Cache:
         logger.error(err)
         raise CacheError(err)
 
-    def set_cache_dir(self, cache_dir: Path | str):
+    def set_cache_dir(self, cache_dir: Path):
         """
         Function to set the cache directory
 

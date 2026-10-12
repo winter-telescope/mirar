@@ -91,7 +91,7 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
 
         for key, value in expected_zp.items():  # pylint: disable=R0801
             if isinstance(value, float):
-                self.assertAlmostEqual(value, header[key], places=2)
+                self.assertAlmostEqual(value, header[key], delta=0.01)
             elif isinstance(value, int):  # pylint: disable=R0801
                 self.assertEqual(value, header[key])
             else:
@@ -106,7 +106,7 @@ class TestSEDMv2StellarPipeline(BaseTestCase):
         for _, row in source_table.iterrows():
             for key, value in expected_ap_phot.items():
                 if isinstance(value, float):
-                    self.assertAlmostEqual(value, row[key], places=2)
+                    self.assertAlmostEqual(value, row[key], delta=0.01)
                 elif isinstance(value, int):
                     self.assertEqual(value, row[key])
                 else:

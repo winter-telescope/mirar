@@ -23,6 +23,8 @@ from mirar.processors.astromatic.sextractor.settings import (
 )
 from mirar.processors.astrometry.anet.anet import (
     ASTROMETRY_TIMEOUT,
+    DEFAULT_INDEX_SERIES,
+    check_index_coverage,
     run_astrometry_net_single,
 )
 from mirar.processors.base_processor import BaseImageProcessor
@@ -64,6 +66,7 @@ class AstrometryNet(BaseImageProcessor):
         write_regions: bool = True,
         cache: bool = False,
         no_tweak: bool = False,
+        index_series: str = DEFAULT_INDEX_SERIES,
     ):
         """
         :param output_sub_dir: subdirectory to output astrometry.net results
@@ -89,6 +92,10 @@ class AstrometryNet(BaseImageProcessor):
         :param sort_key_name: key for sorting sextractor catalog, defaults
         to MAG_AUTO, the default from astrometry.net
         :param no_tweak: do not calculate SIP distortion corrections
+        :param index_series: series of index files to solve against, which must be
+        in the matching subdirectory of the ANET_INDEX_DIR directory. The series sets
+        the reference catalogue, and therefore the frame of the solution, so pick it
+        deliberately for any pipeline whose final astrometry comes from astrometry.net
         """
         super().__init__()
 
@@ -115,12 +122,38 @@ class AstrometryNet(BaseImageProcessor):
 
         self.cache = cache
         self.no_tweak = no_tweak
+        self.index_series = index_series
+
+        # Checked against the first image solved, then not worth repeating
+        self.checked_index_coverage = False
 
     def description(self) -> str:
         return (
             "Processor to perform astrometric calibration "
             "locally with astrometry.net."
         )
+
+    def check_index_coverage(self, image: Image):
+        """
+        Check the index files cover the image scale, once per processor
+
+        The answer is the same for every image a processor solves, so it is only
+        worth working out and reporting for the first of them.
+
+        :param image: Image about to be solved
+        :return: None
+        """
+        if self.checked_index_coverage:
+            return
+
+        check_index_coverage(
+            index_series=self.index_series,
+            scale_bounds=self.scale_bounds,
+            scale_units=self.scale_units,
+            image_shape=image.get_data().shape,
+        )
+
+        self.checked_index_coverage = True
 
     def get_anet_output_dir(self) -> Path:
         """
@@ -146,12 +179,12 @@ class AstrometryNet(BaseImageProcessor):
         if sextractor_config_path is not None:
             if self.sextractor_params_path is None:
                 temp_params_path = get_temp_path(
-                    anet_out_dir, f"{image[BASE_NAME_KEY]}_sex_anet" f".params"
+                    anet_out_dir, Path(f"{image[BASE_NAME_KEY]}_sex_anet.params")
                 )
                 sextractor_params_path = temp_params_path
                 logger.debug(f"Writing parameters file to " f"{sextractor_params_path}")
                 write_param_file(
-                    temp_params_path.as_posix(),
+                    temp_params_path,
                     params=[self.x_image_key, self.y_image_key, self.sort_key_name],
                 )
                 sextractor_temp_files.append(temp_params_path)
@@ -164,11 +197,11 @@ class AstrometryNet(BaseImageProcessor):
             sextractor_config_dict["FILTER_NAME"] = self.sextractor_conv_path
             sextractor_config_dict["STARNNW_NAME"] = self.sextractor_starnnw_path
             temp_config_path = get_temp_path(
-                anet_out_dir, f"{image[BASE_NAME_KEY]}_sex_astrom_anet.sex"
+                anet_out_dir, Path(f"{image[BASE_NAME_KEY]}_sex_astrom_anet.sex")
             )
             write_sextractor_config_to_file(
                 config_dict=sextractor_config_dict,
-                config_filename=temp_config_path.as_posix(),
+                config_filename=temp_config_path,
             )
             sextractor_temp_files.append(temp_config_path)
             sextractor_config_path = temp_config_path
@@ -179,6 +212,8 @@ class AstrometryNet(BaseImageProcessor):
         anet_out_dir.mkdir(parents=True, exist_ok=True)
 
         assert len(batch) > 0, "Batch must contain at least one image"
+
+        self.check_index_coverage(batch[0])
 
         # Ensure that if a source-extractor config file is provided, it has the
         # correct PARAMETERS_NAME, FILTER_NAME and STARNNW_NAME.
@@ -222,6 +257,7 @@ class AstrometryNet(BaseImageProcessor):
                 y_image_key=self.y_image_key,
                 sort_key_name=self.sort_key_name,
                 no_tweak=self.no_tweak,
+                index_series=self.index_series,
             )
 
             anet_output_filees_basepath = new_img_path.as_posix().replace(".fits", "")

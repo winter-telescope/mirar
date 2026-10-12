@@ -7,6 +7,7 @@ from pathlib import Path
 from mirar.pipelines.spring.config.constants import (
     DB_NAME,
     PIPELINE_NAME,
+    SPRING_ANET_INDEX_SERIES,
     SPRING_GAIN,
     SPRING_PIXEL_SCALE,
 )

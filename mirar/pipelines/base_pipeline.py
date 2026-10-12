@@ -23,6 +23,7 @@ from mirar.errors import ErrorStack
 from mirar.paths import get_output_path
 from mirar.processors.base_processor import BaseProcessor, PrerequisiteError
 from mirar.processors.utils.error_annotator import ErrorStackAnnotator
+from mirar.utils.run_stats import RunStats
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,7 @@ class Pipeline:
         return copy.copy(self.all_pipeline_configurations[configuration])
 
     @staticmethod
-    def _load_raw_image(path: str | Path) -> Image | list[Image]:
+    def _load_raw_image(path: Path) -> Image | list[Image]:
         """
         Function to load in a raw image and ensure it
         has the correct format for the code.
@@ -117,7 +118,7 @@ class Pipeline:
         """
         raise NotImplementedError
 
-    def load_raw_image(self, path: str) -> ImageBatch:
+    def load_raw_image(self, path: Path) -> ImageBatch:
         """
         Function to load in a raw image and create an
         :class:`~mirar.data.image_data.Image` object which
@@ -131,7 +132,7 @@ class Pipeline:
             raw_images = [raw_images]
         return ImageBatch(raw_images)
 
-    def unpack_raw_image(self, path: str) -> Image | list[Image]:
+    def unpack_raw_image(self, path: Path) -> Image | list[Image]:
         """
         Function to load in a raw image and ensure it has
          the correct format for the code.
@@ -235,6 +236,25 @@ class Pipeline:
 
         return error_output_path
 
+    def get_stats_output_path(self) -> Path:
+        """
+        Generates a unique path for the run statistics,
+        in the output data directory.
+        Makes the parent directory structure if needed.
+
+        :return: path for run statistics
+        """
+        stats_output_path = Path(
+            get_output_path(
+                base_name=f"{Path(str(self.night)).name}_stats.tsv",
+                dir_root=self.night_sub_dir,
+            )
+        )
+
+        stats_output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        return stats_output_path
+
     def get_flowchart_output_path(self) -> Path:
         """
         Generates a unique path for the flowchart summary,
@@ -280,6 +300,8 @@ class Pipeline:
 
         err_stack = ErrorStack()
 
+        run_stats = RunStats(instrument=self.name, night=str(self.night))
+
         if selected_configurations is None:
             selected_configurations = self.selected_configurations
 
@@ -306,6 +328,10 @@ class Pipeline:
                 dataset, new_err_stack = processor.base_apply(dataset)
                 err_stack += new_err_stack
 
+                run_stats.add_step(
+                    configuration=configuration, step=i + 1, processor=processor
+                )
+
                 if np.logical_and(not catch_all_errors, len(err_stack.reports) > 0):
                     raise err_stack.reports[0].error
 
@@ -325,6 +351,9 @@ class Pipeline:
         err_stack.summarise_error_stack_tsv(
             output_path=output_error_path.with_suffix(".tsv")
         )
+
+        run_stats.summarise_run_stats(output_path=self.get_stats_output_path())
+
         return dataset, err_stack
 
     def postprocess_configuration(

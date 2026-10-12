@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 from astropy.io import fits
 
 from mirar.errors import ProcessorError
@@ -16,7 +17,31 @@ logger = logging.getLogger(__name__)
 
 
 ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
-ANET_INDEX_DIR = os.getenv("ANET_INDEX_DIR", None)
+
+ANET_INDEX_DIR_KEY = "ANET_INDEX_DIR"
+
+DEFAULT_INDEX_SERIES = "5200"
+
+ANET_DOWNLOAD_URL = "http://data.astrometry.net"
+
+# Index files record the range of quad scales they hold in radians
+RADIANS_TO_ARCMIN = 60.0 * 180.0 / np.pi
+
+# Scale bounds are set this far either side of the known pixel scale
+DEFAULT_SCALE_MARGIN = 0.25
+
+# A solution is only marginal once the finest quads exceed half the field
+MARGINAL_QUAD_FRACTION = 0.5
+
+# Each series is served from its own directory, apart from 5200 and its lite version
+INDEX_SERIES_URLS = {
+    "4100": f"{ANET_DOWNLOAD_URL}/4100/",
+    "4200": f"{ANET_DOWNLOAD_URL}/4200/",
+    "5000": f"{ANET_DOWNLOAD_URL}/5000/",
+    "5200": "https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/",
+    "6000": f"{ANET_DOWNLOAD_URL}/6000/",
+    "6100": f"{ANET_DOWNLOAD_URL}/6100/",
+}
 
 
 class AstrometryNetExecutionError(ProcessorError):
@@ -25,7 +50,228 @@ class AstrometryNetExecutionError(ProcessorError):
     """
 
 
-def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
+class AstrometryNetIndexError(ProcessorError):
+    """
+    Class for missing astrometry.net index files
+    """
+
+
+def get_scale_bounds(
+    pixel_scale: float, margin: float = DEFAULT_SCALE_MARGIN
+) -> list[float]:
+    """
+    Get astrometry.net scale bounds either side of a known pixel scale
+
+    Bounds let solve-field skip the index files whose quads could never match the
+    field, rather than searching every index in the directory, and make it less
+    likely to settle on a spurious match.
+
+    :param pixel_scale: Pixel scale of the instrument, in arcseconds per pixel
+    :param margin: Fraction of the pixel scale to allow either side of it
+    :return: Lower and upper bound, in arcseconds per pixel
+    """
+    return [pixel_scale * (1.0 - margin), pixel_scale * (1.0 + margin)]
+
+
+def get_index_scales(index_dir: Path, index_series: str) -> list[tuple[float, float]]:
+    """
+    Get the range of quad scales held by each index file in a directory
+
+    Only the primary header of each file is read, so this stays cheap even for a
+    directory of many large index files.
+
+    :param index_dir: Directory holding the index files
+    :param index_series: Series the index files belong to, e.g. '5200'
+    :return: Lowest and highest quad scale of each file, in arcminutes
+    """
+    scales = []
+
+    for path in sorted(index_dir.glob(get_index_file_pattern(index_series))):
+        header = fits.getheader(path, 0)
+
+        if "SCALE_L" in header and "SCALE_U" in header:
+            scales.append(
+                (
+                    header["SCALE_L"] * RADIANS_TO_ARCMIN,
+                    header["SCALE_U"] * RADIANS_TO_ARCMIN,
+                )
+            )
+
+    return scales
+
+
+def get_field_width(
+    scale_bounds: tuple | list, scale_units: Optional[str], image_shape: tuple
+) -> Optional[float]:
+    """
+    Get the largest field width which the declared scale bounds allow
+
+    :param scale_bounds: Scale bounds passed to solve-field
+    :param scale_units: Units of those bounds, one of 'app', 'amw' or 'degw'
+    :param image_shape: Shape of the image being solved, in pixels
+    :return: Field width in arcminutes, or None if the units are not recognised
+    """
+    bound = max(scale_bounds)
+
+    # Arcseconds per pixel, so the width of the field depends on the image
+    if scale_units == "app":
+        return bound * max(image_shape) / 60.0
+
+    if scale_units == "amw":
+        return bound
+
+    if scale_units == "degw":
+        return bound * 60.0
+
+    return None
+
+
+def check_index_coverage(
+    index_series: str,
+    scale_bounds: Optional[tuple | list],
+    scale_units: Optional[str],
+    image_shape: tuple,
+):
+    """
+    Warn if the index files cannot cover the scale of the image being solved
+
+    Without this, a set of index files too coarse for the field shows up only as
+    an AstrometryNetNoSolvedError once solve-field has given up, which says
+    nothing about the cause. Poor coverage warns rather than raises, because
+    marginal index files do sometimes solve, though index files which are missing
+    altogether still raise, exactly as they do when solve-field is run.
+
+    :param index_series: Series of index files being used, e.g. '5200'
+    :param scale_bounds: Scale bounds passed to solve-field
+    :param scale_units: Units of those bounds, one of 'app', 'amw' or 'degw'
+    :param image_shape: Shape of the image being solved, in pixels
+    :return: None
+    """
+    download_url = INDEX_SERIES_URLS.get(index_series, ANET_DOWNLOAD_URL)
+
+    if scale_bounds is None:
+        logger.warning(
+            f"No scale bounds are set, so solve-field must search every index file "
+            f"of the '{index_series}' series, and whether those files cover the "
+            f"image cannot be checked in advance"
+        )
+        return
+
+    field_width = get_field_width(scale_bounds, scale_units, image_shape)
+
+    if field_width is None:
+        logger.warning(
+            f"Cannot check the '{index_series}' index files against the image, "
+            f"because the scale units '{scale_units}' are not recognised"
+        )
+        return
+
+    scales = get_index_scales(get_index_dir(index_series), index_series)
+
+    if len(scales) == 0:
+        return
+
+    finest = min(x[0] for x in scales)
+    coarsest = max(x[1] for x in scales)
+
+    if finest > field_width:
+        logger.warning(
+            f"The '{index_series}' index files hold quads of {finest:.1f} to "
+            f"{coarsest:.1f} arcmin, but the image is {field_width:.1f} arcmin "
+            f"across, so none of them can match it. Download a finer index file "
+            f"from {download_url}"
+        )
+
+    elif finest > MARGINAL_QUAD_FRACTION * field_width:
+        logger.warning(
+            f"The finest '{index_series}' index files hold quads of {finest:.1f} "
+            f"arcmin, against an image {field_width:.1f} arcmin across, so a "
+            f"solution is marginal. Download a finer index file from {download_url}"
+        )
+
+
+def get_index_file_pattern(index_series: str) -> str:
+    """
+    Get the filename pattern of the index files belonging to a series
+
+    A series is named after its catalogue, e.g. '5200', while each file within it is
+    named after the angular scale it covers, e.g. 'index-5204-11.fits'
+
+    :param index_series: Series of index files, e.g. '5200'
+    :return: Pattern matching the index files of that series
+    """
+    return f"index-{index_series[:2]}*.fits"
+
+
+def get_index_dir(index_series: str) -> Path:
+    """
+    Get the directory holding one series of astrometry.net index files
+
+    The ANET_INDEX_DIR environment variable sets the base directory, and each
+    series lives in its own subdirectory of it, mirroring the layout of the
+    astrometry.net download server. That keeps the series separate, which
+    matters because the solution inherits the reference frame of whichever
+    index solved it.
+
+    :param index_series: Series of index files to use, e.g. '5200'
+    :return: Directory holding that series of index files
+    """
+    base_dir = os.getenv(ANET_INDEX_DIR_KEY)
+
+    if base_dir is None:
+        err = (
+            f"astrometry.net needs index files, which are not included in its "
+            f"installation. Set the '{ANET_INDEX_DIR_KEY}' environment variable to "
+            f"the directory holding them, with one subdirectory per series, so that "
+            f"the '{index_series}' series sits in "
+            f"'${ANET_INDEX_DIR_KEY}/{index_series}'. Download it from "
+            f"{INDEX_SERIES_URLS.get(index_series, ANET_DOWNLOAD_URL)}"
+        )
+        logger.error(err)
+        raise AstrometryNetIndexError(err)
+
+    index_dir = Path(base_dir) / index_series
+
+    if not index_dir.is_dir():
+        raise AstrometryNetIndexError(
+            missing_index_error(index_series, index_dir, "There is no such directory")
+        )
+
+    pattern = get_index_file_pattern(index_series)
+
+    if len(list(index_dir.glob(pattern))) == 0:
+        raise AstrometryNetIndexError(
+            missing_index_error(
+                index_series, index_dir, f"That directory holds no '{pattern}' files"
+            )
+        )
+
+    return index_dir
+
+
+def missing_index_error(index_series: str, index_dir: Path, reason: str) -> str:
+    """
+    Build the error message for a series of index files that cannot be found
+
+    :param index_series: Series of index files that was requested, e.g. '5200'
+    :param index_dir: Directory the index files were expected in
+    :param reason: Why the series could not be used, e.g. 'There is no such directory'
+    :return: Error message
+    """
+    err = (
+        f"Found no astrometry.net index files for the '{index_series}' series. "
+        f"Expected files matching '{get_index_file_pattern(index_series)}' in "
+        f"'{index_dir}'. {reason}. The '{ANET_INDEX_DIR_KEY}' environment variable "
+        f"sets the base directory, and each series belongs in its own subdirectory "
+        f"of it, so download the '{index_series}' series from "
+        f"{INDEX_SERIES_URLS.get(index_series, ANET_DOWNLOAD_URL)} and unpack it "
+        f"into '{index_dir}'"
+    )
+    logger.error(err)
+    return err
+
+
+def run_astrometry_net(images: Path | list, output_dir: Path, *args, **kwargs):
     """
     function to execute `run_astrometry_net_single` on several images in batch
     """
@@ -44,8 +290,8 @@ def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
 
 
 def run_astrometry_net_single(
-    img_path: str | Path,
-    output_dir: str | Path,
+    img_path: Path,
+    output_dir: Path,
     scale_bounds: Optional[tuple | list] = None,  # limits on scale (lower, upper)
     scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
     downsample: Optional[float | int] = None,  # downsample by factor of __
@@ -59,6 +305,7 @@ def run_astrometry_net_single(
     y_image_key: str = "Y_IMAGE",
     sort_key_name: str = "MAG_AUTO",
     no_tweak: bool = False,
+    index_series: str = DEFAULT_INDEX_SERIES,
 ):
     """
     function to run astrometry.net locally on one image, with options to adjust settings
@@ -78,8 +325,7 @@ def run_astrometry_net_single(
         f"--no-plots "
     )
 
-    if ANET_INDEX_DIR is not None:
-        cmd += f"--index-dir {ANET_INDEX_DIR} "
+    cmd += f"--index-dir {get_index_dir(index_series)} "
 
     if no_tweak:
         cmd += " --no-tweak "

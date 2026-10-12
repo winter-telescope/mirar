@@ -5,7 +5,6 @@ Module with classes to write a source table
 import logging
 import pickle
 from pathlib import Path
-from typing import Optional
 
 from mirar.data import SourceBatch, SourceTable
 from mirar.paths import BASE_NAME_KEY, base_output_dir, get_output_dir, get_output_path
@@ -37,8 +36,8 @@ class SourceWriter(BaseSourceProcessor):
 
     def __init__(
         self,
-        output_dir_name: Optional[str] = None,
-        output_dir: str | Path = base_output_dir,
+        output_dir_name: str,
+        output_dir: Path = base_output_dir,
     ):
         super().__init__()
         self.output_dir_name = output_dir_name

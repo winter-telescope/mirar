@@ -5,7 +5,6 @@ Module with classes to save a source table as a parquet file
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -76,8 +75,8 @@ class ParquetWriter(BaseSourceProcessor):
 
     def __init__(
         self,
-        output_dir_name: Optional[str] = None,
-        output_dir: str | Path = base_output_dir,
+        output_dir_name: str,
+        output_dir: Path = base_output_dir,
     ):
         super().__init__()
         self.output_dir_name = output_dir_name

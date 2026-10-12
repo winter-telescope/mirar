@@ -16,7 +16,10 @@ from mirar.pipelines.wasp.config import (
     swarp_config_path,
     wasp_cal_requirements,
 )
-from mirar.pipelines.wasp.config.constants import WASP_PIXEL_SCALE
+from mirar.pipelines.wasp.config.constants import (
+    WASP_ANET_INDEX_SERIES,
+    WASP_PIXEL_SCALE,
+)
 from mirar.pipelines.wasp.generator import (
     annotate_target_coordinates,
     label_stack_id,
@@ -31,7 +34,7 @@ from mirar.pipelines.wasp.generator import (
 from mirar.pipelines.wasp.load_wasp_image import load_raw_wasp_image
 from mirar.processors.astromatic import PSFex, Scamp, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
-from mirar.processors.astrometry.anet import AstrometryNet
+from mirar.processors.astrometry.anet import AstrometryNet, get_scale_bounds
 from mirar.processors.astrometry.autoastrometry import AutoAstrometry
 from mirar.processors.bias import BiasCalibrator
 from mirar.processors.csvlog import CSVLog
@@ -112,6 +115,9 @@ calibrate = [
         output_sub_dir="anet",
         timeout=120,
         use_sextractor=True,
+        index_series=WASP_ANET_INDEX_SERIES,
+        scale_bounds=get_scale_bounds(WASP_PIXEL_SCALE),
+        scale_units="app",
     ),
     Sextractor(
         output_sub_dir="photprocess",

@@ -42,7 +42,7 @@ from mirar.pipelines.winter.config import (
     winter_calhunter_directory,
     winter_fritz_config,
 )
-from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT
+from mirar.pipelines.winter.constants import NXSPLIT, NYSPLIT, WINTER_ANET_INDEX_SERIES
 from mirar.pipelines.winter.generator import (
     apply_rb_to_table,
     apply_xrb_to_table,
@@ -523,6 +523,7 @@ astrometry_net = [
         use_sextractor=True,
         parity="neg",
         search_radius_deg=5.0,
+        index_series=WINTER_ANET_INDEX_SERIES,
         sextractor_config_path=winter_anet_sextractor_config_path_generator,
         use_weight=True,
         timeout=120,
@@ -1192,9 +1193,9 @@ second_pass_calibration = [
     MaskPixelsFromPathInverted(
         mask_path_key=sextractor_checkimg_map["SEGMENTATION"],
         write_masked_pixels_to_file=True,
-        output_dir="sp_stack_source_mask",
+        output_dir_name="sp_stack_source_mask",
     ),
-    WriteMaskedCoordsToFile(output_dir="sp_stack_mask"),
+    WriteMaskedCoordsToFile(output_dir_name="sp_stack_mask"),
     ReloadSwarpComponentImages(
         copy_header_keys=FITS_MASK_KEY,
     ),
@@ -1206,7 +1207,7 @@ second_pass_calibration = [
     ImageSaver(output_dir_name="sp_astrometry", write_mask=True),
     MaskPixelsFromWCS(
         write_masked_pixels_to_file=True,
-        output_dir="sp_source_mask",
+        output_dir_name="sp_source_mask",
         only_write_mask=True,
     ),
     ImageSaver(output_dir_name="sp_masked", write_mask=True),

@@ -69,7 +69,7 @@ DEFAULT_PA_TOLERANCE = 1.4
 
 ############################################
 def autoastrometry(
-    filename: str | Path,
+    filename: Path,
     pixel_scale: Optional[float] = None,
     pa: Optional[float] = None,
     inv: bool = False,
@@ -82,7 +82,7 @@ def autoastrometry(
     tolerance: float = DEFAULT_TOLERANCE,
     catalog: Optional[str] = None,
     overwrite: bool = True,
-    outfile: str = "",
+    outfile: Optional[Path] = None,
     output_dir: Path = base_output_dir,
     temp_file: Optional[str] = None,
     saturation: float = DEFAULT_SATURATION,
@@ -228,8 +228,8 @@ def autoastrometry(
             f"or stars and cosmic rays are being confused."
         )
         logger.error(err)
-        write_text_file("det.init.txt", img_src_list)
-        write_region_file("det.im.reg", img_src_list, "red", "img")
+        write_text_file(Path("det.init.txt"), img_src_list)
+        write_region_file(Path("det.im.reg"), img_src_list, "red", "img")
         raise AstrometrySourceError(err)
 
     img_density = len(img_src_list) / area_sq_min
@@ -486,13 +486,13 @@ def autoastrometry(
 
     if write_crosscheck_files:
         write_text_file(
-            file_path=os.path.splitext(base_output_path)[0] + ".det.wcs.txt",
+            file_path=base_output_path.with_suffix(".det.wcs.txt"),
             src_list=img_src_list,
         )
 
         # Write out a match list to allow doing a formal fit with WCStools.
 
-        match_list_path = os.path.splitext(base_output_path)[0] + ".match.list"
+        match_list_path = base_output_path.with_suffix(".match.list")
 
         logger.info(f"Writing match list to {match_list_path}")
 
@@ -512,11 +512,8 @@ def autoastrometry(
     if overwrite:
         outfile = filename
     elif outfile == "":
-        slash_pos = filename.rfind("/")
-        dir_name = filename[0 : slash_pos + 1]
-        fil = filename[slash_pos + 1 :]
         # alternate behavior would always output to current directory
-        outfile = f"{dir_name}a{fil}"
+        outfile = Path(filename).parent / f"a{Path(filename).name}"
 
     if outfile is not None:
         with fits.open(temp_path) as hdu:
@@ -539,7 +536,7 @@ def autoastrometry(
 
 
 def run_autoastrometry_single(
-    img_path: str | Path,
+    img_path: Path,
     seeing: Optional[float] = None,
     pixel_scale: Optional[float] = None,
     pa: Optional[float] = None,
@@ -553,7 +550,7 @@ def run_autoastrometry_single(
     tolerance: float = DEFAULT_TOLERANCE,
     catalog: Optional[str] = None,
     overwrite: bool = False,
-    outfile: Optional[str] = None,
+    outfile: Optional[Path] = None,
     output_dir: Path = base_output_dir,
     saturation: float = DEFAULT_SATURATION,
     no_rot: bool = False,
@@ -650,7 +647,7 @@ def run_autoastrometry_single(
 
 
 def run_autoastrometry_batch(
-    files: str | Path | list[str | Path],
+    files: Path | list[Path],
     seeing: Optional[float] = None,
     pixel_scale: Optional[float] = None,
     pa: Optional[float] = None,
@@ -664,7 +661,7 @@ def run_autoastrometry_batch(
     tolerance: float = DEFAULT_TOLERANCE,
     catalog: Optional[str] = None,
     overwrite: bool = False,
-    outfile: Optional[str] = None,
+    outfile: Optional[Path] = None,
     output_dir: Path = base_output_dir,
     saturation: float = DEFAULT_SATURATION,
     no_rot: bool = False,
@@ -723,7 +720,7 @@ def run_autoastrometry_batch(
 
     """
 
-    if isinstance(files, str):
+    if isinstance(files, Path):
         files = [files]
 
     if len(files) == 0:

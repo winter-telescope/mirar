@@ -6,6 +6,8 @@ import astroplan
 import astropy.coordinates as coords
 import pandas as pd
 
+WINTER_ANET_INDEX_SERIES = "4200"
+
 winter_filters_map = {"Y": 1, "J": 2, "Hs": 3, "dark": 4}
 
 winter_inv_filters_map = {v: k for k, v in winter_filters_map.items()}

@@ -25,7 +25,7 @@ class RefFromPath(BaseReferenceGenerator):
 
     def __init__(
         self,
-        path: str,
+        path: Path,
         filter_name: str,
         write_image: bool = False,
         write_to_db: bool = False,

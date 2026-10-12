@@ -115,18 +115,25 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /usr/share/miniconda/envs/test/data
-          key: astrometry-index-5200-v1
+          key: astrometry-index-v2
 
       - name: Download astrometry.net index files
         if: steps.cache-astrometry.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          DIR=/usr/share/miniconda/envs/test/data
-          gh release download astrometry-index-v1 \
+          # Each series goes in its own subdirectory, as mirar expects
+          BASE=/usr/share/miniconda/envs/test/data
+          mkdir -p "$BASE/4200" "$BASE/5200"
+          gh release download astrometry-index-v2 \
             --repo winter-telescope/mirar \
-            --dir "$DIR" \
-            --pattern "*.fits"
+            --dir "$BASE/4200" \
+            --pattern "index-42*.fits"
+          gh release download astrometry-index-v2 \
+            --repo winter-telescope/mirar \
+            --dir "$BASE/5200" \
+            --pattern "index-52*.fits"
+          ls -R "$BASE"
 
       # Set up database
       - name: postgres

@@ -45,7 +45,7 @@ class WircPipeline(Pipeline):
     def download_raw_images_for_night(night: str | int):
         download_via_ssh(
             server="gayatri.caltech.edu",
-            base_dir="/scr2/ptf/observation_data",
+            base_dir=Path("/scr2/ptf/observation_data"),
             prefix="WIRC_",
             night=night,
             pipeline=PIPELINE_NAME,
@@ -53,5 +53,5 @@ class WircPipeline(Pipeline):
         )
 
     @staticmethod
-    def _load_raw_image(path: str | Path) -> Image | list[Image]:
+    def _load_raw_image(path: Path) -> Image | list[Image]:
         return load_raw_wirc_image(path)

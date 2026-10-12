@@ -129,7 +129,7 @@ def get_output_path(
 
 
 def get_weight_path(
-    img_path: str | Path,
+    img_path: Path,
 ) -> Path:
     """
     Returns a weight image path
@@ -141,7 +141,7 @@ def get_weight_path(
 
 
 def get_mask_path(
-    img_path: str | Path,
+    img_path: Path,
 ) -> Path:
     """
     Returns a mask image path
@@ -152,7 +152,7 @@ def get_mask_path(
     return Path(img_path).with_suffix(".mask.fits")
 
 
-def get_temp_path(output_dir: Path, file_path: Path | str) -> Path:
+def get_temp_path(output_dir: Path, file_path: Path) -> Path:
     """
     Gets a temporary path, in output dir, with name of file_path
 
@@ -163,7 +163,7 @@ def get_temp_path(output_dir: Path, file_path: Path | str) -> Path:
     return output_dir / ("temp_" + Path(file_path).name)
 
 
-def get_untemp_path(temp_path: Path | str) -> Path:
+def get_untemp_path(temp_path: Path) -> Path:
     """
     Converts a temporary path to a regular path.
 
