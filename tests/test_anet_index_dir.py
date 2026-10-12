@@ -28,8 +28,7 @@ SERIES = "5200"
 
 ANET_LOGGER = "mirar.processors.astrometry.anet.anet"
 
-# A 1024 pixel image at 0.35 arcsec/pixel is just under 6 arcmin across,
-# matching the SEDMv2 field which solves only marginally against 4 arcmin quads
+# 1024 pixels at 0.35 arcsec/pixel is just under 6 arcmin, as for SEDMv2
 IMAGE_SHAPE = (1024, 1024)
 SEDMV2_SCALE_BOUNDS = [0.3, 0.35]
 

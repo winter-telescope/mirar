@@ -67,9 +67,7 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
     """
 
     try:
-        # Capture both streams, so that the external tool does not write over
-        # mirar's own logging, and so that its output survives to be reported
-        # if the command fails
+        # Capture both streams, so the tools do not write over mirar's own logging
 
         rval = subprocess.run(
             cmd,

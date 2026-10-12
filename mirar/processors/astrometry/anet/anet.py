@@ -3,11 +3,11 @@ Script containing functions to run astrometry.net locally
 """
 
 import logging
-import math
 import os
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 from astropy.io import fits
 
 from mirar.errors import ProcessorError
@@ -25,14 +25,12 @@ DEFAULT_INDEX_SERIES = "5200"
 ANET_DOWNLOAD_URL = "http://data.astrometry.net"
 
 # Index files record the range of quad scales they hold in radians
-RADIANS_TO_ARCMIN = 60.0 * 180.0 / math.pi
+RADIANS_TO_ARCMIN = 60.0 * 180.0 / np.pi
 
 # Scale bounds are set this far either side of the known pixel scale
 DEFAULT_SCALE_MARGIN = 0.25
 
-# Quads an appreciable fraction of the field still solve sometimes: a 6 arcmin
-# SEDMv2 field does solve against 4 arcmin quads, so only coarser than half the
-# field is called marginal
+# A solution is only marginal once the finest quads exceed half the field
 MARGINAL_QUAD_FRACTION = 0.5
 
 # Each series is served from its own directory, apart from 5200 and its lite version
