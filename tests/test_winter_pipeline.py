@@ -2,113 +2,55 @@
 Tests for WINTER reduction
 """
 
+import json
 import logging
+import os
 import shutil
+import sys
+from pathlib import Path
 
 from mirar.data import Dataset, ImageBatch
-from mirar.paths import get_output_dir
+from mirar.paths import base_code_dir, get_output_dir
 from mirar.pipelines import get_pipeline
 from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
-expected_zp = {
-    "ZP_2.0": 24.005294438914305,
-    "ZP_2.0_std": 0.06005590150517328,
-    "ZP_2.0_nstars": 59,
-    "ZP_3.0": 24.47122127292256,
-    "ZP_3.0_std": 0.05191250056994636,
-    "ZP_3.0_nstars": 59,
-    "ZP_4.0": 24.660134047602313,
-    "ZP_4.0_std": 0.04895237732433349,
-    "ZP_4.0_nstars": 59,
-    "ZP_5.0": 24.73844478378757,
-    "ZP_5.0_std": 0.04843877831790673,
-    "ZP_5.0_nstars": 59,
-    "ZP_6.0": 24.780598421278032,
-    "ZP_6.0_std": 0.04778940744176772,
-    "ZP_6.0_nstars": 59,
-    "ZP_7.0": 24.79966483902917,
-    "ZP_7.0_std": 0.045979386039383334,
-    "ZP_7.0_nstars": 57,
-    "ZP_8.0": 24.836408870088746,
-    "ZP_8.0_std": 0.049043100282806104,
-    "ZP_8.0_nstars": 56,
-    "ZP_AUTO": 24.84092339714826,
-    "ZP_AUTO_std": 0.05281705601550301,
-    "ZP_AUTO_nstars": 59,
-    "ZP_PSF": 24.677819766367843,
-    "ZP_PSF_std": 0.05191139701034343,
-    "ZP_PSF_nstars": 57,
-    "SCORMEAN": -0.13718873361312706,
-    "SCORMED": -0.11876823466321687,
-    "SCORSTD": 1.3589516850692291,
-}
-expected_dataframe_values = {
-    "magpsf": [
-        17.39802916470696,
-        17.5095656886213,
-        17.40702084758793,
-        17.576428667161935,
-        17.390064760561224,
-        17.503951609537477,
-        17.45941660520178,
-        17.47893024399312,
-        17.325970378802964,
-        17.217715061027427,
-    ],
-    "magap": [
-        17.460308769278605,
-        16.866293511023073,
-        17.406897608738145,
-        18.176968259952798,
-        17.13565906248416,
-        16.923007184191857,
-        17.479606721546585,
-        17.2121344211263,
-        17.592897139280986,
-        16.86732637398696,
-    ],
-    "srmag1": [None, None, None, 21.0019, 21.820299, None, None, 21.697001, None, None],
-    "distpsnr1": [
-        5.728989073771944,
-        None,
-        7.414251184284056,
-        15.556980114051607,
-        16.13806502009323,
-        10.114689758646128,
-        0.70704665975367,
-        5.844587757261037,
-        11.001578870846398,
-        29.471923214945615,
-    ],
-    "sgscore1": [
-        0.7536249756813049,
-        None,
-        0.003958333283662796,
-        0.6446011662483215,
-        0.0062500000931322575,
-        0.9768750071525574,
-        0.06363095343112946,
-        0.4070476293563843,
-        0.06437499821186066,
-        0.06363095343112946,
-    ],
-}
-expected_dataframe_ids = {
-    "psobjectid1": [
-        172812107993700607,
-        None,
-        172822110464957890,
-        172822108147853975,
-        172822109188754944,
-        172842109139360037,
-        172832111005989103,
-        172842109557891697,
-        172832108682599174,
-        172832111005989103,
-    ],
-}
+# The candidate count differs between operating systems, so each has its own set
+PLATFORM = "macos" if sys.platform.startswith("darwin") else "linux"
+EXPECTED_PATH = base_code_dir / "tests" / "expected_values" / PLATFORM / "winter.json"
+
+UPDATE_VALUES_KEY = "UPDATE_EXPECTED_VALUES"
+
+
+def update_expected_values() -> bool:
+    """
+    Check whether the run should rewrite the expected values rather than assert
+
+    :return: Whether to update
+    """
+    return os.getenv(UPDATE_VALUES_KEY, "false").lower() in ["true", "1", "yes"]
+
+
+def save_expected_values(values: dict):
+    """
+    Write the expected values for this platform
+
+    :param values: Values to save
+    :return: None
+    """
+    with open(EXPECTED_PATH, "w", encoding="utf8") as out_f:
+        # Numpy scalars are not json-serialisable, so are unwrapped on the way out
+        json.dump(values, out_f, indent=2, sort_keys=True, default=lambda x: x.item())
+        out_f.write("\n")
+    logger.info(f"Wrote expected values to {EXPECTED_PATH}")
+
+
+EXPECTED = json.loads(Path(EXPECTED_PATH).read_text(encoding="utf8"))
+expected_zp = EXPECTED["expected_zp"]
+expected_dataframe_values = EXPECTED["expected_dataframe_values"]
+expected_dataframe_ids = EXPECTED["expected_dataframe_ids"]
+expected_n_candidates = EXPECTED["expected_n_candidates"]
 
 
 pipeline = get_pipeline(
@@ -154,23 +96,24 @@ class TestWinterPipeline(BaseTestCase):
 
         source_table = res[0][0]
 
-        print("New Results WINTER:")
-        print("expected_zp = {")
-        for key in expected_zp:
-            print(f'    "{key}": {source_table[key]},')
-        print("}")
-
         new_candidates_table = source_table.get_data()
 
-        print("expected_dataframe_values = {")
-        for key in expected_dataframe_values:
-            print(f'    "{key}": {list(new_candidates_table[key][:10])},')
-        print("}")
-
-        print("expected_dataframe_ids = {")
-        for key in expected_dataframe_ids:
-            print(f'    "{key}": {list(new_candidates_table[key][:10])},')
-        print("}")
+        if update_expected_values():
+            save_expected_values(
+                {
+                    "expected_zp": {x: source_table[x] for x in expected_zp},
+                    "expected_dataframe_values": {
+                        x: list(new_candidates_table[x][:10])
+                        for x in expected_dataframe_values
+                    },
+                    "expected_dataframe_ids": {
+                        x: list(new_candidates_table[x][:10])
+                        for x in expected_dataframe_ids
+                    },
+                    "expected_n_candidates": len(new_candidates_table),
+                },
+            )
+            return
 
         print(f"expected_n_candidates = {len(new_candidates_table)}")
 
@@ -186,7 +129,7 @@ class TestWinterPipeline(BaseTestCase):
 
         candidates_table = source_table.get_data()
 
-        self.assertEqual(len(candidates_table), 122)
+        self.assertEqual(len(candidates_table), expected_n_candidates)
         for key, value in expected_dataframe_values.items():
             for ind, val in enumerate(value):
                 if val is None:
