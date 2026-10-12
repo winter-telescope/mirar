@@ -6,7 +6,6 @@ import astroplan
 import astropy.coordinates as coords
 import pandas as pd
 
-# The WINTER machine holds the 4200 index files, and Scamp re-ties the frame after
 WINTER_ANET_INDEX_SERIES = "4200"
 
 winter_filters_map = {"Y": 1, "J": 2, "Hs": 3, "dark": 4}

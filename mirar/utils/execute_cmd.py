@@ -31,6 +31,22 @@ class TimeoutExecutionError(Exception):
 DEFAULT_TIMEOUT = 300.0
 
 
+def decode_output(output: bytes | str | None) -> str:
+    """
+    Decode the output captured from a command, for reporting in an error
+
+    :param output: Captured output, which is bytes unless the stream was not piped
+    :return: Decoded output
+    """
+    if output is None:
+        return "No output was captured"
+
+    if isinstance(output, bytes):
+        return output.decode()
+
+    return output
+
+
 def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
     """
     Function to run on local machine using subprocess, with error handling.
@@ -51,14 +67,13 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
     """
 
     try:
-        # Run command so that output is printed at terminal and captured in rval
+        # Capture both streams, so the tools do not write over mirar's own logging
 
         rval = subprocess.run(
             cmd,
             check=True,
-            capture_output=False,
             shell=True,
-            stdout=subprocess.PIPE,
+            capture_output=True,
             timeout=timeout,
         )
 
@@ -66,13 +81,15 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
 
         if rval.stdout is not None:
             msg += f"Found the following output: {rval.stdout.decode()}"
+        if rval.stderr is not None:
+            msg += f"Found the following error output: {rval.stderr.decode()}"
         logger.debug(msg)
 
     except subprocess.CalledProcessError as err:
         msg = (
             f"Execution Error found when running with command: \n \n '{err.cmd}' \n \n"
             f"This yielded a return code of {err.returncode}. "
-            f"The following traceback was found: \n {err.stderr}"
+            f"The following traceback was found: \n {decode_output(err.stderr)}"
         )
         logger.error(msg)
         raise ExecutionError(msg) from err
@@ -81,7 +98,7 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
         msg = (
             f"Timeout error found when running with command: \n \n '{err.cmd}' \n \n"
             f"The timeout was set to {timeout} seconds. "
-            f"The following traceback was found: \n {err.stderr}"
+            f"The following traceback was found: \n {decode_output(err.stderr)}"
         )
         logger.error(msg)
         raise TimeoutExecutionError(msg) from err
