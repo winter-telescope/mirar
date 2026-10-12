@@ -8,17 +8,15 @@ import shutil
 from mirar.data import Dataset, ImageBatch
 from mirar.paths import get_output_dir
 from mirar.pipelines.summer.summer_pipeline import SummerPipeline
-from mirar.testing import (
-    BaseTestCase,
-    load_expected_values,
-    save_expected_values,
-    update_expected_values,
-)
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
-EXPECTED = load_expected_values("summer_imsub")
-expected_values = EXPECTED.get("expected_values", {})
+expected_values = {
+    "SCORMEAN": -0.06131731786337506,
+    "SCORMED": -0.05791231584806071,
+    "SCORSTD": 1.0663084337455144,
+}
 
 
 pipeline = SummerPipeline(night="20220815", selected_configurations=["test_imsub"])
@@ -39,7 +37,6 @@ class TestSummerImsubPipeline(BaseTestCase):
         Returns:
 
         """
-        self.check_expected_values("summer_imsub", EXPECTED)
         self.logger.info("\n\n Testing summer pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
@@ -52,12 +49,13 @@ class TestSummerImsubPipeline(BaseTestCase):
 
         header = res[0][0].get_header()
 
-        if update_expected_values():
-            save_expected_values(
-                "summer_imsub",
-                {"expected_values": {x: header[x] for x in expected_values}},
-            )
-            return
+        print("New Results SUMMER imsub:")
+        new_exp = "expected_values = { \n"
+        for header_key in header.keys():
+            if header_key in expected_values.keys():
+                new_exp += f'    "{header_key}": {header[header_key]}, \n'
+        new_exp += "}"
+        print(new_exp)
 
         for key, value in expected_values.items():
             if isinstance(value, float):
