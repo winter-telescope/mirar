@@ -2,26 +2,55 @@
 Tests for WINTER reduction
 """
 
+import json
 import logging
+import os
 import shutil
+import sys
+from pathlib import Path
 
 from mirar.data import Dataset, ImageBatch
-from mirar.paths import get_output_dir
+from mirar.paths import base_code_dir, get_output_dir
 from mirar.pipelines import get_pipeline
-from mirar.testing import (
-    BaseTestCase,
-    load_expected_values,
-    save_expected_values,
-    update_expected_values,
-)
+from mirar.testing import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
-EXPECTED = load_expected_values("winter")
-expected_zp = EXPECTED.get("expected_zp", {})
-expected_dataframe_values = EXPECTED.get("expected_dataframe_values", {})
-expected_dataframe_ids = EXPECTED.get("expected_dataframe_ids", {})
-expected_n_candidates = EXPECTED.get("expected_n_candidates", {})
+# The candidate count differs between operating systems, so each has its own set
+PLATFORM = "macos" if sys.platform.startswith("darwin") else "linux"
+EXPECTED_PATH = base_code_dir / "tests" / "expected_values" / PLATFORM / "winter.json"
+
+UPDATE_VALUES_KEY = "UPDATE_EXPECTED_VALUES"
+
+
+def update_expected_values() -> bool:
+    """
+    Check whether the run should rewrite the expected values rather than assert
+
+    :return: Whether to update
+    """
+    return os.getenv(UPDATE_VALUES_KEY, "false").lower() in ["true", "1", "yes"]
+
+
+def save_expected_values(values: dict):
+    """
+    Write the expected values for this platform
+
+    :param values: Values to save
+    :return: None
+    """
+    with open(EXPECTED_PATH, "w", encoding="utf8") as out_f:
+        # Numpy scalars are not json-serialisable, so are unwrapped on the way out
+        json.dump(values, out_f, indent=2, sort_keys=True, default=lambda x: x.item())
+        out_f.write("\n")
+    logger.info(f"Wrote expected values to {EXPECTED_PATH}")
+
+
+EXPECTED = json.loads(Path(EXPECTED_PATH).read_text(encoding="utf8"))
+expected_zp = EXPECTED["expected_zp"]
+expected_dataframe_values = EXPECTED["expected_dataframe_values"]
+expected_dataframe_ids = EXPECTED["expected_dataframe_ids"]
+expected_n_candidates = EXPECTED["expected_n_candidates"]
 
 
 pipeline = get_pipeline(
@@ -54,7 +83,6 @@ class TestWinterPipeline(BaseTestCase):
         Returns:
 
         """
-        self.check_expected_values("winter", EXPECTED)
         self.logger.info("\n\n Testing winter pipeline \n\n")
 
         res, _ = pipeline.reduce_images(Dataset([ImageBatch()]), catch_all_errors=False)
@@ -72,7 +100,6 @@ class TestWinterPipeline(BaseTestCase):
 
         if update_expected_values():
             save_expected_values(
-                "winter",
                 {
                     "expected_zp": {x: source_table[x] for x in expected_zp},
                     "expected_dataframe_values": {
