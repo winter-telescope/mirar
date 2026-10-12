@@ -28,8 +28,10 @@ sextractor_astrometry_config: SextractorConfig = {
     "starnnw_path": winter_file_dir / "default.nnw",
 }
 
-sextractor_astromstats_config = sextractor_astrometry_config
-sextractor_astromstats_config["parameter_path"] = winter_file_dir / "astromstats.param"
+sextractor_astromstats_config: SextractorConfig = {
+    **sextractor_astrometry_config,
+    "parameter_path": winter_file_dir / "astromstats.param",
+}
 
 sextractor_photometry_config: SextractorConfig = {
     "config_path": winter_file_dir / "photomCat.sex",
