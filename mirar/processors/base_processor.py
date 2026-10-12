@@ -260,8 +260,7 @@ class BaseProcessor:
         """
         batch_runtimes = self.latest_batch_runtimes
 
-        # Blocks handled, taken from whichever end of the step saw more, since a
-        # loader starts with none and a step which rejects everything ends with none
+        # Blocks handled, from whichever end saw more, as a loader starts with none
         n_blocks = max([self.latest_n_input_blocks, self.latest_n_output_blocks])
 
         return {
