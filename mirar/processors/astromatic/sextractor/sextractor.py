@@ -17,6 +17,7 @@ from mirar.data import Image, ImageBatch
 from mirar.data.utils.coords import write_regions_file
 from mirar.paths import (
     BASE_NAME_KEY,
+    GAIN_KEY,
     LATEST_WEIGHT_SAVE_KEY,
     PSFEX_CAT_KEY,
     get_output_dir,
@@ -67,7 +68,6 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
     """
 
     base_key = "sextractor"
-    max_n_cpu = 1
 
     def __init__(  # pylint: disable=too-many-locals
         self,  # pylint: disable=too-many-instance-attributes
@@ -197,6 +197,44 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
                 logger.error(err)
                 raise PrerequisiteError(err)
 
+    def get_gain(self, image: Image) -> float | None:
+        """
+        Get the gain to measure an image with
+
+        :param image: Image to be measured
+        :return: Gain of the processor, falling back to that of the image
+        """
+        if self.gain is not None:
+            return self.gain
+
+        return image[GAIN_KEY] if GAIN_KEY in image.keys() else None
+
+    def get_psf_path(self, image: Image) -> Path | None:
+        """
+        Get the PSF model to measure an image with
+
+        :param image: Image to be measured
+        :return: Path of the PSF model, or None if PSFex is not being used
+        :raises ValueError: If PSFex is in use but the image has no PSF model
+        """
+        if not self.use_psfex:
+            return self.psf_path
+
+        psf_path = self.psf_path
+
+        if PSFEX_CAT_KEY in image.keys():
+            psf_path = Path(image[PSFEX_CAT_KEY])
+
+        if psf_path is None:
+            raise ValueError(
+                f"PSFex catalog not found in image {image[BASE_NAME_KEY]}"
+                f"Please run PSFex on this image that should add the path to "
+                f"the header, or specify the path manually using psf_name "
+                f"argument"
+            )
+
+        return psf_path
+
     def _apply_to_images(  # pylint: disable=too-many-locals, too-many-branches
         self, batch: ImageBatch
     ) -> ImageBatch:
@@ -204,8 +242,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
         sextractor_out_dir.mkdir(parents=True, exist_ok=True)
 
         for image in batch:
-            if self.gain is None and "GAIN" in image.keys():
-                self.gain = image["GAIN"]
+            gain = self.get_gain(image)
 
             temp_path = get_temp_path(sextractor_out_dir, Path(image[BASE_NAME_KEY]))
 
@@ -230,17 +267,8 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
                 weight_path = self.save_mask_image(image, temp_path)
                 temp_files.append(weight_path)
 
-            if self.use_psfex:
-                if PSFEX_CAT_KEY in image.keys():
-                    self.psf_path = Path(image[PSFEX_CAT_KEY])
+            psf_path = self.get_psf_path(image)
 
-                if self.psf_path is None:
-                    raise ValueError(
-                        f"PSFex catalog not found in image {image[BASE_NAME_KEY]}"
-                        f"Please run PSFex on this image that should add the path to "
-                        f"the header, or specify the path manually using psf_name "
-                        f"argument"
-                    )
             self.check_psf_prerequisite()
 
             output_cat = sextractor_out_dir / image[BASE_NAME_KEY].replace(
@@ -267,8 +295,8 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
                 verbose_type=self.verbose_type,
                 checkimage_name=checkimage_name,
                 checkimage_type=self.checkimage_type,
-                gain=self.gain,
-                psf_name=self.psf_path,
+                gain=gain,
+                psf_name=psf_path,
                 catalog_name=output_cat,
             )
 
