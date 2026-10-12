@@ -118,7 +118,7 @@ def clean_science_header(  # pylint: disable=too-many-branches
 def clean_cal_header(
     hdr0: fits.Header,
     split_headers: list[fits.Header],
-    filepath,
+    filepath: Path,
     is_mode0: bool,
 ) -> tuple[fits.Header, list[fits.Header]]:
     """
@@ -147,7 +147,7 @@ def clean_cal_header(
         flat_time_ugriz = [0.5, 0.1, 0.03, 0.01, 0.1]
         filt_list = np.array(["u", "g", "r", "i", "z"])
 
-        filt = filepath.split("flat_s")[1][0]  # sedm-specific file name structure
+        filt = str(filepath).split("flat_s")[1][0]  # sedm-specific file name structure
         hdr0["FILTERID"] = filt
         hdr0["FILTER"] = filt
         hdr0[EXPTIME_KEY] = flat_time_ugriz[np.where(filt_list == filt)[0][0]]
@@ -208,7 +208,7 @@ def clean_cal_header(
 
 
 def load_raw_sedmv2_mef(
-    path: str | Path,
+    path: Path,
 ) -> tuple[fits.Header, list[np.ndarray], list[fits.Header]]:
     """
     Load mef image
@@ -245,7 +245,7 @@ def load_raw_sedmv2_mef(
         logger.debug(f"Unexpected IMGTYPE: {check_header['IMGTYPE']}")
 
     header[BASE_NAME_KEY] = os.path.basename(path)
-    header[RAW_IMG_KEY] = path
+    header[RAW_IMG_KEY] = str(path)
     header["EXPID"] = int("".join(header[BASE_NAME_KEY].split("_")[1:3])[2:])
     pipeline_version = __version__
     pipeline_version_padded_str = "".join(
@@ -256,7 +256,7 @@ def load_raw_sedmv2_mef(
 
 
 def load_sedmv2_mef_image(
-    path: str | Path,
+    path: Path,
 ) -> list[Image]:
     """
     Function to load sedmv2 mef images

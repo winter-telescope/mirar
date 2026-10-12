@@ -81,7 +81,7 @@ class BaseCatalog(ABCatalog, ABC):
         """
         raise NotImplementedError()
 
-    def write_catalog(self, image: Image, output_dir: str | Path) -> Path:
+    def write_catalog(self, image: Image, output_dir: Path) -> Path:
         """
         Generates a custom catalog for an image
 
@@ -120,7 +120,7 @@ class BaseCatalog(ABCatalog, ABC):
 
         return output_path
 
-    def get_output_path(self, output_dir: Path, base_name: str | Path) -> Path:
+    def get_output_path(self, output_dir: Path, base_name: str) -> Path:
         """
         Get save path for catalog
 

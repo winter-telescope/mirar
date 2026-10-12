@@ -99,7 +99,7 @@ def find_required_cals(
     latest_dir: Path,
     night: str,
     requirements: list[CalRequirement],
-    open_f: Callable[[str], Image] = open_raw_image,
+    open_f: Callable[[Path], Image | list[Image]] = open_raw_image,
     images: ImageBatch = ImageBatch(),
     skip_latest_night: bool = False,
 ) -> ImageBatch:

@@ -5,7 +5,6 @@ Module to update the header of images with data in a source table
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
@@ -26,8 +25,8 @@ class ImageUpdater(BaseSourceProcessor):
 
     def __init__(
         self,
-        modify_dir_name: Optional[str] = None,
-        input_dir: str | Path = base_output_dir,
+        modify_dir_name: str,
+        input_dir: Path = base_output_dir,
         update_keys: list[str] | str | None = None,
         overwrite: bool = False,
         include_table: bool = True,

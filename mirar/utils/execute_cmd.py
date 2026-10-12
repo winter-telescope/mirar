@@ -87,7 +87,7 @@ def run_local(cmd: str, timeout: float = DEFAULT_TIMEOUT):
         raise TimeoutExecutionError(msg) from err
 
 
-def temp_config(config_path: str | Path, output_dir: str | Path) -> Path:
+def temp_config(config_path: Path, output_dir: Path) -> Path:
     """
     Get a
 
@@ -99,7 +99,7 @@ def temp_config(config_path: str | Path, output_dir: str | Path) -> Path:
     return Path(output_dir) / basename
 
 
-def run_docker(cmd: str, output_dir: Path | str = "."):
+def run_docker(cmd: str, output_dir: Path = Path(".")):
     """Function to run a command via Docker.
     A container will be generated automatically,
     but a Docker server must be running first.
@@ -163,12 +163,12 @@ def run_docker(cmd: str, output_dir: Path | str = "."):
             for j, x in enumerate(sep):
                 if len(x) > 0:
                     if os.path.isfile(x):
-                        new[j] = docker_path(sep[j])
+                        new[j] = docker_path(Path(sep[j]))
                         copy_list.append(sep[j])
                     elif x[0] == "@":
                         files_of_files.append(x[1:])
                     elif os.path.isdir(os.path.dirname(x)):
-                        new[j] = docker_path(sep[j])
+                        new[j] = docker_path(Path(sep[j]))
 
             new_split.append(" ".join(new))
 
@@ -196,7 +196,7 @@ def run_docker(cmd: str, output_dir: Path | str = "."):
                             new_args[i] = str(docker_path(arg.strip("\n"))) + "\n"
                     new_file.append(" ".join(new_args))
 
-            temp_file_path = temp_config(path, output_dir)
+            temp_file_path = temp_config(Path(path), output_dir)
 
             with open(temp_file_path, "w", encoding="utf8") as temp_file:
                 temp_file.writelines(new_file)
@@ -252,7 +252,7 @@ def run_docker(cmd: str, output_dir: Path | str = "."):
 
 def execute(
     cmd: str,
-    output_dir: Path | str = ".",
+    output_dir: Path = Path("."),
     local: bool = True,
     timeout: float = DEFAULT_TIMEOUT,
 ):

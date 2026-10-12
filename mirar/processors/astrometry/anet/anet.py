@@ -16,7 +16,22 @@ logger = logging.getLogger(__name__)
 
 
 ASTROMETRY_TIMEOUT = 900  # astrometry cmd execute timeout, in seconds
-ANET_INDEX_DIR = os.getenv("ANET_INDEX_DIR", None)
+
+ANET_INDEX_DIR_KEY = "ANET_INDEX_DIR"
+
+DEFAULT_INDEX_SERIES = "5200"
+
+ANET_DOWNLOAD_URL = "http://data.astrometry.net"
+
+# Each series is served from its own directory, apart from 5200 and its lite version
+INDEX_SERIES_URLS = {
+    "4100": f"{ANET_DOWNLOAD_URL}/4100/",
+    "4200": f"{ANET_DOWNLOAD_URL}/4200/",
+    "5000": f"{ANET_DOWNLOAD_URL}/5000/",
+    "5200": "https://portal.nersc.gov/project/cosmo/temp/dstn/index-5200/LITE/",
+    "6000": f"{ANET_DOWNLOAD_URL}/6000/",
+    "6100": f"{ANET_DOWNLOAD_URL}/6100/",
+}
 
 
 class AstrometryNetExecutionError(ProcessorError):
@@ -25,7 +40,94 @@ class AstrometryNetExecutionError(ProcessorError):
     """
 
 
-def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
+class AstrometryNetIndexError(ProcessorError):
+    """
+    Class for missing astrometry.net index files
+    """
+
+
+def get_index_file_pattern(index_series: str) -> str:
+    """
+    Get the filename pattern of the index files belonging to a series
+
+    A series is named after its catalogue, e.g. '5200', while each file within it is
+    named after the angular scale it covers, e.g. 'index-5204-11.fits'
+
+    :param index_series: Series of index files, e.g. '5200'
+    :return: Pattern matching the index files of that series
+    """
+    return f"index-{index_series[:2]}*.fits"
+
+
+def get_index_dir(index_series: str) -> Path:
+    """
+    Get the directory holding one series of astrometry.net index files
+
+    The ANET_INDEX_DIR environment variable sets the base directory, and each
+    series lives in its own subdirectory of it, mirroring the layout of the
+    astrometry.net download server. That keeps the series separate, which
+    matters because the solution inherits the reference frame of whichever
+    index solved it.
+
+    :param index_series: Series of index files to use, e.g. '5200'
+    :return: Directory holding that series of index files
+    """
+    base_dir = os.getenv(ANET_INDEX_DIR_KEY)
+
+    if base_dir is None:
+        err = (
+            f"astrometry.net needs index files, which are not included in its "
+            f"installation. Set the '{ANET_INDEX_DIR_KEY}' environment variable to "
+            f"the directory holding them, with one subdirectory per series, so that "
+            f"the '{index_series}' series sits in "
+            f"'${ANET_INDEX_DIR_KEY}/{index_series}'. Download it from "
+            f"{INDEX_SERIES_URLS.get(index_series, ANET_DOWNLOAD_URL)}"
+        )
+        logger.error(err)
+        raise AstrometryNetIndexError(err)
+
+    index_dir = Path(base_dir) / index_series
+
+    if not index_dir.is_dir():
+        raise AstrometryNetIndexError(
+            missing_index_error(index_series, index_dir, "There is no such directory")
+        )
+
+    pattern = get_index_file_pattern(index_series)
+
+    if len(list(index_dir.glob(pattern))) == 0:
+        raise AstrometryNetIndexError(
+            missing_index_error(
+                index_series, index_dir, f"That directory holds no '{pattern}' files"
+            )
+        )
+
+    return index_dir
+
+
+def missing_index_error(index_series: str, index_dir: Path, reason: str) -> str:
+    """
+    Build the error message for a series of index files that cannot be found
+
+    :param index_series: Series of index files that was requested, e.g. '5200'
+    :param index_dir: Directory the index files were expected in
+    :param reason: Why the series could not be used, e.g. 'There is no such directory'
+    :return: Error message
+    """
+    err = (
+        f"Found no astrometry.net index files for the '{index_series}' series. "
+        f"Expected files matching '{get_index_file_pattern(index_series)}' in "
+        f"'{index_dir}'. {reason}. The '{ANET_INDEX_DIR_KEY}' environment variable "
+        f"sets the base directory, and each series belongs in its own subdirectory "
+        f"of it, so download the '{index_series}' series from "
+        f"{INDEX_SERIES_URLS.get(index_series, ANET_DOWNLOAD_URL)} and unpack it "
+        f"into '{index_dir}'"
+    )
+    logger.error(err)
+    return err
+
+
+def run_astrometry_net(images: Path | list, output_dir: Path, *args, **kwargs):
     """
     function to execute `run_astrometry_net_single` on several images in batch
     """
@@ -44,8 +146,8 @@ def run_astrometry_net(images: str | list, output_dir: str, *args, **kwargs):
 
 
 def run_astrometry_net_single(
-    img_path: str | Path,
-    output_dir: str | Path,
+    img_path: Path,
+    output_dir: Path,
     scale_bounds: Optional[tuple | list] = None,  # limits on scale (lower, upper)
     scale_units: Optional[str] = None,  # scale units ('degw', 'amw')
     downsample: Optional[float | int] = None,  # downsample by factor of __
@@ -59,6 +161,7 @@ def run_astrometry_net_single(
     y_image_key: str = "Y_IMAGE",
     sort_key_name: str = "MAG_AUTO",
     no_tweak: bool = False,
+    index_series: str = DEFAULT_INDEX_SERIES,
 ):
     """
     function to run astrometry.net locally on one image, with options to adjust settings
@@ -78,8 +181,7 @@ def run_astrometry_net_single(
         f"--no-plots "
     )
 
-    if ANET_INDEX_DIR is not None:
-        cmd += f"--index-dir {ANET_INDEX_DIR} "
+    cmd += f"--index-dir {get_index_dir(index_series)} "
 
     if no_tweak:
         cmd += " --no-tweak "

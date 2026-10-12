@@ -12,11 +12,11 @@ from mirar.utils import execute
 
 
 def run_swarp(
-    stack_list_path: str | Path,
-    swarp_config_path: str | Path,
-    out_path: str | Path,
-    weight_list_path: Optional[str | Path] = None,
-    weight_out_path: Optional[str | Path] = None,
+    stack_list_path: Path,
+    swarp_config_path: Path,
+    out_path: Path,
+    weight_list_path: Optional[Path] = None,
+    weight_out_path: Optional[Path] = None,
     pixscale: Optional[float] = None,
     x_imgpixsize: Optional[float] = None,
     y_imgpixsize: Optional[float] = None,

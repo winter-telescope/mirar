@@ -38,5 +38,5 @@ class WASPPipeline(Pipeline):
         raise NotImplementedError
 
     @staticmethod
-    def _load_raw_image(path: str | Path) -> Image | list[Image]:
+    def _load_raw_image(path: Path) -> Image | list[Image]:
         return load_raw_wasp_image(path)

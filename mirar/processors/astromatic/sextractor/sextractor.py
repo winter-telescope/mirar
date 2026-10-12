@@ -5,7 +5,6 @@ Module to run
 """
 
 import logging
-import os
 import shutil
 from pathlib import Path
 from typing import Callable, Optional
@@ -208,7 +207,7 @@ class Sextractor(BaseImageProcessor):  # pylint: disable=too-many-instance-attri
             if self.gain is None and "GAIN" in image.keys():
                 self.gain = image["GAIN"]
 
-            temp_path = get_temp_path(sextractor_out_dir, image[BASE_NAME_KEY])
+            temp_path = get_temp_path(sextractor_out_dir, Path(image[BASE_NAME_KEY]))
 
             if not temp_path.exists():
                 self.save_fits(image, temp_path)

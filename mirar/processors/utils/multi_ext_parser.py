@@ -42,7 +42,7 @@ class MultiExtParser(BaseImageProcessor):
         input_img_dir: str = base_raw_dir,
         output_img_dir: Path = base_output_dir,
         load_image: Callable[
-            [str | Path], tuple[np.ndarray, astropy.io.fits.Header]
+            [Path], tuple[np.ndarray, astropy.io.fits.Header]
         ] = open_fits,
         skip_first: bool = False,
         extension_num_header_key: str | None = None,
@@ -80,7 +80,7 @@ class MultiExtParser(BaseImageProcessor):
             f"Processor to parse MEF images from the {self.input_sub_dir} subdirectory "
         )
 
-    def parse(self, path: str) -> list:
+    def parse(self, path: Path) -> list:
         """
         Function to open a raw MEF image, write each extension to a new file
 
@@ -156,7 +156,7 @@ class MultiExtParser(BaseImageProcessor):
 
 
 def load_from_dir(
-    input_dir: str | Path, parse_f: Callable[[list[str | Path]], Image]
+    input_dir: Path, parse_f: Callable[[Path], list[Image]]
 ) -> ImageBatch:
     """
     Function to parse all MEF images in a directory

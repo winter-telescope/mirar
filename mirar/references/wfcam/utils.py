@@ -272,7 +272,7 @@ def open_compressed_wfcam_fits(path: Path) -> tuple[np.ndarray, fits.Header]:
     return extension_data_list[0], extension_header_list[0]
 
 
-def save_wfcam_as_compressed_fits(image: Image, path: str | Path):
+def save_wfcam_as_compressed_fits(image: Image, path: Path):
     """
     Save an Image as a compressed fits image path, atomically (temp file + rename).
 

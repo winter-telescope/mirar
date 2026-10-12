@@ -24,8 +24,8 @@ class CSVExporter(BaseSourceProcessor):
 
     def __init__(
         self,
-        output_dir_name: Optional[str] = None,
-        output_dir: str | Path = base_output_dir,
+        output_dir_name: str,
+        output_dir: Path = base_output_dir,
         export_keys: Optional[list[str]] = None,
     ):
         super().__init__()

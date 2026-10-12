@@ -91,7 +91,7 @@ class BaseWFCAMQuery:
         query_coords_function: Callable[
             [fits.Header, int], tuple[list[float], list[float]]
         ] = get_query_coordinates_from_header,
-        component_image_subdir: str | Path | None = None,
+        component_image_subdir: str | None = None,
     ):
         """
         :param filter_name: Filter name to query for.

@@ -37,7 +37,7 @@ def _insert_in_table(
 
     db_name = sql_table.db_name
 
-    stmt = (
+    stmt: Insert = (
         Insert(sql_table)
         .values(new_entry)
         .returning(*[column(x) for x in returning_keys])

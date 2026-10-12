@@ -15,7 +15,11 @@ from mirar.pipelines.lmi.config import (
     sextractor_photometry_config,
     swarp_config_path,
 )
-from mirar.pipelines.lmi.config.constants import LMI_NONLINEAR_LEVEL, LMI_PIXEL_SCALE
+from mirar.pipelines.lmi.config.constants import (
+    LMI_ANET_INDEX_SERIES,
+    LMI_NONLINEAR_LEVEL,
+    LMI_PIXEL_SCALE,
+)
 from mirar.pipelines.lmi.generator import (
     annotate_target_coordinates,
     label_stack_id,
@@ -100,6 +104,7 @@ calibrate = [
         output_sub_dir="anet",
         timeout=120,
         use_sextractor=True,
+        index_series=LMI_ANET_INDEX_SERIES,
     ),
     Sextractor(
         output_sub_dir="sextractor",
@@ -118,6 +123,7 @@ stack = [
         output_sub_dir="anet2",
         timeout=120,
         use_sextractor=True,
+        index_series=LMI_ANET_INDEX_SERIES,
     ),
     Sextractor(
         output_sub_dir="photprocess",
