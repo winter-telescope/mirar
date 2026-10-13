@@ -48,7 +48,7 @@ class AstrometryFromFile(BaseImageProcessor):
                     logger.debug(f"Removing {key} from {image[BASE_NAME_KEY]}")
                     del image.header[key]
 
-            logger.info(
+            logger.debug(
                 f"Adding astrometry headers from {astrometry_file} "
                 f"to {image[BASE_NAME_KEY]}"
             )
