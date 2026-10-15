@@ -57,9 +57,6 @@ def load_raw_lmi_fits(path: Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
 
     header["OBJRA"] = ra
 
-    if ":" not in str(header["CRVAL1"]):
-        header["CRVAL1"] = Angle(header["CRVAL1"], unit="deg").hourangle
-
     dec = Angle(f"{header['OBSDEC']} degrees").degree
     header["OBJDEC"] = dec
 
