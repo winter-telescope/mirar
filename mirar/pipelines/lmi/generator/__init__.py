@@ -7,10 +7,13 @@ for LMI images
 
 import logging
 
+from astropy.table import Table
+
 from mirar.catalog import BaseCatalog, GaiaVizier
 from mirar.catalog.vizier import PS1, SkyMapper
 from mirar.catalog.vizier.sdss import SDSS, NotInSDSSError, in_sdss
 from mirar.data.image_data import Image
+from mirar.paths import BASE_NAME_KEY
 from mirar.pipelines.git.config import (
     psfex_config_path,
     sextractor_photometry_config,
@@ -21,6 +24,9 @@ from mirar.pipelines.lmi.generator.sources import lmi_skyportal_formatter
 from mirar.pipelines.lmi.generator.stacks import label_stack_id
 from mirar.pipelines.lmi.generator.target import annotate_target_coordinates
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
+from mirar.processors.base_catalog_xmatch_processor import (
+    default_image_sextractor_catalog_purifier,
+)
 from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
 
 logger = logging.getLogger(__name__)
@@ -186,3 +192,47 @@ def lmi_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     )
 
     return good_sci_sources, good_ref_sources
+
+
+# Catalogue matches are dominated by galaxies, and MAG_AUTO grows with an
+# extended source by an amount which differs source to source
+LMI_CLASS_STAR_THRESHOLD = 0.8
+LMI_ZP_SNR_THRESHOLD = 20.0
+
+# Seeing bad enough to smear every star into the extended class would otherwise
+# leave too few sources to fit a zeropoint at all
+LMI_MIN_ZP_POINT_SOURCES = 10
+
+
+def lmi_photometric_catalog_purifier(
+    sci_catalog: Table, ref_catalog: Table, image: Image
+) -> tuple[Table, Table]:
+    """
+    Keep only well-measured point sources for the photometric calibration
+
+    The default purifier cuts on flags, seeing and the image edge, which leaves a
+    catalogue in which galaxies outnumber stars, and those scatter the zeropoint
+    several times more than the stars do.
+
+    :param sci_catalog: Catalog of sources detected in the image
+    :param ref_catalog: Catalog of reference sources
+    :param image: Image being calibrated
+    :return: Purified image and reference catalogs
+    """
+    sci_catalog, ref_catalog = default_image_sextractor_catalog_purifier(
+        sci_catalog=sci_catalog, ref_catalog=ref_catalog, image=image
+    )
+
+    point_sources = (sci_catalog["CLASS_STAR"] > LMI_CLASS_STAR_THRESHOLD) & (
+        sci_catalog["SNR_WIN"] > LMI_ZP_SNR_THRESHOLD
+    )
+
+    if point_sources.sum() < LMI_MIN_ZP_POINT_SOURCES:
+        logger.warning(
+            f"Found only {point_sources.sum()} point sources in "
+            f"{image[BASE_NAME_KEY]}, so the zeropoint is fit to all "
+            f"{len(sci_catalog)} sources and will be less precise"
+        )
+        return sci_catalog, ref_catalog
+
+    return sci_catalog[point_sources], ref_catalog

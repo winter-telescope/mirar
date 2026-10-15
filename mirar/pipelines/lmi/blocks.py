@@ -24,6 +24,7 @@ from mirar.pipelines.lmi.generator import (
     annotate_target_coordinates,
     label_stack_id,
     lmi_photometric_catalog_generator,
+    lmi_photometric_catalog_purifier,
     lmi_reference_image_generator,
     lmi_reference_image_resampler,
     lmi_reference_psfex,
@@ -137,6 +138,7 @@ stack = [
     ),
     PhotCalibrator(
         ref_catalog_generator=lmi_photometric_catalog_generator,
+        catalogs_purifier=lmi_photometric_catalog_purifier,
         num_matches_threshold=3,
     ),
     ImageSaver(
