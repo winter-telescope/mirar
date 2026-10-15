@@ -75,6 +75,10 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
+          # Mixing conda-forge and defaults gives an env whose libtiff soname
+          # does not match what its packages were built against
+          channels: conda-forge
+          channel-priority: strict
 
       # Runs a set of commands using the runners shell
       - name: set up ssh
@@ -91,7 +95,7 @@ jobs:
       - name: install packages with conda
         shell: bash -el {0}
         run: |
-          conda install -c conda-forge \
+          conda install --override-channels -c conda-forge \
             astromatic-source-extractor==$SOURCE_EXTRACTOR_VERSION \
             astromatic-scamp==$SCAMP_VERSION \
             astromatic-swarp==$SWARP_CONDA_VERSION \
