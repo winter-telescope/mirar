@@ -30,7 +30,7 @@ class SkyportalNameResolver(BaseImageProcessor):
         ra_key: str,
         dec_key: str,
         name_key: str = TARGET_KEY,
-        skyportal_client: Optional[SkyportalClient] = SkyportalClient(),
+        skyportal_client: SkyportalClient = SkyportalClient(),
     ):
         super().__init__()
         self.ra_key = ra_key
