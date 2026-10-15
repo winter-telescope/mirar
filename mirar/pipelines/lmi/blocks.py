@@ -42,7 +42,7 @@ from mirar.processors.mask import MaskAboveThreshold
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
-from mirar.processors.skyportal import SkyportalSourceUploader
+from mirar.processors.skyportal import SkyportalNameResolver, SkyportalSourceUploader
 from mirar.processors.sources import (
     CSVExporter,
     CustomSourceTableModifier,
@@ -69,6 +69,7 @@ load_raw = [
     CustomImageBatchModifier(label_stack_id),
     ImageRebatcher(split_key="stackid"),
     CustomImageBatchModifier(annotate_target_coordinates),
+    SkyportalNameResolver(ra_key="OBJRA", dec_key="OBJDEC"),
     ImageRebatcher(BASE_NAME_KEY),
 ]
 
