@@ -28,7 +28,7 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERSION}-Lin
     rm miniconda.sh && \
     conda clean -afy
 
-RUN conda install -y -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl wcstools
+RUN conda install -y --override-channels -c conda-forge astromatic-source-extractor astromatic-scamp astromatic-swarp astromatic-psfex astrometry gsl wcstools
 
 # Create a layer for Poetry
 FROM miniconda AS poetry
