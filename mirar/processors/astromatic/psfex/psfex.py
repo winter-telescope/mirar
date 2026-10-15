@@ -63,7 +63,6 @@ class PSFex(BaseImageProcessor):
     """
 
     base_key = "psfex"
-    max_n_cpu = 1
 
     def __init__(
         self,
