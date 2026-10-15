@@ -68,7 +68,7 @@ fi
 
 echo ""
 echo "==> Creating conda environment: $ENV_NAME (python=$PYTHON_VERSION)"
-conda create -y -n "$ENV_NAME" python="$PYTHON_VERSION"
+conda create -y --override-channels -c conda-forge -n "$ENV_NAME" python="$PYTHON_VERSION"
 conda activate "$ENV_NAME"
 
 PREFIX="$CONDA_PREFIX"
@@ -156,7 +156,7 @@ echo "$PIP_DEPS"
 
 echo ""
 echo "==> Installing conda packages (native arm64)..."
-conda install -y -c conda-forge \
+conda install -y --override-channels -c conda-forge \
     "astromatic-source-extractor=$SOURCE_EXTRACTOR_VERSION" \
     gsl \
     cfitsio fftw openblas curl git \
