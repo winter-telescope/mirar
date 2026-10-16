@@ -7,10 +7,14 @@ for LMI images
 
 import logging
 
+import numpy as np
+from astropy.table import Table
+
 from mirar.catalog import BaseCatalog, GaiaVizier
 from mirar.catalog.vizier import PS1, SkyMapper
 from mirar.catalog.vizier.sdss import SDSS, NotInSDSSError, in_sdss
 from mirar.data.image_data import Image
+from mirar.paths import BASE_NAME_KEY
 from mirar.pipelines.git.config import (
     psfex_config_path,
     sextractor_photometry_config,
@@ -21,12 +25,23 @@ from mirar.pipelines.lmi.generator.sources import lmi_skyportal_formatter
 from mirar.pipelines.lmi.generator.stacks import label_stack_id
 from mirar.pipelines.lmi.generator.target import annotate_target_coordinates
 from mirar.processors.astromatic import PSFex, Sextractor, Swarp
+from mirar.processors.base_catalog_xmatch_processor import (
+    default_image_sextractor_catalog_purifier,
+)
 from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
 
 logger = logging.getLogger(__name__)
 
 LMI_SEARCH_RADIUS_ARCMIN = LMI_WIDTH_DEG * 60.0 / (2.0**0.5)  # Triangle diagonal
+# Photometric calibration variables
 LMI_PHOTOMETRIC_MAX_MAG = 22
+LMI_ZP_SNR_THRESHOLD = 20.0
+LMI_N_ZP_POINT_SOURCES = 60
+LMI_MIN_ZP_POINT_SOURCES = 10
+
+# The LMI filters are SDSS, but the reference catalogue is PS1
+LMI_COLOR_TERM_GUESS = {"g": -0.2}
+LMI_ZP_GUESS = 30.0
 
 
 def lmi_astrometric_catalog_generator(_) -> GaiaVizier:
@@ -186,3 +201,65 @@ def lmi_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     )
 
     return good_sci_sources, good_ref_sources
+
+
+def lmi_photometric_catalog_purifier(
+    sci_catalog: Table, ref_catalog: Table, image: Image
+) -> tuple[Table, Table]:
+    """
+    Keep the most point-like, well-measured sources for the photometric calibration
+
+    The default purifier leaves a catalogue in which the stars are a minority.
+
+    :param sci_catalog: Catalog of sources detected in the image
+    :param ref_catalog: Catalog of reference sources
+    :param image: Image being calibrated
+    :return: Purified image and reference catalogs
+    """
+    sci_catalog, ref_catalog = default_image_sextractor_catalog_purifier(
+        sci_catalog=sci_catalog, ref_catalog=ref_catalog, image=image
+    )
+
+    candidates = sci_catalog[sci_catalog["SNR_WIN"] > LMI_ZP_SNR_THRESHOLD]
+
+    if len(candidates) < LMI_MIN_ZP_POINT_SOURCES:
+        logger.warning(
+            f"Found only {len(candidates)} well-measured sources in "
+            f"{image[BASE_NAME_KEY]}, so the zeropoint is fit to all "
+            f"{len(sci_catalog)} sources and will be less precise"
+        )
+        return sci_catalog, ref_catalog
+
+    most_point_like = np.argsort(candidates["CLASS_STAR"])[::-1]
+
+    return candidates[most_point_like[:LMI_N_ZP_POINT_SOURCES]], ref_catalog
+
+
+def lmi_color_term_guess_generator(
+    image: Image,
+) -> tuple[tuple[str, str], tuple[str, str], tuple[float, float]]:
+    """
+    Get the reference catalog columns which define the colour term for an image
+
+    The colour always straddles the band being calibrated.
+
+    :param image: Image undergoing photometric calibration
+    :return: Bluer and redder magnitude columns, their error columns, and a first
+        guess at the colour term and the zeropoint
+    """
+    filter_name = image["FILTER"].replace("'", "").lower()
+
+    if filter_name == "i":
+        color_filters = ("rmag", "imag")
+    elif filter_name == "z":
+        color_filters = ("imag", "zmag")
+    else:
+        color_filters = ("gmag", "rmag")
+
+    color_errors = (f"e_{color_filters[0]}", f"e_{color_filters[1]}")
+
+    return (
+        color_filters,
+        color_errors,
+        (LMI_COLOR_TERM_GUESS.get(filter_name, 0.0), LMI_ZP_GUESS),
+    )

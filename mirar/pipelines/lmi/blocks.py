@@ -7,7 +7,7 @@ lists which are used to build configurations for the
 
 # pylint: disable=duplicate-code
 
-from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
+from mirar.paths import BASE_NAME_KEY, GAIN_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
 from mirar.pipelines.lmi.config import (
     lmi_cal_requirements,
     psfex_sci_config_path,
@@ -23,7 +23,9 @@ from mirar.pipelines.lmi.config.constants import (
 from mirar.pipelines.lmi.generator import (
     annotate_target_coordinates,
     label_stack_id,
+    lmi_color_term_guess_generator,
     lmi_photometric_catalog_generator,
+    lmi_photometric_catalog_purifier,
     lmi_reference_image_generator,
     lmi_reference_image_resampler,
     lmi_reference_psfex,
@@ -36,13 +38,15 @@ from mirar.processors.astromatic import PSFex, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.astrometry.anet import AstrometryNet, get_scale_bounds
 from mirar.processors.bias import BiasCalibrator
+from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.flat import FlatCalibrator
 from mirar.processors.mask import MaskAboveThreshold
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.processors.photcal.zp_calculator import ZPWithColorTermCalculator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
-from mirar.processors.skyportal import SkyportalSourceUploader
+from mirar.processors.skyportal import SkyportalNameResolver, SkyportalSourceUploader
 from mirar.processors.sources import (
     CSVExporter,
     CustomSourceTableModifier,
@@ -68,6 +72,7 @@ load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_lmi_image),
     CustomImageBatchModifier(label_stack_id),
     ImageRebatcher(split_key="stackid"),
+    SkyportalNameResolver(ra_key="OBJRA", dec_key="OBJDEC"),
     CustomImageBatchModifier(annotate_target_coordinates),
     ImageRebatcher(BASE_NAME_KEY),
 ]
@@ -77,11 +82,11 @@ build_log = [  # pylint: disable=duplicate-code
     CSVLog(
         export_keys=[
             TARGET_KEY,
-            "OBJRA",
-            "OBJDEC",
             "DATE-OBS",
             "FILTER",
             "STACKID",
+            "OBJRA",
+            "OBJDEC",
             OBSCLASS_KEY,
             BASE_NAME_KEY,
         ]
@@ -99,7 +104,13 @@ calibrate = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    ImageBatcher(split_key=BASE_NAME_KEY),
+    ImageRebatcher(BASE_NAME_KEY),
+    LACosmicCleaner(
+        effective_gain_key=GAIN_KEY,
+        readnoise_key="RDNOISE",
+        contrast=4.0,
+        maxiter=1,
+    ),
     AstrometryNet(
         output_sub_dir="anet",
         timeout=120,
@@ -136,6 +147,12 @@ stack = [
     ),
     PhotCalibrator(
         ref_catalog_generator=lmi_photometric_catalog_generator,
+        catalogs_purifier=lmi_photometric_catalog_purifier,
+        zp_calculator=ZPWithColorTermCalculator(
+            color_colnames_guess_generator=lmi_color_term_guess_generator,
+            reject_outliers=True,
+            solver="curve_fit",
+        ),
         num_matches_threshold=3,
     ),
     ImageSaver(

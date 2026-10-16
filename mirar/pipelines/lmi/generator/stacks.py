@@ -31,7 +31,7 @@ def label_stack_id(batch: ImageBatch) -> ImageBatch:
             image["targnum"] = -1
             continue
 
-        target_ra = Angle(image["CRVAL1"], unit="hourangle").degree
+        target_ra = Angle(image["CRVAL1"], unit="degree").degree
         target_dec = Angle(image["CRVAL2"], unit="degree").degree
 
         if (target_ra == 0.0) & (target_dec == 0.0):

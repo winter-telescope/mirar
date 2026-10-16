@@ -161,3 +161,30 @@ class SkyportalClient:
             )
 
         return response
+
+    def get_source_position(self, name: str) -> Optional[tuple[float, float]]:
+        """
+        Get the catalogue position of a named source
+
+        :param name: Name of the source, e.g. 'ZTF26abzrlze'
+        :return: Right ascension and declination in degrees, or None if not found
+        """
+        try:
+            res = self.api("GET", f"sources/{name}")
+        except (requests.RequestException, ValueError) as exc:
+            logger.warning(f"Could not reach SkyPortal to resolve '{name}': {exc}")
+            return None
+
+        if res.status_code != 200:
+            logger.warning(
+                f"SkyPortal returned no source named '{name}' "
+                f"(status {res.status_code})"
+            )
+            return None
+
+        try:
+            data = res.json()["data"]
+            return float(data["ra"]), float(data["dec"])
+        except (ValueError, KeyError, TypeError) as exc:
+            logger.warning(f"Could not read a position for '{name}': {exc}")
+            return None
