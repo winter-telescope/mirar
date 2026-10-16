@@ -16,13 +16,24 @@ from astropy.utils.exceptions import AstropyUserWarning, AstropyWarning
 
 from mirar.data import Image
 from mirar.errors.exceptions import ProcessorError
-from mirar.paths import BASE_NAME_KEY, LATEST_SAVE_KEY, RAW_IMG_KEY, core_fields
+from mirar.paths import (
+    BASE_NAME_KEY,
+    LATEST_SAVE_KEY,
+    OBS_CLASSES,
+    OBSCLASS_KEY,
+    RAW_IMG_KEY,
+    core_fields,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class MissingCoreFieldError(KeyError, ProcessorError):
     """Base class for missing core field errors"""
+
+
+class InvalidObsClassError(ValueError, ProcessorError):
+    """Error for an unrecognised observation class"""
 
 
 class ExtensionParsingError(ProcessorError):
@@ -186,6 +197,7 @@ def save_fits(
     if isinstance(path, str):
         path = Path(path)
     check_image_has_core_fields(image)
+    check_image_has_valid_obsclass(image)
     data = image.get_data()
     header = image.get_header()
     if header is not None:
@@ -213,6 +225,7 @@ def open_raw_image(
     new_img = Image(data.astype(np.float64), header)
 
     check_image_has_core_fields(new_img)
+    check_image_has_valid_obsclass(new_img)
 
     return new_img
 
@@ -346,6 +359,7 @@ def open_mef_image(
         single_header = ext_header_list[i]
         image = Image(data=copy.deepcopy(ext_data), header=copy.deepcopy(single_header))
         check_image_has_core_fields(image)
+        check_image_has_valid_obsclass(image)
 
         split_images_list.append(image)
 
@@ -354,6 +368,22 @@ def open_mef_image(
         raise ExtensionParsingError(f"Found duplicate image names in {names}")
 
     return split_images_list
+
+
+def check_image_has_valid_obsclass(img: Image):
+    """
+    Function to ensure that an image has a recognised observation class
+
+    :param img: Image object to check
+    :return: None
+    """
+    if str(img[OBSCLASS_KEY]).lower() not in OBS_CLASSES:
+        err = (
+            f"Image ({img[BASE_NAME_KEY]}) has {OBSCLASS_KEY} "
+            f"'{img[OBSCLASS_KEY]}', which is not one of {OBS_CLASSES}."
+        )
+        logger.error(err)
+        raise InvalidObsClassError(err)
 
 
 def check_file_is_complete(path: Path) -> bool:
