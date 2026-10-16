@@ -104,7 +104,6 @@ calibrate = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    # Two or three frames per filter do not dilute the cosmic rays away
     LACosmicCleaner(
         effective_gain_key=GAIN_KEY,
         readnoise_key="RDNOISE",
