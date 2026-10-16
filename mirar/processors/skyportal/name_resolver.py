@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 
 from mirar.data import ImageBatch
-from mirar.paths import TARGET_KEY
+from mirar.paths import OBSCLASS_KEY, TARGET_KEY
 from mirar.processors.base_processor import BaseImageProcessor
 from mirar.processors.skyportal.client import SkyportalClient
 
@@ -65,6 +65,10 @@ class SkyportalNameResolver(BaseImageProcessor):
 
     def _apply_to_images(self, batch: ImageBatch) -> ImageBatch:
         for image in batch:
+
+            if image[OBSCLASS_KEY] != "science":
+                continue
+
             position = self.resolve(image[self.name_key])
 
             if position is not None:

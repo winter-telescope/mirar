@@ -72,6 +72,7 @@ load_raw = [
     ImageLoader(input_sub_dir="raw", load_image=load_raw_lmi_image),
     CustomImageBatchModifier(label_stack_id),
     ImageRebatcher(split_key="stackid"),
+    SkyportalNameResolver(ra_key="OBJRA", dec_key="OBJDEC"),
     CustomImageBatchModifier(annotate_target_coordinates),
     ImageRebatcher(BASE_NAME_KEY),
 ]
@@ -84,6 +85,8 @@ build_log = [  # pylint: disable=duplicate-code
             "DATE-OBS",
             "FILTER",
             "STACKID",
+            "OBJRA",
+            "OBJDEC",
             OBSCLASS_KEY,
             BASE_NAME_KEY,
         ]
@@ -101,7 +104,6 @@ calibrate = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    SkyportalNameResolver(ra_key="OBJRA", dec_key="OBJDEC"),
     ImageRebatcher(BASE_NAME_KEY),
     LACosmicCleaner(
         effective_gain_key=GAIN_KEY,
