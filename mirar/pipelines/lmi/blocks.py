@@ -104,11 +104,7 @@ calibrate = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
-    # Each frame carries its own cosmic rays, and with only two or three frames
-    # per filter the stack does not dilute them below the detection threshold.
-    # A high contrast keeps an undersampled PSF from being clipped as well.
-    # One pass removes every spurious detection; further passes only mask the
-    # wings of rays already found, at four times the cost
+    # Two or three frames per filter do not dilute the cosmic rays away
     LACosmicCleaner(
         effective_gain_key=GAIN_KEY,
         readnoise_key="RDNOISE",

@@ -195,14 +195,10 @@ def lmi_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     return good_sci_sources, good_ref_sources
 
 
-# Catalogue matches are dominated by galaxies and by spurious sharp detections,
-# which scatter the zeropoint several times more than the stars do
+# Galaxies and artefacts scatter the zeropoint far more than the stars do
 LMI_ZP_SNR_THRESHOLD = 20.0
 
-# Enough sources to fit a zeropoint without the scatter of the whole catalogue.
-# They are ranked rather than thresholded, because CLASS_STAR is calibrated
-# against an assumed seeing and can call almost every real star extended, which
-# would otherwise leave too few sources to calibrate a frame at all.
+# Ranked rather than thresholded, since CLASS_STAR assumes a seeing
 LMI_N_ZP_POINT_SOURCES = 60
 
 # Below this there is nothing to rank, so the whole catalogue is used instead
@@ -215,8 +211,7 @@ def lmi_photometric_catalog_purifier(
     """
     Keep the most point-like, well-measured sources for the photometric calibration
 
-    The default purifier cuts on flags, seeing and the image edge, which leaves a
-    catalogue of galaxies and artefacts in which the stars are a minority.
+    The default purifier leaves a catalogue in which the stars are a minority.
 
     :param sci_catalog: Catalog of sources detected in the image
     :param ref_catalog: Catalog of reference sources
@@ -242,9 +237,7 @@ def lmi_photometric_catalog_purifier(
     return candidates[most_point_like[:LMI_N_ZP_POINT_SOURCES]], ref_catalog
 
 
-# The LMI filters are SDSS but the reference catalogue is PS1, and the two g
-# bands differ enough to leave a colour term of about -0.2 mag per mag of g-r.
-# Measured on 20261015, where r and i came out flat within their errors.
+# The LMI filters are SDSS, but the reference catalogue is PS1
 LMI_COLOR_TERM_GUESS = {"g": -0.2}
 LMI_ZP_GUESS = 30.0
 
@@ -255,8 +248,7 @@ def lmi_color_term_guess_generator(
     """
     Get the reference catalog columns which define the colour term for an image
 
-    The bands are paired the way the PS1 to SDSS transformations are defined, so
-    the colour always straddles the band being calibrated.
+    The colour always straddles the band being calibrated.
 
     :param image: Image undergoing photometric calibration
     :return: Bluer and redder magnitude columns, their error columns, and a first

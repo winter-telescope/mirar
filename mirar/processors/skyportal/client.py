@@ -166,10 +166,6 @@ class SkyportalClient:
         """
         Get the catalogue position of a named source
 
-        A name which cannot be resolved is not an error, since plenty of targets
-        are never posted to SkyPortal, so this warns and returns None to let the
-        caller decide what to do without a position.
-
         :param name: Name of the source, e.g. 'ZTF26abzrlze'
         :return: Right ascension and declination in degrees, or None if not found
         """

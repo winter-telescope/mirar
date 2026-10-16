@@ -17,10 +17,8 @@ class SkyportalNameResolver(BaseImageProcessor):
     """
     Processor to set target coordinates from the target name, using SkyPortal
 
-    Headers generally record the telescope pointing, which is dithered and need
-    not sit on the target at all, so the position is looked up by name instead.
-    Images whose name cannot be resolved keep the coordinates they already have,
-    since a missing position is no reason to abandon a night of data.
+    Headers record the dithered pointing, which need not sit on the target.
+    An unresolved name leaves the existing coordinates alone.
     """
 
     base_key = "skyportalnameresolver"
