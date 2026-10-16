@@ -236,3 +236,41 @@ def lmi_photometric_catalog_purifier(
         return sci_catalog, ref_catalog
 
     return sci_catalog[point_sources], ref_catalog
+
+
+# The LMI filters are SDSS but the reference catalogue is PS1, and the two g
+# bands differ enough to leave a colour term of about -0.2 mag per mag of g-r.
+# Measured on 20261015, where r and i came out flat within their errors.
+LMI_COLOR_TERM_GUESS = {"g": -0.2}
+LMI_ZP_GUESS = 30.0
+
+
+def lmi_color_term_guess_generator(
+    image: Image,
+) -> tuple[tuple[str, str], tuple[str, str], tuple[float, float]]:
+    """
+    Get the reference catalog columns which define the colour term for an image
+
+    The bands are paired the way the PS1 to SDSS transformations are defined, so
+    the colour always straddles the band being calibrated.
+
+    :param image: Image undergoing photometric calibration
+    :return: Bluer and redder magnitude columns, their error columns, and a first
+        guess at the colour term and the zeropoint
+    """
+    filter_name = image["FILTER"].replace("'", "").lower()
+
+    if filter_name == "i":
+        color_filters = ("rmag", "imag")
+    elif filter_name == "z":
+        color_filters = ("imag", "zmag")
+    else:
+        color_filters = ("gmag", "rmag")
+
+    color_errors = (f"e_{color_filters[0]}", f"e_{color_filters[1]}")
+
+    return (
+        color_filters,
+        color_errors,
+        (LMI_COLOR_TERM_GUESS.get(filter_name, 0.0), LMI_ZP_GUESS),
+    )

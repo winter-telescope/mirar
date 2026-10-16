@@ -23,6 +23,7 @@ from mirar.pipelines.lmi.config.constants import (
 from mirar.pipelines.lmi.generator import (
     annotate_target_coordinates,
     label_stack_id,
+    lmi_color_term_guess_generator,
     lmi_photometric_catalog_generator,
     lmi_photometric_catalog_purifier,
     lmi_reference_image_generator,
@@ -41,6 +42,7 @@ from mirar.processors.csvlog import CSVLog
 from mirar.processors.flat import FlatCalibrator
 from mirar.processors.mask import MaskAboveThreshold
 from mirar.processors.photcal.photcalibrator import PhotCalibrator
+from mirar.processors.photcal.zp_calculator import ZPWithColorTermCalculator
 from mirar.processors.photometry import AperturePhotometry, PSFPhotometry
 from mirar.processors.reference import ProcessReference
 from mirar.processors.skyportal import SkyportalNameResolver, SkyportalSourceUploader
@@ -139,6 +141,11 @@ stack = [
     PhotCalibrator(
         ref_catalog_generator=lmi_photometric_catalog_generator,
         catalogs_purifier=lmi_photometric_catalog_purifier,
+        zp_calculator=ZPWithColorTermCalculator(
+            color_colnames_guess_generator=lmi_color_term_guess_generator,
+            reject_outliers=True,
+            solver="curve_fit",
+        ),
         num_matches_threshold=3,
     ),
     ImageSaver(
