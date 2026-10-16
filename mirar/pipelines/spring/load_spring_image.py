@@ -12,7 +12,14 @@ from astropy.utils.exceptions import AstropyWarning
 
 from mirar.data import Image
 from mirar.io import open_fits, open_raw_image
-from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, TIME_KEY
+from mirar.paths import (
+    BASE_NAME_KEY,
+    OBSCLASS_KEY,
+    TARGET_KEY,
+    TIME_KEY,
+    ObsClass,
+    parse_obsclass,
+)
 from mirar.pipelines.spring.config.constants import SPRING_GAIN
 from mirar.pipelines.spring.constants import (
     imgtype_dict,
@@ -23,6 +30,20 @@ from mirar.pipelines.spring.models import default_program, itid_dict
 from mirar.processors.skyportal import SNCOSMO_KEY
 
 logger = logging.getLogger(__name__)
+
+# Raw OBSTYPE values written by SPRING, mapped onto the observation classes.
+# These are the classes which the SPRING imgtype_dict recognises downstream.
+SPRING_OBSTYPE_MAP = {
+    "science": ObsClass.SCIENCE,
+    "bias": ObsClass.BIAS,
+    "flat": ObsClass.FLAT,
+    "dark": ObsClass.DARK,
+    "focus": ObsClass.FOCUS,
+    "test": ObsClass.TEST,
+    "pointing": ObsClass.POINTING,
+    "other": ObsClass.OTHER,
+    "corrupted": ObsClass.CORRUPTED,
+}
 
 
 def load_raw_spring_fits(path: Path):
@@ -57,9 +78,11 @@ def load_raw_spring_fits(path: Path):
 
     if OBSCLASS_KEY not in header:
         if "OBSTYPE" in header and header["OBSTYPE"] is not None:
-            header[OBSCLASS_KEY] = header["OBSTYPE"].strip().lower()
+            header[OBSCLASS_KEY] = parse_obsclass(
+                header["OBSTYPE"], SPRING_OBSTYPE_MAP, "SPRING"
+            )
         else:
-            header[OBSCLASS_KEY] = "science"
+            header[OBSCLASS_KEY] = ObsClass.SCIENCE.value
 
     target = "unknown"
     if ("SCHDNAME" in header.keys()) & ("OBHISTID" in header.keys()):
@@ -112,6 +135,9 @@ def load_raw_spring_fits(path: Path):
         warnings.simplefilter("ignore", AstropyWarning)
         header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
 
+    # IMGTYPE here is derived from OBSCLASS for the database, and overwrites any
+    # raw IMGTYPE the instrument wrote. This is the opposite direction to SEDMv2,
+    # where the raw IMGTYPE is the instrument key which feeds OBSCLASS.
     header["IMGTYPE"] = header[OBSCLASS_KEY]
     if header["IMGTYPE"] == "test":
         header["IMGTYPE"] = "other"

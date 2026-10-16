@@ -347,6 +347,36 @@ class ObsClass(Enum):
 
 
 OBS_CLASSES = [x.value for x in ObsClass]
+
+
+def parse_obsclass(
+    raw_value: str, mapping: dict[str, ObsClass], instrument: str
+) -> str:
+    """
+    Map a raw instrument observation-type value onto an OBSCLASS value
+
+    Instruments each write their own vocabulary, so every pipeline passes the
+    mapping for its own header key. Unrecognised values become science, as for
+    the instruments which gate on an explicit list, so that an unexpected frame
+    is reduced and flagged rather than silently dropped.
+
+    :param raw_value: Raw observation-type value written by the instrument
+    :param mapping: Mapping of lower-case raw values onto observation classes
+    :param instrument: Instrument name, used for logging
+    :return: Corresponding value of the OBSCLASS key
+    """
+    key = str(raw_value).strip().lower()
+
+    if key not in mapping:
+        logger.warning(
+            f"Unrecognised {instrument} observation type '{raw_value}'. "
+            f"Treating it as '{ObsClass.SCIENCE.value}'."
+        )
+        return ObsClass.SCIENCE.value
+
+    return mapping[key].value
+
+
 TARGET_KEY = "TARGET"
 DITHER_N_KEY = "DITHNUM"
 MAX_DITHER_KEY = "NUMDITHS"

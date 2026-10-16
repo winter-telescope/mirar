@@ -24,11 +24,25 @@ from mirar.paths import (
     PROC_HISTORY_KEY,
     RAW_IMG_KEY,
     TARGET_KEY,
+    ObsClass,
     __version__,
+    parse_obsclass,
 )
 from mirar.pipelines.summer.models import DEFAULT_FIELD, SUMMER_NIGHT_FORMAT
 
 logger = logging.getLogger(__name__)
+
+# Raw OBSTYPE values written by SUMMER, mapped onto the observation classes.
+# SUMMER writes these in upper case, and uses 'other' as its own catch-all.
+SUMMER_OBSTYPE_MAP = {
+    "science": ObsClass.SCIENCE,
+    "bias": ObsClass.BIAS,
+    "flat": ObsClass.FLAT,
+    "dark": ObsClass.DARK,
+    "focus": ObsClass.FOCUS,
+    "pointing": ObsClass.POINTING,
+    "other": ObsClass.OTHER,
+}
 
 
 def load_raw_summer_fits(path: Path) -> tuple[np.ndarray, astropy.io.fits.Header]:
@@ -46,7 +60,9 @@ def load_raw_summer_fits(path: Path) -> tuple[np.ndarray, astropy.io.fits.Header
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", AstropyWarning)
-        header[OBSCLASS_KEY] = header["OBSTYPE"].lower()
+        header[OBSCLASS_KEY] = parse_obsclass(
+            header["OBSTYPE"], SUMMER_OBSTYPE_MAP, "SUMMER"
+        )
         header["UTCTIME"] = str(header["UTCSHUT"]).replace(" ", "T")
 
         header["MJD-OBS"] = header["OBSMJD"]

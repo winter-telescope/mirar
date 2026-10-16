@@ -33,7 +33,9 @@ from mirar.paths import (
     RAW_IMG_KEY,
     SATURATE_KEY,
     TARGET_KEY,
+    ObsClass,
     core_fields,
+    parse_obsclass,
 )
 from mirar.pipelines.winter.constants import (
     all_winter_board_ids,
@@ -48,6 +50,20 @@ from mirar.processors.skyportal import SNCOSMO_KEY
 from mirar.processors.utils.image_loader import BadImageError
 
 logger = logging.getLogger(__name__)
+
+# Raw OBSTYPE values written by WINTER, mapped onto the observation classes.
+# WINTER writes these in upper case, and tags dome flats separately.
+WINTER_OBSTYPE_MAP = {
+    "science": ObsClass.SCIENCE,
+    "bias": ObsClass.BIAS,
+    "dark": ObsClass.DARK,
+    "flat": ObsClass.FLAT,
+    "domeflat": ObsClass.FLAT,
+    "focus": ObsClass.FOCUS,
+    "pointing": ObsClass.POINTING,
+    "test": ObsClass.TEST,
+    "corrupted": ObsClass.CORRUPTED,
+}
 
 
 def clean_header(header: fits.Header) -> fits.Header:
@@ -77,7 +93,9 @@ def clean_header(header: fits.Header) -> fits.Header:
     header["JD"] = date_t.jd
     header["DATE-OBS"] = date_t.isot
 
-    header[OBSCLASS_KEY] = header["OBSTYPE"].lower().strip()
+    header[OBSCLASS_KEY] = parse_obsclass(
+        header["OBSTYPE"], WINTER_OBSTYPE_MAP, "WINTER"
+    )
 
     # Check to ensure that biases and darks are tagged appropriately
     if header["EXPTIME"] == 0.0:
@@ -101,11 +119,6 @@ def clean_header(header: fits.Header) -> fits.Header:
         header["FIELDID"] = DEFAULT_FIELD
         # Set targname to dark
         header["TARGNAME"] = "dark"
-
-    # Tag dome flats as flats
-    if header[OBSCLASS_KEY].lower() == "domeflat":
-        header[OBSCLASS_KEY] = "flat"
-        header[TARGET_KEY] = "flat"
 
     # Mirror cover should be open for science images, and open or closed for darks
     if "MIRCOVER" in header.keys():
@@ -220,6 +233,9 @@ def clean_header(header: fits.Header) -> fits.Header:
         warnings.simplefilter("ignore", AstropyWarning)
         header["NIGHTDATE"] = date_t.to_datetime().strftime("%Y-%m-%d")
 
+    # IMGTYPE here is derived from OBSCLASS for the database, and overwrites any
+    # raw IMGTYPE the instrument wrote. This is the opposite direction to SEDMv2,
+    # where the raw IMGTYPE is the instrument key which feeds OBSCLASS.
     header["IMGTYPE"] = header[OBSCLASS_KEY]
     if header["IMGTYPE"] == "test":
         header["IMGTYPE"] = "other"
