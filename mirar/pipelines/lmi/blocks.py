@@ -73,7 +73,6 @@ load_raw = [
     CustomImageBatchModifier(label_stack_id),
     ImageRebatcher(split_key="stackid"),
     CustomImageBatchModifier(annotate_target_coordinates),
-    SkyportalNameResolver(ra_key="OBJRA", dec_key="OBJDEC"),
     ImageRebatcher(BASE_NAME_KEY),
 ]
 
@@ -82,8 +81,6 @@ build_log = [  # pylint: disable=duplicate-code
     CSVLog(
         export_keys=[
             TARGET_KEY,
-            "OBJRA",
-            "OBJDEC",
             "DATE-OBS",
             "FILTER",
             "STACKID",
@@ -104,14 +101,14 @@ calibrate = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
+    SkyportalNameResolver(ra_key="OBJRA", dec_key="OBJDEC"),
+    ImageRebatcher(BASE_NAME_KEY),
     LACosmicCleaner(
         effective_gain_key=GAIN_KEY,
         readnoise_key="RDNOISE",
         contrast=4.0,
         maxiter=1,
     ),
-    ImageSaver(output_dir_name="crclean"),
-    ImageBatcher(split_key=BASE_NAME_KEY),
     AstrometryNet(
         output_sub_dir="anet",
         timeout=120,
