@@ -7,6 +7,7 @@ for LMI images
 
 import logging
 
+import numpy as np
 from astropy.table import Table
 
 from mirar.catalog import BaseCatalog, GaiaVizier
@@ -194,13 +195,17 @@ def lmi_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     return good_sci_sources, good_ref_sources
 
 
-# Catalogue matches are dominated by galaxies, and MAG_AUTO grows with an
-# extended source by an amount which differs source to source
-LMI_CLASS_STAR_THRESHOLD = 0.8
+# Catalogue matches are dominated by galaxies and by spurious sharp detections,
+# which scatter the zeropoint several times more than the stars do
 LMI_ZP_SNR_THRESHOLD = 20.0
 
-# Seeing bad enough to smear every star into the extended class would otherwise
-# leave too few sources to fit a zeropoint at all
+# Enough sources to fit a zeropoint without the scatter of the whole catalogue.
+# They are ranked rather than thresholded, because CLASS_STAR is calibrated
+# against an assumed seeing and can call almost every real star extended, which
+# would otherwise leave too few sources to calibrate a frame at all.
+LMI_N_ZP_POINT_SOURCES = 60
+
+# Below this there is nothing to rank, so the whole catalogue is used instead
 LMI_MIN_ZP_POINT_SOURCES = 10
 
 
@@ -208,11 +213,10 @@ def lmi_photometric_catalog_purifier(
     sci_catalog: Table, ref_catalog: Table, image: Image
 ) -> tuple[Table, Table]:
     """
-    Keep only well-measured point sources for the photometric calibration
+    Keep the most point-like, well-measured sources for the photometric calibration
 
     The default purifier cuts on flags, seeing and the image edge, which leaves a
-    catalogue in which galaxies outnumber stars, and those scatter the zeropoint
-    several times more than the stars do.
+    catalogue of galaxies and artefacts in which the stars are a minority.
 
     :param sci_catalog: Catalog of sources detected in the image
     :param ref_catalog: Catalog of reference sources
@@ -223,19 +227,19 @@ def lmi_photometric_catalog_purifier(
         sci_catalog=sci_catalog, ref_catalog=ref_catalog, image=image
     )
 
-    point_sources = (sci_catalog["CLASS_STAR"] > LMI_CLASS_STAR_THRESHOLD) & (
-        sci_catalog["SNR_WIN"] > LMI_ZP_SNR_THRESHOLD
-    )
+    candidates = sci_catalog[sci_catalog["SNR_WIN"] > LMI_ZP_SNR_THRESHOLD]
 
-    if point_sources.sum() < LMI_MIN_ZP_POINT_SOURCES:
+    if len(candidates) < LMI_MIN_ZP_POINT_SOURCES:
         logger.warning(
-            f"Found only {point_sources.sum()} point sources in "
+            f"Found only {len(candidates)} well-measured sources in "
             f"{image[BASE_NAME_KEY]}, so the zeropoint is fit to all "
             f"{len(sci_catalog)} sources and will be less precise"
         )
         return sci_catalog, ref_catalog
 
-    return sci_catalog[point_sources], ref_catalog
+    most_point_like = np.argsort(candidates["CLASS_STAR"])[::-1]
+
+    return candidates[most_point_like[:LMI_N_ZP_POINT_SOURCES]], ref_catalog
 
 
 # The LMI filters are SDSS but the reference catalogue is PS1, and the two g
