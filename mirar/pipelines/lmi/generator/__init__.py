@@ -33,7 +33,15 @@ from mirar.references import BaseReferenceGenerator, PS1Ref, SDSSRef
 logger = logging.getLogger(__name__)
 
 LMI_SEARCH_RADIUS_ARCMIN = LMI_WIDTH_DEG * 60.0 / (2.0**0.5)  # Triangle diagonal
+# Photometric calibration variables
 LMI_PHOTOMETRIC_MAX_MAG = 22
+LMI_ZP_SNR_THRESHOLD = 20.0
+LMI_N_ZP_POINT_SOURCES = 60
+LMI_MIN_ZP_POINT_SOURCES = 10
+
+# The LMI filters are SDSS, but the reference catalogue is PS1
+LMI_COLOR_TERM_GUESS = {"g": -0.2}
+LMI_ZP_GUESS = 30.0
 
 
 def lmi_astrometric_catalog_generator(_) -> GaiaVizier:
@@ -195,16 +203,6 @@ def lmi_zogy_catalogs_purifier(sci_catalog, ref_catalog):
     return good_sci_sources, good_ref_sources
 
 
-# Galaxies and artefacts scatter the zeropoint far more than the stars do
-LMI_ZP_SNR_THRESHOLD = 20.0
-
-# Ranked rather than thresholded, since CLASS_STAR assumes a seeing
-LMI_N_ZP_POINT_SOURCES = 60
-
-# Below this there is nothing to rank, so the whole catalogue is used instead
-LMI_MIN_ZP_POINT_SOURCES = 10
-
-
 def lmi_photometric_catalog_purifier(
     sci_catalog: Table, ref_catalog: Table, image: Image
 ) -> tuple[Table, Table]:
@@ -235,11 +233,6 @@ def lmi_photometric_catalog_purifier(
     most_point_like = np.argsort(candidates["CLASS_STAR"])[::-1]
 
     return candidates[most_point_like[:LMI_N_ZP_POINT_SOURCES]], ref_catalog
-
-
-# The LMI filters are SDSS, but the reference catalogue is PS1
-LMI_COLOR_TERM_GUESS = {"g": -0.2}
-LMI_ZP_GUESS = 30.0
 
 
 def lmi_color_term_guess_generator(
