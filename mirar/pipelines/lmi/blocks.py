@@ -7,7 +7,7 @@ lists which are used to build configurations for the
 
 # pylint: disable=duplicate-code
 
-from mirar.paths import BASE_NAME_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
+from mirar.paths import BASE_NAME_KEY, GAIN_KEY, OBSCLASS_KEY, TARGET_KEY, core_fields
 from mirar.pipelines.lmi.config import (
     lmi_cal_requirements,
     psfex_sci_config_path,
@@ -38,6 +38,7 @@ from mirar.processors.astromatic import PSFex, Sextractor
 from mirar.processors.astromatic.swarp import Swarp
 from mirar.processors.astrometry.anet import AstrometryNet, get_scale_bounds
 from mirar.processors.bias import BiasCalibrator
+from mirar.processors.cosmic_rays import LACosmicCleaner
 from mirar.processors.csvlog import CSVLog
 from mirar.processors.flat import FlatCalibrator
 from mirar.processors.mask import MaskAboveThreshold
@@ -103,6 +104,18 @@ calibrate = [
     ImageBatcher(split_key="filter"),
     FlatCalibrator(),
     ImageSelector((OBSCLASS_KEY, ["science"])),
+    # Each frame carries its own cosmic rays, and with only two or three frames
+    # per filter the stack does not dilute them below the detection threshold.
+    # A high contrast keeps an undersampled PSF from being clipped as well.
+    # One pass removes every spurious detection; further passes only mask the
+    # wings of rays already found, at four times the cost
+    LACosmicCleaner(
+        effective_gain_key=GAIN_KEY,
+        readnoise_key="RDNOISE",
+        contrast=4.0,
+        maxiter=1,
+    ),
+    ImageSaver(output_dir_name="crclean"),
     ImageBatcher(split_key=BASE_NAME_KEY),
     AstrometryNet(
         output_sub_dir="anet",
