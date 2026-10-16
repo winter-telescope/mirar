@@ -5,6 +5,7 @@ Central module hosting all shared paths/directory conventions/keys/variables
 import logging
 import os
 import shutil
+from enum import Enum
 from importlib import metadata
 from pathlib import Path
 
@@ -321,6 +322,29 @@ EXPTIME_KEY = "EXPTIME"
 TIME_KEY = "DATE-OBS"
 JD_KEY = "JD"
 OBSCLASS_KEY = "OBSCLASS"
+
+
+class ObsClass(Enum):
+    """
+    Allowed values of the OBSCLASS header key
+    """
+
+    SCIENCE = "science"
+    BIAS = "bias"
+    DARK = "dark"
+    FLAT = "flat"
+    POINTING = "pointing"
+    FOCUS = "focus"
+    ACQUISITION = "acquisition"
+    NONE = "none"
+    TEST = "test"
+    CORRUPTED = "corrupted"
+    REF = "ref"
+    WEIGHT = "weight"
+    SCORR = "scorr"
+
+
+OBS_CLASSES = [x.value for x in ObsClass]
 TARGET_KEY = "TARGET"
 DITHER_N_KEY = "DITHNUM"
 MAX_DITHER_KEY = "NUMDITHS"
