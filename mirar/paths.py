@@ -338,6 +338,8 @@ class ObsClass(Enum):
     ACQUISITION = "acquisition"
     NONE = "none"
     TEST = "test"
+    OTHER = "other"
+    OBJECT = "object"
     CORRUPTED = "corrupted"
     REF = "ref"
     WEIGHT = "weight"
