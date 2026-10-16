@@ -178,10 +178,7 @@ def load_raw_summer_fits(path: Path) -> tuple[np.ndarray, astropy.io.fits.Header
             "OTHER": 5,
         }
 
-        if not header[OBSCLASS_KEY] in itid_dict:
-            header["ITID"] = 5
-        else:
-            header["ITID"] = itid_dict[header[OBSCLASS_KEY]]
+        header["ITID"] = itid_dict.get(header[OBSCLASS_KEY].upper(), 5)
 
         if header["FIELDID"] == "radec":
             header["FIELDID"] = DEFAULT_FIELD
