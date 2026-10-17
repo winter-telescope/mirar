@@ -22,12 +22,24 @@ from mirar.paths import (
     RAW_IMG_KEY,
     TARGET_KEY,
     TIME_KEY,
+    ObsClass,
     __version__,
+    parse_obsclass,
 )
 from mirar.processors.skyportal.skyportal_source import SNCOSMO_KEY
 from mirar.processors.utils.image_loader import InvalidImage
 
 logger = logging.getLogger(__name__)
+
+# Raw IMGTYPE values written by SEDMv2 for calibration files, mapped onto the
+# observation classes. Note that for SEDMv2 IMGTYPE is the raw instrument key
+# which feeds OBSCLASS, the opposite of WINTER and SPRING, where IMGTYPE is
+# derived from OBSCLASS for the database.
+SEDMV2_IMGTYPE_MAP = {
+    "bias": ObsClass.BIAS,
+    "dark": ObsClass.DARK,
+    "flat": ObsClass.FLAT,
+}
 
 
 def clean_science_header(  # pylint: disable=too-many-branches
@@ -138,7 +150,9 @@ def clean_cal_header(
         imgtype_hdr["IMGTYPE"] = "dark"
     if imgtype_hdr["IMGTYPE"] == "illum":  # sky flats
         imgtype_hdr["IMGTYPE"] = "flat"
-    hdr0[OBSCLASS_KEY] = imgtype_hdr["IMGTYPE"].lower()
+    hdr0[OBSCLASS_KEY] = parse_obsclass(
+        imgtype_hdr["IMGTYPE"], SEDMV2_IMGTYPE_MAP, "SEDMv2"
+    )
     hdr0["IMGTYPE"] = imgtype_hdr["IMGTYPE"]
     hdr0[TARGET_KEY] = hdr0[OBSCLASS_KEY]
 
@@ -242,7 +256,9 @@ def load_raw_sedmv2_mef(
     elif check_header["IMGTYPE"] in ["flat", "bias", "dark", "unknown", "illum"]:
         header, split_headers = clean_cal_header(header, split_headers, path, is_mode0)
     else:
-        logger.debug(f"Unexpected IMGTYPE: {check_header['IMGTYPE']}")
+        err = f"Unexpected SEDMv2 IMGTYPE: {check_header['IMGTYPE']}"
+        logger.error(err)
+        raise InvalidImage(err)
 
     header[BASE_NAME_KEY] = os.path.basename(path)
     header[RAW_IMG_KEY] = str(path)
